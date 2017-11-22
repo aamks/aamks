@@ -2,7 +2,7 @@
 
 import locale
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-from init.init import OnInit, OnEnd
+from manager.init import OnInit, OnEnd
 from geom.geom import Geom
 from geom.path import Path
 from geom.tessellate import Tessellate
@@ -14,5 +14,5 @@ Geom()
 Path()
 Tessellate()
 CfastMcarlo()
-EvacMcarlo()
+#EvacMcarlo()
 OnEnd()

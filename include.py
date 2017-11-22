@@ -83,7 +83,7 @@ class Sqlite(): # {{{
 class Psql(): # {{{
     def __init__(self):
         try:
-            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host={} password='TopSecretOfSgsp'".format(os.environ['AAMKS_SERVER']))
+            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host={} password='{}'".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_PG_PASS']))
             self.psqldb=self.PSQL.cursor(cursor_factory=psycopg2.extras.DictCursor)
         except:
             raise Exception("Fatal: Cannot connect to postresql.")

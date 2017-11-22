@@ -18,7 +18,7 @@ from geom.inkscapereader import InkscapeReader
 from include import Sqlite
 from include import Json
 from include import Dump as dd
-from vis.vis import Vis
+from gui.vis.vis import Vis
 
 # }}}
 

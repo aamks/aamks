@@ -8,15 +8,15 @@ from include import Json
 from include import Psql
 from include import Dump as dd
 from include import SimIterations
-from vis.vis import Vis 
+from gui.vis.vis import Vis 
 
 class OnInit():
     def __init__(self):# {{{
         ''' Stuff that happens at the beggining of the project '''
         if len(sys.argv) > 1:
-            os.environ["EGGMAN_PROJECT"]=sys.argv[1]
+            os.environ["AAMKS_PROJECT"]=sys.argv[1]
         self.json=Json()
-        self.conf=self.json.read("{}/conf_eggman.json".format(os.environ['EGGMAN_PROJECT']))
+        self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self.p=Psql()
         self._clear_sqlite()
         self._setup_simulations()
@@ -25,18 +25,18 @@ class OnInit():
         self._info()
 # }}}
     def _info(self):# {{{
-        Popen('env | grep EGGMAN', shell=True)
-        print("\t\t\tinkscape {}/{}".format(os.environ['EGGMAN_PROJECT'], self.conf['GENERAL']['INPUT_GEOMETRY']))
+        Popen('env | grep AAMKS', shell=True)
+        print("\t\t\tinkscape {}/{}".format(os.environ['AAMKS_PROJECT'], self.conf['GENERAL']['INPUT_GEOMETRY']))
 # }}}
     def _clear_sqlite(self):# {{{
         try:
-            os.remove("{}/eggman.sqlite".format(os.environ['EGGMAN_PROJECT']))
+            os.remove("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         except:
             pass
 # }}}
     def _create_iterations_sequence(self):# {{{
         ''' For a given project we may run simulation 0 to 999. Then we may wish to run 100 simulations more and have them numbered here: from=1000 to=1099
-        These from and to numbers are unique for the project and are used as rand seeds in later eggman modules. 
+        These from and to numbers are unique for the project and are used as rand seeds in later aamks modules. 
         This is similar, but distinct from SimIterations() - we are creating the sequence, and the later reads the sequence from/to.
         Remember that range(1,4) returns 1,2,3; hence SELECT max(iteration)+1
         '''
@@ -56,7 +56,7 @@ class OnInit():
     def _setup_simulations(self):# {{{
         ''' Simulation dir maps to id from psql's simulations table'''
 
-        workers_dir="{}/workers".format(os.environ['EGGMAN_PROJECT']) 
+        workers_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
         os.makedirs(workers_dir, exist_ok=True)
 
         irange=self._create_iterations_sequence()
@@ -66,17 +66,17 @@ class OnInit():
 
 # }}}
     def _setup_vis(self):# {{{
-        vis_dir="{}/vis".format(os.environ['EGGMAN_PROJECT']) 
+        vis_dir="{}/vis".format(os.environ['AAMKS_PROJECT']) 
         try:
-            os.remove("{}/vis/paperjs_extras.json".format(os.environ['EGGMAN_PROJECT']))
+            os.remove("{}/vis/paperjs_extras.json".format(os.environ['AAMKS_PROJECT']))
         except:
             pass
         os.makedirs(vis_dir, exist_ok=True)
-        copy_tree("{}/vis/js".format(os.environ['EGGMAN_PATH']), "{}/js".format(vis_dir) )
-        shutil.copyfile("{}/vis/css.css".format(os.environ['EGGMAN_PATH']), "{}/css.css".format(vis_dir))
+        copy_tree("{}/gui/vis/js".format(os.environ['AAMKS_PATH']), "{}/js".format(vis_dir) )
+        shutil.copyfile("{}/gui/vis/css.css".format(os.environ['AAMKS_PATH']), "{}/css.css".format(vis_dir))
 # }}}
     def _setup_anim_master(self):# {{{
-        path="{}/vis/master.html".format(os.environ['EGGMAN_PROJECT'])
+        path="{}/vis/master.html".format(os.environ['AAMKS_PROJECT'])
         with open(path, "w") as f:
             f.write('''<!DOCTYPE HTML>
 <html>
@@ -125,7 +125,7 @@ class OnEnd():
     def __init__(self):# {{{
         ''' Stuff that happens at the end of the project '''
         self.json=Json()
-        self.conf=self.json.read("{}/conf_eggman.json".format(os.environ['EGGMAN_PROJECT']))
+        self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self.p=Psql()
         self._gearman_workers()
         self._visualize()
@@ -133,13 +133,13 @@ class OnEnd():
     def _gearman_workers(self):# {{{
         ''' Gearman must run after server generated all data for workers to download '''
 
-        if os.environ['EGGMAN_USE_GEARMAN']=='0':
+        if os.environ['AAMKS_USE_GEARMAN']=='0':
             return
 
         si=SimIterations(self.conf['GENERAL']['PROJECT_NAME'], self.conf['GENERAL']['NUMBER_OF_SIMULATIONS'])
         for i in range(*si.get()):
-            worker="{}/workers/{}".format(os.environ['EGGMAN_PROJECT'],i)
-            gearman="gearman -f gEGG http://{}/users{} &".format(os.environ['EGGMAN_SERVER'],worker.replace("/home/eggman_users",""))
+            worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
+            gearman="gearman -f gEGG http://{}/users{} &".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""))
             os.system(gearman)
             #print(gearman)
 # }}}
