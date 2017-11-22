@@ -1,0 +1,29 @@
+{
+    "GENERAL": {
+        "PROJECT_NAME": "factory",
+		"INPUT_GEOMETRY": "cad.json",
+        "BUILDING_CATEGORY": "retail",
+        "SIMULATION_TIME": 1200,
+        "NUMBER_OF_SIMULATIONS": 1,
+        "VISUALIZATION_RESOLUTION": 10,
+        "DUMP_DISTRIBUTIONS": 0,
+        "MATERIAL_CEILING": "GYPSUM",
+        "MATERIAL_FLOOR": "GYPSUM",
+        "MATERIAL_WALL": "GYPSUM",
+        "AUTO_DETECTORS": 1,
+        "AUTO_SPRINKLERS": 0,
+        "C_CONST": 8,
+        "LAYER_HEIGHT": 1.8
+    },
+    "AAMKS_CONF": {
+        "TIME_STEP": 0.05,
+        "NUM_OF_STEPS": 24000,
+        "NEIGHBOR_DISTANCE": 80,
+        "MAX_NEIGHBOR": 5,
+        "TIME_HORIZON": 1,
+        "TIME_HORIZON_OBSTACLE": 0.05,
+        "RADIUS": 30,
+        "NODE_RADIUS": 30,
+        "WALL_MARGIN": 30
+    }
+}
