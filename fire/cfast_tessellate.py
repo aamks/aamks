@@ -18,12 +18,12 @@ from include import Dump as dd
 
 # }}}
 
-class Tessellate():
+class CfastTessellate():
     def __init__(self):
         ''' 
         Divide space into cells for queries of fire conditions asked by
         evacuees. Cells may be larger squares or smaller rectangles. First
-        divide into squares of self.side. Iterate over squares and if any
+        divide into squares of self._side. Iterate over squares and if any
         square is crossed by an obstacle divide this square further into
         rectangles. 
         
@@ -32,24 +32,24 @@ class Tessellate():
         correct rectangle. Finally fetch the conditions from the cell. 
         ''' 
 
-        self.side=400
+        self._side=400
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.json=Json() 
-        self.floor=1 
+        self._json=Json() 
+        self._floor=1 
         self._floor_dimensions()
         self._init_space() 
         self._intersect_space() 
         self._optimize()
         self._make_cells() 
         self._plot_space() 
-        self._query((870, 872))
+        self._query((1101, 1001))
 
     def _floor_dimensions(self):# {{{
-        minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (self.floor,))[0]['minx']
-        miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (self.floor,))[0]['miny']
-        maxx=self.s.query("SELECT max(x1) AS maxx FROM aamks_geom WHERE floor=?", (self.floor,))[0]['maxx']
-        maxy=self.s.query("SELECT max(y1) AS maxy FROM aamks_geom WHERE floor=?", (self.floor,))[0]['maxy']
-        self.floor_dim=dict([ ('width', maxx-minx), ('height', maxy-miny), ('maxx', maxx), ('maxy', maxy), ('minx', minx), ('miny', miny)  ])
+        minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (self._floor,))[0]['minx']
+        miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (self._floor,))[0]['miny']
+        maxx=self.s.query("SELECT max(x1) AS maxx FROM aamks_geom WHERE floor=?", (self._floor,))[0]['maxx']
+        maxy=self.s.query("SELECT max(y1) AS maxy FROM aamks_geom WHERE floor=?", (self._floor,))[0]['maxy']
+        self._floor_dim=dict([ ('width', maxx-minx), ('height', maxy-miny), ('maxx', maxx), ('maxy', maxy), ('minx', minx), ('miny', miny)  ])
 # }}}
     def _init_space(self):# {{{
         self.squares=OrderedDict()
@@ -62,15 +62,15 @@ class Tessellate():
             self.lines.append(LineString([ Point(i['x1'],i['y1']), Point(i['x0'], i['y1'])] ))
             self.lines.append(LineString([ Point(i['x1'],i['y1']), Point(i['x1'], i['y0'])] ))
 
-        a=self.side
-        x=int(self.floor_dim['width']/a)+1
-        y=int(self.floor_dim['height']/a)+1
+        self._side
+        x=int(self._floor_dim['width']/self._side)+1
+        y=int(self._floor_dim['height']/self._side)+1
         for v in range(y):
             for i in range(x):
-                x_=self.floor_dim['minx']+a*i
-                y_=self.floor_dim['miny']+a*v
+                x_=self._floor_dim['minx']+self._side*i
+                y_=self._floor_dim['miny']+self._side*v
                 xy=(x_, y_)
-                self.squares[xy]=box(x_, y_, x_+a, y_+a)
+                self.squares[xy]=box(x_, y_, x_+self._side, y_+self._side)
                 self.rectangles[xy]=[]
 # }}}
     def _candidate_intersection(self,id_,points):# {{{
@@ -84,8 +84,8 @@ class Tessellate():
         duplication rectangle (i != k) 
         '''
 
-        right_limit=id_[0]+self.side
-        top_limit=id_[1]+self.side
+        right_limit=id_[0]+self._side
+        top_limit=id_[1]+self._side
         for pt in list(zip(points.xy[0], points.xy[1])):
              if right_limit not in pt and top_limit not in pt:
                  if pt != id_:
@@ -116,18 +116,16 @@ class Tessellate():
 
         print("bytes", sys.getsizeof(self.rectangles))
 # }}}
+    def _make_cell_conditions(self,cell):# {{{
+        self.cells_conditions[cell]=OrderedDict([ ('smoke', 0.1), ('temp', 0.2), ('vis', 0.3) ])
+# }}}
     def _make_cells(self):#{{{
         self.cells_conditions=OrderedDict()
         for k,v in self.query_vertices.items():
             self._make_cell_conditions(k)
             for pt in list(zip(v['x'], v['y'])):
                 self._make_cell_conditions(pt)
-        dd(self.cells_conditions)
 #}}}
-
-    def _make_cell_conditions(self,cell):# {{{
-        self.cells_conditions[cell]=OrderedDict([ ('smoke', 0.1), ('temp', 0.2), ('vis', 0.3) ])
-# }}}
     def _intersect_space(self):# {{{
         ''' 
         We have squares and search for rectangles: we see how squares are crossed by obstacles (walls).
@@ -147,12 +145,21 @@ class Tessellate():
         square. 
         '''
 
-        x=self.floor_dim['minx'] + self.side * int((q[0]-self.floor_dim['minx'])/self.side) 
-        y=self.floor_dim['miny'] + self.side * int((q[1]-self.floor_dim['miny'])/self.side)
-        for i in range(bisect.bisect(self.query_vertices[(x,y)]['x'], q[0])-1,0,-1):
-            if self.query_vertices[(x,y)]['y'][i] < q[1]:
-                print(q, "belongs to", (self.query_vertices[(x,y)]['x'][i],self.query_vertices[(x,y)]['y'][i]))
-                return
+        x=self._floor_dim['minx'] + self._side * int((q[0]-self._floor_dim['minx'])/self._side) 
+        y=self._floor_dim['miny'] + self._side * int((q[1]-self._floor_dim['miny'])/self._side)
+        print("todo", q,x,y)
+        #dd(self.query_vertices[(x,y)])
+        #dd(self.query_vertices)
+        if len(self.query_vertices[(x,y)]['x'])==0:
+            print(q, "in square ({},{}). Conditions:".format(x,y), self.cells_conditions[(x,y)])
+        else:
+            for i in range(bisect.bisect(self.query_vertices[(x,y)]['x'], q[0])-1,0,-1):
+                print(i)
+                if self.query_vertices[(x,y)]['y'][i] < q[1]:
+                    rx=self.query_vertices[(x,y)]['x'][i]
+                    ry=self.query_vertices[(x,y)]['y'][i]
+                    print(q, "in rectangle ({},{}). Conditions:".format(rx,ry), self.cells_conditions[(rx,ry)])
+                    return
 # }}}
     def _plot_space(self):# {{{
         z=OrderedDict()
@@ -166,7 +173,7 @@ class Tessellate():
         # for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY x0,y0"):
         #     z['rectangles'].append( { "xy": (i['x0'], i['y0']), "width": i['width'] , "depth": i['depth'] , "strokeColor": "#f00" , "strokeWidth": 10 , "fillColor": "none", "opacity": 0.4 } )
 
-        a=self.side
+        a=self._side
         for k,v in self.rectangles.items():
             z['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 0.3 , "opacity": 0.2 } )
             z['circles'].append(    { "xy": k, "radius": radius , "fillColor": "#fff", "opacity": 0.3 } )
@@ -175,6 +182,6 @@ class Tessellate():
                 z['circles'].append( { "xy": mm, "radius": radius, "fillColor": "#fff", "opacity": 0.3 } )
                 z['texts'].append(   { "xy": mm, "content": mm, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
 
-        self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        self._json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
         #print('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
