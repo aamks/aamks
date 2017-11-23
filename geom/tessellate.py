@@ -20,17 +20,28 @@ from include import Dump as dd
 
 class Tessellate():
     def __init__(self):
-        ''' Prepare for queries of fire conditions asked by evacuees: divide CFAST space into squares. If obstacles cross a square, divide it further into rectangles. '''
+        ''' 
+        Divide space into cells for queries of fire conditions asked by
+        evacuees. Cells may be larger squares or smaller rectangles. First
+        divide into squares of self.side. Iterate over squares and if any
+        square is crossed by an obstacle divide this square further into
+        rectangles. 
+        
+        For any evacuee's (x,y) it will be easy to find the square he is in. If
+        we have rectangles in our square we use some optimizations to find the
+        correct rectangle. Finally fetch the conditions from the cell. 
+        ''' 
+
         self.side=400
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.json=Json()
-        self.floor=1
+        self.json=Json() 
+        self.floor=1 
         self._floor_dimensions()
-        self._init_space()
-        self._intersect_space()
+        self._init_space() 
+        self._intersect_space() 
         self._optimize()
-        self._cells_conditions()
-        self._plot_space()
+        self._make_cells() 
+        self._plot_space() 
         self._query((870, 872))
 
     def _floor_dimensions(self):# {{{
@@ -63,11 +74,16 @@ class Tessellate():
                 self.rectangles[xy]=[]
 # }}}
     def _candidate_intersection(self,id_,points):# {{{
-        ''' So there's an intersection "points" of the square and walls of the room. We get 2 points in this call.
-        The rectangle is defined by it's (minX,minY) vertex. 
-        We collect the points that belong to the square except from the points on the right and top edges.
-        Also, if the intersection is at where the big square originates, we don't want to duplicate it (i != k)
+        ''' 
+        So there's an intersection "points" of the square and the walls of the
+        room. We get 2 points in this call. Should we create a rectangle of any
+        of these points? The rectangle is defined by it's (minX,minY) vertex.
+        We only accept the points that belong to the square but don't lie on
+        the maxX (right) and maxY (top) edges. Also, if the intersection is at
+        where the big square originates, we don't want to produce the
+        duplication rectangle (i != k) 
         '''
+
         right_limit=id_[0]+self.side
         top_limit=id_[1]+self.side
         for pt in list(zip(points.xy[0], points.xy[1])):
@@ -76,7 +92,8 @@ class Tessellate():
                      self.rectangles[id_].append((int(pt[0]), int(pt[1])))
 # }}}
     def _optimize(self):# {{{
-        ''' 1. self.squares (collection of shapely boxen) is not needed anymore
+        ''' 
+        1. self.squares (collection of shapely boxen) is not needed anymore
         2. self.rectangles must have duplicates removed and must be sorted by x
         3. xy_vectors must be of the form: [ [x0,x1,x2,x3], [y0,y1,y2,y3] ]. 
         '''
@@ -99,14 +116,22 @@ class Tessellate():
 
         print("bytes", sys.getsizeof(self.rectangles))
 # }}}
-    def _cells_conditions(self):#{{{
-        print("todo tesellate  cells")
-        self.cells=OrderedDict()
+    def _make_cells(self):#{{{
+        self.cells_conditions=OrderedDict()
         for k,v in self.query_vertices.items():
-            self.cells[k]=OrderedDict()
+            self._make_cell_conditions(k)
+            for pt in list(zip(v['x'], v['y'])):
+                self._make_cell_conditions(pt)
+        dd(self.cells_conditions)
 #}}}
+
+    def _make_cell_conditions(self,cell):# {{{
+        self.cells_conditions[cell]=OrderedDict([ ('smoke', 0.1), ('temp', 0.2), ('vis', 0.3) ])
+# }}}
     def _intersect_space(self):# {{{
-        ''' First we search for all rooms and big squares intersections. '''
+        ''' 
+        We have squares and search for rectangles: we see how squares are crossed by obstacles (walls).
+        '''
         for line in self.lines: 
             for id_,square in self.squares.items():
                 if square.intersects(line):
@@ -116,11 +141,12 @@ class Tessellate():
         
 # }}}
     def _query(self,q):# {{{
-        ''' Query returns the square for point q. If the square has rectangles, then we return the rectangle 
-        The first step is to find the x,y for the square.
-
+        ''' 
+        Query returns the square for point q. If the square has rectangles,
+        then we return the rectangle The first step is to find the x,y for the
+        square. 
         '''
-        dd(self.query_vertices)
+
         x=self.floor_dim['minx'] + self.side * int((q[0]-self.floor_dim['minx'])/self.side) 
         y=self.floor_dim['miny'] + self.side * int((q[1]-self.floor_dim['miny'])/self.side)
         for i in range(bisect.bisect(self.query_vertices[(x,y)]['x'], q[0])-1,0,-1):
@@ -150,5 +176,5 @@ class Tessellate():
                 z['texts'].append(   { "xy": mm, "content": mm, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
 
         self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
-        print('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        #print('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}

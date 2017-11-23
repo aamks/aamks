@@ -26,7 +26,6 @@ class OnInit():
 # }}}
     def _info(self):# {{{
         Popen('env | grep AAMKS', shell=True)
-        print("\t\t\tinkscape {}/{}".format(os.environ['AAMKS_PROJECT'], self.conf['GENERAL']['INPUT_GEOMETRY']))
 # }}}
     def _clear_sqlite(self):# {{{
         try:

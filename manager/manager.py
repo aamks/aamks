@@ -20,7 +20,7 @@ class Manager():
             
         self.s=Sqlite("{}/manage_aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
-        self.conf=self.json.read("{}/a-manager/conf.json".format(os.environ['AAMKS_PATH']))
+        self.conf=self.json.read("{}/manager/conf.json".format(os.environ['AAMKS_PATH']))
         self._sqlite_import_hosts()
         self._argparse()
 
