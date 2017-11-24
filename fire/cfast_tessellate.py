@@ -1,16 +1,11 @@
 # IMPORT# {{{
 from collections import OrderedDict
-from math import sqrt
-import codecs
 import itertools
 import numpy as np
 import os
-import json
 import sys
 import inspect
-import bisect
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
-from colour import Color
 from numpy.random import randint
 from include import Sqlite
 from include import Json
@@ -21,28 +16,25 @@ from include import Dump as dd
 class CfastTessellate():
     def __init__(self):
         ''' 
-        Divide space into cells for queries of fire conditions asked by
-        evacuees. Cells may be larger squares or smaller rectangles. First
-        divide into squares of self._side. Iterate over squares and if any
-        square is crossed by an obstacle divide this square further into
-        rectangles. 
+        Divide space into cells for smoke conditions queries asked by evacuees.
+        Cells may be larger squares or smaller rectangles. First divide into
+        squares of self._side. Iterate over squares and if any square is
+        crossed by an obstacle divide this square further into rectangles. 
         
         For any evacuee's (x,y) it will be easy to find the square he is in. If
         we have rectangles in our square we use some optimizations to find the
-        correct rectangle. Finally fetch the conditions from the cell. 
-        ''' 
+        correct rectangle. Finally fetch the conditions from the cell. ''' 
 
         self._side=400
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self._json=Json() 
+        self.json=Json() 
         self._floor=1 
         self._floor_dimensions()
         self._init_space() 
         self._intersect_space() 
         self._optimize()
-        self._make_cells() 
         self._plot_space() 
-        self._query((1101, 1001))
+        self._save()
 
     def _floor_dimensions(self):# {{{
         minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (self._floor,))[0]['minx']
@@ -105,27 +97,17 @@ class CfastTessellate():
 
         self.query_vertices=OrderedDict()
         for id_,v in self.rectangles.items():
-            self.query_vertices[id_]=OrderedDict()
+            self.query_vertices[str(id_)]=OrderedDict()
             xy_vectors=list(zip(*self.rectangles[id_]))
             try:
-                self.query_vertices[id_]['x']=xy_vectors[0]
-                self.query_vertices[id_]['y']=xy_vectors[1]
+                self.query_vertices[str(id_)]['x']=xy_vectors[0]
+                self.query_vertices[str(id_)]['y']=xy_vectors[1]
             except:
-                self.query_vertices[id_]['x']=()
-                self.query_vertices[id_]['y']=()
+                self.query_vertices[str(id_)]['x']=()
+                self.query_vertices[str(id_)]['y']=()
 
-        print("bytes", sys.getsizeof(self.rectangles))
+        #print("bytes", sys.getsizeof(self.rectangles))
 # }}}
-    def _make_cell_conditions(self,cell):# {{{
-        self.cells_conditions[cell]=OrderedDict([ ('smoke', 0.1), ('temp', 0.2), ('vis', 0.3) ])
-# }}}
-    def _make_cells(self):#{{{
-        self.cells_conditions=OrderedDict()
-        for k,v in self.query_vertices.items():
-            self._make_cell_conditions(k)
-            for pt in list(zip(v['x'], v['y'])):
-                self._make_cell_conditions(pt)
-#}}}
     def _intersect_space(self):# {{{
         ''' 
         We have squares and search for rectangles: we see how squares are crossed by obstacles (walls).
@@ -137,29 +119,6 @@ class CfastTessellate():
                     if points.length>0:
                         self._candidate_intersection(id_,points)
         
-# }}}
-    def _query(self,q):# {{{
-        ''' 
-        Query returns the square for point q. If the square has rectangles,
-        then we return the rectangle The first step is to find the x,y for the
-        square. 
-        '''
-
-        x=self._floor_dim['minx'] + self._side * int((q[0]-self._floor_dim['minx'])/self._side) 
-        y=self._floor_dim['miny'] + self._side * int((q[1]-self._floor_dim['miny'])/self._side)
-        print("todo", q,x,y)
-        #dd(self.query_vertices[(x,y)])
-        #dd(self.query_vertices)
-        if len(self.query_vertices[(x,y)]['x'])==0:
-            print(q, "in square ({},{}). Conditions:".format(x,y), self.cells_conditions[(x,y)])
-        else:
-            for i in range(bisect.bisect(self.query_vertices[(x,y)]['x'], q[0])-1,0,-1):
-                print(i)
-                if self.query_vertices[(x,y)]['y'][i] < q[1]:
-                    rx=self.query_vertices[(x,y)]['x'][i]
-                    ry=self.query_vertices[(x,y)]['y'][i]
-                    print(q, "in rectangle ({},{}). Conditions:".format(rx,ry), self.cells_conditions[(rx,ry)])
-                    return
 # }}}
     def _plot_space(self):# {{{
         z=OrderedDict()
@@ -182,6 +141,15 @@ class CfastTessellate():
                 z['circles'].append( { "xy": mm, "radius": radius, "fillColor": "#fff", "opacity": 0.3 } )
                 z['texts'].append(   { "xy": mm, "content": mm, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
 
-        self._json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
         #print('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
+    def _save(self):# {{{
+        data=OrderedDict()
+        data['floor_dim']=self._floor_dim
+        data['side']=self._side
+        data['query_vertices']=self.query_vertices
+        #data['cells_conditions']=self.cells_conditions
+        #print("{}/workers/smoke.json".format(os.environ['AAMKS_PROJECT']))
+        self.json.write(data, "{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
+        # }}}

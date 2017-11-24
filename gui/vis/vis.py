@@ -40,8 +40,7 @@ class Vis():
         self._js_append_paperjs_extras()
 
         self.vis_dir="{}/vis".format(os.environ['AAMKS_PROJECT']) 
-        self._make_json_common()
-        self._register_animation()
+        self._save()
 # }}}
 
     def _floor_dimensions(self):# {{{
@@ -106,14 +105,13 @@ class Vis():
             
 # }}}
 
-    def _make_json_common(self):# {{{
-        ''' Common geometry is written once. '''
-        self.json.write(self.jsonCommon, '{}/floor_{}.json'.format(self.vis_dir, self.floor)) 
+    def _save(self):# {{{
+        ''' 
+        Todo: Common geometry is written once. Don't we duplicate it here each
+        time? Except from jsonCommon we update animations listing here (anims.json)
 
-# }}}
-    def _register_animation(self):# {{{
-        ''' todo: description master.html is created in init/init.py
         '''
+        self.json.write(self.jsonCommon, '{}/floor_{}.json'.format(self.vis_dir, self.floor)) 
 
         if self.src=='image':
             anim_source=''
