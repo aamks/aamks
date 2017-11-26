@@ -71,29 +71,26 @@ class CfastTessellate():
         room. We get 2 points in this call. Should we create a rectangle of any
         of these points? The rectangle is defined by it's (minX,minY) vertex.
         We only accept the points that belong to the square but don't lie on
-        the maxX (right) and maxY (top) edges. Also, if the intersection is at
-        where the big square originates, we don't want to produce the
-        duplication rectangle (i != k) 
+        the maxX (right) and maxY (top) edges. 
         '''
 
         right_limit=id_[0]+self._side
         top_limit=id_[1]+self._side
         for pt in list(zip(points.xy[0], points.xy[1])):
-             if right_limit not in pt and top_limit not in pt:
-                 if pt != id_:
-                     self.rectangles[id_].append((int(pt[0]), int(pt[1])))
+            if right_limit != pt[0] and top_limit != pt[1]:
+                self.rectangles[id_].append((int(pt[0]), int(pt[1])))
 # }}}
     def _optimize(self):# {{{
         ''' 
-        1. self.squares (collection of shapely boxen) is not needed anymore
-        2. self.rectangles must have duplicates removed and must be sorted by x
-        3. xy_vectors must be of the form: [ [x0,x1,x2,x3], [y0,y1,y2,y3] ]. 
+        * self.squares (collection of shapely boxen) is not needed anymore
+        * self.rectangles must have duplicates removed and must be sorted by x
+        * xy_vectors must be of the form: [ [x0,x1,x2,x3], [y0,y1,y2,y3] ]. 
         '''
 
         del(self.squares)
 
         for id_,rects in self.rectangles.items():
-            self.rectangles[id_]=list(sorted(set(self.rectangles[id_])))
+            self.rectangles[id_]=list(sorted(set(rects)))
 
         self.query_vertices=OrderedDict()
         for id_,v in self.rectangles.items():
@@ -129,7 +126,7 @@ class CfastTessellate():
         z['texts']=[]           # z['texts'].append(      { "xy": (f['minx']+a*i, f['miny']+a*v), "content": "                                                                                         { }x { }".format(x,y), "fontSize": 20, "fillColor":"#06f", "opacity":0.5 })
         radius=5
 
-        # for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY x0,y0"):
+        #for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY x0,y0"):
         #     z['rectangles'].append( { "xy": (i['x0'], i['y0']), "width": i['width'] , "depth": i['depth'] , "strokeColor": "#f00" , "strokeWidth": 10 , "fillColor": "none", "opacity": 0.4 } )
 
         a=self._side

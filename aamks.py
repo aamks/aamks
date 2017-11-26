@@ -15,7 +15,7 @@ Geom()
 Path()
 CfastTessellate()
 z=SmokeQuery()
-z.query((2000,2000))
+print(z.query((1099,1801)))
 
 #CfastMcarlo()
 #EvacMcarlo()
