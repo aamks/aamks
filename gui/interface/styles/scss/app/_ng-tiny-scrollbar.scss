@@ -1,0 +1,74 @@
+.scroll-viewport {
+  overflow: hidden;
+  position: relative;
+}
+.scroll-overview {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0;
+  margin: 0;
+}
+.scroll-bar {
+  //background-color: #d3d3d3;
+  border-radius: 2px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 15px;
+  transition: 0.6s ease-in-out opacity;
+  height: 100%;
+}
+.scroll-bar.disable {
+  display: none;
+}
+.scroll-bar.visible {
+  opacity: 1 !important;
+}
+.scroll-bar:hover {
+  opacity: 1 !important;
+}
+.scroll-thumb {
+  //background-color: #808080;
+  border-radius: 2px;
+  //height: 50%;
+  width: 15px;
+  cursor: pointer;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0px;
+}
+body.scroll-no-select {
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+
+
+body.theme-white {
+
+	.scroll-bar {
+		background-color: $white;
+
+	}
+	.scroll-thumb {
+		background-color: $grey;
+
+	}
+}
+
+body.theme-dark {
+	.scroll-bar {
+		background-color: #d4d4d4;
+
+
+	}
+	.scroll-thumb {
+		background-color: #999999;
+
+	}
+
+
+}

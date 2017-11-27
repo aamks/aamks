@@ -1,0 +1,111 @@
+[
+    {
+        "name": "nikic/fast-route",
+        "version": "v0.6.0",
+        "version_normalized": "0.6.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/nikic/FastRoute.git",
+            "reference": "31fa86924556b80735f98b294a7ffdfb26789f22"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/nikic/FastRoute/zipball/31fa86924556b80735f98b294a7ffdfb26789f22",
+            "reference": "31fa86924556b80735f98b294a7ffdfb26789f22",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.4.0"
+        },
+        "time": "2015-06-18 19:15:47",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "FastRoute\\": "src/"
+            },
+            "files": [
+                "src/functions.php"
+            ]
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "BSD-3-Clause"
+        ],
+        "authors": [
+            {
+                "name": "Nikita Popov",
+                "email": "nikic@php.net"
+            }
+        ],
+        "description": "Fast request router for PHP",
+        "keywords": [
+            "router",
+            "routing"
+        ]
+    },
+    {
+        "name": "ronan-gloo/jadephp",
+        "version": "dev-master",
+        "version_normalized": "9999999-dev",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/ronan-gloo/jade-php.git",
+            "reference": "77230d2eef2f0d4f045292a5906162f0c0499421"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/ronan-gloo/jade-php/zipball/77230d2eef2f0d4f045292a5906162f0c0499421",
+            "reference": "77230d2eef2f0d4f045292a5906162f0c0499421",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.3.0"
+        },
+        "time": "2013-10-20 15:03:39",
+        "type": "library",
+        "installation-source": "source",
+        "autoload": {
+            "psr-0": {
+                "Jade": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Konstantin Kudryasho",
+                "email": "konstantin.kudryashov@knplabs.com",
+                "homepage": "http://about.me/everzet",
+                "role": "Developer"
+            },
+            {
+                "name": "Janez Troha",
+                "email": "janez.troha@gmail.com",
+                "homepage": "http://flavors.me/dz0ny",
+                "role": "Maintainer"
+            },
+            {
+                "name": "Luke GB",
+                "email": "git@lukegb.com",
+                "homepage": "http://twitter.com/lukegb",
+                "role": "Maintainer"
+            },
+            {
+                "name": "Ronan Tessier",
+                "email": "ronan.tessier@vaconsulting.lu",
+                "homepage": "http://github.com/ronan-gloo",
+                "role": "Maintainer"
+            }
+        ],
+        "description": "HAML-like template engine for PHP 5.3",
+        "homepage": "https://github.com/ronan-gloo/jade.php",
+        "keywords": [
+            "jade",
+            "minification",
+            "template"
+        ]
+    }
+]

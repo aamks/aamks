@@ -1,0 +1,16 @@
+# https://httpd.apache.org/docs/2.4/rewrite/flags.html
+# [L]: last, czyli nie analizuj dalej
+# [F]: forbidden, err 403
+# [NC]: case insensitive
+
+#Options +FollowSymLinks
+#RewriteEngine On
+##RewriteRule ^$ index.html
+#RewriteRule \. - [L]
+#RewriteRule ^.*$ index.php [NC,L]
+
+RewriteEngine On
+RewriteBase /
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.php [QSA,L]

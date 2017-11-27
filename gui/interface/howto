@@ -1,0 +1,10 @@
+-- BOWER
+1. Get .bowerrc, bower.json from github
+2. Type: bower init
+2a. bower install
+3. Run copy.sh
+
+-- NPM
+1. nmp install gulp
+1. nmp install gulp-watch
+2.
