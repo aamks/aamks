@@ -24,32 +24,44 @@ class SmokeQuery():
         ''' 
         #print("{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
         self.json=Json() 
-        f=self.json.read("{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
-        self._read_query_vertices()
-        self.side=f['side']
-        self.floor_dim=f['floor_dim']
-        self._make_cells()
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self._read_tessellation()
+        self._make_cells_static()
+        self._make_cells_dynamic()
+        dd(self.cells_conditions)
 
-    def _read_query_vertices(self):# {{{
+    def _read_tessellation(self):# {{{
         ''' Python has this nice dict[(1,2)], but json cannot handle it. We
         have passed it as dict['(1,2)'] and know need to bring back from str to
         tuple.
         '''
 
         f=self.json.read("{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
+        self.side=f['side']
+        self.floor_dim=f['floor_dim']
         self.query_vertices=OrderedDict()
         for k,v in f['query_vertices'].items():
             self.query_vertices[make_tuple(k)]=v
 # }}}
-    def _make_cell_conditions(self,cell):# {{{
-        self.cells_conditions[cell]=OrderedDict([ ('cell', cell), ('smoke', 0.1), ('temp', 0.2), ('vis', 0.3) ])
+    def _cell_static_data(self,cell):# {{{
+        # TODO: inkscape project has incorrect room intersections :(
+        try:
+            z=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['name']
+        except:
+            z='outside'
+        self.cells_conditions[cell]=OrderedDict([ ('cell', cell), ('compa',z) ])
 # }}}
-    def _make_cells(self):#{{{
+    def _make_cells_static(self):#{{{
         self.cells_conditions=OrderedDict()
         for k,v in self.query_vertices.items():
-            self._make_cell_conditions(k)
+            self._cell_static_data(k)
             for pt in list(zip(v['x'], v['y'])):
-                self._make_cell_conditions(pt)
+                self._cell_static_data(pt)
+#}}}
+    def _make_cells_dynamic(self):#{{{
+        for i in self.cells_conditions.keys():
+            self.cells_conditions[i]['smoke']=0.1
+            self.cells_conditions[i]['temp']=0.2
 #}}}
     def query(self,q):# {{{
         ''' 
