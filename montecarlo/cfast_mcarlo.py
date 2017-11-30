@@ -212,7 +212,7 @@ class CfastMcarlo():
     def _section_preamble(self,outdoor_temp):# {{{
         txt=(
         'VERSN,7,{}'.format(self.conf['GENERAL']['PROJECT_NAME']),
-        'TIMES,{},-120,10,30'.format(self.conf['GENERAL']['SIMULATION_TIME']),
+        'TIMES,{},-120,10,10'.format(self.conf['GENERAL']['SIMULATION_TIME']),
         'EAMB,{},101300,0'.format(273+outdoor_temp),
         'TAMB,293.15,101300,0,50',
         'DTCHECK,1.E-9,100',

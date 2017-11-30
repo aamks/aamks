@@ -104,15 +104,6 @@ class Manager():
         time.sleep(2)
 
 # }}}
-    def run_aamks(self):# {{{
-        ''' Run aamks: cd $AAMKS_PATH; python3 aamks.py $AAMKS_PROJECT '''
-
-        try:
-            Popen("cd {}; python3 aamks.py {}".format(os.environ['AAMKS_PATH'], os.environ['AAMKS_PROJECT']), shell=True)
-        except:
-            print("You need to define AAMKS_PROJECT=/some/path in ~/.bashrc")
-
-# }}}
 
     def _sqlite_import_hosts(self):# {{{
         ''' Create table with all potential hosts in it. 
@@ -156,7 +147,6 @@ class Manager():
         parser.add_argument('-U' , help='update and validate workers'                               , required=False   , action='store_true')
         parser.add_argument('-Q' , help='svn_mimooh revert on workers'                              , required=False   , action='store_true')
         parser.add_argument('-w' , help='wakeOnLan'                                                 , required=False   , action='store_true')
-        parser.add_argument('-X' , help='python3 aamks.py $AAMKS_PROJECT'                         , required=False   , action='store_true')
         args = parser.parse_args()
 
         self.sleep=args.s
@@ -180,8 +170,6 @@ class Manager():
             self.revert_svn_mimooh()
         if args.w:
             self.wake_on_lan()
-        if args.X:
-            self.run_aamks()
 # }}}
 
         

@@ -73,6 +73,7 @@ class OnInit():
         os.makedirs(vis_dir, exist_ok=True)
         copy_tree("{}/gui/vis/js".format(os.environ['AAMKS_PATH']), "{}/js".format(vis_dir) )
         shutil.copyfile("{}/gui/vis/css.css".format(os.environ['AAMKS_PATH']), "{}/css.css".format(vis_dir))
+        shutil.copyfile("{}/geom/colors.json".format(os.environ['AAMKS_PATH']), "{}/colors.json".format(vis_dir))
 # }}}
     def _setup_anim_master(self):# {{{
         path="{}/vis/master.html".format(os.environ['AAMKS_PROJECT'])

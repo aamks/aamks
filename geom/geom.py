@@ -32,6 +32,7 @@ class Geom():
         geometry_data=self._geometry_reader()
         self._geometry2sqlite(geometry_data)
         self._init_helper_variables()
+        self._invert_y()
         self.make_vis('Create geometry')
         self._make_fake_wells()
         self._aamks_geom_into_polygons()
@@ -69,18 +70,13 @@ class Geom():
         return geometry_data
 # }}}
     def _geometry2sqlite(self,geometry_data):# {{{
-        ''' Parse geometry and place geoms in sqlite. The geometry_data example for floor(0):
+        ''' Parse geometry and place geoms in sqlite. The lowest floor is always 1. The geometry_data example for floor(1):
 
-            "0": [
+            "1": [
                 "ROOM": [
                     [ [ 3.0 , 4.8 , 0.0 ] , [ 4.8 , 6.5 , 3.0 ] ] ,
                     [ [ 3.0 , 6.5 , 0.0 ] , [ 6.8 , 7.4 , 3.0 ] ] 
                 ]
-            ]
-
-            "ROOM": [
-                [ "!CFAST_ROOM(0)" , [ 3.0 , 4.8 , 0.0 ] , [ 4.8 , 6.5 , 3.0 ] ] ,
-                [ "!CFAST_ROOM(0)" , [ 3.0 , 6.5 , 0.0 ] , [ 6.8 , 7.4 , 3.0 ] ] 
             ]
 
         Each geom entity will be classified as DOOR, WINDOW, ROOM etc, and will get a unique name via elem_counter
@@ -100,6 +96,16 @@ class Geom():
                     height=v[1][2]-v[0][2]
                     data.append(self._prepare_geom_record(k,v,width,depth,height,floor))
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
+#}}}
+    def _invert_y(self):# {{{
+        ''' 
+        Cad and inkscape have their (0,0) in bottom left. We will present
+        geometries on web with (0,0) in top left, hence we need to invert Y.
+        '''
+        miny=self.s.query("SELECT min(y0) AS r FROM aamks_geom")[0]['r']
+        maxy=self.s.query("SELECT max(y1) AS r FROM aamks_geom")[0]['r']
+        height=maxy-miny
+        self.s.query("UPDATE aamks_geom SET y0=?-y1, y1=?-y0, center_y=?-center_y", (height,height,height))
 #}}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor):# {{{
         ''' Format a record for sqlite. Hvents get fixed width 4 cm '''

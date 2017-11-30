@@ -1,6 +1,6 @@
-!! cfast take around 30 seconds to calculate this one
+!! cfast take around 1 minute seconds to calculate this one
 VERSN,7,inkscape
-TIMES,1200,-120,10,30
+TIMES,1200,-120,10,10
 EAMB,294.74,101300,0
 TAMB,293.15,101300,0,50
 DTCHECK,1.E-9,100

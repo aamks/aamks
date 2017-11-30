@@ -107,8 +107,9 @@ class CfastTessellate():
 # }}}
     def _intersect_space(self):# {{{
         ''' 
-        We have squares and search for rectangles: we see how squares are crossed by obstacles (walls).
+        We want to further tessellate the square into rectangles based on obstacles.
         '''
+
         for line in self.lines: 
             for id_,square in self.squares.items():
                 if square.intersects(line):

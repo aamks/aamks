@@ -19,7 +19,8 @@ var scale=1;
 var fireScale;
 var intervalId;
 var fireScaleCounter;
-var colors=darkColors();
+var colors;
+var colorsDb;
 var staticGeoms;
 var burningFireLocation;
 var wallsSize;
@@ -46,10 +47,14 @@ var	visContainsAnimation=0;
 var	animationIsRunning=0;
 
 
-$.getJSON("anims.json", function(data) {
-	// Runs automatically on the start. By default runs the last visualization from anims.json.
-	makeChooseVis(data);
-	showStaticImage(data[data.length-1]);
+$.getJSON("colors.json", function(cols) {
+	colorsDb=cols;
+	colors=colorsDb['darkColors'];
+	$.getJSON("anims.json", function(data) {
+		// Runs automatically on the start. By default runs the last visualization from anims.json.
+		makeChooseVis(data);
+		showStaticImage(data[data.length-1]);
+	});
 });
 
 function makeChooseVis(data) {
@@ -387,54 +392,6 @@ $('show-animation-setup-box').click(function() {
 	$('animation-setup-box').toggle(400);
 });
 
-function darkColors() {
-	return { 
-		"COR"        : "#102" ,
-		"HALL"       : "#230" ,
-		"HOLE"       : "#033" ,
-		"ROOM"       : "#333" ,
-		"STAI"       : "#302" ,
-		"VNT"        : "#033" ,
-		"W"          : "#013" ,
-		"door"       : "#880" ,
-		"stroke"     : "#fff" ,
-		"obsts"      : "#068" ,
-		"canvas"     : "#000" ,
-		"fg"         : "#fff" ,
-		"bg"         : "#000" ,
-		"doseN"      : "#0f8" ,
-		"doseL"      : "#060" ,
-		"doseM"      : "#f80" ,
-		"doseH"      : "#f00" ,
-		"firefill"   : "#ff0" ,
-		"firestroke" : "#f00"
-	};
-}
-
-function lightColors() {
-	return { 
-		"COR"        : "#fff" ,
-		"HALL"       : "#fff" ,
-		"HOLE"       : "#000" ,
-		"ROOM"       : "#fff" ,
-		"STAI"       : "#fff" ,
-		"VNT"        : "#000" ,
-		"W"          : "#000" ,
-		"door"       : "#eee" ,
-		"stroke"     : "#fff" ,
-		"obsts"      : "#222" ,
-		"canvas"     : "#fff" ,
-		"fg"         : "#222" ,
-		"bg"         : "#fff" ,
-		"doseN"      : "#000" ,
-		"doseL"      : "#444" ,
-		"doseM"      : "#999" ,
-		"doseH"      : "#ddd" ,
-		"firefill"   : "#f80" ,
-		"firestroke" : "#800"
-	};
-}
-
 function listenEvents() {
 	$('#labels-size').on('keyup'     , function() { labelsSize=this.value     ; resetCanvas() ; })
 	$('#walls-size').on('keyup'      , function() { wallsSize=this.value      ; resetCanvas() ; })
@@ -466,9 +423,9 @@ function listenEvents() {
 			doorsSize=0;
 			labelsSize=0;
 			resetCanvas(); 
-			colors=lightColors(); 
+			colors=colorsDb['lightColors']
 		} else {
-			colors=darkColors();
+			colors=colorsDb['darkColors']
 		}
 		resetCanvas();
 		$("canvas").css("background", colors['bg']);

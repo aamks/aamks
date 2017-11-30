@@ -6,7 +6,6 @@ from manager.init import OnInit, OnEnd
 from geom.geom import Geom
 from geom.path import Path
 from fire.cfast_tessellate import CfastTessellate
-from fire.csvcfast import CsvCfast
 from fire.smoke_query import SmokeQuery
 from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
@@ -17,8 +16,7 @@ Geom()
 #Path()
 CfastTessellate()
 z=SmokeQuery()
-#print(z.query((61,64)))
-CsvCfast()
+print(z.query((915,875)))
 
 #CfastMcarlo()
 #EvacMcarlo()
