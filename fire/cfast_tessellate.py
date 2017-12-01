@@ -17,13 +17,24 @@ class CfastTessellate():
     def __init__(self):
         ''' 
         Divide space into cells for smoke conditions queries asked by evacuees.
-        Cells may be larger squares or smaller rectangles. First divide into
-        squares of self._side. Iterate over squares and if any square is
-        crossed by an obstacle divide this square further into rectangles. 
+        A cell may be a square or a rectangle. First divide space into squares
+        of self._side. Iterate over squares and if any square is crossed by an
+        obstacle divide this square further into rectangles. 
         
-        For any evacuee's (x,y) it will be easy to find the square he is in. If
-        we have rectangles in our square we use some optimizations to find the
-        correct rectangle. Finally fetch the conditions from the cell. ''' 
+        In the final structure of tesselation.json we encode each cell.
+        Each cell is sorted by x, which allows quick bisections.
+
+        * In each cell we always encode the first sub-cell - the square itself.
+        (2000, 2449): OrderedDict([('x', (2000,)), ('y', (2449,))])
+
+        * Then we can add more sub-cells (rectangles).
+        (1600, 2449): OrderedDict([('x', (1600, 1600, 1842, 1842)), ('y', (2449, 2541, 2449, 2541))])
+
+        Tessellation will be later used for filling the cells with smoke
+        conditions. Finally we get a tool for quick altering of the state of an
+        evacuee at x,y.
+
+        '''
 
         self._side=400
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -90,6 +101,7 @@ class CfastTessellate():
         del(self.squares)
 
         for id_,rects in self.rectangles.items():
+            rects.append(id_)
             self.rectangles[id_]=list(sorted(set(rects)))
 
         self.query_vertices=OrderedDict()
@@ -132,7 +144,7 @@ class CfastTessellate():
 
         a=self._side
         for k,v in self.rectangles.items():
-            z['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 0.3 , "opacity": 0.2 } )
+            z['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 5 , "opacity": 0.2 } )
             z['circles'].append(    { "xy": k, "radius": radius , "fillColor": "#fff", "opacity": 0.3 } )
             z['texts'].append(      { "xy": k, "content": k, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
             for mm in v:
@@ -147,7 +159,5 @@ class CfastTessellate():
         data['floor_dim']=self._floor_dim
         data['side']=self._side
         data['query_vertices']=self.query_vertices
-        #data['cells_conditions']=self.cells_conditions
-        #print("{}/workers/smoke.json".format(os.environ['AAMKS_PROJECT']))
         self.json.write(data, "{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
         # }}}

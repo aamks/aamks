@@ -39,7 +39,7 @@ var obstacles;
 var paperjsExtras;
 var lastFrame;
 var lerps;
-var labelsSize=20;
+var labelsSize=40;
 var sliderPos=0;
 var lerpFrame=0;
 var frame=0;
@@ -89,9 +89,9 @@ function showStaticImage(jsonRecord) {
 		doorsSize=2*wallsSize;
 
         // temp
-        wallsSize=0;
-        doorsSize=0;
-        labelsSize=0;
+        // wallsSize=0;
+        // doorsSize=0;
+        //labelsSize=0;
 
 		rooms=data.rooms;
 		doors=data.doors;

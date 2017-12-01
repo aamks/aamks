@@ -17,8 +17,12 @@ from include import Dump as dd
 class SmokeQuery():
     def __init__(self):
         ''' 
-        On init fill each cell with smoke conditions. Then you can query an (x,y). 
+        Fill each cell with smoke conditions. Then you can query an (x,y). 
+        For any evacuee's (x,y) it will be easy to find the square he is in. If
+        we have rectangles in our square we use some optimizations to find the
+        correct rectangle. Finally fetch the conditions from the cell. 
         ''' 
+
         #print("{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
         self.json=Json() 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -29,22 +33,28 @@ class SmokeQuery():
         self._make_parsed_placeholder()
         self._parse()
         self.conditions_fill_compas()
+        for i in range(200):
+            self.query((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])))
 
     def _make_parsed_placeholder(self):  # {{{
-        '''
-        Placeholder dict for csv values. 
+        ''' 
+        Placeholder dict for cfast csv values. Csv contain some params that are
+        relevant for aamks and some that are not. 
         '''
 
-        self.all_params = ('CEILT', 'DJET', 'FLHGT', 'FLOORT', 'HGT', 'HRR', 'HRRL', 'HRRU', 'IGN', 'LLCO', 'LLCO2',
-                          'LLH2O', 'LLHCL', 'LLHCN', 'LLN2', 'LLO2', 'LLOD', 'LLT', 'LLTS', 'LLTUHC', 'LWALLT', 'PLUM',
-                          'PRS', 'PYROL', 'TRACE', 'ULCO', 'ULCO2', 'ULH2O', 'ULHCL', 'ULHCN', 'ULN2', 'ULO2', 'ULOD',
-                          'ULT', 'ULTS', 'ULTUHC', 'UWALLT', 'VOL')
-        self.all_compas=(i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'"))
+        self.relevant_params = ('CEILT', 'DJET', 'FLHGT', 'FLOORT', 'HGT',
+        'HRR', 'HRRL', 'HRRU', 'IGN', 'LLCO', 'LLCO2', 'LLH2O', 'LLHCL',
+        'LLHCN', 'LLN2', 'LLO2', 'LLOD', 'LLT', 'LLTS', 'LLTUHC', 'LWALLT',
+        'PLUM', 'PRS', 'PYROL', 'TRACE', 'ULCO', 'ULCO2', 'ULH2O', 'ULHCL',
+        'ULHCN', 'ULN2', 'ULO2', 'ULOD', 'ULT', 'ULTS', 'ULTUHC', 'UWALLT',
+        'VOL')
+
+        self.all_compas=(i['short'] for i in self.s.query("SELECT short FROM aamks_geom where type_pri = 'COMPA'"))
 
         self.parsed = OrderedDict()
         for i in self.all_compas:
             for t in range(0,self.conf['GENERAL']['SIMULATION_TIME']+10,10):
-                self.parsed[(i, t)] = OrderedDict([(x, None) for x in self.all_params])
+                self.parsed[(i, t)] = OrderedDict([(x, None) for x in self.relevant_params])
 # }}}
     def _parse(self):# {{{
         ''' Parse aamks csv output from n,s,w files for sqlite. '''
@@ -69,14 +79,14 @@ class SmokeQuery():
             for row in csvData:
                 time = row[0]
                 for m in range(len(row)):
-                    if params[m] in self.all_params and geoms[m] in self.all_compas:
+                    if params[m] in self.relevant_params and geoms[m] in self.all_compas:
                         self.parsed[geoms[m], time][params[m]] = row[m]
         # todo: feed conditions dd(self.parsed)
 # }}}
     def _create_dbs(self):# {{{
         self._parse()
 
-        columns = ['GEOM', 'TIME'] + list(self.all_params)
+        columns = ['GEOM', 'TIME'] + list(self.relevant_params)
 
         sqliteInputRows = []
         for k, v in self.parsed.items():
@@ -103,14 +113,14 @@ class SmokeQuery():
             self.query_vertices[make_tuple(k)]=v
 # }}}
     def _init_conditions(self):# {{{
-        self._compa_conditions=dict()
-        for i in self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA'"):
-            self._compa_conditions[i['name']]=dict()
-        self._compa_conditions['outside']=dict()
+        self._compa_conditions=OrderedDict()
+        for i in self.s.query("SELECT short from aamks_geom WHERE type_pri='COMPA'"):
+            self._compa_conditions[i['short']]=OrderedDict()
+        self._compa_conditions['outside']=OrderedDict()
 # }}}
     def _make_cell2compa_record(self,cell):# {{{
         try:
-            z=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['name']
+            z=self.s.query("SELECT short from aamks_geom WHERE type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['short']
         except:
             z='outside'
         self.cell2compa[cell]=z
@@ -122,13 +132,22 @@ class SmokeQuery():
             for pt in list(zip(v['x'], v['y'])):
                 self._make_cell2compa_record(pt)
 #}}}
+    def _results(self,q,r,compa):# {{{
+        ''' q=query, r=cell '''
+        z=self.json.read('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        z['circles'].append( { "xy": q, "radius": 10, "fillColor": "#f0f", "opacity": 0.9 } )
+        z['circles'].append( { "xy": r, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
+        z['texts'].append(   { "xy": q, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
+        self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        return "Conditions at {}x{} (cell {}x{}): {}".format(q[0],q[1], r[0],r[1], self._compa_conditions[self.cell2compa[r]])
+# }}}
     def conditions_fill_compas(self):#{{{
         ''' Cfast writes to csv files. We parse and write the data to cells '''
 
         for k,v in self._compa_conditions.items():
-            self._compa_conditions[k]['compa']=k
             self._compa_conditions[k]['smoke']=1
             self._compa_conditions[k]['vis']=2
+            self._compa_conditions[k]['compa']=k
 #}}}
     def query(self,q):# {{{
         ''' 
@@ -141,13 +160,16 @@ class SmokeQuery():
         x=self.floor_dim['minx'] + self.side * int((q[0]-self.floor_dim['minx'])/self.side) 
         y=self.floor_dim['miny'] + self.side * int((q[1]-self.floor_dim['miny'])/self.side)
 
-        if len(self.query_vertices[x,y]['x'])==0:
-            return "Conditions at {}x{} (cell {}x{}): {}".format(q[0],q[1], x,y, self._compa_conditions[self.cell2compa[x,y]])
+        if len(self.query_vertices[x,y]['x'])==1:
+            return self._results(q, (x,y),  self.cell2compa[x,y])
         else:
             for i in range(bisect.bisect(self.query_vertices[(x,y)]['x'], q[0]),0,-1):
                 if self.query_vertices[(x,y)]['y'][i-1] < q[1]:
                     rx=self.query_vertices[(x,y)]['x'][i-1]
                     ry=self.query_vertices[(x,y)]['y'][i-1]
-                    return "Conditions at {}x{} (cell {}x{}): {}".format(q[0],q[1], rx,ry, self._compa_conditions[self.cell2compa[rx,ry]])
+                    return self._results(q, (rx,ry), self.cell2compa[rx,ry])
+
+        #print("Outside! Agent should never be asking for outside conditions!")
+        return self._results(q, (x,y), "outside")
 # }}}
 

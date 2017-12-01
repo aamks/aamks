@@ -15,8 +15,7 @@ Geom()
 
 #Path()
 CfastTessellate()
-z=SmokeQuery()
-print(z.query((915,875)))
+SmokeQuery()
 
 #CfastMcarlo()
 #EvacMcarlo()

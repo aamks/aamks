@@ -20,7 +20,6 @@ from numpy.random import lognormal
 from numpy.random import binomial
 from numpy.random import gamma
 from numpy.random import triangular
-from numpy.random import randint
 from numpy.random import seed
 from numpy import array as npa
 from math import sqrt
