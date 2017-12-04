@@ -23,23 +23,62 @@ class SmokeQuery():
         correct rectangle. Finally fetch the conditions from the cell. 
         ''' 
 
-        #print("{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
         self.json=Json() 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self._read_tessellation()
-        self._init_conditions()
         self._make_cell2compa()
-        self._make_parsed_placeholder()
-        self._parse()
-        self.conditions_fill_compas()
-        for i in range(200):
-            self.query((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])))
+        self._init_compa_conditions()
+        # todo: requests for self.cfast_get_conditions() calls
+        self.cfast_get_conditions()
+        for i in range(2):
+            print(self.get_conditions((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])), 0))
 
-    def _make_parsed_placeholder(self):  # {{{
+    def _read_tessellation(self):# {{{
         ''' 
-        Placeholder dict for cfast csv values. Csv contain some params that are
-        relevant for aamks and some that are not. 
+        Python has this nice dict[(1,2)], but json cannot handle it. We have
+        passed it as dict['(1,2)'] and know need to bring back from str to
+        tuple.
+        '''
+
+        f=self.json.read("{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
+        self.side=f['side']
+        self.floor_dim=f['floor_dim']
+        self.query_vertices=OrderedDict()
+        for k,v in f['query_vertices'].items():
+            self.query_vertices[make_tuple(k)]=v
+# }}}
+    def _make_cell2compa_record(self,cell):# {{{
+        try:
+            z=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['name']
+        except:
+            z='Outside'
+        self.cell2compa[cell]=z
+# }}}
+    def _make_cell2compa(self):#{{{
+        self.cell2compa=OrderedDict()
+        for k,v in self.query_vertices.items():
+            self._make_cell2compa_record(k)
+            for pt in list(zip(v['x'], v['y'])):
+                self._make_cell2compa_record(pt)
+#}}}
+    def _results(self,q,r,compa,time):# {{{
+        ''' q=query, r=cell '''
+        z=self.json.read('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        z['circles'].append( { "xy": q, "radius": 10, "fillColor": "#f0f", "opacity": 0.9 } )
+        z['circles'].append( { "xy": r, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
+        z['texts'].append(   { "xy": q, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
+        self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        return "Conditions at ({},{})/({},{})\t{}: {}".format(q[0],q[1], r[0],r[1], self.cell2compa[r], self._compa_conditions[(self.cell2compa[r],time)])
+# }}}
+    def _init_compa_conditions(self):  # {{{
+        ''' 
+        Prepare dict structure for cfast csv values. Csv contain some params that are
+        relevant for aamks and some that are not. The keys are (compa, time):
+
+            self._compa_conditions[('R_1' , 0)]: OrderedDict([('CEILT'  , None) , ('DJET' , None) , ...)
+            self._compa_conditions[('R_1' , 10)]: OrderedDict([('CEILT' , None) , ('DJET' , None) , ...)
+            self._compa_conditions[('R_1' , 20)]: OrderedDict([('CEILT' , None) , ('DJET' , None) , ...)
         '''
 
         self.relevant_params = ('CEILT', 'DJET', 'FLHGT', 'FLOORT', 'HGT',
@@ -49,15 +88,16 @@ class SmokeQuery():
         'ULHCN', 'ULN2', 'ULO2', 'ULOD', 'ULT', 'ULTS', 'ULTUHC', 'UWALLT',
         'VOL')
 
-        self.all_compas=(i['short'] for i in self.s.query("SELECT short FROM aamks_geom where type_pri = 'COMPA'"))
+        self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
 
-        self.parsed = OrderedDict()
+        self._compa_conditions = OrderedDict()
         for i in self.all_compas:
             for t in range(0,self.conf['GENERAL']['SIMULATION_TIME']+10,10):
-                self.parsed[(i, t)] = OrderedDict([(x, None) for x in self.relevant_params])
+                self._compa_conditions[(i, t)] = OrderedDict([(x, None) for x in self.relevant_params])
+        #dd(self._compa_conditions)
 # }}}
-    def _parse(self):# {{{
-        ''' Parse aamks csv output from n,s,w files for sqlite. '''
+    def cfast_get_conditions(self):# {{{
+        ''' Parse cfast csv output from n,s,w files. '''
 
         for letter in ['n', 's', 'w']:
             f = '{}/fire/test/cfast_{}.csv'.format(os.environ['AAMKS_PATH'], letter)
@@ -80,76 +120,9 @@ class SmokeQuery():
                 time = row[0]
                 for m in range(len(row)):
                     if params[m] in self.relevant_params and geoms[m] in self.all_compas:
-                        self.parsed[geoms[m], time][params[m]] = row[m]
-        # todo: feed conditions dd(self.parsed)
+                        self._compa_conditions[geoms[m], time][params[m]] = row[m]
 # }}}
-    def _create_dbs(self):# {{{
-        self._parse()
-
-        columns = ['GEOM', 'TIME'] + list(self.relevant_params)
-
-        sqliteInputRows = []
-        for k, v in self.parsed.items():
-            sqliteInputRows.append(k + tuple(vv for kk, vv in self.parsed[k].items()))
-
-        cursor = self.sql_connection.cursor()
-
-        cursor.execute("CREATE TABLE aamks_csv ({})".format(','.join(columns)))
-        cursor.execute("CREATE INDEX time_ind ON aamks_csv (GEOM, TIME)")
-        cursor.executemany("INSERT INTO aamks_csv values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", sqliteInputRows)
-# }}}
-    def _read_tessellation(self):# {{{
-        ''' 
-        Python has this nice dict[(1,2)], but json cannot handle it. We have
-        passed it as dict['(1,2)'] and know need to bring back from str to
-        tuple.
-        '''
-
-        f=self.json.read("{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
-        self.side=f['side']
-        self.floor_dim=f['floor_dim']
-        self.query_vertices=OrderedDict()
-        for k,v in f['query_vertices'].items():
-            self.query_vertices[make_tuple(k)]=v
-# }}}
-    def _init_conditions(self):# {{{
-        self._compa_conditions=OrderedDict()
-        for i in self.s.query("SELECT short from aamks_geom WHERE type_pri='COMPA'"):
-            self._compa_conditions[i['short']]=OrderedDict()
-        self._compa_conditions['outside']=OrderedDict()
-# }}}
-    def _make_cell2compa_record(self,cell):# {{{
-        try:
-            z=self.s.query("SELECT short from aamks_geom WHERE type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['short']
-        except:
-            z='outside'
-        self.cell2compa[cell]=z
-# }}}
-    def _make_cell2compa(self):#{{{
-        self.cell2compa=OrderedDict()
-        for k,v in self.query_vertices.items():
-            self._make_cell2compa_record(k)
-            for pt in list(zip(v['x'], v['y'])):
-                self._make_cell2compa_record(pt)
-#}}}
-    def _results(self,q,r,compa):# {{{
-        ''' q=query, r=cell '''
-        z=self.json.read('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
-        z['circles'].append( { "xy": q, "radius": 10, "fillColor": "#f0f", "opacity": 0.9 } )
-        z['circles'].append( { "xy": r, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
-        z['texts'].append(   { "xy": q, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
-        self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
-        return "Conditions at {}x{} (cell {}x{}): {}".format(q[0],q[1], r[0],r[1], self._compa_conditions[self.cell2compa[r]])
-# }}}
-    def conditions_fill_compas(self):#{{{
-        ''' Cfast writes to csv files. We parse and write the data to cells '''
-
-        for k,v in self._compa_conditions.items():
-            self._compa_conditions[k]['smoke']=1
-            self._compa_conditions[k]['vis']=2
-            self._compa_conditions[k]['compa']=k
-#}}}
-    def query(self,q):# {{{
+    def get_conditions(self,q,time):# {{{
         ''' 
         First we find to which square our q belongs. If this square has 0 rectangles
         then we return conditions from the square. If the square has rectangles
@@ -161,15 +134,15 @@ class SmokeQuery():
         y=self.floor_dim['miny'] + self.side * int((q[1]-self.floor_dim['miny'])/self.side)
 
         if len(self.query_vertices[x,y]['x'])==1:
-            return self._results(q, (x,y),  self.cell2compa[x,y])
+            return self._results(q, (x,y),  self.cell2compa[x,y], time)
         else:
             for i in range(bisect.bisect(self.query_vertices[(x,y)]['x'], q[0]),0,-1):
                 if self.query_vertices[(x,y)]['y'][i-1] < q[1]:
                     rx=self.query_vertices[(x,y)]['x'][i-1]
                     ry=self.query_vertices[(x,y)]['y'][i-1]
-                    return self._results(q, (rx,ry), self.cell2compa[rx,ry])
+                    return self._results(q, (rx,ry), self.cell2compa[rx,ry], time)
 
         #print("Outside! Agent should never be asking for outside conditions!")
-        return self._results(q, (x,y), "outside")
+        return self._results(q, (x,y), "Outside", time)
 # }}}
 
