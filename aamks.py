@@ -13,10 +13,10 @@ from montecarlo.evac_mcarlo import EvacMcarlo
 OnInit()
 Geom()
 
-#Path()
-CfastTessellate()
-SmokeQuery()
+Path()
+#CfastTessellate()
+#SmokeQuery()
 
-#CfastMcarlo()
-#EvacMcarlo()
+CfastMcarlo()
+EvacMcarlo()
 OnEnd()

@@ -3,7 +3,7 @@
         "PROJECT_NAME": "simple",
 		"INPUT_GEOMETRY": "cad.json",
         "NUMBER_OF_SIMULATIONS": 1,
-        "SIMULATION_TIME": 1200,
+        "SIMULATION_TIME": 90,
         "AUTO_DETECTORS": 1,
         "AUTO_SPRINKLERS": 0,
         "BUILDING_CATEGORY": "office",

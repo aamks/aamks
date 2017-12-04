@@ -57,7 +57,7 @@ class Geom():
 
     def _create_sqlite_table(self):# {{{
         ''' Init sqlite aamks_geom table. Must use two unique ids a) 'name' for visualisation b) 'global_type_id' for cfast enumeration. '''
-        self.s.query("CREATE TABLE aamks_geom('name','short','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z')")
+        self.s.query("CREATE TABLE aamks_geom('name','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z')")
 # }}}
     def _geometry_reader(self):# {{{
         g=self.conf['GENERAL']['INPUT_GEOMETRY']
@@ -132,11 +132,10 @@ class Geom():
 
         self._elem_counter[type_pri]+=1
         global_type_id=self._elem_counter[type_pri]
-        name='{}_{}_{}'.format(k , floor   , global_type_id)
-        short='{}_{}'.format(k[0], global_type_id)
+        name='{}_{}'.format(k[0], global_type_id)
 
-        #data.append('name' , 'short' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , 'material_ceiling'                       , 'material_floor'                       , 'material_wall'                       , 'sprinkler' , 'detector' ,  'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z')
-        return (name        , short   , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['GENERAL']['MATERIAL_CEILING'] , self.conf['GENERAL']['MATERIAL_FLOOR'] , self.conf['GENERAL']['MATERIAL_WALL'] , 0           , 0          ,  None          , None             , None           , None            , None        , None , None , None , None       , None       , None         )
+        #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , 'material_ceiling'                       , 'material_floor'                       , 'material_wall'                       , 'sprinkler' , 'detector' ,  'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z')
+        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['GENERAL']['MATERIAL_CEILING'] , self.conf['GENERAL']['MATERIAL_FLOOR'] , self.conf['GENERAL']['MATERIAL_WALL'] , 0           , 0          ,  None          , None             , None           , None            , None        , None , None , None , None       , None       , None         )
 
 # }}}
     def _init_helper_variables(self):# {{{
@@ -153,7 +152,7 @@ class Geom():
         Say we have floor bottom lines at 0, 3, 6, 9, 12 metres and WELL's top is at 9 metres - the WELL belongs to floors 0, 3, 6.
         We INSERT fake (x,y) WELL rectangles on proper floors in order to calculate vent_from / vent_to properly. 
         The WELL's rectangle name (row['name']) on each floor is the same as the origin. 
-        WELLs are temporary objects and will be removed after we are done with intersections. We identify them by row['short']='WELL' '''
+        WELLs are temporary objects and will be removed after we are done with intersections. We identify them by row['name']='WELL' '''
 
         self._wells_add_floors={}
         for w in self.s.query("SELECT floor,global_type_id,height FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
@@ -169,7 +168,7 @@ class Geom():
         for w, floors in self._wells_add_floors.items():
             row=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND global_type_id=?", (w[1],))[0]
             for floor in floors:
-                row['short']='WELL'
+                row['name']='WELL'
                 row['floor']=floor
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
 
@@ -336,7 +335,7 @@ class Geom():
 # }}}
     def _remove_fake_wells(self):# {{{
         ''' Removing fake WELLs after we are done with horizontal intersections. '''
-        self.s.query("DELETE FROM aamks_geom WHERE short='WELL'")
+        self.s.query("DELETE FROM aamks_geom WHERE name='WELL'")
 # }}}
     def _find_vertical_intersections(self):# {{{
         ''' Similar to _find_horiz_intersections()
@@ -467,9 +466,9 @@ class Geom():
         '''
         self._save()
         if faulty_id != '':
-            r=self.s.query("SELECT short,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
-            Vis(r['floor'], r['short'], 'image', "<ered>Fatal: {}</ered>".format(title))
-            print("Fatal: {}: {}".format(r['short'], title))
+            r=self.s.query("SELECT name,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
+            Vis(r['floor'], r['name'], 'image', "<ered>Fatal: {}</ered>".format(title))
+            print("Fatal: {}: {}".format(r['name'], title))
             sys.exit()
         else:
             Vis(floor, None, 'image', title)

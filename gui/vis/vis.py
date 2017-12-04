@@ -63,15 +63,15 @@ class Vis():
     def _js_make_rooms(self):# {{{
         ''' Data for rooms. Coords and colors. '''
         self.jsonCommon['rooms']=OrderedDict()
-        for i in self.s.query("SELECT short,x0,y0,width,depth,type_sec FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (self.floor,)):
-            self.jsonCommon['rooms'][i['short']]=i
+        for i in self.s.query("SELECT name,x0,y0,width,depth,type_sec FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (self.floor,)):
+            self.jsonCommon['rooms'][i['name']]=i
 
 # }}}
     def _js_make_doors(self):# {{{
         ''' Data for doors. Coords and colors. '''
         self.jsonCommon['doors']=OrderedDict()
-        for i in self.s.query("SELECT short,x0,y0,center_x,center_y,width,depth,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (self.floor,)):
-            self.jsonCommon['doors'][i['short']]=i
+        for i in self.s.query("SELECT name,x0,y0,center_x,center_y,width,depth,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (self.floor,)):
+            self.jsonCommon['doors'][i['name']]=i
 # }}}
     def _js_make_obstacles(self):# {{{
         ''' Data for obstacles. It may happen that geom.py was interrupted before obstacles were created, so there are no obstacles in geom.json, hence try/except. '''

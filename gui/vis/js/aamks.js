@@ -258,7 +258,7 @@ function paperjsDisplayImage() {
 
 	if (labelsSize != 0) { 
 		for (var key in rooms) {
-			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+10,rooms[key]["y0"]+30), fillColor:colors["fg"], content: rooms[key]["short"], fontFamily: 'Play', fontSize: labelsSize }));
+			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+10,rooms[key]["y0"]+30), fillColor:colors["fg"], content: rooms[key]["name"], fontFamily: 'Play', fontSize: labelsSize }));
 		}
 	}
 
@@ -268,7 +268,7 @@ function paperjsDisplayImage() {
 			staticGeoms.addChild(new Path.Rectangle({point: new Point(doors[key]["x0"],doors[key]["y0"]), size: new Size(doors[key]["width"],doors[key]["depth"]), strokeColor: colors['door'], strokeWidth:doorsSize  }));
 		}
 		if (labelsSize != 0) { 
-			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-10,doors[key]["center_y"]-10), fillColor:colors["fg"], content: doors[key]["short"], opacity: 0.7, fontFamily: 'Play', fontSize: labelsSize*0.75 }));
+			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-10,doors[key]["center_y"]-10), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Play', fontSize: labelsSize*0.75 }));
 		}
 	}
 

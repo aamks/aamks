@@ -77,7 +77,7 @@ class Sqlite(): # {{{
 
     def dump(self):
         print("dump() from caller: {}".format(inspect.stack()[1][3]))
-        for i in self.query('SELECT * FROM aamks_geom order by floor,name'):
+        for i in self.query('SELECT * FROM aamks_geom order by floor,type_pri,global_type_id'):
             print(i)
 # }}}
 class Psql(): # {{{

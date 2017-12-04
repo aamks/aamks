@@ -29,8 +29,8 @@ class SmokeQuery():
         self._read_tessellation()
         self._make_cell2compa()
         self._init_compa_conditions()
-        # todo: requests for self.cfast_get_conditions() calls
-        self.cfast_get_conditions()
+        # todo: requests for self.read_cfast_records() calls
+        self.read_cfast_records()
         for i in range(2):
             print(self.get_conditions((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])), 0))
 
@@ -50,10 +50,9 @@ class SmokeQuery():
 # }}}
     def _make_cell2compa_record(self,cell):# {{{
         try:
-            z=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['name']
+            self.cell2compa[cell]=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['name']
         except:
-            z='Outside'
-        self.cell2compa[cell]=z
+            pass
 # }}}
     def _make_cell2compa(self):#{{{
         self.cell2compa=OrderedDict()
@@ -62,14 +61,20 @@ class SmokeQuery():
             for pt in list(zip(v['x'], v['y'])):
                 self._make_cell2compa_record(pt)
 #}}}
-    def _results(self,q,r,compa,time):# {{{
-        ''' q=query, r=cell '''
+    def _results(self,q,r,time):# {{{
+        ''' q=query, r=cell. Outside is for debugging - should never happen in aamks. '''
+        try:
+            compa=self.cell2compa[r]
+        except:
+            compa="outside"
+            time=0
+            print("Agent outside needs fixing")
         z=self.json.read('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
         z['circles'].append( { "xy": q, "radius": 10, "fillColor": "#f0f", "opacity": 0.9 } )
         z['circles'].append( { "xy": r, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
         z['texts'].append(   { "xy": q, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
         self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
-        return "Conditions at ({},{})/({},{})\t{}: {}".format(q[0],q[1], r[0],r[1], self.cell2compa[r], self._compa_conditions[(self.cell2compa[r],time)])
+        return "Conditions at {} ({},{})/({},{}): {}".format(compa, q[0],q[1], r[0],r[1], self._compa_conditions[(compa,time)])
 # }}}
     def _init_compa_conditions(self):  # {{{
         ''' 
@@ -79,6 +84,8 @@ class SmokeQuery():
             self._compa_conditions[('R_1' , 0)]: OrderedDict([('CEILT'  , None) , ('DJET' , None) , ...)
             self._compa_conditions[('R_1' , 10)]: OrderedDict([('CEILT' , None) , ('DJET' , None) , ...)
             self._compa_conditions[('R_1' , 20)]: OrderedDict([('CEILT' , None) , ('DJET' , None) , ...)
+
+        self._compa_conditions[('outside', 0)]=OrderedDict() is more for debugging.
         '''
 
         self.relevant_params = ('CEILT', 'DJET', 'FLHGT', 'FLOORT', 'HGT',
@@ -94,9 +101,9 @@ class SmokeQuery():
         for i in self.all_compas:
             for t in range(0,self.conf['GENERAL']['SIMULATION_TIME']+10,10):
                 self._compa_conditions[(i, t)] = OrderedDict([(x, None) for x in self.relevant_params])
-        #dd(self._compa_conditions)
+        self._compa_conditions[('outside', 0)]=OrderedDict()
 # }}}
-    def cfast_get_conditions(self):# {{{
+    def read_cfast_records(self):# {{{
         ''' Parse cfast csv output from n,s,w files. '''
 
         for letter in ['n', 's', 'w']:
@@ -134,15 +141,13 @@ class SmokeQuery():
         y=self.floor_dim['miny'] + self.side * int((q[1]-self.floor_dim['miny'])/self.side)
 
         if len(self.query_vertices[x,y]['x'])==1:
-            return self._results(q, (x,y),  self.cell2compa[x,y], time)
+            return self._results(q, (x,y), time)
         else:
             for i in range(bisect.bisect(self.query_vertices[(x,y)]['x'], q[0]),0,-1):
                 if self.query_vertices[(x,y)]['y'][i-1] < q[1]:
                     rx=self.query_vertices[(x,y)]['x'][i-1]
                     ry=self.query_vertices[(x,y)]['y'][i-1]
-                    return self._results(q, (rx,ry), self.cell2compa[rx,ry], time)
-
-        #print("Outside! Agent should never be asking for outside conditions!")
-        return self._results(q, (x,y), "Outside", time)
+                    return self._results(q, (rx,ry), time)
+        return self._results(q, (x,y), time) # outside!
 # }}}
 
