@@ -5,6 +5,7 @@ import re
 import os
 import sys
 import inspect
+import time
 import bisect
 from ast import literal_eval as make_tuple
 from numpy.random import randint
@@ -29,10 +30,15 @@ class SmokeQuery():
         self._read_tessellation()
         self._make_cell2compa()
         self._init_compa_conditions()
-        # todo: requests for self.read_cfast_records() calls
-        self.read_cfast_records()
-        for i in range(2):
-            print(self.get_conditions((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])), 0))
+        self._cfast_headers()
+        while 1:
+            t=20
+            time.sleep(1)
+            if self.read_cfast_records(t)==1:
+                print(self.get_conditions((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])), t))
+                sys.exit()
+            else:
+                print("CFAST not ready")
 
     def _read_tessellation(self):# {{{
         ''' 
@@ -74,7 +80,7 @@ class SmokeQuery():
         z['circles'].append( { "xy": r, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
         z['texts'].append(   { "xy": q, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
         self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
-        return "Conditions at {} ({},{})/({},{}): {}".format(compa, q[0],q[1], r[0],r[1], self._compa_conditions[(compa,time)])
+        return "Conditions at {} @ {}s ({},{}) in [{},{}]: {}".format(compa, time, q[0],q[1], r[0],r[1], self._compa_conditions[(compa,time)])
 # }}}
     def _init_compa_conditions(self):  # {{{
         ''' 
@@ -103,31 +109,64 @@ class SmokeQuery():
                 self._compa_conditions[(i, t)] = OrderedDict([(x, None) for x in self.relevant_params])
         self._compa_conditions[('outside', 0)]=OrderedDict()
 # }}}
-    def read_cfast_records(self):# {{{
-        ''' Parse cfast csv output from n,s,w files. '''
+    def _cfast_headers(self):# {{{
+        ''' Get 3 first rows from n,s,w files and make headers: params and geoms. Happens only once.'''
 
+        self._headers=OrderedDict()
         for letter in ['n', 's', 'w']:
             f = '{}/fire/test/cfast_{}.csv'.format(os.environ['AAMKS_PATH'], letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 headers = []
-                for x in range(4):
+                for x in range(3):
                     headers.append([field.replace(' ', '') for field in next(reader)])
                     headers[x]
                 headers[0] = [re.sub("_.*", "", xx) for xx in headers[0]]
 
+            self._headers[letter]=OrderedDict()
+            self._headers[letter]['params']=headers[0]
+            self._headers[letter]['geoms']=headers[2]
+# }}}
+    def _cfast_has_time(self,time):# {{{
+        ''' 
+        CFAST dumps 4 header records and then data records. 
+        Data records are indexed by time with delta=10s.
+        '''
+
+        needed_record=int(time/10)+1
+        with open('/tmp/cfast_n.csv') as f:
+            num_data_records=sum(1 for _ in f)-4
+        if num_data_records > needed_record:
+            return 1
+        else:
+            return 0
+# }}}
+
+    def read_cfast_records(self,time):# {{{
+        ''' 
+        We had parsed headers separately. Now we only parse numbers from n,s,w files. 
+        Application needs to call us prior to massive queries for conditions at (x,y).
+        '''
+
+        if self._cfast_has_time(time)==0:
+            return 0
+
+        for letter in ['n', 's', 'w']:
+            f = '{}/fire/test/cfast_{}.csv'.format(os.environ['AAMKS_PATH'], letter)
+            with open(f, 'r') as csvfile:
+                reader = csv.reader(csvfile, delimiter=',')
+                for x in range(4):
+                    next(reader)
                 csvData = list()
                 for row in reader:
-                    csvData.append(tuple(round(float(j), 2) for j in row))
-
-            params = headers[0]
-            geoms = headers[2]
+                    csvData.append(tuple(float(j) for j in row))
 
             for row in csvData:
                 time = row[0]
                 for m in range(len(row)):
-                    if params[m] in self.relevant_params and geoms[m] in self.all_compas:
-                        self._compa_conditions[geoms[m], time][params[m]] = row[m]
+                    if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
+                        self._compa_conditions[self._headers[letter]['geoms'][m], time][self._headers[letter]['params'][m]] = row[m]
+        return 1
 # }}}
     def get_conditions(self,q,time):# {{{
         ''' 

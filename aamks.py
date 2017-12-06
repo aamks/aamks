@@ -14,9 +14,8 @@ OnInit()
 Geom()
 
 Path()
-#CfastTessellate()
-#SmokeQuery()
-
+CfastTessellate()
 CfastMcarlo()
 EvacMcarlo()
+SmokeQuery()
 OnEnd()
