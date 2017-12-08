@@ -77,16 +77,17 @@ class OnInit():
 # }}}
     def _setup_anim_master(self):# {{{
         path="{}/vis/master.html".format(os.environ['AAMKS_PROJECT'])
+
         with open(path, "w") as f:
             f.write('''<!DOCTYPE HTML>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta http-equiv=Content-Type content='text/html; charset=utf-8' />
-    <title>Aamks</title>
-    <link rel='stylesheet' type='text/css' href='css.css'>
     <link href='https://fonts.googleapis.com/css?family=Play' rel='stylesheet'>
     <link href='https://fonts.googleapis.com/icon?family=Material+Icons' rel='stylesheet'>
+    <title>Aamks</title>
+    <link rel='stylesheet' type='text/css' href='css.css'>
         <script type="text/javascript" src="js/jquery.js"></script>
         <script type="text/javascript" src="js/paper-full.js"></script>
         <script type="text/javascript" src="js/jszip.min.js"></script>
@@ -95,7 +96,7 @@ class OnInit():
 </head>
 <body>
 <div>
-    <vis-title></vis-title>
+    <vis-title></vis-title> &nbsp; &nbsp; Time: <sim-time></sim-time>
     &nbsp; &nbsp;
     <show-animation-setup-box>[setup]</show-animation-setup-box>
     

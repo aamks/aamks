@@ -37,15 +37,16 @@ var rooms;
 var doors;
 var obstacles;
 var paperjsExtras;
-var lastFrame;
 var lerps;
+var lastFrame=1;
+var deltaTime=0; 
+var timeShift=0; 
 var labelsSize=40;
 var sliderPos=0;
 var lerpFrame=0;
 var frame=0;
 var	visContainsAnimation=0;
 var	animationIsRunning=0;
-
 
 $.getJSON("colors.json", function(cols) {
 	colorsDb=cols;
@@ -76,16 +77,17 @@ function makeChooseVis(data) {
 	});
 };
 
-function showStaticImage(jsonRecord) {
+function showStaticImage(chosenAnim) {
 	// After we read a record from anims.json we reset the current visualization and setup a new one.
 	// We can only start animation after we are done with static rooms, doors etc.
 	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
-	$.getJSON(jsonRecord["geom_json"], function(data) {
-		$("vis-title").html(jsonRecord['title']);
-		burningFireLocation=jsonRecord['fire_origin']
-		wallsSize=Math.round(2/jsonRecord["scale"]);
-		ballsSize=Math.round(5/jsonRecord["scale"]);
-		velocitiesSize=Math.round(1/jsonRecord["scale"]);
+	$.getJSON(chosenAnim["geom_json"], function(data) {
+		$("vis-title").html(chosenAnim['title']);
+		$("sim-time").html(animTimeFormat());
+		burningFireLocation=chosenAnim['fire_origin']
+		wallsSize=Math.round(2/chosenAnim["scale"]);
+		ballsSize=Math.round(5/chosenAnim["scale"]);
+		velocitiesSize=Math.round(1/chosenAnim["scale"]);
 		doorsSize=2*wallsSize;
 
         // temp
@@ -98,9 +100,9 @@ function showStaticImage(jsonRecord) {
 		obstacles=data.obstacles;
         paperjsExtras=data.paperjs_extras;
 		
-		view.scale(jsonRecord["scale"]/scale);  
-		scale=jsonRecord["scale"];
-		view.center = new Point(jsonRecord["translate"]); 
+		view.scale(chosenAnim["scale"]/scale);  
+		scale=chosenAnim["scale"];
+		view.center = new Point(chosenAnim["translate"]); 
 		makeAnimationControls();
 		makeSetupBoxInputs();
 		makeColors();
@@ -109,20 +111,20 @@ function showStaticImage(jsonRecord) {
 		listenEvents();
 		resetCanvas();
 
-		if(jsonRecord["highlight_geom"]!=null) { highlightGeom(jsonRecord["highlight_geom"]); }
+		if(chosenAnim["highlight_geom"]!=null) { highlightGeom(chosenAnim["highlight_geom"]); }
 		
-		if(jsonRecord["anim_json"]!='') { 
-			showAnimation(jsonRecord);
+		if(chosenAnim["anim_json"]!='') { 
+			showAnimation(chosenAnim);
 		}
 
 	});
 }
 
-function showAnimation(jsonRecord) {
+function showAnimation(chosenAnim) {
 	// After static data is loaded to paperjs we can run animations.
 	// 0.000001 & friends prevent divisions by 0.
 	var promise = new JSZip.external.Promise(function (resolve, reject) {
-		JSZipUtils.getBinaryContent(jsonRecord["anim_json"], function(err, data) {
+		JSZipUtils.getBinaryContent(chosenAnim["anim_json"], function(err, data) {
 			if (err) {
 				reject(err);
 			} else {
@@ -136,8 +138,11 @@ function showAnimation(jsonRecord) {
 		return zip.file("anim.json").async("string"); 
 	})
 
-	.then(function success(jsonRecord) {                    
-		var animJson = JSON.parse(jsonRecord);
+	.then(function success(chosenAnim) {                    
+		var animJson = JSON.parse(chosenAnim);
+		timeShift=animJson.time_shift;
+		deltaTime=animJson.simulation_time-timeShift;
+		$("sim-time").html(animTimeFormat());
 		evacueesData=animJson.data;
 		lastFrame=animJson.data.length-1;
 		numberOfEvacuees=animJson.data[0].length;
@@ -147,6 +152,7 @@ function showAnimation(jsonRecord) {
 
 		$("#speed").on("keyup", function(){
 			lerps=Math.round(1/(($('#speed').val()/100)+0.0000000000000000001))+1;
+			lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
 			$('.canvas_slider_rect').css("fill" , "#000000");
 		});
 
@@ -263,7 +269,6 @@ function paperjsDisplayImage() {
 	}
 
 	for (var key in doors) {
-        console.log('d', doorsSize);
 		if (doorsSize != 0) { 
 			staticGeoms.addChild(new Path.Rectangle({point: new Point(doors[key]["x0"],doors[key]["y0"]), size: new Size(doors[key]["width"],doors[key]["depth"]), strokeColor: colors['door'], strokeWidth:doorsSize  }));
 		}
@@ -349,6 +354,7 @@ function updateAnimatedElement(i) {
 function afterLerpFrame() {
 	// The slider moves after each frame. The slider is a collection of 100 svg rectangles. We need to clear the previous rectangle and mark the current rectangle
 	$('#slider_'+(sliderPos)).css("fill", "#000");
+	$("sim-time").html(animTimeFormat());
 	sliderPos=Math.round(lerpFrame/(lerps*lastFrame)*100);
 	lerpFrame++;
 	$('#slider_'+(sliderPos-0)).css("fill", "#555");
@@ -443,6 +449,14 @@ function listenEvents() {
 		$('.canvas_slider_rect').css("fill" , "#000");
 	});
 }
+
+function animTimeFormat() {
+	var date=new Date(null);
+	var t=timeShift+deltaTime*sliderPos/100
+	date.setSeconds(t);
+	return date.toISOString().substr(14,5);
+};
+
 
 function highlightGeom(key) {
 	try {
