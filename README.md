@@ -8,9 +8,9 @@ simulations (a-evac) and then evaluates the results.
 Aamks workflow:
 * read aamks configuration (see examples), e.g.:
 
-	NUMBER_OF_SIMULATIONS=999
-	BUILDING_CATEGORY="office"
-	...
+	* NUMBER_OF_SIMULATIONS=999
+	* BUILDING_CATEGORY="office"
+	* ...
 
 * read geometry from autocad or inkscape
 * create 999 CFAST input files 
@@ -19,5 +19,5 @@ Aamks workflow:
 * collect workers results in a database
 * compile the 1300 results into distributions
 
-The master branch is by no means guaranteed to work - you better wait for a
+The master branch is by no means guaranteed to work, you better wait for a
 release. 
