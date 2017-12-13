@@ -18,20 +18,22 @@ class Manager():
         except OSError:
             pass
             
-        self.s=Sqlite("{}/manage_aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self._argparse()
+# }}}
+    def _access_hosts(self):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/manager/conf.json".format(os.environ['AAMKS_PATH']))
+        self.s=Sqlite("{}/manage_aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self._sqlite_import_hosts()
-        self._argparse()
-
 # }}}
-
     def ping_workers(self):# {{{
+        self._access_hosts()
         for i in self.s.query("SELECT distinct(host),network FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
             Popen('''host={}; net={}; nc -w 2 -z $host 22 2>/dev/null && {{ echo "$host\t($net)\t●"; }} || {{ echo "$host ($net)\t-"; }}'''.format(i['host'],i['network']), shell=True)
         time.sleep(2)
 # }}}
     def wake_on_lan(self):# {{{
+        self._access_hosts()
         for i in self.s.query("SELECT distinct(host),mac,broadcast FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
             Popen("wakeonlan -i {} {}".format(i['broadcast'], i['mac']), shell=True)
         time.sleep(2)
@@ -40,13 +42,15 @@ class Manager():
     def add_workers(self):# {{{
         ''' Register each host enabled in conf.json to gearman $AAMKS_SERVER (.bashrc) '''
 
+        self._access_hosts()
         for i in self.s.query("SELECT host FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
-            Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f gEGG xargs python3 {}/evac/run.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
+            Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/evac/run.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
 
 # }}}
     def exec_command(self, cmd):# {{{
         ''' Exec cmd on each host enabled in conf.json '''
 
+        self._access_hosts()
         for i in self.s.query("SELECT distinct(host),network FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
             print('\n..........................................................')
             print(i['host'], "\t\t\t\t", i['network'])
@@ -58,11 +62,13 @@ class Manager():
 
         cmd="pkill -9 -f '^{}'".format(pattern)
         print(cmd)
+        self._access_hosts()
         for i in self.s.query("SELECT distinct(host) FROM workers WHERE gearman_registered=1 ORDER BY network,host"):
             Popen("ssh -o ConnectTimeout=3 {} \"nohup sudo {} &\"".format(i['host'], cmd), shell=True)
 
 # }}}
     def revert_svn_mimooh(self):# {{{
+        self._access_hosts()
         for i in self.s.query("SELECT distinct(host) FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
             Popen("ssh -o ConnectTimeout=3 {} \"nohup sudo svn revert /home/svn/svn_mimooh --depth infinity  &\"".format(i['host']), shell=True)
 
@@ -70,6 +76,7 @@ class Manager():
     def update_workers(self):# {{{
         ''' Update svn on each host enabled in conf.json. Check if all packages are installed. Etc. '''
 
+        self._access_hosts()
         for i in self.s.query("SELECT distinct(host) FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
             cmds=[]
             cmds.append("ssh -o ConnectTimeout=3 {} ".format(i['host']))
@@ -87,6 +94,7 @@ class Manager():
 
         time.sleep(5)
         Popen("rm -rf /tmp/aamks_validate; mkdir /tmp/aamks_validate;", shell=True)
+        self._access_hosts()
         for i in self.s.query("SELECT distinct(host) FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
             Popen("scp {}:/tmp/aamks_validate.log /tmp/aamks_validate/{};".format(i['host'],i['host']), shell=True)
 
@@ -111,7 +119,7 @@ class Manager():
         If host has 0 cores enabled, then we will still have 1 record for it, because host may be disabled just now, but has been gearman_registered previously
         '''
 
-        self.s.query("create TABLE workers('mac','host','broadcast','network','conf_enabled','gearman_registered')")
+        self.s.query("CREATE TABLE workers('mac','host','broadcast','network','conf_enabled','gearman_registered')")
         for network,cores in self.conf['enabled_networks'].items():
             for record in self.conf['networks'][network]:
                 record.append(network)
