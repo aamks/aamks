@@ -65,9 +65,9 @@ class OnInit():
 
 # }}}
     def _setup_vis(self):# {{{
-        vis_dir="{}/vis".format(os.environ['AAMKS_PROJECT']) 
+        vis_dir="{}/workers/vis".format(os.environ['AAMKS_PROJECT']) 
         try:
-            os.remove("{}/vis/paperjs_extras.json".format(os.environ['AAMKS_PROJECT']))
+            os.remove("{}/workers/vis/paperjs_extras.json".format(os.environ['AAMKS_PROJECT']))
         except:
             pass
         os.makedirs(vis_dir, exist_ok=True)
