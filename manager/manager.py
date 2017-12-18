@@ -68,10 +68,10 @@ class Manager():
             Popen("ssh -o ConnectTimeout=3 {} \"nohup sudo {} &\"".format(i['host'], cmd), shell=True)
 
 # }}}
-    def revert_svn_mimooh(self):# {{{
+    def revert_git_aamks(self):# {{{
         self._access_hosts()
         for i in self.s.query("SELECT distinct(host) FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
-            Popen("ssh -o ConnectTimeout=3 {} \"nohup sudo svn revert /home/svn/svn_mimooh --depth infinity  &\"".format(i['host']), shell=True)
+            Popen("ssh -o ConnectTimeout=3 {} \"nohup sudo svn revert $AAMKS_PATH --depth infinity  &\"".format(i['host']), shell=True)
 
 # }}}
     def update_workers(self):# {{{
@@ -84,11 +84,10 @@ class Manager():
             cmds.append("\"")
             cmds.append("printf \`cat /etc/hostname\` > /tmp/aamks_validate.log; ")
             cmds.append("printf ': ' >> /tmp/aamks_validate.log; ")
-            cmds.append("sudo chown -R mimooh /home/mimooh;")
-            cmds.append("svn up /home/svn/svn_mimooh; ")
-            cmds.append("svn log /home/svn/svn_mimooh -l 1 | head -n 2 | tail -n 1 >> /tmp/aamks_validate.log; ")
+            cmds.append("svn co https://github.com/aamks/aamks/trunk $AAMKS_PATH")
+            cmds.append("svn log $AAMKS_PATH -l 1 | head -n 2 | tail -n 1 >> /tmp/aamks_validate.log; ")
             cmds.append("sudo apt-get install --yes python3-pip python3-psycopg2 python3-numpy ipython3 python3-urllib3 gearman >> aamks_validate.log; ")
-            cmds.append("rm -rf /home/mimooh/.cache/; ")
+            cmds.append("rm -rf ~/.cache/; ")
             cmds.append("sudo -H pip3 install networkX >> aamks_validate.log; ")
             cmds.append("\"")
             Popen("".join(cmds), shell=True)
@@ -154,7 +153,7 @@ class Manager():
         parser.add_argument('-r' , help='reset all gearmand '                                       , required=False   , action='store_true')
         parser.add_argument('-s' , help='sleep seconds between commands, default 0'                 , required=False   , type=int, default=0)
         parser.add_argument('-U' , help='update and validate workers'                               , required=False   , action='store_true')
-        parser.add_argument('-Q' , help='svn_mimooh revert on workers'                              , required=False   , action='store_true')
+        parser.add_argument('-Q' , help='git_aamks revert on workers'                               , required=False   , action='store_true')
         parser.add_argument('-w' , help='wakeOnLan'                                                 , required=False   , action='store_true')
         args = parser.parse_args()
 
@@ -176,7 +175,7 @@ class Manager():
         if args.U:
             self.update_workers()
         if args.Q:
-            self.revert_svn_mimooh()
+            self.revert_git_aamks()
         if args.w:
             self.wake_on_lan()
 # }}}

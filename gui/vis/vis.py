@@ -39,7 +39,7 @@ class Vis():
         self._js_make_obstacles()
         self._js_append_paperjs_extras()
 
-        self.vis_dir="{}/vis".format(os.environ['AAMKS_PROJECT']) 
+        self.vis_dir="{}/workers/vis".format(os.environ['AAMKS_PROJECT']) 
         self._save()
 # }}}
 

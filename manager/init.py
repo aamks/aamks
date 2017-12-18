@@ -76,7 +76,7 @@ class OnInit():
         shutil.copyfile("{}/geom/colors.json".format(os.environ['AAMKS_PATH']), "{}/colors.json".format(vis_dir))
 # }}}
     def _setup_anim_master(self):# {{{
-        path="{}/vis/master.html".format(os.environ['AAMKS_PROJECT'])
+        path="{}/workers/vis/master.html".format(os.environ['AAMKS_PROJECT'])
 
         with open(path, "w") as f:
             f.write('''<!DOCTYPE HTML>
