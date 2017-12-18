@@ -5,6 +5,7 @@ from subprocess import Popen,PIPE
 import sqlite3
 import json
 import sys
+sys.path.append(os.environ['AAMKS_PATH'])
 import argparse
 from include import Sqlite
 from include import Json
@@ -45,7 +46,7 @@ class Manager():
         self._access_hosts()
         for i in self.s.query("SELECT host FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
             #Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/evac/run.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
-            Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs bash {}/evac/gearman_test.sh > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
+            Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/tests/worker_report.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
 
 # }}}
     def exec_command(self, cmd):# {{{
@@ -79,27 +80,20 @@ class Manager():
 
         self._access_hosts()
         for i in self.s.query("SELECT distinct(host) FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
+            input("\nPress enter after each host\n")
             cmds=[]
             cmds.append("ssh -o ConnectTimeout=3 {} ".format(i['host']))
             cmds.append("\"")
-            cmds.append("printf \`cat /etc/hostname\` > /tmp/aamks_validate.log; ")
-            cmds.append("printf ': ' >> /tmp/aamks_validate.log; ")
-            cmds.append("svn co https://github.com/aamks/aamks/trunk $AAMKS_PATH")
-            cmds.append("svn log $AAMKS_PATH -l 1 | head -n 2 | tail -n 1 >> /tmp/aamks_validate.log; ")
-            cmds.append("sudo apt-get install --yes python3-pip python3-psycopg2 python3-numpy ipython3 python3-urllib3 gearman >> aamks_validate.log; ")
+            cmds.append("printf \`cat /etc/hostname\` ; ")
+            cmds.append("printf ': ' ; ")
+            cmds.append("svn co https://github.com/aamks/aamks/trunk $AAMKS_PATH; ")
+            cmds.append("svn log $AAMKS_PATH -l 1 | head -n 2 | tail -n 1 ; ")
+            cmds.append("sudo apt-get install --yes python3-pip python3-psycopg2 python3-numpy ipython3 python3-urllib3 gearman ; ")
             cmds.append("rm -rf ~/.cache/; ")
-            cmds.append("sudo -H pip3 install networkX >> aamks_validate.log; ")
+            cmds.append("sudo -H pip3 install networkX ; ")
             cmds.append("\"")
             Popen("".join(cmds), shell=True)
 
-        time.sleep(5)
-        Popen("rm -rf /tmp/aamks_validate; mkdir /tmp/aamks_validate;", shell=True)
-        self._access_hosts()
-        for i in self.s.query("SELECT distinct(host) FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
-            Popen("scp {}:/tmp/aamks_validate.log /tmp/aamks_validate/{};".format(i['host'],i['host']), shell=True)
-
-        time.sleep(2)
-        Popen("cat /tmp/aamks_validate/* | sed 's%\s%\t%' | sort", shell=True)
 # }}}
     def reset_gearmand(self):# {{{
         cmds="sudo killall -9 gearman 2>/dev/null; sudo /etc/init.d/gearman-job-server restart"
@@ -180,7 +174,5 @@ class Manager():
             self.wake_on_lan()
 # }}}
 
-        
- # }}}
 manager=Manager()
 print()
