@@ -21,4 +21,4 @@ from collections import OrderedDict
 #print("scp {}:{} {}/".format(sys.argv[1], sys.argv[2], os.environ['AAMKS_PROJECT']))
 
 # get json 
-Popen("scp {}:{} {}/".format(sys.argv[1], sys.argv[2], os.environ['AAMKS_PROJECT']), shell=True)
+Popen("scp {}:{} {}/workers/".format(sys.argv[1], sys.argv[2], os.environ['AAMKS_PROJECT']), shell=True)

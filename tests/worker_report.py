@@ -13,6 +13,7 @@ class WorkerReport():
         host=os.uname()[1]
         report=OrderedDict()
         report['hostname']=host
+        report['args']=", ".join(sys.argv)
         report['animation']="{}/{}.anim.zip".format(path,host)
         report['results']="psql report"
         json_file="{}/{}.json".format(path, host)

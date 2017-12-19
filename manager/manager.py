@@ -21,10 +21,10 @@ class Manager():
             
         self.json=Json()
         self.conf=self.json.read("{}/manager/conf.json".format(os.environ['AAMKS_PATH']))
-        self.list_enabled_networks()
+        self._list_enabled_networks()
         self._argparse()
 # }}}
-    def list_enabled_networks(self):# {{{
+    def _list_enabled_networks(self):# {{{
         print("Networks enabled in conf.json")
         dd(self.conf['enabled_networks'])
         print("")
@@ -52,7 +52,7 @@ class Manager():
         self._access_hosts()
         for i in self.s.query("SELECT host FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
             #Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/evac/run.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
-            print("Registering {}\tfor aRun jobs ordered by {}: ".format(i['host'], os.environ['AAMKS_SERVER']))
+            print("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/tests/worker_report.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']))
             Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/tests/worker_report.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
 
 # }}}
@@ -87,12 +87,12 @@ class Manager():
 
         self._access_hosts()
         for i in self.s.query("SELECT distinct(host) FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
-            input("\nPress enter after each host\n")
             cmds=[]
             cmds.append("ssh -o ConnectTimeout=3 {} ".format(i['host']))
             cmds.append("\"")
+            cmds.append("echo ;")
             cmds.append("printf \`cat /etc/hostname\` ; ")
-            cmds.append("printf ': ' ; ")
+            cmds.append("echo ;")
             cmds.append("svn co https://github.com/aamks/aamks/trunk $AAMKS_PATH; ")
             cmds.append("svn log $AAMKS_PATH -l 1 | head -n 2 | tail -n 1 ; ")
             cmds.append("sudo apt-get install --yes python3-pip python3-psycopg2 python3-numpy ipython3 python3-urllib3 gearman ; ")
@@ -100,6 +100,7 @@ class Manager():
             cmds.append("sudo -H pip3 install networkX ; ")
             cmds.append("\"")
             Popen("".join(cmds), shell=True)
+            time.sleep(8)
 
 # }}}
     def reset_gearmand(self):# {{{
@@ -164,7 +165,7 @@ class Manager():
         if args.c:
             self.exec_command(args.c)
         if args.k:
-            self.kill_by_pattern("pkill -9 -f 'gearman|^cfast|^python3'")
+            self.kill_by_pattern("gearman|^cfast|^python3")
         if args.K:
             self.kill_by_pattern(args.K)
         if args.l:
