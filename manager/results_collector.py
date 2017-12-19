@@ -7,10 +7,10 @@ from include import Json
 from collections import OrderedDict
 
 '''
-1. aamksrun makes gearman pass the job to worker: (,E)
+1. aamksrun makes gearman pass the job to worker: 
     /usr/local/aamks/tests/worker_report.py
-2. Worker calls gearman back with: Popen("gearman -h {} -f aOut '{} {}'".format(os.environ['AAMKS_SERVER'], report['hostname'], json_file), shell=True)
-3. This file implements gearman's aOut function realizować
+2. Worker calls gearman server back with: Popen("gearman -h {} -f aOut '{} {}'".format(os.environ['AAMKS_SERVER'], report['hostname'], json_file), shell=True)
+3. This file implements gearman's aOut function 
 '''
 
 # gearman -f aOut "g1 /usr/local/aamks/tests/report.json"
