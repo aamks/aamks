@@ -19,11 +19,17 @@ class Manager():
         except OSError:
             pass
             
-        self._argparse()
-# }}}
-    def _access_hosts(self):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/manager/conf.json".format(os.environ['AAMKS_PATH']))
+        self.list_enabled_networks()
+        self._argparse()
+# }}}
+    def list_enabled_networks(self):# {{{
+        print("Networks enabled in conf.json")
+        dd(self.conf['enabled_networks'])
+        print("")
+# }}}
+    def _access_hosts(self):# {{{
         self.s=Sqlite("{}/manage_aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self._sqlite_import_hosts()
 # }}}
@@ -46,6 +52,7 @@ class Manager():
         self._access_hosts()
         for i in self.s.query("SELECT host FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
             #Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/evac/run.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
+            print("Registering {}\tfor aRun jobs ordered by {}: ".format(i['host'], os.environ['AAMKS_SERVER']))
             Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/tests/worker_report.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
 
 # }}}
@@ -145,7 +152,7 @@ class Manager():
         parser.add_argument('-l' , help='list tasks'                                                , required=False   , action='store_true')
         parser.add_argument('-p' , help='ping all workers'                                          , required=False   , action='store_true')
         parser.add_argument('-r' , help='reset all gearmand '                                       , required=False   , action='store_true')
-        parser.add_argument('-s' , help='sleep seconds between commands, default 0'                 , required=False   , type=int, default=0)
+        parser.add_argument('-s' , help='sleep seconds between commands                             , default 0'       , required=False        , type=int , default=0)
         parser.add_argument('-U' , help='update and validate workers'                               , required=False   , action='store_true')
         parser.add_argument('-Q' , help='git_aamks revert on workers'                               , required=False   , action='store_true')
         parser.add_argument('-w' , help='wakeOnLan'                                                 , required=False   , action='store_true')
