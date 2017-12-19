@@ -23,8 +23,8 @@ class WorkerReport():
         report['sim_id']=sim_id 
         report['animation']="{}/{}.anim.zip".format(path,dest)
         report['results']="psql report"
-        json_file="{}/{}.json".format(path, dest)
+        json_file="{}/report_{}.json".format(path, dest)
         json.write(report, json_file)
-        Popen("gearman -h {} -f aOut '{} {}'".format(os.environ['AAMKS_SERVER'], dest, json_file), shell=True)
+        Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], host, json_file, dest), shell=True)
 
 report=WorkerReport("/home/aamks", os.path.basename(sys.argv[1]))
