@@ -11,8 +11,9 @@ class WorkerReport():
         ''' 
         Runs on a worker. 
         Write /home/aamks/sim_id.json on each aRun completion.
-        Then inform gearman server to scp this file via aOut service.
-        Gearman will process this json in manager/results_collector.py
+        Then inform gearman server to scp to itself /home/aamks/sim_id.json via aOut service.
+        Gearman server will process this json in manager/results_collector.py.
+        Gearman server will psql insert and will scp the worker's animation to itself. 
         '''
 
         json=Json()

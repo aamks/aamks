@@ -1,13 +1,12 @@
 import os 
 import sys
 from subprocess import Popen,PIPE
-
 sys.path.append(os.environ['AAMKS_PATH'])
 from include import Json
 from collections import OrderedDict
 
 '''
-1. aamksrun makes gearman pass the job to worker: 
+1. aamksrun makes gearman pass these jobs to workers: 
     /usr/local/aamks/tests/worker_report.py
 2. Worker calls gearman server back with: Popen("gearman -h {} -f aOut '{} {}'".format(os.environ['AAMKS_SERVER'], report['hostname'], json_file), shell=True)
 3. This file implements gearman's aOut function:
