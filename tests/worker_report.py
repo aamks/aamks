@@ -26,6 +26,7 @@ class WorkerReport():
         report['results']="psql report"
         json_file="{}/report_{}.json".format(path, dest)
         json.write(report, json_file)
+        Popen("cp /home/aamks/{}.anim.zip /home/aamks/{}.anim.zip".format(host, sim_id), shell=True)
         Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], host, json_file, dest), shell=True)
 
 report=WorkerReport("/home/aamks", os.path.basename(sys.argv[1]))
