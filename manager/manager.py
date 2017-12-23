@@ -51,9 +51,10 @@ class Manager():
 
         self._access_hosts()
         for i in self.s.query("SELECT host FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
-            #Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/evac/run.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
-            print("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/tests/worker_report.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']))
-            Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/tests/worker_report.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
+            if os.environ['AAMKS_TESTING']=='1':
+                Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/tests/worker.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
+            else:
+                Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/evac/run.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
 
 # }}}
     def exec_command(self, cmd):# {{{

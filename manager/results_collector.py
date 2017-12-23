@@ -7,8 +7,8 @@ from collections import OrderedDict
 
 '''
 1. aamksrun makes gearman pass these jobs to workers: 
-    /usr/local/aamks/tests/worker_report.py
-2. Worker calls gearman server back with: Popen("gearman -h {} -f aOut '{} {}'".format(os.environ['AAMKS_SERVER'], report['hostname'], json_file), shell=True)
+    /usr/local/aamks/tests/worker.py
+2. Worker calls gearman server back 
 3. This file implements gearman's aOut function:
     * download json with configuration to workers/123/report_123.json
     * download animation to workers/123/123.anim.zip

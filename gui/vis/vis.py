@@ -8,7 +8,6 @@ import os
 import json
 import sys
 import inspect
-from colour import Color
 from numpy.random import randint
 from include import Sqlite
 from include import Json
