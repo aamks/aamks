@@ -1,0 +1,2 @@
+* Animations need translate/scale
+* Remove the redundant jsons (just use sqlite)

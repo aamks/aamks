@@ -17,8 +17,11 @@ from include import Dump as dd
 
 class Vis():
     def __init__(self,floor,highlight_geom,src='image',title='',fire_origin=[]):# {{{
-        ''' Html canvas module for src=image (read from sqlite geoms) or src=/path/to/animation (animate evacuues read from evac's json). 
-        src=image is how we ignore all aspects of animation. '''
+        ''' 
+        Html canvas module for src=image (read from sqlite geoms) or
+        src=/path/to/animation (animate evacuues read from evac's json).
+        src=image is how we ignore all aspects of animation. 
+        '''
 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
@@ -86,7 +89,6 @@ class Vis():
             self.jsonCommon['obstacles']=[ { "x0":0, "y0":0, "width":0, "height":0 } ]
             
 # }}}
-
     def _js_append_paperjs_extras(self):# {{{
         ''' We can plot some extra rectangles, points, lines and circles on top of our paperjs geoms '''
 
@@ -103,7 +105,6 @@ class Vis():
             self.jsonCommon['paperjs_extras']=z
             
 # }}}
-
     def _save(self):# {{{
         ''' 
         Todo: Common geometry is written once. Don't we duplicate it here each
@@ -127,6 +128,5 @@ class Vis():
         except:
             z=[]
         z.append(self.jsonOut)
-        with open("{}/anims.json".format(self.vis_dir), mode='w', encoding='utf-8') as f:
-            json.dump(z, f)
+        self.json.write(z, "{}/anims.json".format(self.vis_dir))
 # }}}
