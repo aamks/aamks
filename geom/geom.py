@@ -50,7 +50,6 @@ class Geom():
         self._auto_detectors_and_sprinklers()
         self._rooms_into_obstacles()
         self.make_vis('Create obstacles')
-        self._find_room_intersects_doors_or_holes()
         self._assert_faces_ok()
         self._assert_room_has_door()
         self._save()
@@ -65,7 +64,8 @@ class Geom():
 
         self.s.query("CREATE TABLE aamks_geom('name','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z')")
         self.s.query("CREATE TABLE floors('floor', 'width', 'height', 'minx', 'miny', 'maxx', 'maxy', 'animation_scale', 'animation_translate_x', 'animation_translate_y')")
-        self.s.query("CREATE TABLE obstacles('floor', 'obstacles')")
+        self.s.query("CREATE TABLE obstacles(json)")
+        self.s.query("CREATE TABLE id2compa(json)")
 # }}}
 
     def _floors_details(self):# {{{
@@ -205,12 +205,20 @@ class Geom():
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
 
 # }}}
+
+
     def _make_id2compa_name(self):# {{{
-        ''' Create a map of ids to names for COMPAS, e.g. _id2compa_name[4]='ROOM_1_4' '''
-        self._id2compa_name=OrderedDict()
+        ''' 
+        Create a map of ids to names for COMPAS, e.g. _id2compa_name[4]='ROOM_1_4' 
+        This map is stored to sqlite because path.py needs it. 
+        Still true after mesh travelling?
+        ''' 
+        self._id2compa_name=OrderedDict() 
         for v in self.s.query("select name,global_type_id from aamks_geom where type_pri='COMPA'"):
             self._id2compa_name[v['global_type_id']]=v['name']
-        self._id2compa_name[self.outside_compa]='outside'
+            self._id2compa_name[self.outside_compa]='outside'
+
+        self.s.query('INSERT INTO id2compa VALUES (?)', (json.dumps(self._id2compa_name),))
 # }}}
     def _add_names_to_vents_from_to(self):# {{{
         ''' Vents from/to use indices, but names will be simpler for AAMKS and for debugging. 
@@ -400,18 +408,6 @@ class Geom():
             self.s.query("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", (v[0],v[1],vent_id))
 
 # }}}
-    def _find_room_intersects_doors_or_holes(self):# {{{
-        ''' Intersecting rooms with doors/holes for graphs. '''
-
-        all_compas=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name") ]
-        all_compas.append('outside')
-
-        self.compa_intersects_doors=OrderedDict((key,[]) for key in all_compas)
-
-        for v in self.s.query("select * from aamks_geom where type_tri='DOOR'"):
-            self.compa_intersects_doors[self._id2compa_name[v['vent_from']]].append(v['name'])
-            self.compa_intersects_doors[self._id2compa_name[v['vent_to']]].append(v['name'])
-# }}}
     def _rooms_into_obstacles(self):# {{{
         ''' 
         For a roomX we create a roomX_ghost, we move it by wall_width, which
@@ -424,6 +420,7 @@ class Geom():
         '''
 
         wall_width=4
+        values=OrderedDict()
         for floor in self.floors:
             walls=[]
             for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
@@ -448,10 +445,10 @@ class Geom():
                 elif isinstance(wall, Polygon):
                     boxen.append(wall)
 
-            values=[]
+            values[floor]=[]
             for b in boxen:
-                values.append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
-            self.s.query("INSERT INTO obstacles VALUES (?,?)", (floor,json.dumps(values)))
+                values[floor].append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
+        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(values),))
 # }}}
     def _assert_faces_ok(self):# {{{
         ''' Are all hvents' faces fine? '''
@@ -479,11 +476,6 @@ class Geom():
 
         dump_objects=OrderedDict()
         dump_objects['geom']=compas
-        try: 
-            #dump_objects['obstacles']=self.obstacles
-            dump_objects['compa_intersects_doors']=self.compa_intersects_doors
-        except:
-            pass
 
         self.json.write(dump_objects, "{}/geom.json".format(os.environ['AAMKS_PROJECT']))
 # }}}

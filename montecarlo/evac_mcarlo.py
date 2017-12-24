@@ -89,19 +89,22 @@ class EvacMcarlo():
             self._doors_centers[i['name']] = (i['center_x'], i['center_y'])
 # }}}
     def _roadmaps_for_evacuees(self):# {{{
-        ''' An evacuee finds himself in a room.
-        There are n doors to this room.
-        The graph already knows the distance from each door to the outside
-        We search for min(dist_evacuee2door + dist_door2outside)
-        Then for each evacuee we save the cooridnates: [ evacuee, D0, D1, D2, D3 ]
-        We also save the rooms sequence [ ROOM_1_1, ROOM_1_4 ] so that the aamks's evacuee doesn't need to make costly calcuations of the current room from xy.
+        ''' 
+        An evacuee finds himself in a room. There are n doors to this room. The
+        graph already knows the distance from each door to the outside We
+        search for min(dist_evacuee2door + dist_door2outside) Then for each
+        evacuee we save the cooridnates: [ evacuee, D0, D1, D2, D3 ] We also
+        save the rooms sequence [ ROOM_1_1, ROOM_1_4 ] so that the aamks's
+        evacuee doesn't need to make costly calcuations of the current room
+        from xy.
         '''
+
         graph=self.json.read("{}/graph.json".format(os.environ['AAMKS_PROJECT']))
         geom=self.json.read("{}/geom.json".format(os.environ['AAMKS_PROJECT']))
         network_xpaths_lengths  = graph['network_xpaths_lengths']
         graph_coords_seq        = graph['graph_coords_seq']
         graph_rooms_seq         = graph['graph_rooms_seq']
-        door_intersections      = geom['compa_intersects_doors']
+        door_intersections      = json.loads(self.s.query("SELECT * FROM door_intersections")[0]['intersections'])
         
         self.evacuees_roadmaps_coords=OrderedDict()
         self.evacuees_roadmaps_rooms=OrderedDict()

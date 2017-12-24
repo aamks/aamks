@@ -1,2 +1,2 @@
-* Remove the redundant jsons -- compa_intersects_doors is next
+* Remove the redundant jsons 
 * Can we feed js from sqlite?

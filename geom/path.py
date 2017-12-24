@@ -9,6 +9,7 @@ import networkx as nx
 import numpy.random as rand
 import os
 import sys
+import json
 from include import Sqlite
 from include import Json
 from include import Dump as dd
@@ -28,6 +29,22 @@ class Path():
         self._save()
 # }}}
 
+    def _make_door_intersections(self):# {{{
+        ''' Intersecting rooms with doors/holes for graphs. '''
+
+        all_compas=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name") ]
+        all_compas.append('outside')
+
+        door_intersections=OrderedDict((key,[]) for key in all_compas)
+        id2compa_name=json.loads(self.s.query("select * from id2compa")[0]['json'])
+
+        for v in self.s.query("select * from aamks_geom where type_tri='DOOR'"):
+            door_intersections[id2compa_name[str(v['vent_from'])]].append(v['name'])
+            door_intersections[id2compa_name[str(v['vent_to'])]].append(v['name'])
+        self.s.query("CREATE TABLE door_intersections(intersections)")
+        self.s.query("INSERT INTO door_intersections VALUES (?)", (json.dumps(door_intersections),))
+        return door_intersections
+# }}}
     def _doors_centers(self):# {{{
         self._doors_centers = {}
         for i in self.s.query("SELECT name, center_x, center_y FROM aamks_geom WHERE type_tri='DOOR'"):
@@ -35,9 +52,9 @@ class Path():
 # }}}
     def _measure_door_pairs_distances(self):# {{{
         ''' networkx needs to know all door pairs and the distance in each pair. '''
-        self.door_intersections = self.json.read("{}/geom.json".format(os.environ['AAMKS_PROJECT']))['compa_intersects_doors']
+        door_intersections=self._make_door_intersections()
         doorPairs = []
-        for k, v in self.door_intersections.items():
+        for k, v in door_intersections.items():
             if k != 'outside':
                 for z in list(itertools.combinations(v, 2)):
                     doorPairs.append(z)
@@ -48,7 +65,7 @@ class Path():
             d1Center = self._doors_centers[doorPair[1]]
             self._door_pairs_distances.append((doorPair[0], doorPair[1], round(sqrt((d0Center[0] - d1Center[0]) ** 2 + (d0Center[1] - d1Center[1]) ** 2), 2)))
 
-        for doorOut in self.door_intersections['outside']:
+        for doorOut in door_intersections['outside']:
             self._door_pairs_distances.append(('outside', doorOut, 0))
 # }}}
     def _graph_and_distances(self):# {{{
