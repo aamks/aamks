@@ -1,2 +1,2 @@
-* Animations need translate/scale
-* Remove the redundant jsons (just use sqlite)
+* Remove the redundant jsons -- compa_intersects_doors is next
+* Can we feed js from sqlite?

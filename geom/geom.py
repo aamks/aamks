@@ -27,12 +27,13 @@ class Geom():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        self._create_sqlite_table()
+        self._create_sqlite_tables()
         self._make_elem_counter()
         geometry_data=self._geometry_reader()
         self._geometry2sqlite(geometry_data)
         self._init_helper_variables()
         self._invert_y()
+        self._floors_details()
         self.make_vis('Create geometry')
         self._make_fake_wells()
         self._aamks_geom_into_polygons()
@@ -55,9 +56,40 @@ class Geom():
         self._save()
 # }}}
 
-    def _create_sqlite_table(self):# {{{
-        ''' Init sqlite aamks_geom table. Must use two unique ids a) 'name' for visualisation b) 'global_type_id' for cfast enumeration. '''
+    def _create_sqlite_tables(self):# {{{
+        ''' 
+        Init sqlite aamks_geom table and other tables. Must use two unique ids
+        a) 'name' for visualisation and b) 'global_type_id' for cfast
+        enumeration. 
+        '''
+
         self.s.query("CREATE TABLE aamks_geom('name','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z')")
+        self.s.query("CREATE TABLE floors('floor', 'width', 'height', 'minx', 'miny', 'maxx', 'maxy', 'animation_scale', 'animation_translate_x', 'animation_translate_y')")
+        self.s.query("CREATE TABLE obstacles('floor', 'obstacles')")
+# }}}
+
+    def _floors_details(self):# {{{
+        ''' 
+        Floor dimensions are needed here and there, therefore we store it in
+        sqlite. Canvas size is 1600 x 800 in css.css. Calculate how to scale
+        the whole floor to fit the canvas. Minima don't have to be at (0,0) in
+        autocad, therefore we also need to translate the drawing for the
+        canvas. '''
+
+        for floor in self.floors:
+            minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (floor,))[0]['minx']
+            miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (floor,))[0]['miny']
+            maxx=self.s.query("SELECT max(x1) AS maxx FROM aamks_geom WHERE floor=?", (floor,))[0]['maxx']
+            maxy=self.s.query("SELECT max(y1) AS maxy FROM aamks_geom WHERE floor=?", (floor,))[0]['maxy']
+
+            width=maxx-minx
+            height=maxy-miny
+
+            animation_scale=round(min(1600/width,800/height)*0.95, 2) # 0.95 is canvas padding
+            animation_translate=[ int(maxx-0.5*width), int(maxy-0.5*height) ]
+
+            values=(floor , width , height , minx , miny , maxx , maxy , animation_scale , animation_translate[0] , animation_translate[1])
+            self.s.query('INSERT INTO floors VALUES ({})'.format(','.join('?' * len(values))), values)
 # }}}
     def _geometry_reader(self):# {{{
         g=self.conf['GENERAL']['INPUT_GEOMETRY']
@@ -380,21 +412,21 @@ class Geom():
             self.compa_intersects_doors[self._id2compa_name[v['vent_from']]].append(v['name'])
             self.compa_intersects_doors[self._id2compa_name[v['vent_to']]].append(v['name'])
 # }}}
-
     def _rooms_into_obstacles(self):# {{{
-        ''' Convert to multiple rectangles, which can be transformed to FDS obsts. 
-        For a roomX we create a roomX_ghost, we move it by wall_width, which must match the width of hvents. Then we create walls via logical operations.
-        We then intersect the walls with the doors to have openings in the walls.
-        The door's width can originate on top of the wall, but such intersections don't count. Only intesections of area > wall_width**2 count -- only doors that have long side on the wall.
+        ''' 
+        For a roomX we create a roomX_ghost, we move it by wall_width, which
+        must match the width of hvents. Then we create walls via logical
+        operations. We then intersect the walls with the doors to have openings
+        in the walls. The door's width can originate on top of the wall, but
+        such intersections don't count. Only intesections of area >
+        wall_width**2 count -- only doors that have long side on the wall. 
         For comfortable debuging filter geoms in self.s.query(). 
         '''
 
         wall_width=4
-        self.obstacles=OrderedDict()
         for floor in self.floors:
             walls=[]
             for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
-            #for i in self.s.query("SELECT * FROM aamks_geom WHERE name='ROOM_1_23' ORDER BY name"):
                 walls.append((i['x0']+wall_width , i['y0']            , i['x0']+i['width']            , i['y0']+wall_width)                )
                 walls.append((i['x0']+i['width'] , i['y0']            , i['x0']+i['width']+wall_width , i['y0']+i['depth']+wall_width)     )
                 walls.append((i['x0']+wall_width , i['y0']+i['depth'] , i['x0']+i['width']            , i['y0']+i['depth']+wall_width)     )
@@ -404,8 +436,6 @@ class Geom():
             doors_polygons=[]
             for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_tri='DOOR' ORDER BY name", (floor,)):
                 doors_polygons.append(box(i['x0'], i['y0'], i['x0']+i['width'], i['y0']+i['depth']))
-            #self.plot_x([ (i,None,"#ff00ff") for i in walls_polygons ] + [ (i,None,None) for i in doors_polygons])
-
                 
             boxen=[]
             for wall in walls_polygons:
@@ -418,12 +448,11 @@ class Geom():
                 elif isinstance(wall, Polygon):
                     boxen.append(wall)
 
-            self.obstacles[floor]=[]
-
+            values=[]
             for b in boxen:
-                self.obstacles[floor].append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
+                values.append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
+            self.s.query("INSERT INTO obstacles VALUES (?,?)", (floor,json.dumps(values)))
 # }}}
-
     def _assert_faces_ok(self):# {{{
         ''' Are all hvents' faces fine? '''
         for v in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from,vent_to"):
@@ -451,7 +480,7 @@ class Geom():
         dump_objects=OrderedDict()
         dump_objects['geom']=compas
         try: 
-            dump_objects['obstacles']=self.obstacles
+            #dump_objects['obstacles']=self.obstacles
             dump_objects['compa_intersects_doors']=self.compa_intersects_doors
         except:
             pass

@@ -33,9 +33,6 @@ class Vis():
         self.src=src
 
         self.jsonCommon=OrderedDict()
-        self.jsonOut=OrderedDict()
-        self.jsonOut['title']=self.title
-        self._scale_and_translate()
         self._js_make_rooms()
         self._js_make_doors()
         self._js_make_obstacles()
@@ -45,23 +42,6 @@ class Vis():
         self._save()
 # }}}
 
-    def _floor_dimensions(self):# {{{
-        minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (self.floor,))[0]['minx']
-        miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (self.floor,))[0]['miny']
-        maxx=self.s.query("SELECT max(x1) AS maxx FROM aamks_geom WHERE floor=?", (self.floor,))[0]['maxx']
-        maxy=self.s.query("SELECT max(y1) AS maxy FROM aamks_geom WHERE floor=?", (self.floor,))[0]['maxy']
-
-        return dict([ ('width', maxx-minx), ('height', maxy-miny), ('maxx', maxx), ('maxy', maxy), ('minx', minx), ('miny', miny)  ])
-# }}}
-    def _scale_and_translate(self):# {{{
-        ''' Canvas size is 1600 x 800 in css.css. Calculate how to scale the whole floor to fit the canvas. 
-        Minima don't have to be at (0,0) in autocad, therefore we also need to translate the drawing for the canvas. '''
-
-        f=self._floor_dimensions()
-        self.jsonOut['scale']=round(min(1600/f['width'],800/f['height'])*0.95, 2) # 0.95 is canvas padding
-        self.jsonOut['translate']=[ int(f['maxx']-0.5*f['width']), int(f['maxy']-0.5*f['height']) ]
-
-# }}}
     def _js_make_rooms(self):# {{{
         ''' Data for rooms. Coords and colors. '''
         self.jsonCommon['rooms']=OrderedDict()
@@ -118,6 +98,9 @@ class Vis():
         else:
             anim_source=self.src
 
+        self.jsonOut=OrderedDict()
+        self.jsonOut['title']=self.title
+        self.jsonOut['todo']="todo: animations and scale moved to sqlite"
         self.jsonOut['geom_json']='floor_{}.json'.format(self.floor) 
         self.jsonOut['anim_json']="../"+anim_source
         self.jsonOut['fire_origin']=self.fire_origin
