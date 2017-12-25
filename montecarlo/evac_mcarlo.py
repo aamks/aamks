@@ -54,7 +54,7 @@ class EvacMcarlo():
 # }}}
 
     def _room_of_fire_origin(self):# {{{
-        ''' ROOM_OF_FIRE_ORIGIN is invented in CfastConf.py and written to sim_id/evac.json '''
+        ''' ROOM_OF_FIRE_ORIGIN is invented in cfast_mcarlo.py and written to sim_id/evac.json '''
         self.conf['GENERAL']['ROOM_OF_FIRE_ORIGIN']=self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], self._sim_id))['GENERAL']['ROOM_OF_FIRE_ORIGIN']
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
@@ -99,12 +99,11 @@ class EvacMcarlo():
         from xy.
         '''
 
-        graph=self.json.read("{}/graph.json".format(os.environ['AAMKS_PROJECT']))
-        geom=self.json.read("{}/geom.json".format(os.environ['AAMKS_PROJECT']))
+        door_intersections      =json.loads(self.s.query("SELECT * FROM door_intersections")[0]['json'])
+        graph                   =json.loads(self.s.query("SELECT * FROM graph")[0]['json'])
         network_xpaths_lengths  = graph['network_xpaths_lengths']
         graph_coords_seq        = graph['graph_coords_seq']
         graph_rooms_seq         = graph['graph_rooms_seq']
-        door_intersections      = json.loads(self.s.query("SELECT * FROM door_intersections")[0]['intersections'])
         
         self.evacuees_roadmaps_coords=OrderedDict()
         self.evacuees_roadmaps_rooms=OrderedDict()

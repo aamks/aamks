@@ -1,2 +1,2 @@
-* Remove the redundant jsons 
-* Can we feed js from sqlite?
+* dump sql to jsons inside vis/ ? 
+* prepare vis/anims.json (translate, scale)

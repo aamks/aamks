@@ -93,16 +93,15 @@ class Vis():
         '''
         self.json.write(self.jsonCommon, '{}/floor_{}.json'.format(self.vis_dir, self.floor)) 
 
-        if self.src=='image':
-            anim_source=''
-        else:
-            anim_source=self.src
-
         self.jsonOut=OrderedDict()
+        if self.src=='image':
+            self.jsonOut['anim_json']=''
+        else:
+            self.jsonOut['anim_json']="../{}".format(self.src)
+
         self.jsonOut['title']=self.title
         self.jsonOut['todo']="todo: animations and scale moved to sqlite"
         self.jsonOut['geom_json']='floor_{}.json'.format(self.floor) 
-        self.jsonOut['anim_json']="../"+anim_source
         self.jsonOut['fire_origin']=self.fire_origin
         self.jsonOut['highlight_geom']=self.highlight_geom
 

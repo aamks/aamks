@@ -1,6 +1,5 @@
 # MODULES
 # {{{
-from pprint import pprint
 import json
 from collections import OrderedDict
 import shutil
@@ -27,10 +26,8 @@ class Geom():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        self._create_sqlite_tables()
         self._make_elem_counter()
-        geometry_data=self._geometry_reader()
-        self._geometry2sqlite(geometry_data)
+        self._geometry2sqlite(self._geometry_reader())
         self._init_helper_variables()
         self._invert_y()
         self._floors_details()
@@ -52,20 +49,6 @@ class Geom():
         self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
-        self._save()
-# }}}
-
-    def _create_sqlite_tables(self):# {{{
-        ''' 
-        Init sqlite aamks_geom table and other tables. Must use two unique ids
-        a) 'name' for visualisation and b) 'global_type_id' for cfast
-        enumeration. 
-        '''
-
-        self.s.query("CREATE TABLE aamks_geom('name','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z')")
-        self.s.query("CREATE TABLE floors('floor', 'width', 'height', 'minx', 'miny', 'maxx', 'maxy', 'animation_scale', 'animation_translate_x', 'animation_translate_y')")
-        self.s.query("CREATE TABLE obstacles(json)")
-        self.s.query("CREATE TABLE id2compa(json)")
 # }}}
 
     def _floors_details(self):# {{{
@@ -74,8 +57,10 @@ class Geom():
         sqlite. Canvas size is 1600 x 800 in css.css. Calculate how to scale
         the whole floor to fit the canvas. Minima don't have to be at (0,0) in
         autocad, therefore we also need to translate the drawing for the
-        canvas. '''
+        canvas. 
+        '''
 
+        values=OrderedDict()
         for floor in self.floors:
             minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (floor,))[0]['minx']
             miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (floor,))[0]['miny']
@@ -88,8 +73,9 @@ class Geom():
             animation_scale=round(min(1600/width,800/height)*0.95, 2) # 0.95 is canvas padding
             animation_translate=[ int(maxx-0.5*width), int(maxy-0.5*height) ]
 
-            values=(floor , width , height , minx , miny , maxx , maxy , animation_scale , animation_translate[0] , animation_translate[1])
-            self.s.query('INSERT INTO floors VALUES ({})'.format(','.join('?' * len(values))), values)
+            values[floor]=(width , height , minx , miny , maxx , maxy , animation_scale , animation_translate[0] , animation_translate[1])
+        self.s.query("CREATE TABLE floors(json)")
+        self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(values),))
 # }}}
     def _geometry_reader(self):# {{{
         g=self.conf['GENERAL']['INPUT_GEOMETRY']
@@ -102,7 +88,9 @@ class Geom():
         return geometry_data
 # }}}
     def _geometry2sqlite(self,geometry_data):# {{{
-        ''' Parse geometry and place geoms in sqlite. The lowest floor is always 1. The geometry_data example for floor(1):
+        ''' 
+        Parse geometry and place geoms in sqlite. The lowest floor is always 1.
+        The geometry_data example for floor("1"):
 
             "1": [
                 "ROOM": [
@@ -111,14 +99,17 @@ class Geom():
                 ]
             ]
 
-        Each geom entity will be classified as DOOR, WINDOW, ROOM etc, and will get a unique name via elem_counter
-        Some columns in db are left empty for now.
-        We multiply geometries * 100 and work on integer cm. This prevents us from the issues with shapely floats and rounding.
+        Each geom entity will be classified as DOOR, WINDOW, ROOM etc, and will
+        get a unique name via elem_counter Some columns in db are left empty
+        for now. We multiply geometries * 100 and work on integer cm. This
+        prevents us from the issues with shapely floats and rounding.
+
+        Sqlite's aamks_geom table must use two unique ids a) 'name' for
+        visualisation and b) 'global_type_id' for cfast enumeration. 
         '''
 
         data=[]
         for floor,gg in geometry_data.items():
-            floor=int(floor)
             for k,arr in gg.items():
                 for v in arr:
                     v[0]=[ int(i*100) for i in v[0] ]
@@ -127,6 +118,7 @@ class Geom():
                     depth= v[1][1]-v[0][1]
                     height=v[1][2]-v[0][2]
                     data.append(self._prepare_geom_record(k,v,width,depth,height,floor))
+        self.s.query("CREATE TABLE aamks_geom('name','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z')")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
     def _invert_y(self):# {{{
@@ -218,6 +210,7 @@ class Geom():
             self._id2compa_name[v['global_type_id']]=v['name']
             self._id2compa_name[self.outside_compa]='outside'
 
+        self.s.query("CREATE TABLE id2compa(json)")
         self.s.query('INSERT INTO id2compa VALUES (?)', (json.dumps(self._id2compa_name),))
 # }}}
     def _add_names_to_vents_from_to(self):# {{{
@@ -448,6 +441,7 @@ class Geom():
             values[floor]=[]
             for b in boxen:
                 values[floor].append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
+        self.s.query("CREATE TABLE obstacles(json)")
         self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(values),))
 # }}}
     def _assert_faces_ok(self):# {{{
@@ -467,25 +461,10 @@ class Geom():
             if i['global_type_id'] not in all_interected_room:
                 self.make_vis('Room without door', i['global_type_id'], 'COMPA')
 # }}}
-    def _save(self):# {{{
-        ''' Geometry will be written to geom.json and passed to workers. '''
-
-        compas={}
-        for floor in self.floors:
-            compas[floor]=self.s.query('SELECT name, type_pri, type_sec, type_tri, x0, y0, z0, x1, y1, z1, width, depth, height, center_x, center_y, center_z, vent_from_name, vent_to_name, how_much_open FROM aamks_geom WHERE floor=? ', (floor,))
-
-        dump_objects=OrderedDict()
-        dump_objects['geom']=compas
-
-        self.json.write(dump_objects, "{}/geom.json".format(os.environ['AAMKS_PROJECT']))
-# }}}
 
     def make_vis(self, title, faulty_id='', type_pri='HVENT', floor=1):# {{{
-        ''' This method is for visualizing both errors and just how things look. 
-        First we need to self._save() data to intermediate geom.json file. 
+        ''' This method is for visualizing both errors and just how things look. '''
 
-        '''
-        self._save()
         if faulty_id != '':
             r=self.s.query("SELECT name,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
             Vis(r['floor'], r['name'], 'image', "<ered>Fatal: {}</ered>".format(title))

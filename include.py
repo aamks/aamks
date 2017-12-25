@@ -79,6 +79,23 @@ class Sqlite(): # {{{
         print("dump() from caller: {}".format(inspect.stack()[1][3]))
         for i in self.query('SELECT * FROM aamks_geom order by floor,type_pri,global_type_id'):
             print(i)
+
+    def dumpall(self):
+        ''' Remember to add all needed sqlite tables here '''
+        print("dump() from caller: {}".format(inspect.stack()[1][3]))
+        for i in ('aamks_geom', 'floors', 'obstacles', 'id2compa', 'door_intersections', 'graph'):
+            try:
+                print("\n=======================")
+                print("table:", i)
+                print("=======================\n")
+                z=self.query("SELECT * FROM {}".format(i))
+                try:
+                    z=json.loads(z[0]['json'])
+                except:
+                    pass
+                Dump(z)
+            except:
+                pass
 # }}}
 class Psql(): # {{{
     def __init__(self):

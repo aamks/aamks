@@ -41,7 +41,7 @@ class Path():
         for v in self.s.query("select * from aamks_geom where type_tri='DOOR'"):
             door_intersections[id2compa_name[str(v['vent_from'])]].append(v['name'])
             door_intersections[id2compa_name[str(v['vent_to'])]].append(v['name'])
-        self.s.query("CREATE TABLE door_intersections(intersections)")
+        self.s.query("CREATE TABLE door_intersections(json)")
         self.s.query("INSERT INTO door_intersections VALUES (?)", (json.dumps(door_intersections),))
         return door_intersections
 # }}}
@@ -83,7 +83,7 @@ class Path():
                 self._network_xpaths[k] = v
 
         for k, v in nx.shortest_path_length(G, target='outside', weight='weight').items():
-            self._network_xpaths_lengths[k] = v
+            self._network_xpaths_lengths[k] = int(v)
 # }}}
     def _assert_outside_available(self):# {{{
         ''' Each door must appear as a key in self._network_xpaths[k]. '''
@@ -117,7 +117,12 @@ class Path():
 # }}}
 
     def _save(self):# {{{
-        ''' Save graph data to graph.json. '''
-        f="{}/graph.json".format(os.environ['AAMKS_PROJECT'])
-        self.json.write(OrderedDict([ ('network_xpaths_lengths',self._network_xpaths_lengths), ('graph_coords_seq',self._graph_coords_seq), ('graph_rooms_seq',self._graph_rooms_seq)  ]) , f)
+        ''' Save graph data to sqlite '''
+        z=OrderedDict()
+        z['network_xpaths_lengths']=self._network_xpaths_lengths
+        z['graph_coords_seq']=self._graph_coords_seq
+        z['graph_rooms_seq']=self._graph_rooms_seq
+
+        self.s.query("CREATE TABLE graph(json)")
+        self.s.query("INSERT INTO graph VALUES (?)", (json.dumps(z),))
 # }}}
