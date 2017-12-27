@@ -1,2 +1,3 @@
+* make gearman report tracebacks via email (problem that this user is restricted)
 * dump sql to jsons inside vis/ ? 
 * prepare vis/anims.json (translate, scale)

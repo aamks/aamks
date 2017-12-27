@@ -147,13 +147,12 @@ class OnEnd():
         if os.environ['AAMKS_USE_GEARMAN']=='0':
             return
 
-
         si=SimIterations(self.conf['GENERAL']['PROJECT_NAME'], self.conf['GENERAL']['NUMBER_OF_SIMULATIONS'])
+        project=self.conf['GENERAL']['PROJECT_NAME']
         for i in range(*si.get()):
             worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-            gearman="gearman -f aRun http://{}/users{} &".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""))
+            gearman="gearman -f aRun 'http://{}/users{} {} &'".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""), project)
             os.system(gearman)
-            #print(gearman)
 # }}}
     def _visualize(self):# {{{
         Vis(1, None, '1.anim.zip', "evac 1", (3000,1500))

@@ -14,6 +14,7 @@ from numpy.random import choice
 from math import sqrt
 import itertools
 from geom.inkscapereader import InkscapeReader
+from include import SendMessage
 from include import Sqlite
 from include import Json
 from include import Dump as dd

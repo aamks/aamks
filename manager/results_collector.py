@@ -7,7 +7,7 @@ from include import Sqlite
 from collections import OrderedDict
 
 class ResultsCollector():
-    def __init__(self):# {{{
+    def __init__(self, host, json_file, sim_id):# {{{
         '''
         1. aamksrun makes gearman pass these jobs to workers: 
             /usr/local/aamks/tests/worker.py
@@ -16,14 +16,18 @@ class ResultsCollector():
             * download results.json with configuration to workers/123/report_123.json
             * download animation.zip to workers/123/123.anim.zip
         '''
-        self._dest_dir="{}/workers/{}".format(os.environ['AAMKS_PROJECT'], sys.argv[3])
-        self._json_file="{}/report_{}.json".format(self._dest_dir, sys.argv[3])
+        self.host=host
+        self.json_file=json_file
+        self.sim_id=sim_id
+
+        self._dest_dir="{}/workers/{}".format(os.environ['AAMKS_PROJECT'], self.sim_id)
+        self._dest_json="{}/report_{}.json".format(self._dest_dir, self.sim_id)
         self.json=Json()
         self._results_json()
         self._animation()
 # }}}
     def _results_json(self):# {{{
-        Popen(["scp", "{}:{}".format(sys.argv[1], sys.argv[2]), self._json_file]).wait()
+        Popen(["scp", "{}:{}".format(self.host, self.json_file), self._dest_json]).wait()
 # }}}
     def _fire_origin_coords(self, sim_id):# {{{
         data=self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], sim_id))
@@ -34,8 +38,8 @@ class ResultsCollector():
         return (z['center_x'], z['center_y'])
 # }}}
     def _animation(self):# {{{
-        data=self.json.read(self._json_file)
-        Popen(["scp", "{}:{}".format(sys.argv[1], data['animation']), self._dest_dir])
+        data=self.json.read(self._dest_json)
+        Popen(["scp", "{}:{}".format(self.host, data['animation']), self._dest_dir])
 
         self.jsonOut=OrderedDict()
         self.jsonOut['title']=data['sim_id']
@@ -55,4 +59,14 @@ class ResultsCollector():
         self.json.write(z, anims_master)
 # }}}
 
-ResultsCollector()
+try:
+    host=sys.argv[1]
+    json_file=sys.argv[2]
+    sim_id=sys.argv[3]
+except:
+    ''' Testing without gearman. Make sure workers/1/ exist and contains evac and cfast jsons. '''
+    host="localhost"
+    json_file="/home/aamks/simple/report_1.json"
+    sim_id="1"
+
+ResultsCollector(host,json_file,sim_id)

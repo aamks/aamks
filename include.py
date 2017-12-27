@@ -5,8 +5,15 @@ import sqlite3
 import psycopg2
 import inspect
 import json
+from subprocess import Popen,PIPE
 
-
+class SendMessage:# {{{
+    def __init__(self,msg):
+        try:
+            Popen("printf '{}' | {}".format(msg, os.environ['AAMKS_MESSENGER']), shell=True)
+        except:
+            pass
+# }}}
 class Dump():# {{{
     def __init__(self,struct):
         '''debugging function, much like print but handles various types better'''
