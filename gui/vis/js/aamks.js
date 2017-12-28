@@ -6,7 +6,8 @@
 // 1. init/init.py creates master.html and attaches js/
 // 2. First we read anims.json for a list of registered visualizations
 // 3. We choose a registered animation and read first json, e.g. floor_1.json
-// 4. anims.json has "anim_json" key which can be empty or point to e.g. 1.anim.zip
+// 4. anims.json has "anim" key which can be empty or point to a directory, e.g 83/
+//		-- we will then get ../83/anim.zip
 //
 // Animations are frames for t0, t1, tN. Each frame contains all agents information in a vector:
 // 
@@ -14,7 +15,6 @@
 //     agentX , agentY , headingX , headingY , FED: N|L|M|H , opacity
 //}}}
 
-// current_project/vis/anims.json
 var scale=1;
 var fireScale;
 var intervalId;
@@ -81,40 +81,38 @@ function showStaticImage(chosenAnim) {
 	// After we read a record from anims.json we reset the current visualization and setup a new one.
 	// We can only start animation after we are done with static rooms, doors etc.
 	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
-	$.getJSON("static.json", function(data) {
-	// TODO: $.getJSON(chosenAnim["geom_json"], function(data) { "floor_1.json"
+	$.getJSON("static.json", function(dstatic) {
+		var floor=chosenAnim["floor"];
+		var newScale=dstatic[floor]['meta']['scale'];
+		view.scale(newScale/scale);  
+		scale=newScale;
+		view.center = new Point(dstatic[floor]['meta']['translate']); 
+
 		$("vis-title").html(chosenAnim['title']);
 		$("sim-time").html(animTimeFormat());
 		burningFireLocation=chosenAnim['fire_origin']
-		wallsSize=Math.round(2/chosenAnim["scale"]);
-		ballsSize=Math.round(5/chosenAnim["scale"]);
-		velocitiesSize=Math.round(1/chosenAnim["scale"]);
+		wallsSize=Math.round(2/scale);
+		ballsSize=Math.round(5/scale);
+		velocitiesSize=Math.round(1/scale);
 		doorsSize=2*wallsSize;
 
-        // temp
-        // wallsSize=0;
-        // doorsSize=0;
-        //labelsSize=0;
-
-		rooms=data.rooms;
-		doors=data.doors;
-		obstacles=data.obstacles;
-        paperjsExtras=data.paperjs_extras;
+		console.log(dstatic);
+		rooms=dstatic[floor].rooms;
+		doors=dstatic[floor].doors;
+		obstacles=dstatic[floor].obstacles;
+        paperjsExtras=dstatic[floor].paperjs_extras;
 		
-		view.scale(chosenAnim["scale"]/scale);  
-		scale=chosenAnim["scale"];
-		view.center = new Point(chosenAnim["translate"]); 
 		makeAnimationControls();
 		makeSetupBoxInputs();
 		makeColors();
-		makeHighlightGeoms(data);
+		makeHighlightGeoms(dstatic[floor]);
 
 		listenEvents();
 		resetCanvas();
 
 		if(chosenAnim["highlight_geom"]!=null) { highlightGeom(chosenAnim["highlight_geom"]); }
 		
-		if(chosenAnim["anim_json"]!='') { 
+		if(chosenAnim["anim"]!='') { 
 			showAnimation(chosenAnim);
 		}
 
@@ -125,7 +123,7 @@ function showAnimation(chosenAnim) {
 	// After static data is loaded to paperjs we can run animations.
 	// 0.000001 & friends prevent divisions by 0.
 	var promise = new JSZip.external.Promise(function (resolve, reject) {
-		JSZipUtils.getBinaryContent(chosenAnim["anim_json"], function(err, data) {
+		JSZipUtils.getBinaryContent("../"+chosenAnim["anim"]+"/anim.zip", function(err, data) {
 			if (err) {
 				reject(err);
 			} else {

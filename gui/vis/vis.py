@@ -20,8 +20,9 @@ class Vis():
     def __init__(self,highlight_geom,src='image',title='',fire_origin=[]):# {{{
         ''' 
         Html canvas module for src=image (read from sqlite geoms) or
-        src=/path/to/animation (animate evacuues read from evac's json).
-        src=image is how we ignore all aspects of animation. 
+        src=animation_directory in workers/ directory. We will then search for
+        e.g. workers/85/anim.zip file. src=image is how we ignore all aspects
+        of animation. 
         '''
 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -33,7 +34,7 @@ class Vis():
         self.src=src
 
         self._static=OrderedDict()
-        self._js_make_floors()
+        self._js_make_floors_and_meta()
         self._js_make_rooms()
         self._js_make_doors()
         self._js_make_obstacles()
@@ -42,15 +43,14 @@ class Vis():
         self.vis_dir="{}/workers/vis".format(os.environ['AAMKS_PROJECT']) 
         self._save()
 # }}}
-    def _js_make_floors(self):# {{{
-        '''
-        1: [('meta', {'width': 5004 , 'animation_translate': [3502 , 500] , ... })]
-        2: [('meta', {'width': 5004 , 'animation_translate': [3502 , 0]   , ... })]
-        '''
+    def _js_make_floors_and_meta(self):# {{{
+        ''' Animation meta tells how to scale and translate canvas view '''
         
         for floor,meta in json.loads(self.s.query("SELECT * FROM floors")[0]['json']).items():
             self._static[floor]=OrderedDict()
-            self._static[floor]['meta']=OrderedDict(meta)
+            self._static[floor]['meta']=OrderedDict()
+            self._static[floor]['meta']['scale']=meta['animation_scale']
+            self._static[floor]['meta']['translate']=meta['animation_translate']
 # }}}
     def _js_make_rooms(self):# {{{
         ''' Data for rooms. '''
@@ -115,22 +115,22 @@ class Vis():
         records=[]
         for floor in self._static.keys():
             anim_record=OrderedDict()
-            if self.src=='image':
-                anim_record['anim_json']=''
-            else:
-                anim_record['anim_json']="../{}".format(self.src)
-
-            anim_record['title']=self.title
+            anim_record['sort_id']=0
+            anim_record['title']="{}, f{}".format(self.title, floor)
             anim_record['floor']=floor
             anim_record['fire_origin']=self.fire_origin
             anim_record['highlight_geom']=self.highlight_geom
+            if self.src=='image':
+                anim_record['anim']=''
+            else:
+                anim_record['anim']="{}".format(self.src)
+
             records.append(anim_record)
 
         try:
             z=self.json.read("{}/anims.json".format(self.vis_dir))
         except:
             z=[]
-        z.append(records)
-        dd(records)
+        z+=records
         self.json.write(z, "{}/anims.json".format(self.vis_dir))
 # }}}

@@ -137,7 +137,7 @@ class OnEnd():
         self.p=Psql()
         self._gearman_register_results_collector()
         self._gearman_register_works()
-        self._visualize()
+        self._visualize_demo()
 # }}}
     def _gearman_register_results_collector(self):# {{{
         ''' 
@@ -160,6 +160,10 @@ class OnEnd():
             gearman="gearman -f aRun 'http://{}/users{} {} &'".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""), project)
             os.system(gearman)
 # }}}
-    def _visualize(self):# {{{
-        Vis(None, 'demo.anim.zip', "demo", (3000,1500))
+    def _visualize_demo(self):# {{{
+        demo_dir="{}/workers/demo".format(os.environ['AAMKS_PROJECT'])
+        os.makedirs(demo_dir, exist_ok=True)
+        shutil.copyfile("{}/examples/demo/anim.zip".format(os.environ['AAMKS_PATH']), "{}/anim.zip".format(demo_dir))
+        shutil.copyfile("{}/examples/demo/evac.json".format(os.environ['AAMKS_PATH']), "{}/evac.json".format(demo_dir))
+        Vis(None, "demo", "demo", (3000,1500))
 # }}}

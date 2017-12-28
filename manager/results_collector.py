@@ -18,7 +18,7 @@ try:
             2. Worker calls gearman server aOut function
             3. This file implements gearman's aOut function:
                 * download results.json with configuration to workers/123/report_123.json
-                * download animation.zip to workers/123/123.anim.zip
+                * download animation.zip to workers/123/anim.zip
             '''
             self.host=host
             self.json_file=json_file
@@ -26,7 +26,7 @@ try:
             self.floor=floor
 
             self._dest_dir="{}/workers/{}".format(os.environ['AAMKS_PROJECT'], self.sim_id)
-            self._dest_json="{}/report_{}.json".format(self._dest_dir, self.sim_id)
+            self._dest_json="{}/report.json".format(self._dest_dir)
             self.json=Json()
             self._results_json()
             self._animation()
@@ -44,14 +44,15 @@ try:
 # }}}
         def _animation(self):# {{{
             data=self.json.read(self._dest_json)
-            Popen(["scp", "{}:{}".format(self.host, data['animation']), self._dest_dir])
+            Popen(["scp", "{}:{}".format(self.host, data['animation']), "{}/anim.zip".format(self._dest_dir)])
 
             self.jsonOut=OrderedDict()
-            self.jsonOut['anim_json']="../{}.anim.zip".format(data['sim_id'])
-            self.jsonOut['title']=data['sim_id']
+            self.jsonOut['sort_id']=int(sim_id)
+            self.jsonOut['title']="sim{}, f{}".format(data['sim_id'], self.floor)
             self.jsonOut['floor']=self.floor
             self.jsonOut['fire_origin']=self._fire_origin_coords(data['sim_id'])
-            self.jsonOut['highlight_geom']=''
+            self.jsonOut['highlight_geom']=None
+            self.jsonOut['anim']="{}".format(data['sim_id'])
 
             anims_master="{}/workers/vis/anims.json".format(os.environ['AAMKS_PROJECT'])
             try:
