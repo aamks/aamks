@@ -9,10 +9,14 @@ from subprocess import Popen,PIPE
 
 class SendMessage:# {{{
     def __init__(self,msg):
-        try:
-            Popen("printf '{}' | {}".format(msg, os.environ['AAMKS_MESSENGER']), shell=True)
-        except:
-            pass
+        with open("/tmp/aamks.log", "a") as f: 
+            f.write(msg+"\n")
+        users=json.loads(os.environ['AAMKS_NOTIFY'])
+        for i in users:
+            user_srv=i[0]
+            user,server=user_srv.split("@")
+            passwd=i[1]
+            Popen("printf '{}' | sendxmpp -r aamks -d -t -u {} -p {} -j {} {} > /dev/null 2>/dev/null &".format(msg, user, passwd, server, user_srv), shell=True)
 # }}}
 class Dump():# {{{
     def __init__(self,struct):
@@ -97,7 +101,7 @@ class Sqlite(): # {{{
                 print("=======================\n")
                 z=self.query("SELECT * FROM {}".format(i))
                 try:
-                    z=json.loads(z[0]['json'])
+                    z=json.loads(z[0]['json'], object_pairs_hook=OrderedDict)
                 except:
                     pass
                 Dump(z)

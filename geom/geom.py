@@ -14,7 +14,6 @@ from numpy.random import choice
 from math import sqrt
 import itertools
 from geom.inkscapereader import InkscapeReader
-from include import SendMessage
 from include import Sqlite
 from include import Json
 from include import Dump as dd
@@ -74,7 +73,7 @@ class Geom():
             animation_scale=round(min(1600/width,800/height)*0.95, 2) # 0.95 is canvas padding
             animation_translate=[ int(maxx-0.5*width), int(maxy-0.5*height) ]
 
-            values[floor]=(width , height , minx , miny , maxx , maxy , animation_scale , animation_translate[0] , animation_translate[1])
+            values[floor]=OrderedDict([('width', width) , ('height', height) , ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy) , ('animation_scale', animation_scale), ('animation_translate',  animation_translate)])
         self.s.query("CREATE TABLE floors(json)")
         self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(values),))
 # }}}
@@ -414,7 +413,7 @@ class Geom():
         '''
 
         wall_width=4
-        values=OrderedDict()
+        rectangles=OrderedDict()
         for floor in self.floors:
             walls=[]
             for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
@@ -439,11 +438,32 @@ class Geom():
                 elif isinstance(wall, Polygon):
                     boxen.append(wall)
 
-            values[floor]=[]
+            obstacles=[]
             for b in boxen:
-                values[floor].append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
+                obstacles.append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
+            rectangles[floor]=self._obstacles_into_rectangles(obstacles)
         self.s.query("CREATE TABLE obstacles(json)")
-        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(values),))
+        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(rectangles),))
+# }}}
+    def _obstacles_into_rectangles(self,obstacles):# {{{
+        ''' 
+        Transform 4-points-obstacles:
+            [(x0,y0), (x1,y1), (x2,y2), (x3,y3)] 
+        into rectangles:
+            [(x0,y0,width,height)]
+        '''
+
+        rectangles=[]
+        for i in obstacles:
+            k=list(zip(*i))
+            coords=OrderedDict()
+            coords["x0"]=min(k[0])
+            coords["y0"]=min(k[1]) 
+            coords["width"]=max(k[0]) - min(k[0])
+            coords["depth"]=max(k[1]) - min(k[1]) 
+            rectangles.append(coords)
+
+        return rectangles
 # }}}
     def _assert_faces_ok(self):# {{{
         ''' Are all hvents' faces fine? '''
@@ -468,9 +488,9 @@ class Geom():
 
         if faulty_id != '':
             r=self.s.query("SELECT name,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
-            Vis(r['floor'], r['name'], 'image', "<ered>Fatal: {}</ered>".format(title))
+            Vis(r['name'], 'image', "<ered>Fatal: {}</ered>".format(title))
             print("Fatal: {}: {}".format(r['name'], title))
             sys.exit()
         else:
-            Vis(floor, None, 'image', title)
+            Vis(None, 'image', title)
 # }}}

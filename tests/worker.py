@@ -12,7 +12,7 @@ import traceback
 
 try:
     class WorkerReport():
-        def __init__(self, sim_id, project, animation_data, psql_data): # {{{
+        def __init__(self, sim_id, project,floor, animation_data, psql_data ): # {{{
             ''' 
             Runs on a worker. Write /home/aamks/project/sim_id.json on each aRun
             completion. Then inform gearman server to scp to itself
@@ -28,8 +28,21 @@ try:
             except:
                 pass
             self.sim_id=sim_id
-            self._write_report(psql_data)
+            self.floor=floor
             self._write_animation(animation_data)
+            self._write_report(psql_data)
+        # }}}
+        def _write_animation(self, animation_data):# {{{
+            ''' 
+            Raw data comes as an argument. We create /home/aamks/1.anim.zip
+            with anim.json inside. 
+            '''
+
+            zf = zipfile.ZipFile("{}/{}.anim.zip".format(self.project_dir, self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
+            try:
+                zf.writestr("anim.json", json.dumps(animation_data))
+            finally:
+                zf.close()
         # }}}
         def _write_report(self, psql_data):# {{{
             j=Json()
@@ -41,16 +54,9 @@ try:
             report['psql']=psql_data
             json_file="{}/report_{}.json".format(self.project_dir, self.sim_id)
             j.write(report, json_file)
-            Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], host, json_file, self.sim_id), shell=True)
+            Popen("gearman -h {} -f aOut '{} {} {} {}'".format(os.environ['AAMKS_SERVER'], host, json_file, sim_id, floor ), shell=True)
         # }}}
-        def _write_animation(self, animation_data):# {{{
-            zf = zipfile.ZipFile("{}/{}.anim.zip".format(self.project_dir, self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
-            try:
-                zf.writestr("anim.json", json.dumps(animation_data))
-            finally:
-                zf.close()
-        # }}}
-    def example_animation_data(sim_id):# {{{
+    def example_animation_data():# {{{
         ''' TODO: temporary. Should come as argument in the future '''
         animation_data=dict()
         animation_data['data']=[
@@ -61,6 +67,7 @@ try:
                 [ [ 6000 , 1150 , 200 , 200  , "N" , 0 ] , [ 0    , 0    , 200 , 200 , "N" , 0 ] ] ,
                 [ [ 0    , 0    , 200 , 200  , "N" , 0 ] , [ 0    , 0    , 200 , 200 , "N" , 0 ] ] 
             ]            
+        animation_data['floor']="1"
         animation_data['frame_rate']=2
         animation_data['project_name']=project
         animation_data['simulation_id']=sim_id
@@ -69,25 +76,23 @@ try:
         return animation_data
 # }}}
 
-    sim_id=os.path.basename(sys.argv[1])
-    project=sys.argv[2]
     try:
         sim_id=os.path.basename(sys.argv[1])
         project=sys.argv[2]
-        animation_data=sys.argv[3]
-        psql_data=sys.argv[4]
     except:
         ''' Testing without gearman. '''  
         sim_id="1"
         project="simple"
-        animation_data=example_animation_data(sim_id)
-        psql_data="psql report"
 
-    report=WorkerReport(sim_id, project, animation_data, psql_data)
+    # todo: animation_data and psql_data will be produced in a-evac
+    floor="1"
+    animation_data=example_animation_data()
+    psql_data="psql report"
+
+    report=WorkerReport(sim_id,project,floor,animation_data,psql_data)
 
 except:
-    t=traceback.format_exc()
-    with open("/tmp/aamks_fail.log", "w") as f: 
-        f.write(t)
-    SendMessage('err')
+    t="In test/worker.py:\n"
+    t+=traceback.format_exc()
+    SendMessage(t)
     raise Exception("worker fail")

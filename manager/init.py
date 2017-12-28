@@ -26,6 +26,7 @@ class OnInit():
         self._info()
 # }}}
     def _info(self):# {{{
+        print("Project name:", self.conf['GENERAL']['PROJECT_NAME'])
         Popen('env | grep AAMKS', shell=True)
 # }}}
     def _clear_sqlite(self):# {{{
@@ -35,11 +36,16 @@ class OnInit():
             pass
 # }}}
     def _create_iterations_sequence(self):# {{{
-        ''' For a given project we may run simulation 0 to 999. Then we may wish to run 100 simulations more and have them numbered here: from=1000 to=1099
-        These from and to numbers are unique for the project and are used as rand seeds in later aamks modules. 
-        This is similar, but distinct from SimIterations() - we are creating the sequence, and the later reads the sequence from/to.
-        Remember that range(1,4) returns 1,2,3; hence SELECT max(iteration)+1
+        ''' 
+        For a given project we may run simulation 0 to 999. Then we may wish to
+        run 100 simulations more and have them numbered here: from=1000 to=1099
+        These from and to numbers are unique for the project and are used as
+        rand seeds in later aamks modules. This is similar, but distinct from
+        SimIterations() - we are creating the sequence, and the later reads the
+        sequence from/to. Remember that range(1,4) returns 1,2,3; hence SELECT
+        max(iteration)+1 
         '''
+
         project=self.conf['GENERAL']['PROJECT_NAME']
         how_many=self.conf['GENERAL']['NUMBER_OF_SIMULATIONS']
 
@@ -155,8 +161,5 @@ class OnEnd():
             os.system(gearman)
 # }}}
     def _visualize(self):# {{{
-        Vis(1, None, '1.anim.zip', "evac 1", (3000,1500))
-        Vis(1, None, '2.anim.zip', "evac 2", (4000,1600))
-        Vis(1, None, '3.anim.zip', "evac 3" )
-        Vis(1, None, '4.anim.zip', "evac 4" )
+        Vis(None, 'demo.anim.zip', "demo", (3000,1500))
 # }}}

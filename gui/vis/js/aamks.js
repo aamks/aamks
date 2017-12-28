@@ -81,7 +81,8 @@ function showStaticImage(chosenAnim) {
 	// After we read a record from anims.json we reset the current visualization and setup a new one.
 	// We can only start animation after we are done with static rooms, doors etc.
 	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
-	$.getJSON(chosenAnim["geom_json"], function(data) {
+	$.getJSON("static.json", function(data) {
+	// TODO: $.getJSON(chosenAnim["geom_json"], function(data) { "floor_1.json"
 		$("vis-title").html(chosenAnim['title']);
 		$("sim-time").html(animTimeFormat());
 		burningFireLocation=chosenAnim['fire_origin']

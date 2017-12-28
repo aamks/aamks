@@ -9,22 +9,21 @@ The script create.sh will create the complete database.
 
 ===================== NOTIFICATIONS ========================
 
-The AAMKS_MESSENGER is for gearman and other notifications. These localhost
-mailservers are troublesome, therefore the user must provide something himself.
-The include.py tries to deliver messages based on this schema:
+! aamks manager needs to be restarted in order to reread ~/.bashrc !
 
-AAMKS_MESSENGER="mutt -s 'aamks' you@gmail.com" # in bashrc
-Popen("printf '{}' | {}".format(msg, os.environ['AAMKS_MESSENGER']), shell=True)
-    
-    which results in:
+AAMKS_NOTIFY is for gearman and other notifications. Emails notifications are
+troublesome (local maileserver? / spam / google's authorizations) therefore we
+notify via jabber. Just install xabber or other client on your smarphone / your
+desktop. AAMKS_NOTIFY is a json object:
 
-prinf 'some message' | mutt -s 'aamks' you@gmail.com
+AAMKS_NOTIFY='[[ "you@xabber.com", "password1" ], [ "someone@jabber.at", "password2" ]]'
+
 
 ===================== BASHRC ========================
 
-You should setup (modify) these in ~/.bashrc: 
+You should setup these variables in ~/.bashrc: 
 
-AAMKS_MESSENGER="mutt -s 'aamks' you@gmail.com"
+AAMKS_NOTIFY='[[ "you@xabber.com", "password1" ], [ "someone@jabber.at", "password2" ]]'
 AAMKS_TESTING=0
 AAMKS_PATH=/usr/local/aamks
 AAMKS_SERVER=127.0.0.1

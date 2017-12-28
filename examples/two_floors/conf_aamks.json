@@ -1,6 +1,6 @@
 {
     "GENERAL": {
-        "PROJECT_NAME": "simple",
+        "PROJECT_NAME": "two_floors",
 		"INPUT_GEOMETRY": "cad.json",
         "NUMBER_OF_SIMULATIONS": 1,
         "SIMULATION_TIME": 600,
