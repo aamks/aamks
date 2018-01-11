@@ -1,1 +1,15 @@
-* continue on vis/anims.json 
+* Distribution of total number of evacuees
+* FDS: change randomization of (x,y) for evacuees origins inside polygons 
+* FDS: prepare obsts:
+	[
+		{"x0":1, "y0":2, "width":10, "depth":20 } ,
+		{"x0":1, "y0":2, "width":10, "depth":20 }
+	]
+
+* FDS:	conf: "INPUT_GEOMETRY_TYPE": 
+* Exit doors as a separate key in cad.json
+* Non-orthogonal polygons + obsts for them
+
+Karol:
+* Global change from rectangles to polygons
+* Fix paperjs_extras

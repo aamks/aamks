@@ -49,6 +49,7 @@ class Geom():
         self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
+        self.s.dumpall()
 # }}}
 
     def _floors_details(self):# {{{
