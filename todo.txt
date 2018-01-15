@@ -11,5 +11,5 @@
 * Non-orthogonal polygons + obsts for them
 
 Karol:
-* Global change from rectangles to polygons
+* Add polygons support
 * Fix paperjs_extras
