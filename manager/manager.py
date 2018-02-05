@@ -5,7 +5,6 @@ from subprocess import Popen,PIPE
 import sqlite3
 import json
 import sys
-sys.path.append(os.environ['AAMKS_PATH'])
 import argparse
 from include import Sqlite
 from include import Json
@@ -52,7 +51,7 @@ class Manager():
         self._access_hosts()
         for i in self.s.query("SELECT host FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
             if os.environ['AAMKS_TESTING']=='1':
-                Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/evac/worker.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
+                Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/tests/worker.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
             else:
                 Popen("ssh -f -o ConnectTimeout=3 {} \" nohup gearman -w -h {} -f aRun xargs python3 {}/evac/run.py > /dev/null 2>&1 &\"".format(i['host'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
 

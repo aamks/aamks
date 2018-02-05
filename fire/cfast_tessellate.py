@@ -5,6 +5,7 @@ import numpy as np
 import os
 import sys
 import inspect
+import json
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from numpy.random import randint
 from include import Sqlite
@@ -14,11 +15,11 @@ from include import Dump as dd
 # }}}
 
 class CfastTessellate():
-    def __init__(self):
+    def __init__(self): # {{{
         ''' 
         Divide space into cells for smoke conditions queries asked by evacuees.
         A cell may be a square or a rectangle. First divide space into squares
-        of self._side. Iterate over squares and if any square is crossed by an
+        of self._square_side. Iterate over squares and if any square is crossed by an
         obstacle divide this square further into rectangles. 
         
         In the final structure of tesselation.json we encode each cell.
@@ -36,25 +37,30 @@ class CfastTessellate():
 
         '''
 
-        self._side=400
+        self._square_side=300
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.json=Json() 
-        self._floor=1 
-        self._floor_dimensions()
-        self._init_space() 
-        self._intersect_space() 
-        self._optimize()
-        self._plot_space() 
-        self._save()
+        try:
+            self.s.query("DROP TABLE tessellation")
+        except:
+            pass
+        self.s.query("CREATE TABLE tessellation(json)")
 
-    def _floor_dimensions(self):# {{{
-        minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (self._floor,))[0]['minx']
-        miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (self._floor,))[0]['miny']
-        maxx=self.s.query("SELECT max(x1) AS maxx FROM aamks_geom WHERE floor=?", (self._floor,))[0]['maxx']
-        maxy=self.s.query("SELECT max(y1) AS maxy FROM aamks_geom WHERE floor=?", (self._floor,))[0]['maxy']
-        self._floor_dim=dict([ ('width', maxx-minx), ('height', maxy-miny), ('maxx', maxx), ('maxy', maxy), ('minx', minx), ('miny', miny)  ])
+        self.json=Json() 
+        self._save=OrderedDict()
+        floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
+        for floor in floors.keys():
+            self._init_space(floor) 
+            self._intersect_space() 
+            self._optimize(floor)
+            self._plot_space() 
+        self._dbsave()
 # }}}
-    def _init_space(self):# {{{
+    def _init_space(self,floor):# {{{
+        ''' Divide floor into squares. Prepare empty rectangles placeholders. '''
+
+        floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
+        fdims=floors[floor]
+
         self.squares=OrderedDict()
         self.rectangles=OrderedDict()
         self.lines=[]
@@ -65,15 +71,14 @@ class CfastTessellate():
             self.lines.append(LineString([ Point(i['x1'],i['y1']), Point(i['x0'], i['y1'])] ))
             self.lines.append(LineString([ Point(i['x1'],i['y1']), Point(i['x1'], i['y0'])] ))
 
-        self._side
-        x=int(self._floor_dim['width']/self._side)+1
-        y=int(self._floor_dim['height']/self._side)+1
+        x=int(fdims['width']/self._square_side)+1
+        y=int(fdims['height']/self._square_side)+1
         for v in range(y):
             for i in range(x):
-                x_=self._floor_dim['minx']+self._side*i
-                y_=self._floor_dim['miny']+self._side*v
+                x_=fdims['minx']+self._square_side*i
+                y_=fdims['miny']+self._square_side*v
                 xy=(x_, y_)
-                self.squares[xy]=box(x_, y_, x_+self._side, y_+self._side)
+                self.squares[xy]=box(x_, y_, x_+self._square_side, y_+self._square_side)
                 self.rectangles[xy]=[]
 # }}}
     def _candidate_intersection(self,id_,points):# {{{
@@ -85,17 +90,25 @@ class CfastTessellate():
         the maxX (right) and maxY (top) edges. 
         '''
 
-        right_limit=id_[0]+self._side
-        top_limit=id_[1]+self._side
+        right_limit=id_[0]+self._square_side
+        top_limit=id_[1]+self._square_side
         for pt in list(zip(points.xy[0], points.xy[1])):
             if right_limit != pt[0] and top_limit != pt[1]:
                 self.rectangles[id_].append((int(pt[0]), int(pt[1])))
 # }}}
-    def _optimize(self):# {{{
+    def _optimize(self, floor):# {{{
         ''' 
         * self.squares (collection of shapely boxen) is not needed anymore
         * self.rectangles must have duplicates removed and must be sorted by x
         * xy_vectors must be of the form: [ [x0,x1,x2,x3], [y0,y1,y2,y3] ]. 
+
+        query_vertices are of the form:
+
+        square        : optimized rectangles 
+        (1000 , -1000): OrderedDict([('x' , (1000 , 1100)) , ('y' , (-1000 , -1000))])
+        (1400 , -1000): OrderedDict([('x' , (1400 , 1500)) , ('y' , (-1000 , -1000))])
+        (1800 , -1000): OrderedDict([('x' , (1800 , ))     , ('y' , (-1000 , ))])
+        (2200 , -1000): OrderedDict([('x' , (2200 , ))     , ('y' , (-1000 , ))])
         '''
 
         del(self.squares)
@@ -104,17 +117,22 @@ class CfastTessellate():
             rects.append(id_)
             self.rectangles[id_]=list(sorted(set(rects)))
 
-        self.query_vertices=OrderedDict()
+        query_vertices=OrderedDict()
         for id_,v in self.rectangles.items():
-            self.query_vertices[str(id_)]=OrderedDict()
+            query_vertices[str(id_)]=OrderedDict()
             xy_vectors=list(zip(*self.rectangles[id_]))
             try:
-                self.query_vertices[str(id_)]['x']=xy_vectors[0]
-                self.query_vertices[str(id_)]['y']=xy_vectors[1]
+                query_vertices[str(id_)]['x']=xy_vectors[0]
+                query_vertices[str(id_)]['y']=xy_vectors[1]
             except:
-                self.query_vertices[str(id_)]['x']=()
-                self.query_vertices[str(id_)]['y']=()
+                query_vertices[str(id_)]['x']=()
+                query_vertices[str(id_)]['y']=()
 
+        self._save[floor]=OrderedDict()
+        self._save[floor]['square_side']=self._square_side
+        self._save[floor]['query_vertices']=query_vertices
+
+# }}}
         #print("bytes", sys.getsizeof(self.rectangles))
 # }}}
     def _intersect_space(self):# {{{
@@ -131,6 +149,7 @@ class CfastTessellate():
         
 # }}}
     def _plot_space(self):# {{{
+        ''' Only for debugging '''
         z=OrderedDict()
 
         z['rectangles']=[]      # z['rectangles'].append( { "xy": (1000+i*40, 500+i) , "width": 20 , "depth": 100 , "strokeColor": "#fff" , "strokeWidth": 2 , "fillColor": "#f80", "opacity": 0.7 } )
@@ -142,7 +161,7 @@ class CfastTessellate():
         #for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY x0,y0"):
         #     z['rectangles'].append( { "xy": (i['x0'], i['y0']), "width": i['width'] , "depth": i['depth'] , "strokeColor": "#f00" , "strokeWidth": 10 , "fillColor": "none", "opacity": 0.4 } )
 
-        a=self._side
+        a=self._square_side
         for k,v in self.rectangles.items():
             z['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 5 , "opacity": 0.2 } )
             z['circles'].append(    { "xy": k, "radius": radius , "fillColor": "#fff", "opacity": 0.3 } )
@@ -154,10 +173,5 @@ class CfastTessellate():
         self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
         #print('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
-    def _save(self):# {{{
-        data=OrderedDict()
-        data['floor_dim']=self._floor_dim
-        data['side']=self._side
-        data['query_vertices']=self.query_vertices
-        self.json.write(data, "{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
-        # }}}
+    def _dbsave(self):
+        self.s.query('INSERT INTO tessellation VALUES (?)', (json.dumps(self._save),))

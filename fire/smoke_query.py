@@ -5,6 +5,7 @@ import re
 import os
 import sys
 import inspect
+import json
 import time
 import bisect
 from ast import literal_eval as make_tuple
@@ -16,7 +17,7 @@ from include import Dump as dd
 # }}}
 
 class SmokeQuery():
-    def __init__(self):
+    def __init__(self,floor):
         ''' 
         Fill each cell with smoke conditions. Then you can query an (x,y). 
         For any evacuee's (x,y) it will be easy to find the square he is in. If
@@ -27,7 +28,7 @@ class SmokeQuery():
         self.json = Json()
         self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        self._read_tessellation()
+        self._read_tessellation(floor)
         self._make_cell2compa()
         self._init_compa_conditions()
         self._cfast_headers()
@@ -40,19 +41,23 @@ class SmokeQuery():
              else:
                  print("CFAST not ready")
 
-    def _read_tessellation(self):# {{{
+    def _read_tessellation(self,floor):# {{{
         ''' 
         Python has this nice dict[(1,2)], but json cannot handle it. We have
         passed it as dict['(1,2)'] and know need to bring back from str to
         tuple.
         '''
 
-        f=self.json.read("{}/workers/tessellation.json".format(os.environ['AAMKS_PROJECT']))
-        self.side=f['side']
-        self.floor_dim=f['floor_dim']
-        self.query_vertices=OrderedDict()
-        for k,v in f['query_vertices'].items():
-            self.query_vertices[make_tuple(k)]=v
+        floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
+        self.floor_dim=floors[floor]
+
+        json_tessellation=json.loads(self.s.query("SELECT * FROM tessellation")[0]['json'])
+        tessellation=json_tessellation[floor]
+        self._square_side=tessellation['square_side']
+        self._query_vertices=OrderedDict()
+        for k,v in tessellation['query_vertices'].items():
+            self._query_vertices[make_tuple(k)]=v
+        dd(self._query_vertices)
 # }}}
     def _make_cell2compa_record(self,cell):# {{{
         try:
@@ -62,7 +67,7 @@ class SmokeQuery():
 # }}}
     def _make_cell2compa(self):#{{{
         self.cell2compa=OrderedDict()
-        for k,v in self.query_vertices.items():
+        for k,v in self._query_vertices.items():
             self._make_cell2compa_record(k)
             for pt in list(zip(v['x'], v['y'])):
                 self._make_cell2compa_record(pt)
@@ -176,16 +181,16 @@ class SmokeQuery():
         conditions from the cell. 
         '''
 
-        x=self.floor_dim['minx'] + self.side * int((q[0]-self.floor_dim['minx'])/self.side) 
-        y=self.floor_dim['miny'] + self.side * int((q[1]-self.floor_dim['miny'])/self.side)
+        x=self.floor_dim['minx'] + self._square_side * int((q[0]-self.floor_dim['minx'])/self._square_side) 
+        y=self.floor_dim['miny'] + self._square_side * int((q[1]-self.floor_dim['miny'])/self._square_side)
 
-        if len(self.query_vertices[x,y]['x'])==1:
+        if len(self._query_vertices[x,y]['x'])==1:
             return self._results(q, (x,y), time)
         else:
-            for i in range(bisect.bisect(self.query_vertices[(x,y)]['x'], q[0]),0,-1):
-                if self.query_vertices[(x,y)]['y'][i-1] < q[1]:
-                    rx=self.query_vertices[(x,y)]['x'][i-1]
-                    ry=self.query_vertices[(x,y)]['y'][i-1]
+            for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
+                if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
+                    rx=self._query_vertices[(x,y)]['x'][i-1]
+                    ry=self._query_vertices[(x,y)]['y'][i-1]
                     return self._results(q, (rx,ry), time)
         return self._results(q, (x,y), time) # outside!
 # }}}

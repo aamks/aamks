@@ -27,6 +27,7 @@ class Path():
         self._paths_as_coordinates()
         self._paths_as_rooms()
         self._save()
+        #self.s.dumpall()
 # }}}
 
     def _make_door_intersections(self):# {{{

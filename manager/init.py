@@ -2,7 +2,6 @@ from collections import OrderedDict
 from subprocess import Popen,PIPE
 import sys
 import os
-sys.path.append(os.environ['AAMKS_PATH'])
 import shutil
 from distutils.dir_util import copy_tree
 from include import Json

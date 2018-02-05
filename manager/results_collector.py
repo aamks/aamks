@@ -2,7 +2,6 @@ import os
 import sys
 import json
 from subprocess import Popen,PIPE
-sys.path.append(os.environ['AAMKS_PATH'])
 from include import Json
 from include import Sqlite
 from include import SendMessage

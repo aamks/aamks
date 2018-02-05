@@ -49,7 +49,7 @@ class Geom():
         self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
-        self.s.dumpall()
+        #self.s.dumpall()
 # }}}
 
     def _floors_details(self):# {{{
@@ -415,6 +415,8 @@ class Geom():
 
         wall_width=4
         rectangles=OrderedDict()
+        as_points=OrderedDict()
+        data=OrderedDict()
         for floor in self.floors:
             walls=[]
             for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
@@ -443,8 +445,11 @@ class Geom():
             for b in boxen:
                 obstacles.append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
             rectangles[floor]=self._obstacles_into_rectangles(obstacles)
+            as_points[floor]=obstacles
+            data['points']=as_points
+            data['named']=rectangles
         self.s.query("CREATE TABLE obstacles(json)")
-        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(rectangles),))
+        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
 # }}}
     def _obstacles_into_rectangles(self,obstacles):# {{{
         ''' 
@@ -460,6 +465,8 @@ class Geom():
             coords=OrderedDict()
             coords["x0"]=min(k[0])
             coords["y0"]=min(k[1]) 
+            coords["x1"]=max(k[0])
+            coords["y1"]=max(k[1]) 
             coords["width"]=max(k[0]) - min(k[0])
             coords["depth"]=max(k[1]) - min(k[1]) 
             rectangles.append(coords)

@@ -87,14 +87,14 @@ class Sqlite(): # {{{
         print(data)
 
     def dump(self):
-        print("dump() from caller: {}".format(inspect.stack()[1][3]))
+        print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         for i in self.query('SELECT * FROM aamks_geom order by floor,type_pri,global_type_id'):
             print(i)
 
     def dumpall(self):
         ''' Remember to add all needed sqlite tables here '''
-        print("dump() from caller: {}".format(inspect.stack()[1][3]))
-        for i in ('aamks_geom', 'floors', 'obstacles', 'id2compa', 'door_intersections', 'graph'):
+        print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
+        for i in ('aamks_geom', 'floors', 'obstacles', 'id2compa', 'door_intersections', 'graph', 'tessellation'):
             try:
                 print("\n=======================")
                 print("table:", i)
@@ -131,7 +131,7 @@ class Psql(): # {{{
     def dump(self):
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        print("\np.dump() from caller: {}".format(inspect.stack()[1][3]))
+        print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         for i in self.query("SELECT id,project,iteration,to_char(current_timestamp, 'Mon.DD HH24:MI'),data FROM simulations WHERE project=%s ORDER BY id", (self.conf['GENERAL']['PROJECT_NAME'],) ):
             print(i)
 
