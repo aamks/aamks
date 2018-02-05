@@ -1,7 +1,7 @@
 import warnings
 warnings.simplefilter('ignore', RuntimeWarning)
 import rvo2
-from Evacuees import Evacuees
+from evac.evacuees import Evacuees
 
 
 class EvacEnv:

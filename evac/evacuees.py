@@ -1,4 +1,4 @@
-from Evacuee import Evacuee
+from evac.evacuee import Evacuee
 
 
 class Evacuees:
