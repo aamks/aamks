@@ -36,7 +36,7 @@ class SmokeQuery():
              t = 20
              time.sleep(1)
              if self.read_cfast_records(t) == 1:
-                 print(self.get_conditions((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])), t))
+                 print(self.get_conditions((1, 1), t))
                  sys.exit()
              else:
                  print("CFAST not ready")

@@ -8,7 +8,6 @@ from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
 from include import Sqlite
 import time
-from os.path import expanduser
 import logging
 from urllib.request import urlopen, urlretrieve
 from include import Json
@@ -32,7 +31,7 @@ class Worker():
         self.start_time = time.time()
         self.error_main = 'Error occurred, see aamks.log file for details.'
 
-        os.chdir(expanduser("~"))
+        os.chdir('/home/aamks')
         logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
                             format='%(asctime)s %(levelname)s: %(message)s')
 
