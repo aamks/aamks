@@ -6,6 +6,7 @@ import sys
 from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
+from fire.smoke_query import SmokeQuery
 from include import Sqlite
 import time
 import logging
@@ -111,6 +112,9 @@ class Worker():
                 sys.exit(1)
 
         logging.info('Simulation finished with exit code 0')
+
+    def read_data_from_cfast(self):
+        sq = SmokeQuery(floor='1', path=self.vars['conf']['GENERAL']['WORKSPACE'])
 
     def create_geom_database(self):
         self.s = Sqlite("{}/aamks.sqlite".format(self.vars['conf']['GENERAL']['WORKSPACE']))
@@ -255,6 +259,7 @@ class Worker():
     def main(self):
         self.set_environment()
         self.run_cfast_simulations()
+        self.read_data_from_cfast()
         self.create_geom_database()
         self.create_evacuees()
         self.do_simulations()

@@ -17,7 +17,7 @@ from include import Dump as dd
 # }}}
 
 class SmokeQuery():
-    def __init__(self,floor):
+    def __init__(self, floor, path):
         ''' 
         Fill each cell with smoke conditions. Then you can query an (x,y). 
         For any evacuee's (x,y) it will be easy to find the square he is in. If
@@ -26,8 +26,8 @@ class SmokeQuery():
         ''' 
 
         self.json = Json()
-        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
+        self.s = Sqlite("{}/aamks.sqlite".format(path))
+        self.simulation_time = 100
         self._read_tessellation(floor)
         self._make_cell2compa()
         self._init_compa_conditions()
@@ -41,7 +41,7 @@ class SmokeQuery():
              else:
                  print("CFAST not ready")
 
-    def _read_tessellation(self,floor):# {{{
+    def _read_tessellation(self, floor):# {{{
         ''' 
         Python has this nice dict[(1,2)], but json cannot handle it. We have
         passed it as dict['(1,2)'] and know need to bring back from str to
@@ -49,7 +49,7 @@ class SmokeQuery():
         '''
 
         floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
-        self.floor_dim=floors[floor]
+        self.floor_dim = floors[floor]
 
         json_tessellation=json.loads(self.s.query("SELECT * FROM tessellation")[0]['json'])
         tessellation=json_tessellation[floor]
@@ -110,7 +110,7 @@ class SmokeQuery():
 
         self._compa_conditions = OrderedDict()
         for i in self.all_compas:
-            for t in range(0,self.conf['GENERAL']['SIMULATION_TIME']+10,10):
+            for t in range(0, self.simulation_time+10, 10):
                 self._compa_conditions[(i, t)] = OrderedDict([(x, None) for x in self.relevant_params])
         self._compa_conditions[('outside', 0)]=OrderedDict()
 # }}}

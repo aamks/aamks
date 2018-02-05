@@ -5,6 +5,14 @@ from evac.evacuees import Evacuees
 
 
 class EvacEnv:
+    config = dict()
+    config['TIME_STEP'] = 0.1
+    config['NEIGHBOR_DISTANCE'] = 80
+    config['MAX_NEIGHBOR'] = 5
+    config['TIME_HORIZON'] = 1
+    config['TIME_HORIZON_OBSTACLE'] = 0.05
+    config['RADIUS'] = 60
+
     def __init__(self, aamks_vars):
         self.evacuees = Evacuees
         self.max_speed = 0
@@ -23,10 +31,7 @@ class EvacEnv:
         self.fire_dto = None
         self.rset = 0
         self.per_9 = 0
-
-
-        self.config = aamks_vars['AAMKS_CONF']
-        self.general= aamks_vars['GENERAL']
+        self.general = aamks_vars['GENERAL']
 
         self.sim = rvo2.PyRVOSimulator(self.config['TIME_STEP'], self.config['NEIGHBOR_DISTANCE'],
                                        self.config['MAX_NEIGHBOR'], self.config['TIME_HORIZON'],
