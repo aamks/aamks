@@ -31,14 +31,14 @@ class SmokeQuery():
         self._make_cell2compa()
         self._init_compa_conditions()
         self._cfast_headers()
-        while 1:
-            t=20
-            time.sleep(1)
-            if self.read_cfast_records(t)==1:
-                print(self.get_conditions((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])), t))
-                sys.exit()
-            else:
-                print("CFAST not ready")
+        # while 1:
+        #     t=20
+        #     time.sleep(1)
+        #     if self.read_cfast_records(t)==1:
+        #         print(self.get_conditions((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])), t))
+        #         sys.exit()
+        #     else:
+        #         print("CFAST not ready")
 
     def _read_tessellation(self):# {{{
         ''' 
