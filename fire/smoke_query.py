@@ -24,21 +24,21 @@ class SmokeQuery():
         correct rectangle. Finally fetch the conditions from the cell. 
         ''' 
 
-        self.json=Json() 
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.json = Json()
+        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self._read_tessellation()
         self._make_cell2compa()
         self._init_compa_conditions()
         self._cfast_headers()
-        # while 1:
-        #     t=20
-        #     time.sleep(1)
-        #     if self.read_cfast_records(t)==1:
-        #         print(self.get_conditions((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])), t))
-        #         sys.exit()
-        #     else:
-        #         print("CFAST not ready")
+        while 1:
+             t = 20
+             time.sleep(1)
+             if self.read_cfast_records(t) == 1:
+                 print(self.get_conditions((randint( self.floor_dim['minx'],self.floor_dim['maxx']), randint(self.floor_dim['miny'],self.floor_dim['maxy'])), t))
+                 sys.exit()
+             else:
+                 print("CFAST not ready")
 
     def _read_tessellation(self):# {{{
         ''' 
@@ -142,13 +142,13 @@ class SmokeQuery():
             return 0
 # }}}
 
-    def read_cfast_records(self,time):# {{{
+    def read_cfast_records(self, time):# {{{
         ''' 
         We had parsed headers separately. Now we only parse numbers from n,s,w files. 
         Application needs to call us prior to massive queries for conditions at (x,y).
         '''
 
-        if self._cfast_has_time(time)==0:
+        if self._cfast_has_time(time) == 0:
             return 0
 
         for letter in ['n', 's', 'w']:
@@ -172,7 +172,7 @@ class SmokeQuery():
         ''' 
         First we find to which square our q belongs. If this square has 0 rectangles
         then we return conditions from the square. If the square has rectangles
-        we need to loop through those rectangles. Finaly we read the smoke
+        we need to loop through those rectangles. Finally we read the smoke
         conditions from the cell. 
         '''
 
