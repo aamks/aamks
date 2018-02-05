@@ -1,12 +1,16 @@
+import {JetFan} from '../fds-object/jet-fan';
 import { Surf } from '../fds-object/surf';
 import { Matl } from '../fds-object/matl';
 import { Ramp } from '../fds-object/ramp';
 import { get, map } from 'lodash';
+import { SurfVent } from '../fds-object/surf-vent';
 
 export interface LibraryObject {
 	ramps: Ramp[],
 	matls: Matl[],
 	surfs: Surf[],
+	ventsurfs: Surf[],
+	jetfans: JetFan[],
 }
 
 export class Library {
@@ -14,6 +18,8 @@ export class Library {
 	private _ramps: Ramp[];
 	private _matls: Matl[];
 	private _surfs: Surf[];
+	private _ventsurfs: SurfVent[];
+	private _jetfans: JetFan[];
 
 	constructor(jsonString: string) {
 
@@ -31,6 +37,16 @@ export class Library {
 		this.surfs = get(base, 'surfs') === undefined ? [] : map(base.surfs, (surf) => {
 			return new Surf(JSON.stringify(surf), this.matls);
 		});
+
+		this.ventsurfs = get(base, 'ventsurfs') === undefined ? [] : map(base.ventsurfs, (ventsurf) => {
+			return new SurfVent(JSON.stringify(ventsurf), this.ramps);
+		});
+
+		this.jetfans = get(base, 'jetfans') === undefined ? []: map(base.jetfans, (jetfan) => {
+			return new JetFan(JSON.stringify(jetfan), this.ramps);
+
+		});
+
 	}
 
 	public get ramps(): Ramp[] {
@@ -57,5 +73,20 @@ export class Library {
 		this._surfs = value;
 	}
 
+	public get ventsurfs(): SurfVent[] {
+		return this._ventsurfs;
+	}
+
+	public set ventsurfs(value: SurfVent[]) {
+		this._ventsurfs = value;
+	}
+
+	public get jetfans(): JetFan[] {
+		return this._jetfans;
+	}
+
+	public set jetfans(value: JetFan[]) {
+		this._jetfans = value;
+	}
 
 }

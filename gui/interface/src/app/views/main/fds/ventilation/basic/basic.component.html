@@ -1,0 +1,271 @@
+<div class="double-amper-container">
+  <div class="single-amper-container">
+    <div class="list">
+      <div class="list-title" (click)="add('vent')">
+        <i class="material-icons">add_box</i> Add VENT
+      </div>
+      <perfect-scrollbar #ventScrollbar (psScrollY)="scrollbarUpdate('vent')">
+        <div class="list-items">
+          <div class="list-item" *ngFor="let ventItem of ventilation.vents | slice:ui.ventilation.vent.begin:(ui.ventilation.vent.begin + ui.listRange)">
+            <a [ngClass]="{active: ventItem===vent}" (click)="activate(ventItem.id, 'vent')"> {{ventItem.id}} </a>
+            <i class="material-icons red" (click)="remove(ventItem.id, 'vent')">delete_forever</i>
+          </div>
+        </div>
+      </perfect-scrollbar>
+      <div class="list-bottom" *ngIf="ventilation.vents.length > ui.listRange">
+        <i class="material-icons" *ngIf="ui.ventilation.vent.begin > 0" (click)="uiStateService.decreaseRange('ventilation.vent')">chevron_left</i>
+        <div>{{ui.ventilation.vent.begin}} - {{ui.ventilation.vent.begin + ui.listRange > ventilation.vents.length ? ventilation.vents.length
+          : ui.ventilation.vent.begin + ui.listRange}}</div>
+        <i class="material-icons" *ngIf="ui.ventilation.vent.begin + ui.listRange < ventilation.vents.length" (click)="uiStateService.increaseRange('ventilation.vent')">chevron_right</i>
+      </div>
+    </div>
+    <div class="form-box">
+      <div class="form-row" *ngIf="!vent">
+        <label>Select or add new vent</label>
+      </div>
+      <div *ngIf="vent != undefined">
+        <div class="form-title">
+          <label> {{vent.id}} definition</label>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>Id: </label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="vent.id" stringInput>
+            </div>
+          </div>
+          <div>
+            <label>Surface:</label>
+            <div class="field-container">
+              <select [(ngModel)]="vent.surf">
+                <option *ngFor="let surf of surfs" [ngValue]="surf">{{surf.id}}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="form-title">
+          <label>Vent XB</label>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>X1:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="vent.xb.x1" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>X2:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="vent.xb.x2" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Y1:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="vent.xb.y1" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Y2:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="vent.xb.y2" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Z1:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="vent.xb.z1" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Z2:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="vent.xb.z2" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+  </div>
+
+  <div class="single-amper-container">
+    <div class="list">
+      <div class="list-title" (click)="add('surf')">
+        <i class="material-icons">add_box</i> Add SURF
+      </div>
+      <perfect-scrollbar #surfScrollbar (psScrollY)="scrollbarUpdate('surf')">
+        <div class="list-items">
+          <div class="list-item" *ngFor="let surfItem of ventilation.surfs | slice:ui.ventilation.surf.begin:(ui.ventilation.surf.begin + ui.listRange)">
+            <a [ngClass]="{active: surfItem===surf}" (click)="activate(surfItem.id, 'surf')"> {{surfItem.id}} </a>
+            <i class="material-icons red" (click)="remove(surfItem.id, 'surf')">delete_forever</i>
+          </div>
+        </div>
+      </perfect-scrollbar>
+      <div class="list-bottom" *ngIf="ventilation.surfs.length > ui.listRange">
+        <i class="material-icons" *ngIf="ui.ventilation.surf.begin > 0" (click)="uiStateService.decreaseRange('ventilation.surf')">chevron_left</i>
+        <div>{{ui.ventilation.surf.begin}} - {{ui.ventilation.surf.begin + ui.listRange > ventilation.surfs.length ? ventilation.surfs.length
+          : ui.ventilation.surf.begin + ui.listRange}}</div>
+        <i class="material-icons" *ngIf="ui.ventilation.surf.begin + ui.listRange < ventilation.surfs.length" (click)="uiStateService.increaseRange('ventilation.surf')">chevron_right</i>
+      </div>
+    </div>
+
+    <div class="form-box">
+      <div class="form-row" *ngIf="!surf">
+        <label>Select or add new surf</label>
+      </div>
+      <div *ngIf="surf != undefined">
+        <div class="form-title">
+          <label>{{surf.id}} definition</label>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>Id:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.id" />
+            </div>
+          </div>
+          <div>
+            <label>Color:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.color" (blur)="updateCad('hole')" decimalInput>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Flow type:</label>
+            <div class="field-container">
+              <select [(ngModel)]="surf.flow.type">
+                <option *ngFor="let element of ENUMS_SURF.surfVentFlowType" [ngValue]="element.value" (click)="surf.changeFlowType()">{{element.label}}</option>
+              </select>
+            </div>
+          </div>
+          <div *ngIf="surf.flow.type=='velocity'">
+            <label>Velocity:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.flow.velocity" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m/s"></ng-katex>
+            </div>
+          </div>
+          <div *ngIf="surf.flow.type=='volumeFlow'">
+            <label>Volume flow:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.flow.volume_flow" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m^3/s"></ng-katex>
+              <input class="ml+" type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.flow.volume_flow_per_hour" decimalInput>
+              <ng-katex equation="m^3/h"></ng-katex>
+            </div>
+          </div>
+          <div *ngIf="surf.flow.type=='massFlow'">
+            <label>Mass flow:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.flow.mass_flow" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="kg/s"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>RAMP:</label>
+            <div class="field-container">
+              <select [(ngModel)]="surf.ramp">
+                <option [ngValue]="undefined">No RAMP</option>
+                <option *ngFor="let ramp of (((objectType == 'current') ? ramps : libRamps) | rampFilter:{type:'vent'})" [ngValue]="ramp">{{ramp.id}}</option>
+              </select>
+              <i (click)="addRamp('vent','conductivity')" class="material-icons">add_box</i>
+            </div>
+          </div>
+        </div>
+        <ramp-chart *ngIf="surf.ramp && surf.ramp.steps.length > 0 && surf.flow.type == 'volumeFlow'" [rampId]="surf.ramp.id" [value]="surf.flow.volume_flow"
+          [objectType]="objectType" [xLabel]="'Time'" [yLabel]="'Volume Flow'" [units]="['s','m^3/s']"></ramp-chart>
+
+        <ramp-chart *ngIf="surf.ramp && surf.ramp.steps.length > 0 && surf.flow.type == 'velocity'" [rampId]="surf.ramp.id" [value]="surf.flow.velocity"
+          [objectType]="objectType" [xLabel]="'Time'" [yLabel]="'Velocity'" [units]="['s','m/s']"></ramp-chart>
+
+        <ramp-chart *ngIf="surf.ramp && surf.ramp.steps.length > 0 && surf.flow.type == 'massFlow'" [rampId]="surf.ramp.id" [value]="surf.flow.mass_flow"
+          [objectType]="objectType" [xLabel]="'Time'" [yLabel]="'Mass'" [units]="['s','kg/s']"></ramp-chart>
+
+        <div class="form-row">
+          <div>
+            <label>Heater:</label>
+            <div class="field-container">
+              <input type=checkbox [(ngModel)]="surf.heater.active" />
+            </div>
+          </div>
+          <div *ngIf="surf.heater.active">
+            <label>Temperature:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.heater.temperature" decimalInput>
+              <ng-katex equation="\degree C"></ng-katex>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Louver:</label>
+            <div class="field-container">
+              <input type="checkbox" [(ngModel)]="surf.louver.active" />
+            </div>
+          </div>
+          <div *ngIf="surf.louver.active">
+            <label>Tangential velocity horizontal:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.louver.tangential1" (blur)="updateCad('hole')"
+                decimalInput>
+              <ng-katex equation="m/s"></ng-katex>
+            </div>
+          </div>
+          <div *ngIf="surf.louver.active">
+            <label>Tangential velocity vertical:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.louver.tangential2" (blur)="updateCad('hole')"
+                decimalInput>
+              <ng-katex equation="m/s"></ng-katex>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lib-wrapper">
+      <div class="lib-drawer" [ngClass]="ui.ventilation.surf.lib == 'closed' ? 'closed' : 'opened'">
+        <div class="lib-label-wrapper">
+          <div class="lib-label" (click)="toggleLibrary()">
+            <label>LIBRARY</label>
+          </div>
+        </div>
+        <div class="lib-area">
+          <div class="list">
+            <div class="list-title" (click)="add('surf', true)">
+              <i class="material-icons">add_box</i> Add SURF
+            </div>
+            <perfect-scrollbar #surfLibScrollbar (psScrollY)="scrollbarUpdate('libSurf')">
+              <div class="list-items">
+                <div class="list-item" *ngFor="let surfItem of libSurfs | slice: ui.ventilation.libSurf.begin:(ui.ventilation.libSurf.begin + ui.listRange)">
+                  <a (click)="activate(surfItem.id, 'surf', true)" [ngClass]="{active: surfItem === surf}">{{surfItem.id}}</a>
+                  <i class="material-icons" ng-click="importLibraryItem(surfItem.id)">content_copy</i>
+                  <i class="material-icons red" (click)="delete(surfItem.id, 'surf', true)">delete_forever</i>
+                </div>
+              </div>
+            </perfect-scrollbar>
+            <div class="list-bottom" *ngIf="libSurfs.length > ui.listRange">
+              <i class="material-icons" *ngIf="ui.ventilation.libSurf.begin > 0" (click)="uiStateService.decreaseRange('ventilation.libSurf')">chevron_left</i>
+              <div>{{ui.ventilation.libSurf.begin}} - {{ui.ventilation.libSurf.begin + ui.listRange > libSurfs.length ? libSurfs.length
+                : ui.ventilation.obst.begin + ui.listRange}}</div>
+              <i class="material-icons" *ngIf="ui.ventilation.libSurf.begin + ui.listRange < libSurfs.length" (click)="uiStateService.increaseRange('ventilation.libSurf')">chevron_right</i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</div>

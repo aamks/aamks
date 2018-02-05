@@ -64,6 +64,16 @@ import { RampFilterPipe } from './pipes/ramp-filter/ramp-filter.pipe';
 import { StepsSortPipe } from './pipes/steps-sort/steps-sort.pipe';
 import { SurfaceComponent } from './views/main/fds/geometry/surface/surface.component';
 import { UniqueSelectComponent } from './views/main/fds/shared/unique-select/unique-select.component';
+import { BasicComponent } from './views/main/fds/ventilation/basic/basic.component';
+import { JetfanComponent } from './views/main/fds/ventilation/jetfan/jetfan.component';
+import { FiresComponent } from './views/main/fds/fire/fires/fires.component';
+import { CombustionComponent } from './views/main/fds/fire/combustion/combustion.component';
+import { DumpComponent } from './views/main/fds/output/dump/dump.component';
+import { BoundaryComponent } from './views/main/fds/output/boundary/boundary.component';
+import { SliceComponent } from './views/main/fds/output/slice/slice.component';
+import { IsosurfaceComponent } from './views/main/fds/output/isosurface/isosurface.component';
+import { DeviceComponent } from './views/main/fds/output/device/device.component';
+import { RampComponent } from './views/main/fds/ramp/ramp.component';
 
 
 @NgModule({
@@ -90,6 +100,16 @@ import { UniqueSelectComponent } from './views/main/fds/shared/unique-select/uni
     StepsSortPipe,
     SurfaceComponent,
     UniqueSelectComponent,
+    BasicComponent,
+    JetfanComponent,
+    FiresComponent,
+    CombustionComponent,
+    DumpComponent,
+    BoundaryComponent,
+    SliceComponent,
+    IsosurfaceComponent,
+    DeviceComponent,
+    RampComponent,
   ],
   imports: [
     BrowserModule,

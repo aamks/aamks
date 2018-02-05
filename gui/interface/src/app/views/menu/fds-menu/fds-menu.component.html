@@ -1,3 +1,78 @@
-<p>
-  fds-menu works!
-</p>
+<div>
+  <div class="n1">
+    <i class="material-icons null"></i>
+    <a routerLink="general">General</a>
+  </div>
+
+  <div class="n1" (click)="toggleMenu('geometry')">
+    <i *ngIf="!uiState.fdsMenu.geometry" class="material-icons">expand_more</i>
+    <i *ngIf="uiState.fdsMenu.geometry" class="material-icons">expand_less</i>
+    <a>Geometry</a>
+  </div>
+  <div class="ng2" [ngClass]="uiState.fdsMenu.geometry ? 'open' : 'close'">
+    <div class="n2">
+      <a routerLink="geometry/mesh">Mesh</a>
+    </div>
+    <div class="n2">
+      <a routerLink="geometry/material">Material</a>
+    </div>
+    <div class="n2">
+      <a routerLink="geometry/surface">Surface</a>
+    </div>
+    <div class="n2">
+      <a routerLink="geometry/obstruction">Obstruction</a>
+    </div>
+  </div>
+
+  <div class="n1" (click)="toggleMenu('ventilation')">
+    <i *ngIf="!uiState.fdsMenu.ventilation" class="material-icons">expand_more</i>
+    <i *ngIf="uiState.fdsMenu.ventilation" class="material-icons">expand_less</i>
+    <a>Ventilation</a>
+  </div>
+  <div class="ng2" [ngClass]="uiState.fdsMenu.ventilation ? 'open' : 'close'">
+    <div class="n2">
+      <a routerLink="ventilation/basic">Basic</a>
+    </div>
+    <div class="n2">
+      <a routerLink="ventilation/jetfan">Jetfan</a>
+    </div>
+  </div>
+
+  <div class="n1" (click)="toggleMenu('fire')">
+    <i *ngIf="!uiState.fdsMenu.fire" class="material-icons">expand_more</i>
+    <i *ngIf="uiState.fdsMenu.fire" class="material-icons">expand_less</i>
+    <a>Fire</a>
+  </div>
+  <div class="ng2" [ngClass]="uiState.fdsMenu.fire ? 'open' : 'close'">
+    <div class="n2">
+      <a routerLink="fire/fires">Fires</a>
+    </div>
+    <div class="n2">
+      <a routerLink="fire/combustion">Combustion</a>
+    </div>
+  </div>
+
+  <div class="n1" (click)="toggleMenu('output')">
+    <i *ngIf="!uiState.fdsMenu.output" class="material-icons">expand_more</i>
+    <i *ngIf="uiState.fdsMenu.output" class="material-icons">expand_less</i>
+    <a>Output</a>
+  </div>
+  <div class="ng2" [ngClass]="uiState.fdsMenu.output ? 'open' : 'close'">
+    <div class="n2">
+      <a routerLink="output/dump">Dump</a>
+    </div>
+    <div class="n2">
+      <a routerLink="output/boundary">Boundary</a>
+    </div>
+    <div class="n2">
+      <a routerLink="output/slice">Slice</a>
+    </div>
+    <div class="n2">
+      <a routerLink="output/isosurface">Isosurface</a>
+    </div>
+    <div class="n2">
+      <a routerLink="output/device">Device</a>
+    </div>
+  </div>
+
+</div>

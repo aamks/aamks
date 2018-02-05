@@ -16,10 +16,10 @@ export class UiState {
 	constructor() {
 		this.fdsMenu = {
 			geometry: true,
-			ventilation: false,
-			fire: false,
-			output: false,
-			species: false
+			ventilation: true,
+			fire: true,
+			output: true,
+			species: true
 		}
 
 		this.general = { tab: 0, list: 0, elementIndex: 0 }

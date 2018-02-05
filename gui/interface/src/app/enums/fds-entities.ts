@@ -12731,7 +12731,7 @@ export const FdsEntities =
           TMP_FRONT: {
             type: 'Real',
             units: '^{\\circ}C',
-            'default': 20.,
+            'default': [20.],
             help: '',
             pattern: '',
             valid_ranges: [

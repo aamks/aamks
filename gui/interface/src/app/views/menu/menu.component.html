@@ -1,35 +1,3 @@
-<div><!--*ngIf="main.currentFdsScenario != undefined"-->
-  <div class="n1">
-    <i class="material-icons null"></i>
-    <a routerLink="general">General</a>
-  </div>
-
-  <div class="n1" (click)="toggleMenu('geometry')">
-    <i *ngIf="!uiState.fdsMenu.geometry" class="material-icons">expand_more</i>
-    <i *ngIf="uiState.fdsMenu.geometry" class="material-icons">expand_less</i>
-    <a>Geometry</a>
-  </div>
-  <div class="ng2" [ngClass]="uiState.fdsMenu.geometry ? 'open' : 'close'">
-    <div class="n2">
-      <a routerLink="geometry/mesh">Mesh</a>
-    </div>
-    <div class="n2">
-      <a routerLink="geometry/material">Material</a>
-    </div>
-    <div class="n2">
-      <a routerLink="geometry/surface">Surface</a>
-    </div>
-    <div class="n2">
-      <a routerLink="geometry/obstruction">Obstruction</a>
-    </div>
-  </div>
-
-  <div class="n1">
-    <i class="material-icons">expand_more</i>
-    <a>Ventilation</a>
-  </div>
-  <div class="n1">
-    <i class="material-icons">expand_more</i>
-    <a>Fires</a>
-  </div>
+<div>
+  <app-fds-menu></app-fds-menu>
 </div>

@@ -6,7 +6,7 @@ import * as _ from 'lodash';
 import { Devc } from './devc';
 
 export interface VentObject {
-    id: number,
+    id: string,
     uuid: string,
     idAC: number,
     elevation: number,
@@ -16,7 +16,7 @@ export interface VentObject {
 }
 
 export class Vent {
-    private _id: number;
+    private _id: string;
     private _uuid: string;
     private _idAC: number;
     private _xb: Xb;
@@ -32,7 +32,7 @@ export class Vent {
 
         let VENT = FdsEntities.VENT;
 
-        this.id = base.id || 0;
+        this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
         this.elevation = base.elevation || 0;
@@ -56,11 +56,11 @@ export class Vent {
         //return accessor.selectSetter(self, 'surf.surf_id', id_old, list);
     }
 
-    public get id(): number {
+    public get id(): string {
         return this._id;
     }
 
-    public set id(value: number) {
+    public set id(value: string) {
         this._id = value;
     }
 

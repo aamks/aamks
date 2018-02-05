@@ -8,6 +8,15 @@ import { ObstructionComponent } from './views/main/fds/geometry/obstruction/obst
 import { GeneralComponent } from './views/main/fds/general/general.component';
 import { MaterialComponent } from './views/main/fds/geometry/material/material.component';
 import { SurfaceComponent } from './views/main/fds/geometry/surface/surface.component';
+import { BasicComponent } from './views/main/fds/ventilation/basic/basic.component';
+import { JetfanComponent } from './views/main/fds/ventilation/jetfan/jetfan.component';
+import { FiresComponent } from './views/main/fds/fire/fires/fires.component';
+import { CombustionComponent } from './views/main/fds/fire/combustion/combustion.component';
+import { DumpComponent } from './views/main/fds/output/dump/dump.component';
+import { BoundaryComponent } from './views/main/fds/output/boundary/boundary.component';
+import { SliceComponent } from './views/main/fds/output/slice/slice.component';
+import { IsosurfaceComponent } from './views/main/fds/output/isosurface/isosurface.component';
+import { DeviceComponent } from './views/main/fds/output/device/device.component';
 
 const routes: Routes = [
   {
@@ -18,6 +27,7 @@ const routes: Routes = [
     path: 'general',
     component: GeneralComponent
   },
+
   {
     path: 'geometry/mesh',
     component: MeshComponent
@@ -34,6 +44,45 @@ const routes: Routes = [
     path: 'geometry/obstruction',
     component: ObstructionComponent
   },
+
+  {
+    path: 'ventilation/basic',
+    component: BasicComponent
+  },
+  {
+    path: 'ventilation/jetfan',
+    component: JetfanComponent
+  },
+
+  {
+    path: 'fire/fires',
+    component: FiresComponent
+  },
+  {
+    path: 'fire/combustion',
+    component: CombustionComponent
+  },
+
+  {
+    path: 'output/dump',
+    component: DumpComponent
+  },
+  {
+    path: 'output/boundary',
+    component: BoundaryComponent
+  },
+  {
+    path: 'output/slice',
+    component: SliceComponent
+  },
+  {
+    path: 'output/isosurface',
+    component: IsosurfaceComponent
+  },
+  {
+    path: 'output/device',
+    component: DeviceComponent
+  }
 ];
 
 @NgModule({

@@ -4,7 +4,7 @@ import * as _ from 'lodash';
 import { Ramp } from './ramp';
 
 export interface SurfVentObject {
-    id: number,
+    id: string,
     uuid: string,
     idAC: number,
     color: string,
@@ -17,7 +17,7 @@ export interface SurfVentObject {
 }
 
 export class SurfVent {
-    private _id: number;
+    private _id: string;
     private _uuid: string;
     private _idAC: number;
     private _color: string;
@@ -36,7 +36,7 @@ export class SurfVent {
 
         let SURF = FdsEntities.SURF;
 
-        this.id = base.id || 0;
+        this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
         this.color = _.toString(_.get(base, 'color', SURF.COLOR.default[0]));
@@ -108,11 +108,11 @@ export class SurfVent {
         }
     }
 
-    public get id(): number {
+    public get id(): string {
         return this._id;
     }
 
-    public set id(value: number) {
+    public set id(value: string) {
         this._id = value;
     }
 

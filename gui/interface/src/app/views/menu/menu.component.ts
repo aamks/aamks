@@ -22,9 +22,4 @@ export class MenuComponent implements OnInit {
     this.uiStateService.getUiState().subscribe(uiState => this.uiState = uiState);
   }
 
-  toggleMenu(menuItem:string) {
-    this.uiState.fdsMenu[menuItem] = !this.uiState.fdsMenu[menuItem];
-  }
-
-
 }
