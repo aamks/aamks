@@ -1,0 +1,61 @@
+<div class="project-header">
+    <div class="add-project" (click)="addProject()">
+        <i class="material-icons">add_box</i>
+        Add project
+    </div>
+    <div class="project-categories">
+        <div class="project-category" [ngClass]="category.active ? 'active' : ''" (click)="category.triggerActive(); changeCategoryActivity(category.uuid, categoryIndex)" *ngFor="let category of main.categories; index as categoryIndex" ng-show="category.visible==true">
+            <p>{{category.label}}</p>
+        </div>
+    </div>
+</div>
+<div *ngFor="let project of projects; index as projectIndex">
+    <div class="project" *ngIf="checkProjectCategory(project.category)">
+        <i class="material-icons mr+" *ngIf="main.currentProject == undefined || project.id != main.currentProject.id" (click)="setCurrentProject(project.id)">expand_more</i>
+        <i class="material-icons mr+" *ngIf="main.currentProject != undefined && project.id == main.currentProject.id" (click)="unsetCurrentProject()">expand_less</i>
+        <input type="text" [(ngModel)]="project.name" [ngModelOptions]="{updateOn:'blur'}" (blur)="updateProject(projectIndex)" />
+        <select class="mr+" [(ngModel)]="project.category" (change)="updateProject(projectIndex)">
+            <option *ngFor="let category of main.categories" [ngValue]="category.uuid">{{category.label}}</option>
+        </select>
+        <label class="mr+">Description:</label>
+        <input type="text" [(ngModel)]="project.description" [ngModelOptions]="{updateOn:'blur'}" (blur)="updateProject(projectIndex)" />
+        <i class="material-icons red" (click)="deleteProject(projectIndex)">delete_forever</i>
+    </div>
+
+    <div class="scenario" [ngClass]="main.currentProject != undefined && project.id == main.currentProject.id ? 'open' : 'close'">
+        <div class="scenario-title">
+            <div class="scenario-signature">
+                Scenario list
+            </div>
+            <div class="scenario-controls">
+                <div class="add-button" (click)="addRiskScenario(project.id)">
+                    <i class="material-icons">add_box</i>
+                    <label>Add Risk Scenario</label>
+                </div>
+                <div class="add-button" (click)="addFdsScenario(project.id)">
+                    <i class="material-icons ml+">add_box</i>
+                    <label>Add FDS Scenario</label>
+                </div>
+            </div>
+        </div>
+        <div class="scenario-item" *ngFor="let fdsScenario of project.fdsScenarios; index as fdsScenarioIndex;" [ngClass]="main.currentFdsScenario != undefined && fdsScenario.id == main.currentFdsScenario.id ? 'active' : ''">
+            <div class="scenario-signature" (click)="setCurrentFdsScenario(project.id, fdsScenario.id)">
+                <i class="material-icons ico">apps</i>
+            </div>
+            <div class="scenario-controls">
+                <input type="text" [(ngModel)]="fdsScenario.name" [ngModelOptions]="{updateOn:'blur'}" (blur)="updateFdsScenario(project.id, fdsScenario.id)" />
+                <i class="material-icons ml+" (click)="downloadFdsScenario(project.id, fdsScenario.id)">file_download</i>
+                <i class="material-icons ml+ red" (click)="deleteFdsScenario(projectIndex, fdsScenarioIndex)">delete_forever</i>
+            </div>
+        </div>	
+        <div class="scenario-item" *ngFor="let riskScenario of project.riskScenarios; index as riskScenarioIndex;" [ngClass]="main.currentRiskScenario != undefined && riskScenario.id == main.currentRiskScenario.id ? 'active' : ''"> 
+            <div class="scenario-signature" (click)="setCurrentRiskScenario(project.id, riskScenario.id)">
+                <i class="material-icons ico">equalizer</i>
+            </div>
+            <div class="scenario-controls">	
+                <input class="no-shadow" type="text" ng-model-options="{getterSetter:true, updateOn:'blur'}" ng-model="functions.risk_scenario.set_name($index, project.id)" />
+                <i class="material-icons ml+ red" ng-click="deleteRiskScenario(project.id, riskScenario.id)">delete_forever</i>
+            </div>
+        </div>
+    </div>
+</div>

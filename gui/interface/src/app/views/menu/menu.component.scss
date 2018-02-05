@@ -1,0 +1,56 @@
+@import '../../app.component.scss';
+
+$open-time: .5s;
+$close-time: .5s;
+$close-time-lib: 1.0s;
+$open-curve: ease-out;
+$close-curve: ease-in;
+
+//.n1:first-child {
+//    background-color: $grey1;
+//    border: none;
+//}
+
+.n1 {
+    background-color: $grey2;
+	height: 1.5rem;
+	padding: 0.5rem;
+	//padding: .7rem;
+    border-bottom: 1px solid $border-light;
+	box-shadow: 0 -1px 0 $shadow-dark inset;
+
+	i.null {
+		width:24px;
+	}
+}
+.n1:hover {
+	color: $blue;
+	cursor: pointer;
+}
+
+.n2 {
+	background-color: $grey4;
+	height: 1.4rem;
+	padding-top: .3rem;
+    padding-left: 2.5rem;
+	cursor: pointer;
+}
+.n2:hover {
+	a {
+		color: $blue;
+	}
+}
+
+.ng2 {
+	overflow: hidden;
+}
+
+.ng2.open {
+	max-height: 10rem;
+	transition: max-height $open-time $open-curve;
+}
+
+.ng2.close {
+	max-height: 0;
+	transition: max-height $close-time cubic-bezier(0, 1, 0, 1);
+}

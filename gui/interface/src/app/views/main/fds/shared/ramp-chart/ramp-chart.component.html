@@ -1,0 +1,44 @@
+<div class="ramp-container">
+  <div class="ramp-chart" #rampChart></div>
+  <div class="ramp-steps">
+    <div class="ramp-step">
+      <div>
+        <label>Add step:</label>
+        <div class="field-container">
+          <i (click)="ramp.addStep(); updateChart()" class="material-icons">add_box</i>
+        </div>
+      </div>
+    </div>
+    <div class="ramp-step">
+      <div>
+        <div class="field-container">
+          <label>Time: </label>
+        </div>
+      </div>
+      <div>
+        <div class="field-container">
+          <label>Value: </label>
+        </div>
+      </div>
+    </div>
+    <div class="ramp-step" *ngFor="let step of (ramp.steps | stepsSort); index as stepIndex">
+      <div>
+        <div class="field-container">
+          <input [ngModelOptions]="{ updateOn:'blur' }" [(ngModel)]="step.t" decimalInput>
+          <ng-katex equation="{{units[0]}}"></ng-katex>
+        </div>
+      </div>
+      <div>
+        <div class="field-container">
+          <!--<input [ngModelOptions]="{ updateOn:'blur' }" [(ngModel)]="step.f" decimalInput>
+          <input [value]="step.f * value" (input)="calcF($event.target.value, stepIndex)" (blur)="updateChart()">-->
+          <input [ngModel]="getF(stepIndex)" [ngModelOptions]="{ updateOn:'blur' }" (ngModelChange)="setF($event, stepIndex)" (blur)="updateChart()" decimalInput>
+          <ng-katex equation="{{units[1]}}"></ng-katex>
+        </div>
+      </div>
+      <div class="form-diagram-column">
+        <i class="material-icons red">delete_forever</i>
+      </div>
+    </div>
+  </div>
+</div>

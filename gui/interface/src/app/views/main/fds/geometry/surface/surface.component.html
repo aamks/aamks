@@ -1,0 +1,232 @@
+<div class="single-amper-container">
+
+  <div class="list">
+    <div class="list-title" (click)="add()">
+      <i class="material-icons">add_box</i> Add SURF
+    </div>
+    <perfect-scrollbar #surfScrollbar (psScrollY)="scrollbarUpdate('surf')">
+      <div class="list-items">
+        <div class="list-item" *ngFor="let surfItem of surfs | slice: ui.geometry.surf.begin:(ui.geometry.surf.begin + ui.listRange)">
+          <a (click)="activate(surfItem.id)" [ngClass]="{active: surfItem===surf}"> {{surfItem.id}} </a>
+          <i class="material-icons red" *ngIf="surf.editable==true" (click)="delete(surfItem.id)">delete_forever</i>
+        </div>
+      </div>
+    </perfect-scrollbar>
+    <div class="list-bottom" *ngIf="geometry.surfs.length > ui.listRange">
+      <i class="material-icons" *ngIf="ui.geometry.surf.begin > 0" (click)="uiStateService.decreaseRange('geometry.surf')">chevron_left</i>
+      <div>{{ui.geometry.surf.begin}} - {{ui.geometry.surf.begin + ui.listRange > geometry.surfs.length ? geometry.surfs.length
+        : ui.geometry.obst.begin + ui.listRange}}</div>
+      <i class="material-icons" *ngIf="ui.geometry.surf.begin + ui.listRange < geometry.surfs.length" (click)="uiStateService.increaseRange('geometry.surf')">chevron_right</i>
+    </div>
+  </div>
+
+  <div class="form-box" [ngClass]="objectType == 'current' ? 'current' : 'library'">
+    <div class="form-row" *ngIf="!surf">
+      <label>Click 'New' to add surf to surf list</label>
+    </div>
+    <div *ngIf="surf">
+      <div class="form-title">
+        <label> {{surf.id}} definition</label>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Id: </label>
+          <div class="field-container">
+            <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.id" stringInput>
+          </div>
+        </div>
+        <div>
+          <label>Color:</label>
+          <div class="field-container">
+            <select [(ngModel)]="surf.color" [disabled]="!surf.editable">
+              <option *ngFor="let color of COLORS" [ngValue]="color.value">{{color.label}}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label>Transparency:</label>
+          <div class="field-container">
+            <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.transparency" [disabled]="!surf.editable" decimalInput>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Backing:</label>
+          <div class="field-container">
+            <select [(ngModel)]="surf.backing" [disabled]="!surf.editable">
+              <option *ngFor="let element of BACKING" [ngValue]="element.value">{{element.label}}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label>Adiabatic:</label>
+          <div class="field-container">
+            <input type=checkbox [(ngModel)]="surf.adiabatic" ng-true-value='true' [disabled]="!surf.editable" />
+          </div>
+        </div>
+      </div>
+      <div *ngIf="surf && surf.editable">
+
+
+        <div class="form-title">
+          <label>Layers</label>
+        </div>
+
+        <div class="form-row">
+          <div (click)="addLayer()">
+            <div class="field-container">
+              <i class="material-icons">add_box</i> Add layer
+            </div>
+          </div>
+        </div>
+
+        <div class="layers-list" *ngFor="let layer of surf.layers; index as layerIndex">
+          <div class="form-row">
+            <div>
+              <label>Layer</label>
+              <div class="field-container">{{layerIndex}}</div>
+            </div>
+
+            <div>
+              <label>Thickness:</label>
+              <div class="field-container">
+                <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="layer.thickness" decimalInput>
+                <ng-katex equation="m"></ng-katex>
+              </div>
+            </div>
+
+            <div>
+              <label>Delete layer</label>
+              <div class="field-container" (click)="deleteLayer(layerIndex)">
+                <i class="material-icons red">delete_forever</i>
+              </div>
+            </div>
+
+            <div>
+              <label>Add material</label>
+              <div class="field-container" (click)="addMaterial(layerIndex)">
+                <i class="material-icons">add_box</i>
+              </div>
+            </div>
+          </div>
+          <div class="form-row ml++" *ngFor="let material of layer.materials; index as materialIndex">
+
+            <div>
+              <label>Material</label>
+              <div class="field-container">{{materialIndex}}</div>
+            </div>
+
+            <div>
+              <label>Select material:</label>
+              <div class="field-container">
+                <unique-select [allElements]="matls" [usedElements]="layer.materials" [currentElement]="material.material"></unique-select> 
+
+      <!--<ramp-chart *ngIf="matl.conductivity_ramp && matl.conductivity_ramp.steps.length > 0" [rampId]="matl.conductivity_ramp.id"
+        [value]="matl.conductivity" [objectType]="objectType" [xLabel]="'Temperature'" [yLabel]="'Conductivity'" [units]="['\\degree C','W/(m K)']"></ramp-chart>-->
+
+              </div>
+            </div>
+            <div>
+              <!--<wf-unique-select list="geometry.matls" used="$parent.layer.materials" model="material.material" />-->
+              <label>Mass fraction:</label>
+              <div class="field-container">
+                <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="material.fraction" decimalInput>
+              </div>
+            </div>
+
+            <div>
+              <label>Delete material:</label>
+              <div class="field-container">
+                <i class="material-icons red" (click)="deleteMaterial(layerIndex, materialIndex)">delete_forever</i>
+              </div>
+
+            </div>
+
+
+
+          </div>
+
+        </div>
+
+        <!--
+        <div class="from-row" *ngFor="let layer of surf.layers">
+          <div class="form-row-top">
+            <div class="form-row-bottom">
+              <div class="form-row-small">
+                <div>Layer {{$index}}:</div>
+              </div>
+              <div class="form-row-small">
+                <div>
+                  <label>Thickness:</label>
+                  <div>
+                    <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="layer.thickness" />
+                    <ng-katex equation="m"></ng-katex>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row-link" (click)="functions.surf.layer.remove($index)">
+                <i class="material-icons red">delete_forever</i>
+                <div>Delete layer</div>
+              </div>
+              <div class="form-row-link" (click)="functions.surf.layer.material.newMaterial($index)">
+                <i class="material-icons">add_box</i>
+                <div>Add material</div>
+              </div>
+            </div>
+            <div class="form-row-bottom">
+              <div class="form-row-small-top">
+                <div>
+                  <div class="form-row-small" *ngFor="let material of layer.materials">
+                    <div>
+                      <wf-unique-select list="geometry.matls" used="$parent.layer.materials" model="material.material" />
+                    </div>
+                    <div>
+                      <label>Mass fraction:</label>
+                      <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="material.fraction" />
+                    </div>
+                    <i class="material-icons red" (click)="functions.surf.layer.material.remove($parent.$index, $index)">delete_forever</i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      -->
+      </div>
+    </div>
+  </div>
+
+  <div class="lib-wrapper">
+    <div class="lib-drawer" [ngClass]="ui.geometry.surf.lib == 'closed' ? 'closed' : 'opened'">
+      <div class="lib-label-wrapper">
+        <div class="lib-label" (click)="toggleLibrary()">
+          <label>LIBRARY</label>
+        </div>
+      </div>
+      <div class="lib-area">
+        <div class="list">
+          <div class="list-title" (click)="add(true)">
+            <i class="material-icons">add_box</i> Add SURF
+          </div>
+          <div class="list-items" scrollbar="{axis:'y', alwaysVisible:true, autoUpdate:true, thumbSize: 15}" scrollname="libSurf">
+            <div class="list-item" *ngFor="let surfItem of lib.surfs | slice:ui.geometry.libSurf.begin:(ui.geometry.libSurf.begin + ui.listRange)">
+              <a (click)="activate(surfItem.id, true)" [ngClass]="{activeLib: surfItem === surf}"> {{surfItem.id}} </a>
+              <i class="material-icons" (click)="importLibraryItem(surfItem.id)">content_copy</i>
+              <i class="material-icons red" (click)="delte(surfItem.id)">delete_forever</i>
+            </div>
+          </div>
+          <div class="list-bottom">
+            <div class="list-controls" *ngIf="libSurfs.length > listRange">
+              <i class="material-icons" *ngIf="ui.geometry.libSurf.begin > 0" (click)="uiStateService.decreaseRange('geometry.libSurf')">chevron_left</i>
+              <div>{{ui.geometry.libSurf.begin}} - {{ui.geometry.libSurf.begin + ui.listRange > libSurfs.length ? libSurfs.length
+                : ui.geometry.obst.begin + ui.listRange}}</div>
+              <i class="material-icons" *ngIf="ui.geometry.libSurf.begin + ui.listRange < libSurfs.length" (click)="uiStateService.increaseRange('geometry.libSurf')">chevron_right</i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

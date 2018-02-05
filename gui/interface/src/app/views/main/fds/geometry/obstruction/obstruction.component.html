@@ -1,0 +1,324 @@
+<div class="double-amper-container">
+  <div class="single-amper-container">
+    <div class="list">
+      <div class="list-title" (click)="add('obst')">
+        <i class="material-icons">add_box</i> Add OBST
+      </div>
+      <perfect-scrollbar #obstScrollbar (psScrollY)="scrollbarUpdate('obst')">
+        <div class="list-items">
+          <div class="list-item" *ngFor="let obstItem of geometry.obsts | slice:ui.geometry.obst.begin:(ui.geometry.obst.begin + ui.listRange)">
+            <a [ngClass]="{active: obstItem===obst}" (click)="activate(obstItem.id, 'obst')"> {{obstItem.id}} </a>
+            <i class="material-icons red" (click)="remove(obstItem.id, 'obst')">delete_forever</i>
+          </div>
+        </div>
+      </perfect-scrollbar>
+      <div class="list-bottom" *ngIf="geometry.obsts.length > ui.listRange">
+        <i class="material-icons" *ngIf="ui.geometry.obst.begin > 0" (click)="uiStateService.decreaseRange('geometry.obst')">chevron_left</i>
+        <div>{{ui.geometry.obst.begin}} - {{ui.geometry.obst.begin + ui.listRange > geometry.obsts.length ? geometry.obsts.length
+          : ui.geometry.obst.begin + ui.listRange}}</div>
+        <i class="material-icons" *ngIf="ui.geometry.obst.begin + ui.listRange < geometry.obsts.length" (click)="uiStateService.increaseRange('geometry.obst')">chevron_right</i>
+      </div>
+    </div>
+    <div class="form-box">
+      <div class="form-row" *ngIf="!obst">
+        <label>Select or add new obst</label>
+      </div>
+      <div *ngIf="obst != undefined">
+        <div class="form-title">
+          <label> {{obst.id}} definition</label>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Id: </label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="obst.id" stringInput/>
+            </div>
+          </div>
+          <div>
+            <label>Elevation: </label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="obst.elevation" decimalInput/>
+            </div>
+          </div>
+          <div>
+            <label>Device:</label>
+            <div class="field-container">
+              <select [(ngModel)]="obst.devc">
+                <option [ngValue]="undefined">No DEVC</option>
+                <option *ngFor="let devc of output.devcs" [ngValue]="devc">{{devc.id}}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="form-title">
+          <label>Obst XB</label>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>X1:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="obst.xb.x1" (blur)="updateCad('obst')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>X2:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="obst.xb.x2" (blur)="updateCad('obst')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Y1:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="obst.xb.y1" (blur)="updateCad('obst')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Y2:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="obst.xb.y2" (blur)="updateCad('obst')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Z1:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="obst.xb.z1" (blur)="updateCad('obst')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Z2:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="obst.xb.z2" (blur)="updateCad('obst')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+        </div>
+        <div class="form-title">
+          <label>Surface</label>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>SURF type:</label>
+            <select [(ngModel)]="obst.surf.type" (change)="obst.changeSurfType()">
+              <option *ngFor="let obstSurfType of ENUMS_OBST.obstSurfType" [ngValue]="obstSurfType.value">{{obstSurfType.label}}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div *ngIf="obst.surf.type == 'surf_id'">
+            <label>Surface (SURF_ID): </label>
+            <select [(ngModel)]="obst.surf.surf_id" (blur)="updateCad('obst')">
+              <option [ngValue]="undefined">No SURF</option>
+              <option *ngFor="let surf of geometry.surfs" [ngValue]="surf">{{surf.id}}</option>
+            </select>
+          </div>
+          <div *ngIf="obst.surf.type=='surf_ids'">
+            <div>
+              <label>Surface (SURF_IDX): </label>
+              <select [(ngModel)]="obst.surf.surf_idx" (blur)="updateCad('obst')">
+                <option [ngValue]="undefined">No SURF</option>
+                <option *ngFor="let surf of geometry.surfs" [ngValue]="surf">{{surf.id}}</option>
+              </select>
+            </div>
+            <div>
+              <label>Surface (SURF_IDY): </label>
+              <select [(ngModel)]="obst.surf.surf_idy">
+                <option [ngValue]="undefined">No SURF</option>
+                <option *ngFor="let surf of geometry.surfs" [ngValue]="surf">{{surf.id}}</option>
+              </select>
+            </div>
+            <div>
+              <label>Surface (SURF_IDZ): </label>
+              <select [(ngModel)]="obst.surf.surf_idz">
+                <option [ngValue]="undefined">No SURF</option>
+                <option *ngFor="let surf of geometry.surfs" [ngValue]="surf">{{surf.id}}</option>
+              </select>
+            </div>
+          </div>
+          <div *ngIf="obst.surf.type=='surf_id6'">
+            <div>
+              <label>Surface (SURF_ID1): </label>
+              <select [(ngModel)]="obst.surf.surf_id1" (blur)="updateCad('obst')">
+                <option [ngValue]="undefined">No SURF</option>
+                <option *ngFor="let surf of geometry.surfs" [ngValue]="surf">{{surf.id}}</option>
+              </select>
+            </div>
+            <div>
+              <label>Surface (SURF_ID2): </label>
+              <select [(ngModel)]="obst.surf.surf_id2">
+                <option [ngValue]="undefined">No SURF</option>
+                <option *ngFor="let surf of geometry.surfs" [ngValue]="surf">{{surf.id}}</option>
+              </select>
+            </div>
+            <div>
+              <label>Surface (SURF_ID3): </label>
+              <select [(ngModel)]="obst.surf.surf_id3">
+                <option [ngValue]="undefined">No SURF</option>
+                <option *ngFor="let surf of geometry.surfs" [ngValue]="surf">{{surf.id}}</option>
+              </select>
+            </div>
+            <div>
+              <label>Surface (SURF_ID4): </label>
+              <select [(ngModel)]="obst.surf.surf_id4">
+                <option [ngValue]="undefined">No SURF</option>
+                <option *ngFor="let surf of geometry.surfs" [ngValue]="surf">{{surf.id}}</option>
+              </select>
+            </div>
+            <div>
+              <label>Surface (SURF_ID5): </label>
+              <select [(ngModel)]="obst.surf.surf_id5">
+                <option [ngValue]="undefined">No SURF</option>
+                <option *ngFor="let surf of geometry.surfs" [ngValue]="surf">{{surf.id}}</option>
+              </select>
+            </div>
+            <div>
+              <label>Surface (SURF_ID6): </label>
+              <select [(ngModel)]="obst.surf.surf_id6">
+                <option [ngValue]="undefined">No SURF</option>
+                <option *ngFor="let surf of geometry.surfs" [ngValue]="surf">{{surf.id}}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-title">
+          <label>Other</label>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Thicken: </label>
+            <div class="field-container">
+              <input type="checkbox" [(ngModel)]="obst.thicken" />
+            </div>
+          </div>
+          <div>
+            <label>Permit hole: </label>
+            <div class="field-container">
+              <input type="checkbox" [(ngModel)]="obst.permitHole" />
+            </div>
+          </div>
+          <div>
+            <label>Overlay: </label>
+            <div class="field-container">
+              <input type="checkbox" [(ngModel)]="obst.overlay" />
+            </div>
+          </div>
+          <div>
+            <label>Removable: </label>
+            <div class="field-container">
+              <input type="checkbox" [(ngModel)]="obst.removable" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="single-amper-container">
+    <div class="list">
+      <div class="list-title" (click)="add('hole')">
+        <i class="material-icons">add_box</i> Add OBST
+      </div>
+      <perfect-scrollbar #holeScrollbar (psScrollY)="scrollbarUpdate('hole')">
+        <div class="list-items">
+          <div class="list-item" *ngFor="let holeItem of geometry.holes | slice:ui.geometry.hole.begin:(ui.geometry.hole.begin + ui.listRange)">
+            <a [ngClass]="{active: holeItem===hole}" (click)="activate(holeItem.id, 'hole')"> {{holeItem.id}} </a>
+            <i class="material-icons red" (click)="remove(holeItem.id, 'hole')">delete_forever</i>
+          </div>
+        </div>
+      </perfect-scrollbar>
+      <div class="list-bottom" *ngIf="geometry.holes.length > ui.listRange">
+        <i class="material-icons" *ngIf="ui.geometry.hole.begin > 0" (click)="uiStateService.decreaseRange('geometry.hole')">chevron_left</i>
+        <div>{{ui.geometry.hole.begin}} - {{ui.geometry.hole.begin + ui.listRange > geometry.holes.length ? geometry.holes.length
+          : ui.geometry.hole.begin + ui.listRange}}</div>
+        <i class="material-icons" *ngIf="ui.geometry.hole.begin + ui.listRange < geometry.holes.length" (click)="uiStateService.increaseRange('geometry.hole')">chevron_right</i>
+      </div>
+    </div>
+
+    <div class="form-box">
+      <div class="form-row" *ngIf="!hole">
+        <label>Select or add new hole</label>
+      </div>
+      <div *ngIf="hole != undefined">
+        <div class="form-title">
+          <label>
+            {{hole.id}} definition</label>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Id:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="hole.id" stringInput/>
+            </div>
+          </div>
+          <div>
+            <label>Elevation: </label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="hole.elevation" decimalInput/>
+            </div>
+          </div>
+          <div>
+            <label>Device:</label>
+            <div class="field-container">
+              <select [(ngModel)]="hole.devc">
+                <option [ngValue]="undefined">No DEVC</option>
+                <option *ngFor="let devc of output.devcs" [ngValue]="devc">{{devc.id}}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="form-title">
+          <label>Hole XB</label>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>X1:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="hole.xb.x1" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>X2:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="hole.xb.x2" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Y1:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="hole.xb.y1" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Y2:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="hole.xb.y2" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Z1:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="hole.xb.z1" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Z2:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="hole.xb.z2" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

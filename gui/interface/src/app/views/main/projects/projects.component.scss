@@ -1,0 +1,174 @@
+@import '../main.component.scss';
+
+$open-time: .1s;
+$close-time: .1s;
+$open-curve: ease-out;
+$close-curve: ease-in;
+
+.project-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    height: 2.5rem;
+    background-color: $grey1;
+    box-shadow: 0 -1px 0 $shadow-dark inset;
+    
+    div.add-project {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        cursor: pointer;
+    }
+    div.add-project:hover {
+        color: $blue;
+        i {
+            color: $blue;
+        }
+    }
+    i:first-child {
+        margin-left: 2px;
+    }
+    .project-categories {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+        flex-grow: 1;
+        .project-category {
+            cursor: pointer;
+            padding: 0.2rem 0.5rem 0.2rem 0.5rem;
+            margin-left: 2px;
+            background-color: $passive;
+        }
+        .project-category.active {
+            background-color: $active1;
+        }
+    }
+    i:last-child {
+        margin-left: 2px;
+    }
+}
+
+
+.project {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    height: 2.5rem;
+	//border-bottom: 1px solid $border-light;
+    box-shadow: 0 -1px 0 $shadow-dark inset;
+    background-color: $grey2;
+    input {
+        border: none;
+        box-shadow: none;
+        background-color: none;
+        width: 18rem;
+    }
+    
+}
+
+.scenario {
+    border-bottom: 1px solid $border-light;
+    background-color: $grey3;
+    overflow: hidden;
+    input {
+        margin-right: 2rem;
+        background-color: none;
+        border: none;
+        box-shadow: none;
+        width: 16rem;
+    }
+    .scenario-title {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		height: 2.5rem;
+		padding-left: 4rem;
+		padding-right: 1rem;
+		border-bottom: 1px solid $border-light;
+		box-shadow: 0 -1px 0 $shadow-dark inset;
+		.scenario-signature {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			flex-basis: 20%;
+		}
+		.scenario-controls {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: flex-start;
+			flex-basis: 80%;
+			div.add-button {
+				cursor: pointer;
+				label {
+					cursor: pointer;
+				}
+			}
+			.add-button:hover {
+				color: $blue;
+				i {
+					color: $blue;
+				}
+			}
+		}
+    }
+    .scenario-item {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		height: 2.5rem;
+		cursor: pointer;
+		border-left: 2px solid $grey3;
+		.scenario-signature {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			flex-basis: 5%;
+			padding-left: 4rem;
+		}
+		.scenario-controls {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: flex-start;
+			flex-basis: 95%;
+			padding-right: 1rem;
+		}
+	}
+
+	.scenario-item:hover {
+		background-color: $grey-hover;
+		i.ico {
+			color: $blue;
+		}
+	}
+	.scenario-item:last-child {
+		border-bottom: none;
+	}
+
+	.scenario-item.active {
+		background-color: $grey-hover;
+		border-left: 2px solid $blue;
+		i.ico {
+			color: $blue;
+		}
+	}
+}
+
+.scenario.open {
+    max-height: 100rem;
+	transition: max-height $open-time $open-curve;
+}
+
+.scenario.close {
+    max-height: 0;
+	transition: max-height $close-time cubic-bezier(0, 1, 0, 1);
+}

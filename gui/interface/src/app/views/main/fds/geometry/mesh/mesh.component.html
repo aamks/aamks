@@ -1,0 +1,197 @@
+<div class="double-amper-container">
+  <div class="single-amper-container">
+    <div class="list">
+      <div class="list-title" (click)="add('obst')">
+        <i class="material-icons">add_box</i> Add MESH
+      </div>
+      <perfect-scrollbar #meshScrollbar (psScrollY)="scrollbarUpdate('mesh')">
+        <div class="list-items">
+          <div class="list-item" *ngFor="let meshItem of meshes | slice: ui.geometry.mesh.begin:(ui.geometry.mesh.begin + ui.listRange)">
+            <a (click)="activate(meshItem.id, 'mesh')" [ngClass]="{active: meshItem === mesh}">{{meshItem.id}}</a>
+            <i class="material-icons red" (click)="delete(meshItem.id, 'mesh')">delete_forever</i>
+          </div>
+        </div>
+      </perfect-scrollbar>
+      <div class="list-bottom" *ngIf="geometry.meshes.length > ui.listRange">
+        <i class="material-icons" *ngIf="ui.geometry.mesh.begin > 0" (click)="uiStateService.decreaseRange('geometry.mesh')">chevron_left</i>
+        <div>{{ui.geometry.mesh.begin}} - {{ui.geometry.mesh.begin + ui.listRange > geometry.meshes.length ? geometry.meshes.length
+          : ui.geometry.obst.begin + ui.listRange}}</div>
+        <i class="material-icons" *ngIf="ui.geometry.mesh.begin + ui.listRange < geometry.meshes.length" (click)="uiStateService.increaseRange('geometry.mesh')">chevron_right</i>
+      </div>
+    </div>
+
+    <div class="form-box">
+      <div *ngIf="!mesh">
+        <label>Select or add new vent open</label>
+      </div>
+      <div *ngIf="mesh">
+        <div class="form-title">
+          <label>{{mesh.id}} definition</label>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Id:</label>
+            <input [(ngModel)]="mesh.id" stringInput>
+          </div>
+          <div>
+            <label>Mesh cells no:</label>
+            {{mesh.calcCells()}}
+          </div>
+          <div>
+            <label>Domain cells no:</label>
+            {{totalCells()}}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>I:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.i" integerInput>
+          </div>
+          <div>
+            <label>J:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.j" integerInput>
+          </div>
+          <div>
+            <label>K:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.k" integerInput>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>X cell size:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.isize" decimalInput>
+          </div>
+          <div>
+            <label>Y cell size:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.jsize" decimalInput>
+          </div>
+          <div>
+            <label>Z cell size:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.ksize" decimalInput>
+          </div>
+        </div>
+
+        <div class="form-title">
+          <label>Mesh XB</label>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>X1:</label>
+            <input [ngModelOptions]="{updateOn: 'blur'}" [(ngModel)]="mesh.x1" (blur)="updateCad()" decimalInput>
+          </div>
+          <div>
+            <label>X2:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.x2" (blur)="updateCad()" decimalInput>
+          </div>
+          <div>
+            <label>Y1:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.y1" (blur)="updateCad()" decimalInput>
+          </div>
+          <div>
+            <label>Y2:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.y2" (blur)="updateCad()" decimalInput>
+          </div>
+          <div>
+            <label>Z1:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.z1" (blur)="updateCad()" decimalInput>
+          </div>
+          <div>
+            <label>Z2:</label>
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="mesh.z2" (blur)="updateCad()" decimalInput>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="single-amper-container">
+
+    <div class="list">
+      <div class="list-title" (click)="add('open')">
+        <i class="material-icons">add_box</i> Add Open
+      </div>
+      <perfect-scrollbar #openScrollbar (psScrollY)="scrollbarUpdate('open')">
+        <div class="list-items">
+          <div class="list-item" *ngFor="let openItem of opens | slice:ui.geometry.open.begin:(ui.geometry.open.begin + ui.listRange)">
+            <a (click)="activate(openItem.id, 'open')" [ngClass]="{active: openItem === open}"> {{openItem.id}} </a>
+            <i class="material-icons" (click)="delete(meshItem.id, 'open')">delete_forever</i>
+          </div>
+        </div>
+      </perfect-scrollbar>
+      <div class="list-bottom" *ngIf="opens.length > listRange">
+        <div class="list-controls">
+          <i class="material-icons" *ngIf="ui.geometry.mesh.begin > 0" (click)="uiStateService.decreaseRange('geometry.open')">chevron_left</i>
+          <p>{{ui.geometry.open.begin}}-{{ui.geometry.open.begin+listRange>geometry.opens.length ? geometry.opens.length:ui.geometry.open.begin+listRange}}</p>
+          <i class="material-icons" *ngIf="ui.geometry.mesh.begin + ui.listRange < geometry.meshes.length" (click)="uiStateService.increaseRange('geometry.open')">chevron_right</i>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-box">
+      <div *ngIf="!open">
+        <label>Select or add new vent open</label>
+      </div>
+      <div *ngIf="open">
+        <div class="form-title">
+          <label>{{open.id}} definition</label>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Id: </label>
+            <div class="field-container">
+              <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="open.id" stringInput>
+            </div>
+          </div>
+        </div>
+        <div class="form-title">
+          <label>Open XB</label>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>X1:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="open.x1" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>X2:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="open.x2" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Y1:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="open.y1" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Y2:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="open.y2" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Z1:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="open.z1" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+          <div>
+            <label>Z2:</label>
+            <div class="field-container">
+              <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="open.z2" (blur)="updateCad('hole')" decimalInput>
+              <ng-katex equation="m"></ng-katex>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,59 @@
+.ramp-container {
+    display: grid;
+    grid-template-columns: 60% 40%;
+
+    .ramp-chart {
+        width: 100%;
+        height: 400px;
+
+        .axis path,
+        .axis line {
+            stroke: #999;
+        }
+
+        .axis text {
+            fill: #999;
+        }
+
+        g {
+            text {
+                font-size: 10px;
+                font-family: "Play";
+                fill: #999;
+
+            }
+        }
+
+    }
+
+
+    .ramp-steps{
+        .ramp-step {
+            display: flex;
+            flex-direction: row;
+            align-items: left;
+
+            div {
+                display: flex;
+                flex-direction: column;
+                align-items: left;
+                padding: 0.1rem;
+                label {
+                    font-size: 0.9rem;
+                }
+                div.field-container {
+                    display: flex;
+                    flex-direction: row;
+                    min-width: 4rem;
+                    input {
+                        margin-right: 0.5rem;
+                    }
+
+                }
+            }
+        }
+    }
+
+
+}
+

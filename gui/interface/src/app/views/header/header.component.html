@@ -1,0 +1,27 @@
+<div class="header-container">
+
+  <div class="header-left">
+    <button (click)="showDiagnosticData()">Diagnostic</button>
+    <button (click)="setCurrentFdsScenario(177,687)">Set FDS scenario</button>
+  </div>
+
+  <div class="header-right">
+    <div></div>
+    <div>
+    </div>
+    <div>
+      <div class="left-bottom">
+        <i class="material-icons">view_list</i>
+        <a routerLink="">Projects</a>
+        <span *ngIf="main.currentProject != undefined">
+          &nbsp;| Active project: {{main.currentProject.name}} 
+        </span>
+        <span *ngIf="main.currentProject != undefined && main.currentFdsScenario != undefined">
+          &nbsp;| Active scenario: {{main.currentFdsScenario.name}}
+        </span>
+      </div>
+    </div>
+    <div></div>
+  </div>
+
+</div>

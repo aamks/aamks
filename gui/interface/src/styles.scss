@@ -1,0 +1,119 @@
+// Reset sytles
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+	text-decoration: none;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
+
+/* You can add global styles to this file, and also import other style files */
+$red: #FF516D;
+$green: #009688;
+$white: #eee;
+$grey: #888;
+$blue: #29B6F6;
+$blue-dark: #1E88E5;
+$green: #9CCC65;
+$orange: #FF9800;
+$orange-light: #FFF3E0;
+
+$grey-hover: #606060;
+
+$grey1: #303030;
+$grey2: #404040;
+$grey3: #505050;
+$grey4: #606060;
+$grey5: #707070;
+$grey6: #808080;
+
+$border-light: #565656;
+$border-dark: #303030;
+
+$shadow-light: #363636;	
+$shadow-dark: #323232;
+
+$active: #aaa;
+$active1: #1E88E5;
+$passive: #565555;
+$body:#383838;
+
+html {
+	font-size: 1rem;
+	font-family: "Play";
+}
+
+body {
+	overflow-y: scroll;
+	overflow-x: scroll;
+	color: $white;
+	background-color: $body;
+}
+
+:focus {
+	outline:none;
+}
+::-moz-focus-inner {
+	border:0;
+}
+
+a { cursor: pointer; }
+a:link, a:visited { color: $white; }
+a:hover { color: $blue; }
+a.active { color: $blue; }
+a.activeLib { color: $green; }
+
+i { display: inline-block; vertical-align: middle; height: 24px; width: 24px; cursor: pointer; }
+i:hover { color: $blue; }
+i.red:hover { color: $red; }
+
+input { box-shadow: none; border-radius: none; border: none; background: none; font-size: 1rem; padding-bottom: 0; color: $orange; font-family: Consolas, Lucida Console, monospace; }
+input { color: $orange; border-bottom: 1px solid $grey6; box-shadow: 0 -1px 0 $grey1 inset; padding: 0 0 0 0; }
+input:focus, select:focus, textarea:focus, button:focus { outline: none; }
+
+.mr\+ { margin-right: 1rem; }
+.mr\+\+ { margin-right: 2rem; }
+.mr\+\+\+ { margin-right: 3rem; }
+.ml\+ { margin-left: 1rem; }
+.ml\+\+ { margin-left: 2rem; }
+.ml\+\+\+ { margin-right: 3rem; }
+
+ng-katex { font-size: .9rem; }

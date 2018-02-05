@@ -1,0 +1,137 @@
+<div class="single-amper-container">
+
+  <div class="list">
+    <div class="list-title" (click)="add()">
+      <i class="material-icons">add_box</i> Add MATL
+    </div>
+    <perfect-scrollbar #matlScrollbar (psScrollY)="scrollbarUpdate('matl')">
+      <div class="list-items">
+        <div class="list-item" *ngFor="let matlItem of geometry.matls | slice: ui.geometry.matl.begin:(ui.geometry.matl.begin + ui.listRange)">
+          <a (click)="activate(matlItem.id)" [ngClass]="{active: matlItem === matl}">{{matlItem.id}}</a>
+          <i class="material-icons red" (click)="delete(matlItem.id)">delete_forever</i>
+        </div>
+      </div>
+    </perfect-scrollbar>
+    <div class="list-bottom" *ngIf="geometry.matls.length > ui.listRange">
+      <i class="material-icons" *ngIf="ui.geometry.matl.begin > 0" (click)="uiStateService.decreaseRange('geometry.matl')">chevron_left</i>
+      <div>{{ui.geometry.matl.begin}} - {{ui.geometry.matl.begin + ui.listRange > geometry.matls.length ? geometry.matls.length
+        : ui.geometry.obst.begin + ui.listRange}}</div>
+      <i class="material-icons" *ngIf="ui.geometry.matl.begin + ui.listRange < geometry.matls.length" (click)="uiStateService.increaseRange('geometry.matl')">chevron_right</i>
+    </div>
+  </div>
+
+  <div class="form-box" [ngClass]="objectType == 'current' ? 'current' : 'library'">
+    <div *ngIf="!matl">
+      <label>Select or add new material</label>
+    </div>
+    <div *ngIf="matl">
+      <div class="form-title">
+        <label>{{matl.id}} definition</label>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Id:</label>
+          <div class="field-container">
+            <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="matl.id" stringInput>
+          </div>
+        </div>
+
+        <div>
+          <label>Density:</label>
+          <div class="field-container">
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="matl.density" decimalInput>
+            <ng-katex equation="kg/m^3"></ng-katex>
+          </div>
+        </div>
+        <div>
+          <label>Emissivity:</label>
+          <div class="field-container">
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="matl.emissivity" decimalInput>
+          </div>
+        </div>
+        <div>
+          <label>Absorption coefficient: </label>
+          <div class="field-container">
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="matl.absorption_coefficient" decimalInput>
+            <ng-katex equation="1/m"></ng-katex>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Conductivity:</label>
+          <div class="field-container">
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="matl.conductivity" decimalInput>
+            <ng-katex equation="W/(m K)"></ng-katex>
+          </div>
+        </div>
+        <div>
+          <label>Conductivity RAMP:</label>
+          <div class="field-container">
+            <select [(ngModel)]="matl.conductivity_ramp">
+              <option [ngValue]="undefined">No RAMP</option>
+              <option *ngFor="let ramp of (((objectType == 'current') ? ramps : libRamps) | rampFilter:{type:'matl'})" [ngValue]="ramp">{{ramp.id}}</option>
+            </select>
+            <i (click)="addRamp('matl','conductivity')" class="material-icons">add_box</i>
+          </div>
+        </div>
+      </div>
+      <ramp-chart *ngIf="matl.conductivity_ramp && matl.conductivity_ramp.steps.length > 0" [rampId]="matl.conductivity_ramp.id"
+        [value]="matl.conductivity" [objectType]="objectType" [xLabel]="'Temperature'" [yLabel]="'Conductivity'" [units]="['\\degree C','W/(m K)']"></ramp-chart>
+      <div class="form-row">
+        <div>
+          <label>Specific heat: </label>
+          <div class="field-container">
+            <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="matl.specific_heat" decimalInput/>
+            <ng-katex equation="kJ/(kg K)"></ng-katex>
+          </div>
+        </div>
+        <div>
+          <label>Specific heat RAMP: </label>
+          <div class="field-container">
+            <select [(ngModel)]="matl.specific_heat_ramp">
+              <option [ngValue]="undefined">No RAMP</option>
+              <option *ngFor="let ramp of (((objectType == 'current') ? ramps : libRamps) | rampFilter:{type:'matl'})" [ngValue]="ramp">{{ramp.id}}</option>
+            </select>
+            <i (click)="addRamp('matl','specific_heat')" class="material-icons">add_box</i>
+          </div>
+        </div>
+      </div>
+      <ramp-chart *ngIf="matl.specific_heat_ramp && matl.specific_heat_ramp.steps.length > 0" [rampId]="matl.specific_heat_ramp.id"
+        [value]="matl.specific_heat" [xLabel]="'Temperature'" [yLabel]="'Specific heat'" [units]="['\\degree C','kJ/(kg K)']"></ramp-chart>
+    </div>
+  </div>
+
+  <div class="lib-wrapper">
+    <div class="lib-drawer" [ngClass]="ui.geometry.matl.lib == 'closed' ? 'closed' : 'opened'">
+      <div class="lib-label-wrapper">
+        <div class="lib-label" (click)="toggleLibrary()">
+          <label>LIBRARY</label>
+        </div>
+      </div>
+      <div class="lib-area">
+        <div class="list">
+          <div class="list-title" (click)="add(true)">
+            <i class="material-icons">add_box</i> Add MATL
+          </div>
+          <perfect-scrollbar #matlLibScrollbar (psScrollY)="scrollbarUpdate('libMatl')">
+            <div class="list-items">
+              <div class="list-item" *ngFor="let matlItem of lib.matls | slice: ui.geometry.libMatl.begin:(ui.geometry.libMatl.begin + ui.listRange)">
+                <a (click)="activate(matlItem.id, true)" [ngClass]="{active: matlItem === matl}">{{matlItem.id}}</a>
+                <i class="material-icons" ng-click="importLibraryItem(matlItem.id)">content_copy</i>
+                <i class="material-icons red" (click)="delete(matlItem.id, true)">delete_forever</i>
+              </div>
+            </div>
+          </perfect-scrollbar>
+          <div class="list-bottom" *ngIf="libMatls.length > ui.listRange">
+            <i class="material-icons" *ngIf="ui.geometry.libMatl.begin > 0" (click)="uiStateService.decreaseRange('geometry.libMatl')">chevron_left</i>
+            <div>{{ui.geometry.libMatl.begin}} - {{ui.geometry.libMatl.begin + ui.listRange > libMatls.length ? libMatls.length
+              : ui.geometry.obst.begin + ui.listRange}}</div>
+            <i class="material-icons" *ngIf="ui.geometry.libMatl.begin + ui.listRange < libMatls.length" (click)="uiStateService.increaseRange('geometry.libMatl')">chevron_right</i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
