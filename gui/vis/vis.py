@@ -106,8 +106,7 @@ class Vis():
                 self._static[floor]['paperjs_extras']=z
             
 # }}}
-    def _reorder_animations(self, z):# {{{
-        return
+    def _js_reorder_animations(self, z):# {{{
         '''
         sort_id -1, -2, -3 come from the server.
         sort_id > 1 come from workers -- sort_id is sim_id.
@@ -115,25 +114,42 @@ class Vis():
         The server starts with -1 and next animations have -1 added.
         '''
 
+        sorted_anims=[]
         d=[]
         for i,j in enumerate(z):
             d.append((j['sort_id'],i))
-        ordered=sorted(d)
-        dd(ordered)
+        sorted_d=sorted(d)
+        for i in sorted_d:
+            sorted_anims.append(z[i[1]])
+        lowest_id=sorted_d[0][0]
+        return (sorted_anims, lowest_id - 1)
+
 # }}}
     def _save(self):# {{{
         ''' 
         Static.json is written each time, because obstacles may be available /
         non-available, so it is not constans. Except from static.json we update
         animations listing here (anims.json)
+
+        Animations are also updated from workers via gearman.
+
+        /usr/local/aamks/current/workers/vis/anims.json
         '''
 
         self.json.write(self._static, '{}/static.json'.format(self.vis_dir)) 
 
+        try:
+            z=self.json.read("{}/anims.json".format(self.vis_dir))
+            z,lowest_id=self._js_reorder_animations(z)
+        except:
+            z=[]
+            lowest_id=-1
+
         records=[]
         for floor in self._static.keys():
             anim_record=OrderedDict()
-            anim_record['sort_id']=0.001
+            anim_record['sort_id']=lowest_id
+            lowest_id-=1
             anim_record['title']="{}-{}, f{}".format(self.title, datetime.now().strftime('%H:%M'), floor)
             anim_record['floor']=floor
             anim_record['fire_origin']=self.fire_origin
@@ -143,13 +159,8 @@ class Vis():
             else:
                 anim_record['anim']="{}".format(self.src)
 
-            records.append(anim_record)
+            records = [anim_record] + records
 
-        try:
-            z=self.json.read("{}/anims.json".format(self.vis_dir))
-            self._reorder_animations(z)
-        except:
-            z=[]
-        z+=records
+        z = records + z
         self.json.write(z, "{}/anims.json".format(self.vis_dir))
 # }}}

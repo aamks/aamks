@@ -13,7 +13,7 @@ from montecarlo.evac_mcarlo import EvacMcarlo
 OnInit()
 Geom()
 Path() # TODO: seems like we should call it elsewhere
-#CfastTessellate()
+CfastTessellate()
 CfastMcarlo()
 EvacMcarlo()
 OnEnd()
