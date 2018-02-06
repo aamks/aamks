@@ -1,3 +1,4 @@
+import {Fire} from '../fds-object/fire';
 import {JetFan} from '../fds-object/jet-fan';
 import { Surf } from '../fds-object/surf';
 import { Matl } from '../fds-object/matl';
@@ -11,6 +12,7 @@ export interface LibraryObject {
 	surfs: Surf[],
 	ventsurfs: Surf[],
 	jetfans: JetFan[],
+	fires: Fire[],
 }
 
 export class Library {
@@ -20,6 +22,7 @@ export class Library {
 	private _surfs: Surf[];
 	private _ventsurfs: SurfVent[];
 	private _jetfans: JetFan[];
+	private _fires: Fire[];
 
 	constructor(jsonString: string) {
 
@@ -45,6 +48,10 @@ export class Library {
 		this.jetfans = get(base, 'jetfans') === undefined ? []: map(base.jetfans, (jetfan) => {
 			return new JetFan(JSON.stringify(jetfan), this.ramps);
 
+		});
+
+		this.fires = get(base, 'fires') === undefined ? []: map(base.fires, (fire) => {
+			return new Fire(JSON.stringify(fire), this.ramps);
 		});
 
 	}
@@ -87,6 +94,14 @@ export class Library {
 
 	public set jetfans(value: JetFan[]) {
 		this._jetfans = value;
+	}
+
+	public get fires(): Fire[] {
+		return this._fires;
+	}
+
+	public set fires(value: Fire[]) {
+		this._fires = value;
 	}
 
 }

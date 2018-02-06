@@ -74,6 +74,7 @@ import { SliceComponent } from './views/main/fds/output/slice/slice.component';
 import { IsosurfaceComponent } from './views/main/fds/output/isosurface/isosurface.component';
 import { DeviceComponent } from './views/main/fds/output/device/device.component';
 import { RampComponent } from './views/main/fds/ramp/ramp.component';
+import { InputFileComponent } from './views/main/fds/input-file/input-file.component';
 
 
 @NgModule({
@@ -110,6 +111,7 @@ import { RampComponent } from './views/main/fds/ramp/ramp.component';
     IsosurfaceComponent,
     DeviceComponent,
     RampComponent,
+    InputFileComponent,
   ],
   imports: [
     BrowserModule,

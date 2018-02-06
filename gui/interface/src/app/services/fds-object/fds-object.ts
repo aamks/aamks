@@ -116,6 +116,11 @@ export class Fds {
     let RADI = FdsEntities.RADI;
 
     // Create fire elements
+    // General structure:
+    // fires:
+    //      - fires
+    //      - combustion -> fuel
+    //      - radiation
     this.fires.fires = (_.get(base, 'fires.fires') === undefined ? [] : _.map(base.fires.fires, (fire) => {
       return new Fire(JSON.stringify(fire), this.ramps.ramps);
     }));

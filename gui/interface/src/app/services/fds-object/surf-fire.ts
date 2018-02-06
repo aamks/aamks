@@ -4,7 +4,7 @@ import * as _ from 'lodash';
 import { Ramp } from './ramp';
 
 export interface SurfFireObject {
-    id: number,
+    id: string,
     uuid: string,
     idAC: number,
     color: string,
@@ -23,7 +23,7 @@ export interface SurfFireObject {
 
 export class SurfFire {
 
-    private _id: number;
+    private _id: string;
     private _uuid: string;
     private _idAC: number;
     private _color: string;
@@ -40,7 +40,7 @@ export class SurfFire {
 
         let SURF = FdsEntities.SURF;
 
-        this.id = base.id || 0;
+        this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
 
@@ -72,10 +72,9 @@ export class SurfFire {
             if (!ramps) {
                 this.ramp = { id: '' };
             } else {
-                //this.ramp = _.find(ramps, function (ramp) {
-                //    // TODO sprawdzic
-                //    return ramp.id == base.ramp_id;
-                //})
+                this.ramp = _.find(ramps, (ramp) => {
+                    return ramp.id == base.ramp_id;
+                });
                 if (this.ramp === undefined)
                     this.ramp = { id: '' };
             }
@@ -83,61 +82,61 @@ export class SurfFire {
 
     }
 
-	public get id(): number {
-		return this._id;
-	}
+    public get id(): string {
+        return this._id;
+    }
 
-	public set id(value: number) {
-		this._id = value;
-	}
+    public set id(value: string) {
+        this._id = value;
+    }
 
-	public get uuid(): string {
-		return this._uuid;
-	}
+    public get uuid(): string {
+        return this._uuid;
+    }
 
-	public set uuid(value: string) {
-		this._uuid = value;
-	}
+    public set uuid(value: string) {
+        this._uuid = value;
+    }
 
-	public get idAC(): number {
-		return this._idAC;
-	}
+    public get idAC(): number {
+        return this._idAC;
+    }
 
-	public set idAC(value: number) {
-		this._idAC = value;
-	}
+    public set idAC(value: number) {
+        this._idAC = value;
+    }
 
-	public get color(): string {
-		return this._color;
-	}
+    public get color(): string {
+        return this._color;
+    }
 
-	public set color(value: string) {
-		this._color = value;
-	}
+    public set color(value: string) {
+        this._color = value;
+    }
 
-	public get fire_type(): string {
-		return this._fire_type;
-	}
+    public get fire_type(): string {
+        return this._fire_type;
+    }
 
-	public set fire_type(value: string) {
-		this._fire_type = value;
-	}
+    public set fire_type(value: string) {
+        this._fire_type = value;
+    }
 
-	public get hrr(): object {
-		return this._hrr;
-	}
+    public get hrr(): object {
+        return this._hrr;
+    }
 
-	public set hrr(value: object) {
-		this._hrr = value;
-	}
+    public set hrr(value: object) {
+        this._hrr = value;
+    }
 
-	public get ramp(): object {
-		return this._ramp;
-	}
+    public get ramp(): object {
+        return this._ramp;
+    }
 
-	public set ramp(value: object) {
-		this._ramp = value;
-	}
+    public set ramp(value: object) {
+        this._ramp = value;
+    }
 
     public toJSON(): object {
         var surf = {

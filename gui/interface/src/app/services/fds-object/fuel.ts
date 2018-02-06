@@ -8,7 +8,7 @@ import * as _ from 'lodash';
 import { FdsEnums } from '../../enums/fds-enums';
 
 export interface FuelObject {
-    id: number,
+    id: string,
     uuid: string,
     idAC: number,
     editable: boolean,
@@ -28,7 +28,7 @@ export interface FuelObject {
 }
 
 export class Fuel {
-    private _id: number;
+    private _id: string;
     private _uuid: string;
     private _idAC: number;
     private _editable: boolean;
@@ -55,7 +55,7 @@ export class Fuel {
         let REAC = FdsEntities.REAC;
         let RADCALS = FdsEnums.radcals;
 
-        this.id = base.id || 0;
+        this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
 
@@ -106,11 +106,11 @@ export class Fuel {
 
     }
 
-	public get id(): number {
+	public get id(): string {
 		return this._id;
 	}
 
-	public set id(value: number) {
+	public set id(value: string) {
 		this._id = value;
 	}
 

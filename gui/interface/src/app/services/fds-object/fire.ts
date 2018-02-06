@@ -4,7 +4,7 @@ import { SurfFire } from './surf-fire';
 import { VentFire } from './vent-fire';
 
 export interface FireObject {
-    id: number,
+    id: string,
     uuid: string,
     idAC: number,
     editable: boolean,
@@ -13,7 +13,7 @@ export interface FireObject {
 }
 
 export class Fire {
-    private _id: number;
+    private _id: string;
     private _uuid: string;
     private _idAC: number;
     private _editable: boolean;
@@ -29,7 +29,7 @@ export class Fire {
 
         //let HOLE = FdsEntities.HOLE;
 
-        this.id = base.id || 0;
+        this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
         this.editable = (base.editable == true);
@@ -71,11 +71,11 @@ export class Fire {
         return time;
     }
 
-	public get id(): number {
+	public get id(): string {
 		return this._id;
 	}
 
-	public set id(value: number) {
+	public set id(value: string) {
 		this._id = value;
 	}
 

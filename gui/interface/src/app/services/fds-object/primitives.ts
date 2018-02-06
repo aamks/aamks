@@ -7,12 +7,12 @@ export class Xb {
     private _z2: number;
 
     constructor(xb: number[]) {
-        this.x1 = xb[0];
-        this.x2 = xb[1];
-        this.y1 = xb[2];
-        this.y2 = xb[3];
-        this.z1 = xb[4];
-        this.z2 = xb[5];
+        this.x1 = xb[0] || 0;
+        this.x2 = xb[1] || 1;
+        this.y1 = xb[2] || 0;
+        this.y2 = xb[3] || 1;
+        this.z1 = xb[4] || 0;
+        this.z2 = xb[5] || 1;
     }
 
     /** getter/setter x1 */

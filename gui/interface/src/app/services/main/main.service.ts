@@ -29,15 +29,21 @@ export class MainService {
   }
 
   /** Get max id from list */
-  public getListId(list: any[]): number {
+  public getListId(list: any[], type?: string): number {
     if (list.length > 0) {
 
       let maxId = 0;
+      let id: number;
 
       // Check max Id of existing elements
       _.each(list, function (element) {
         if (element['id'] != "") {
-          let id = Number(element['id'].toString().substr(4));
+          if(type == 'jetfan') {
+            id = Number(element['id'].toString().substr(6));
+          }
+          else {
+            id = Number(element['id'].toString().substr(4));
+          }
 
           if (id > maxId) {
             maxId = id;

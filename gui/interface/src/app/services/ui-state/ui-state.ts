@@ -15,8 +15,8 @@ export class UiState {
 
 	constructor() {
 		this.fdsMenu = {
-			geometry: true,
-			ventilation: true,
+			geometry: false,
+			ventilation: false,
 			fire: true,
 			output: true,
 			species: true
@@ -48,9 +48,10 @@ export class UiState {
 			tab: 0,
 			fire: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
 			libFire: { scrollPosition: 0, begin: 0, elementIndex: 0 },
+			libFuel: { scrollPosition: 0, begin: 0, elementIndex: 0 },
+			// Not needed for now below
 			group: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' },
 			fuel: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' },
-			libFuel: { scrollPosition: 0, begin: 0, elementIndex: 0 }
 		}
 
 		this.output = {

@@ -5,7 +5,7 @@ import * as _ from 'lodash';
 import { Ramp } from './ramp';
 
 export interface JetFanObject {
-    id: number,
+    id: string,
     uuid: string,
     idAC: number,
     color: string,
@@ -21,7 +21,7 @@ export interface JetFanObject {
 }
 
 export class JetFan {
-    private _id: number;
+    private _id: string;
     private _uuid: string;
     private _idAC: number;
     private _color: string;
@@ -48,7 +48,7 @@ export class JetFan {
         let HVAC = FdsEntities.HVAC;
         let DEVC = FdsEntities.DEVC;
 
-        this.id = base.id || 0;
+        this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
         this.color = _.toString(_.get(base, 'color', SURF.COLOR.default[0]));
@@ -57,8 +57,8 @@ export class JetFan {
         this.xb = new Xb(_.toArray(base.xb)) || new Xb(VENT.XB.default);
 
         this.flow = {
-            type: _.get(base, 'flow.type', 'velocity'),
-            oldType: 'velocity',
+            type: _.get(base, 'flow.type', 'volumeFlow'),
+            oldType: 'volumeFlow',
             volume_flow: _.toNumber(_.get(base, 'flow.volume_flow', SURF.VOLUME_FLOW.default[0])),
             volume_flow_per_hour: _.toNumber(_.get(base, 'flow.volume_flow_per_hour', SURF.VOLUME_FLOW.default[0] * 3600)),
             mass_flow: _.toNumber(_.get(base, 'flow.mass_flow', SURF.MASS_FLUX.default[0])),
@@ -150,11 +150,11 @@ export class JetFan {
         }
     }
 
-    public get id(): number {
+    public get id(): string {
         return this._id;
     }
 
-    public set id(value: number) {
+    public set id(value: string) {
         this._id = value;
     }
 

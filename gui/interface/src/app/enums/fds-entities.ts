@@ -9729,7 +9729,7 @@ export const FdsEntities =
           },
           FORMULA: {
             type: 'Character',
-            'default': [],
+            'default': [''],
             help: '',
             pattern: '',
             valid_ranges: [
@@ -9747,7 +9747,7 @@ export const FdsEntities =
           },
           FUEL: {
             type: 'Character',
-            'default': [],
+            'default': [''],
             help: '',
             pattern: '',
             valid_ranges: [
@@ -9785,9 +9785,7 @@ export const FdsEntities =
           },
           H: {
             type: 'Real',
-            'default': [
-              1.75
-            ],
+            'default': [ 1.75 ],
             help: '',
             pattern: '',
             valid_ranges: [
@@ -12507,9 +12505,7 @@ export const FdsEntities =
           TAU_Q: {
             type: 'Real',
             units: 's',
-            'default': [
-              1.
-            ],
+            'default': [ 1. ],
             help: '',
             pattern: '',
             valid_ranges: [
@@ -12846,7 +12842,7 @@ export const FdsEntities =
           VEL_T: {
             type: 'RealPair',
             'default': [
-              '0,0'
+              0,0,0
             ],
             units: 'm/s',
             help: '',
@@ -12866,7 +12862,7 @@ export const FdsEntities =
           },
           VOLUME_FLOW: {
             type: 'Real',
-            'default': 0,
+            'default': [0],
             units: 'm^3/s',
             help: '',
             pattern: '',

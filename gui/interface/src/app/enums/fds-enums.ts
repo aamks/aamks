@@ -2079,6 +2079,22 @@ export const FdsEnums =
                 { label: 'Smoke detector', value: 'smoke_detector' }
             ],
         },
+        FIRE: {
+            fireType: [
+                { label: 'Constant HRR', value: 'constant_hrr' },
+                { label: 'Time dependent HRRPUA', value: 'time_dependent_hrrpua' },
+                { label: 'Radially spreading fire', value: 'radially_spreading' }
+            ],
+            hrrType: [
+                { label: 'HRRPUA', value: 'hrrpua' },
+                { label: 'MLRPUA', value: 'mlrpua' }
+            ],
+            timeFunction: [
+                { label: 'RAMP', value: 'ramp' },
+                { label: 'TAU_Q', value: 'tauq' }
+            ],
+
+        },
         radcals: [
             { label: 'Methane', value: 'methane' },
             { label: 'Propane', value: 'propane' },
@@ -2099,19 +2115,6 @@ export const FdsEnums =
             { label: 'Fire', value: 'fire' },
             { label: 'Ventilation', value: 'vent' },
             { label: 'Pressure', value: 'pres' }
-        ],
-        fireType: [
-            { label: 'Constant HRR', value: 'constant_hrr' },
-            { label: 'Time dependent HRRPUA', value: 'time_dependent_hrrpua' },
-            { label: 'Radially spreading fire', value: 'radially_spreading' }
-        ],
-        timeFunction: [
-            { label: 'RAMP', value: 'ramp' },
-            { label: 'TAU_Q', value: 'tauq' }
-        ],
-        hrrType: [
-            { label: 'HRRPUA', value: 'hrrpua' },
-            { label: 'MLRPUA', value: 'mlrpua' }
         ],
         SPEC: {
             specieFlowType: [

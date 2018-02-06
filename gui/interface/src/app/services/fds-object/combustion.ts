@@ -6,7 +6,7 @@ import { FdsEnums } from '../../enums/fds-enums';
 import { FdsEntities } from '../../enums/fds-entities';
 
 export interface CombustionObject {
-    id: number,
+    id: string,
     uuid: string,
     idAC: number,
     turnOnReaction: boolean,
@@ -14,7 +14,7 @@ export interface CombustionObject {
 }
 
 export class Combustion {
-    private _id: number;
+    private _id: string;
     private _uuid: string;
     private _idAC: number;
     private _turnOnReaction: boolean;
@@ -27,7 +27,7 @@ export class Combustion {
 
         let idGeneratorService = new IdGeneratorService;
 
-        this.id = base.id || 0;
+        this.id = base.id || 'My fuel';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
 
@@ -42,11 +42,11 @@ export class Combustion {
 
     }
 
-    public get id(): number {
+    public get id(): string {
         return this._id;
     }
 
-    public set id(value: number) {
+    public set id(value: string) {
         this._id = value;
     }
 

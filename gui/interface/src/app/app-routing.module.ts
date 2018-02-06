@@ -17,6 +17,7 @@ import { BoundaryComponent } from './views/main/fds/output/boundary/boundary.com
 import { SliceComponent } from './views/main/fds/output/slice/slice.component';
 import { IsosurfaceComponent } from './views/main/fds/output/isosurface/isosurface.component';
 import { DeviceComponent } from './views/main/fds/output/device/device.component';
+import { InputFileComponent } from './views/main/fds/input-file/input-file.component';
 
 const routes: Routes = [
   {
@@ -82,6 +83,10 @@ const routes: Routes = [
   {
     path: 'output/device',
     component: DeviceComponent
+  },
+  {
+    path: 'input',
+    component: InputFileComponent
   }
 ];
 

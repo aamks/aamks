@@ -1,3 +1,260 @@
-<p>
-  jetfan works!
-</p>
+<div class="single-amper-container">
+
+  <div class="list">
+    <div class="list-title" (click)="add()">
+      <i class="material-icons">add_box</i> Add JETFAN
+    </div>
+    <perfect-scrollbar #jetfanScrollbar (psScrollY)="scrollbarUpdate('jetfan')">
+      <div class="list-items">
+        <div class="list-item" *ngFor="let jetfanItem of ventilation.jetfans | slice: ui.ventilation.jetfan.begin:(ui.ventilation.jetfan.begin + ui.listRange)">
+          <a (click)="activate(jetfanItem.id)" [ngClass]="{active: jetfanItem === jetfan}">{{jetfanItem.id}}</a>
+          <i class="material-icons red" (click)="delete(jetfanItem.id)">delete_forever</i>
+        </div>
+      </div>
+    </perfect-scrollbar>
+    <div class="list-bottom" *ngIf="ventilation.jetfans.length > ui.listRange">
+      <i class="material-icons" *ngIf="ui.ventilation.jetfan.begin > 0" (click)="uiStateService.decreaseRange('ventilation.jetfan')">chevron_left</i>
+      <div>{{ui.ventilation.jetfan.begin}} - {{ui.ventilation.jetfan.begin + ui.listRange > ventilation.jetfans.length ? ventilation.jetfans.length
+        : ui.ventilation.obst.begin + ui.listRange}}</div>
+      <i class="material-icons" *ngIf="ui.ventilation.jetfan.begin + ui.listRange < ventilation.jetfans.length" (click)="uiStateService.increaseRange('ventilation.jetfan')">chevron_right</i>
+    </div>
+  </div>
+
+
+
+
+  <div class="form-box" [ngClass]="objectType == 'current' ? 'current' : 'library'">
+    <div *ngIf="!jetfan">
+      <label>Select or add new jetfan</label>
+    </div>
+    <div *ngIf="jetfan">
+
+      <div class="form-title">
+        <label>{{jetfan.id}} definition</label>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Id:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.id" stringInput>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-title">
+        <label>Jetfan XB</label>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>X1: </label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.xb.x1" decimalInput>
+            <ng-katex equation="m"></ng-katex>
+          </div>
+        </div>
+        <div>
+          <label>X2: </label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.xb.x2" decimalInput>
+            <ng-katex equation="m"></ng-katex>
+          </div>
+        </div>
+        <div>
+          <label>Y1: </label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.xb.y1" decimalInput>
+            <ng-katex equation="m"></ng-katex>
+          </div>
+        </div>
+        <div>
+          <label>Y2: </label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.xb.y2" decimalInput>
+            <ng-katex equation="m"></ng-katex>
+          </div>
+        </div>
+        <div>
+          <label>Z1: </label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.xb.z1" decimalInput>
+            <ng-katex equation="m"></ng-katex>
+          </div>
+        </div>
+        <div>
+          <label>Z2: </label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.xb.z2" decimalInput>
+            <ng-katex equation="m"></ng-katex>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flow type -->
+      <div class="form-title">
+        <label>Flow</label>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Flow type:</label>
+          <div class="field-container">
+            <select [(ngModel)]="jetfan.flow.type">
+              <option *ngFor="let element of ENUMS_JETFAN.jetfanFlowType" (click)="jetfan.changeFlowType()" [ngValue]="element.value">{{element.label}}</option>
+            </select>
+          </div>
+        </div>
+        <div *ngIf="jetfan.flow.type=='volumeFlow'">
+          <label>Volume flow:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.flow.volume_flow" decimalInput>
+            <ng-katex equation="{m^3}/s"></ng-katex>
+            <input class="ml+" type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.flow.volume_flow_per_hour" decimalInput>
+            <ng-katex equation="{m^3}/h"></ng-katex>
+          </div>
+        </div>
+        <div *ngIf="jetfan.flow.type=='massFlow'">
+          <label>Mass flow:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.flow.mass_flow" decimalInput>
+            <ng-katex equation="kg/s"></ng-katex>
+          </div>
+        </div>
+        <div>
+          <label>Flow direction:</label>
+          <div class="field-container">
+            <select [(ngModel)]="jetfan.direction">
+              <option *ngFor="let element of ENUMS_JETFAN.jetfanDirection" [ngValue]="element.value">{{element.label}}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label>Area type:</label>
+          <div class="field-container">
+            <select [(ngModel)]="jetfan.area.type">
+              <option *ngFor="let element of ENUMS_JETFAN.jetfanAreaType" (click)="jetfan.changeAreaType()" [ngValue]="element.value">{{element.label}}</option>
+            </select>
+          </div>
+        </div>
+        <div *ngIf="jetfan.area.type=='area'">
+          <label>Area:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.area.area" decimalInput />
+            <ng-katex equation="m^2"></ng-katex>
+          </div>
+        </div>
+        <div *ngIf="jetfan.area.type=='diameter'">
+          <label>Diameter:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.area.diameter" decimalInput />
+            <ng-katex equation="m"></ng-katex>
+          </div>
+        </div>
+        <div *ngIf="jetfan.area.type=='perimeter'">
+          <label>Perimeter:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.area.perimeter" decimalInput />
+            <ng-katex equation="m"></ng-katex>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>RAMP:</label>
+          <div class="field-container">
+            <select [(ngModel)]="jetfan.ramp">
+              <option [ngValue]="undefined">No RAMP</option>
+              <option *ngFor="let ramp of (((objectType == 'current') ? ramps : libRamps) | rampFilter:{type:'vent'})" [ngValue]="ramp">{{ramp.id}}</option>
+            </select>
+            <i (click)="addRamp('vent')" class="material-icons">add_box</i>
+          </div>
+        </div>
+      </div>
+      <ramp-chart *ngIf="jetfan.ramp && jetfan.ramp.steps.length > 0" [rampId]="jetfan.ramp.id" [value]="jetfan.flow.volume_flow"
+        [objectType]="objectType" [xLabel]="'Time'" [yLabel]="'Volume flow'" [units]="['s','m^3/s']"></ramp-chart>
+
+      <!-- Tangential flow -->
+      <div class="form-row">
+        <div>
+          <label>Louver:</label>
+          <div class="field-container">
+            <input type="checkbox" [(ngModel)]="jetfan.louver.active" />
+          </div>
+        </div>
+        <div *ngIf="jetfan.louver.active">
+          <label>U-vector:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.louver.tangential1" decimalInput />
+          </div>
+        </div>
+        <div *ngIf="jetfan.louver.active">
+          <label>V-vector:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.louver.tangential2" decimalInput />
+          </div>
+        </div>
+        <div *ngIf="jetfan.louver.active">
+          <label>W-vector:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.louver.tangential3" decimalInput />
+          </div>
+        </div>
+      </div>
+
+      <!-- Devc -->
+      <div class="form-row">
+        <div>
+          <label>Destruction temperature:</label>
+          <div class="field-container">
+            <input type="checkbox" [(ngModel)]="jetfan.devc.active" />
+          </div>
+        </div>
+        <div *ngIf="jetfan.devc.active">
+          <label>Temperature:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.devc.setpoint" decimalInput />
+            <ng-katex equation="^{\circ}C"></ng-katex>
+          </div>
+        </div>
+      </div>
+
+
+
+    </div>
+  </div>
+
+
+
+
+  <div class="lib-wrapper">
+    <div class="lib-drawer" [ngClass]="ui.ventilation.jetfan.lib == 'closed' ? 'closed' : 'opened'">
+      <div class="lib-label-wrapper">
+        <div class="lib-label" (click)="toggleLibrary()">
+          <label>LIBRARY</label>
+        </div>
+      </div>
+      <div class="lib-area">
+        <div class="list">
+          <div class="list-title" (click)="add(true)">
+            <i class="material-icons">add_box</i> Add JETFAN
+          </div>
+          <perfect-scrollbar #jetfanLibScrollbar (psScrollY)="scrollbarUpdate('libJetfan')">
+            <div class="list-items">
+              <div class="list-item" *ngFor="let jetfanItem of lib.jetfans | slice: ui.ventilation.libJetfan.begin:(ui.ventilation.libJetfan.begin + ui.listRange)">
+                <a (click)="activate(jetfanItem.id, true)" [ngClass]="{active: jetfanItem === jetfan}">{{jetfanItem.id}}</a>
+                <i class="material-icons" ng-click="importLibraryItem(jetfanItem.id)">content_copy</i>
+                <i class="material-icons red" (click)="delete(jetfanItem.id, true)">delete_forever</i>
+              </div>
+            </div>
+          </perfect-scrollbar>
+          <div class="list-bottom" *ngIf="libJetfans.length > ui.listRange">
+            <i class="material-icons" *ngIf="ui.ventilation.libJetfan.begin > 0" (click)="uiStateService.decreaseRange('ventilation.libJetfan')">chevron_left</i>
+            <div>{{ui.ventilation.libJetfan.begin}} - {{ui.ventilation.libJetfan.begin + ui.listRange > libJetfans.length ? libJetfans.length
+              : ui.ventilation.obst.begin + ui.listRange}}</div>
+            <i class="material-icons" *ngIf="ui.ventilation.libJetfan.begin + ui.listRange < libJetfans.length" (click)="uiStateService.increaseRange('ventilation.libJetfan')">chevron_right</i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
