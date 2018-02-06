@@ -26,20 +26,21 @@ class SmokeQuery():
         ''' 
 
         self.json = Json()
-        self.s = Sqlite("{}/aamks.sqlite".format(path))
+        self.path = path
+        self.s = Sqlite("{}/aamks.sqlite".format(self.path))
         self.simulation_time = 100
         self._read_tessellation(floor)
         self._make_cell2compa()
         self._init_compa_conditions()
         self._cfast_headers()
-        while 1:
-             t = 20
-             time.sleep(1)
-             if self.read_cfast_records(t) == 1:
-                 print(self.get_conditions((1, 1), t))
-                 sys.exit()
-             else:
-                 print("CFAST not ready")
+        #while 1:
+        #     t = 20
+        #     time.sleep(1)
+        #     if self.read_cfast_records(t) == 1:
+        #         print(self.get_conditions((1005, 1), t))
+        #         sys.exit()
+        #     else:
+        #         print("CFAST not ready")
 
     def _read_tessellation(self, floor):# {{{
         ''' 
@@ -57,7 +58,6 @@ class SmokeQuery():
         self._query_vertices=OrderedDict()
         for k,v in tessellation['query_vertices'].items():
             self._query_vertices[make_tuple(k)]=v
-        dd(self._query_vertices)
 # }}}
     def _make_cell2compa_record(self,cell):# {{{
         try:
@@ -80,11 +80,11 @@ class SmokeQuery():
             compa="outside"
             time=0
             print("Agent outside needs fixing")
-        z=self.json.read('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
-        z['circles'].append( { "xy": q, "radius": 10, "fillColor": "#f0f", "opacity": 0.9 } )
-        z['circles'].append( { "xy": r, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
-        z['texts'].append(   { "xy": q, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
-        self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        #z=self.json.read('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        #z['circles'].append( { "xy": q, "radius": 10, "fillColor": "#f0f", "opacity": 0.9 } )
+        #z['circles'].append( { "xy": r, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
+        #z['texts'].append(   { "xy": q, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
+        #self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
         return "Conditions at {} @ {}s ({},{}) in [{},{}]: {}".format(compa, time, q[0],q[1], r[0],r[1], self._compa_conditions[(compa,time)])
 # }}}
     def _init_compa_conditions(self):  # {{{
@@ -119,7 +119,7 @@ class SmokeQuery():
 
         self._headers=OrderedDict()
         for letter in ['n', 's', 'w']:
-            f = '{}/fire/test/cfast_{}.csv'.format(os.environ['AAMKS_PATH'], letter)
+            f = '{}/cfast_{}.csv'.format(self.path, letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 headers = []
@@ -139,7 +139,7 @@ class SmokeQuery():
         '''
 
         needed_record=int(time/10)+1
-        with open('/tmp/cfast_n.csv') as f:
+        with open('{}/cfast_n.csv'.format(self.path)) as f:
             num_data_records=sum(1 for _ in f)-4
         if num_data_records > needed_record:
             return 1
@@ -157,7 +157,7 @@ class SmokeQuery():
             return 0
 
         for letter in ['n', 's', 'w']:
-            f = '{}/fire/test/cfast_{}.csv'.format(os.environ['AAMKS_PATH'], letter)
+            f = '{}/cfast_{}.csv'.format(self.path, letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):

@@ -32,6 +32,7 @@ class EvacEnv:
         self.rset = 0
         self.per_9 = 0
         self.general = aamks_vars['GENERAL']
+        self.config['NUM_OF_STEPS'] = aamks_vars['AAMKS_CONF']['NUM_OF_STEPS']
 
         self.sim = rvo2.PyRVOSimulator(self.config['TIME_STEP'], self.config['NEIGHBOR_DISTANCE'],
                                        self.config['MAX_NEIGHBOR'], self.config['TIME_HORIZON'],

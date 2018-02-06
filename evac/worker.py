@@ -115,9 +115,13 @@ class Worker():
 
     def read_data_from_cfast(self):
         sq = SmokeQuery(floor='1', path=self.vars['conf']['GENERAL']['WORKSPACE'])
+        ready = sq.read_cfast_records(20)
+        print(sq.get_conditions((1005, 1), 20))
+        print(ready)
 
     def create_geom_database(self):
         self.s = Sqlite("{}/aamks.sqlite".format(self.vars['conf']['GENERAL']['WORKSPACE']))
+        #self.s.dumpall()
         self.geom = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         for i in self.geom['points']:
             print(i)
