@@ -15,6 +15,7 @@
         "C_CONST": 8,
         "LAYER_HEIGHT": 1.8
     },
+     
     "AAMKS_CONF": {
         "TIME_STEP": 0.05,
         "NUM_OF_STEPS": 24000,
@@ -25,5 +26,6 @@
         "RADIUS": 30,
         "NODE_RADIUS": 30,
         "WALL_MARGIN": 30
-    }
+    },
+	"CFAST_STATIC_RECORDS": [ "MVENT1", "MVENT2", "MVENT3" ] 
 }

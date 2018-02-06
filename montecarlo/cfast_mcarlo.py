@@ -59,7 +59,6 @@ class CfastMcarlo():
         return outdoor_temp
 # }}}
     def _draw_fire(self):# {{{
-        #origin_in_room=binomial(1,self.dists['origin_of_fire']['fire_starts_in_room_probability'])
         origin_in_room=binomial(1,self.dists['building_category'][self.conf['GENERAL']['BUILDING_CATEGORY']]['origin_of_fire']['fire_starts_in_room_probability'])
         
         self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY name") ]
@@ -84,11 +83,11 @@ class CfastMcarlo():
 
 # }}}
     def _draw_fire_properties(self,intervals):# {{{
-        i=OrderedDict()
+        i              = OrderedDict()
         i['coyield']   = round(uniform(0.01,0.043),3)
         i['sootyield'] = round(uniform(0.11,0.17),3)
-        i['trace']      = 0
-        i['q_star']      = round(uniform(0.5,2),3) 
+        i['trace']     = 0
+        i['q_star']    = round(uniform(0.5,2),3)
         i['heigh']     = 0
         i['radfrac']   = round(gamma(124.48,0.00217),3)
         i['heatcom']   = round(uniform(16400000,27000000),1)
@@ -106,6 +105,11 @@ class CfastMcarlo():
         return result
 # }}}
     def _draw_fire_development(self): # {{{
+        ''' 
+        Generate the fire. Alpha t square on the left, then constant in the
+        middle, then fading on the right. At the end read hrrs at given times.
+        '''
+
         i=self.dists['building_category'][self.conf['GENERAL']['BUILDING_CATEGORY']]['heat_release_rate']
         hrr_peak=int(uniform(i['max_HRR'][0],i['max_HRR'][1])*1000)
         alpha=int(triangular(i['alfa_min_mode_max'][0], i['alfa_min_mode_max'][1], i['alfa_min_mode_max'][2])*1000)
@@ -133,10 +137,16 @@ class CfastMcarlo():
         times=list(times0 + times1 + times2)
         hrrs=list(hrrs0 + hrrs1 + hrrs2)
 
-        #self.geom.dd_plot(times,hrrs,"hrr_peak:{}, alpha:{}".format(hrr_peak/1000, alpha/1000))
         return (times,hrrs)
 # }}}
     def _draw_window_opening(self,outdoor_temp): # {{{
+        ''' 
+        Windows are opened / closed based on outside temperatures but even
+        still, there's a distribution of users willing to open/close the
+        windows. Windows can be full-open (1), quarter-open (0.25) or closed
+        (0). 
+        '''
+
         draw_value=uniform(0,1)
         for i in self.dists['window_open']['setup']:
             if outdoor_temp > i['outside_temperature_range'][0] and outdoor_temp <= i['outside_temperature_range'][1]:
@@ -151,7 +161,11 @@ class CfastMcarlo():
         
 # }}}
     def _draw_door_and_hole_opening(self,Type):# {{{
-        ''' Door may be open or closed, but Hole is always open and we don't need to log that '''
+        ''' 
+        Door may be open or closed, but Hole is always open and we don't need
+        to log that.
+        '''
+
         if Type=='D':
             how_much_open=binomial(1,self.dists['door_open']['standard_door_is_open_probability'])
             self._psql_log_variable(Type.lower(),how_much_open)
@@ -189,6 +203,8 @@ class CfastMcarlo():
 
 # CFAST SECTIONS
     def _make_cfast(self):# {{{
+        ''' Compose cfast.in sections '''
+
         outdoor_temp=self._draw_outdoor_temp()
         txt=(
             self._section_preamble(outdoor_temp),
@@ -264,7 +280,7 @@ class CfastMcarlo():
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
     def _section_windows(self,outdoor_temp):# {{{
-        ''' Randomize how windows are opened/close. '''
+        ''' Randomize how windows are opened/closed. '''
         txt=['!! WINDOWS, from,to,id,width,soffit,sill,offset,face,open']
         windows_setup=[]
         for v in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='WIN' ORDER BY vent_from,vent_to"):
@@ -315,13 +331,13 @@ class CfastMcarlo():
     def _section_vvent(self):# {{{
         # VVENT AREA, SHAPE, INITIAL_FRACTION
         txt=['!! VVENT,top,bottom,id,area,shape,rel_type,criterion,target,i_time, i_frac, f_time, f_frac, offset_x, offset_y']
-        for v in self.s.query("SELECT distinct v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_pri='VVENT' AND c.type_pri = 'COMPA' ORDER BY v.vent_from,v.vent_to"):
+        for v in self.s.query("SELECT distinct v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_pri='VVENT' AND c.type_pri = 'COMPA' ORDER BY v.vent_from,v.vent_to"):
             collect=[]
             collect.append('VVENT')                                         # VVENT AREA, SHAPE, INITIAL_FRACTION
             collect.append(v['vent_from'])                                  # COMPARTMENT1
             collect.append(v['vent_to'])                                    # COMPARTMENT2
             collect.append(v['vvent_room_seq'])                             # VENT_NUMBER
-            collect.append(round((v['width']*v['depth'])/1e4, 2))           # AREA TODO: isn't it v['room_area']?
+            collect.append(v['room_area'])                                  # AREA OF THE ROOM, feb.2018: previously: round((v['width']*v['depth'])/1e4, 2)
             collect.append(2)                                               # Type of dumper 1 - round, 2 - squere
             collect.append('TIME')                                          # Type of realease
             collect.append('')                                              # empty for time release
@@ -424,11 +440,15 @@ class CfastMcarlo():
 
 # }}}
     def _section_static(self):# {{{
-        ''' This section is for any static data defined in self.conf['CFAST_STATIC_RECORDS'].  
-        It will be added to all your cfast.in files 
+        ''' 
+        This section is for any static data defined in
+        self.conf['CFAST_STATIC_RECORDS']. It will be added to all your
+        cfast.in files. Useful for stuff that aamks doesn't produce, but you
+        want in each of your 1.000 cfast.in files.
         '''
-        #txt=self.conf['CFAST_STATIC_RECORDS']
-        #return "\n".join(txt)+"\n" if len(txt)>1 else ""
+
+        txt=self.conf['CFAST_STATIC_RECORDS']
+        return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
 
     def _new_psql_log(self):#{{{
@@ -457,8 +477,12 @@ class CfastMcarlo():
         ])
 #}}}
     def _write(self):#{{{
-        ''' Write cfast variables to postgres. Also, since we invent ROOM_OF_FIRE_ORIGIN here, we need to pass it to evac via sim_id/evac.json. 
-        Both column names and the values for psql come from trusted source, so there should be no security issues with just joining dict data.
+        ''' 
+        Write cfast variables to postgres. Also, since we invent
+        ROOM_OF_FIRE_ORIGIN here, we need to pass it to evac via
+        sim_id/evac.json. Both column names and the values for psql come from
+        trusted source, so there should be no security issues with just joining
+        dict data (non-parametrized query). 
         '''
 
         pairs=[]

@@ -170,7 +170,7 @@ class CfastTessellate():
                 z['circles'].append( { "xy": mm, "radius": radius, "fillColor": "#fff", "opacity": 0.3 } )
                 z['texts'].append(   { "xy": mm, "content": mm, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
 
-        self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        #self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
         #print('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
     def _dbsave(self):

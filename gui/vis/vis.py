@@ -9,6 +9,7 @@ import json
 import sys
 import inspect
 import json
+from datetime import datetime
 from numpy.random import randint
 from include import Sqlite
 from include import Json
@@ -76,7 +77,8 @@ class Vis():
         '''
 
         try:
-            for floor,obstacles in json.loads(self.s.query("SELECT * FROM obstacles")[0]['json']).items():
+            _json=json.loads(self.s.query("SELECT * FROM obstacles")[0]['json'])
+            for floor,obstacles in _json['named'].items():
                 self._static[floor]['obstacles']=obstacles
         except:
             for floor in self._static.keys():
@@ -85,7 +87,8 @@ class Vis():
     def _js_append_paperjs_extras(self):# {{{
         ''' 
         We can plot some extra rectangles, points, lines and circles on top of
-        our paperjs geoms 
+        our paperjs geoms. paperjs_extras.json is optional -- aamks if fine if
+        the file doesn't exist. 
         '''
 
         try:
@@ -103,6 +106,21 @@ class Vis():
                 self._static[floor]['paperjs_extras']=z
             
 # }}}
+    def _reorder_animations(self, z):# {{{
+        return
+        '''
+        sort_id -1, -2, -3 come from the server.
+        sort_id > 1 come from workers -- sort_id is sim_id.
+        We want to display latest from the server on top, then the workers.
+        The server starts with -1 and next animations have -1 added.
+        '''
+
+        d=[]
+        for i,j in enumerate(z):
+            d.append((j['sort_id'],i))
+        ordered=sorted(d)
+        dd(ordered)
+# }}}
     def _save(self):# {{{
         ''' 
         Static.json is written each time, because obstacles may be available /
@@ -115,8 +133,8 @@ class Vis():
         records=[]
         for floor in self._static.keys():
             anim_record=OrderedDict()
-            anim_record['sort_id']=0
-            anim_record['title']="{}, f{}".format(self.title, floor)
+            anim_record['sort_id']=0.001
+            anim_record['title']="{}-{}, f{}".format(self.title, datetime.now().strftime('%H:%M'), floor)
             anim_record['floor']=floor
             anim_record['fire_origin']=self.fire_origin
             anim_record['highlight_geom']=self.highlight_geom
@@ -129,6 +147,7 @@ class Vis():
 
         try:
             z=self.json.read("{}/anims.json".format(self.vis_dir))
+            self._reorder_animations(z)
         except:
             z=[]
         z+=records

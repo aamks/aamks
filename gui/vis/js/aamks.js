@@ -96,7 +96,7 @@ function showStaticImage(chosenAnim) {
 		velocitiesSize=Math.round(1/scale);
 		doorsSize=2*wallsSize;
 
-		console.log(dstatic);
+		//console.log(dstatic);
 		rooms=dstatic[floor].rooms;
 		doors=dstatic[floor].doors;
 		obstacles=dstatic[floor].obstacles;

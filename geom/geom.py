@@ -127,10 +127,9 @@ class Geom():
         Cad and inkscape have their (0,0) in bottom left. We will present
         geometries on web with (0,0) in top left, hence we need to invert Y.
         '''
-        miny=self.s.query("SELECT min(y0) AS r FROM aamks_geom")[0]['r']
+
         maxy=self.s.query("SELECT max(y1) AS r FROM aamks_geom")[0]['r']
-        height=maxy-miny
-        self.s.query("UPDATE aamks_geom SET y0=?-y1, y1=?-y0, center_y=?-center_y", (height,height,height))
+        self.s.query("UPDATE aamks_geom SET y0=?-y1, y1=?-y0, center_y=?-center_y", (maxy,maxy,maxy))
 #}}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor):# {{{
         ''' Format a record for sqlite. Hvents get fixed width 4 cm '''
@@ -168,7 +167,7 @@ class Geom():
         self.floors=        [z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self.all_doors=     [z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name") ]
 
-        self.s.query("UPDATE aamks_geom SET room_area=width*depth/10000 WHERE type_pri='COMPA'")
+        self.s.query("UPDATE aamks_geom SET room_area=round(width*depth/10000,2) WHERE type_pri='COMPA'")
         self.s.query("UPDATE aamks_geom SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
 
 # }}}
