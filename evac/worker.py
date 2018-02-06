@@ -30,6 +30,7 @@ class Worker():
         self.fire_dto = None
         self.sim_floors = None
         self.start_time = time.time()
+        self.floors = list()
         self.error_main = 'Error occurred, see aamks.log file for details.'
 
         os.chdir('/home/aamks')
@@ -116,7 +117,7 @@ class Worker():
     def read_data_from_cfast(self):
         sq = SmokeQuery(floor='1', path=self.vars['conf']['GENERAL']['WORKSPACE'])
         ready = sq.read_cfast_records(20)
-        print(sq.get_conditions((1005, 1), 20))
+        a = sq.get_conditions((1005, 1), 20)
         print(ready)
 
     def create_geom_database(self):
@@ -126,8 +127,8 @@ class Worker():
         for i in self.geom['points']:
             print(i)
 
-    def create_evacuees(self):
-        floor_no = '1'
+    def _create_evacuees(self, floor):
+        floor_no = str(floor+1)
 
         evacuees = []
         logging.info('Num of evacuees in file: {}'.format(self.vars['conf'][floor_no]['NUM_OF_EVACUEES']))
@@ -147,55 +148,48 @@ class Worker():
         [e.add_pedestrian(i) for i in evacuees]
 
         logging.info('Num of evacuees created: {}'.format(len(evacuees)))
-        self.evacuees = e
+        return e
 
-    def do_simulations(self):
+    def prepare_simulations(self):
         logging.info('Number of floors processed: {}'.format(len(self.geom['points'])))
-        floors = []
+        obstacles = []
 
-        try:
-            for i in self.geom['points']:
-                floors.append(EvacEnv(self.vars['conf']))
-        except Exception as e:
-            logging.error('Cannot create RVO2 environment: {}'.format(str(e)))
-            sys.exit(1)
+        for i in range(len(self.geom['points'])-1):
+            try:
+                env = EvacEnv(self.vars['conf'])
+            except Exception as e:
+                logging.error('Cannot create RVO2 environment: {}'.format(str(e)))
+                sys.exit(1)
+            else:
+                logging.info('RVO2 ready on {} floors'.format(len(self.floors)))
+
+            for obst in self.geom['points'][str(i+1)]:
+                obstacles.append([tuple(x) for x in obst])
+            env.obstacle = obstacles
+            num_of_vertices = env.process_obstacle(obstacles)
+            logging.info('Number of vercites in RVO2: {}'.format(num_of_vertices))
+
+            e = self._create_evacuees(i)
+            env.place_evacuees(e)
+            self.floors.append(env)
+
+    def do_simulation(self):
+        time_frame = 10
+        smokes_dto = list()
+        floor = 1
+        master_query = SmokeQuery(floor='1', path=self.vars['conf']['GENERAL']['WORKSPACE'])
+
+        for i in self.floors:
+            i.smoke_query = SmokeQuery(floor=str(floor), path=self.vars['conf']['GENERAL']['WORKSPACE'])
+            floor += 1
+
+        if master_query.read_cfast_records(time_frame) == 1:
+            for i in self.floors:
+                i.do_simulation(time_frame)
+                time_frame += 10
         else:
-            logging.info('RVO2 ready on {} floors'.format(len(floors)))
+            time.sleep(1)
 
-        try:
-            num_of_floor = 1
-            for floor in floors:
-                obstacles = []
-                for obst in self.geom['points'][str(num_of_floor)]:
-                    obstacles.append([tuple(x) for x in obst])
-                floor.obstacle = obstacles
-                num_of_vertices = floor.process_obstacle(obstacles)
-                logging.info('Number of vercites in RVO2: {}'.format(num_of_vertices))
-                num_of_floor += 1
-        except Exception as e:
-            logging.error('Cannot set obstacle to RVO2: {}'.format(str(e)))
-            sys.exit(1)
-        else:
-            logging.info('Obstacles successfully processed by RVO2')
-        try:
-            for f in floors:
-                f.place_evacuees(self.evacuees)
-        except Exception as e:
-            logging.error('Cannot place evacuees to RVO2: {}'.format(str(e)))
-            sys.exit(1)
-        else:
-            logging.info('Evacuees in RVO2')
-
-        for floor in floors:
-            floor.fire_dto = self.fire_dto
-
-        for floor in floors:
-            floor.do_simulation()
-            logging.info('{} seconds of simulation generated at floor: {}'
-                         .format(round(floor.get_simulation_time(), 2), floors.index(floor)))
-            self.rset = floor.rset
-            self.per_9 = floor.per_9
-        self.sim_floors = floors
 
     def send_report(self, sim_id, project,floor, animation_data, psql_data ): # {{{
         '''
@@ -265,8 +259,8 @@ class Worker():
         self.run_cfast_simulations()
         self.read_data_from_cfast()
         self.create_geom_database()
-        self.create_evacuees()
-        self.do_simulations()
+        self.prepare_simulations()
+        self.do_simulation()
 
 ## }}}
 #

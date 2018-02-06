@@ -33,15 +33,7 @@ class SmokeQuery():
         self._make_cell2compa()
         self._init_compa_conditions()
         self._cfast_headers()
-        #while 1:
-        #     t = 20
-        #     time.sleep(1)
-        #     if self.read_cfast_records(t) == 1:
-        #         print(self.get_conditions((1005, 1), t))
-        #         sys.exit()
-        #     else:
-        #         print("CFAST not ready")
-
+        
     def _read_tessellation(self, floor):# {{{
         ''' 
         Python has this nice dict[(1,2)], but json cannot handle it. We have
@@ -85,7 +77,8 @@ class SmokeQuery():
         #z['circles'].append( { "xy": r, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
         #z['texts'].append(   { "xy": q, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
         #self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
-        return "Conditions at {} @ {}s ({},{}) in [{},{}]: {}".format(compa, time, q[0],q[1], r[0],r[1], self._compa_conditions[(compa,time)])
+
+        return "Conditions at {} @ {}s ({},{}) in [{},{}]: {}".format(compa, time, q[0], q[1], r[0],r[1], self._compa_conditions[(compa, time)])
 # }}}
     def _init_compa_conditions(self):  # {{{
         ''' 

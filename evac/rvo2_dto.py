@@ -2,6 +2,7 @@ import warnings
 warnings.simplefilter('ignore', RuntimeWarning)
 import rvo2
 from evac.evacuees import Evacuees
+from math import ceil
 
 
 class EvacEnv:
@@ -28,7 +29,7 @@ class EvacEnv:
         self.finished_vec = []
         self.trajectory = []
         self.focus = []
-        self.fire_dto = None
+        self.smoke_query = None
         self.rset = 0
         self.per_9 = 0
         self.general = aamks_vars['GENERAL']
@@ -57,7 +58,11 @@ class EvacEnv:
         [self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_max_of_pedestrian(i))
          for i in range(self.evacuees.get_number_of_pedestrians())]
 
-        self.current_time = self.evacuees.get_first_evacuees_time()
+        #self.current_time = self.evacuees.get_first_evacuees_time()
+
+    @staticmethod
+    def discretize_time(time):
+        return int(ceil(time/10.0)) * 10
 
     def save_data_for_visualization(self):
         self.trajectory.append(self.positions)
@@ -101,8 +106,11 @@ class EvacEnv:
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 1:
                 continue
             else:
-                optical_density = self.fire_dto.get_optical_density_in_room(self.evacuees.get_position_of_pedestrian(i),
-                                                                        self.current_time)
+                print(self.evacuees.get_position_of_pedestrian(i), self.discretize_time(self.current_time))
+                optical_density = self.smoke_query.get_conditions(self.evacuees.get_position_of_pedestrian(i),
+                                                                               self.discretize_time(self.current_time))
+                print(self.evacuees.get_position_of_pedestrian(i), self.current_time)
+
                 self.evacuees.update_speed_of_pedestrian(i, optical_density)
                 self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_of_pedestrian(i))
         self.speeds = [int(self.evacuees.get_speed_of_pedestrian(i)) for (i) in range(self.sim.getNumAgents())]
@@ -112,7 +120,7 @@ class EvacEnv:
             if(self.evacuees.get_finshed_of_pedestrian(i)) == 1:
                 continue
             else:
-                fed = self.fire_dto.get_fed(self.evacuees.get_position_of_pedestrian(i), self.current_time)
+                fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i), self.current_time)
                 self.evacuees.update_fed_of_pedestrian(i, fed)
         fed = [self.evacuees.get_fed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
         c = None
@@ -175,9 +183,8 @@ class EvacEnv:
              }
         return json_content
 
-
-    def do_simulation(self):
-        for step in range(self.config['NUM_OF_STEPS']):
+    def do_simulation(self, time):
+        for step in range(int(time/self.config['TIME_STEP'])):
             self.sim.doStep()
             self.update_agents_position()
             self.update_state()
