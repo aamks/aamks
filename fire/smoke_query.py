@@ -17,26 +17,36 @@ from include import Dump as dd
 # }}}
 
 class SmokeQuery():
-    def __init__(self, floor):
+    def __init__(self, floor):# {{{
         ''' 
-        Fill each cell with smoke conditions. Then you can query an (x,y). 
+        * On class init we read tessellation and such (happens once).
+        * We are getting read_cfast_record(T) calls in say 5s intervals:
+          We only store this single T'th record in a dict.
+        * We are getting lots of get_conditions((x,y),param) calls after
+          read_cfast_record(T) returns the needed CFAST record.
+
+        Map each cell to a compa: 
+            (1000, 600): R_1,  (1100, 600): R_2,  ...
+
+        After CFAST produces the conditions at time T, feed _compa_conditions.
         For any evacuee's (x,y) it will be easy to find the square he is in. If
         we have rectangles in our square we use some optimizations to find the
-        correct rectangle. Finally fetch the conditions from the cell. 
+        correct rectangle. Finally fetch the conditions via cell-compa map. 
         ''' 
 
         self.json = Json()
+        # print("temp: /usr/local/aamks/current/workers/1/")
+        # os.chdir("/usr/local/aamks/current/workers/1/")
         self.s = Sqlite("aamks.sqlite")
-        self.simulation_time = 100
         self._read_tessellation(floor)
         self._make_cell2compa()
         self._init_compa_conditions()
         self._cfast_headers()
-        
+        # }}}
     def _read_tessellation(self, floor):# {{{
         ''' 
         Python has this nice dict[(1,2)], but json cannot handle it. We have
-        passed it as dict['(1,2)'] and know need to bring back from str to
+        passed it as dict['(1,2)'] and now need to bring back from str to
         tuple.
         '''
 
@@ -52,21 +62,21 @@ class SmokeQuery():
 # }}}
     def _make_cell2compa_record(self,cell):# {{{
         try:
-            self.cell2compa[cell]=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['name']
+            self._cell2compa[cell]=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['name']
         except:
             pass
 # }}}
     def _make_cell2compa(self):#{{{
-        self.cell2compa=OrderedDict()
+        self._cell2compa=OrderedDict()
         for k,v in self._query_vertices.items():
             self._make_cell2compa_record(k)
             for pt in list(zip(v['x'], v['y'])):
                 self._make_cell2compa_record(pt)
 #}}}
-    def _results(self,q,r,time):# {{{
-        ''' q=query, r=cell. Outside is for debugging - should never happen in aamks. '''
+    def _results(self,query,cell):# {{{
+        ''' Outside is for debugging - should never happen in aamks. '''
         try:
-            compa=self.cell2compa[r]
+            compa=self._cell2compa[cell]
         except:
             compa="outside"
             time=0
@@ -77,18 +87,18 @@ class SmokeQuery():
         #z['texts'].append(   { "xy": q, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
         #self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
 
-        return "Conditions at {} @ {}s ({},{}) in [{},{}]: {}".format(compa, time, q[0], q[1], r[0],r[1], self._compa_conditions[(compa, time)])
+        return self._compa_conditions[compa]
 # }}}
     def _init_compa_conditions(self):  # {{{
         ''' 
         Prepare dict structure for cfast csv values. Csv contain some params that are
-        relevant for aamks and some that are not. The keys are (compa, time):
+        relevant for aamks and some that are not. 
 
-            self._compa_conditions[('R_1' , 0)]: OrderedDict([('CEILT'  , None) , ('DJET' , None) , ...)
-            self._compa_conditions[('R_1' , 10)]: OrderedDict([('CEILT' , None) , ('DJET' , None) , ...)
-            self._compa_conditions[('R_1' , 20)]: OrderedDict([('CEILT' , None) , ('DJET' , None) , ...)
+            self._compa_conditions['R_1']: OrderedDict([('TIME', None), ('CEILT' , None) , ...)
+            self._compa_conditions['R_2']: OrderedDict([('TIME', None), ('CEILT' , None) , ...)
+            self._compa_conditions['R_3']: OrderedDict([('TIME', None), ('CEILT' , None) , ...)
 
-        self._compa_conditions[('outside', 0)]=OrderedDict() is more for debugging.
+        self._compa_conditions['outside']=OrderedDict() is more for debugging.
         '''
 
         self.relevant_params = ('CEILT', 'DJET', 'FLHGT', 'FLOORT', 'HGT',
@@ -101,13 +111,15 @@ class SmokeQuery():
         self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
 
         self._compa_conditions = OrderedDict()
-        for i in self.all_compas:
-            for t in range(0, self.simulation_time+10, 10):
-                self._compa_conditions[(i, t)] = OrderedDict([(x, None) for x in self.relevant_params])
-        self._compa_conditions[('outside', 0)]=OrderedDict()
+        for compa in self.all_compas:
+            self._compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME']+list(self.relevant_params)])
+        self._compa_conditions['outside']=OrderedDict([('TIME',None)])
 # }}}
     def _cfast_headers(self):# {{{
-        ''' Get 3 first rows from n,s,w files and make headers: params and geoms. Happens only once.'''
+        ''' 
+        Get 3 first rows from n,s,w files and make headers: params and geoms.
+        Happens only once.
+        '''
 
         self._headers=OrderedDict()
         for letter in ['n', 's', 'w']:
@@ -128,18 +140,19 @@ class SmokeQuery():
         ''' 
         CFAST dumps 4 header records and then data records. 
         Data records are indexed by time with delta=10s.
+        AAMKS has this delta hardcoded: CFAST dumps data in 10s intervals.
         '''
 
-        needed_record=int(time/10)+1
+        needed_record_id=int(time/10)+1
         with open('cfast_n.csv') as f:
             num_data_records=sum(1 for _ in f)-4
-        if num_data_records > needed_record:
+        if num_data_records > needed_record_id:
             return 1
         else:
             return 0
 # }}}
 
-    def read_cfast_records(self, time):# {{{
+    def read_cfast_record(self, time):# {{{
         ''' 
         We had parsed headers separately. Now we only parse numbers from n,s,w files. 
         Application needs to call us prior to massive queries for conditions at (x,y).
@@ -154,18 +167,21 @@ class SmokeQuery():
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):
                     next(reader)
-                csvData = list()
                 for row in reader:
-                    csvData.append(tuple(float(j) for j in row))
+                    if int(float(row[0])) == time:
+                        needed_record=[int(float(j)) for j in row]
+                        break
 
-            for row in csvData:
-                time = int(row[0])
-                for m in range(len(row)):
-                    if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
-                        self._compa_conditions[self._headers[letter]['geoms'][m], time][self._headers[letter]['params'][m]] = row[m]
+            for compa in self.all_compas:
+                self._compa_conditions[compa]['TIME']=needed_record[0]
+            self._compa_conditions['outside']['TIME']=needed_record[0]
+
+            for m in range(len(needed_record)):
+                if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
+                    self._compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
         return 1
 # }}}
-    def get_conditions(self,q,time):# {{{
+    def get_conditions(self,q):# {{{
         ''' 
         First we find to which square our q belongs. If this square has 0 rectangles
         then we return conditions from the square. If the square has rectangles
@@ -177,13 +193,16 @@ class SmokeQuery():
         y=self.floor_dim['miny'] + self._square_side * int((q[1]-self.floor_dim['miny'])/self._square_side)
 
         if len(self._query_vertices[x,y]['x'])==1:
-            return self._results(q, (x,y), time)
+            return self._results(q, (x,y))
         else:
             for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
                 if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
                     rx=self._query_vertices[(x,y)]['x'][i-1]
                     ry=self._query_vertices[(x,y)]['y'][i-1]
-                    return self._results(q, (rx,ry), time)
-        return self._results(q, (x,y), time) # outside!
+                    return self._results(q, (rx,ry))
+        return self._results(q, (x,y)) # outside!
 # }}}
 
+# s=SmokeQuery("1")
+# s.read_cfast_record(30)
+# print(s.get_conditions((2001,100)))
