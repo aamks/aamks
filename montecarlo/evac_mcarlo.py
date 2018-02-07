@@ -40,7 +40,6 @@ class EvacMcarlo():
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self.dists=self.json.read("{}/distributions.json".format(os.environ['AAMKS_PROJECT']))
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
-        self._evac_conf=OrderedDict()
         self._make_doors_centers()
 
         si=SimIterations(self.conf['GENERAL']['PROJECT_NAME'], self.conf['GENERAL']['NUMBER_OF_SIMULATIONS'])
@@ -152,25 +151,27 @@ class EvacMcarlo():
     def _make_evac_conf(self):# {{{
         ''' Write data to sim_id/evac.json. '''
 
+        self._evac_conf=OrderedDict()
         self._static_evac_conf()
+        self._evac_conf['FLOORS_DATA']=OrderedDict()
         for floor in self.floors:
-            self._evac_conf[floor]=OrderedDict()
-            self._evac_conf[floor]['NUM_OF_EVACUEES']=len(self.evacuees_roadmaps_coords[floor])
-            self._evac_conf[floor]['EVACUEES']=OrderedDict()
+            self._evac_conf['FLOORS_DATA'][floor]=OrderedDict()
+            self._evac_conf['FLOORS_DATA'][floor]['NUM_OF_EVACUEES']=len(self.evacuees_roadmaps_coords[floor])
+            self._evac_conf['FLOORS_DATA'][floor]['EVACUEES']=OrderedDict()
             for i in range(0,len(self.evacuees_roadmaps_coords[floor])):
                 e_id='E{}'.format(i)
 
-                self._evac_conf[floor]['EVACUEES'][e_id]=OrderedDict()
-                self._evac_conf[floor]['EVACUEES'][e_id]['ORIGIN']         = self.evacuees_roadmaps_coords[floor][i].pop(0)
-                self._evac_conf[floor]['EVACUEES'][e_id]['ROADMAP']        = self.evacuees_roadmaps_coords[floor][i]
-                self._evac_conf[floor]['EVACUEES'][e_id]['ROADMAP_ROOMS']  = self.evacuees_roadmaps_rooms[floor][i]
-                self._evac_conf[floor]['EVACUEES'][e_id]['PRE_EVACUATION'] = self._evacuee_pre_evacuation(self.evacuees_roadmaps_rooms[floor][i])
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]=OrderedDict()
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ORIGIN']         = self.evacuees_roadmaps_coords[floor][i].pop(0)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ROADMAP']        = self.evacuees_roadmaps_coords[floor][i]
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ROADMAP_ROOMS']  = self.evacuees_roadmaps_rooms[floor][i]
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION'] = self._evacuee_pre_evacuation(self.evacuees_roadmaps_rooms[floor][i])
 
                 speeds=self.dists['building_category'][self.conf['GENERAL']['BUILDING_CATEGORY']]['evacuees_speed_params']
-                self._evac_conf[floor]['EVACUEES'][e_id]['ALPHA_V']        = round(normal(*speeds['alpha_v_mean_and_sd'])     , 2)
-                self._evac_conf[floor]['EVACUEES'][e_id]['BETA_V']         = round(normal(*speeds['beta_v_mean_and_sd'])      , 2)
-                self._evac_conf[floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(*speeds['max_h_speed_mean_and_sd']) , 2)
-                self._evac_conf[floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(*speeds['max_v_speed_mean_and_sd']) , 2)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ALPHA_V']        = round(normal(*speeds['alpha_v_mean_and_sd'])     , 2)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['BETA_V']         = round(normal(*speeds['beta_v_mean_and_sd'])      , 2)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(*speeds['max_h_speed_mean_and_sd']) , 2)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(*speeds['max_v_speed_mean_and_sd']) , 2)
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
 
 # }}}
