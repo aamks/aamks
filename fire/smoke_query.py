@@ -159,7 +159,7 @@ class SmokeQuery():
                     csvData.append(tuple(float(j) for j in row))
 
             for row in csvData:
-                time = row[0]
+                time = int(row[0])
                 for m in range(len(row)):
                     if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
                         self._compa_conditions[self._headers[letter]['geoms'][m], time][self._headers[letter]['params'][m]] = row[m]
