@@ -186,6 +186,7 @@ class Worker:
 
         if master_query.read_cfast_record(time_frame) == 1:
             for i in self.floors:
+                i.read_cfast_record(time_frame)
                 i.do_simulation(time_frame)
                 time_frame += 10
         else:

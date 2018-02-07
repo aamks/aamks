@@ -50,6 +50,9 @@ class EvacEnv:
     def __getattr__(self, item):
         return self.__dict__[item]
 
+    def read_cfast_record(self, time):
+        self.smoke_query.read_cfast_record(time)
+
     def place_evacuees(self, evacuees):
         assert isinstance(evacuees, Evacuees), '%evacuees is not type of Evacuees'
         self.evacuees = evacuees

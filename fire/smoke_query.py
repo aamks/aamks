@@ -45,6 +45,7 @@ class SmokeQuery:
         self._init_compa_conditions()
         self._cfast_headers()
         self.layer_height = vars['LAYER_HEIGHT']
+        self.time_step = 0.1
 
         logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
                                     format='%(asctime)s %(levelname)s: %(message)s')
@@ -221,28 +222,26 @@ class SmokeQuery:
             return conditions['ULOD']
 
     def get_fed(self, position, time):
-        co, o2,co2,hcn,hcl = None
         logging.info('Query FED at time: {} on position: {}'.format(time, position))
         conditions = self.get_conditions(position)
         hgt = conditions['HGT']
 
-# s=SmokeQuery("1")
-# s.read_cfast_record(30)
-# print(s.get_conditions((2001,100)))
         if hgt > self.layer_height:
+            layer = 'U'
             co = conditions['ULCO'] * 10000
             o2 = conditions['ULO2']
             co2 = conditions['ULCO2']
             hcn = conditions['ULHCN'] * 10000
             hcl = conditions['ULHCL'] * 10000
         else:
+            layer='L'
             co = conditions['LLCO'] * 10000
             o2 = conditions['LLO2']
             co2 = conditions['LLCO2']
             hcn = conditions['LLHCN'] * 10000
             hcl = conditions['LLHCL'] * 10000
 
-        fed_co = 2.764e-5 * (co ** 1.036) * (self.time_step / 60)
+        fed_co = 2.764e-5 * ((conditions[layer+'LCO'] * 10000) ** 1.036) * (self.time_step / 60)
         fed_hcn = (exp(hcn / 43) / 220 - 0.0045) * (self.time_step / 60)
         fed_hcl = (hcl / 1900) * self.time_step
         fed_o2 = (self.time_step / 60) / (60 * exp(8.13 - 0.54 * (20.9 - o2)))
