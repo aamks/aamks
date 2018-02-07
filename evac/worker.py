@@ -17,7 +17,11 @@ from collections import OrderedDict
 from subprocess import Popen
 import zipfile
 
-class Worker():
+SIMULATION_TYPE = 'NO_CFAST'
+
+
+class Worker:
+
     def __init__(self):
         self.url = sys.argv[1]
         self.vars = OrderedDict()
@@ -31,15 +35,14 @@ class Worker():
         self.sim_floors = None
         self.start_time = time.time()
         self.floors = list()
-        self.error_main = 'Error occurred, see aamks.log file for details.'
-
         os.chdir('/home/aamks')
-        logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
-                            format='%(asctime)s %(levelname)s: %(message)s')
 
+    def _report_error(self, exception: Exception) -> logging:
+        print('Error occurred, see aamks.log file for details.')
+        logging.error('Cannot create RVO2 environment: {}'.format(str(exception)))
+        sys.exit(1)
 
-    def set_environment(self):
-        logging.info('URL: {}'.format(self.url))
+    def get_config(self):
 
         try:
             self.vars['conf'] = json.loads(urlopen('{}/evac.json'.format(self.url)).read().decode())
@@ -49,25 +52,25 @@ class Worker():
         else:
             print('URL OK. Starting calculations')
 
-        try:
-            shutil.rmtree(self.vars['conf']['GENERAL']['WORKSPACE'], ignore_errors=True)
-            os.makedirs(self.vars['conf']['GENERAL']['WORKSPACE'])
-            os.chdir(self.vars['conf']['GENERAL']['WORKSPACE'])
+        self.sim_id = self.vars['conf']['GENERAL']['SIM_ID']
+        self.host_name = os.uname()[1]
+        self.db_server = self.vars['conf']['GENERAL']['SERVER']
+        # self.project_name = self.vars['conf']['GENERAL']['PROJECT_NAME']
 
-        except Exception as e:
-            print(self.error_main)
-            logging.error('Cannot create workspace: {}'.format(str(e)))
-            sys.exit(1)
-        else:
-            logging.info('Workspace created.')
+    def get_geom_and_cfast(self):
+
+        os.chdir(self.vars['conf']['GENERAL']['WORKSPACE'])
+
+        logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
+                            format='%(asctime)s %(levelname)s: %(message)s')
+
+        logging.info('URL: {}'.format(self.url))
 
         try:
             urlretrieve('{}/../../aamks.sqlite'.format(self.url), 'aamks.sqlite')
 
         except Exception as e:
-            print(self.error_main)
-            logging.error('Cannot fetch aamks.sqllite from server: {}'.format(str(e)))
-            sys.exit(1)
+            self._report_error(e)
         else:
             logging.info('Aamks.sqlite fetched from server')
 
@@ -75,18 +78,17 @@ class Worker():
             self.cfast_input = urlopen('{}/cfast.in'.format(self.url)).read().decode()
 
         except Exception as e:
-            print(self.error_main)
-            logging.error('Cannot fetch cfast.in from server: {}'.format(str(e)))
-            sys.exit(1)
+            self._report_error(e)
         else:
             logging.info('Cfast.in fetched from server')
-
-        self.project_name = self.vars['conf']['GENERAL']['PROJECT_NAME']
-        self.sim_id = self.vars['conf']['GENERAL']['SIM_ID']
-        self.host_name = os.uname()[1]
-        self.db_server = self.vars['conf']['GENERAL']['SERVER']
-
         print("Host: {} start simulation id: {}".format(self.host_name, self.sim_id))
+
+    def _create_workspace(self):
+        try:
+            shutil.rmtree(self.vars['conf']['GENERAL']['WORKSPACE'], ignore_errors=True)
+            os.makedirs(self.vars['conf']['GENERAL']['WORKSPACE'])
+        except Exception as e:
+            self._report_error(e)
 
     def run_cfast_simulations(self):
 
@@ -94,9 +96,7 @@ class Worker():
             with open('cfast.in', "w") as f:
                 f.write(self.cfast_input)
         except Exception as e:
-            print(self.error_main)
-            logging.error('Cannot write cfast input file: {}'.format(str(e)))
-            sys.exit(1)
+            self._report_error(e)
         else:
             logging.info('Cfast input file saved.')
 
@@ -104,51 +104,43 @@ class Worker():
             os.system('/usr/local/aamks/fire/cfast cfast.in')
             cfast_log = open('cfast.log', 'r')
         except Exception as e:
-            print(self.error_main)
-            logging.error('Cannot run cfast simulations: {}'.format(str(e)))
-            sys.exit(1)
+            self._report_error(e)
 
         for line in cfast_log.readlines():
             if line.startswith("***Error:"):
-                logging.error('Simulation failed: {}'.format(line))
-                sys.exit(1)
+                self._report_error(Exception(line))
 
         logging.info('Simulation finished with exit code 0')
 
-    def read_data_from_cfast(self):
-        sq = SmokeQuery(floor='1')
-        ready = sq.read_cfast_records(20)
-        a = sq.get_conditions((1005, 1), 20)
-        print(ready)
-
     def create_geom_database(self):
+
         self.s = Sqlite("aamks.sqlite")
         #self.s.dumpall()
         self.geom = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
-        for i in self.geom['points']:
-            print(i)
 
     def _create_evacuees(self, floor):
         floor_no = str(floor+1)
 
         evacuees = []
-        logging.info('Num of evacuees in file: {}'.format(self.vars['conf']['FLOORS_DATA'][floor_no]['NUM_OF_EVACUEES']))
+        logging.info('Adding evacuues on floor: {}'.format(floor_no))
 
-        for i in range(self.vars['conf']['FLOORS_DATA'][floor_no]['NUM_OF_EVACUEES']):
-            evacuees.append(Evacuee(origin=tuple(self.vars['conf']['FLOORS_DATA'][floor_no]['EVACUEES']['E' + str(i)]['ORIGIN']),
-                                    v_speed=self.vars['conf']['FLOORS_DATA'][floor_no]['EVACUEES']['E' + str(i)]['V_SPEED'],
-                                    h_speed=self.vars['conf']['FLOORS_DATA'][floor_no]['EVACUEES']['E' + str(i)]['H_SPEED'],
-                                    roadmap=self.vars['conf']['FLOORS_DATA'][floor_no]['EVACUEES']['E' + str(i)]['ROADMAP'],
-                                    pre_evacuation=self.vars['conf']['FLOORS_DATA'][floor_no]['EVACUEES']['E' + str(i)][
+        floor = self.vars['conf']['FLOORS_DATA'][floor_no]
+
+        for i in range(floor['NUM_OF_EVACUEES']):
+            evacuees.append(Evacuee(origin=tuple(floor['EVACUEES']['E' + str(i)]['ORIGIN']),
+                                    v_speed=floor['EVACUEES']['E' + str(i)]['V_SPEED'],
+                                    h_speed=floor['EVACUEES']['E' + str(i)]['H_SPEED'],
+                                    roadmap=floor['EVACUEES']['E' + str(i)]['ROADMAP'],
+                                    pre_evacuation=floor['EVACUEES']['E' + str(i)][
                                         'PRE_EVACUATION'],
-                                    alpha_v=self.vars['conf']['FLOORS_DATA'][floor_no]['EVACUEES']['E' + str(i)]['ALPHA_V'],
-                                    beta_v=self.vars['conf']['FLOORS_DATA'][floor_no]['EVACUEES']['E' + str(i)]['BETA_V'],
+                                    alpha_v=floor['EVACUEES']['E' + str(i)]['ALPHA_V'],
+                                    beta_v=floor['EVACUEES']['E' + str(i)]['BETA_V'],
                                     node_radius=self.vars['conf']['AAMKS_CONF']['NODE_RADIUS']))
 
         e = Evacuees()
         [e.add_pedestrian(i) for i in evacuees]
 
-        logging.info('Num of evacuees created: {}'.format(len(evacuees)))
+        logging.info('Num of evacuees placed: {}'.format(len(evacuees)))
         return e
 
     def prepare_simulations(self):
@@ -159,8 +151,7 @@ class Worker():
             try:
                 env = EvacEnv(self.vars['conf'])
             except Exception as e:
-                logging.error('Cannot create RVO2 environment: {}'.format(str(e)))
-                sys.exit(1)
+                self._report_error(e)
             else:
                 logging.info('RVO2 ready on {} floors'.format(i))
 
@@ -168,23 +159,32 @@ class Worker():
                 obstacles.append([tuple(x) for x in obst])
             env.obstacle = obstacles
             num_of_vertices = env.process_obstacle(obstacles)
-            logging.info('Number of vercites in RVO2: {}'.format(num_of_vertices))
+            logging.info('Added obstacles on floor: {}, number of vercites: {}'.format(str(i+1), num_of_vertices))
 
             e = self._create_evacuees(i)
             env.place_evacuees(e)
             self.floors.append(env)
 
     def do_simulation(self):
+        logging.info('Starting simulaitons')
+
         time_frame = 10
-        smokes_dto = list()
         floor = 1
-        master_query = SmokeQuery(floor='1')
+        try:
+            master_query = SmokeQuery(floor='1', vars=self.vars['conf']['GENERAL'])
+        except Exception as e:
+            self._report_error(e)
 
         for i in self.floors:
-            i.smoke_query = SmokeQuery(floor=str(floor))
+            try:
+                i.smoke_query = SmokeQuery(floor=str(floor), vars=self.vars['conf']['GENERAL'])
+            except Exception as e:
+                self._report_error(e)
+            else:
+                logging.info('Smoke query connected to floor: {}'.format(floor))
             floor += 1
 
-        if master_query.read_cfast_records(time_frame) == 1:
+        if master_query.read_cfast_record(time_frame) == 1:
             for i in self.floors:
                 i.do_simulation(time_frame)
                 time_frame += 10
@@ -256,36 +256,25 @@ class Worker():
         return animation_data
 
     def main(self):
-        self.set_environment()
+        self.get_config()
+        self._create_workspace()
+        self.get_geom_and_cfast()
+        self.create_geom_database()
         self.run_cfast_simulations()
-        #self.read_data_from_cfast()
         self.create_geom_database()
         self.prepare_simulations()
         self.do_simulation()
 
-## }}}
-#
-#    try:
-#        sim_id=os.path.basename(sys.argv[1])
-#        project=sys.argv[2]
-#    except:
-#        ''' Testing without gearman. '''
-#        sim_id="1"
-#        project="simple"
-#
-#    # todo: animation_data and psql_data will be produced in a-evac
-#    floor="1"
-#    animation_data=example_animation_data()
-#    psql_data="psql report"
-#
-#    report=Worker(sim_id, project, floor, animation_data, psql_data)
-#
-#except:
-#    t="In test/worker.py:\n"
-#    t+=traceback.format_exc()
-#    SendMessage(t)
-#    raise Exception("worker fail")
+    def test(self):
+        self.get_config()
+        self.get_geom_and_cfast()
+        self.create_geom_database()
+        self.prepare_simulations()
+        self.do_simulation()
 
-#
+
 w = Worker()
-w.main()
+if SIMULATION_TYPE == 'NO_CFAST':
+    w.test()
+else:
+    w.main()

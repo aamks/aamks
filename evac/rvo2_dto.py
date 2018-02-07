@@ -3,6 +3,7 @@ warnings.simplefilter('ignore', RuntimeWarning)
 import rvo2
 from evac.evacuees import Evacuees
 from math import ceil
+import logging
 
 
 class EvacEnv:
@@ -39,6 +40,9 @@ class EvacEnv:
                                        self.config['MAX_NEIGHBOR'], self.config['TIME_HORIZON'],
                                        self.config['TIME_HORIZON_OBSTACLE'], self.config['RADIUS'],
                                        self.max_speed)
+
+        logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
+                            format='%(asctime)s %(levelname)s: %(message)s')
 
     def __setattr__(self, key, value):
         self.__dict__[key] = value
@@ -106,10 +110,8 @@ class EvacEnv:
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 1:
                 continue
             else:
-                print(self.evacuees.get_position_of_pedestrian(i), self.discretize_time(self.current_time))
-                optical_density = self.smoke_query.get_conditions(self.evacuees.get_position_of_pedestrian(i),
+                optical_density = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(i),
                                                                                self.discretize_time(self.current_time))
-                print(self.evacuees.get_position_of_pedestrian(i), self.current_time)
 
                 self.evacuees.update_speed_of_pedestrian(i, optical_density)
                 self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_of_pedestrian(i))
@@ -186,6 +188,7 @@ class EvacEnv:
     def do_simulation(self, time):
         for step in range(int(time/self.config['TIME_STEP'])):
             self.sim.doStep()
+            logging.info('Agent moved')
             self.update_agents_position()
             self.update_state()
             self.update_time()

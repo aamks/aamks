@@ -12,37 +12,43 @@ from ast import literal_eval as make_tuple
 from numpy.random import randint
 from include import Sqlite
 from include import Json
+import logging
+from math import exp
 from include import Dump as dd
 
 # }}}
 
-class SmokeQuery():
-    def __init__(self, floor):# {{{
-        ''' 
+
+class SmokeQuery:
+
+    def __init__(self, floor, vars):
+        '''
         * On class init we read tessellation and such (happens once).
         * We are getting read_cfast_record(T) calls in say 5s intervals:
           We only store this single T'th record in a dict.
         * We are getting lots of get_conditions((x,y),param) calls after
           read_cfast_record(T) returns the needed CFAST record.
 
-        Map each cell to a compa: 
+        Map each cell to a compa:
             (1000, 600): R_1,  (1100, 600): R_2,  ...
 
         After CFAST produces the conditions at time T, feed _compa_conditions.
         For any evacuee's (x,y) it will be easy to find the square he is in. If
         we have rectangles in our square we use some optimizations to find the
-        correct rectangle. Finally fetch the conditions via cell-compa map. 
+        correct rectangle. Finally fetch the conditions via cell-compa map.
         ''' 
 
         self.json = Json()
-        # print("temp: /usr/local/aamks/current/workers/1/")
-        # os.chdir("/usr/local/aamks/current/workers/1/")
         self.s = Sqlite("aamks.sqlite")
         self._read_tessellation(floor)
         self._make_cell2compa()
         self._init_compa_conditions()
         self._cfast_headers()
-        # }}}
+        self.layer_height = vars['LAYER_HEIGHT']
+
+        logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
+                                    format='%(asctime)s %(levelname)s: %(message)s')
+
     def _read_tessellation(self, floor):# {{{
         ''' 
         Python has this nice dict[(1,2)], but json cannot handle it. We have
@@ -89,10 +95,11 @@ class SmokeQuery():
 
         return self._compa_conditions[compa]
 # }}}
+
     def _init_compa_conditions(self):  # {{{
         ''' 
         Prepare dict structure for cfast csv values. Csv contain some params that are
-        relevant for aamks and some that are not. 
+        relevant for aamks and some that are not.
 
             self._compa_conditions['R_1']: OrderedDict([('TIME', None), ('CEILT' , None) , ...)
             self._compa_conditions['R_2']: OrderedDict([('TIME', None), ('CEILT' , None) , ...)
@@ -116,7 +123,7 @@ class SmokeQuery():
         self._compa_conditions['outside']=OrderedDict([('TIME',None)])
 # }}}
     def _cfast_headers(self):# {{{
-        ''' 
+        '''
         Get 3 first rows from n,s,w files and make headers: params and geoms.
         Happens only once.
         '''
@@ -203,7 +210,43 @@ class SmokeQuery():
                     return self._results(q, (rx,ry))
         return self._results(q, (x,y)) # outside!
 # }}}
+    def get_visibility(self, position, time):
+        conditions = self.get_conditions(position)
+        logging.info('Query visibility at time: {} on position: {}'.format(time, position))
+
+        hgt = conditions['HGT']
+        if hgt > self.layer_height:
+            return conditions['LLOD']
+        else:
+            return conditions['ULOD']
+
+    def get_fed(self, position, time):
+        co, o2,co2,hcn,hcl = None
+        logging.info('Query FED at time: {} on position: {}'.format(time, position))
+        conditions = self.get_conditions(position)
+        hgt = conditions['HGT']
 
 # s=SmokeQuery("1")
 # s.read_cfast_record(30)
 # print(s.get_conditions((2001,100)))
+        if hgt > self.layer_height:
+            co = conditions['ULCO'] * 10000
+            o2 = conditions['ULO2']
+            co2 = conditions['ULCO2']
+            hcn = conditions['ULHCN'] * 10000
+            hcl = conditions['ULHCL'] * 10000
+        else:
+            co = conditions['LLCO'] * 10000
+            o2 = conditions['LLO2']
+            co2 = conditions['LLCO2']
+            hcn = conditions['LLHCN'] * 10000
+            hcl = conditions['LLHCL'] * 10000
+
+        fed_co = 2.764e-5 * (co ** 1.036) * (self.time_step / 60)
+        fed_hcn = (exp(hcn / 43) / 220 - 0.0045) * (self.time_step / 60)
+        fed_hcl = (hcl / 1900) * self.time_step
+        fed_o2 = (self.time_step / 60) / (60 * exp(8.13 - 0.54 * (20.9 - o2)))
+        hv_co2 = exp(0.1903 * co2 + 2.0004) / 7.1
+        fed_total = (fed_co + fed_hcn + fed_hcl) * hv_co2 + fed_o2
+
+        return fed_total
