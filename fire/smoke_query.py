@@ -169,7 +169,8 @@ class SmokeQuery():
                     next(reader)
                 for row in reader:
                     if int(float(row[0])) == time:
-                        needed_record=[int(float(j)) for j in row]
+                        needed_record=[float(j) for j in row]
+                        needed_record[0]=int(float(row[0]))
                         break
 
             for compa in self.all_compas:
