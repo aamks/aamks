@@ -17,7 +17,7 @@ from include import Dump as dd
 # }}}
 
 class SmokeQuery():
-    def __init__(self, floor, path):
+    def __init__(self, floor):
         ''' 
         Fill each cell with smoke conditions. Then you can query an (x,y). 
         For any evacuee's (x,y) it will be easy to find the square he is in. If
@@ -26,8 +26,7 @@ class SmokeQuery():
         ''' 
 
         self.json = Json()
-        self.path = path
-        self.s = Sqlite("{}/aamks.sqlite".format(self.path))
+        self.s = Sqlite("aamks.sqlite")
         self.simulation_time = 100
         self._read_tessellation(floor)
         self._make_cell2compa()
@@ -112,7 +111,7 @@ class SmokeQuery():
 
         self._headers=OrderedDict()
         for letter in ['n', 's', 'w']:
-            f = '{}/cfast_{}.csv'.format(self.path, letter)
+            f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 headers = []
@@ -132,7 +131,7 @@ class SmokeQuery():
         '''
 
         needed_record=int(time/10)+1
-        with open('{}/cfast_n.csv'.format(self.path)) as f:
+        with open('cfast_n.csv') as f:
             num_data_records=sum(1 for _ in f)-4
         if num_data_records > needed_record:
             return 1
@@ -150,7 +149,7 @@ class SmokeQuery():
             return 0
 
         for letter in ['n', 's', 'w']:
-            f = '{}/cfast_{}.csv'.format(self.path, letter)
+            f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):
