@@ -1,4 +1,8 @@
 #!/bin/bash
+
+sudo apt-get install python3-pip python3-shapely python3-numpy python3-networkx python3-psycopg2 gearman sendxmpp
+sudo -H pip3 install webcolors pyhull 
+
 . vars.sh
 [ $AAMKS_PG_REMOVE_ALL_AAMKS_DATA == 1 ] && { 
 	psql -c "DROP DATABASE aamks";
@@ -10,9 +14,7 @@ psql << EOF
 
 CREATE DATABASE aamks;
 \c aamks;
-
 CREATE USER $AAMKS_PG_USER WITH PASSWORD '$AAMKS_PG_PASS';
-
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- updateTimestamp---{{{

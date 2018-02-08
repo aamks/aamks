@@ -9,14 +9,11 @@ from subprocess import Popen,PIPE
 
 class SendMessage:# {{{
     def __init__(self,msg):
+        msg="".join([ c if c.isalnum() else " " for c in msg ])
         with open("/tmp/aamks.log", "a") as f: 
             f.write(msg+"\n")
-        users=json.loads(os.environ['AAMKS_NOTIFY'])
-        for i in users:
-            user_srv=i[0]
-            user,server=user_srv.split("@")
-            passwd=i[1]
-            Popen("printf '{}' | sendxmpp -r aamks -d -t -u {} -p {} -j {} {} > /dev/null 2>/dev/null &".format(msg, user, passwd, server, user_srv), shell=True)
+        for to in [ i.strip() for i in os.environ['AAMKS_NOTIFY'].split(",") ]:
+            Popen("printf '{}' | sendxmpp -r aamks -d -t -u aamks -p aamkstatanka -j jabb.im {}> /dev/null 2>/dev/null &".format(msg, to), shell=True)
 # }}}
 class Dump():# {{{
     def __init__(self,struct):

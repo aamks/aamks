@@ -27,5 +27,5 @@
         "WALL_MARGIN": 30
     },
 
-	"CFAST_STATIC_RECORDS": [ "MVENT1", "MVENT2", "MVENT3" ] 
+	"CFAST_STATIC_RECORDS": [ ] 
 }
