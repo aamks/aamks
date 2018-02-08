@@ -127,7 +127,7 @@ class Geom():
         Cad and inkscape have their (0,0) in bottom left. We will present
         geometries on web with (0,0) in top left, hence we need to invert Y.
         '''
-
+        return
         maxy=self.s.query("SELECT max(y1) AS r FROM aamks_geom")[0]['r']
         self.s.query("UPDATE aamks_geom SET y0=?-y1, y1=?-y0, center_y=?-center_y", (maxy,maxy,maxy))
 #}}}

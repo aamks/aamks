@@ -69,7 +69,9 @@ class SmokeQuery:
 # }}}
     def _make_cell2compa_record(self,cell):# {{{
         try:
-            self._cell2compa[cell]=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['name']
+            self._cell2compa[cell]=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' "
+                                                "AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1",
+                                                (cell[0], cell[1], cell[0], cell[1]))[0]['name']
         except:
             pass
 # }}}
@@ -88,10 +90,10 @@ class SmokeQuery:
             compa="outside"
             time=0
             print("Agent outside needs fixing")
-        #z=self.json.read('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
-        #z['circles'].append( { "xy": q, "radius": 10, "fillColor": "#f0f", "opacity": 0.9 } )
-        #z['circles'].append( { "xy": r, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
-        #z['texts'].append(   { "xy": q, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
+        #z = self.json.read('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        #z['circles'].append( { "xy": query, "radius": 10, "fillColor": "#f0f", "opacity": 0.9 } )
+        #z['circles'].append( { "xy": cell, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
+        #z['texts'].append(   { "xy": query, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
         #self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
 
         return self._compa_conditions[compa]
@@ -144,7 +146,7 @@ class SmokeQuery:
             self._headers[letter]['params']=headers[0]
             self._headers[letter]['geoms']=headers[2]
 # }}}
-    def _cfast_has_time(self,time):# {{{
+    def cfast_has_time(self,time):# {{{
         ''' 
         CFAST dumps 4 header records and then data records. 
         Data records are indexed by time with delta=10s.
@@ -166,7 +168,7 @@ class SmokeQuery:
         Application needs to call us prior to massive queries for conditions at (x,y).
         '''
 
-        if self._cfast_has_time(time) == 0:
+        if self.cfast_has_time(time) == 0:
             return 0
 
         for letter in ['n', 's', 'w']:

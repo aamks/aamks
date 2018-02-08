@@ -150,6 +150,7 @@ class Worker:
         for i in range(len(self.geom['points'])):
             try:
                 env = EvacEnv(self.vars['conf'])
+                env.floor = i
             except Exception as e:
                 self._report_error(e)
             else:
@@ -184,7 +185,8 @@ class Worker:
                 logging.info('Smoke query connected to floor: {}'.format(floor))
             floor += 1
 
-        if master_query.read_cfast_record(time_frame) == 1:
+        if master_query.cfast_has_time(time_frame) == 1:
+            logging.info('Simulation time: {}'.format(time_frame))
             for i in self.floors:
                 i.read_cfast_record(time_frame)
                 i.do_simulation(time_frame)

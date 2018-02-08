@@ -33,6 +33,7 @@ class EvacEnv:
         self.smoke_query = None
         self.rset = 0
         self.per_9 = 0
+        self.floor = 0
         self.general = aamks_vars['GENERAL']
         self.config['NUM_OF_STEPS'] = aamks_vars['AAMKS_CONF']['NUM_OF_STEPS']
 
@@ -109,12 +110,13 @@ class EvacEnv:
             self.focus.append(self.evacuees.get_focus_of_pedestrian(i))
 
     def update_speed(self):
+        logging.info('Flooor {} udated speed'.format(self.floor))
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 1:
                 continue
             else:
                 optical_density = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(i),
-                                                                               self.discretize_time(self.current_time))
+                                                                               self.current_time)
 
                 self.evacuees.update_speed_of_pedestrian(i, optical_density)
                 self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_of_pedestrian(i))
