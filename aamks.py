@@ -8,7 +8,6 @@ from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SendMessage
 
-SendMessage("Let's go!")
 OnInit()
 Geom()
 Path() # TODO: seems like we should call it elsewhere
@@ -16,7 +15,6 @@ CfastTessellate()
 CfastMcarlo()
 EvacMcarlo()
 OnEnd()
-
 
 # ssh mimooh@duch
 # aamks.<example>       # wystarczy raz 

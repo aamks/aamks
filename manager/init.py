@@ -1,5 +1,7 @@
 from collections import OrderedDict
 from subprocess import Popen,PIPE
+import http.server
+import socketserver
 import sys
 import os
 import shutil
@@ -13,8 +15,10 @@ from gui.vis.vis import Vis
 class OnInit():
     def __init__(self):# {{{
         ''' Stuff that happens at the beggining of the project '''
+
         if len(sys.argv) > 1:
             os.environ["AAMKS_PROJECT"]=sys.argv[1]
+        self._kill_http_server()
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self.p=Psql()
@@ -23,6 +27,16 @@ class OnInit():
         self._setup_vis()
         self._setup_anim_master()
         self._info()
+# }}}
+    def _kill_http_server(self):# {{{
+        ''' 
+        Python serves vis data at localhost:8123. When we change aamks project,
+        we need to chdir and serve vis data from there, so we need to kill the old
+        python webserver. It may need some time to release the resources, so we
+        kill it early and then serve again as late as possible -- onEnd(). 
+        '''
+
+        Popen('pkill -9 -f "^python3 -m http.server 8123"', shell=True)
 # }}}
     def _info(self):# {{{
         print("Project name:", self.conf['GENERAL']['PROJECT_NAME'])
@@ -137,6 +151,7 @@ class OnEnd():
         self._gearman_register_results_collector()
         self._gearman_register_works()
         self._visualize_demo()
+        self._http_serve()
 # }}}
     def _gearman_register_results_collector(self):# {{{
         ''' 
@@ -165,4 +180,12 @@ class OnEnd():
         shutil.copyfile("{}/examples/demo/anim.zip".format(os.environ['AAMKS_PATH']), "{}/anim.zip".format(demo_dir))
         shutil.copyfile("{}/examples/demo/evac.json".format(os.environ['AAMKS_PATH']), "{}/evac.json".format(demo_dir))
         Vis(None, "demo", "demo", (3000,1500))
+# }}}
+    def _http_serve(self):# {{{
+        ''' 
+        We also serve animations via localhost:8123. 
+        2>/dev/null ignores "OSError: [Errno 98] Address already in use"
+        '''
+
+        Popen('cd {}; python3 -m http.server 8123 2>/dev/null 1>/dev/null'.format(os.environ['AAMKS_PROJECT']), shell=True)
 # }}}

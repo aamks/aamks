@@ -52,9 +52,9 @@ $.getJSON("colors.json", function(cols) {
 	colorsDb=cols;
 	colors=colorsDb['darkColors'];
 	$.getJSON("anims.json", function(data) {
-		// Runs automatically on the start. By default runs the last visualization from anims.json.
+		// Runs automatically on the start. By default runs the first visualization from anims.json, which should be most fresh.
 		makeChooseVis(data);
-		showStaticImage(data[data.length-1]);
+		showStaticImage(data[0]);
 	});
 });
 
