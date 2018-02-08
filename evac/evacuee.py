@@ -1,5 +1,6 @@
 from operator import sub
 from math import sqrt
+import logging
 
 
 class Evacuee:
@@ -30,6 +31,9 @@ class Evacuee:
         self.beta_v = beta_v
         self.max_speed = v_speed
 
+        logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
+                            format='%(asctime)s %(levelname)s: %(message)s')
+
     def __getattr__(self, name):
         return self.__dict__[name]
 
@@ -38,6 +42,9 @@ class Evacuee:
 
     @property
     def focus(self):
+        logging.info('Roadmap {}, current goal for visible {}'.format(self.roadmap, self.goal_s))
+        if self.goal_s < 0:
+            self.goal_s = 0
         return tuple(self.roadmap[self.goal_s])
 
     def update_state(self, goal_s_visible):

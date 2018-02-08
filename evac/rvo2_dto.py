@@ -193,7 +193,7 @@ class EvacEnv:
     def do_simulation(self, time):
         for step in range(int(time/self.config['TIME_STEP'])):
             self.sim.doStep()
-            logging.info('Agent moved')
+            logging.info('Agents moving step: {}'.format(step))
             self.update_agents_position()
             self.update_state()
             self.update_time()

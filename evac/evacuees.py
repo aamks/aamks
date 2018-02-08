@@ -1,9 +1,15 @@
 from evac.evacuee import Evacuee
+import logging
+
+#logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
+                        #format='%(asctime)s %(levelname)s: %(message)s')
 
 
 class Evacuees:
     def __init__(self):
         self.pedestrians = []
+
+
 
     def add_pedestrian(self, pedestrian):
         assert isinstance(pedestrian, Evacuee), "%pedestrian is not Pedestrian class object"
@@ -84,10 +90,12 @@ class Evacuees:
 
     def get_position_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
+
         return self.pedestrians[ped_no].position
 
     def get_focus_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
+        #logging.info('Evacuee {} at position'.format(ped_no))
         return self.pedestrians[ped_no].focus
 
     def update_state(self, ped_no: int, visible: bool) -> object:

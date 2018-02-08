@@ -184,15 +184,17 @@ class Worker:
             else:
                 logging.info('Smoke query connected to floor: {}'.format(floor))
             floor += 1
-
-        if master_query.cfast_has_time(time_frame) == 1:
-            logging.info('Simulation time: {}'.format(time_frame))
-            for i in self.floors:
-                i.read_cfast_record(time_frame)
-                i.do_simulation(time_frame)
+        while 1:
+            if master_query.cfast_has_time(time_frame) == 1:
+                logging.info('Simulation time: {}'.format(time_frame))
+                for i in self.floors:
+                    i.read_cfast_record(time_frame)
+                    i.do_simulation(time_frame)
                 time_frame += 10
-        else:
-            time.sleep(1)
+            else:
+                time.sleep(1)
+            if time_frame > 30:
+                break
 
 
     def send_report(self, sim_id, project,floor, animation_data, psql_data ): # {{{
@@ -264,7 +266,6 @@ class Worker:
         self.get_geom_and_cfast()
         self.create_geom_database()
         self.run_cfast_simulations()
-        self.create_geom_database()
         self.prepare_simulations()
         self.do_simulation()
 
