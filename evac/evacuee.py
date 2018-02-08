@@ -22,7 +22,7 @@ class Evacuee:
         self.speed = 0
         self.thermal_injury = 0
         self.position = origin
-        self.finished = 0
+        self.finished = 1
         self.node_radius = node_radius
 
         self.pre_evacuation_time = pre_evacuation
@@ -71,7 +71,7 @@ class Evacuee:
             self.goal_s -= 1
         elif state == 's1111':
             self.unnorm_vector = (0, 0)
-            self.finished = 1
+            self.finished = 0
 
     def update_fed(self, fed):
         assert isinstance(fed, float), '%fed is not required type float'

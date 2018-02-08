@@ -81,7 +81,7 @@ class EvacEnv:
 
     def update_agents_position(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
-            if (self.evacuees.get_finshed_of_pedestrian(i)) == 1:
+            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 self.sim.setAgentPosition(i, (10000+i, 10000))
                 continue
             else:
@@ -99,7 +99,7 @@ class EvacEnv:
 
     def update_state(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
-            if (self.evacuees.get_finshed_of_pedestrian(i)) == 1:
+            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
                 focus_visible = self.sim.queryVisibility(self.evacuees.get_position_of_pedestrian(i),
@@ -112,7 +112,7 @@ class EvacEnv:
     def update_speed(self):
         logging.info('Flooor {} udated speed'.format(self.floor))
         for i in range(self.evacuees.get_number_of_pedestrians()):
-            if (self.evacuees.get_finshed_of_pedestrian(i)) == 1:
+            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
                 optical_density = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(i),
@@ -124,7 +124,7 @@ class EvacEnv:
 
     def update_fed(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
-            if(self.evacuees.get_finshed_of_pedestrian(i)) == 1:
+            if(self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
                 fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i), self.current_time)
@@ -163,10 +163,10 @@ class EvacEnv:
         return self.sim.getGlobalTime()
 
     def get_rset_time(self) -> None:
-        exited = self.finished.count(1)
+        exited = self.finished.count(0)
         if (exited > len(self.finished) * 0.1) and self.per_9 == 0:
             self.per_9 = self.current_time
-        if all(x == 1 for x in self.finished) and self.rset == 0:
+        if all(x == 0 for x in self.finished) and self.rset == 0:
             self.rset = self.current_time
 
     def record_data(self):

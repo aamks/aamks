@@ -193,7 +193,7 @@ class Worker:
                 time_frame += 10
             else:
                 time.sleep(1)
-            if time_frame > 30:
+            if time_frame > 20:
                 break
 
 
@@ -217,17 +217,23 @@ class Worker:
         self._write_animation(animation_data)
         self._write_report(psql_data)
     # }}}
-    def _write_animation(self, animation_data):# {{{
+    def _write_animation(self):# {{{
         '''
         Raw data comes as an argument. We create /home/aamks/1.anim.zip
         with anim.json inside.
         '''
 
-        zf = zipfile.ZipFile("{}/{}.anim.zip".format(self.project_dir, self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
-        try:
-            zf.writestr("anim.json", json.dumps(animation_data))
-        finally:
-            zf.close()
+        floor = 1
+        for i in self.floors:
+            animation_data = i.record_data()
+            zf = zipfile.ZipFile("f{}_s{}.anim.zip".format(floor, self.sim_id), mode='w',
+                                 compression=zipfile.ZIP_DEFLATED)
+            try:
+                zf.writestr("anim.json", json.dumps(animation_data))
+            finally:
+                zf.close()
+            floor += 1
+
     # }}}
     def _write_report(self, psql_data):# {{{
         j=Json()
@@ -241,24 +247,6 @@ class Worker:
         j.write(report, json_file)
         Popen("gearman -h {} -f aOut '{} {} {} {}'".format(os.environ['AAMKS_SERVER'], host, json_file, sim_id, floor ), shell=True)
     # }}}
-    def example_animation_data():# {{{
-        ''' TODO: temporary. Should come as argument in the future '''
-        animation_data=dict()
-        animation_data['data']=[
-                [ [ 1000 , 1150 , 20  , 200  , "N" , 1 ] , [ 1000 , 1150 , 200 , 0   , "N" , 1 ] ] ,
-                [ [ 1100 , 1850 , 200 , -300 , "N" , 1 ] , [ 1500 , 1150 , 200 , 0   , "N" , 1 ] ] ,
-                [ [ 1500 , 1150 , 200 , 80   , "N" , 0 ] , [ 5000 , 1150 , 200 , 0   , "N" , 1 ] ] ,
-                [ [ 5000 , 1850 , 200 , -200 , "N" , 0 ] , [ 6000 , 1150 , 200 , 0   , "N" , 1 ] ] ,
-                [ [ 6000 , 1150 , 200 , 200  , "N" , 0 ] , [ 0    , 0    , 200 , 200 , "N" , 0 ] ] ,
-                [ [ 0    , 0    , 200 , 200  , "N" , 0 ] , [ 0    , 0    , 200 , 200 , "N" , 0 ] ] 
-            ]            
-        animation_data['floor']="1"
-        animation_data['frame_rate']=2
-        animation_data['project_name']=project
-        animation_data['simulation_id']=sim_id
-        animation_data['simulation_time']=200
-        animation_data['time_shift']=150.61 
-        return animation_data
 
     def main(self):
         self.get_config()
@@ -275,6 +263,7 @@ class Worker:
         self.create_geom_database()
         self.prepare_simulations()
         self.do_simulation()
+        self._write_animation()
 
 
 w = Worker()
