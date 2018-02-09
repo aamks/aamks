@@ -43,7 +43,7 @@ class CfastMcarlo():
         self.dists=self.json.read("{}/distributions.json".format(os.environ['AAMKS_PROJECT']))
         self._psql_collector=OrderedDict()
 
-        si=SimIterations(self.conf['GENERAL']['PROJECT_NAME'], self.conf['GENERAL']['NUMBER_OF_SIMULATIONS'])
+        si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._new_psql_log()
@@ -59,7 +59,7 @@ class CfastMcarlo():
         return outdoor_temp
 # }}}
     def _draw_fire(self):# {{{
-        origin_in_room=binomial(1,self.dists['building_category'][self.conf['GENERAL']['BUILDING_CATEGORY']]['origin_of_fire']['fire_starts_in_room_probability'])
+        origin_in_room=binomial(1,self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['origin_of_fire']['fire_starts_in_room_probability'])
         
         self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY name") ]
         self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY name") ]
@@ -71,7 +71,7 @@ class CfastMcarlo():
             chosen=str(choice(self.all_corridors_and_halls))
             self._psql_log_variable('fireorig','non_room')
             self._psql_log_variable('fireorigname',chosen)
-        self.conf['GENERAL']['ROOM_OF_FIRE_ORIGIN']=chosen
+        self.conf['ROOM_OF_FIRE_ORIGIN']=chosen
 
         compa=self.s.query("SELECT * FROM aamks_geom WHERE name=? and type_pri='COMPA'", (chosen,))[0]
         x=round(compa['width']/(2.0*100),2)
@@ -110,7 +110,7 @@ class CfastMcarlo():
         middle, then fading on the right. At the end read hrrs at given times.
         '''
 
-        i=self.dists['building_category'][self.conf['GENERAL']['BUILDING_CATEGORY']]['heat_release_rate']
+        i=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['heat_release_rate']
         hrr_peak=int(uniform(i['max_HRR'][0],i['max_HRR'][1])*1000)
         alpha=int(triangular(i['alfa_min_mode_max'][0], i['alfa_min_mode_max'][1], i['alfa_min_mode_max'][2])*1000)
 
@@ -226,8 +226,8 @@ class CfastMcarlo():
 # }}}
     def _section_preamble(self,outdoor_temp):# {{{
         txt=(
-        'VERSN,7,{}'.format(self.conf['GENERAL']['PROJECT_NAME']),
-        'TIMES,{},-120,10,10'.format(self.conf['GENERAL']['SIMULATION_TIME']),
+        'VERSN,7,{}'.format(self.conf['PROJECT_NAME']),
+        'TIMES,{},-120,10,10'.format(self.conf['SIMULATION_TIME']),
         'EAMB,{},101300,0'.format(273+outdoor_temp),
         'TAMB,293.15,101300,0,50',
         'DTCHECK,1.E-9,100',
@@ -490,7 +490,7 @@ class CfastMcarlo():
         for k,v in self._psql_collector[self._sim_id].items():
             pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
         data=', '.join(pairs)
-        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self.conf['GENERAL']['PROJECT_NAME'], self._sim_id))
+        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self.conf['PROJECT_NAME'], self._sim_id))
 
         self.json.write(self.conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
 #}}}

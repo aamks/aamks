@@ -42,7 +42,7 @@ class EvacMcarlo():
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._make_doors_centers()
 
-        si=SimIterations(self.conf['GENERAL']['PROJECT_NAME'], self.conf['GENERAL']['NUMBER_OF_SIMULATIONS'])
+        si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._dispatch_evacuees()
@@ -54,14 +54,14 @@ class EvacMcarlo():
 
     def _room_of_fire_origin(self):# {{{
         ''' ROOM_OF_FIRE_ORIGIN is invented in cfast_mcarlo.py and written to sim_id/evac.json '''
-        self.conf['GENERAL']['ROOM_OF_FIRE_ORIGIN']=self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], self._sim_id))['GENERAL']['ROOM_OF_FIRE_ORIGIN']
+        self.conf['ROOM_OF_FIRE_ORIGIN']=self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], self._sim_id))['ROOM_OF_FIRE_ORIGIN']
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
         ''' Special selectors from distributions.json
         First we try to return ROOM_1_2, then ROOM_FLOOR_1, then ROOM
         '''
 
-        z=self.dists['building_category'][self.conf['GENERAL']['BUILDING_CATEGORY']]['evacuees_concentration']
+        z=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['evacuees_concentration']
         for i in [name, "{}_FLOOR_{}".format(type_sec,floor), type_sec]:
             if i in z.keys():
                 return z[i]
@@ -134,18 +134,18 @@ class EvacMcarlo():
     def _evacuee_pre_evacuation(self,room):# {{{
         ''' An evacuee pre_evacuates from either ordinary room or from the room of fire origin. '''
 
-        if room != self.conf['GENERAL']['ROOM_OF_FIRE_ORIGIN']:
-            pre_evacuation=self.dists['building_category'][self.conf['GENERAL']['BUILDING_CATEGORY']]['pre_evacuation_time']['mean_and_sd_ordinary_room']
+        if room != self.conf['ROOM_OF_FIRE_ORIGIN']:
+            pre_evacuation=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['pre_evacuation_time']['mean_and_sd_ordinary_room']
         else:
-            pre_evacuation=self.dists['building_category'][self.conf['GENERAL']['BUILDING_CATEGORY']]['pre_evacuation_time']['mean_and_sd_room_of_fire_origin']
+            pre_evacuation=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['pre_evacuation_time']['mean_and_sd_room_of_fire_origin']
         return round(lognormal(pre_evacuation[0], pre_evacuation[1]), 2)
 # }}}
 
     def _static_evac_conf(self):# {{{
-        self._evac_conf['GENERAL']=self.conf['GENERAL']
-        self._evac_conf['GENERAL']['WORKSPACE']="{}_{:04d}".format(self.conf['GENERAL']['PROJECT_NAME'], self._sim_id)
-        self._evac_conf['GENERAL']['SIM_ID']=self._sim_id
-        self._evac_conf['GENERAL']['SERVER']=os.environ['AAMKS_SERVER']
+        self._evac_conf=self.conf
+        self._evac_conf['WORKSPACE']="{}_{:04d}".format(self.conf['PROJECT_NAME'], self._sim_id)
+        self._evac_conf['SIM_ID']=self._sim_id
+        self._evac_conf['SERVER']=os.environ['AAMKS_SERVER']
         self._evac_conf['AAMKS_CONF']=self.conf['AAMKS_CONF']
 # }}}
     def _make_evac_conf(self):# {{{
@@ -167,7 +167,7 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ROADMAP_ROOMS']  = self.evacuees_roadmaps_rooms[floor][i]
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION'] = self._evacuee_pre_evacuation(self.evacuees_roadmaps_rooms[floor][i])
 
-                speeds=self.dists['building_category'][self.conf['GENERAL']['BUILDING_CATEGORY']]['evacuees_speed_params']
+                speeds=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['evacuees_speed_params']
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ALPHA_V']        = round(normal(*speeds['alpha_v_mean_and_sd'])     , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['BETA_V']         = round(normal(*speeds['beta_v_mean_and_sd'])      , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(*speeds['max_h_speed_mean_and_sd']) , 2)

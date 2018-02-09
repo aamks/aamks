@@ -27,6 +27,7 @@ class OnInit():
         self._setup_vis()
         self._setup_anim_master()
         self._info()
+        self._http_serve()
 # }}}
     def _kill_http_server(self):# {{{
         ''' 
@@ -39,7 +40,7 @@ class OnInit():
         Popen('pkill -9 -f "^python3 -m http.server 8123"', shell=True)
 # }}}
     def _info(self):# {{{
-        print("Project name:", self.conf['GENERAL']['PROJECT_NAME'])
+        print("Project name:", self.conf['PROJECT_NAME'])
         Popen('env | grep AAMKS', shell=True)
 # }}}
     def _clear_sqlite(self):# {{{
@@ -59,8 +60,8 @@ class OnInit():
         max(iteration)+1 
         '''
 
-        project=self.conf['GENERAL']['PROJECT_NAME']
-        how_many=self.conf['GENERAL']['NUMBER_OF_SIMULATIONS']
+        project=self.conf['PROJECT_NAME']
+        how_many=self.conf['NUMBER_OF_SIMULATIONS']
 
         r=[]
         try:
@@ -81,7 +82,7 @@ class OnInit():
         irange=self._create_iterations_sequence()
         for i in range(*irange):
             os.makedirs("{}/{}".format(workers_dir,i), exist_ok=True)
-            self.p.query("INSERT INTO simulations(iteration,project) VALUES(%s,%s)", (i,self.conf['GENERAL']['PROJECT_NAME']))
+            self.p.query("INSERT INTO simulations(iteration,project) VALUES(%s,%s)", (i,self.conf['PROJECT_NAME']))
 
 # }}}
     def _setup_vis(self):# {{{
@@ -141,6 +142,14 @@ class OnInit():
 
 ''')
 # }}}
+    def _http_serve(self):# {{{
+        ''' 
+        We also serve animations via localhost:8123. 
+        2>/dev/null ignores "OSError: [Errno 98] Address already in use"
+        '''
+
+        Popen('cd {}; python3 -m http.server 8123 2>/dev/null 1>/dev/null'.format(os.environ['AAMKS_PROJECT']), shell=True)
+# }}}
 
 class OnEnd():
     def __init__(self):# {{{
@@ -151,7 +160,6 @@ class OnEnd():
         self._gearman_register_results_collector()
         self._gearman_register_works()
         self._visualize_demo()
-        self._http_serve()
 # }}}
     def _gearman_register_results_collector(self):# {{{
         ''' 
@@ -167,8 +175,8 @@ class OnEnd():
         if os.environ['AAMKS_USE_GEARMAN']=='0':
             return
 
-        si=SimIterations(self.conf['GENERAL']['PROJECT_NAME'], self.conf['GENERAL']['NUMBER_OF_SIMULATIONS'])
-        project=self.conf['GENERAL']['PROJECT_NAME']
+        si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
+        project=self.conf['PROJECT_NAME']
         for i in range(*si.get()):
             worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
             gearman="gearman -f aRun 'http://{}/users{} {} &'".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""), project)
@@ -180,12 +188,4 @@ class OnEnd():
         shutil.copyfile("{}/examples/demo/anim.zip".format(os.environ['AAMKS_PATH']), "{}/anim.zip".format(demo_dir))
         shutil.copyfile("{}/examples/demo/evac.json".format(os.environ['AAMKS_PATH']), "{}/evac.json".format(demo_dir))
         Vis(None, "demo", "demo", (3000,1500))
-# }}}
-    def _http_serve(self):# {{{
-        ''' 
-        We also serve animations via localhost:8123. 
-        2>/dev/null ignores "OSError: [Errno 98] Address already in use"
-        '''
-
-        Popen('cd {}; python3 -m http.server 8123 2>/dev/null 1>/dev/null'.format(os.environ['AAMKS_PROJECT']), shell=True)
 # }}}

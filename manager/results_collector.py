@@ -35,7 +35,7 @@ try:
 # }}}
         def _fire_origin_coords(self, sim_id):# {{{
             data=self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], sim_id))
-            room=data['GENERAL']['ROOM_OF_FIRE_ORIGIN']
+            room=data['ROOM_OF_FIRE_ORIGIN']
             
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
             z=self.s.query("SELECT center_x, center_y FROM aamks_geom WHERE name=?", (room,))[0]
@@ -72,7 +72,7 @@ try:
         j=Json()
         c=j.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         host="localhost"
-        json_file="/home/aamks/{}/report_1.json".format(c['GENERAL']['PROJECT_NAME'])
+        json_file="/home/aamks/{}/report_1.json".format(c['PROJECT_NAME'])
         sim_id="1"
         floor="1"
 

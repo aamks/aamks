@@ -79,7 +79,7 @@ class Geom():
         self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(values),))
 # }}}
     def _geometry_reader(self):# {{{
-        g=self.conf['GENERAL']['INPUT_GEOMETRY']
+        g=self.conf['INPUT_GEOMETRY']
         if g=="cad.json":
             geometry_data=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
         if g=="input.svg":
@@ -90,10 +90,10 @@ class Geom():
 # }}}
     def _geometry2sqlite(self,geometry_data):# {{{
         ''' 
-        Parse geometry and place geoms in sqlite. The lowest floor is always 1.
-        The geometry_data example for floor("1"):
+        Parse geometry and place geoms in sqlite. The lowest floor is always 0.
+        The geometry_data example for floor("0"):
 
-            "1": [
+            "0": [
                 "ROOM": [
                     [ [ 3.0 , 4.8 , 0.0 ] , [ 4.8 , 6.5 , 3.0 ] ] ,
                     [ [ 3.0 , 6.5 , 0.0 ] , [ 6.8 , 7.4 , 3.0 ] ] 
@@ -159,7 +159,7 @@ class Geom():
         name='{}_{}'.format(k[0], global_type_id)
 
         #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , 'material_ceiling'                       , 'material_floor'                       , 'material_wall'                       , 'sprinkler' , 'detector' ,  'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z')
-        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['GENERAL']['MATERIAL_CEILING'] , self.conf['GENERAL']['MATERIAL_FLOOR'] , self.conf['GENERAL']['MATERIAL_WALL'] , 0           , 0          ,  None          , None             , None           , None            , None        , None , None , None , None       , None       , None         )
+        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['MATERIAL_CEILING'] , self.conf['MATERIAL_FLOOR'] , self.conf['MATERIAL_WALL'] , 0           , 0          ,  None          , None             , None           , None            , None        , None , None , None , None       , None       , None         )
 
 # }}}
     def _init_helper_variables(self):# {{{
@@ -232,9 +232,9 @@ class Geom():
 
 # }}}
     def _auto_detectors_and_sprinklers(self):# {{{
-        if self.conf['GENERAL']['AUTO_DETECTORS'] == 1:
+        if self.conf['AUTO_DETECTORS'] == 1:
             self.s.query("UPDATE aamks_geom set detector = 1 WHERE type_pri='COMPA'")
-        if self.conf['GENERAL']['AUTO_SPRINKLERS'] == 1:
+        if self.conf['AUTO_SPRINKLERS'] == 1:
             self.s.query("UPDATE aamks_geom set sprinkler = 1 WHERE type_pri='COMPA'")
 # }}}
     def _make_elem_counter(self):# {{{
