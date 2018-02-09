@@ -30,7 +30,7 @@ class InkscapeReader():
         self._types=self.json.read("{}/geom/colors.json".format(os.environ['AAMKS_PATH']))['darkColors']
         self._colors=dict((v,k) for k,v in self._types.items())
         self.map=OrderedDict([ ('ROOM', "ROOM" ), ('COR', "CORRIDOR" ), ('D', "DOOR_PLAIN" ), ('HOLE', "HOLE" ), ('C', "DOOR_CLOSER" ), ('E', "DOOR_ELECTROMAGNET"), ('W', "WINDOW" ), ('HALL', "HALL" ), ('STAI', "STAIRCASE" ), ('VNT', "VVENT" ) ])
-        #self._write_inkscape_palette()
+        self._write_inkscape_palette()
         self._elems=[]
         self._read_svg()
         self._asJson()
