@@ -45,9 +45,17 @@ class SmokeQuery:
         self._init_compa_conditions()
         self._cfast_headers()
         self.layer_height = vars['LAYER_HEIGHT']
-        self.time_step = 0.1
 
-        logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
+
+        try:
+            f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
+            self.config = json.load(f)
+        except Exception as e:
+            print('Cannot read config file: {}'.format(e))
+            sys.exit(1)
+
+
+        logging.basicConfig(filename='aamks.log', level=logging.ERROR,
                                     format='%(asctime)s %(levelname)s: %(message)s')
 
     def _read_tessellation(self, floor):# {{{
@@ -86,15 +94,9 @@ class SmokeQuery:
         ''' Outside is for debugging - should never happen in aamks. '''
         try:
             compa=self._cell2compa[cell]
-        except:
+        except Exception as e:
             compa="outside"
-            time=0
-            print("Agent outside needs fixing")
-        #z = self.json.read('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
-        #z['circles'].append( { "xy": query, "radius": 10, "fillColor": "#f0f", "opacity": 0.9 } )
-        #z['circles'].append( { "xy": cell, "radius": 10, "fillColor": "#0ff", "opacity": 0.6 } )
-        #z['texts'].append(   { "xy": query, "content": " "+compa, "fontSize": 50, "fillColor":"#f0f", "opacity":0.8 })
-        #self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+            logging.ERROR("Agent outside needs fixing: {}".format(e))
 
         return self._compa_conditions[compa]
 # }}}
@@ -215,7 +217,7 @@ class SmokeQuery:
 # }}}
     def get_visibility(self, position, time):
         conditions = self.get_conditions(position)
-        logging.info('Query visibility at time: {} on position: {}'.format(time, position))
+        logging.debug('Query visibility at time: {} on position: {}'.format(time, position))
 
         hgt = conditions['HGT']
         if hgt > self.layer_height:
@@ -224,30 +226,20 @@ class SmokeQuery:
             return conditions['ULOD']
 
     def get_fed(self, position, time):
-        logging.info('Query FED at time: {} on position: {}'.format(time, position))
+        logging.debug('Query FED at time: {} on position: {}'.format(time, position))
         conditions = self.get_conditions(position)
         hgt = conditions['HGT']
 
         if hgt > self.layer_height:
             layer = 'U'
-            co = conditions['ULCO'] * 10000
-            o2 = conditions['ULO2']
-            co2 = conditions['ULCO2']
-            hcn = conditions['ULHCN'] * 10000
-            hcl = conditions['ULHCL'] * 10000
         else:
-            layer='L'
-            co = conditions['LLCO'] * 10000
-            o2 = conditions['LLO2']
-            co2 = conditions['LLCO2']
-            hcn = conditions['LLHCN'] * 10000
-            hcl = conditions['LLHCL'] * 10000
+            layer = 'L'
 
-        fed_co = 2.764e-5 * ((conditions[layer+'LCO'] * 10000) ** 1.036) * (self.time_step / 60)
-        fed_hcn = (exp(hcn / 43) / 220 - 0.0045) * (self.time_step / 60)
-        fed_hcl = (hcl / 1900) * self.time_step
-        fed_o2 = (self.time_step / 60) / (60 * exp(8.13 - 0.54 * (20.9 - o2)))
-        hv_co2 = exp(0.1903 * co2 + 2.0004) / 7.1
+        fed_co = 2.764e-5 * ((conditions[layer+'LCO'] * 10000) ** 1.036) * (self.config['TIME_STEP'] / 60)
+        fed_hcn = (exp((conditions[layer+'LHCN'] * 10000) / 43) / 220 - 0.0045) * (self.config['TIME_STEP'] / 60)
+        fed_hcl = ((conditions['LLHCL'] * 10000) / 1900) * self.config['TIME_STEP']
+        fed_o2 = (self.config['TIME_STEP'] / 60) / (60 * exp(8.13 - 0.54 * (20.9 - conditions[layer+'LO2'])))
+        hv_co2 = exp(0.1903 * conditions[layer+'LCO2'] + 2.0004) / 7.1
         fed_total = (fed_co + fed_hcn + fed_hcl) * hv_co2 + fed_o2
 
         return fed_total

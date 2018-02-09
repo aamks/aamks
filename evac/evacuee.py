@@ -42,7 +42,7 @@ class Evacuee:
 
     @property
     def focus(self):
-        logging.info('Roadmap {}, current goal for visible {}'.format(self.roadmap, self.goal_s))
+        #logging.info('Roadmap {}, current goal for visible {}'.format(self.roadmap, self.goal_s))
         if self.goal_s < 0:
             self.goal_s = 0
         return tuple(self.roadmap[self.goal_s])

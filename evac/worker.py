@@ -26,7 +26,7 @@ class Worker:
         self.url = sys.argv[1]
         self.vars = OrderedDict()
         self.results = dict()
-        self.geom = None
+        self.obstacles = None
         self.trajectory = None
         self.velocity = None
         self.floor_dims = None
@@ -43,6 +43,12 @@ class Worker:
         sys.exit(1)
 
     def get_config(self):
+        try:
+            f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
+            self.config = json.load(f)
+        except Exception as e:
+            print('Cannot read config file: {}'.format(e))
+            sys.exit(1)
 
         try:
             self.vars['conf'] = json.loads(urlopen('{}/evac.json'.format(self.url)).read().decode())
@@ -55,13 +61,12 @@ class Worker:
         self.sim_id = self.vars['conf']['GENERAL']['SIM_ID']
         self.host_name = os.uname()[1]
         self.db_server = self.vars['conf']['GENERAL']['SERVER']
-        # self.project_name = self.vars['conf']['GENERAL']['PROJECT_NAME']
 
     def get_geom_and_cfast(self):
 
         os.chdir(self.vars['conf']['GENERAL']['WORKSPACE'])
 
-        logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
+        logging.basicConfig(filename='aamks.log', level=logging.INFO,
                             format='%(asctime)s %(levelname)s: %(message)s')
 
         logging.info('URL: {}'.format(self.url))
@@ -98,7 +103,7 @@ class Worker:
         except Exception as e:
             self._report_error(e)
         else:
-            logging.info('Cfast input file saved.')
+            logging.debug('Cfast input file saved.')
 
         try:
             os.system('/usr/local/aamks/fire/cfast cfast.in')
@@ -116,13 +121,13 @@ class Worker:
 
         self.s = Sqlite("aamks.sqlite")
         #self.s.dumpall()
-        self.geom = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
+        self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
 
     def _create_evacuees(self, floor):
         floor_no = str(floor+1)
 
         evacuees = []
-        logging.info('Adding evacuues on floor: {}'.format(floor_no))
+        logging.debug('Adding evacuues on floor: {}'.format(floor_no))
 
         floor = self.vars['conf']['FLOORS_DATA'][floor_no]
 
@@ -144,10 +149,10 @@ class Worker:
         return e
 
     def prepare_simulations(self):
-        logging.info('Number of floors processed: {}'.format(len(self.geom['points'])))
+        logging.info('Number of floors processed: {}'.format(len(self.obstacles['points'])))
         obstacles = []
 
-        for i in range(len(self.geom['points'])):
+        for i in range(len(self.obstacles['points'])):
             try:
                 env = EvacEnv(self.vars['conf'])
                 env.floor = i
@@ -156,7 +161,7 @@ class Worker:
             else:
                 logging.info('RVO2 ready on {} floors'.format(i))
 
-            for obst in self.geom['points'][str(i+1)]:
+            for obst in self.obstacles['points'][str(i + 1)]:
                 obstacles.append([tuple(x) for x in obst])
             env.obstacle = obstacles
             num_of_vertices = env.process_obstacle(obstacles)
@@ -193,7 +198,7 @@ class Worker:
                 time_frame += 10
             else:
                 time.sleep(1)
-            if time_frame > 20:
+            if time_frame > 100:
                 break
 
 
@@ -236,16 +241,18 @@ class Worker:
 
     # }}}
     def _write_report(self, psql_data):# {{{
-        j=Json()
-        host=os.uname()[1]
-        report=OrderedDict()
-        report['worker']=host
-        report['sim_id']=self.sim_id
-        report['animation']="{}/{}.anim.zip".format(self.project_dir, self.sim_id)
-        report['psql']=psql_data
-        json_file="{}/report_{}.json".format(self.project_dir, self.sim_id)
-        j.write(report, json_file)
-        Popen("gearman -h {} -f aOut '{} {} {} {}'".format(os.environ['AAMKS_SERVER'], host, json_file, sim_id, floor ), shell=True)
+        for num_floor in range(len(self.floors)):
+            j=Json()
+            host = os.uname()[1]
+            report = OrderedDict()
+            report['worker'] = host
+            report['sim_id'] = self.sim_id
+            report['animation'] = "{}_{}.anim.zip".format(num_floor, self.sim_id)
+            report['psql']=psql_data
+            json_file = "report{}_{}.json".format(num_floor, self.sim_id)
+            j.write(report, json_file)
+            #Popen("gearman -h {} -f aOut '{} {} {} {}'".format(os.environ['AAMKS_SERVER'],
+                                                           #host, json_file, self.sim_id, num_floor), shell=True)
     # }}}
 
     def main(self):
@@ -264,6 +271,7 @@ class Worker:
         self.prepare_simulations()
         self.do_simulation()
         self._write_animation()
+        self._write_report('psql_connect')
 
 
 w = Worker()

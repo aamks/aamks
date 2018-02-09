@@ -4,16 +4,13 @@ import rvo2
 from evac.evacuees import Evacuees
 from math import ceil
 import logging
+import os
+import json
+
+
 
 
 class EvacEnv:
-    config = dict()
-    config['TIME_STEP'] = 0.1
-    config['NEIGHBOR_DISTANCE'] = 80
-    config['MAX_NEIGHBOR'] = 5
-    config['TIME_HORIZON'] = 1
-    config['TIME_HORIZON_OBSTACLE'] = 0.05
-    config['RADIUS'] = 60
 
     def __init__(self, aamks_vars):
         self.evacuees = Evacuees
@@ -22,7 +19,6 @@ class EvacEnv:
         self.positions = []
         self.velocities = []
         self.velocity_vector = []
-        self.speeds = []
         self.speed_vec = []
         self.fed = []
         self.fed_vec = []
@@ -34,22 +30,19 @@ class EvacEnv:
         self.rset = 0
         self.per_9 = 0
         self.floor = 0
+
+        f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
+        self.config = json.load(f)
+
         self.general = aamks_vars['GENERAL']
-        self.config['NUM_OF_STEPS'] = aamks_vars['AAMKS_CONF']['NUM_OF_STEPS']
 
         self.sim = rvo2.PyRVOSimulator(self.config['TIME_STEP'], self.config['NEIGHBOR_DISTANCE'],
                                        self.config['MAX_NEIGHBOR'], self.config['TIME_HORIZON'],
                                        self.config['TIME_HORIZON_OBSTACLE'], self.config['RADIUS'],
                                        self.max_speed)
 
-        logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
+        logging.basicConfig(filename='aamks.log', level='logging.{}'.format(self.config['LOGGING_MODE']),
                             format='%(asctime)s %(levelname)s: %(message)s')
-
-    def __setattr__(self, key, value):
-        self.__dict__[key] = value
-
-    def __getattr__(self, item):
-        return self.__dict__[item]
 
     def read_cfast_record(self, time):
         self.smoke_query.read_cfast_record(time)
@@ -66,8 +59,6 @@ class EvacEnv:
         [self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_max_of_pedestrian(i))
          for i in range(self.evacuees.get_number_of_pedestrians())]
 
-        #self.current_time = self.evacuees.get_first_evacuees_time()
-
     @staticmethod
     def discretize_time(time):
         return int(ceil(time/10.0)) * 10
@@ -75,7 +66,6 @@ class EvacEnv:
     def save_data_for_visualization(self):
         self.trajectory.append(self.positions)
         self.velocity_vector.append(self.velocities)
-        self.speed_vec.append(self.speeds)
         self.fed_vec.append(self.fed)
         self.finished_vec.append(self.finished)
 
@@ -100,6 +90,7 @@ class EvacEnv:
     def update_state(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
+                logging.debug('Agent {} moved'.format(i))
                 continue
             else:
                 focus_visible = self.sim.queryVisibility(self.evacuees.get_position_of_pedestrian(i),
@@ -110,7 +101,7 @@ class EvacEnv:
             self.focus.append(self.evacuees.get_focus_of_pedestrian(i))
 
     def update_speed(self):
-        logging.info('Flooor {} udated speed'.format(self.floor))
+        logging.debug('Flooor {} udated speed'.format(self.floor))
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
@@ -120,7 +111,6 @@ class EvacEnv:
 
                 self.evacuees.update_speed_of_pedestrian(i, optical_density)
                 self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_of_pedestrian(i))
-        self.speeds = [int(self.evacuees.get_speed_of_pedestrian(i)) for (i) in range(self.sim.getNumAgents())]
 
     def update_fed(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
@@ -164,6 +154,7 @@ class EvacEnv:
 
     def get_rset_time(self) -> None:
         exited = self.finished.count(0)
+        logging.info('Time: {}, floor: {}, evacuated: {}'.format(self.floor, exited, self.get_simulation_time()))
         if (exited > len(self.finished) * 0.1) and self.per_9 == 0:
             self.per_9 = self.current_time
         if all(x == 0 for x in self.finished) and self.rset == 0:
@@ -172,16 +163,15 @@ class EvacEnv:
     def record_data(self):
         data = []
         for i in range(len(self.trajectory)):
-            if (i % self.general['VISUALIZATION_RESOLUTION']) == 0:
+            if (i % self.config['VISUALIZATION_RESOLUTION']) == 0:
                 time_row = []
                 for n in range(self.sim.getNumAgents()):
                     time_row.append([self.trajectory[i][n][0], self.trajectory[i][n][1], self.velocity_vector[i][n][0],
-                                     self.velocity_vector[i][n][1], self.speed_vec[i][n], self.fed_vec[i][n],
-                                     self.finished_vec[i][n]])
+                                     self.velocity_vector[i][n][1], self.fed_vec[i][n], self.finished_vec[i][n]])
                 data.append(time_row)
 
         json_content = {'number_of_evacuees': self.sim.getNumAgents(),
-             'frame_rate': self.config['TIME_STEP'] * self.general['VISUALIZATION_RESOLUTION'],
+             'frame_rate': self.config['TIME_STEP'] * self.config['VISUALIZATION_RESOLUTION'],
              'project_name': self.general['PROJECT_NAME'],
              'simulation_id': self.general['SIM_ID'],
              'simulation_time': self.get_simulation_time(),
@@ -193,7 +183,7 @@ class EvacEnv:
     def do_simulation(self, time):
         for step in range(int(time/self.config['TIME_STEP'])):
             self.sim.doStep()
-            logging.info('Agents moving step: {}'.format(step))
+            logging.debug('Simulation step: {}'.format(step))
             self.update_agents_position()
             self.update_state()
             self.update_time()
