@@ -3,6 +3,7 @@
 sudo apt-get install python3-pip python3-shapely python3-numpy python3-networkx python3-psycopg2 gearman sendxmpp
 sudo -H pip3 install webcolors pyhull 
 
+echo; echo; echo  "Connecting to psql as $USER"
 . vars.sh
 [ $AAMKS_PG_REMOVE_ALL_AAMKS_DATA == 1 ] && { 
 	psql -c "DROP DATABASE aamks";

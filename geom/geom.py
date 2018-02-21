@@ -118,7 +118,7 @@ class Geom():
                     depth= v[1][1]-v[0][1]
                     height=v[1][2]-v[0][2]
                     data.append(self._prepare_geom_record(k,v,width,depth,height,floor))
-        self.s.query("CREATE TABLE aamks_geom('name','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z')")
+        self.s.query("CREATE TABLE aamks_geom('name','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z', 'fire_model_ignore')")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
     def _invert_y(self):# {{{
@@ -157,8 +157,8 @@ class Geom():
         global_type_id=self._elem_counter[type_pri]
         name='{}_{}'.format(k[0], global_type_id)
 
-        #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , 'material_ceiling'                       , 'material_floor'                       , 'material_wall'                       , 'sprinkler' , 'detector' ,  'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z')
-        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['MATERIAL_CEILING'] , self.conf['MATERIAL_FLOOR'] , self.conf['MATERIAL_WALL'] , 0           , 0          ,  None          , None             , None           , None            , None        , None , None , None , None       , None       , None         )
+        #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , 'material_ceiling'            , 'material_floor'            , 'material_wall'            , 'sprinkler' , 'detector' , 'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z' , 'fire_model_ignore')
+        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['MATERIAL_CEILING'] , self.conf['MATERIAL_FLOOR'] , self.conf['MATERIAL_WALL'] , 0           , 0          , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
 
 # }}}
     def _init_helper_variables(self):# {{{
@@ -170,38 +170,51 @@ class Geom():
         self.s.query("UPDATE aamks_geom SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
 
 # }}}
+    def _name_well(self,r):# {{{
+        '''
+        A WELL needs to introduce a new 2D slice. The name must come from
+        either STAI or HALL. We need a new global_type_id also. 
+        '''
+
+        self._elem_counter[r['type_pri']]+=1
+        global_type_id=self._elem_counter[r['type_pri']]
+        if r['type_sec'] == 'STAI':
+            return ("S_{}".format(global_type_id), global_type_id)
+        else:
+            return ("H_{}".format(global_type_id), global_type_id)
+
+# }}}
     def _make_fake_wells(self):# {{{
         ''' 
+        This is for evacuation only and cannot interfere with fire models.
         Most STAI(RCASES) or HALL(S) are drawn on floor 0, but they are tall
         and need to cross other floors. We call them WELLs. Say we have floor
         bottom lines at 0, 3, 6, 9, 12 metres and WELL's top is at 9 metres -
         the WELL belongs to floors 0, 1, 2. We INSERT fake (x,y) WELL
-        rectangles on proper floors in order to calculate vent_from / vent_to
-        properly. The WELL's rectangle name (row['name']) on each floor is the
-        same as the origin. WELLs are temporary objects and will be removed
-        after we are done with intersections. We identify them by
-        row['name']='WELL' 
+        slices on proper floors in order to calculate vent_from / vent_to
+        properly. WELLs are named after WELL's origin -- for S4 we'll have S4_1
+        on floor1 and S4_2 on floor2. WELLs slices are labeled WELL in
+        type_sec. 
         '''
 
-        self._wells_add_floors={}
+        add_wells={}
         for w in self.s.query("SELECT floor,global_type_id,height FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
-            self._wells_add_floors[(w['floor'], w['global_type_id'])]=[]
+            add_wells[(w['floor'], w['global_type_id'])]=[]
             current_floor=w['floor']
 
             for floor in self.floors:
                 for v in self.s.query("SELECT min(z0) FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,)):
                     if v['min(z0)'] < w['height']:
-                        self._wells_add_floors[(w['floor'], w['global_type_id'])].append(floor)
-            self._wells_add_floors[(w['floor'], w['global_type_id'])].remove(current_floor)
+                        add_wells[(w['floor'], w['global_type_id'])].append(floor)
+            add_wells[(w['floor'], w['global_type_id'])].remove(current_floor)
 
-        for w, floors in self._wells_add_floors.items():
+        for w, floors in add_wells.items():
             row=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND global_type_id=?", (w[1],))[0]
             for floor in floors:
-                row['name']='WELL'
+                row['name'], row['global_type_id']=self._name_well(row)
+                row['fire_model_ignore']=1
                 row['floor']=floor
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
-        self.s.dumpall()
-        sys.exit()
 
 # }}}
 
@@ -391,6 +404,7 @@ class Geom():
     def _remove_fake_wells(self):# {{{
         ''' Removing fake WELLs after we are done with horizontal intersections. '''
         self.s.query("DELETE FROM aamks_geom WHERE name='WELL'")
+        self.s.dumpall()
 # }}}
     def _find_vertical_intersections(self):# {{{
         '''
