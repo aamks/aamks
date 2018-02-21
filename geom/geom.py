@@ -49,7 +49,6 @@ class Geom():
         self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
-        #self.s.dumpall()
 # }}}
 
     def _floors_details(self):# {{{
@@ -172,11 +171,17 @@ class Geom():
 
 # }}}
     def _make_fake_wells(self):# {{{
-        ''' Most STAI(RCASES) or HALL(S) are drawn on floor 1, but they are tall and need to cross other floors. We call them WELLs. 
-        Say we have floor bottom lines at 0, 3, 6, 9, 12 metres and WELL's top is at 9 metres - the WELL belongs to floors 0, 3, 6.
-        We INSERT fake (x,y) WELL rectangles on proper floors in order to calculate vent_from / vent_to properly. 
-        The WELL's rectangle name (row['name']) on each floor is the same as the origin. 
-        WELLs are temporary objects and will be removed after we are done with intersections. We identify them by row['name']='WELL' '''
+        ''' 
+        Most STAI(RCASES) or HALL(S) are drawn on floor 0, but they are tall
+        and need to cross other floors. We call them WELLs. Say we have floor
+        bottom lines at 0, 3, 6, 9, 12 metres and WELL's top is at 9 metres -
+        the WELL belongs to floors 0, 1, 2. We INSERT fake (x,y) WELL
+        rectangles on proper floors in order to calculate vent_from / vent_to
+        properly. The WELL's rectangle name (row['name']) on each floor is the
+        same as the origin. WELLs are temporary objects and will be removed
+        after we are done with intersections. We identify them by
+        row['name']='WELL' 
+        '''
 
         self._wells_add_floors={}
         for w in self.s.query("SELECT floor,global_type_id,height FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
@@ -195,6 +200,8 @@ class Geom():
                 row['name']='WELL'
                 row['floor']=floor
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
+        self.s.dumpall()
+        sys.exit()
 
 # }}}
 
@@ -214,17 +221,25 @@ class Geom():
         self.s.query('INSERT INTO id2compa VALUES (?)', (json.dumps(self._id2compa_name),))
 # }}}
     def _add_names_to_vents_from_to(self):# {{{
-        ''' Vents from/to use indices, but names will be simpler for AAMKS and for debugging. 
-        Hvents/Vvents lower_id/higher_id are already taken care of in _find_vertical_intersections()
+        ''' 
+        Vents from/to use indices, but names will be simpler for AAMKS and for
+        debugging. Hvents/Vvents lower_id/higher_id are already taken care of
+        in _find_vertical_intersections() 
         '''
+
         query=[]
         for v in self.s.query("select vent_from,vent_to,name from aamks_geom where type_pri IN('HVENT', 'VVENT')"):
             query.append((self._id2compa_name[v['vent_from']], self._id2compa_name[v['vent_to']], v['name']))
         self.s.executemany('UPDATE aamks_geom SET vent_from_name=?, vent_to_name=? WHERE name=?', query)
 # }}}
     def _calculate_sills(self):# {{{
-        ''' Sill is the distance relative to the floor. Say there's a HVENT H between rooms A and B. Say A and B have variate z0 (floor elevations). How do we calculate the height of the sill?
-        The CFAST.in solution is simple: We find 'hvent_from' for H and then we use it's z0. This z0 is the needed 'relative 0' for the calcuation. '''
+        ''' 
+        Sill is the distance relative to the floor. Say there's a HVENT H
+        between rooms A and B. Say A and B have variate z0 (floor elevations).
+        How do we calculate the height of the sill? The CFAST.in solution is
+        simple: We find 'hvent_from' for H and then we use it's z0. This z0 is
+        the needed 'relative 0' for the calcuation. 
+        '''
 
         for v in self.s.query("SELECT global_type_id, z0, vent_from  FROM aamks_geom WHERE type_pri='HVENT' ORDER BY name"): 
             floor_baseline=self.s.query("SELECT z0 FROM aamks_geom WHERE global_type_id=? AND type_pri='COMPA'", (v['vent_from'],))[0]['z0']
@@ -238,10 +253,13 @@ class Geom():
             self.s.query("UPDATE aamks_geom set sprinkler = 1 WHERE type_pri='COMPA'")
 # }}}
     def _make_elem_counter(self):# {{{
-        ''' Geom primary types are enumerated globally for the building in sqlite. 
-        Each of the types has separate numbering starting from 1.
-        ROOM_2_8 refers to the eight compartment in the building which happens to exist on floor 2 
-         '''
+        ''' 
+        Geom primary types are enumerated globally for the building in sqlite.
+        Each of the types has separate numbering starting from 1. ROOM_2_8
+        refers to the eight compartment in the building which happens to exist
+        on floor 2.
+        '''
+
         self._elem_counter={}
         for i in ('COMPA', 'HVENT', 'VVENT'):
             self._elem_counter[i]=0
@@ -261,9 +279,11 @@ class Geom():
                 self.aamks_polies[v['type_pri']][floor][v['global_type_id']]=box(v['x0'], v['y0'], v['x0']+v['width'], v['y0']+v['depth'])
 # }}}
     def _aamks_geom_orientation(self):# {{{
-        ''' Is HVENT vertical or horizontal? 
-        Apart from what is width and height for geometry, HVENTS have their cfast_width always along the wall
+        ''' 
+        Is HVENT vertical or horizontal? Apart from what is width and height
+        for geometry, HVENTS have their cfast_width always along the wall
         '''
+
         for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='HVENT' order by name"):
             if v['width'] > v['depth']:
                 self.s.query("UPDATE aamks_geom SET is_vertical=0 WHERE name=?" , (v['name']  , ))
@@ -273,17 +293,18 @@ class Geom():
                 self.s.query("UPDATE aamks_geom SET cfast_width=? WHERE name=?" , (v['depth'] , v['name']))
 # }}}
     def _get_faces(self):# {{{
-        ''' Cfast faces and offsets calculation. 
-        HVENTS have width=4, so we only consider intersection.length > 4
-        Faces are properties of doors. They are calculated in respect to the room of lower id. 
-        The orientation of faces in each room:
+        ''' 
+        Cfast faces and offsets calculation. HVENTS have width=4, so we only
+        consider intersection.length > 4 Faces are properties of doors. They
+        are calculated in respect to the room of lower id. The orientation of
+        faces in each room:
                 3
             +-------+
           4 |       | 2
             +-------+
                 1
-
         '''
+
         for floor in self.floors:
             for i in self.s.query("SELECT vent_from as compa_id, global_type_id as vent_id FROM aamks_geom WHERE type_pri='HVENT' AND floor=?", (floor,)):
                 hvent_poly=self.aamks_polies['HVENT'][floor][i['vent_id']]
@@ -349,6 +370,7 @@ class Geom():
             
         v=sorted(v) asserts that we go from lower_vent_id to higher_vent_id
         '''
+
         all_hvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='HVENT' ORDER BY name") ]
         vc_intersections={key:[] for key in all_hvents }
 
@@ -371,11 +393,13 @@ class Geom():
         self.s.query("DELETE FROM aamks_geom WHERE name='WELL'")
 # }}}
     def _find_vertical_intersections(self):# {{{
-        ''' Similar to _find_horiz_intersections()
-        This time we are looking for a vvent (at floor n) which intersects a compa at it's floor (floor n) and a compa above (floor n+1) 
-        We will iterate over two_floors, which can contain:
-        a) the set of compas from (floor n) and (floor n+1)
-        b) the set of compas from (floor n) only if it is the top most floor -- outside_compa will come into play
+        '''
+        Similar to _find_horiz_intersections() This time we are looking for a
+        vvent (at floor n) which intersects a compa at it's floor (floor n)
+        and a compa above (floor n+1) We will iterate over two_floors, which
+        can contain: a) the set of compas from (floor n) and (floor n+1) b)
+        the set of compas from (floor n) only if it is the top most floor --
+        outside_compa will come into play
 
         Opposed to _find_horiz_intersections() vents go from higher to lower:
             "UPDATE aamks_geom SET vent_to=?, vent_from=?"
