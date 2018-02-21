@@ -2,6 +2,7 @@
 vetical geoms
 localhost webserver
 invert Y in js
+test
 
 
 * Distribution of total number of evacuees
