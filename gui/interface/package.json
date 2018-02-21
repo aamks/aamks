@@ -22,9 +22,11 @@
     "@angular/platform-browser-dynamic": "^5.0.0",
     "@angular/router": "^5.0.0",
     "angular-in-memory-web-api": "^0.5.1",
+    "codemirror": "^5.35.0",
     "core-js": "^2.4.1",
     "d3": "^4.12.2",
     "ember-cli-cors": "0.0.2",
+    "handlebars": "^4.0.11",
     "lodash": "^4.17.4",
     "ng-katex": "^0.3.37",
     "ngx-perfect-scrollbar": "^5.3.1",
@@ -32,7 +34,7 @@
     "zone.js": "^0.8.14"
   },
   "devDependencies": {
-    "@angular/cli": "1.5.2",
+    "@angular/cli": "^1.7.0",
     "@angular/compiler-cli": "^5.0.0",
     "@angular/language-service": "^5.0.0",
     "@types/d3": "^4.12.0",
