@@ -7,30 +7,33 @@ The script create.sh will create the complete database.
 1. vim vars.sh
 2. bash create.sh
 
+
+===================== BASHRC ========================
+
+You should setup these variables in ~/.bashrc: 
+
+AAMKS_PATH='/usr/local/aamks'
+AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
+AAMKS_TESTING=0
+AAMKS_SERVER=127.0.0.1
+AAMKS_USE_GEARMAN=1
+AAMKS_PG_PASS='secret' # Set during installation via /usr/local/aamks/installer/vars.sh
+
+
 ===================== NOTIFICATIONS ========================
 
 ! aamks manager needs to be restarted in order to reread ~/.bashrc !
 
 AAMKS_NOTIFY is for gearman and other notifications. Emails notifications are
 troublesome (local maileserver? / spam / google's authorizations) therefore we
-notify via jabber. Just install xabber or other client on your smarphone / your
-desktop. AAMKS_NOTIFY is a json object:
+notify via jabber. Just install xabber or other client on your smartphone /
+your desktop, create your jabber account and wait for notifications, if there
+are any.
 
-AAMKS_NOTIFY='[[ "you@xabber.com", "password1" ], [ "someone@jabber.at", "password2" ]]'
-
-
-===================== BASHRC ========================
-
-You should setup these variables in ~/.bashrc: 
-
-AAMKS_NOTIFY='[[ "you@xabber.com", "password1" ], [ "someone@jabber.at", "password2" ]]'
-AAMKS_TESTING=0
-AAMKS_PATH=/usr/local/aamks
-AAMKS_SERVER=127.0.0.1
-AAMKS_USE_GEARMAN=1
-AAMKS_PG_PASS=secret
+AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 
 ===================== GUI - WEB APPLICATION ========================
+
 1. Install nodejs package and than using cmd type:
 npm install @angular/cli
 

@@ -1,21 +1,25 @@
 #!/bin/bash
 
-sudo apt-get install python3-pip python3-shapely python3-numpy python3-networkx python3-psycopg2 gearman sendxmpp
+sudo apt-get install postgresql python3-pip python3-shapely python3-numpy python3-networkx python3-psycopg2 gearman sendxmpp
 sudo -H pip3 install webcolors pyhull 
 
-echo; echo; echo  "Connecting to psql as $USER"
+echo; echo; echo;
+echo "Running psql commands with" 
+echo "sudo -u postgres psql -c 'sql commands'"
+echo 
+
 . vars.sh
 [ $AAMKS_PG_REMOVE_ALL_AAMKS_DATA == 1 ] && { 
-	psql -c "DROP DATABASE aamks";
-	psql -c "DROP USER $AAMKS_PG_USER";
+	sudo -u postgres psql -c "DROP DATABASE aamks";
+	sudo -u postgres psql -c "DROP USER aamks";
 }
 [ $AAMKS_PG_PASS == 'secret' ] && { echo "You need to change AAMKS_PG_PASS='secret' in vars.sh"; } || {
 
-psql << EOF
+sudo -u postgres psql << EOF
 
 CREATE DATABASE aamks;
 \c aamks;
-CREATE USER $AAMKS_PG_USER WITH PASSWORD '$AAMKS_PG_PASS';
+CREATE USER aamks WITH PASSWORD '$AAMKS_PG_PASS';
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- updateTimestamp---{{{
@@ -135,33 +139,33 @@ CREATE TABLE simulations ( ---{{{
 CREATE TRIGGER update_modified BEFORE UPDATE ON projects FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_modified BEFORE UPDATE ON scenarios FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 ---{{{ ALTERS
-ALTER TABLE users OWNER TO $AAMKS_PG_USER;
-GRANT ALL ON TABLE users TO $AAMKS_PG_USER;
-GRANT ALL ON SEQUENCE users_id_seq TO $AAMKS_PG_USER;
+ALTER TABLE users OWNER TO aamks;
+GRANT ALL ON TABLE users TO aamks;
+GRANT ALL ON SEQUENCE users_id_seq TO aamks;
 
-ALTER TABLE projects OWNER TO $AAMKS_PG_USER;
-GRANT ALL ON TABLE projects TO $AAMKS_PG_USER;
-GRANT ALL ON SEQUENCE projects_id_seq TO $AAMKS_PG_USER;
+ALTER TABLE projects OWNER TO aamks;
+GRANT ALL ON TABLE projects TO aamks;
+GRANT ALL ON SEQUENCE projects_id_seq TO aamks;
 
-ALTER TABLE scenarios OWNER TO $AAMKS_PG_USER;
-GRANT ALL ON TABLE scenarios TO $AAMKS_PG_USER;
-GRANT ALL ON SEQUENCE scenarios_id_seq TO $AAMKS_PG_USER;
+ALTER TABLE scenarios OWNER TO aamks;
+GRANT ALL ON TABLE scenarios TO aamks;
+GRANT ALL ON SEQUENCE scenarios_id_seq TO aamks;
 
-ALTER TABLE risk_scenarios OWNER TO $AAMKS_PG_USER;
-GRANT ALL ON TABLE risk_scenarios TO $AAMKS_PG_USER;
-GRANT ALL ON SEQUENCE risk_scenarios_id_seq TO $AAMKS_PG_USER;
+ALTER TABLE risk_scenarios OWNER TO aamks;
+GRANT ALL ON TABLE risk_scenarios TO aamks;
+GRANT ALL ON SEQUENCE risk_scenarios_id_seq TO aamks;
 
-ALTER TABLE categories OWNER TO $AAMKS_PG_USER;
-GRANT ALL ON TABLE categories TO $AAMKS_PG_USER;
-GRANT ALL ON SEQUENCE categories_id_seq TO $AAMKS_PG_USER;
+ALTER TABLE categories OWNER TO aamks;
+GRANT ALL ON TABLE categories TO aamks;
+GRANT ALL ON SEQUENCE categories_id_seq TO aamks;
 
-ALTER TABLE library OWNER TO $AAMKS_PG_USER;
-GRANT ALL ON TABLE library TO $AAMKS_PG_USER;
-GRANT ALL ON SEQUENCE library_id_seq TO $AAMKS_PG_USER;
+ALTER TABLE library OWNER TO aamks;
+GRANT ALL ON TABLE library TO aamks;
+GRANT ALL ON SEQUENCE library_id_seq TO aamks;
 
-ALTER TABLE simulations OWNER TO $AAMKS_PG_USER;
-GRANT ALL ON TABLE simulations TO $AAMKS_PG_USER;
-GRANT ALL ON SEQUENCE simulations_id_seq TO $AAMKS_PG_USER;
+ALTER TABLE simulations OWNER TO aamks;
+GRANT ALL ON TABLE simulations TO aamks;
+GRANT ALL ON SEQUENCE simulations_id_seq TO aamks;
 ---}}}
 
 EOF

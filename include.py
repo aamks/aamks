@@ -31,10 +31,14 @@ class Dump():# {{{
             print(struct)
 # }}}
 class SimIterations():# {{{
-    ''' For a given project we may run simulation 0 to 999. Then we may wish to run 100 simulations more and have them numbered here: from=1000 to=1099
-    These from and to numbers are unique for the project and are used as rand seeds in later aamks modules. 
-    Remember that range(1,4) returns 1,2,3; hence SELECT max(iteration)+1
+    ''' 
+    For a given project we may run simulation 0 to 999. Then we may wish to run
+    100 simulations more and have them numbered here: from=1000 to=1099 These
+    from and to numbers are unique for the project and are used as rand seeds
+    in later aamks modules. Remember that range(1,4) returns 1,2,3; hence
+    SELECT max(iteration)+1 
     '''
+
     def __init__(self, project, how_many):
         self.p=Psql()
         self.project=project

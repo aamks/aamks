@@ -29,9 +29,9 @@ class Geom():
         self._make_elem_counter()
         self._geometry2sqlite(self._geometry_reader())
         self._init_helper_variables()
+        self._make_fake_wells()
         self._floors_details()
         self.make_vis('Create geometry')
-        self._make_fake_wells()
         self._aamks_geom_into_polygons()
         self._aamks_geom_orientation()
         self._make_id2compa_name()
@@ -55,7 +55,7 @@ class Geom():
         sqlite. Canvas size is 1600 x 800 in css.css. Calculate how to scale
         the whole floor to fit the canvas. Minima don't have to be at (0,0) in
         autocad, therefore we also need to translate the drawing for the
-        canvas. 
+        canvas. Y needs to be inverted for js, hence -int(maxy-0.5*height).
         '''
 
         values=OrderedDict()
@@ -69,17 +69,21 @@ class Geom():
             height=maxy-miny
 
             animation_scale=round(min(1600/width,800/height)*0.95, 2) # 0.95 is canvas padding
-            animation_translate=[ int(maxx-0.5*width), int(maxy-0.5*height) ]
+            animation_translate=[ int(maxx-0.5*width), -int(maxy-0.5*height) ]
 
             values[floor]=OrderedDict([('width', width) , ('height', height) , ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy) , ('animation_scale', animation_scale), ('animation_translate',  animation_translate)])
         self.s.query("CREATE TABLE floors(json)")
         self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(values),))
 # }}}
     def _geometry_reader(self):# {{{
-        g=self.conf['INPUT_GEOMETRY']
-        if g=="cad.json":
+        ''' 
+        By convention: read cad.json first, otherwise make InkscapeReader()
+        read input.svg. 
+        '''
+
+        try:
             geometry_data=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
-        if g=="input.svg":
+        except:
             InkscapeReader()
             geometry_data=self.json.read("{}/svg.json".format(os.environ['AAMKS_PROJECT']))
 

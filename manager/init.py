@@ -159,7 +159,7 @@ class OnEnd():
         self.p=Psql()
         self._gearman_register_results_collector()
         self._gearman_register_works()
-        self._visualize_demo()
+        self._visualize_aanim()
 # }}}
     def _gearman_register_results_collector(self):# {{{
         ''' 
@@ -170,7 +170,10 @@ class OnEnd():
         Popen("(echo workers ; sleep 0.1) | netcat {} 4730 | grep -q aOut || {{ gearman -w -h {} -f aOut xargs python3 {}/manager/results_collector.py; }}".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
 # }}}
     def _gearman_register_works(self):# {{{
-        ''' We only register works. The works will be run by workers registered via manager. '''
+        ''' 
+        We only register works. The works will be run by workers registered via
+        manager. 
+        '''
 
         if os.environ['AAMKS_USE_GEARMAN']=='0':
             return
@@ -182,10 +185,15 @@ class OnEnd():
             gearman="gearman -f aRun 'http://{}/users{} {} &'".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""), project)
             os.system(gearman)
 # }}}
-    def _visualize_demo(self):# {{{
-        demo_dir="{}/workers/demo".format(os.environ['AAMKS_PROJECT'])
-        os.makedirs(demo_dir, exist_ok=True)
-        shutil.copyfile("{}/examples/demo/anim.zip".format(os.environ['AAMKS_PATH']), "{}/anim.zip".format(demo_dir))
-        shutil.copyfile("{}/examples/demo/evac.json".format(os.environ['AAMKS_PATH']), "{}/evac.json".format(demo_dir))
-        Vis(None, "demo", "demo", (3000,1500))
+    def _visualize_aanim(self):# {{{
+        ''' If we chosen to see the animated demo of aamks. '''
+
+        if self.conf['PROJECT_NAME'] == 'aanim':
+            si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
+            project=self.conf['PROJECT_NAME']
+            for i in range(*si.get()):
+                worker_dir="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
+                shutil.copyfile("{}/examples/aanim/anim.zip".format(os.environ['AAMKS_PATH'])  , "{}/anim.zip".format(worker_dir))
+                shutil.copyfile("{}/examples/aanim/evac.json".format(os.environ['AAMKS_PATH']) , "{}/evac.json".format(worker_dir))
+                Vis(None, "aanim", "aanim", (0,0))
 # }}}

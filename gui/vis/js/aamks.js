@@ -1,4 +1,4 @@
-// TODO: nie potrzeba num_of_evacuees
+// Invert Y everywhere.
 // Animation can be paused on mouse clicks - onFrame() always checks the animationIsRunning variable. {{{
 // On mouse clicks we display evacBalls data and mouse position
 //
@@ -232,7 +232,7 @@ function paperjsLetItBurn() {
 		clearInterval(intervalId);
 		return; 
 	}
-	burningFire.addChild(new Path.Circle({center: new Point(burningFireLocation) , radius:ballsSize*4 , fillColor:colors["firefill"] , strokeColor:colors["firestroke"] , strokeWidth:ballsSize }));
+	burningFire.addChild(new Path.Circle({center: new Point(burningFireLocation[0], -burningFireLocation[1]) , radius:ballsSize*4 , fillColor:colors["firefill"] , strokeColor:colors["firestroke"] , strokeWidth:ballsSize }));
 
 	clearInterval(intervalId);
 	fireScale=0.9;
@@ -254,25 +254,25 @@ function paperjsDisplayImage() {
 	}
 
 	for (var key in rooms) {
-		staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['stroke'], strokeWidth:0.2, fillColor:colors[rooms[key]["type_sec"]]}));
+		staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],-rooms[key]["y0"]), size: new Size(rooms[key]["width"],-rooms[key]["depth"]), strokeColor:colors['stroke'], strokeWidth:0.2, fillColor:colors[rooms[key]["type_sec"]]}));
 	}
 
 	for (var i=0; i<obstacles.length; i++) {
-		staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],obstacles[i]["depth"]), strokeColor: colors['obsts'], strokeWidth:wallsSize }));
+		staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],-obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],-obstacles[i]["depth"]), strokeColor: colors['obsts'], strokeWidth:wallsSize }));
 	}
 
 	if (labelsSize != 0) { 
 		for (var key in rooms) {
-			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+10,rooms[key]["y0"]+30), fillColor:colors["fg"], content: rooms[key]["name"], fontFamily: 'Play', fontSize: labelsSize }));
+			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+10,-rooms[key]["y0"]-30), fillColor:colors["fg"], content: rooms[key]["name"], fontFamily: 'Play', fontSize: labelsSize }));
 		}
 	}
 
 	for (var key in doors) {
 		if (doorsSize != 0) { 
-			staticGeoms.addChild(new Path.Rectangle({point: new Point(doors[key]["x0"],doors[key]["y0"]), size: new Size(doors[key]["width"],doors[key]["depth"]), strokeColor: colors['door'], strokeWidth:doorsSize  }));
+			staticGeoms.addChild(new Path.Rectangle({point: new Point(doors[key]["x0"],-doors[key]["y0"]), size: new Size(doors[key]["width"],-doors[key]["depth"]), strokeColor: colors['door'], strokeWidth:doorsSize  }));
 		}
 		if (labelsSize != 0) { 
-			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-10,doors[key]["center_y"]-10), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Play', fontSize: labelsSize*0.75 }));
+			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-10,-doors[key]["center_y"]+10), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Play', fontSize: labelsSize*0.75 }));
 		}
 	}
 
@@ -283,21 +283,21 @@ function appendPaperjsExtras() {
 
 	for (var i=0; i<paperjsExtras['rectangles'].length; i++) {
 		g=paperjsExtras['rectangles'][i];
-		new Path.Rectangle({point: new Point(g["xy"]), size: new Size(g["width"],g["depth"]), strokeColor:g['strokeColor'], strokeWidth:g['strokeWidth'], fillColor:g['fillColor'], opacity:g['opacity'] });
+		new Path.Rectangle({point: new Point(g["xy"][0], -g["xy"][1]), size: new Size(g["width"],-g["depth"]), strokeColor:g['strokeColor'], strokeWidth:g['strokeWidth'], fillColor:g['fillColor'], opacity:g['opacity'] });
 	}
 
 	for (var i=0; i<paperjsExtras['lines'].length; i++) {
 		g=paperjsExtras['lines'][i];
-		new Path.Line({ from: new Point(g["xy"]), to: new Point(g["x1"],g["y1"]), strokeColor:g['strokeColor'], strokeWidth:g['strokeWidth'], opacity:g['opacity']  });
+		new Path.Line({ from: new Point(g["xy"][0], -g["xy"][1]), to: new Point(g["x1"],-g["y1"]), strokeColor:g['strokeColor'], strokeWidth:g['strokeWidth'], opacity:g['opacity']  });
 	}
 
 	for (var i=0; i<paperjsExtras['circles'].length; i++) {
 		g=paperjsExtras['circles'][i];
-		new Path.Circle({ center: new Point(g["xy"]), radius:g["radius"], fillColor:g['fillColor'], opacity:g['opacity'] });
+		new Path.Circle({ center: new Point(g["xy"][0], -g["xy"][1]), radius:g["radius"], fillColor:g['fillColor'], opacity:g['opacity'] });
 	}
 	for (var i=0; i<paperjsExtras['texts'].length; i++) {
 		g=paperjsExtras['texts'][i];
-		new PointText({ point: new Point(g["xy"]), content: g["content"], fontFamily: 'Play', fontSize: g["fontSize"], fillColor:g['fillColor'], opacity:g['opacity'] });
+		new PointText({ point: new Point(g["xy"][0], -g["xy"][1]), content: g["content"], fontFamily: 'Play', fontSize: g["fontSize"], fillColor:g['fillColor'], opacity:g['opacity'] });
 	}
 }
 
@@ -320,11 +320,11 @@ function paperjsDisplayAnimation() {
 	if (visContainsAnimation==0) { return; } 
 
 	for (var i=0; i<numberOfEvacuees; i++) {
-		evacVelocities.addChild( new Path.Line({ from: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), to: new Point(evacueesData[0][i][2],evacueesData[0][i][3]), strokeColor:colors['fg'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+		evacVelocities.addChild( new Path.Line({ from: new Point(evacueesData[0][i][0],-evacueesData[0][i][1]), to: new Point(evacueesData[0][i][2],-evacueesData[0][i][3]), strokeColor:colors['fg'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
 	}
 
 	for (var i=0; i<numberOfEvacuees; i++) {
-		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: ballsSize, fillColor: colors['doseN'] }));
+		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],-evacueesData[0][i][1]), radius: ballsSize, fillColor: colors['doseN'] }));
 	}
 
 }
@@ -341,13 +341,13 @@ function updateAnimatedElement(i) {
 	evacBalls.children[i].opacity=evacVelocities.children[i].opacity=evacueesData[frame+1][i][5]; 
 	evacBalls.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]; 
 
-	evacBalls.children[i].position.x = evacueesData[frame][i][0] + (evacueesData[frame+1][i][0] - evacueesData[frame][i][0]) * (lerpFrame%lerps)/lerps; 
-	evacBalls.children[i].position.y = evacueesData[frame][i][1] + (evacueesData[frame+1][i][1] - evacueesData[frame][i][1]) * (lerpFrame%lerps)/lerps; 
+	evacBalls.children[i].position.x =   evacueesData[frame][i][0] + (evacueesData[frame+1][i][0] - evacueesData[frame][i][0]) * (lerpFrame%lerps)/lerps; 
+	evacBalls.children[i].position.y = - evacueesData[frame][i][1] - (evacueesData[frame+1][i][1] - evacueesData[frame][i][1]) * (lerpFrame%lerps)/lerps; 
 
 	evacVelocities.children[i].segments[0].point.x = evacBalls.children[i].position.x;
 	evacVelocities.children[i].segments[0].point.y = evacBalls.children[i].position.y;
 	evacVelocities.children[i].segments[1].point.x = evacBalls.children[i].position.x + evacueesData[frame][i][2];
-	evacVelocities.children[i].segments[1].point.y = evacBalls.children[i].position.y + evacueesData[frame][i][3];
+	evacVelocities.children[i].segments[1].point.y = evacBalls.children[i].position.y - evacueesData[frame][i][3];
 }
 
 function afterLerpFrame() {
@@ -382,7 +382,7 @@ function onMouseDown(event) {
 	var x;
 	var y;
 	//$("canvas-mouse-coords").text(Math.floor(event.downPoint['x']/100)+","+Math.floor(event.downPoint['y']/100));
-	$("canvas-mouse-coords").text(Math.floor(event.downPoint['x'])+","+Math.floor(event.downPoint['y']));
+	$("canvas-mouse-coords").text(Math.floor(event.downPoint['x'])+ "," + -Math.floor(event.downPoint['y']));
 	$("canvas-mouse-coords").css({'display':'block', 'left':event.event.pageX, 'top':event.event.pageY});
 	for (var i = 0; i < numberOfEvacuees; i++) { 
 		x=evacBalls.children[i].position.x;
@@ -459,9 +459,9 @@ function animTimeFormat() {
 
 function highlightGeom(key) {
 	try {
-		new Path.Rectangle({point: new Point(Math.round(rooms[key]["x0"]),Math.round(rooms[key]["y0"])), size: new Size(Math.round(rooms[key]["width"]),Math.round(rooms[key]["depth"])), opacity:0.4, fillColor: "#0f0"});
+		new Path.Rectangle({point: new Point(Math.round(rooms[key]["x0"]),-Math.round(rooms[key]["y0"])), size: new Size(Math.round(rooms[key]["width"]),-Math.round(rooms[key]["depth"])), opacity:0.4, fillColor: "#0f0"});
 	} catch(e) {
-		new Path.Circle({center: new Point(Math.round(doors[key]["center_x"]),Math.round(doors[key]["center_y"])), radius: 100,  opacity:0.4, fillColor: "#0f0"});
+		new Path.Circle({center: new Point(Math.round(doors[key]["center_x"]),-Math.round(doors[key]["center_y"])), radius: 100,  opacity:0.4, fillColor: "#0f0"});
 	}
 }
 
