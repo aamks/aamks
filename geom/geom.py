@@ -29,7 +29,6 @@ class Geom():
         self._make_elem_counter()
         self._geometry2sqlite(self._geometry_reader())
         self._init_helper_variables()
-        self._invert_y()
         self._floors_details()
         self.make_vis('Create geometry')
         self._make_fake_wells()
@@ -37,7 +36,6 @@ class Geom():
         self._aamks_geom_orientation()
         self._make_id2compa_name()
         self._find_horiz_intersections()
-        self._remove_fake_wells()
         self._get_faces()
         self._hvents_per_room()
         self._find_vertical_intersections()
@@ -121,15 +119,6 @@ class Geom():
         self.s.query("CREATE TABLE aamks_geom('name','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z', 'fire_model_ignore')")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
-    def _invert_y(self):# {{{
-        ''' 
-        Cad and inkscape have their (0,0) in bottom left. We will present
-        geometries on web with (0,0) in top left, hence we need to invert Y.
-        '''
-        return
-        maxy=self.s.query("SELECT max(y1) AS r FROM aamks_geom")[0]['r']
-        self.s.query("UPDATE aamks_geom SET y0=?-y1, y1=?-y0, center_y=?-center_y", (maxy,maxy,maxy))
-#}}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor):# {{{
         ''' Format a record for sqlite. Hvents get fixed width 4 cm '''
         # COMPA
@@ -170,31 +159,15 @@ class Geom():
         self.s.query("UPDATE aamks_geom SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
 
 # }}}
-    def _name_well(self,r):# {{{
-        '''
-        A WELL needs to introduce a new 2D slice. The name must come from
-        either STAI or HALL. We need a new global_type_id also. 
-        '''
-
-        self._elem_counter[r['type_pri']]+=1
-        global_type_id=self._elem_counter[r['type_pri']]
-        if r['type_sec'] == 'STAI':
-            return ("S_{}".format(global_type_id), global_type_id)
-        else:
-            return ("H_{}".format(global_type_id), global_type_id)
-
-# }}}
     def _make_fake_wells(self):# {{{
         ''' 
-        This is for evacuation only and cannot interfere with fire models.
-        Most STAI(RCASES) or HALL(S) are drawn on floor 0, but they are tall
-        and need to cross other floors. We call them WELLs. Say we have floor
-        bottom lines at 0, 3, 6, 9, 12 metres and WELL's top is at 9 metres -
-        the WELL belongs to floors 0, 1, 2. We INSERT fake (x,y) WELL
-        slices on proper floors in order to calculate vent_from / vent_to
-        properly. WELLs are named after WELL's origin -- for S4 we'll have S4_1
-        on floor1 and S4_2 on floor2. WELLs slices are labeled WELL in
-        type_sec. 
+        This is for evacuation only and cannot interfere with fire models
+        (fire_model_ignore=1). Most STAI(RCASES) or HALL(S) are drawn on floor
+        0, but they are tall and need to cross other floors. We call them
+        WELLs. Say we have floor bottoms at 0, 3, 6, 9, 12 metres and WELL's
+        top is at 9 metres - the WELL belongs to floors 0, 1, 2. We INSERT fake
+        (x,y) WELL slices on proper floors in order to calculate vent_from /
+        vent_to properly. 
         '''
 
         add_wells={}
@@ -211,13 +184,11 @@ class Geom():
         for w, floors in add_wells.items():
             row=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND global_type_id=?", (w[1],))[0]
             for floor in floors:
-                row['name'], row['global_type_id']=self._name_well(row)
                 row['fire_model_ignore']=1
                 row['floor']=floor
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
 
 # }}}
-
 
     def _make_id2compa_name(self):# {{{
         ''' 
@@ -225,10 +196,11 @@ class Geom():
         This map is stored to sqlite because path.py needs it. 
         Still true after mesh travelling?
         ''' 
+
         self._id2compa_name=OrderedDict() 
-        for v in self.s.query("select name,global_type_id from aamks_geom where type_pri='COMPA'"):
+        for v in self.s.query("select name,global_type_id from aamks_geom where type_pri='COMPA' ORDER BY global_type_id"):
             self._id2compa_name[v['global_type_id']]=v['name']
-            self._id2compa_name[self.outside_compa]='outside'
+        self._id2compa_name[self.outside_compa]='outside'
 
         self.s.query("CREATE TABLE id2compa(json)")
         self.s.query('INSERT INTO id2compa VALUES (?)', (json.dumps(self._id2compa_name),))
@@ -336,7 +308,10 @@ class Geom():
                         self.s.query("UPDATE aamks_geom SET face=?, face_offset=? WHERE global_type_id=? AND type_pri='HVENT'", (face,offset,i['vent_id'])) 
 # }}}
     def _hvents_per_room(self):# {{{
-        '''Cfast requires that hvents in each room are enumerated.'''
+        '''
+        If there are more than one vent in a room Cfast needs them enumerated.
+        '''
+
         i=0
         j=0
         update=[]
@@ -349,7 +324,9 @@ class Geom():
         self.s.executemany('UPDATE aamks_geom SET hvent_room_seq=? WHERE name=?', (update))
 # }}}
     def _vvents_per_room(self):# {{{
-        ''' Cfast requires that vvents in each room are enumerated. '''
+        '''
+        If there are more than one vent in a room Cfast needs them enumerated.
+        '''
         i=0
         j=0
         update=[]
@@ -400,11 +377,6 @@ class Geom():
                 self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
             self.s.query("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", (v[0],v[1],vent_id))
 
-# }}}
-    def _remove_fake_wells(self):# {{{
-        ''' Removing fake WELLs after we are done with horizontal intersections. '''
-        self.s.query("DELETE FROM aamks_geom WHERE name='WELL'")
-        self.s.dumpall()
 # }}}
     def _find_vertical_intersections(self):# {{{
         '''
@@ -487,7 +459,6 @@ class Geom():
             data['named']=rectangles
         self.s.query("CREATE TABLE obstacles(json)")
         self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
-        self.s.dumpall()
 # }}}
     def _obstacles_into_rectangles(self,obstacles):# {{{
         ''' 

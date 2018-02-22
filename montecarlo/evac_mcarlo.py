@@ -69,7 +69,14 @@ class EvacMcarlo():
 
 # }}}
     def _dispatch_evacuees(self):# {{{
-        ''' We dispatch the evacuees across the building according to the density distribution. '''
+        ''' 
+        We dispatch the evacuees across the building according to the density
+        distribution. 
+        '''
+
+        # TODO: we used WALL_MARGIN previously
+        # uniform(r['x0'] + self.conf['AAMKS_CONF']['WALL_MARGIN']
+        
 
         self.dispatched_evacuees=OrderedDict() 
         for floor in self.floors:
@@ -77,8 +84,8 @@ class EvacMcarlo():
             rooms = self.s.query("SELECT x0, x1, y0, y1, name, type_sec, room_area FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,))
             for r in rooms:
                 density=self._get_density(r['name'],r['type_sec'],floor)
-                x = uniform(r['x0'] + self.conf['AAMKS_CONF']['WALL_MARGIN'], r['x1'] - self.conf['AAMKS_CONF']['WALL_MARGIN'], int(r['room_area'] / density))
-                y = uniform(r['y0'] + self.conf['AAMKS_CONF']['WALL_MARGIN'], r['y1'] - self.conf['AAMKS_CONF']['WALL_MARGIN'], int(r['room_area'] / density))
+                x = uniform(r['x0'] + 50 , r['x1'] - 50 , int(r['room_area'] / density))
+                y = uniform(r['y0'] + 50 , r['y1'] - 50 , int(r['room_area'] / density))
                 positions += list(zip(x, y))
             self.dispatched_evacuees[floor] = [list([int(i) for i in l]) for l in positions]
 # }}}
@@ -146,7 +153,6 @@ class EvacMcarlo():
         self._evac_conf['WORKSPACE']="{}_{:04d}".format(self.conf['PROJECT_NAME'], self._sim_id)
         self._evac_conf['SIM_ID']=self._sim_id
         self._evac_conf['SERVER']=os.environ['AAMKS_SERVER']
-        self._evac_conf['AAMKS_CONF']=self.conf['AAMKS_CONF']
 # }}}
     def _make_evac_conf(self):# {{{
         ''' Write data to sim_id/evac.json. '''

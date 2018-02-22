@@ -27,7 +27,6 @@ class Path():
         self._paths_as_coordinates()
         self._paths_as_rooms()
         self._save()
-        #self.s.dumpall()
 # }}}
 
     def _make_door_intersections(self):# {{{
@@ -113,8 +112,6 @@ class Path():
                     rooms.append(i['vent_from_name'])
                     rooms.append(i['vent_to_name'])
                 self._graph_rooms_seq[k].append(max(set(rooms), key=rooms.count))
-        #self.geom.dump()
-
 # }}}
 
     def _save(self):# {{{
