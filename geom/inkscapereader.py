@@ -63,10 +63,10 @@ class InkscapeReader():
     def _read_svg(self):# {{{
         ''' 
         Read rectangles from svg tree. Since svg is 2D, we only support
-        floor="1" with x,y and fixed z=3m. At the end we have json of this
+        floor="0" with x,y and fixed z=3m. At the end we have json of this
         form: 
 
-            "1": {
+            "0": {
                  "ROOM": [
                      [ [ 10, 10, 0 ], [ 11, 20, 3 ] ]
                      [ [ 11, 10, 0 ], [ 15, 20, 3 ] ]
@@ -94,16 +94,15 @@ class InkscapeReader():
     def _asJson(self):# {{{
         ''' 
         All the rounding() in this importer must happen no ealier than at the
-        very end. Otherwise we would have rounding errors in inkscape_height -
-        y 
+        very end. Otherwise we will have rounding errors in inkscape_height-y 
         '''
 
         json=OrderedDict()
-        json["1"]=OrderedDict()
+        json["0"]=OrderedDict()
         for i in self.map.keys():
-            json["1"][i]=[]
+            json["0"][i]=[]
         for i in self._elems:
-            json["1"][i['type']].append([ [round(i['x']/100,2), round(i['y']/100,2), 0 ], [round((i['x']+i['width'])/100,2), round((i['y']+i['height'])/100,2), 3 ] ])
+            json["0"][i['type']].append([ [round(i['x']/100,2), round(i['y']/100,2), 0 ], [round((i['x']+i['width'])/100,2), round((i['y']+i['height'])/100,2), 3 ] ])
         self.json.write(json, "{}/svg.json".format(os.environ['AAMKS_PROJECT']))
 
 # }}}

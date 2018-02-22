@@ -123,7 +123,7 @@ function showAnimation(chosenAnim) {
 	// After static data is loaded to paperjs we can run animations.
 	// 0.000001 & friends prevent divisions by 0.
 	var promise = new JSZip.external.Promise(function (resolve, reject) {
-		JSZipUtils.getBinaryContent("../"+chosenAnim["anim"]+"/anim.zip", function(err, data) {
+		JSZipUtils.getBinaryContent("../"+chosenAnim["anim"], function(err, data) {
 			if (err) {
 				reject(err);
 			} else {

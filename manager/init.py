@@ -193,7 +193,7 @@ class OnEnd():
             project=self.conf['PROJECT_NAME']
             for i in range(*si.get()):
                 worker_dir="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                shutil.copyfile("{}/examples/aanim/anim.zip".format(os.environ['AAMKS_PATH'])  , "{}/anim.zip".format(worker_dir))
+                shutil.copyfile("{}/examples/aanim/f0.zip".format(os.environ['AAMKS_PATH'])    , "{}/f0.zip".format(worker_dir))
                 shutil.copyfile("{}/examples/aanim/evac.json".format(os.environ['AAMKS_PATH']) , "{}/evac.json".format(worker_dir))
-                Vis(None, "aanim", "aanim", (0,0))
+                Vis(None, "{}/f0.zip".format(i), "aanim", (0,0))
 # }}}
