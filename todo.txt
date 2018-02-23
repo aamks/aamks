@@ -1,8 +1,5 @@
 * mimooh:
-vetical geoms (WELLS)
-localhost webserver
-invert Y in js
-test
+duplicates in dd_geoms (tessellate)
 
 * mimooh + stanley:
 Add polygons support

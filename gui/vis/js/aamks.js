@@ -36,7 +36,7 @@ var numberOfEvacuees;
 var rooms;
 var doors;
 var obstacles;
-var paperjsExtras;
+var dd_geoms;
 var lerps;
 var lastFrame=1;
 var deltaTime=0; 
@@ -100,7 +100,8 @@ function showStaticImage(chosenAnim) {
 		rooms=dstatic[floor].rooms;
 		doors=dstatic[floor].doors;
 		obstacles=dstatic[floor].obstacles;
-        paperjsExtras=dstatic[floor].paperjs_extras;
+        dd_geoms=dstatic[floor].dd_geoms;
+		console.log(dd_geoms)
 		
 		makeAnimationControls();
 		makeSetupBoxInputs();
@@ -167,7 +168,7 @@ function showAnimation(chosenAnim) {
 function resetCanvas() {
 	// Reset on new visualization, on scaling walls, etc.
 	paperjsDisplayImage();
-    appendPaperjsExtras();
+    append_dd_geoms();
 	paperjsLetItBurn();
 	paperjsDisplayAnimation();
 }
@@ -278,26 +279,27 @@ function paperjsDisplayImage() {
 
 } 
 
-function appendPaperjsExtras() { 
+function append_dd_geoms() { 
+	// We attach to the static geoms
 	var g;
 
-	for (var i=0; i<paperjsExtras['rectangles'].length; i++) {
-		g=paperjsExtras['rectangles'][i];
-		new Path.Rectangle({point: new Point(g["xy"][0], -g["xy"][1]), size: new Size(g["width"],-g["depth"]), strokeColor:g['strokeColor'], strokeWidth:g['strokeWidth'], fillColor:g['fillColor'], opacity:g['opacity'] });
+	for (var i=0; i<dd_geoms['rectangles'].length; i++) {
+		g=dd_geoms['rectangles'][i];
+		staticGeoms.addChild(new Path.Rectangle({point: new Point(g["xy"][0], -g["xy"][1]), size: new Size(g["width"],-g["depth"]), strokeColor:g['strokeColor'], strokeWidth:g['strokeWidth'], fillColor:g['fillColor'], opacity:g['opacity'] }));
 	}
 
-	for (var i=0; i<paperjsExtras['lines'].length; i++) {
-		g=paperjsExtras['lines'][i];
-		new Path.Line({ from: new Point(g["xy"][0], -g["xy"][1]), to: new Point(g["x1"],-g["y1"]), strokeColor:g['strokeColor'], strokeWidth:g['strokeWidth'], opacity:g['opacity']  });
+	for (var i=0; i<dd_geoms['lines'].length; i++) {
+		g=dd_geoms['lines'][i];
+		staticGeoms.addChild(new Path.Line({ from: new Point(g["xy"][0], -g["xy"][1]), to: new Point(g["x1"],-g["y1"]), strokeColor:g['strokeColor'], strokeWidth:g['strokeWidth'], opacity:g['opacity']  }));
 	}
 
-	for (var i=0; i<paperjsExtras['circles'].length; i++) {
-		g=paperjsExtras['circles'][i];
-		new Path.Circle({ center: new Point(g["xy"][0], -g["xy"][1]), radius:g["radius"], fillColor:g['fillColor'], opacity:g['opacity'] });
+	for (var i=0; i<dd_geoms['circles'].length; i++) {
+		g=dd_geoms['circles'][i];
+		staticGeoms.addChild(new Path.Circle({ center: new Point(g["xy"][0], -g["xy"][1]), radius:g["radius"], fillColor:g['fillColor'], opacity:g['opacity'] }));
 	}
-	for (var i=0; i<paperjsExtras['texts'].length; i++) {
-		g=paperjsExtras['texts'][i];
-		new PointText({ point: new Point(g["xy"][0], -g["xy"][1]), content: g["content"], fontFamily: 'Play', fontSize: g["fontSize"], fillColor:g['fillColor'], opacity:g['opacity'] });
+	for (var i=0; i<dd_geoms['texts'].length; i++) {
+		g=dd_geoms['texts'][i];
+		staticGeoms.addChild(new PointText({ point: new Point(g["xy"][0], -g["xy"][1]), content: g["content"], fontFamily: 'Play', fontSize: g["fontSize"], fillColor:g['fillColor'], opacity:g['opacity'] }));
 	}
 }
 

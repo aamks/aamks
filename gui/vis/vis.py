@@ -39,7 +39,7 @@ class Vis():
         self._js_make_rooms()
         self._js_make_doors()
         self._js_make_obstacles()
-        self._js_append_paperjs_extras()
+        self._js_make_dd_geoms()
 
         self.vis_dir="{}/workers/vis".format(os.environ['AAMKS_PROJECT']) 
         self._save()
@@ -84,27 +84,16 @@ class Vis():
             for floor in self._static.keys():
                 self._static[floor]['obstacles']=[ dict([("x0",0), ("y0",0), ("width",0), ("depth",0) ]) ]
 # }}}
-    def _js_append_paperjs_extras(self):# {{{
+    def _js_make_dd_geoms(self):# {{{
         ''' 
-        We can plot some extra rectangles, points, lines and circles on top of
-        our paperjs geoms. paperjs_extras.json is optional -- aamks if fine if
-        the file doesn't exist. 
+        dd_geoms are initialized in geom.py. Those are optional extra
+        rectangles, points, lines and circles that are written to on top of our
+        geoms. Useful for debugging.
         '''
 
-        try:
-            for floor in self._static.keys():
-                f=self.json.read("{}/paperjs_extras.json".format(os.environ['AAMKS_PROJECT']))
-                self._static[floor]['paperjs_extras']=f
-
-        except:
-            for floor in self._static.keys():
-                z=dict()
-                z['rectangles']=[]      # z['rectangles'].append( { "xy": (1000+i*40, 500+i) , "width": 20 , "depth": 100 , "strokeColor": "#fff" , "strokeWidth": 2 , "fillColor": "#f80", "opacity": 0.7 } )
-                z['lines']=[]           # z['lines'].append(      { "xy": (2000+i*40, 200+i*40), "x1": 3400, "y1": 500, "strokeColor": "#fff" , "strokeWidth": 2, "opacity": 0.7 } )
-                z['circles']=[]         # z['circles'].append(    { "xy": (i['center_x'], i['center_y']), "radius": 80 , "fillColor": "#fff", "opacity": 0.3 } )
-                z['texts']=[]           # z['texts'].append(      { "xy": (f['minx']+a*i, f['miny']+a*v), "content": "                                                                                         { }x { }".format(x,y), "fontSize": 20, "fillColor":"#06f", "opacity":0.5 })
-                self._static[floor]['paperjs_extras']=z
-            
+        f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
+        for floor in self._static.keys():
+            self._static[floor]['dd_geoms']=f[floor]
 # }}}
     def _js_reorder_animations(self, z):# {{{
         '''
@@ -129,11 +118,8 @@ class Vis():
         ''' 
         Static.json is written each time, because obstacles may be available /
         non-available, so it is not constans. Except from static.json we update
-        animations listing here (anims.json)
-
-        Animations are also updated from workers via gearman.
-
-        /usr/local/aamks/current/workers/vis/anims.json
+        animations listing here (anims.json) Animations are also updated from
+        workers via gearman. 
         '''
 
         self.json.write(self._static, '{}/static.json'.format(self.vis_dir)) 

@@ -8,6 +8,7 @@ import re
 import sys
 from pprint import pprint
 import codecs
+from subprocess import Popen,PIPE
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from shapely.ops import polygonize
 from numpy.random import choice
@@ -29,9 +30,9 @@ class Geom():
         self._make_elem_counter()
         self._geometry2sqlite(self._geometry_reader())
         self._init_helper_variables()
+        self._init_dd_geoms()
         self._make_fake_wells()
         self._floors_details()
-        self.make_vis('Create geometry')
         self._aamks_geom_into_polygons()
         self._aamks_geom_orientation()
         self._make_id2compa_name()
@@ -162,6 +163,38 @@ class Geom():
         self.s.query("UPDATE aamks_geom SET room_area=round(width*depth/10000,2) WHERE type_pri='COMPA'")
         self.s.query("UPDATE aamks_geom SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
 
+# }}}
+    def _init_dd_geoms(self):# {{{
+        ''' 
+        dd_geoms are some optional extra rectangles, points, lines and
+        circles that are written to on top of our geoms. Useful for developing
+        and debugging features. Must come early, because visualization depends
+        on it. 
+        '''
+
+        z=dict()
+        for floor in self.floors:
+            z[floor]=dict()
+            z[floor]['rectangles']=[]      
+            z[floor]['lines']=[]           
+            z[floor]['circles']=[]         
+            z[floor]['texts']=[]           
+            z[floor]['rectangles']=[]      
+
+            # Example usage anywhere inside aamks:
+
+            # z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            # z["0"]['rectangles'].append( { "xy": (1000 , 1000) , "width": 200             , "depth": 300        , "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#f80" , "opacity": 0.7 } )
+            # z["0"]['rectangles'].append( { "xy": (0    , 0)    , "width": 200              , "depth": 200        , "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#f80" , "opacity": 0.7 } )
+            # z["0"]['lines'].append(      { "xy": (2000 , 200)  , "x1": 3400               , "y1": 500           , "strokeColor": "#fff" , "strokeWidth": 2  , "opacity": 0.7 } )
+            # z["0"]['circles'].append(    { "xy": (1500 , 1500) , "radius": 80             , "fillColor": "#fff" , "opacity": 0.3 } )
+            # z["0"]['texts'].append(      { "xy": (1000 , 1000) , "content": "(1000x1000)" , "fontSize": 400      , "fillColor":"#06f"    , "opacity":0.7 } )
+            # self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
+            # from gui.vis.vis import Vis
+            # Vis(None, 'image', 'dd_geoms example')
+
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
     def _make_fake_wells(self):# {{{
         ''' 
@@ -415,6 +448,8 @@ class Geom():
             self.s.query("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", (v[0],v[1],vent_id))
 
 # }}}
+
+# OBSTACLES
     def _rooms_into_obstacles(self):# {{{
         ''' 
         For a roomX we create a roomX_ghost, we move it by wall_width, which
@@ -486,6 +521,8 @@ class Geom():
 
         return rectangles
 # }}}
+
+# ASSERTIONS
     def _assert_faces_ok(self):# {{{
         ''' Are all hvents' faces fine? '''
         for v in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from,vent_to"):
@@ -504,13 +541,19 @@ class Geom():
                 self.make_vis('Room without door', i['global_type_id'], 'COMPA')
 # }}}
 
-    def make_vis(self, title, faulty_id='', type_pri='HVENT', floor=1):# {{{
-        ''' This method is for visualizing both errors and just how things look. '''
+
+    def make_vis(self, title, faulty_id='', type_pri='HVENT'):# {{{
+        ''' 
+        This method is for visualizing both errors and just how things look. 
+        If faulty_id comes non-empty then we are signaling an error.
+        '''
 
         if faulty_id != '':
             r=self.s.query("SELECT name,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
-            Vis(r['name'], 'image', "<ered>Fatal: {}</ered>".format(title))
-            print("Fatal: {}: {}".format(r['name'], title))
+            fatal="Fatal: {}: {}".format(r['name'], title)
+            Vis(r['name'], 'image', "<ered>{}</ered>".format(fatal))
+            print("\n\n{}. Running xdg-open http://localhost:8123/workers/vis/master.html. See your webbrowser.".format(fatal))
+            Popen('xdg-open http://localhost:8123/workers/vis/master.html', shell=True)
             sys.exit()
         else:
             Vis(None, 'image', title)

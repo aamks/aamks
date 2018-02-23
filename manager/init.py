@@ -39,10 +39,6 @@ class OnInit():
 
         Popen('pkill -9 -f "^python3 -m http.server 8123"', shell=True)
 # }}}
-    def _info(self):# {{{
-        print("Project name:", self.conf['PROJECT_NAME'])
-        Popen('env | grep AAMKS', shell=True)
-# }}}
     def _clear_sqlite(self):# {{{
         try:
             os.remove("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -87,12 +83,15 @@ class OnInit():
 # }}}
     def _setup_vis(self):# {{{
         vis_dir="{}/workers/vis".format(os.environ['AAMKS_PROJECT']) 
-        try:
-            os.remove("{}/workers/vis/paperjs_extras.json".format(os.environ['AAMKS_PROJECT']))
-        except:
-            pass
+        # TODO: may be useful at some occasion, who knows...
+        # try:
+        #     os.remove("{}/workers/vis/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
+        # except:
+        #     pass
         os.makedirs(vis_dir, exist_ok=True)
         copy_tree("{}/gui/vis/js".format(os.environ['AAMKS_PATH']), "{}/js".format(vis_dir) )
+        os.remove("{}/js/aamks.js".format(vis_dir) )
+        os.symlink("{}/gui/vis/js/aamks.js".format(os.environ['AAMKS_PATH']), "{}/js/aamks.js".format(vis_dir) )
         shutil.copyfile("{}/gui/vis/css.css".format(os.environ['AAMKS_PATH']), "{}/css.css".format(vis_dir))
         shutil.copyfile("{}/geom/colors.json".format(os.environ['AAMKS_PATH']), "{}/colors.json".format(vis_dir))
 # }}}
@@ -141,6 +140,11 @@ class OnInit():
 <canvas id="canvas" resize hidpi="off" />
 
 ''')
+# }}}
+    def _info(self):# {{{
+        print("Your AAMKS variables can be adjusted in your ~/.bashrc")
+        Popen('env | grep AAMKS', shell=True)
+        print("Project name:", self.conf['PROJECT_NAME'])
 # }}}
     def _http_serve(self):# {{{
         ''' 
@@ -195,5 +199,5 @@ class OnEnd():
                 worker_dir="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                 shutil.copyfile("{}/examples/aanim/f0.zip".format(os.environ['AAMKS_PATH'])    , "{}/f0.zip".format(worker_dir))
                 shutil.copyfile("{}/examples/aanim/evac.json".format(os.environ['AAMKS_PATH']) , "{}/evac.json".format(worker_dir))
-                Vis(None, "{}/f0.zip".format(i), "aanim", (0,0))
+                Vis(None, "{}/f0.zip".format(i), "Demo aanim, fire at (0,0)", (0,0))
 # }}}

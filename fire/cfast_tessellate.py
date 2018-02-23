@@ -11,6 +11,7 @@ from numpy.random import randint
 from include import Sqlite
 from include import Json
 from include import Dump as dd
+from gui.vis.vis import Vis
 
 # }}}
 
@@ -22,7 +23,7 @@ class CfastTessellate():
         of self._square_side. Iterate over squares and if any square is crossed by an
         obstacle divide this square further into rectangles. 
         
-        In the final structure of tesselation.json we encode each cell.
+        In the final structure of tessellation.json we encode each cell.
         Each cell is sorted by x, which allows quick bisections.
 
         * In each cell we always encode the first sub-cell - the square itself.
@@ -52,7 +53,7 @@ class CfastTessellate():
             self._init_space(floor) 
             self._intersect_space() 
             self._optimize(floor)
-            self._plot_space() 
+            self._plot_space(floor) 
         self._dbsave()
 # }}}
     def _init_space(self,floor):# {{{
@@ -133,7 +134,6 @@ class CfastTessellate():
         self._save[floor]['query_vertices']=query_vertices
 
 # }}}
-        #print("bytes", sys.getsizeof(self.rectangles))
 # }}}
     def _intersect_space(self):# {{{
         ''' 
@@ -148,30 +148,26 @@ class CfastTessellate():
                         self._candidate_intersection(id_,points)
         
 # }}}
-    def _plot_space(self):# {{{
-        ''' Only for debugging '''
-        z=OrderedDict()
+    def _plot_space(self,floor):# {{{
+        ''' 
+        Plots the tessellation on top of the rooms. 
+        '''
 
-        z['rectangles']=[]      # z['rectangles'].append( { "xy": (1000+i*40, 500+i) , "width": 20 , "depth": 100 , "strokeColor": "#fff" , "strokeWidth": 2 , "fillColor": "#f80", "opacity": 0.7 } )
-        z['lines']=[]           # z['lines'].append(      { "xy": (2000+i*40, 200+i*40), "x1": 3400, "y1": 500, "strokeColor": "#fff" , "strokeWidth": 2, "opacity": 0.7 } )
-        z['circles']=[]         # z['circles'].append(    { "xy": (i['center_x'], i['center_y']), "radius": 80 , "fillColor": "#fff", "opacity": 0.3 } )
-        z['texts']=[]           # z['texts'].append(      { "xy": (f['minx']+a*i, f['miny']+a*v), "content": "                                                                                         { }x { }".format(x,y), "fontSize": 20, "fillColor":"#06f", "opacity":0.5 })
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
         radius=5
-
-        #for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY x0,y0"):
-        #     z['rectangles'].append( { "xy": (i['x0'], i['y0']), "width": i['width'] , "depth": i['depth'] , "strokeColor": "#f00" , "strokeWidth": 10 , "fillColor": "none", "opacity": 0.4 } )
-
         a=self._square_side
         for k,v in self.rectangles.items():
-            z['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 5 , "opacity": 0.2 } )
-            z['circles'].append(    { "xy": k, "radius": radius , "fillColor": "#fff", "opacity": 0.3 } )
-            z['texts'].append(      { "xy": k, "content": k, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
+            z[floor]['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 20 , "opacity": 0.2 } )
+            z[floor]['circles'].append(    { "xy": k, "radius": radius , "fillColor": "#fff", "opacity": 0.3 } )
+            z[floor]['texts'].append(      { "xy": k, "content": k, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
             for mm in v:
-                z['circles'].append( { "xy": mm, "radius": radius, "fillColor": "#fff", "opacity": 0.3 } )
-                z['texts'].append(   { "xy": mm, "content": mm, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
+                z[floor]['circles'].append( { "xy": mm, "radius": radius, "fillColor": "#fff", "opacity": 0.3 } )
+                z[floor]['texts'].append(   { "xy": mm, "content": mm, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
 
-        #self.json.write(z, '{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
-        #print('{}/paperjs_extras.json'.format(os.environ['AAMKS_PROJECT']))
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        Vis(None, 'image', 'tessellation')
 # }}}
-    def _dbsave(self):
+    def _dbsave(self):# {{{
         self.s.query('INSERT INTO tessellation VALUES (?)', (json.dumps(self._save),))
+# }}}
