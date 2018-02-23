@@ -53,7 +53,8 @@ class CfastTessellate():
             self._init_space(floor) 
             self._intersect_space() 
             self._optimize(floor)
-            self._plot_space(floor) 
+            # self._plot_space(floor)  # debug
+        #Vis(None, 'image', 'tessellation') # debug
         self._dbsave()
 # }}}
     def _init_space(self,floor):# {{{
@@ -164,9 +165,7 @@ class CfastTessellate():
             for mm in v:
                 z[floor]['circles'].append( { "xy": mm, "radius": radius, "fillColor": "#fff", "opacity": 0.3 } )
                 z[floor]['texts'].append(   { "xy": mm, "content": mm, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
-
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        Vis(None, 'image', 'tessellation')
 # }}}
     def _dbsave(self):# {{{
         self.s.query('INSERT INTO tessellation VALUES (?)', (json.dumps(self._save),))

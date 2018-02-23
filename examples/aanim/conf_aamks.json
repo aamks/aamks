@@ -1,6 +1,6 @@
 {
 	"PROJECT_NAME": "aanim",
-	"FIRE_SIMULATOR": "cfast",
+	"GEOMETRY_TYPE": "cfast",
 	"BUILDING_CATEGORY": "office",
 	"NUMBER_OF_SIMULATIONS": 1,
 	"AUTO_DETECTORS": 1,

@@ -96,12 +96,10 @@ function showStaticImage(chosenAnim) {
 		velocitiesSize=Math.round(1/scale);
 		doorsSize=2*wallsSize;
 
-		//console.log(dstatic);
 		rooms=dstatic[floor].rooms;
 		doors=dstatic[floor].doors;
 		obstacles=dstatic[floor].obstacles;
         dd_geoms=dstatic[floor].dd_geoms;
-		console.log(dd_geoms)
 		
 		makeAnimationControls();
 		makeSetupBoxInputs();

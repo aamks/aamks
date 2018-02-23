@@ -84,10 +84,10 @@ class OnInit():
     def _setup_vis(self):# {{{
         vis_dir="{}/workers/vis".format(os.environ['AAMKS_PROJECT']) 
         # TODO: may be useful at some occasion, who knows...
-        # try:
-        #     os.remove("{}/workers/vis/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
-        # except:
-        #     pass
+        try:
+            os.remove("{}/workers/vis/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
+        except:
+            pass
         os.makedirs(vis_dir, exist_ok=True)
         copy_tree("{}/gui/vis/js".format(os.environ['AAMKS_PATH']), "{}/js".format(vis_dir) )
         os.remove("{}/js/aamks.js".format(vis_dir) )
