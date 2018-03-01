@@ -16,8 +16,14 @@ import json
 from collections import OrderedDict
 from subprocess import Popen
 import zipfile
+from include import SendMessage
 
-SIMULATION_TYPE = 'NO_CFAST'
+
+#SIMULATION_TYPE = 'NO_CFAST'
+SIMULATION_TYPE = 1
+SendMessage("mimooh")
+
+
 
 
 class Worker:
@@ -58,13 +64,13 @@ class Worker:
         else:
             print('URL OK. Starting calculations')
 
-        self.sim_id = self.vars['conf']['GENERAL']['SIM_ID']
+        self.sim_id = self.vars['conf']['SIM_ID']
         self.host_name = os.uname()[1]
-        self.db_server = self.vars['conf']['GENERAL']['SERVER']
+        self.db_server = self.vars['conf']['SERVER']
 
     def get_geom_and_cfast(self):
 
-        os.chdir(self.vars['conf']['GENERAL']['WORKSPACE'])
+        os.chdir(self.vars['conf']['WORKSPACE'])
 
         logging.basicConfig(filename='aamks.log', level=logging.INFO,
                             format='%(asctime)s %(levelname)s: %(message)s')
@@ -90,8 +96,8 @@ class Worker:
 
     def _create_workspace(self):
         try:
-            shutil.rmtree(self.vars['conf']['GENERAL']['WORKSPACE'], ignore_errors=True)
-            os.makedirs(self.vars['conf']['GENERAL']['WORKSPACE'])
+            shutil.rmtree(self.vars['conf']['WORKSPACE'], ignore_errors=True)
+            os.makedirs(self.vars['conf']['WORKSPACE'])
         except Exception as e:
             self._report_error(e)
 
@@ -177,13 +183,13 @@ class Worker:
         time_frame = 10
         floor = 1
         try:
-            master_query = SmokeQuery(floor='1', vars=self.vars['conf']['GENERAL'])
+            master_query = SmokeQuery(floor='1', vars=self.vars['conf'])
         except Exception as e:
             self._report_error(e)
 
         for i in self.floors:
             try:
-                i.smoke_query = SmokeQuery(floor=str(floor), vars=self.vars['conf']['GENERAL'])
+                i.smoke_query = SmokeQuery(floor=str(floor), vars=self.vars['conf'])
             except Exception as e:
                 self._report_error(e)
             else:
