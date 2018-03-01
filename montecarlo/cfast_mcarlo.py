@@ -227,12 +227,11 @@ class CfastMcarlo():
     def _section_preamble(self,outdoor_temp):# {{{
         ''' 
         We use 9999999999 as time, since Cfast will be killed by aamks. 
-        TIMES,{},-120,10,10'.format(self.conf['SIMULATION_TIME'])
         '''
 
         txt=(
         'VERSN,7,{}'.format(self.conf['PROJECT_NAME']),
-        'TIMES,{},-120,10,10,9999999999',
+        'TIMES,99999999999,-120,10,10',
         'EAMB,{},101300,0'.format(273+outdoor_temp),
         'TAMB,293.15,101300,0,50',
         'DTCHECK,1.E-9,100',

@@ -187,6 +187,7 @@ class OnEnd():
         for i in range(*si.get()):
             worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
             gearman="gearman -f aRun 'http://{}/users{} {} &'".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""), project)
+            print("cd /usr/local/aamks/evac/; python3 worker.py http://{}/users{}".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""),project))
             os.system(gearman)
 # }}}
     def _visualize_aanim(self):# {{{
