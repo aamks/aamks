@@ -19,7 +19,6 @@ export interface DevcObject {
 
 }
 
-
 export class Bndf {
     private _id: number;
     private _uuid: string;

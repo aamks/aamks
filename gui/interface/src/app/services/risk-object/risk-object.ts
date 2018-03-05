@@ -1,2 +1,10 @@
-export class RiskObject {
+export interface RiskObject {
+
+}
+
+export class Risk {
+
+
+
+
 }
