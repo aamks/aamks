@@ -1,4 +1,5 @@
 import { get } from 'lodash';
+import { RiskEntities } from '../../enums/risk-entities';
 
 export interface GeneralObject {
     project_name: string,
@@ -15,7 +16,7 @@ export class General {
     private _project_name: string;
     private _simulation_time: number;
     private _number_of_simulations: number;
-    private _indoor_temperature: number;
+    private _indoor_temp: number;
     private _elevation: number;
     private _indoor_pressure: number;
     private _humidity: number;
@@ -25,47 +26,72 @@ export class General {
         let base: GeneralObject;
         base = <GeneralObject>JSON.parse(jsonString);
 
-        //this.id = base.id || 0;
-        //this.uuid = base.uuid || idGeneratorService.genUUID();
-        //this.idAC = base.idAC || 0;
+        let GENERAL = RiskEntities.general;
 
-        //this.function_type = get(base, 'function_type', CTRL.FUNCTION_TYPE.default[0]);
+        this.project_name = get(base, 'project_name', GENERAL.project_name.default);
+        this.simulation_time = get(base, 'simulation_time', GENERAL.simulation_time.default);
+        this.number_of_simulations = get(base, 'number_of_simulations', GENERAL.number_of_simulations.default);
+        this.indoor_temp = get(base, 'indoor_temp', GENERAL.indoor_temp.default);
+        this.elevation = get(base, 'elevation', GENERAL.elevation.default);
+        this.indoor_pressure = get(base, 'indoor_pressure', GENERAL.indoor_pressure.default);
+        this.humidity = get(base, 'humidity', GENERAL.humidity.default);
 
-        //this.n = toNumber(get(base, 'n', CTRL.N.default[0]));
-        //this.latch = (get(base, 'latch', CTRL.LATCH.default[0]) == true);
-
-        //this.inputs = toPlainObject(get(base, 'inputs', [{}]));
     }
 
-//    this.general = {
-//    project_name: lodash.get(base, 'general.project_name', def.general.project_name.value),
-//    set_project_name: function (arg) {
-//        return setter(this, 'project_name', def.general.project_name, arg);
-//    },
-//    simulation_time: lodash.get(base, 'general.simulation_time', def.general.simulation_time.value),
-//    set_simulation_time: function (arg) {
-//        return setter(this, 'simulation_time', def.general.simulation_time, arg);
-//    },
-//    number_of_simulations: lodash.get(base, 'general.number_of_simulations', def.general.number_of_simulations.value),
-//    set_number_of_simulations: function (arg) {
-//        return setter(this, 'number_of_simulations', def.general.number_of_simulations, arg);
-//    },
-//    indoor_temp: lodash.get(base, 'general.indoor_temp', def.general.indoor_temp.value),
-//    set_indoor_temp: function (arg) {
-//        return setter(this, 'indoor_temp', def.general.indoor_temp, arg);
-//    },
-//    elevation: lodash.get(base, 'general.elevation', def.general.elevation.value),
-//    set_elevation: function (arg) {
-//        return setter(this, 'elevation', def.general.elevation, arg);
-//    },
-//    indoor_pressure: lodash.get(base, 'general.indoor_pressure', def.general.indoor_pressure.value),
-//    set_indoor_pressure: function (arg) {
-//        return setter(this, 'indoor_pressure', def.general.indoor_pressure, arg);
-//    },
-//    humidity: lodash.get(base, 'general.humidity', def.general.humidity.value),
-//    set_humidity: function (arg) {
-//        return setter(this, 'humidity', def.general.humidity, arg);
-//    }
-//};
-  
+	public get project_name(): string {
+		return this._project_name;
+	}
+
+	public set project_name(value: string) {
+		this._project_name = value;
+	}
+
+	public get simulation_time(): number {
+		return this._simulation_time;
+	}
+
+	public set simulation_time(value: number) {
+		this._simulation_time = value;
+	}
+
+	public get number_of_simulations(): number {
+		return this._number_of_simulations;
+	}
+
+	public set number_of_simulations(value: number) {
+		this._number_of_simulations = value;
+	}
+
+	public get indoor_temp(): number {
+		return this._indoor_temp;
+	}
+
+	public set indoor_temp(value: number) {
+		this._indoor_temp = value;
+	}
+
+	public get elevation(): number {
+		return this._elevation;
+	}
+
+	public set elevation(value: number) {
+		this._elevation = value;
+	}
+
+	public get indoor_pressure(): number {
+		return this._indoor_pressure;
+	}
+
+	public set indoor_pressure(value: number) {
+		this._indoor_pressure = value;
+	}
+
+	public get humidity(): number {
+		return this._humidity;
+	}
+
+	public set humidity(value: number) {
+		this._humidity = value;
+	}
+
 }
