@@ -34,7 +34,7 @@ class EvacEnv:
         f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
         self.config = json.load(f)
 
-        self.general = aamks_vars['GENERAL']
+        self.general = aamks_vars
 
         self.sim = rvo2.PyRVOSimulator(self.config['TIME_STEP'], self.config['NEIGHBOR_DISTANCE'],
                                        self.config['MAX_NEIGHBOR'], self.config['TIME_HORIZON'],

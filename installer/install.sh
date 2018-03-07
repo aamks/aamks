@@ -18,7 +18,7 @@ AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 AAMKS_TESTING=0
 AAMKS_SERVER=127.0.0.1
 AAMKS_USE_GEARMAN=1
-AAMKS_PG_PASS='secret' 
+AAMKS_PG_PASS='hulakula' 
 
 # END OF CONFIGURATION
 

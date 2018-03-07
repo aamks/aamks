@@ -19,8 +19,8 @@ import zipfile
 from include import SendMessage
 
 
-#SIMULATION_TYPE = 'NO_CFAST'
-SIMULATION_TYPE = 1
+SIMULATION_TYPE = 'NO_CFAST'
+#SIMULATION_TYPE = 1
 SendMessage("mimooh")
 
 
@@ -130,12 +130,11 @@ class Worker:
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
 
     def _create_evacuees(self, floor):
-        floor_no = str(floor+1)
 
         evacuees = []
-        logging.debug('Adding evacuues on floor: {}'.format(floor_no))
+        logging.debug('Adding evacuues on floor: {}'.format(floor))
 
-        floor = self.vars['conf']['FLOORS_DATA'][floor_no]
+        floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
 
         for i in range(floor['NUM_OF_EVACUEES']):
             evacuees.append(Evacuee(origin=tuple(floor['EVACUEES']['E' + str(i)]['ORIGIN']),
@@ -146,7 +145,7 @@ class Worker:
                                         'PRE_EVACUATION'],
                                     alpha_v=floor['EVACUEES']['E' + str(i)]['ALPHA_V'],
                                     beta_v=floor['EVACUEES']['E' + str(i)]['BETA_V'],
-                                    node_radius=self.vars['conf']['AAMKS_CONF']['NODE_RADIUS']))
+                                    node_radius=self.config['NODE_RADIUS']))
 
         e = Evacuees()
         [e.add_pedestrian(i) for i in evacuees]
@@ -167,7 +166,7 @@ class Worker:
             else:
                 logging.info('RVO2 ready on {} floors'.format(i))
 
-            for obst in self.obstacles['points'][str(i + 1)]:
+            for obst in self.obstacles['points'][str(i)]:
                 obstacles.append([tuple(x) for x in obst])
             env.obstacle = obstacles
             num_of_vertices = env.process_obstacle(obstacles)
@@ -181,15 +180,15 @@ class Worker:
         logging.info('Starting simulaitons')
 
         time_frame = 10
-        floor = 1
+        floor = 0
         try:
-            master_query = SmokeQuery(floor='1', vars=self.vars['conf'])
+            master_query = SmokeQuery(floor='1', vars=self.config)
         except Exception as e:
             self._report_error(e)
 
         for i in self.floors:
             try:
-                i.smoke_query = SmokeQuery(floor=str(floor), vars=self.vars['conf'])
+                i.smoke_query = SmokeQuery(floor=str(floor), vars=self.config)
             except Exception as e:
                 self._report_error(e)
             else:
