@@ -260,9 +260,9 @@ class CfastMcarlo():
             collect.append(round(v['width']/100.0,2))  # WIDTH
             collect.append(round(v['depth']/100.0,2))  # DEPTH
             collect.append(round(v['height']/100.0,2)) # INTERNAL_HEIGHT
-            collect.append(round(v['x0']/100.0,2))      # ABSOLUTE_X_POSITION
-            collect.append(round(v['y0']/100.0,2))      # ABSOLUTE_Y_POSITION
-            collect.append(round(v['z0']/100.0,2))      # z
+            collect.append(round(v['x0']/100.0,2))     # ABSOLUTE_X_POSITION
+            collect.append(round(v['y0']/100.0,2))     # ABSOLUTE_Y_POSITION
+            collect.append(round(v['z0']/100.0,2))     # ABSOLUTE_Z_POSITION
             collect.append(v['material_ceiling'])      # CEILING_MATERIAL_NAME
             collect.append(v['material_floor'])        # FLOOR_MATERIAL_NAME
             collect.append(v['material_wall'])         # WALL_MATERIAL_NAME
