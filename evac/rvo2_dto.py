@@ -154,7 +154,7 @@ class EvacEnv:
 
     def get_rset_time(self) -> None:
         exited = self.finished.count(0)
-        logging.info('Time: {}, floor: {}, evacuated: {}'.format(self.floor, exited, self.get_simulation_time()))
+        logging.info('Time: {}, floor: {}, evacuated: {}'.format(self.get_simulation_time(), self.floor, exited))
         if (exited > len(self.finished) * 0.1) and self.per_9 == 0:
             self.per_9 = self.current_time
         if all(x == 0 for x in self.finished) and self.rset == 0:

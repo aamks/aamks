@@ -3,6 +3,8 @@
 import os
 import shutil
 import sys
+
+
 from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
@@ -182,7 +184,7 @@ class Worker:
         time_frame = 10
         floor = 0
         try:
-            master_query = SmokeQuery(floor='1', vars=self.config)
+            master_query = SmokeQuery(floor='0', vars=self.config)
         except Exception as e:
             self._report_error(e)
 
@@ -203,7 +205,7 @@ class Worker:
                 time_frame += 10
             else:
                 time.sleep(1)
-            if time_frame > 100:
+            if time_frame > 80:
                 break
 
 
@@ -233,7 +235,7 @@ class Worker:
         with anim.json inside.
         '''
 
-        floor = 1
+        floor = 0
         for i in self.floors:
             animation_data = i.record_data()
             zf = zipfile.ZipFile("f{}_s{}.anim.zip".format(floor, self.sim_id), mode='w',
@@ -260,6 +262,35 @@ class Worker:
                                                            #host, json_file, self.sim_id, num_floor), shell=True)
     # }}}
 
+
+    def _write_animation_file(self, anim_json, floor):# {{{
+
+        self.jsonOut = OrderedDict()
+        self.jsonOut['sort_id'] = int(self.sim_id)
+        self.jsonOut['title'] = "sim{}, f{}".format(self.sim_id, floor)
+        self.jsonOut['floor'] = floor
+        self.jsonOut['fire_origin'] = self.vars['conf']['ROOM_OF_FIRE_ORIGIN']
+        self.jsonOut['highlight_geom'] = None
+        self.jsonOut['anim']="{}/f{}_s{}.anim.zip".format(self.sim_id, floor, self.sim_id)
+
+        anim_json.append(self.jsonOut)
+
+        return anim_json
+
+    # }}}
+
+    def _copy_animation_files(self):
+
+        json = Json()
+        anim_json = json.read('{}/workers/vis/anims.json'.format(os.environ['AAMKS_PROJECT']))
+
+        for i in self.vars['conf']['FLOORS_DATA'].keys():
+            shutil.copy('f{}_s{}.anim.zip'.format(i, self.sim_id), '{}{}/{}'.format(os.environ['AAMKS_PROJECT'], 'workers', self.sim_id))
+            anim_json = self._write_animation_file(anim_json, i)
+
+        json.write(anim_json, '{}/workers/vis/anims.json'.format(os.environ['AAMKS_PROJECT']))
+
+
     def main(self):
         self.get_config()
         self._create_workspace()
@@ -268,6 +299,8 @@ class Worker:
         self.run_cfast_simulations()
         self.prepare_simulations()
         self.do_simulation()
+        self._write_animation()
+        self._write_report('psql_connect')
 
     def test(self):
         self.get_config()
@@ -277,6 +310,7 @@ class Worker:
         self.do_simulation()
         self._write_animation()
         self._write_report('psql_connect')
+        self._copy_animation_files()
 
 
 w = Worker()
