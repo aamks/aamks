@@ -207,6 +207,8 @@ class Geom():
         vent_to properly. 
         '''
 
+        return
+
         add_wells={}
         for w in self.s.query("SELECT floor,global_type_id,height FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
             add_wells[(w['floor'], w['global_type_id'])]=[]

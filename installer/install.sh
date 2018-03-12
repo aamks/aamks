@@ -29,7 +29,7 @@ AAMKS_PG_PASS='hulakula'
 } 
 
 sudo apt-get install postgresql python3-pip python3-shapely python3-numpy python3-networkx python3-psycopg2 gearman sendxmpp xdg-utils
-sudo -H pip3 install webcolors pyhull 
+sudo -H pip3 install webcolors pyhull colour
 
 echo; echo; echo;
 echo "Running psql commands with" 
