@@ -18,20 +18,38 @@ AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 AAMKS_TESTING=0
 AAMKS_SERVER=127.0.0.1
 AAMKS_USE_GEARMAN=1
-AAMKS_PG_PASS='hulakula' 
+AAMKS_PG_PASS='hulakula'  # TODO: for developers: need to change to 'secret' 
+AAMKS_PROJECT='/home/aamks_users/mimoohowy@gmail.com/1/risk/current' # We need some default. Aamks/examples/three will be copied there.
 
 # END OF CONFIGURATION
 
-[ $AAMKS_PG_PASS == 'secret' ] && { 
-	echo "Password for aamks psql user needs to be changed from the default='secret'. It must match the AAMKS_PG_PASS in your ~/.bashrc."; 
-	echo
-	exit;
-} 
+USER=`id -ru`
+[ "X$USER" == "X0" ] && { echo "Don't run as root / sudo"; exit; }
 
-sudo apt-get install postgresql python3-pip python3-shapely python3-numpy python3-networkx python3-psycopg2 gearman sendxmpp xdg-utils
-sudo -H pip3 install webcolors pyhull colour
-# Blender
-sudo apt-get update && sudo apt-get install blender llvm-dev libpugixml-dev 
+# [ $AAMKS_PG_PASS == 'secret' ] && { 
+# 	echo "Password for aamks psql user needs to be changed from the default='secret'. It must match the AAMKS_PG_PASS in your ~/.bashrc."; 
+# 	echo
+# 	exit;
+# } 
+
+sudo apt-get update 
+sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils
+sudo -H pip3 install webcolors pyhull colour shapely numpy networkx
+
+# Blender upbge engine
+sudo apt-get install blender llvm-dev libpugixml-dev 
+
+sudo rm -rf "$AAMKS_PATH/current"
+sudo mkdir -p "$AAMKS_PATH/current"
+sudo mkdir -p "$AAMKS_PROJECT"
+sudo rm -rf "$AAMKS_PROJECT" # only 'current' will be removed to make space for incoming link
+sudo ln -sf "$AAMKS_PATH/current" "$AAMKS_PROJECT"
+sudo cp $AAMKS_PATH/examples/three/*  $AAMKS_PATH/current/
+
+sudo mkdir -p /home/aamks/
+sudo chown -R $USER $AAMKS_PATH
+sudo chown -R $USER /home/aamks
+sudo chown -R $USER /home/aamks_users
 
 echo; echo; echo;
 echo "Running psql commands with" 
