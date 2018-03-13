@@ -65,14 +65,17 @@ class Geom():
             miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (floor,))[0]['miny']
             maxx=self.s.query("SELECT max(x1) AS maxx FROM aamks_geom WHERE floor=?", (floor,))[0]['maxx']
             maxy=self.s.query("SELECT max(y1) AS maxy FROM aamks_geom WHERE floor=?", (floor,))[0]['maxy']
+            z0=self.s.query("SELECT z0 FROM aamks_geom WHERE floor=?", (floor,))[0]['z0']
 
-            width=maxx-minx
-            height=maxy-miny
+            width= maxx - minx
+            height= maxy - miny
+
+            center=(minx + int(width/2), miny + int(height/2), z0)
 
             animation_scale=round(min(1600/width,800/height)*0.95, 2) # 0.95 is canvas padding
             animation_translate=[ int(maxx-0.5*width), -int(maxy-0.5*height) ]
 
-            values[floor]=OrderedDict([('width', width) , ('height', height) , ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy) , ('animation_scale', animation_scale), ('animation_translate',  animation_translate)])
+            values[floor]=OrderedDict([('width', width) , ('height', height) , ('z', z0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy) , ('animation_scale', animation_scale), ('animation_translate',  animation_translate)])
         self.s.query("CREATE TABLE floors(json)")
         self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(values),))
 # }}}
