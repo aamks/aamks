@@ -48,8 +48,8 @@ class EvacMcarlo():
             self._dispatch_evacuees()
             self._roadmaps_for_evacuees()
             self._room_of_fire_origin() 
-            self._make_evac_conf()
             self._make_evac_origins()
+            self._make_evac_conf()
 
 # }}}
 
@@ -155,6 +155,17 @@ class EvacMcarlo():
         self._evac_conf['SIM_ID']=self._sim_id
         self._evac_conf['SERVER']=os.environ['AAMKS_SERVER']
 # }}}
+    def _make_evac_origins(self):# {{{
+        ''' For blender: write evacuees origins to /tmp/blender_evac.json. '''
+
+        blender_evac=[]
+        for floor in self.floors:
+            z=self.s.query("SELECT z0 FROM aamks_geom WHERE floor=?", (floor,))[0]['z0']
+            for i in self.evacuees_roadmaps_coords[floor]:
+                blender_evac.append((i[0][0]/100, i[0][1]/100, z/100))
+        self.json.write(blender_evac, "/tmp/blender_evac.json")
+
+# }}}
     def _make_evac_conf(self):# {{{
         ''' Write data to sim_id/evac.json. '''
 
@@ -180,16 +191,5 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(*speeds['max_h_speed_mean_and_sd']) , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(*speeds['max_v_speed_mean_and_sd']) , 2)
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
-
-# }}}
-    def _make_evac_origins(self):# {{{
-        ''' Write data to sim_id/evac.json for blender. '''
-
-        blender_evac=[]
-        for floor in self.floors:
-            z=self.s.query("SELECT z0 FROM aamks_geom WHERE floor=?", (floor,))[0]['z0']
-            for i in self.evacuees_roadmaps_coords[floor]:
-                blender_evac.append((i[0][0]/100, i[0][1]/100, z/100))
-        self.json.write(blender_evac, "/tmp/blender_evac.json")
 
 # }}}
