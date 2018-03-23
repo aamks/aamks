@@ -87,6 +87,8 @@ class Path():
 # }}}
     def _assert_outside_available(self):# {{{
         ''' Each door must appear as a key in self._network_xpaths[k]. '''
+        
+        return # TODO: disabling for blender
 
         for i in self.s.query("SELECT global_type_id,floor,name FROM aamks_geom WHERE type_tri='DOOR'"):
             if i['name'] not in self._network_xpaths.keys(): 
