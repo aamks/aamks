@@ -18,6 +18,7 @@ from geom.inkscapereader import InkscapeReader
 from include import Sqlite
 from include import Json
 from include import Dump as dd
+from geom.staircaser import Staircaser
 from gui.vis.vis import Vis
 
 # }}}
@@ -467,14 +468,14 @@ class Geom():
 # }}}
 
 # STAIRCASER
-    def _staircaser(self):
-        #self.s.dump()
+    def _staircaser(self):# {{{
+        fheight=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])['1']['z']/100
         for z in self.s.query("SELECT * FROM aamks_geom WHERE type_sec='STAI' ORDER BY name"): 
-            print(z)
-        #Staircaser(bottom=[(5,5,0), (7,5,0)], fheight=3, floors=3, swidth=2)
-        self.s.dumpall()
-        print("stairs")
-        sys.exit()
+            bottom=[ (z['x0']/100, z['y0']/100, z['z0']/100), (z['x1']/100, z['y1']/100, z['z1']/100) ]
+            print('bottom',bottom, 'fheight',fheight, 'floors',len(self.floors), 'swidth', 2)
+            Staircaser(bottom=bottom, fheight=fheight, floors=len(self.floors), swidth=2)
+
+# }}}
 
 # ASSERTIONS
     def _assert_faces_ok(self):# {{{
