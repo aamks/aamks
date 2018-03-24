@@ -360,5 +360,3 @@ class Staircaser():
         print("The result written to /tmp/result.json")
 # }}}
 # }}}
-
-Staircaser(bottom=[(5,5,0), (7,5,0)], fheight=3, floors=3, swidth=2)

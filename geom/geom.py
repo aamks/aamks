@@ -44,8 +44,7 @@ class Geom():
         self._add_names_to_vents_from_to()
         self._calculate_sills()
         self._auto_detectors_and_sprinklers()
-        self._rooms_into_obstacles()
-        self.make_vis('Create obstacles')
+        self._staircaser()
         self._assert_faces_ok()
         self._assert_room_has_door()
 # }}}
@@ -268,9 +267,11 @@ class Geom():
         the needed 'relative 0' for the calcuation. 
         '''
 
+        update=[]
         for v in self.s.query("SELECT global_type_id, z0, vent_from  FROM aamks_geom WHERE type_pri='HVENT' ORDER BY name"): 
             floor_baseline=self.s.query("SELECT z0 FROM aamks_geom WHERE global_type_id=? AND type_pri='COMPA'", (v['vent_from'],))[0]['z0']
-            self.s.query("UPDATE aamks_geom SET sill=? WHERE type_pri='HVENT' AND global_type_id=?", (v['z0']-floor_baseline, v['global_type_id']))
+            update.append((v['z0']-floor_baseline, v['global_type_id']))
+        self.s.executemany("UPDATE aamks_geom SET sill=? WHERE type_pri='HVENT' AND global_type_id=?", update)
 
 # }}}
     def _auto_detectors_and_sprinklers(self):# {{{
@@ -311,13 +312,18 @@ class Geom():
         for geometry, HVENTS have their cfast_width always along the wall
         '''
 
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='HVENT' order by name"):
-            if v['width'] > v['depth']:
-                self.s.query("UPDATE aamks_geom SET is_vertical=0 WHERE name=?" , (v['name']  , ))
-                self.s.query("UPDATE aamks_geom SET cfast_width=? WHERE name=?" , (v['width'] , v['name']))
-            else:
-                self.s.query("UPDATE aamks_geom SET is_vertical=1 WHERE name=?" , (v['name']  , ))
-                self.s.query("UPDATE aamks_geom SET cfast_width=? WHERE name=?" , (v['depth'] , v['name']))
+        # TODO: faster, but the same as previous?
+        self.s.query("UPDATE aamks_geom SET is_vertical=0, cfast_width=width WHERE type_pri='HVENT' AND width > depth ")
+        self.s.query("UPDATE aamks_geom SET is_vertical=1, cfast_width=depth WHERE type_pri='HVENT' AND width < depth ")
+
+        # for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='HVENT' order by name"):
+        #     print(v['width'], v['depth'])
+        #     if v['width'] > v['depth']:
+        #         self.s.query("UPDATE aamks_geom SET is_vertical=0 WHERE name=?" , (v['name']  , ))
+        #         self.s.query("UPDATE aamks_geom SET cfast_width=? WHERE name=?" , (v['width'] , v['name']))
+        #     else:
+        #         self.s.query("UPDATE aamks_geom SET is_vertical=1 WHERE name=?" , (v['name']  , ))
+        #         self.s.query("UPDATE aamks_geom SET cfast_width=? WHERE name=?" , (v['depth'] , v['name']))
 # }}}
     def _get_faces(self):# {{{
         ''' 
@@ -412,12 +418,16 @@ class Geom():
                     if vent_poly.intersection(compa_poly).length > 4:
                         vc_intersections[vent_id].append(compa_id)
 
+        update=[]
         for vent_id,v in vc_intersections.items():
             v=sorted(v)
             v.append(self.outside_compa)
             if len(v) not in (2,3):
                 self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
-            self.s.query("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", (v[0],v[1],vent_id))
+            update.append((v[0], v[1], vent_id))
+            #self.s.query("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", (v[0],v[1],vent_id))
+        # TODO: executemany is faster, but same results?
+        self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", update)
 
 # }}}
     def _find_vertical_intersections(self):# {{{
@@ -445,87 +455,26 @@ class Geom():
                     if vent_poly.intersection(compa_poly).length > 4:
                         vc_intersections[vent_id].append(compa_id)
 
+        update=[]
         for vent_id,v in vc_intersections.items():
             v=sorted(v)
             v.append(self.outside_compa)
             if len(v) not in (2,3):
                 self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
-            self.s.query("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", (v[0],v[1],vent_id))
+            update.append((v[0], v[1], vent_id))
+        self.s.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
 
 # }}}
 
-# OBSTACLES
-    def _rooms_into_obstacles(self):# {{{
-        ''' 
-        For a roomX we create a roomX_ghost, we move it by wall_width, which
-        must match the width of hvents. Then we create walls via logical
-        operations. We then intersect the walls with the doors to have openings
-        in the walls. The door's width can originate on top of the wall, but
-        such intersections don't count. Only intesections of area >
-        wall_width**2 count -- only doors that have long side on the wall. 
-        For comfortable debuging filter geoms in self.s.query(). 
-        '''
-
-        wall_width=4
-        rectangles=OrderedDict()
-        as_points=OrderedDict()
-        data=OrderedDict()
-        for floor in self.floors:
-            walls=[]
-            for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
-                walls.append((i['x0']+wall_width , i['y0']            , i['x0']+i['width']            , i['y0']+wall_width)                )
-                walls.append((i['x0']+i['width'] , i['y0']            , i['x0']+i['width']+wall_width , i['y0']+i['depth']+wall_width)     )
-                walls.append((i['x0']+wall_width , i['y0']+i['depth'] , i['x0']+i['width']            , i['y0']+i['depth']+wall_width)     )
-                walls.append((i['x0']            , i['y0']            , i['x0']+wall_width            , i['y0']+i['depth']+wall_width)     )
-            walls_polygons=([box(ii[0],ii[1],ii[2],ii[3]) for ii in set(walls)])
-
-            doors_polygons=[]
-            for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_tri='DOOR' ORDER BY name", (floor,)):
-                doors_polygons.append(box(i['x0'], i['y0'], i['x0']+i['width'], i['y0']+i['depth']))
-                
-            boxen=[]
-            for wall in walls_polygons:
-                for door in doors_polygons:
-                    if wall.intersection(door).area > wall_width**2:
-                        wall=wall.difference(door)
-                if isinstance(wall, MultiPolygon):
-                    for i in polygonize(wall):
-                        boxen.append(i)
-                elif isinstance(wall, Polygon):
-                    boxen.append(wall)
-
-            obstacles=[]
-            for b in boxen:
-                obstacles.append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
-            rectangles[floor]=self._obstacles_into_rectangles(obstacles)
-            as_points[floor]=obstacles
-            data['points']=as_points
-            data['named']=rectangles
-        self.s.query("CREATE TABLE obstacles(json)")
-        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
-# }}}
-    def _obstacles_into_rectangles(self,obstacles):# {{{
-        ''' 
-        Transform 4-points-obstacles:
-            [(x0,y0), (x1,y1), (x2,y2), (x3,y3)] 
-        into rectangles:
-            [(x0,y0,width,height)]
-        '''
-
-        rectangles=[]
-        for i in obstacles:
-            k=list(zip(*i))
-            coords=OrderedDict()
-            coords["x0"]=min(k[0])
-            coords["y0"]=min(k[1]) 
-            coords["x1"]=max(k[0])
-            coords["y1"]=max(k[1]) 
-            coords["width"]=max(k[0]) - min(k[0])
-            coords["depth"]=max(k[1]) - min(k[1]) 
-            rectangles.append(coords)
-
-        return rectangles
-# }}}
+# STAIRCASER
+    def _staircaser(self):
+        #self.s.dump()
+        for z in self.s.query("SELECT * FROM aamks_geom WHERE type_sec='STAI' ORDER BY name"): 
+            print(z)
+        #Staircaser(bottom=[(5,5,0), (7,5,0)], fheight=3, floors=3, swidth=2)
+        self.s.dumpall()
+        print("stairs")
+        sys.exit()
 
 # ASSERTIONS
     def _assert_faces_ok(self):# {{{
