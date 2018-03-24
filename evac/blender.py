@@ -7,8 +7,15 @@ from include import Dump as dd
 from include import Colors
 
 class BlenderAamksEvac():
+    ''' 
+    Aamks now uses blender game engine (BGE), currently https://upbge.org/.
+    BGE has 3D rvo2 + navmesh so it should make evacuation easier. Obviously
+    blender provides the awesome 3D visualizations too, so it's a great
+    developing environment. 
+    '''
+
     def __init__(self):# {{{
-        self.s=Sqlite("/usr/local/aamks/current/aamks.sqlite")
+        self.s=Sqlite("/usr/local/aamks/current/aamks.sqlite") # TODO: update to worker's perspective
         self.json=Json()
         self._init_blender()
         self._make_exit()
@@ -26,7 +33,7 @@ class BlenderAamksEvac():
 # }}}
     def _make_exit(self):# {{{
         bpy.ops.mesh.primitive_cube_add(location=(50,8,0.2))
-        bpy.context.object.name='AA'
+        bpy.context.object.name='Exit'
 # }}}
     def _make_floors(self):# {{{
         self.floors=[]
@@ -42,9 +49,8 @@ class BlenderAamksEvac():
         for material in bpy.data.materials:
             bpy.data.materials.remove(material)
         c=Colors
-
         self.materials=dict()
-        colors=self.json.read("/usr/local/aamks/geom/colors.json")
+        colors=self.json.read("../geom/colors.json")
         for k,v in colors['darkColors'].items():
             mat = bpy.data.materials.new(k)
             mat.diffuse_color = c.hex2rgb(v)
@@ -57,7 +63,6 @@ class BlenderAamksEvac():
     def _make_rooms(self):# {{{
         ''' 0.001 prevents z-fighting of overlaping polygons. '''
 
-        #for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND name='S4' ORDER BY name"): 
         for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name"): 
             print('name', i['name'])
             origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100)
@@ -127,7 +132,7 @@ class BlenderAamksEvac():
         for door in self.s.query("SELECT name FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name"): 
             door=bpy.data.objects[door['name']]
             door.select=True
-            #bpy.ops.object.delete()
+            bpy.ops.object.delete()
 
 # }}}
     def _make_navmesh(self):# {{{
@@ -199,7 +204,7 @@ class BlenderAamksEvac():
         mat.diffuse_color = (1,1,1)
 
         self.evacuees=[]
-        floors_data=self.json.read("/tmp/blender_evac.json")['FLOORS_DATA']
+        floors_data=self.json.read("/tmp/blender_evac.json")['FLOORS_DATA'] # TODO: update to worker's perspective
         for floor,data in floors_data.items():
             for name,setup in data['EVACUEES'].items():
                 self._single_evacuee(name, setup['ORIGIN'], mat)
