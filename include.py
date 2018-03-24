@@ -5,8 +5,8 @@ import sqlite3
 import inspect
 import json
 from subprocess import Popen,PIPE
-try: # just for now - blender python complains about it for some reason
-    import psycopg2
+try:
+    import psycopg2 # Blender cannot import psycopg2. 
 except:
     pass
 
@@ -32,6 +32,12 @@ class Dump():# {{{
         #    self.dd(list(struct))
         else:
             print(struct)
+# }}}
+class Colors():# {{{
+    def hex2rgb(self,color):
+        rgb = color[1:]
+        r, g, b = rgb[0:2], rgb[2:4], rgb[4:6]
+        return tuple([float(int(v, 16)) / 255 for v in (r, g, b)])
 # }}}
 class SimIterations():# {{{
     ''' 
