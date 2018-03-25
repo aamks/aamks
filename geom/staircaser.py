@@ -3,44 +3,21 @@ import json
 from shapely.geometry import box
 from shapely.affinity import rotate, scale
 
-class Json(): 
-    def read(self,path): # {{{
-        try:
-            f=open(path, 'r')
-            dump=json.load(f, object_pairs_hook=OrderedDict)
-            f.close()
-            return dump
-        except:
-            raise Exception("\n\nMissing or invalid json: {}.".format(path)) 
-# }}}
-    def write(self, data, path, pretty=1): # {{{
-        try:
-            if pretty==1:
-                pretty=json.dumps(data, indent=4)
-                f=open(path, 'w')
-                f.write(pretty)
-                f.close()
-            else:
-                f=open(path, 'w')
-                json.dump(data, f)
-                f.close()
-        except:
-            raise Exception("\n\nCannot write json: {}.".format(path)) 
-
-# }}}
-
 class Staircaser():
-    def __init__(self, bottom, fheight, floors, swidth):# {{{
+    def __init__(self, bottom, fheight, floors, swidth=2, variant='all'):# {{{
         ''' 
         bottom      : the projection of the staircase onto XY plane
         fheight     : floor height
         floors      : number of floors
-        swidth      : stair width
+        swidth      : stair width, default=2
+        variant     : 'all' | '0_0' | '-0_0' | '180_0' | '-180_0' | '0_1' | '-0_1' | '180_1' | '-180_1', default='all'
 
         We will produce a json with all the 8 orientations of stairs runs: 
-            2 along_wall (short vs long) * 2 rotations * 2 directions (CW vs CCW) 
+            2 along_side (Y vs X) * 2 rotations * 2 directions (CW vs CCW) 
 
-        along short / long wall are called orientation within the script.
+        along Y or X are called orientation within the script.
+
+        Variants encode 'rotation_orientation', 0=Y, 1=X.
         '''
 
         self.fheight=fheight
@@ -57,21 +34,19 @@ class Staircaser():
             self._make_pillar()
             self._geoms_defs()
             self._affine_transforms()
-        self._on_end()
+        self.json=self._output_variant(variant) 
 # }}}
     def _on_init(self,bottom):# {{{
         ''' 
         Prepare json structure for geoms. 
         '''
 
-        self.json = OrderedDict()
-        self.json=OrderedDict()
-        self.json['meta']=OrderedDict()
-        self.json['staircases']=OrderedDict()
+        self.collect=OrderedDict()
+        self.collect['staircases']=OrderedDict()
         cx=bottom[0][0] + 0.5 * (bottom[1][0] - bottom[0][0])
         cy=bottom[0][1] + 0.5 * (bottom[1][1] - bottom[0][1])
         cz=bottom[0][2] + 0.5 * (bottom[1][2] - bottom[0][2])
-        self.json['meta']['center']=(cx,cy,cz)
+        self.staircase_center=(cx,cy,cz)
 
 # }}}
     def _single_stair_height_and_width(self):# {{{
@@ -262,8 +237,8 @@ class Staircaser():
 # }}}
 
     def _make_pillar(self):# {{{
-        cx=self.json['meta']['center'][0]
-        cy=self.json['meta']['center'][1]
+        cx=self.staircase_center[0]
+        cy=self.staircase_center[1]
         if self.orientation == 0: 
             sx=0.5 * (self.landings[0]['size'][0] - 2 * self.swidth)
             sy=0.5 * self.how_many_stairs * self.sw
@@ -323,20 +298,20 @@ class Staircaser():
         for angle in (0,180):
             label0="{}_{}".format(angle,  self.orientation)
             label1="-{}_{}".format(angle,  self.orientation)
-            self.json['staircases'][label0]=list()
-            self.json['staircases'][label1]=list()
+            self.collect['staircases'][label0]=list()
+            self.collect['staircases'][label1]=list()
             for i in self.boxen:
 
                 shape=i[0]
                 data=i[1]
 
-                rotated=rotate(geom=shape, angle=angle, origin=self.json['meta']['center'])
+                rotated=rotate(geom=shape, angle=angle, origin=self.staircase_center)
                 rr=self._shapely_extract(rotated,data)
-                self.json['staircases'][label0].append(rr)
+                self.collect['staircases'][label0].append(rr)
 
-                mirrored=scale(rotated, xfact=-1, yfact=1, origin=self.json['meta']['center'])
+                mirrored=scale(rotated, xfact=-1, yfact=1, origin=self.staircase_center)
                 mm=self._shapely_extract(mirrored,data)
-                self.json['staircases'][label1].append(mm)
+                self.collect['staircases'][label1].append(mm)
 
 # }}}
     def _shapely_extract(self,box,data):# {{{
@@ -354,9 +329,19 @@ class Staircaser():
 
         return dict([ ('center', center), ('size', size), ('p0', p0), ('p1', p1) ])
 # }}}
-    def _on_end(self):# {{{
-        json=Json()
-        json.write(self.json, "/tmp/result.json")
-        print("The result written to /tmp/result.json")
+    def _output_variant(self,variant):# {{{
+        if variant == 'all':
+            picks=[ '0_0', '-0_0', '180_0', '-180_0', '0_1', '-0_1', '180_1', '-180_1' ]
+        else:
+            picks=[ variant ]
+
+        try:
+            out=[]
+            for i in picks:
+                out.append(self.collect['staircases'][i])
+                return json.dumps(out)
+        except:
+            print("Variant must be one of: 'all' | '0_0' | '-0_0' | '180_0' | '-180_0' | '0_1' | '-0_1' | '180_1' | '-180_1'")
+
 # }}}
 # }}}

@@ -29,7 +29,9 @@ class Geom():
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self._make_elem_counter()
-        self._geometry2sqlite(self._geometry_reader())
+        self._geometry_reader()
+        self._geometry2sqlite()
+        self._obstacles2sqlite()
         self._init_helper_variables()
         self._init_dd_geoms()
         self._make_fake_wells()
@@ -86,17 +88,16 @@ class Geom():
         '''
 
         try:
-            geometry_data=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
+            self.geometry_data=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
         except:
             InkscapeReader()
-            geometry_data=self.json.read("{}/svg.json".format(os.environ['AAMKS_PROJECT']))
+            self.geometry_data=self.json.read("{}/svg.json".format(os.environ['AAMKS_PROJECT']))
 
-        return geometry_data
 # }}}
-    def _geometry2sqlite(self,geometry_data):# {{{
+    def _geometry2sqlite(self):# {{{
         ''' 
         Parse geometry and place geoms in sqlite. The lowest floor is always 0.
-        The geometry_data example for floor("0"):
+        The self.geometry_data example for floor("0"):
 
             "0": [
                 "ROOM": [
@@ -115,22 +116,55 @@ class Geom():
         '''
 
         data=[]
-        for floor,gg in geometry_data.items():
+        for floor,gg in self.geometry_data.items():
             for k,arr in gg.items():
                 for v in arr:
-                    v[0]=[ int(i*100) for i in v[0] ]
-                    v[1]=[ int(i*100) for i in v[1] ]
-                    width= v[1][0]-v[0][0]
-                    depth= v[1][1]-v[0][1]
-                    height=v[1][2]-v[0][2]
-                    data.append(self._prepare_geom_record(k,v,width,depth,height,floor))
+                    p0=[ int(i*100) for i in v[0] ]
+                    p1=[ int(i*100) for i in v[1] ]
+                    width= p1[0]-p0[0]
+                    depth= p1[1]-p0[1]
+                    height=p1[2]-p0[2]
+                    record=self._prepare_geom_record(k,[p0,p1],width,depth,height,floor)
+                    if record != False:
+                        data.append(record)
         self.s.query("CREATE TABLE aamks_geom('name','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z', 'fire_model_ignore')")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
+    def _obstacles2sqlite(self):# {{{
+        ''' 
+        Geometry may contain obstacles to model machines, FDS walls, bookcases,
+        etc. Users may choose our staircaser module to auto-generate stairs for
+        the staircase, or they can provide stairs themselves as obstacles here.
+        Obstacles are not visible in CFAST, since they don't belong to
+        aamks_geom table. 
+        '''
+
+        data=[]
+        self.s.query("CREATE TABLE obstacles(json)")
+        for floor,gg in self.geometry_data.items():
+            for v in gg['OBST']:
+                p0=v[0]
+                p1=v[1]
+                center=( p0[0] + 0.5 * (p1[0]-p0[0]), p0[1] + 0.5 * (p1[1]-p0[1]), p0[2] + 0.5 * (p1[2]-p0[2]))
+                size=(center[0]-p0[0], center[1]-p0[1], center[2]-p0[2])
+
+                p0     = [ round(x,3) for x in p0 ]
+                p1     = [ round(x,3) for x in p1 ]
+                center = [ round(x,3) for x in center ]
+                size   = [ round(x,3) for x in size ]
+
+                data.append(dict([ ('center', center), ('size', size), ('p0', p0), ('p1', p1) ]))
+
+            self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
+#}}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor):# {{{
         ''' Format a record for sqlite. Hvents get fixed width 4 cm '''
+        # OBST
+        if k in ('OBST'):
+            return False
+
         # COMPA
-        if k in ('ROOM', 'COR', 'HALL', 'STAI'):      
+        elif k in ('ROOM', 'COR', 'HALL', 'STAI'):      
             type_pri='COMPA'
             type_tri=''
         
@@ -141,7 +175,7 @@ class Geom():
             type_tri=''
         
         # HVENT  
-        else:                               
+        elif k in ('D', 'C', 'E', 'HOLE', 'W'): 
             width=max(width,4)
             depth=max(depth,4)
             type_pri='HVENT'
@@ -469,12 +503,22 @@ class Geom():
 
 # STAIRCASER
     def _staircaser(self):# {{{
+        ''' 
+        Staircaser will autofill the staircase cuboid with stairs. 
+        We assume that each floor has the same height as floor 0.
+        '''
+
+        self.s.query("CREATE TABLE staircaser(json)")
+
+        inserts=OrderedDict()
         fheight=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])['1']['z']/100
         for z in self.s.query("SELECT * FROM aamks_geom WHERE type_sec='STAI' ORDER BY name"): 
             bottom=[ (z['x0']/100, z['y0']/100, z['z0']/100), (z['x1']/100, z['y1']/100, z['z1']/100) ]
-            print('bottom',bottom, 'fheight',fheight, 'floors',len(self.floors), 'swidth', 2)
-            Staircaser(bottom=bottom, fheight=fheight, floors=len(self.floors), swidth=2)
+            s=Staircaser(bottom=bottom, fheight=fheight, floors=len(self.floors), swidth=2, variant='0_0')
+            inserts[z['name']]=s.json
 
+        self.s.query('INSERT INTO staircaser VALUES (?)', (json.dumps(inserts),))
+        self.s.dumpall()
 # }}}
 
 # ASSERTIONS

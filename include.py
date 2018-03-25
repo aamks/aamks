@@ -104,7 +104,7 @@ class Sqlite(): # {{{
     def dumpall(self):
         ''' Remember to add all needed sqlite tables here '''
         print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
-        for i in ('aamks_geom', 'floors', 'obstacles', 'id2compa', 'door_intersections', 'graph', 'tessellation'):
+        for i in ('aamks_geom', 'staircaser', 'floors', 'obstacles', 'id2compa', 'door_intersections', 'graph', 'tessellation'):
             try:
                 print("\n=======================")
                 print("table:", i)
@@ -156,7 +156,7 @@ class Json(): # {{{
         except:
             raise Exception("\n\nMissing or invalid json: {}.".format(path)) 
 
-    def write(self, data, path, pretty=1): 
+    def write(self, data, path, pretty=0): 
         try:
             if pretty==1:
                 pretty=json.dumps(data, indent=4)
