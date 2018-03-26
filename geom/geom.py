@@ -153,9 +153,9 @@ class Geom():
                 center = [ round(x,3) for x in center ]
                 size   = [ round(x,3) for x in size ]
 
-                data.append(dict([ ('center', center), ('size', size), ('p0', p0), ('p1', p1) ]))
+                data.append({'center': center, 'size': size, 'p0': p0, 'p1': p1})
 
-            self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
+        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
 #}}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor):# {{{
         ''' Format a record for sqlite. Hvents get fixed width 4 cm '''
@@ -506,18 +506,21 @@ class Geom():
         ''' 
         Staircaser will autofill the staircase cuboid with stairs. 
         We assume that each floor has the same height as floor 0.
+        Staircaser produces the staircase for a particulat variant and we
+        access it via single_staircase[0].
         '''
 
         self.s.query("CREATE TABLE staircaser(json)")
 
-        inserts=OrderedDict()
+        data=[]
         fheight=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])['1']['z']/100
         for z in self.s.query("SELECT * FROM aamks_geom WHERE type_sec='STAI' ORDER BY name"): 
             bottom=[ (z['x0']/100, z['y0']/100, z['z0']/100), (z['x1']/100, z['y1']/100, z['z1']/100) ]
-            s=Staircaser(bottom=bottom, fheight=fheight, floors=len(self.floors), swidth=2, variant='0_0')
-            inserts[z['name']]=s.json
+            stairs=Staircaser(bottom=bottom, fheight=fheight, floors=len(self.floors), swidth=2, variant='0_0')
+            single_staircase=json.loads(stairs.get_json())
+            data+=single_staircase[0]
 
-        self.s.query('INSERT INTO staircaser VALUES (?)', (json.dumps(inserts),))
+        self.s.query('INSERT INTO staircaser VALUES (?)', (json.dumps(data),))
         self.s.dumpall()
 # }}}
 

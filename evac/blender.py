@@ -84,6 +84,16 @@ class BlenderAamksEvac():
             self._make_door(i['name'],i['type_sec'],origin,size)
 
 # }}}
+    def _make_stairs(self):# {{{
+        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name"): 
+            origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100-0.1)
+            size=[0.5*i['width']/100, 0.5*i['depth']/100, 0.5*i['height']/100]
+            for s in range(len(size)):
+                if size[s] < 0.1:
+                    size[s]=0.5
+            self._make_door(i['name'],i['type_sec'],origin,size)
+
+# }}}
     def _make_door(self,name,mat,origin,size):# {{{
         bpy.ops.mesh.primitive_cube_add(location=origin)
         bpy.ops.transform.resize(value=size)

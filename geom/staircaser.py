@@ -23,6 +23,7 @@ class Staircaser():
         self.fheight=fheight
         self.floors=floors
         self.swidth=swidth
+        self.variant=variant
 
         self._on_init(bottom)
         self._single_stair_height_and_width()
@@ -34,7 +35,6 @@ class Staircaser():
             self._make_pillar()
             self._geoms_defs()
             self._affine_transforms()
-        self.json=self._output_variant(variant) 
 # }}}
     def _on_init(self,bottom):# {{{
         ''' 
@@ -329,11 +329,11 @@ class Staircaser():
 
         return dict([ ('center', center), ('size', size), ('p0', p0), ('p1', p1) ])
 # }}}
-    def _output_variant(self,variant):# {{{
-        if variant == 'all':
+    def get_json(self):# {{{
+        if self.variant == 'all':
             picks=[ '0_0', '-0_0', '180_0', '-180_0', '0_1', '-0_1', '180_1', '-180_1' ]
         else:
-            picks=[ variant ]
+            picks=[ self.variant ]
 
         try:
             out=[]
