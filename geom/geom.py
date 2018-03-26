@@ -278,8 +278,6 @@ class Geom():
             self._id2compa_name[v['global_type_id']]=v['name']
         self._id2compa_name[self.outside_compa]='outside'
 
-        self.s.query("CREATE TABLE id2compa(json)")
-        self.s.query('INSERT INTO id2compa VALUES (?)', (json.dumps(self._id2compa_name),))
 # }}}
     def _add_names_to_vents_from_to(self):# {{{
         ''' 

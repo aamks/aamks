@@ -148,25 +148,27 @@ class Staircaser():
         sh=self.sh
         sw=self.sw
         for f in range(self.floors):
+            # stairs
             for i in range(self.how_many_stairs):
                 center=(self.landings[0]['p0'][0]+0.5*self.swidth, self.landings[0]['p1'][1]+i*sw+0.5*sw, f*self.fheight  + i*sh+0.5*sh)
                 size=(self.swidth/2,sw/2,sh/2)
                 self._make_single_stair(center,size)
-
+            # landing 0
             i+=1
-            center=(self.landings[1]['center_x'], self.landings[1]['center_y'], f*self.fheight + i*sh+0.5*sh)
+            center=(self.landings[1]['center_x'], self.landings[1]['center_y'], f*self.fheight + i*sh-0.5*sh)
             size=(self.landings[1]['size'][0]/2, self.landings[1]['size'][1]/2, sh/2)
             self._make_single_stair(center,size)
-
+            # stairs
             for i in range(self.how_many_stairs):
                 center=(self.landings[1]['p1'][0]-0.5*self.swidth, self.landings[1]['p0'][1]-i*sw-0.5*sw, f*self.fheight + self.how_many_stairs*sh+i*sh+0.5*sh)
                 size=(self.swidth/2,sw/2,sh/2)
                 self._make_single_stair(center,size)
+            # landing 1
             i+=1
-            center=(self.landings[0]['center_x'], self.landings[0]['center_y'], f*self.fheight + self.how_many_stairs*sh+i*sh+0.5*sh)
+            center=(self.landings[0]['center_x'], self.landings[0]['center_y'], f*self.fheight + self.how_many_stairs*sh+i*sh-0.5*sh)
             size=(self.landings[1]['size'][0]/2, self.landings[1]['size'][1]/2, sh/2)
             self._make_single_stair(center,size)
-
+        # top barrier
         center=(self.landings[0]['p0'][0]+0.5*self.swidth, self.landings[0]['p1'][1]+0.5*sw, f*self.fheight + self.how_many_stairs*sh+i*sh+ 1)
         size=(self.swidth/2,sw/2,1)
         self._make_single_stair(center,size)
@@ -212,24 +214,27 @@ class Staircaser():
         sh=self.sh
         sw=self.sw
         for f in range(self.floors):
+            # stairs
             for i in range(self.how_many_stairs):
                 center=(self.landings[0]['p1'][0]+i*sw+0.5*sw, self.landings[0]['p0'][1]+0.5*self.swidth, f*self.fheight + i*sh+0.5*sh)
                 size=(sw/2,self.swidth/2,sh/2)
                 self._make_single_stair(center,size)
+            # landing 0
             i+=1
-            center=(self.landings[1]['center_x'], self.landings[1]['center_y'], f*self.fheight + i*sh+0.5*sh)
+            center=(self.landings[1]['center_x'], self.landings[1]['center_y'], f*self.fheight + i*sh-0.5*sh)
             size=(self.landings[1]['size'][0]/2, self.landings[1]['size'][1]/2, sh/2)
             self._make_single_stair(center,size)
-
+            # stairs
             for i in range(self.how_many_stairs):
                 center=(self.landings[1]['p0'][0]-i*sw-0.5*sw, self.landings[1]['p1'][1]-0.5*self.swidth, f*self.fheight + self.how_many_stairs*sh+i*sh+0.5*sh)
                 size=(sw/2,self.swidth/2,sh/2)
                 self._make_single_stair(center,size)
+            # landing 1
             i+=1
-            center=(self.landings[0]['center_x'], self.landings[1]['center_y'], f*self.fheight + self.how_many_stairs*sh+i*sh+0.5*sh)
+            center=(self.landings[0]['center_x'], self.landings[1]['center_y'], f*self.fheight + self.how_many_stairs*sh+i*sh-0.5*sh)
             size=(self.landings[1]['size'][0]/2, self.landings[1]['size'][1]/2, sh/2)
             self._make_single_stair(center,size)
-
+        # top barrier
         center=(self.landings[0]['p1'][0]+0.5*sw, self.landings[1]['p0'][1]+0.5*self.swidth, f*self.fheight + self.how_many_stairs*sh+i*sh+ 1)
         size=(sw/2, self.swidth/2,1)
         self._make_single_stair(center,size)

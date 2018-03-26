@@ -1,6 +1,7 @@
 import bpy
 import bge
 import json
+import os
 from include import Sqlite
 from include import Json
 from include import Dump as dd
@@ -17,13 +18,15 @@ class BlenderAamksEvac():
     def __init__(self):# {{{
         self.s=Sqlite("/usr/local/aamks/current/aamks.sqlite") # TODO: update to worker's perspective
         self.json=Json()
+        self._navmesh_collector=[]
         self._init_blender()
-        self._make_exit()
         self._make_materials()
+        self._make_exit()
         self._make_floors()
         self._make_rooms()
         self._make_doors()
         self._cut_doors()
+        self._make_stairs()
         self._make_navmesh()
         self._make_evacuees()
 # }}}
@@ -31,27 +34,14 @@ class BlenderAamksEvac():
         bpy.ops.object.lamp_add(type="SUN", radius=5, location=(0,0,50))
         bpy.context.object.data.energy=0.2
 # }}}
-    def _make_exit(self):# {{{
-        bpy.ops.mesh.primitive_cube_add(location=(50,8,0.2))
-        bpy.context.object.name='Exit'
-# }}}
-    def _make_floors(self):# {{{
-        self.floors=[]
-        for k,v in json.loads(self.s.query("SELECT * FROM floors")[0]['json']).items():
-            bpy.ops.mesh.primitive_cube_add(location=(v['center'][0]/100, v['center'][1]/100, v['center'][2]/100))
-            bpy.ops.transform.resize(value=(v['width']/200+3, v['height']/200+3, 0.05))
-            bpy.context.object.name='floor{}'.format(k)
-            bpy.ops.object.duplicate_move()
-            self.floors.append(int(v['z']/100))
 
-# }}}
     def _make_materials(self):# {{{
         for material in bpy.data.materials:
             bpy.data.materials.remove(material)
-        c=Colors
+        c=Colors()
         self.materials=dict()
-        colors=self.json.read("../geom/colors.json")
-        for k,v in colors['darkColors'].items():
+        colors=self.json.read("{}/geom/colors.json".format(os.environ['AAMKS_PATH']))['darkColors']
+        for k,v in colors.items():
             mat = bpy.data.materials.new(k)
             mat.diffuse_color = c.hex2rgb(v)
             if k in ('ROOM', 'COR', 'STAI', 'HALL'):
@@ -60,31 +50,34 @@ class BlenderAamksEvac():
             self.materials[k]=mat
 
 # }}}
+    def _make_exit(self):# {{{
+        bpy.ops.mesh.primitive_cube_add(location=(50,8,0.2))
+        bpy.context.object.name='EXIT'
+# }}}
+    def _make_floors(self):# {{{
+        for k,v in json.loads(self.s.query("SELECT * FROM floors")[0]['json']).items():
+            name='floor{}'.format(k)
+            bpy.ops.mesh.primitive_cube_add(location=(v['center'][0]/100, v['center'][1]/100, v['center'][2]/100))
+            bpy.ops.transform.resize(value=(v['width']/200+3, v['height']/200+3, 0.05))
+            bpy.context.object.name=name
+            self._navmesh_collector.append(name)
+
+# }}}
     def _make_rooms(self):# {{{
         ''' 0.001 prevents z-fighting of overlaping polygons. '''
 
         for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name"): 
-            print('name', i['name'])
             origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100)
             size=(0.001+0.5*i['width']/100, 0.001+0.5*i['depth']/100, 0.001+0.5*i['height']/100)
             inset=[]
             for s in size:
-                inset.append((s-0.4)/s)
-            inset[2]=s+0.1
+                inset.append((s-0.1)/s)
+            #inset[2]=s+0.1
             self._make_room(i['name'],i['type_sec'],origin,size,inset)
+            self._navmesh_collector.append(i['name'])
 
 # }}}
     def _make_doors(self):# {{{
-        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name"): 
-            origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100-0.1)
-            size=[0.5*i['width']/100, 0.5*i['depth']/100, 0.5*i['height']/100]
-            for s in range(len(size)):
-                if size[s] < 0.1:
-                    size[s]=0.5
-            self._make_door(i['name'],i['type_sec'],origin,size)
-
-# }}}
-    def _make_stairs(self):# {{{
         for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name"): 
             origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100-0.1)
             size=[0.5*i['width']/100, 0.5*i['depth']/100, 0.5*i['height']/100]
@@ -126,6 +119,24 @@ class BlenderAamksEvac():
         bpy.ops.object.delete()
 
 # }}}
+    def _make_stairs(self):# {{{
+        stairs=json.loads(self.s.query("SELECT json FROM staircaser")[0]['json'])
+        stairs_names=[]
+        for num,i in enumerate(stairs):
+            name="stair_{}".format(num)
+            bpy.ops.mesh.primitive_cube_add(location=i['center'])
+            bpy.ops.transform.resize(value=i['size'])
+            bpy.context.object.name=name
+            stairs_names.append(name)
+
+        bpy.ops.object.select_all(action='DESELECT')
+        for i in stairs_names:
+            bpy.data.objects[i].select=True
+        bpy.ops.object.join()
+        bpy.context.object.name='stairs'
+        self._navmesh_collector.append('stairs')
+
+# }}}
     def _cut_doors(self):# {{{
         bpy.ops.object.select_all(action='DESELECT')
         for compa in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name"): 
@@ -147,23 +158,13 @@ class BlenderAamksEvac():
 # }}}
     def _make_navmesh(self):# {{{
         bpy.ops.object.select_all(action='DESELECT')
-        for compa in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name"): 
-            bpy.data.objects[compa['name']].select=True
-            bpy.ops.object.duplicate_move()
-            bpy.ops.object.select_all(action='DESELECT')
-
-        for compa in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name"): 
-            bpy.data.objects[compa['name']].select=True
-
-        for i in range(len(self.floors)):
-            bpy.data.objects['floor{}'.format(i)].select=True
-
-        bpy.context.scene.objects.active = bpy.data.objects['floor0']
+        for i in self._navmesh_collector:
+            bpy.data.objects[i].select=True
+        bpy.ops.object.duplicate_move()
         bpy.ops.object.join()
+        bpy.context.object.name='navmesh_input'
         bpy.ops.mesh.navmesh_make()
-
         bpy.ops.object.select_all(action='DESELECT')
-        bpy.data.objects['floor0'].select=True
         #bpy.ops.object.delete()
         #bpy.data.objects['Navmesh'].hide=True
 
@@ -194,7 +195,7 @@ class BlenderAamksEvac():
         actuator = actuators[-1]
         sensor.axis='ALLAXIS'
         actuator.mode='PATHFOLLOWING'
-        actuator.target = bpy.data.objects["AA"]
+        actuator.target = bpy.data.objects["EXIT"]
         actuator.navmesh= bpy.data.objects["Navmesh"]
         actuator.self_terminated= True
         #actuator.show_visualization= True
