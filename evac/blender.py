@@ -10,9 +10,9 @@ from include import Colors
 class BlenderAamksEvac():
     ''' 
     Aamks now uses blender game engine (BGE), currently https://upbge.org/.
-    BGE has 3D rvo2 + navmesh so it should make evacuation easier. Obviously
-    blender provides the awesome 3D visualizations too, so it's a great
-    developing environment. 
+    BGE has 3D rvo2 + navmesh so it should make simulation of the evacuation
+    easier. Obviously blender provides some awesome 3D visualizations too, so
+    it's a great developing environment. 
     '''
 
     def __init__(self):# {{{
@@ -22,7 +22,6 @@ class BlenderAamksEvac():
         self._init_blender()
         self._make_materials()
         self._make_exit()
-        self._make_floors()
         self._make_rooms()
         self._make_doors()
         self._cut_doors()
@@ -54,32 +53,23 @@ class BlenderAamksEvac():
         bpy.ops.mesh.primitive_cube_add(location=(50,8,0.2))
         bpy.context.object.name='EXIT'
 # }}}
-    def _make_floors(self):# {{{
-        for k,v in json.loads(self.s.query("SELECT * FROM floors")[0]['json']).items():
-            name='floor{}'.format(k)
-            bpy.ops.mesh.primitive_cube_add(location=(v['center'][0]/100, v['center'][1]/100, v['center'][2]/100))
-            bpy.ops.transform.resize(value=(v['width']/200+3, v['height']/200+3, 0.05))
-            bpy.context.object.name=name
-            self._navmesh_collector.append(name)
-
-# }}}
     def _make_rooms(self):# {{{
         ''' 0.001 prevents z-fighting of overlaping polygons. '''
 
         for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name"): 
             origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100)
             size=(0.001+0.5*i['width']/100, 0.001+0.5*i['depth']/100, 0.001+0.5*i['height']/100)
-            inset=[]
+            outset=[]
             for s in size:
-                inset.append((s-0.1)/s)
+                outset.append((s+0.1)/s)
             #inset[2]=s+0.1
-            self._make_room(i['name'],i['type_sec'],origin,size,inset)
+            self._make_room(i['name'],i['type_sec'],origin,size,outset)
             self._navmesh_collector.append(i['name'])
 
 # }}}
     def _make_doors(self):# {{{
         for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name"): 
-            origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100-0.1)
+            origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100)
             size=[0.5*i['width']/100, 0.5*i['depth']/100, 0.5*i['height']/100]
             for s in range(len(size)):
                 if size[s] < 0.1:
@@ -96,26 +86,32 @@ class BlenderAamksEvac():
         orig.show_name=True
 
 # }}}
-    def _make_room(self,name,mat,origin,size,inset):# {{{
+    def _make_room(self,name,mat,origin,size,outset):# {{{
+        ''' 
+        Except from just adding the room we create an obstacle from it:
+        smaller (original) cuts in bigger (outset). 
+        '''
+
         bpy.ops.mesh.primitive_cube_add(location=origin)
         bpy.ops.transform.resize(value=size)
-        orig=bpy.context.object
-        orig.data.materials.append(self.materials[mat])
-        orig.show_transparent=True
-        orig.name=name
-        orig.show_name=True
+        smaller=bpy.context.object
+        smaller.name="smaller"
 
         bpy.ops.object.duplicate_move()
-        bpy.context.object.name="cube_cut"
-        bpy.ops.transform.resize(value=inset)
+        bigger=bpy.context.object
+        bigger.data.materials.append(self.materials[mat])
+        bigger.show_transparent=True
+        bigger.name=name
+
+        bpy.ops.transform.resize(value=outset)
         bpy.ops.object.select_all(action='DESELECT')
-        bpy.context.scene.objects.active = orig
+        bpy.context.scene.objects.active = bigger
         bpy.ops.object.modifier_add(type='BOOLEAN')
         bpy.context.object.modifiers['Boolean'].operation='DIFFERENCE'
-        bpy.context.object.modifiers['Boolean'].object=bpy.data.objects['cube_cut']
+        bpy.context.object.modifiers['Boolean'].object=smaller 
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Boolean')
         bpy.ops.object.select_all(action='DESELECT')
-        bpy.data.objects['cube_cut'].select=True
+        smaller.select=True
         bpy.ops.object.delete()
 
 # }}}
@@ -170,7 +166,7 @@ class BlenderAamksEvac():
 
 # }}}
     def _single_evacuee(self,name,pos,mat):# {{{
-        bpy.ops.mesh.primitive_cylinder_add(radius=0.25, depth=1, location=(pos[0], pos[1], pos[2]+0.8))
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.25, depth=1, location=(pos[0], pos[1], pos[2]+0.65))
 
         obj=bpy.context.object
         obj.data.materials.append(mat)
@@ -229,6 +225,9 @@ class BlenderAamksEvac():
 # suzanne.select=False
 # bpy.ops.object.delete()
 # bpy.context.scene.objects.active = suzanne
+
+# separate
+# filename="{}/evac/blender.py".format(os.environ['AAMKS_PATH'])
 # }}}
 
 BlenderAamksEvac()

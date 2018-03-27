@@ -21,7 +21,7 @@ class Staircaser():
         '''
 
         self.fheight=fheight
-        self.floors=floors
+        self.floors=floors-1 
         self.swidth=swidth
         self.variant=variant
 
@@ -169,8 +169,8 @@ class Staircaser():
             size=(self.landings[1]['size'][0]/2, self.landings[1]['size'][1]/2, sh/2)
             self._make_single_stair(center,size)
         # top barrier
-        center=(self.landings[0]['p0'][0]+0.5*self.swidth, self.landings[0]['p1'][1]+0.5*sw, f*self.fheight + self.how_many_stairs*sh+i*sh+ 1)
-        size=(self.swidth/2,sw/2,1)
+        center=(self.landings[0]['p0'][0]+0.5*self.swidth, self.landings[0]['p1'][1]+0.5*sw, (self.floors+1) * self.fheight - self.fheight * 0.5)
+        size=(self.swidth/2,sw/2, self.fheight/2)
         self._make_single_stair(center,size)
 
 # }}}
@@ -235,8 +235,8 @@ class Staircaser():
             size=(self.landings[1]['size'][0]/2, self.landings[1]['size'][1]/2, sh/2)
             self._make_single_stair(center,size)
         # top barrier
-        center=(self.landings[0]['p1'][0]+0.5*sw, self.landings[1]['p0'][1]+0.5*self.swidth, f*self.fheight + self.how_many_stairs*sh+i*sh+ 1)
-        size=(sw/2, self.swidth/2,1)
+        center=(self.landings[0]['p1'][0]+0.5*sw, self.landings[1]['p0'][1]+0.5*self.swidth, (self.floors+1) * self.fheight - self.fheight * 0.5)
+        size=(sw/2, self.swidth/2, self.fheight/2)
         self._make_single_stair(center,size)
 
 # }}}
@@ -247,13 +247,13 @@ class Staircaser():
         if self.orientation == 0: 
             sx=0.5 * (self.landings[0]['size'][0] - 2 * self.swidth)
             sy=0.5 * self.how_many_stairs * self.sw
-            center=(cx, cy, self.fheight * self.floors * 0.5 + 1)
-            size=(max(0.01 , sx) , sy , self.floors * self.fheight/2 + 1)
+            center=(cx, cy, (self.floors+1) * self.fheight * 0.5)
+            size=(max(0.01 , sx) , sy , (self.floors+1) * self.fheight * 0.5)
         else:
             sx=0.5 * self.how_many_stairs * self.sw
             sy=0.5 * (self.landings[0]['size'][1] - 2 * self.swidth)
-            center=(cx, cy, self.fheight * self.floors * 0.5 + 1)
-            size=(sx , max(0.01 , sy) , self.floors * self.fheight/2 + 1)
+            center=(cx, cy, (self.floors+1) * self.fheight * 0.5)
+            size=(sx , max(0.01 , sy) , (self.floors+1) * self.fheight * 0.5)
 
         self._geoms.append(dict([ ('center', center), ('size', size) ]))
 # }}}
