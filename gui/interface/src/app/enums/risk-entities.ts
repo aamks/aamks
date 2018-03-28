@@ -6,7 +6,7 @@ export const RiskEntities =
             project_name: {
                 type: 'Character',
                 units: '',
-                'default': 'New Project',
+                default: 'New Project',
                 help: '',
                 pattern: '',
                 valid_ranges: [
