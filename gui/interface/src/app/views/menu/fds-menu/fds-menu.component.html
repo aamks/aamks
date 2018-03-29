@@ -1,7 +1,7 @@
 <div>
   <div class="n1">
     <i class="material-icons null"></i>
-    <a routerLink="general">General</a>
+    <a routerLink="fds/general">General</a>
   </div>
 
   <div class="n1" (click)="toggleMenu('geometry')">
@@ -11,16 +11,16 @@
   </div>
   <div class="ng2" [ngClass]="uiState.fdsMenu.geometry ? 'open' : 'close'">
     <div class="n2">
-      <a routerLink="geometry/mesh">Mesh</a>
+      <a routerLink="fds/geometry/mesh">Mesh</a>
     </div>
     <div class="n2">
-      <a routerLink="geometry/material">Material</a>
+      <a routerLink="fds/geometry/material">Material</a>
     </div>
     <div class="n2">
-      <a routerLink="geometry/surface">Surface</a>
+      <a routerLink="fds/geometry/surface">Surface</a>
     </div>
     <div class="n2">
-      <a routerLink="geometry/obstruction">Obstruction</a>
+      <a routerLink="fds/geometry/obstruction">Obstruction</a>
     </div>
   </div>
 
@@ -31,10 +31,10 @@
   </div>
   <div class="ng2" [ngClass]="uiState.fdsMenu.ventilation ? 'open' : 'close'">
     <div class="n2">
-      <a routerLink="ventilation/basic">Basic</a>
+      <a routerLink="fds/ventilation/basic">Basic</a>
     </div>
     <div class="n2">
-      <a routerLink="ventilation/jetfan">Jetfan</a>
+      <a routerLink="fds/ventilation/jetfan">Jetfan</a>
     </div>
   </div>
 
@@ -45,10 +45,10 @@
   </div>
   <div class="ng2" [ngClass]="uiState.fdsMenu.fire ? 'open' : 'close'">
     <div class="n2">
-      <a routerLink="fire/fires">Fires</a>
+      <a routerLink="fds/fire/fires">Fires</a>
     </div>
     <div class="n2">
-      <a routerLink="fire/combustion">Combustion</a>
+      <a routerLink="fds/fire/combustion">Combustion</a>
     </div>
   </div>
 
@@ -59,25 +59,25 @@
   </div>
   <div class="ng2" [ngClass]="uiState.fdsMenu.output ? 'open' : 'close'">
     <div class="n2">
-      <a routerLink="output/dump">Dump</a>
+      <a routerLink="fds/output/dump">Dump</a>
     </div>
     <div class="n2">
-      <a routerLink="output/boundary">Boundary</a>
+      <a routerLink="fds/output/boundary">Boundary</a>
     </div>
     <div class="n2">
-      <a routerLink="output/slice">Slice</a>
+      <a routerLink="fds/output/slice">Slice</a>
     </div>
     <div class="n2">
-      <a routerLink="output/isosurface">Isosurface</a>
+      <a routerLink="fds/output/isosurface">Isosurface</a>
     </div>
     <div class="n2">
-      <a routerLink="output/device">Device</a>
+      <a routerLink="fds/output/device">Device</a>
     </div>
   </div>
 
   <div class="n1">
     <i class="material-icons null"></i>
-    <a routerLink="input">Input file</a>
+    <a routerLink="fds/input">Input file</a>
   </div>
 
 </div>

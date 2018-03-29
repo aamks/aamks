@@ -53,8 +53,8 @@
                 <i class="material-icons ico">equalizer</i>
             </div>
             <div class="scenario-controls">	
-                <input class="no-shadow" type="text" ng-model-options="{getterSetter:true, updateOn:'blur'}" ng-model="functions.risk_scenario.set_name($index, project.id)" />
-                <i class="material-icons ml+ red" ng-click="deleteRiskScenario(project.id, riskScenario.id)">delete_forever</i>
+                <input type="text" [(ngModel)]="riskScenario.name" [ngModelOptions]="{updateOn:'blur'}" (blur)="updateRiskScenario(project.id, riskScenario.id)" />
+                <i class="material-icons ml+ red" (click)="deleteRiskScenario(projectIndex, riskScenarioIndex)">delete_forever</i>
             </div>
         </div>
     </div>

@@ -75,6 +75,12 @@ import { IsosurfaceComponent } from './views/main/fds/output/isosurface/isosurfa
 import { DeviceComponent } from './views/main/fds/output/device/device.component';
 import { RampComponent } from './views/main/fds/ramp/ramp.component';
 import { InputFileComponent } from './views/main/fds/input-file/input-file.component';
+import { RiskScenarioService } from './services/risk-scenario/risk-scenario.service';
+import { BuildingCharacteristicComponent } from './views/main/risk/building-characteristic/building-characteristic.component';
+import { ResultsComponent } from './views/main/risk/results/results.component';
+import { SettingsComponent } from './views/main/risk/settings/settings.component';
+import { GeneralRiskComponent } from './views/main/risk/general-risk/general-risk.component';
+import { BuildingInfrastructureComponent } from './views/main/risk/building-infrastructure/building-infrastructure.component';
 
 
 @NgModule({
@@ -112,6 +118,11 @@ import { InputFileComponent } from './views/main/fds/input-file/input-file.compo
     DeviceComponent,
     RampComponent,
     InputFileComponent,
+    BuildingCharacteristicComponent,
+    ResultsComponent,
+    SettingsComponent,
+    GeneralRiskComponent,
+    BuildingInfrastructureComponent,
   ],
   imports: [
     BrowserModule,
@@ -128,6 +139,7 @@ import { InputFileComponent } from './views/main/fds/input-file/input-file.compo
     WebsocketService,
     ProjectService,
     FdsScenarioService,
+    RiskScenarioService,
     IdGeneratorService,
     CadService,
     LibraryService,

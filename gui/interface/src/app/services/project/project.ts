@@ -38,7 +38,8 @@ export class Project {
         this._riskScenarios = [];
         if (base.riskScenarios) {
             _.forEach(base.riskScenarios, (scenario) => {
-                //this._riskScenarios.push(new RiskScenario(JSON.stringify(scenario)));
+                console.log(scenario);
+                this._riskScenarios.push(new RiskScenario(JSON.stringify(scenario)));
             });
         }
     }

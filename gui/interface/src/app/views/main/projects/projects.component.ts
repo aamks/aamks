@@ -8,6 +8,7 @@ import { FdsScenarioService } from '../../../services/fds-scenario/fds-scenario.
 import { Main } from '../../../services/main/main';
 import { CategoryService } from '../../../services/category/category.service';
 import { CategoryObject } from '../../../services/category/category';
+import { RiskScenarioService } from '../../../services/risk-scenario/risk-scenario.service';
 
 @Component({
   selector: 'app-projects',
@@ -21,6 +22,7 @@ export class ProjectsComponent implements OnInit {
   constructor(private mainService:MainService, 
               private projectService:ProjectService, 
               private fdsScenarioService:FdsScenarioService,
+              private riskScenarioService:RiskScenarioService,
               private categoryService:CategoryService
             ) { }
 
@@ -101,24 +103,23 @@ export class ProjectsComponent implements OnInit {
   }
 
   /** Set risk scenario to current */
-  setCurrentRiskScenario(projectId:number, fdsScenarioId:number) {
-    console.log("set current risk scenario");
-    //this.fdsScenarioService.setCurrentFdsScenario(projectId, fdsScenarioId).subscribe();
+  setCurrentRiskScenario(projectId:number, riskScenarioId:number) {
+    this.riskScenarioService.setCurrentRiskScenario(projectId, riskScenarioId).subscribe();
   }
 
   /** Add risk scenario */
   addRiskScenario(projectId:number) {
-    console.log("add risk scenario");
+    this.riskScenarioService.createRiskScenario(projectId);
   }
 
   /** Update risk scenario */
   updateRiskScenario(projectId:number, riskScenarioId:number) {
-
+    this.riskScenarioService.updateRiskScenario(projectId, riskScenarioId, 'head');
   }
 
   /** Delete fds scenario */
-  deleteRiskScenario() {
-    console.log("delete risk scenario");
+  deleteRiskScenario(projectIndex:number, riskScenarioIndex:number) {
+    this.riskScenarioService.deleteRiskScenario(projectIndex, riskScenarioIndex);
   }
 
 

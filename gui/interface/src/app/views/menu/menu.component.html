@@ -1,3 +1,4 @@
 <div>
-  <app-fds-menu></app-fds-menu>
+  <app-fds-menu *ngIf='main.currentFdsScenario != undefined'></app-fds-menu>
+  <app-risk-menu *ngIf='main.currentRiskScenario != undefined'></app-risk-menu>
 </div>

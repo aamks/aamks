@@ -1,3 +1,4 @@
+import { UiState } from '../../../services/ui-state/ui-state';
 import { Component, OnInit } from '@angular/core';
 
 @Component({
@@ -6,6 +7,7 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./risk-menu.component.scss']
 })
 export class RiskMenuComponent implements OnInit {
+
 
   constructor() { }
 

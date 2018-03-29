@@ -39,9 +39,13 @@ export class HeaderComponent implements OnInit {
     console.log("--- Current fds scenario ---");
     console.log(this.main.currentFdsScenario);
     console.log();
-    console.log("--- Library ---");
-    console.log(this.lib);
+
+    console.log("--- Current risk scenario ---");
+    console.log(this.main.currentRiskScenario);
     console.log();
+    //console.log("--- Library ---");
+    //console.log(this.lib);
+    //console.log();
     if (this.main.currentFdsScenario != undefined) {
       //console.log("--- Fds object -------------");
       //console.log(this.main.currentFdsScenario.fdsObject);
@@ -53,7 +57,7 @@ export class HeaderComponent implements OnInit {
       //console.log(this.main.currentFdsScenario.fdsObject.ventilation);
       //console.log();
     }
-    console.log("======== Diagnostic ========");
+    console.log("======== End Diagnostic ========");
   }
 
   setCurrentFdsScenario(projectId: number, fdsScenarioId: number) {

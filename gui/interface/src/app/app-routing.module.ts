@@ -18,6 +18,11 @@ import { SliceComponent } from './views/main/fds/output/slice/slice.component';
 import { IsosurfaceComponent } from './views/main/fds/output/isosurface/isosurface.component';
 import { DeviceComponent } from './views/main/fds/output/device/device.component';
 import { InputFileComponent } from './views/main/fds/input-file/input-file.component';
+import { GeneralRiskComponent } from './views/main/risk/general-risk/general-risk.component';
+import { BuildingCharacteristicComponent } from './views/main/risk/building-characteristic/building-characteristic.component';
+import { BuildingInfrastructureComponent } from './views/main/risk/building-infrastructure/building-infrastructure.component';
+import { SettingsComponent } from './views/main/risk/settings/settings.component';
+import { ResultsComponent } from './views/main/risk/results/results.component';
 
 const routes: Routes = [
   {
@@ -25,69 +30,89 @@ const routes: Routes = [
     component: ProjectsComponent
   },
   {
-    path: 'general',
+    path: 'fds/general',
     component: GeneralComponent
   },
 
   {
-    path: 'geometry/mesh',
+    path: 'fds/geometry/mesh',
     component: MeshComponent
   },
   {
-    path: 'geometry/material',
+    path: 'fds/geometry/material',
     component: MaterialComponent
   },
   {
-    path: 'geometry/surface',
+    path: 'fds/geometry/surface',
     component: SurfaceComponent
   },
   {
-    path: 'geometry/obstruction',
+    path: 'fds/geometry/obstruction',
     component: ObstructionComponent
   },
 
   {
-    path: 'ventilation/basic',
+    path: 'fds/ventilation/basic',
     component: BasicComponent
   },
   {
-    path: 'ventilation/jetfan',
+    path: 'fds/ventilation/jetfan',
     component: JetfanComponent
   },
 
   {
-    path: 'fire/fires',
+    path: 'fds/fire/fires',
     component: FiresComponent
   },
   {
-    path: 'fire/combustion',
+    path: 'fds/fire/combustion',
     component: CombustionComponent
+  },
+  {
+    path: 'fds/output/dump',
+    component: DumpComponent
   },
 
   {
-    path: 'output/dump',
-    component: DumpComponent
-  },
-  {
-    path: 'output/boundary',
+    path: 'fds/output/boundary',
     component: BoundaryComponent
   },
   {
-    path: 'output/slice',
+    path: 'fds/output/slice',
     component: SliceComponent
   },
   {
-    path: 'output/isosurface',
+    path: 'fds/output/isosurface',
     component: IsosurfaceComponent
   },
   {
-    path: 'output/device',
+    path: 'fds/output/device',
     component: DeviceComponent
   },
   {
-    path: 'input',
+    path: 'fds/input',
     component: InputFileComponent
-  }
+  },
+  {
+    path: 'risk/general',
+    component: GeneralRiskComponent
+  },
+  {
+    path: 'risk/characteristic',
+    component: BuildingCharacteristicComponent
+  },
+  {
+    path: 'risk/infrastructure',
+    component: BuildingInfrastructureComponent
+  },
+  {
+    path: 'risk/settings',
+    component: SettingsComponent
+  },
+  {
+    path: 'risk/results',
+    component: ResultsComponent
+  },
 ];
 
 @NgModule({

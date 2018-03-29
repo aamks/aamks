@@ -35,7 +35,6 @@ export class General {
         this.elevation = get(base, 'elevation', GENERAL.elevation.default);
         this.indoor_pressure = get(base, 'indoor_pressure', GENERAL.indoor_pressure.default);
         this.humidity = get(base, 'humidity', GENERAL.humidity.default);
-
     }
 
 	public get project_name(): string {

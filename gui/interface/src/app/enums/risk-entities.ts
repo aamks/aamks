@@ -25,7 +25,7 @@ export const RiskEntities =
             simulation_time: {
                 type: 'Real',
                 units: 's',
-                'default': 0,
+                default: 0,
                 help: '',
                 pattern: '',
                 valid_ranges: [
@@ -44,7 +44,7 @@ export const RiskEntities =
             number_of_simulations: {
                 type: 'Integer',
                 units: '',
-                'default': 5000,
+                default: 5000,
                 help: '',
                 pattern: '',
                 valid_ranges: [
