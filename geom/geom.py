@@ -507,8 +507,11 @@ class Geom():
         Staircaser produces the staircase for a particulat variant and we
         access it via single_staircase[0].
         '''
-
+        
         self.s.query("CREATE TABLE staircaser(json)")
+
+        if self.conf['AUTO_STAIRCASER'] == 0:
+            return
 
         data=[]
         fheight=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])['1']['z']/100
@@ -519,7 +522,6 @@ class Geom():
             data+=single_staircase[0]
 
         self.s.query('INSERT INTO staircaser VALUES (?)', (json.dumps(data),))
-        self.s.dumpall()
 # }}}
 
 # ASSERTIONS

@@ -59,13 +59,12 @@ class OnInit():
         max(iteration)+1 
         '''
 
-        project=self._project_name
         how_many=self.conf['NUMBER_OF_SIMULATIONS']
 
         r=[]
         try:
             # If the project already exists in simulations table (e.g. adding 100 simulations to existing 1000); try: fails on addition on int+None.
-            r.append(self.p.query('SELECT max(iteration)+1 FROM simulations WHERE project=%s', (project,))[0][0])
+            r.append(self.p.query('SELECT max(iteration)+1 FROM simulations WHERE project=%s', (self._project_name,))[0][0])
             r.append(r[0]+how_many)
         except:
             # If a new project
@@ -147,7 +146,6 @@ class OnInit():
     def _info(self):# {{{
         print("Your AAMKS variables can be adjusted in your ~/.bashrc")
         Popen('env | grep AAMKS', shell=True)
-        print("Project name:", self._project_name)
 # }}}
     def _http_serve(self):# {{{
         ''' 
@@ -165,9 +163,11 @@ class OnEnd():
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self.p=Psql()
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
-        self._gearman_register_results_collector()
-        self._gearman_register_works()
+        self._workers_directories()
         self._visualize_aanim()
+        if os.environ['AAMKS_USE_GEARMAN'] == '1':
+            self._gearman_register_results_collector()
+            self._gearman_register_works()
 # }}}
     def _gearman_register_results_collector(self):# {{{
         ''' 
@@ -179,18 +179,14 @@ class OnEnd():
 # }}}
     def _gearman_register_works(self):# {{{
         ''' 
-        We only register works. The works will be run by workers registered via
-        manager. 
+        We only register works. Workers will register to calculate these. 
         '''
 
-        if os.environ['AAMKS_USE_GEARMAN']=='0':
-            return
-
         si=SimIterations(self._project_name, self.conf['NUMBER_OF_SIMULATIONS'])
-        project=self._project_name
         for i in range(*si.get()):
             worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-            gearman="gearman -f aRun 'http://{}/users{} {} &'".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""), project)
+            url=worker.replace("/home/aamks_users", "http://{}/users".format(os.environ['AAMKS_SERVER']))
+            gearman="gearman -f aRun '{} &'".format(url)
             print("cd /usr/local/aamks/evac/; python3 worker.py http://{}:8123/workers/{}".format(os.environ['AAMKS_SERVER'],i))
             os.system(gearman)
 # }}}
@@ -198,11 +194,27 @@ class OnEnd():
         ''' If we chosen to see the animated demo of aamks. '''
 
         if self._project_name == 'aanim':
-            si=SimIterations(self._project_name, self.conf['NUMBER_OF_SIMULATIONS'])
-            project=self._project_name
+            si=SimIterations('aanim', self.conf['NUMBER_OF_SIMULATIONS'])
             for i in range(*si.get()):
-                worker_dir="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                shutil.copyfile("{}/examples/aanim/f0.zip".format(os.environ['AAMKS_PATH'])    , "{}/f0.zip".format(worker_dir))
-                shutil.copyfile("{}/examples/aanim/evac.json".format(os.environ['AAMKS_PATH']) , "{}/evac.json".format(worker_dir))
+                worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
+                shutil.copyfile("{}/examples/aanim/f0.zip".format(os.environ['AAMKS_PATH'])    , "{}/f0.zip".format(worker))
+                shutil.copyfile("{}/examples/aanim/evac.json".format(os.environ['AAMKS_PATH']) , "{}/evac.json".format(worker))
                 Vis(None, "{}/f0.zip".format(i), "Demo aanim, fire at (0,0)", (0,0))
+# }}}
+    def _workers_directories(self):# {{{
+        ''' aamks/evac/ scripts can always fallback for workers/newest/ '''
+
+        si=SimIterations(self._project_name, self.conf['NUMBER_OF_SIMULATIONS'])
+        for i in range(*si.get()):
+            os.symlink("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), "{}/workers/{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT'], i))
+
+        workers="{}/workers/".format(os.environ['AAMKS_PROJECT'])
+        files = os.listdir(workers)
+        paths = [os.path.join(workers, basename) for basename in files]
+        newest=max(paths, key=os.path.getctime)
+        try:
+            os.remove("{}/newest".format(workers))
+        except:
+            pass
+        os.symlink(newest, "{}/newest".format(workers))
 # }}}

@@ -111,7 +111,6 @@ class EvacMcarlo():
 # }}}
     def _make_evac_conf(self):# {{{
         ''' Write data to sim_id/evac.json. '''
-        ''' For easier development: /tmp/blender_evac.json. '''
 
         self._evac_conf['FLOORS_DATA']=OrderedDict()
         for floor in self.floors:
@@ -130,6 +129,5 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(*speeds['max_h_speed_mean_and_sd']) , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(*speeds['max_v_speed_mean_and_sd']) , 2)
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
-        self.json.write(self._evac_conf, "/tmp/blender_evac.json")
 
 # }}}

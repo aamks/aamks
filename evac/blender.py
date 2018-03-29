@@ -15,8 +15,10 @@ class BlenderAamksEvac():
     it's a great developing environment. 
     '''
 
-    def __init__(self):# {{{
-        self.s=Sqlite("/usr/local/aamks/current/aamks.sqlite") # TODO: update to worker's perspective
+    def __init__(self, sim_id='newest'):# {{{
+        self._sim_id=sim_id
+        print("{}/workers/{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT'], self._sim_id)) 
+        self.s=Sqlite("{}/workers/{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT'], self._sim_id)) 
         self.json=Json()
         self._navmesh_collector=[]
         self._init_blender()
@@ -211,7 +213,7 @@ class BlenderAamksEvac():
         mat.diffuse_color = (1,1,1)
 
         self.evacuees=[]
-        floors_data=self.json.read("/tmp/blender_evac.json")['FLOORS_DATA'] # TODO: update to worker's perspective
+        floors_data=self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], self._sim_id))['FLOORS_DATA']
         for floor,data in floors_data.items():
             for name,setup in data['EVACUEES'].items():
                 self._single_evacuee(name, setup['ORIGIN'], mat)
