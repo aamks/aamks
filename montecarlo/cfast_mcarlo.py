@@ -42,8 +42,9 @@ class CfastMcarlo():
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self.dists=self.json.read("{}/distributions.json".format(os.environ['AAMKS_PROJECT']))
         self._psql_collector=OrderedDict()
+        self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
-        si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
+        si=SimIterations(self._project_name, self.conf['NUMBER_OF_SIMULATIONS'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._new_psql_log()
@@ -59,21 +60,23 @@ class CfastMcarlo():
         return outdoor_temp
 # }}}
     def _draw_fire(self):# {{{
-        origin_in_room=binomial(1,self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['origin_of_fire']['fire_starts_in_room_probability'])
+        ''' FIRE_ORIGIN is passed via fire_origin.json to evac.in '''
+        is_origin_in_the_room=binomial(1,self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['origin_of_fire']['fire_starts_in_room_probability'])
         
         self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY name") ]
         self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY name") ]
-        if origin_in_room==1 or len(self.all_corridors_and_halls)==0:
-            chosen=str(choice(self.all_rooms))
+        if is_origin_in_the_room == 1 or len(self.all_corridors_and_halls) == 0:
+            FIRE_ORIGIN=str(choice(self.all_rooms))
             self._psql_log_variable('fireorig','room')
-            self._psql_log_variable('fireorigname',chosen)
+            self._psql_log_variable('fireorigname',FIRE_ORIGIN)
         else:
-            chosen=str(choice(self.all_corridors_and_halls))
+            FIRE_ORIGIN=str(choice(self.all_corridors_and_halls))
             self._psql_log_variable('fireorig','non_room')
-            self._psql_log_variable('fireorigname',chosen)
-        self.conf['ROOM_OF_FIRE_ORIGIN']=chosen
+            self._psql_log_variable('fireorigname',FIRE_ORIGIN)
 
-        compa=self.s.query("SELECT * FROM aamks_geom WHERE name=? and type_pri='COMPA'", (chosen,))[0]
+        self.json.write(FIRE_ORIGIN, "{}/workers/{}/fire_origin.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
+
+        compa=self.s.query("SELECT * FROM aamks_geom WHERE name=? and type_pri='COMPA'", (FIRE_ORIGIN,))[0]
         x=round(compa['width']/(2.0*100),2)
         y=round(compa['depth']/(2.0*100),2)
         z=round(compa['height']/100.0 * (1-math.log10(uniform(1,10))),2)
@@ -230,7 +233,7 @@ class CfastMcarlo():
         '''
 
         txt=(
-        'VERSN,7,{}'.format(self.conf['PROJECT_NAME']),
+        'VERSN,7,{}'.format(self._project_name),
         'TIMES,600,-120,10,10',
         'EAMB,{},101300,0'.format(273+outdoor_temp),
         'TAMB,293.15,101300,0,50',
@@ -483,19 +486,15 @@ class CfastMcarlo():
 #}}}
     def _write(self):#{{{
         ''' 
-        Write cfast variables to postgres. Also, since we invent
-        ROOM_OF_FIRE_ORIGIN here, we need to pass it to evac via
-        sim_id/evac.json. Both column names and the values for psql come from
-        trusted source, so there should be no security issues with just joining
-        dict data (non-parametrized query). 
+        Write cfast variables to postgres. Both column names and the values for
+        psql come from trusted source, so there should be no security issues
+        with just joining dict data (non-parametrized query). 
         '''
 
         pairs=[]
         for k,v in self._psql_collector[self._sim_id].items():
             pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
         data=', '.join(pairs)
-        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self.conf['PROJECT_NAME'], self._sim_id))
-
-        self.json.write(self.conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
+        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self._project_name, self._sim_id))
 #}}}
 

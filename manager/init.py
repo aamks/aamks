@@ -18,10 +18,13 @@ class OnInit():
 
         if len(sys.argv) > 1:
             os.environ["AAMKS_PROJECT"]=sys.argv[1]
-        self._kill_http_server()
+
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self.p=Psql()
+
+        self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
+        self._kill_http_server()
         self._clear_sqlite()
         self._setup_simulations()
         self._setup_vis()
@@ -56,7 +59,7 @@ class OnInit():
         max(iteration)+1 
         '''
 
-        project=self.conf['PROJECT_NAME']
+        project=self._project_name
         how_many=self.conf['NUMBER_OF_SIMULATIONS']
 
         r=[]
@@ -78,7 +81,7 @@ class OnInit():
         irange=self._create_iterations_sequence()
         for i in range(*irange):
             os.makedirs("{}/{}".format(workers_dir,i), exist_ok=True)
-            self.p.query("INSERT INTO simulations(iteration,project) VALUES(%s,%s)", (i,self.conf['PROJECT_NAME']))
+            self.p.query("INSERT INTO simulations(iteration,project) VALUES(%s,%s)", (i,self._project_name))
 
 # }}}
     def _setup_vis(self):# {{{
@@ -144,7 +147,7 @@ class OnInit():
     def _info(self):# {{{
         print("Your AAMKS variables can be adjusted in your ~/.bashrc")
         Popen('env | grep AAMKS', shell=True)
-        print("Project name:", self.conf['PROJECT_NAME'])
+        print("Project name:", self._project_name)
 # }}}
     def _http_serve(self):# {{{
         ''' 
@@ -161,6 +164,7 @@ class OnEnd():
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self.p=Psql()
+        self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
         self._gearman_register_results_collector()
         self._gearman_register_works()
         self._visualize_aanim()
@@ -182,8 +186,8 @@ class OnEnd():
         if os.environ['AAMKS_USE_GEARMAN']=='0':
             return
 
-        si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
-        project=self.conf['PROJECT_NAME']
+        si=SimIterations(self._project_name, self.conf['NUMBER_OF_SIMULATIONS'])
+        project=self._project_name
         for i in range(*si.get()):
             worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
             gearman="gearman -f aRun 'http://{}/users{} {} &'".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""), project)
@@ -193,9 +197,9 @@ class OnEnd():
     def _visualize_aanim(self):# {{{
         ''' If we chosen to see the animated demo of aamks. '''
 
-        if self.conf['PROJECT_NAME'] == 'aanim':
-            si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
-            project=self.conf['PROJECT_NAME']
+        if self._project_name == 'aanim':
+            si=SimIterations(self._project_name, self.conf['NUMBER_OF_SIMULATIONS'])
+            project=self._project_name
             for i in range(*si.get()):
                 worker_dir="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                 shutil.copyfile("{}/examples/aanim/f0.zip".format(os.environ['AAMKS_PATH'])    , "{}/f0.zip".format(worker_dir))

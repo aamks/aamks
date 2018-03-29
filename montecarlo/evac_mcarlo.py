@@ -40,8 +40,9 @@ class EvacMcarlo():
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self.dists=self.json.read("{}/distributions.json".format(os.environ['AAMKS_PROJECT']))
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
+        self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
-        si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
+        si=SimIterations(self._project_name, self.conf['NUMBER_OF_SIMULATIONS'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._static_evac_conf()
@@ -49,28 +50,27 @@ class EvacMcarlo():
             self._make_evac_conf()
 
 # }}}
-
-
-
     def _static_evac_conf(self):# {{{
         ''' 
-        ROOM_OF_FIRE_ORIGIN is invented in cfast_mcarlo.py and written to
-        sim_id/evac.json 
+        AAMKS_PROJECT must be propagated to worker environment.
         '''
 
+        fire_origin_file="{}/workers/{}/fire_origin.json".format(os.environ['AAMKS_PROJECT'], self._sim_id)
+
         self._evac_conf=self.conf
-        self._evac_conf['WORKSPACE']="{}_{:04d}".format(self.conf['PROJECT_NAME'], self._sim_id)
+        self._evac_conf['AAMKS_PROJECT']=os.environ['AAMKS_PROJECT']
         self._evac_conf['SIM_ID']=self._sim_id
         self._evac_conf['SERVER']=os.environ['AAMKS_SERVER']
-        self._evac_conf['ROOM_OF_FIRE_ORIGIN']=self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], self._sim_id))['ROOM_OF_FIRE_ORIGIN']
+        self._evac_conf['FIRE_ORIGIN']=self.json.read(fire_origin_file)
+        os.remove(fire_origin_file)
 # }}}
     def _make_pre_evacuation(self,room,type_sec):# {{{
         ''' 
         An evacuee pre_evacuates from either ordinary room or from the room of
-        fire origin. type_sec will be probably developed in the future.
+        fire origin; type_sec is for future development.
         '''
 
-        if room != self._evac_conf['ROOM_OF_FIRE_ORIGIN']:
+        if room != self._evac_conf['FIRE_ORIGIN']:
             pre_evacuation=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['pre_evacuation_time']['mean_and_sd_ordinary_room']
         else:
             pre_evacuation=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['pre_evacuation_time']['mean_and_sd_room_of_fire_origin']
