@@ -52,8 +52,8 @@ class BlenderAamksEvac():
 
 # }}}
     def _make_exit(self):# {{{
-        bpy.ops.mesh.primitive_cube_add(location=(50,8,0.2))
-        bpy.context.object.name='EXIT'
+        bpy.ops.mesh.primitive_cube_add(location=(45,23,0.2))
+        bpy.context.object.name='00_EXIT'
 # }}}
     def _make_rooms(self):# {{{
         ''' 0.001 prevents z-fighting of overlaping polygons. '''
@@ -61,10 +61,7 @@ class BlenderAamksEvac():
         for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name"): 
             origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100)
             size=(0.001+0.5*i['width']/100, 0.001+0.5*i['depth']/100, 0.001+0.5*i['height']/100)
-            outset=[]
-            for s in size:
-                outset.append((s+0.1)/s)
-            #inset[2]=s+0.1
+            outset=[ (i+0.1)/i for i in size ]
             self._make_room(i['name'],i['type_sec'],origin,size,outset)
             self._navmesh_collector.append(i['name'])
 
@@ -92,27 +89,36 @@ class BlenderAamksEvac():
         ''' 
         Except from just adding the room we create an obstacle from it:
         smaller (original) cuts in bigger (outset). 
+        The smaller needs to cut ceiling in the bigger.
         '''
 
         bpy.ops.mesh.primitive_cube_add(location=origin)
         bpy.ops.transform.resize(value=size)
         smaller=bpy.context.object
-        smaller.name="smaller"
 
         bpy.ops.object.duplicate_move()
         bigger=bpy.context.object
+
+        bigger.select=False
+        smaller.select=True
+        into_ceiling=0.2
+        bpy.ops.transform.resize(value=(1, 1, 1+into_ceiling))
+        bpy.ops.transform.translate(value=(0, 0, (size[2]*into_ceiling)))
+        smaller.select=False
+
         bigger.data.materials.append(self.materials[mat])
         bigger.show_transparent=True
         bigger.name=name
 
+        bigger.select=True
         bpy.ops.transform.resize(value=outset)
-        bpy.ops.object.select_all(action='DESELECT')
-        bpy.context.scene.objects.active = bigger
+
         bpy.ops.object.modifier_add(type='BOOLEAN')
-        bpy.context.object.modifiers['Boolean'].operation='DIFFERENCE'
-        bpy.context.object.modifiers['Boolean'].object=smaller 
+        bigger.modifiers['Boolean'].operation='DIFFERENCE'
+        bigger.modifiers['Boolean'].object=smaller 
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Boolean')
-        bpy.ops.object.select_all(action='DESELECT')
+        bigger.select=False
+
         smaller.select=True
         bpy.ops.object.delete()
 
@@ -160,23 +166,25 @@ class BlenderAamksEvac():
             bpy.data.objects[i].select=True
         bpy.ops.object.duplicate_move()
         bpy.ops.object.join()
-        bpy.context.object.name='navmesh_input'
+        navmesh_input=bpy.context.object
         bpy.ops.mesh.navmesh_make()
         bpy.ops.object.select_all(action='DESELECT')
-        #bpy.ops.object.delete()
+        navmesh_input.select=True
+        bpy.ops.object.delete()
         #bpy.data.objects['Navmesh'].hide=True
 
 # }}}
     def _single_evacuee(self,name,pos,mat):# {{{
-        bpy.ops.mesh.primitive_cylinder_add(radius=0.25, depth=1, location=(pos[0], pos[1], pos[2]+0.65))
-
+        agent_height=1.6
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.25, depth=agent_height, location=(pos[0], pos[1], pos[2]+0.5*agent_height*1.1))
         obj=bpy.context.object
         obj.data.materials.append(mat)
         obj.name=name
         obj.game.use_obstacle_create=True
-        obj.game.obstacle_radius=0.1
+        obj.game.obstacle_radius=0.27
         obj.game.physics_type='DYNAMIC'
-        obj.game.radius=0.3
+        obj.game.radius=0.27
+        obj.game.elasticity=0.9
 
         sensors = obj.game.sensors
         controllers = obj.game.controllers
@@ -193,7 +201,7 @@ class BlenderAamksEvac():
         actuator = actuators[-1]
         sensor.axis='ALLAXIS'
         actuator.mode='PATHFOLLOWING'
-        actuator.target = bpy.data.objects["EXIT"]
+        actuator.target = bpy.data.objects["00_EXIT"]
         actuator.navmesh= bpy.data.objects["Navmesh"]
         actuator.self_terminated= True
         #actuator.show_visualization= True
@@ -232,4 +240,4 @@ class BlenderAamksEvac():
 # filename="{}/evac/blender.py".format(os.environ['AAMKS_PATH'])
 # }}}
 
-BlenderAamksEvac()
+#BlenderAamksEvac()
