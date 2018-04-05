@@ -6,6 +6,9 @@ import { FormsModule } from '@angular/forms';
 import { AppRoutingModule } from './app-routing.module';
 import { HttpClientModule } from '@angular/common/http'
 
+// Ng-select
+import { NgSelectModule } from '@ng-select/ng-select';
+
 // KaTex
 import { KatexModule } from 'ng-katex';
 
@@ -131,7 +134,8 @@ import { BuildingInfrastructureComponent } from './views/main/risk/building-infr
     FormsModule,
     CommonModule,
     KatexModule,
-    PerfectScrollbarModule
+    PerfectScrollbarModule,
+    NgSelectModule
   ],
   providers: [
     MainService,

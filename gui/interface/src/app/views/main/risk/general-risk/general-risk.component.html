@@ -1,3 +1,49 @@
-<p>
-  general-risk works!
-</p>
+<div class="amper-container">
+  <div class="form-box">
+
+    <div class="form-title">
+      <label class='header'>General settings</label>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Scenario name:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.project_name" stringInput>
+        </div>
+      </div>
+      <div>
+        <label>Elevation:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.elevation" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Simulation time:</label>
+        <div class="field-container">
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.simulation_time" decimalInput>
+          <ng-katex equation="s"></ng-katex>
+        </div>
+      </div>
+      <div>
+        <label>Number of simulations:</label>
+        <div class="field-container">
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.number_of_simulations" decimalInput>
+          <ng-katex equation="s"></ng-katex>
+        </div>
+      </div>
+      <div>
+        <label>Indoor temperature:</label>
+        <div class="field-container">
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoor_temp" decimalInput>
+          <ng-katex equation="s"></ng-katex>
+        </div>
+      </div>
+      <div>
+        <label>Indoor pressure:</label>
+        <div class="field-container">
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoor_pressure" decimalInput>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

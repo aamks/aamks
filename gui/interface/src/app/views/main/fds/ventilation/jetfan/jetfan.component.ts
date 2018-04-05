@@ -23,7 +23,7 @@ export class JetfanComponent implements OnInit {
   // Global objects
   main: Main;
   fds: Fds;
-  ventilation: object;
+  ventilation: any;
   ui: UiState;
   lib: Library;
 

@@ -119,7 +119,7 @@
           </div>
         </div>
       </perfect-scrollbar>
-      <div class="list-bottom" *ngIf="opens.length > listRange">
+      <div class="list-bottom" *ngIf="opens.length > ui.listRange">
         <div class="list-controls">
           <i class="material-icons" *ngIf="ui.geometry.mesh.begin > 0" (click)="uiStateService.decreaseRange('geometry.open')">chevron_left</i>
           <p>{{ui.geometry.open.begin}}-{{ui.geometry.open.begin+listRange>geometry.opens.length ? geometry.opens.length:ui.geometry.open.begin+listRange}}</p>

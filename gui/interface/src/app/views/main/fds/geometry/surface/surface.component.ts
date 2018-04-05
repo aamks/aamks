@@ -23,7 +23,7 @@ export class SurfaceComponent implements OnInit {
   // Global objects
   main: Main;
   fds: Fds;
-  geometry: object;
+  geometry: any;
   ui: UiState;
   lib: Library;
 

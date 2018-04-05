@@ -21,7 +21,7 @@ export class CombustionComponent implements OnInit {
   // Global objects
   main: Main;
   fds: Fds;
-  fires: object;
+  fires: any;
   ui: UiState;
   lib: Library;
 

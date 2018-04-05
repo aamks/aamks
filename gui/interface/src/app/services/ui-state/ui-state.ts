@@ -1,15 +1,15 @@
 export class UiState {
 
-	private _general: object;
-	private _geometry: object;
-	private _ventilation: object;
-	private _fires: object;
-	private _output: object;
-	private _species: object;
-	private _parts: object;
-	private _ramps: object;
+	private _general: any;
+	private _geometry: any;
+	private _ventilation: any;
+	private _fires: any;
+	private _output: any;
+	private _species: any;
+	private _parts: any;
+	private _ramps: any;
 
-	private _fdsMenu: object;
+	private _fdsMenu: any;
 	
 	private _listRange: number = 200;
 
@@ -89,75 +89,75 @@ export class UiState {
 		}
 	}
 
-	public get general(): object {
+	public get general(): any {
 		return this._general;
 	}
 
-	public set general(value: object) {
+	public set general(value: any) {
 		this._general = value;
 	}
 
-	public get geometry(): object {
+	public get geometry(): any {
 		return this._geometry;
 	}
 
-	public set geometry(value: object) {
+	public set geometry(value: any) {
 		this._geometry = value;
 	}
 
-	public get ventilation(): object {
+	public get ventilation(): any {
 		return this._ventilation;
 	}
 
-	public set ventilation(value: object) {
+	public set ventilation(value: any) {
 		this._ventilation = value;
 	}
 
-	public get fires(): object {
+	public get fires(): any {
 		return this._fires;
 	}
 
-	public set fires(value: object) {
+	public set fires(value: any) {
 		this._fires = value;
 	}
 
-	public get output(): object {
+	public get output(): any {
 		return this._output;
 	}
 
-	public set output(value: object) {
+	public set output(value: any) {
 		this._output = value;
 	}
 
-	public get species(): object {
+	public get species(): any {
 		return this._species;
 	}
 
-	public set species(value: object) {
+	public set species(value: any) {
 		this._species = value;
 	}
 
-	public get parts(): object {
+	public get parts(): any {
 		return this._parts;
 	}
 
-	public set parts(value: object) {
+	public set parts(value: any) {
 		this._parts = value;
 	}
 
-	public get ramps(): object {
+	public get ramps(): any {
 		return this._ramps;
 	}
 
-	public set ramps(value: object) {
+	public set ramps(value: any) {
 		this._ramps = value;
 	}
 
-	public get fdsMenu(): object {
+	public get fdsMenu(): any {
 		return this._fdsMenu;
 	}
 
-	public set fdsMenu(value: object) {
+	public set fdsMenu(value: any) {
 		this._fdsMenu = value;
 	}
 

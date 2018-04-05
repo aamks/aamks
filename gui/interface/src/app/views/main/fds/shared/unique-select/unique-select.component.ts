@@ -12,9 +12,9 @@ export class UniqueSelectComponent implements OnInit {
   //@ViewChild('rampChart') private chartContainer: ElementRef;
   @Input() private allElements: object[];
   @Input() private usedElements: object[];
-  @Input() private currentElement: object[];
+  @Input() public currentElement: object[];
 
-  private elements: object[] = [];
+  public elements: object[] = [];
 
   constructor() { }
 

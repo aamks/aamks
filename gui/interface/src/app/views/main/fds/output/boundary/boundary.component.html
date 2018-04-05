@@ -1,3 +1,16 @@
-<p>
-  boundary works!
-</p>
+<div class="amper-container">
+    <div class="form-box">
+        <div class="form-title">
+            <label class='header'>Boundary qunatities</label>
+        </div>
+        <div class="form-row">
+            <div>
+                <label>Select qunatities:</label>
+                <div class="field-container">
+                    <ng-select [items]="bndfs" bindLabel="label" bindValue="quantity" placeholder="Select boundary quantity" multiple="true"
+                        hideSelected="true" [(ngModel)]="selectedBndfs" (change)="selectBndf()"></ng-select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

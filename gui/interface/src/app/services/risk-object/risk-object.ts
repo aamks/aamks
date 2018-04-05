@@ -13,10 +13,10 @@ export interface RiskObject {
 
 export class Risk {
 
-    general = {};
-    buildingCharacteristic = {};
-    buildingInfrastructure = {};
-    settings = {};
+    general: General;
+    buildingCharacteristic: BuildingCharacteristic;
+    buildingInfrastructure: BuildingInfrastructure;
+    settings: Settings;
 
     constructor(jsonString: string) {
 
@@ -25,9 +25,9 @@ export class Risk {
 
         // Create general
         this.general = get(base, 'general') === undefined ? new General("{}") : new General(JSON.stringify(base.general));
-        this.buildingCharacteristic = {};
-        this.buildingInfrastructure = {};
-        this.settings = {};
+        this.buildingCharacteristic = new BuildingCharacteristic();
+        this.buildingInfrastructure = new BuildingInfrastructure();
+        this.settings = new Settings('{}');
 
     }
 

@@ -23,7 +23,7 @@ export class MeshComponent implements OnInit {
   // Global objects
   main: Main;
   fds: Fds;
-  geometry: object;
+  geometry: any;
   ui: UiState;
 
   // Component objects

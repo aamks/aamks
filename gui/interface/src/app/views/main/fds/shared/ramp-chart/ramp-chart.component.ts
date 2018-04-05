@@ -33,7 +33,7 @@ export class RampChartComponent implements OnInit, OnChanges {
   private lib: Library;
   private ramps: Ramp[];
   private libRamps: Ramp[];
-  private ramp: Ramp;
+  public ramp: Ramp;
 
   private margin = { top: 10, right: 30, bottom: 40, left: 50 };
   private width: number;
@@ -160,7 +160,7 @@ export class RampChartComponent implements OnInit, OnChanges {
   }
 
   /** Update chart */
-  private updateChart() {
+  public updateChart() {
     // Prepare data
     let steps = this.prepareData();
 

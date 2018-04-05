@@ -12,7 +12,7 @@ import { General } from '../../../../services/fds-object/general';
 export class GeneralComponent implements OnInit {
   main: Main;
   general: General;
-  dump: object;
+  dump: any;
 
   constructor(private mainService: MainService, private websocket: WebsocketService) { }
 

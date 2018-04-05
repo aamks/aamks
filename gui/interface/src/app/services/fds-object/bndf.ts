@@ -48,7 +48,7 @@ export class Bndf {
         this.label = base['label'] || '';
 
         this.marked = (base.marked == false);
-        this.quantity = _.get(base, 'quantity', {});
+        this.quantity = _.get(base, 'quantity', '');
 
         if (base.part) {
             this.part = true;

@@ -1,3 +1,41 @@
-<p>
-  dump works!
-</p>
+<div class="amper-container">
+  <div class="form-box">
+
+    <div class="form-title">
+      <label class='header'>General dump</label>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Data saving counts:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="dump.nframes" stringInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-title">
+      <label class='header'>Other</label>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Mass file:</label>
+        <div class="field-container">
+          <input type="checkbox" [(ngModel)]="dump.mass_file" />
+        </div>
+      </div>
+      <div>
+        <label>Smoke 3D:</label>
+        <div class="field-container">
+          <input type="checkbox" [(ngModel)]="dump.smoke3d" />
+        </div>
+      </div>
+      <div>
+        <label>Status file:</label>
+        <div class="field-container">
+          <input type="checkbox" [(ngModel)]="dump.status_file" />
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

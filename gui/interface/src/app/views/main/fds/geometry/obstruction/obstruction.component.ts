@@ -21,9 +21,9 @@ export class ObstructionComponent implements OnInit {
   // Global objects
   main: Main;
   fds: Fds;
-  geometry: object;
+  geometry: any;
   ui: UiState;
-  output: object;
+  output: any;
 
   // Component objects
   obsts: Obst[];

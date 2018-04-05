@@ -217,7 +217,7 @@
             </div>
           </div>
           <div class="list-bottom">
-            <div class="list-controls" *ngIf="libSurfs.length > listRange">
+            <div class="list-controls" *ngIf="libSurfs.length > ui.listRange">
               <i class="material-icons" *ngIf="ui.geometry.libSurf.begin > 0" (click)="uiStateService.decreaseRange('geometry.libSurf')">chevron_left</i>
               <div>{{ui.geometry.libSurf.begin}} - {{ui.geometry.libSurf.begin + ui.listRange > libSurfs.length ? libSurfs.length
                 : ui.geometry.obst.begin + ui.listRange}}</div>

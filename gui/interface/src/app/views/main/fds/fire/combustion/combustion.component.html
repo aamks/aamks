@@ -24,7 +24,7 @@
         <div class="field-container">
           <select [(ngModel)]="fires.combustion.fuel.spec" (blur)="fires.combustion.changeFuel()">
             <option [ngValue]="undefined">No specie</option>
-            <option *ngFor="let spec of species" [ngValue]="spec">{{spec.id}}</option>
+            <!--<option *ngFor="let spec of species" [ngValue]="spec">{{spec.id}}</option>-->
           </select>
         </div>
       </div>
