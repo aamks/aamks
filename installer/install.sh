@@ -35,7 +35,7 @@ USER=`id -ru`
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`
 sudo cat /etc/apache2/envvars | grep -v AAMKS_PG_PASS > $temp
-echo "export AAMKS_PG_PASS=$AAMKS_PG_PASS" >> $temp
+echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
 sudo cp $temp /etc/apache2/envvars
 rm $temp
 
