@@ -10,6 +10,9 @@ import 'codemirror/addon/display/fullscreen';
 import 'codemirror/addon/fold/foldcode';
 import 'codemirror/addon/fold/foldgutter';
 import 'codemirror/addon/fold/fds-fold';
+import { MainService } from '../../../../services/main/main.service';
+import { Main } from '../../../../services/main/main';
+import { HttpManagerService, Result } from '../../../../services/http-manager/http-manager.service';
 
 @Component({
   selector: 'app-input-file',
@@ -21,7 +24,7 @@ export class InputFileComponent implements OnInit {
   @ViewChild('host') host;
 
   private value = " \
-  # ---- General ---- \
+  # ---- General ---- \n\
 &HEAD TITLE='Simulation title', CHID='Chid_out' / \n\
 &TIME T_END=1200 / \n\
  \n\
@@ -79,7 +82,12 @@ export class InputFileComponent implements OnInit {
 
   private cm = null;
 
-  constructor() { }
+
+  main: Main;
+
+  constructor(private mainService: MainService, private httpManager: HttpManagerService) {
+    this.mainService.getMain().subscribe(main => this.main = main);
+  }
 
   ngOnInit() {
   }
@@ -97,7 +105,15 @@ export class InputFileComponent implements OnInit {
    */
   codemirrorInit(config) {
     this.cm = CodeMirror.fromTextArea(this.host.nativeElement, config);
-    this.cm.setValue(this.value);
+
+    // tutaj pobierz
+    console.log(this.main.currentFdsScenario.toJSON());
+    console.log('dupa');
+
+    this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/objtotext', JSON.stringify(this.main.currentFdsScenario.toJSON())).then((result: Result) => {
+      let data = result.data;
+      this.cm.setValue(data);
+    });
   }
 
 

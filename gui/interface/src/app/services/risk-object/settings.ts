@@ -3,40 +3,56 @@ import { RiskEntities } from '../../enums/risk-entities';
 import { RiskEnums } from '../../enums/risk-enums';
 
 export interface SettingsObject {
-    project_name: string,
-    simulation_time: number,
-    number_of_simulations: number,
-    indoor_temperature: number,
-    elevation: number,
-    indoor_pressure: number,
-    humidity: number
+    windowOpen: object,
+    plainDoorOpen: object,
+    doorWithCloser: object,
+    electricReleaseDoor: object,
+    originOfFire: object,
+    fireDetectorsTriggerTemperature: object,
+    fireDetectorsFailure: object,
+    sprinklerTriggerTemperature: object,
+    sprinklerFailure: object,
+    outdoorTemperature: object,
+    verticalSpeed: object,
+    horizontalSpeed: object,
+    alarmTime: object,
+    fireLocation: object,
+    fireHrr: object,
+    fireAlpha: object,
+    fireCo: object,
+    fireSoot: object,
+    preMovement: object,
+    densityRoom: object,
+    densityCorridor: object,
+    alphaSpeed: object,
+    betaSpeed: object
 }
 
 export class Settings {
 
-    private _window_open: object;
-    private _plain_door_open: object;
-    private _door_with_closer: object;
-    private _electric_release_door: object;
-    private _origin_of_fire: object;
-    private _fire_detectors_trigger_temp: object;
-    private _fire_detectors_failure: object;
-    private _sprinkler_trigger_temp: object;
-    private _sprinkler_failure: object;
-    private _outdoor_temp: object;
-    private _vertical_speed: object;
-    private _horizontal_speed: object;
-    private _alarm_time: object;
-    private _fire_location: object;
-    private _fire_hrr: object;
-    private _fire_alpha: object;
-    private _fire_co: object;
-    private _fire_soot: object;
-    private _pre_movement: object;
-    private _density_room: object;
-    private _density_corridor: object;
-    private _alpha_speed: object;
-    private _beta_speed: object;
+    private _windowOpen: object;
+    private _plainDoorOpen: object;
+    private _doorWithCloser: object;
+    private _electricReleaseDoor: object;
+    private _originOfFire: object;
+    private _fireDetectorsTriggerTemperature: object;
+    private _fireDetectorsFailure: object;
+    private _sprinklerTriggerTemperature: object;
+    private _sprinklerFailure: object;
+    private _outdoorTemperature: object;
+    private _verticalSpeed: object;
+    private _horizontalSpeed: object;
+    private _alarmTime: object;
+    private _fireLocation: object;
+    private _fireHrr: object;
+    private _fireAlpha: object;
+    private _fireCo: object;
+    private _fireSoot: object;
+    private _preMovement: object;
+    private _densityRoom: object;
+    private _densityCorridor: object;
+    private _alphaSpeed: object;
+    private _betaSpeed: object;
 
     constructor(jsonString: string) {
 
@@ -49,37 +65,37 @@ export class Settings {
 			return dist.value;
 		});
 
-        this.window_open = {
+        this.windowOpen = {
             distribution: distributions.custom,
-            var1: get(base, 'window_open.var1', RISK.window_open.var1.default),
-            var2: get(base, 'window_open.var2', RISK.window_open.var2.default),
+            var1: get(base, 'windowOpen.var1', RISK.windowOpen.var1.default),
+            var2: get(base, 'windowOpen.var2', RISK.windowOpen.var2.default),
         };
-        this.plain_door_open = {
+        this.plainDoorOpen = {
             distribution: distributions.binomial,
-            var1: get(base, 'plain_door_open.var1', RISK.plain_door_open.var1.default),
-            var2: get(base, 'plain_door_open.var2', RISK.plain_door_open.var2.default),
+            var1: get(base, 'plainDoorOpen.var1', RISK.plainDoorOpen.var1.default),
+            var2: get(base, 'plainDoorOpen.var2', RISK.plainDoorOpen.var2.default),
         };
-        this.door_with_closer = {
+        this.doorWithCloser = {
             distribution: distributions.binomial,
-            var1: get(base, 'door_with_closer.var1', RISK.door_with_closer.var1.default),
-            var2: get(base, 'door_with_closer.var2', RISK.door_with_closer.var2.default),
+            var1: get(base, 'door_withCloser.var1', RISK.doorWithCloser.var1.default),
+            var2: get(base, 'door_withCloser.var2', RISK.doorWithCloser.var2.default),
         };
-        this.electric_release_door = {
+        this.electricReleaseDoor = {
             distribution: distributions.binomial,
-            var1: get(base, 'electric_release_door.var1', RISK.electric_release_door.var1.default),
-            var2: get(base, 'electric_release_door.var2', RISK.electric_release_door.var2.default),
+            var1: get(base, 'electricReleaseDoor.var1', RISK.electricReleaseDoor.var1.default),
+            var2: get(base, 'electricReleaseDoor.var2', RISK.electricReleaseDoor.var2.default),
         };
-        this.origin_of_fire = {
+        this.originOfFire = {
             distribution: distributions.binomial,
-            var1: get(base, 'origin_of_fire.var1', RISK.origin_of_fire.var1.default),
-            var2: get(base, 'origin_of_fire.var2', RISK.origin_of_fire.var2.default),
+            var1: get(base, 'originOfFire.var1', RISK.originOfFire.var1.default),
+            var2: get(base, 'originOfFire.var2', RISK.originOfFire.var2.default),
         };
-        this.fire_detectors_trigger_temp = {
+        this.fireDetectorsTriggerTemperature = {
             distribution: distributions.normal,
-            var1: get(base, 'fire_detectors_trigger_temp.var1', RISK.fire_detectors_trigger_temp.var1.default),
-            var2: get(base, 'fire_detectors_trigger_temp.var2', RISK.fire_detectors_trigger_temp.var2.default),
+            var1: get(base, 'fireDetectorsTriggerTemperature.var1', RISK.fireDetectorsTriggerTemperature.var1.default),
+            var2: get(base, 'fireDetectorsTriggerTemperature.var2', RISK.fireDetectorsTriggerTemperature.var2.default),
         };
-        this.fire_detectors_failure = {
+        /*this.fire_detectors_failure = {
             distribution: distributions.binomial,
             var1: get(base, 'fire_detectors_failure.var1', RISK.fire_detectors_failure.var1.default),
             var2: get(base, 'fire_detectors_failure.var2', RISK.fire_detectors_failure.var2.default),
@@ -165,190 +181,376 @@ export class Settings {
             var1: get(base, 'beta_speed.var1', RISK.beta_speed.var1.default),
             var2: get(base, 'beta_speed.var2', RISK.beta_speed.var2.default),
         };
+        */
     }
 
-	public get window_open(): object {
-		return this._window_open;
+    /**
+     * Getter windowOpen
+     * @return {object}
+     */
+	public get windowOpen(): object {
+		return this._windowOpen;
 	}
 
-	public set window_open(value: object) {
-		this._window_open = value;
+    /**
+     * Setter windowOpen
+     * @param {object} value
+     */
+	public set windowOpen(value: object) {
+		this._windowOpen = value;
 	}
 
-	public get plain_door_open(): object {
-		return this._plain_door_open;
+    /**
+     * Getter plainDoorOpen
+     * @return {object}
+     */
+	public get plainDoorOpen(): object {
+		return this._plainDoorOpen;
 	}
 
-	public set plain_door_open(value: object) {
-		this._plain_door_open = value;
+    /**
+     * Setter plainDoorOpen
+     * @param {object} value
+     */
+	public set plainDoorOpen(value: object) {
+		this._plainDoorOpen = value;
 	}
 
-	public get door_with_closer(): object {
-		return this._door_with_closer;
+    /**
+     * Getter doorWithCloser
+     * @return {object}
+     */
+	public get doorWithCloser(): object {
+		return this._doorWithCloser;
 	}
 
-	public set door_with_closer(value: object) {
-		this._door_with_closer = value;
+    /**
+     * Setter doorWithCloser
+     * @param {object} value
+     */
+	public set doorWithCloser(value: object) {
+		this._doorWithCloser = value;
 	}
 
-	public get electric_release_door(): object {
-		return this._electric_release_door;
+    /**
+     * Getter electricReleaseDoor
+     * @return {object}
+     */
+	public get electricReleaseDoor(): object {
+		return this._electricReleaseDoor;
 	}
 
-	public set electric_release_door(value: object) {
-		this._electric_release_door = value;
+    /**
+     * Setter electricReleaseDoor
+     * @param {object} value
+     */
+	public set electricReleaseDoor(value: object) {
+		this._electricReleaseDoor = value;
 	}
 
-	public get origin_of_fire(): object {
-		return this._origin_of_fire;
+    /**
+     * Getter originOfFire
+     * @return {object}
+     */
+	public get originOfFire(): object {
+		return this._originOfFire;
 	}
 
-	public set origin_of_fire(value: object) {
-		this._origin_of_fire = value;
+    /**
+     * Setter originOfFire
+     * @param {object} value
+     */
+	public set originOfFire(value: object) {
+		this._originOfFire = value;
 	}
 
-	public get fire_detectors_trigger_temp(): object {
-		return this._fire_detectors_trigger_temp;
+    /**
+     * Getter fireDetectorsTriggerTemperature
+     * @return {object}
+     */
+	public get fireDetectorsTriggerTemperature(): object {
+		return this._fireDetectorsTriggerTemperature;
 	}
 
-	public set fire_detectors_trigger_temp(value: object) {
-		this._fire_detectors_trigger_temp = value;
+    /**
+     * Setter fireDetectorsTriggerTemperature
+     * @param {object} value
+     */
+	public set fireDetectorsTriggerTemperature(value: object) {
+		this._fireDetectorsTriggerTemperature = value;
 	}
 
-	public get fire_detectors_failure(): object {
-		return this._fire_detectors_failure;
+    /**
+     * Getter fireDetectorsFailure
+     * @return {object}
+     */
+	public get fireDetectorsFailure(): object {
+		return this._fireDetectorsFailure;
 	}
 
-	public set fire_detectors_failure(value: object) {
-		this._fire_detectors_failure = value;
+    /**
+     * Setter fireDetectorsFailure
+     * @param {object} value
+     */
+	public set fireDetectorsFailure(value: object) {
+		this._fireDetectorsFailure = value;
 	}
 
-	public get sprinkler_trigger_temp(): object {
-		return this._sprinkler_trigger_temp;
+    /**
+     * Getter sprinklerTriggerTemperature
+     * @return {object}
+     */
+	public get sprinklerTriggerTemperature(): object {
+		return this._sprinklerTriggerTemperature;
 	}
 
-	public set sprinkler_trigger_temp(value: object) {
-		this._sprinkler_trigger_temp = value;
+    /**
+     * Setter sprinklerTriggerTemperature
+     * @param {object} value
+     */
+	public set sprinklerTriggerTemperature(value: object) {
+		this._sprinklerTriggerTemperature = value;
 	}
 
-	public get sprinkler_failure(): object {
-		return this._sprinkler_failure;
+    /**
+     * Getter sprinklerFailure
+     * @return {object}
+     */
+	public get sprinklerFailure(): object {
+		return this._sprinklerFailure;
 	}
 
-	public set sprinkler_failure(value: object) {
-		this._sprinkler_failure = value;
+    /**
+     * Setter sprinklerFailure
+     * @param {object} value
+     */
+	public set sprinklerFailure(value: object) {
+		this._sprinklerFailure = value;
 	}
 
-	public get outdoor_temp(): object {
-		return this._outdoor_temp;
+    /**
+     * Getter outdoorTemperature
+     * @return {object}
+     */
+	public get outdoorTemperature(): object {
+		return this._outdoorTemperature;
 	}
 
-	public set outdoor_temp(value: object) {
-		this._outdoor_temp = value;
+    /**
+     * Setter outdoorTemperature
+     * @param {object} value
+     */
+	public set outdoorTemperature(value: object) {
+		this._outdoorTemperature = value;
 	}
 
-	public get vertical_speed(): object {
-		return this._vertical_speed;
+    /**
+     * Getter verticalSpeed
+     * @return {object}
+     */
+	public get verticalSpeed(): object {
+		return this._verticalSpeed;
 	}
 
-	public set vertical_speed(value: object) {
-		this._vertical_speed = value;
+    /**
+     * Setter verticalSpeed
+     * @param {object} value
+     */
+	public set verticalSpeed(value: object) {
+		this._verticalSpeed = value;
 	}
 
-	public get horizontal_speed(): object {
-		return this._horizontal_speed;
+    /**
+     * Getter horizontalSpeed
+     * @return {object}
+     */
+	public get horizontalSpeed(): object {
+		return this._horizontalSpeed;
 	}
 
-	public set horizontal_speed(value: object) {
-		this._horizontal_speed = value;
+    /**
+     * Setter horizontalSpeed
+     * @param {object} value
+     */
+	public set horizontalSpeed(value: object) {
+		this._horizontalSpeed = value;
 	}
 
-	public get alarm_time(): object {
-		return this._alarm_time;
+    /**
+     * Getter alarmTime
+     * @return {object}
+     */
+	public get alarmTime(): object {
+		return this._alarmTime;
 	}
 
-	public set alarm_time(value: object) {
-		this._alarm_time = value;
+    /**
+     * Setter alarmTime
+     * @param {object} value
+     */
+	public set alarmTime(value: object) {
+		this._alarmTime = value;
 	}
 
-	public get fire_location(): object {
-		return this._fire_location;
+    /**
+     * Getter fireLocation
+     * @return {object}
+     */
+	public get fireLocation(): object {
+		return this._fireLocation;
 	}
 
-	public set fire_location(value: object) {
-		this._fire_location = value;
+    /**
+     * Setter fireLocation
+     * @param {object} value
+     */
+	public set fireLocation(value: object) {
+		this._fireLocation = value;
 	}
 
-	public get fire_hrr(): object {
-		return this._fire_hrr;
+    /**
+     * Getter fireHrr
+     * @return {object}
+     */
+	public get fireHrr(): object {
+		return this._fireHrr;
 	}
 
-	public set fire_hrr(value: object) {
-		this._fire_hrr = value;
+    /**
+     * Setter fireHrr
+     * @param {object} value
+     */
+	public set fireHrr(value: object) {
+		this._fireHrr = value;
 	}
 
-	public get fire_alpha(): object {
-		return this._fire_alpha;
+    /**
+     * Getter fireAlpha
+     * @return {object}
+     */
+	public get fireAlpha(): object {
+		return this._fireAlpha;
 	}
 
-	public set fire_alpha(value: object) {
-		this._fire_alpha = value;
+    /**
+     * Setter fireAlpha
+     * @param {object} value
+     */
+	public set fireAlpha(value: object) {
+		this._fireAlpha = value;
 	}
 
-	public get fire_co(): object {
-		return this._fire_co;
+    /**
+     * Getter fireCo
+     * @return {object}
+     */
+	public get fireCo(): object {
+		return this._fireCo;
 	}
 
-	public set fire_co(value: object) {
-		this._fire_co = value;
+    /**
+     * Setter fireCo
+     * @param {object} value
+     */
+	public set fireCo(value: object) {
+		this._fireCo = value;
 	}
 
-	public get fire_soot(): object {
-		return this._fire_soot;
+    /**
+     * Getter fireSoot
+     * @return {object}
+     */
+	public get fireSoot(): object {
+		return this._fireSoot;
 	}
 
-	public set fire_soot(value: object) {
-		this._fire_soot = value;
+    /**
+     * Setter fireSoot
+     * @param {object} value
+     */
+	public set fireSoot(value: object) {
+		this._fireSoot = value;
 	}
 
-	public get pre_movement(): object {
-		return this._pre_movement;
+    /**
+     * Getter preMovement
+     * @return {object}
+     */
+	public get preMovement(): object {
+		return this._preMovement;
 	}
 
-	public set pre_movement(value: object) {
-		this._pre_movement = value;
+    /**
+     * Setter preMovement
+     * @param {object} value
+     */
+	public set preMovement(value: object) {
+		this._preMovement = value;
 	}
 
-	public get density_room(): object {
-		return this._density_room;
+    /**
+     * Getter densityRoom
+     * @return {object}
+     */
+	public get densityRoom(): object {
+		return this._densityRoom;
 	}
 
-	public set density_room(value: object) {
-		this._density_room = value;
+    /**
+     * Setter densityRoom
+     * @param {object} value
+     */
+	public set densityRoom(value: object) {
+		this._densityRoom = value;
 	}
 
-	public get density_corridor(): object {
-		return this._density_corridor;
+    /**
+     * Getter densityCorridor
+     * @return {object}
+     */
+	public get densityCorridor(): object {
+		return this._densityCorridor;
 	}
 
-	public set density_corridor(value: object) {
-		this._density_corridor = value;
+    /**
+     * Setter densityCorridor
+     * @param {object} value
+     */
+	public set densityCorridor(value: object) {
+		this._densityCorridor = value;
 	}
 
-	public get alpha_speed(): object {
-		return this._alpha_speed;
+    /**
+     * Getter alphaSpeed
+     * @return {object}
+     */
+	public get alphaSpeed(): object {
+		return this._alphaSpeed;
 	}
 
-	public set alpha_speed(value: object) {
-		this._alpha_speed = value;
+    /**
+     * Setter alphaSpeed
+     * @param {object} value
+     */
+	public set alphaSpeed(value: object) {
+		this._alphaSpeed = value;
 	}
 
-	public get beta_speed(): object {
-		return this._beta_speed;
+    /**
+     * Getter betaSpeed
+     * @return {object}
+     */
+	public get betaSpeed(): object {
+		return this._betaSpeed;
 	}
 
-	public set beta_speed(value: object) {
-		this._beta_speed = value;
+    /**
+     * Setter betaSpeed
+     * @param {object} value
+     */
+	public set betaSpeed(value: object) {
+		this._betaSpeed = value;
 	}
+
 
 }

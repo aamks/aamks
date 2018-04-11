@@ -3,7 +3,7 @@
 export const RiskEntities =
     {
         general: {
-            project_name: {
+            projectName: {
                 type: 'Character',
                 units: '',
                 default: 'New Project',
@@ -22,7 +22,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            simulation_time: {
+            simulationTime: {
                 type: 'Real',
                 units: 's',
                 default: 0,
@@ -41,7 +41,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            number_of_simulations: {
+            numberOfSimulations: {
                 type: 'Integer',
                 units: '',
                 default: 5000,
@@ -60,7 +60,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            indoor_temp: {
+            indoorTemperature: {
                 type: 'Real',
                 units: 'C',
                 'default': 20,
@@ -98,7 +98,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            indoor_pressure: {
+            indoorPressure: {
                 type: 'Real',
                 units: 'Pa',
                 'default': 101325,
@@ -137,11 +137,11 @@ export const RiskEntities =
                 ]
             }
         },
-        building: {
+        characteristic: {
             type: {
                 type: 'Character',
                 units: '',
-                'default': '',
+                default: 'office',
                 help: '',
                 pattern: '',
                 valid_ranges: [
@@ -157,86 +157,29 @@ export const RiskEntities =
                     }
                 ]
             },
-            has_fire_detectors: {
-                type: 'Logical',
-                units: '',
-                'default': false,
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            has_sprinklers: {
-                type: 'Logical',
-                units: '',
-                'default': false,
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            has_trained_staff: {
-                type: 'Logical',
-                units: '',
-                'default': false,
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            has_dso: {
-                type: 'Logical',
-                units: '',
-                'default': false,
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            alarming_level: {
+            complexity: {
                 type: 'Character',
                 units: '',
-                'default': '1',
+                default: 'b1',
+                help: '',
+                pattern: '',
+                valid_ranges: [
+                    {
+                        minInclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ],
+                reasonable_ranges: [
+                    {
+                        minExclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ]
+            },
+            managment: {
+                type: 'Character',
+                units: '',
+                default: 'm1',
                 help: '',
                 pattern: '',
                 valid_ranges: [
@@ -253,8 +196,76 @@ export const RiskEntities =
                 ]
             }
         },
+        infrastructure: {
+            hasDetectors: {
+                type: 'Logical',
+                units: '',
+                'default': false,
+                help: '',
+                pattern: '',
+                valid_ranges: [
+                    {
+                        minInclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ],
+                reasonable_ranges: [
+                    {
+                        minExclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ]
+            },
+            hasSprinklers: {
+                type: 'Logical',
+                units: '',
+                'default': false,
+                help: '',
+                pattern: '',
+                valid_ranges: [
+                    {
+                        minInclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ],
+                reasonable_ranges: [
+                    {
+                        minExclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ]
+            },
+            hasTrainedStaff: {
+                type: 'Logical',
+                units: '',
+                'default': false,
+                help: '',
+                pattern: ''
+            },
+            hasVa: {
+                type: 'Logical',
+                units: '',
+                'default': false,
+                help: '',
+                pattern: ''
+            },
+            has_nshevs: {
+                type: 'Logical',
+                units: '',
+                'default': false,
+                help: '',
+                pattern: ''
+            },
+            alarming_level: {
+                type: 'Character',
+                units: '',
+                'default': '1',
+                help: '',
+                pattern: ''
+            }
+        },
         sprinklers: {
-            activation_temp: {
+            activationTemperature: {
                 type: 'Real',
                 units: 'C',
                 'default': '0',
@@ -273,7 +284,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            activation_obscuration: {
+            activationObscuration: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -311,7 +322,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            spray_density: {
+            sprayDensity: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -351,7 +362,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            activation_temp: {
+            activationTemperature: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -370,7 +381,28 @@ export const RiskEntities =
                     }
                 ]
             },
-            activation_obscuration: {
+            activationObscuration: {
+                type: 'Real',
+                units: '',
+                'default': '0',
+                help: '',
+                pattern: '',
+                valid_ranges: [
+                    {
+                        minInclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ],
+                reasonable_ranges: [
+                    {
+                        minExclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ]
+            }
+        },
+        nshevs: {
+            activationTime: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -410,7 +442,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            begin_dropoff_pressure: {
+            beginDropoffPressure: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -429,7 +461,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            zero_flow_pressure: {
+            zeroFlowPressure: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -448,7 +480,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            initial_opening_fraction: {
+            initialOpeningFraction: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -467,7 +499,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            filter_efficiency: {
+            filterEfficiency: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -488,7 +520,7 @@ export const RiskEntities =
             }
         },
         materials: {
-            thickness_wall: {
+            thicknessWall: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -507,7 +539,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            thickness_ceiling: {
+            thicknessCeiling: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -526,7 +558,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            thickness_floor: {
+            thicknessFloor: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -547,7 +579,7 @@ export const RiskEntities =
             }
         },
         evacuation: {
-            number_of_people: {
+            numberOfPeople: {
                 type: 'Integer',
                 units: '',
                 'default': '0',
@@ -566,7 +598,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            vertical_speed: {
+            verticalSpeed: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -585,7 +617,7 @@ export const RiskEntities =
                     }
                 ]
             },
-            horizontal_speed: {
+            horizontalSpeed: {
                 type: 'Real',
                 units: '',
                 'default': '0',
@@ -605,7 +637,7 @@ export const RiskEntities =
                 ]
             }
         },
-        window_open: {
+        windowOpen: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -645,7 +677,7 @@ export const RiskEntities =
                 ]
             }
         },
-        plain_door_open: {
+        plainDoorOpen: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -685,7 +717,7 @@ export const RiskEntities =
                 ]
             }
         },
-        door_with_closer: {
+        doorWithCloser: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -725,7 +757,7 @@ export const RiskEntities =
                 ]
             }
         },
-        electric_release_door: {
+        electricReleaseDoor: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -765,7 +797,7 @@ export const RiskEntities =
                 ]
             }
         },
-        origin_of_fire: {
+        originOfFire: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -805,7 +837,7 @@ export const RiskEntities =
                 ]
             }
         },
-        fire_detectors_trigger_temp: {
+        fireDetectorsTriggerTemperature: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -845,7 +877,7 @@ export const RiskEntities =
                 ]
             }
         },
-        fire_detectors_failure: {
+        fireDetectorsFailure: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -885,7 +917,7 @@ export const RiskEntities =
                 ]
             }
         },
-        sprinkler_trigger_temp: {
+        sprinklerTriggerTemperature: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -925,7 +957,7 @@ export const RiskEntities =
                 ]
             }
         },
-        sprinkler_failure: {
+        sprinklerFailure: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -965,7 +997,7 @@ export const RiskEntities =
                 ]
             }
         },
-        outdoor_temp: {
+        outdoorTemp: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1005,7 +1037,7 @@ export const RiskEntities =
                 ]
             }
         },
-        vertical_speed: {
+        verticalSpeed: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1045,7 +1077,7 @@ export const RiskEntities =
                 ]
             }
         },
-        horizontal_speed: {
+        horizontalSpeed: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1085,7 +1117,7 @@ export const RiskEntities =
                 ]
             }
         },
-        alarm_time: {
+        alarmTime: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1125,7 +1157,7 @@ export const RiskEntities =
                 ]
             }
         },
-        fire_location: {
+        fireLocation: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1165,7 +1197,7 @@ export const RiskEntities =
                 ]
             }
         },
-        fire_hrr: {
+        fireHrr: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1205,7 +1237,7 @@ export const RiskEntities =
                 ]
             }
         },
-        fire_alpha: {
+        fireAlpha: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1245,7 +1277,7 @@ export const RiskEntities =
                 ]
             }
         },
-        fire_co: {
+        fireCo: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1285,7 +1317,7 @@ export const RiskEntities =
                 ]
             }
         },
-        fire_soot: {
+        fireSoot: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1325,7 +1357,7 @@ export const RiskEntities =
                 ]
             }
         },
-        pre_movement: {
+        preMovement: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1365,7 +1397,7 @@ export const RiskEntities =
                 ]
             }
         },
-        density_room: {
+        densityRoom: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1405,7 +1437,7 @@ export const RiskEntities =
                 ]
             }
         },
-        density_corridor: {
+        densityCorridor: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1445,7 +1477,7 @@ export const RiskEntities =
                 ]
             }
         },
-        alpha_speed: {
+        alphaSpeed: {
             var1: {
                 type: 'Real',
                 units: '',
@@ -1485,7 +1517,7 @@ export const RiskEntities =
                 ]
             }
         },
-        beta_speed: {
+        betaSpeed: {
             var1: {
                 type: 'Real',
                 units: '',

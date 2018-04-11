@@ -10,6 +10,10 @@ export class UiState {
 	private _ramps: any;
 
 	private _fdsMenu: any;
+	private _fdsActive: string;
+
+	private _riskMenu: any;
+	private _riskActive: string;
 	
 	private _listRange: number = 200;
 
@@ -17,7 +21,7 @@ export class UiState {
 		this.fdsMenu = {
 			geometry: false,
 			ventilation: false,
-			fire: true,
+			fire: false,
 			output: true,
 			species: true
 		}
@@ -167,6 +171,22 @@ export class UiState {
 
 	public set listRange(value: number) {
 		this._listRange = value;
+	}
+
+    /**
+     * Getter fdsActive
+     * @return {string}
+     */
+	public get fdsActive(): string {
+		return this._fdsActive;
+	}
+
+    /**
+     * Setter fdsActive
+     * @param {string} value
+     */
+	public set fdsActive(value: string) {
+		this._fdsActive = value;
 	}
 
 }

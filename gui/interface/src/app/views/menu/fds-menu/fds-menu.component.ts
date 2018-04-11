@@ -1,7 +1,7 @@
-import {UiStateService} from '../../../services/ui-state/ui-state.service';
-import {MainService} from '../../../services/main/main.service';
-import {UiState} from '../../../services/ui-state/ui-state';
-import {Main} from '../../../services/main/main';
+import { UiStateService } from '../../../services/ui-state/ui-state.service';
+import { MainService } from '../../../services/main/main.service';
+import { UiState } from '../../../services/ui-state/ui-state';
+import { Main } from '../../../services/main/main';
 import { Component, OnInit } from '@angular/core';
 
 @Component({
@@ -11,10 +11,10 @@ import { Component, OnInit } from '@angular/core';
 })
 export class FdsMenuComponent implements OnInit {
 
-  main:Main;
-  uiState:UiState;
+  main: Main;
+  uiState: UiState;
 
-  constructor(private mainService:MainService, private uiStateService:UiStateService) { }
+  constructor(private mainService: MainService, private uiStateService: UiStateService) { }
 
   ngOnInit() {
     // Sync services
@@ -23,8 +23,14 @@ export class FdsMenuComponent implements OnInit {
   }
 
   // Toggle open or close menu main items
-  toggleMenu(menuItem:string) {
+  toggleMenu(menuItem: string) {
     this.uiState.fdsMenu[menuItem] = !this.uiState.fdsMenu[menuItem];
+  }
+
+  activate(option: string) {
+    console.log(option);
+    this.uiState.fdsActive = option;
+
   }
 
 

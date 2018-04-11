@@ -194,9 +194,10 @@ export class Fds {
     let fds = {
       general: this.general.toJSON(),
       geometry: {
-        matls: _.map(this.geometry['matls'], (matl: Matl) => { return matl.toJSON(); }),
-        meshes: _.map(this.geometry['meshes'], (mesh: Mesh) => { return mesh.toJSON(); }),
-        opens: _.map(this.geometry['opens'], (open: Open) => { return open.toJSON(); })
+        meshes: _.map(this.geometry.meshes, (mesh: Mesh) => { return mesh.toJSON(); }),
+        opens: _.map(this.geometry.opens, (open: Open) => { return open.toJSON(); }),
+        matls: _.map(this.geometry.matls, (matl: Matl) => { return matl.toJSON(); }),
+        surfs: _.map(this.geometry.surfs, (surf: Surf) => { return surf.toJSON(); }),
       },
       ramps: this.ramps
     }

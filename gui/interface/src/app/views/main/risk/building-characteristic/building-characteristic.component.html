@@ -1,3 +1,88 @@
-<p>
-  building-characteristic works!
-</p>
+<div class="amper-container">
+  <div class="form-box">
+
+    <div class="form-title">
+      <label class='header'>General settings</label>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Building type:</label>
+        <div class="field-container">
+          <select [(ngModel)]="buildingCharacteristic.type">
+            <option *ngFor="let element of TYPE" [ngValue]="element.value">{{element.label}}</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Complexity level:</label>
+        <div class="field-container">
+          <select [(ngModel)]="buildingCharacteristic.complexity">
+            <option *ngFor="let element of COMPLEXITY" [ngValue]="element.value">{{element.label}}</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Managment level:</label>
+        <div class="field-container">
+          <select [(ngModel)]="buildingCharacteristic.managment">
+            <option *ngFor="let element of MANAGMENT" [ngValue]="element.value">{{element.label}}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-title">
+      <label class='header'>Materials</label>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Wall:</label>
+        <div class="field-container">
+          <select [(ngModel)]="buildingCharacteristic.materials.wall">
+            <option *ngFor="let element of MATERIALS" [ngValue]="element.value">{{element.label}}</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Thickness:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingCharacteristic.materials.thicknessWall" decimalInput>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Ceiling:</label>
+        <div class="field-container">
+          <select [(ngModel)]="buildingCharacteristic.materials.ceiling">
+            <option *ngFor="let element of MATERIALS" [ngValue]="element.value">{{element.label}}</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Thickness:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingCharacteristic.materials.thicknessCeiling" decimalInput>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Floor:</label>
+        <div class="field-container">
+          <select [(ngModel)]="buildingCharacteristic.materials.floor">
+            <option *ngFor="let element of MATERIALS" [ngValue]="element.value">{{element.label}}</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Thickness:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingCharacteristic.materials.thicknessFloor" decimalInput>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

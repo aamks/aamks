@@ -25,17 +25,17 @@ export class Risk {
 
         // Create general
         this.general = get(base, 'general') === undefined ? new General("{}") : new General(JSON.stringify(base.general));
-        this.buildingCharacteristic = new BuildingCharacteristic();
-        this.buildingInfrastructure = new BuildingInfrastructure();
-        this.settings = new Settings('{}');
-
+        this.buildingCharacteristic = get(base, 'buildingCharacteristic') === undefined ? new BuildingCharacteristic("{}") : new BuildingCharacteristic(JSON.stringify(base.buildingCharacteristic));
+        this.buildingInfrastructure = get(base, 'buildingInfrastructure') === undefined ? new BuildingInfrastructure("{}") : new BuildingInfrastructure(JSON.stringify(base.buildingInfrastructure));
+        this.settings = get(base, 'settings') === undefined ? new Settings("{}") : new Settings(JSON.stringify(base.buildingInfrastructure));
     }
 
     public toJSON() : object {
         let risk = {
             general: this.general,
             buildingCharacteristic: this.buildingCharacteristic,
-            buildingInfrastructure: this.buildingInfrastructure
+            buildingInfrastructure: this.buildingInfrastructure,
+            settings: this.settings
         }
         return risk;
     }

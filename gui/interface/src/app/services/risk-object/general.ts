@@ -28,12 +28,12 @@ export class General {
 
         let GENERAL = RiskEntities.general;
 
-        this.project_name = get(base, 'project_name', GENERAL.project_name.default) as string;
-        this.simulation_time = get(base, 'simulation_time', GENERAL.simulation_time.default) as number;
-        this.number_of_simulations = get(base, 'number_of_simulations', GENERAL.number_of_simulations.default) as number;
-        this.indoor_temp = get(base, 'indoor_temp', GENERAL.indoor_temp.default) as number;
+        this.project_name = get(base, 'project_name', GENERAL.projectName.default) as string;
+        this.simulation_time = get(base, 'simulation_time', GENERAL.simulationTime.default) as number;
+        this.number_of_simulations = get(base, 'number_of_simulations', GENERAL.numberOfSimulations.default) as number;
+        this.indoor_temp = get(base, 'indoor_temp', GENERAL.indoorTemperature.default) as number;
         this.elevation = get(base, 'elevation', GENERAL.elevation.default) as number;
-        this.indoor_pressure = get(base, 'indoor_pressure', GENERAL.indoor_pressure.default) as number;
+        this.indoor_pressure = get(base, 'indoor_pressure', GENERAL.indoorPressure.default) as number;
         this.humidity = get(base, 'humidity', GENERAL.humidity.default) as number;
     }
 
