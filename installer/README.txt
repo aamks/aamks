@@ -13,4 +13,4 @@ npm install
 It will initialize/install required node_modules packages included in package.json
 
 3. Copy required codemirror additional files to codemirror module:
-cp -r node_modules/codemirror_addons/ node_modules/codemirror/
+cp -r node_modules/codemirror_addons/* node_modules/codemirror/

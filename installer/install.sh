@@ -38,6 +38,7 @@ sudo cat /etc/apache2/envvars | grep -v AAMKS_PG_PASS > $temp
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
 sudo cp $temp /etc/apache2/envvars
 rm $temp
+# check if service apache2 restart is needed
 
 
 sudo apt-get update 
@@ -123,6 +124,9 @@ CREATE TABLE categories (---{{{
 	visible boolean,
 	modified timestamp default current_timestamp
 );
+insert into categories(user_id, label, uuid, active, visible) values (1, 'current', uuid_generate_v4(), true, true);
+insert into categories(user_id, label, uuid, active, visible) values (1, 'archive', uuid_generate_v4(), true, true);
+insert into categories(user_id, label, uuid, active, visible) values (1, 'finished', uuid_generate_v4(), true, true);
 ---}}}
 CREATE TABLE scenarios (---{{{
 	id serial PRIMARY KEY, 
