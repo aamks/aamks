@@ -139,6 +139,9 @@ class Geom():
         aamks_geom table. 
         '''
 
+        if self.conf['AUTO_STAIRCASER'] == 0:
+            return
+
         data=[]
         self.s.query("CREATE TABLE obstacles(json)")
         for floor,gg in self.geometry_data.items():

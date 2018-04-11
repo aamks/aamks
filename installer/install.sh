@@ -32,6 +32,14 @@ USER=`id -ru`
 # 	exit;
 # } 
 
+# www-data user needs AAMKS_PG_PASS
+temp=`mktemp`
+sudo cat /etc/apache2/envvars | grep -v AAMKS_PG_PASS > $temp
+echo "export AAMKS_PG_PASS=$AAMKS_PG_PASS" >> $temp
+sudo cp $temp /etc/apache2/envvars
+rm $temp
+
+
 sudo apt-get update 
 sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils
 sudo -H pip3 install webcolors pyhull colour shapely numpy networkx

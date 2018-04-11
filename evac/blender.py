@@ -17,7 +17,6 @@ class BlenderAamksEvac():
 
     def __init__(self, sim_id='newest'):# {{{
         self._sim_id=sim_id
-        print("{}/workers/{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT'], self._sim_id)) 
         self.s=Sqlite("{}/workers/{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT'], self._sim_id)) 
         self.json=Json()
         self._navmesh_collector=[]
@@ -52,7 +51,7 @@ class BlenderAamksEvac():
 
 # }}}
     def _make_exit(self):# {{{
-        bpy.ops.mesh.primitive_cube_add(location=(45,23,0.2))
+        bpy.ops.mesh.primitive_cube_add(location=(45,23,2))
         bpy.context.object.name='00_EXIT'
 # }}}
     def _make_rooms(self):# {{{
@@ -124,7 +123,10 @@ class BlenderAamksEvac():
 
 # }}}
     def _make_stairs(self):# {{{
-        stairs=json.loads(self.s.query("SELECT json FROM staircaser")[0]['json'])
+        try:
+            stairs=json.loads(self.s.query("SELECT json FROM staircaser")[0]['json'])
+        except:
+            return
         stairs_names=[]
         for num,i in enumerate(stairs):
             name="stair_{}".format(num)
@@ -204,10 +206,10 @@ class BlenderAamksEvac():
         actuator.target = bpy.data.objects["00_EXIT"]
         actuator.navmesh= bpy.data.objects["Navmesh"]
         actuator.self_terminated= True
-        #actuator.show_visualization= True
+        actuator.show_visualization= True
         actuator.acceleration=5
         actuator.velocity=15
-        actuator.distance=0.3
+        actuator.distance=6
 
         sensor.link(controller)
         actuator.link(controller)
@@ -240,4 +242,4 @@ class BlenderAamksEvac():
 # filename="{}/evac/blender.py".format(os.environ['AAMKS_PATH'])
 # }}}
 
-#BlenderAamksEvac()
+BlenderAamksEvac()
