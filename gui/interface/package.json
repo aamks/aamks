@@ -21,6 +21,7 @@
     "@angular/platform-browser": "^5.0.0",
     "@angular/platform-browser-dynamic": "^5.0.0",
     "@angular/router": "^5.0.0",
+    "@ng-select/ng-select": "^0.35.0",
     "@types/paper": "^0.9.14",
     "angular-in-memory-web-api": "^0.5.1",
     "codemirror": "^5.35.0",
