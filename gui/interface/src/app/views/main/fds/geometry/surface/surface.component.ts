@@ -12,6 +12,7 @@ import { Main } from '../../../../../services/main/main';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { cloneDeep, find, set, findIndex } from 'lodash';
 import { FdsEnums } from '../../../../../enums/fds-enums';
+import { IdGeneratorService } from '../../../../../services/id-generator/id-generator.service';
 
 @Component({
   selector: 'app-surface',
@@ -65,7 +66,7 @@ export class SurfaceComponent implements OnInit {
     this.libMatls = this.lib.matls;
 
     // Activate last element
-    this.surfs.length > 0 ? this.surf = this.surfs[this.ui.geometry['surf'].elementIndex] : undefined;
+    this.surfs.length > 0 ? this.surf = this.surfs[this.ui.geometry['surf'].elementIndex] : this.surf = undefined;
 
     // Subscribe websocket requests status for websocket CAD sync
     this.websocketService.requestStatus.subscribe(
@@ -89,7 +90,7 @@ export class SurfaceComponent implements OnInit {
   ngAfterViewInit() {
     // Set scrollbars position y after view rendering and set last selected element
     this.surfScrollbar.directiveRef.scrollToY(this.ui.geometry['surf'].scrollPosition);
-    this.activate(this.surfs[this.ui.geometry['surf'].elementIndex].id);
+    this.surfs.length > 0 && this.activate(this.surfs[this.ui.geometry['surf'].elementIndex].id);
   }
 
   /** Activate element on click */
@@ -99,7 +100,6 @@ export class SurfaceComponent implements OnInit {
       this.surf = find(this.fds.geometry.surfs, function (o) { return o.id == id; });
       this.ui.geometry['surf'].elementIndex = findIndex(this.surfs, { id: id });
       this.surfOld = cloneDeep(this.surf);
-      //console.log(this.surf);
     }
     else {
       this.objectType = 'library';
@@ -115,10 +115,12 @@ export class SurfaceComponent implements OnInit {
     if (!library) {
       let element = { id: 'SURF' + this.mainService.getListId(this.surfs) };
       this.surfs.push(new Surf(JSON.stringify(element), this.matls));
+      this.activate(element.id);
     }
     else {
-      let element = { id: 'MATL' + this.mainService.getListId(this.libSurfs) };
+      let element = { id: 'SURF' + this.mainService.getListId(this.libSurfs) };
       this.libSurfs.push(new Surf(JSON.stringify(element), this.libMatls));
+      this.activate(element.id, true);
     }
   }
 
@@ -128,14 +130,14 @@ export class SurfaceComponent implements OnInit {
       let index = findIndex(this.surfs, { id: id });
       this.surfs.splice(index, 1);
       if (this.ui.geometry['surf'].elementIndex == index) {
-        index > 1 ? this.activate(this.surfs[index - 1].id) : this.activate(this.surfs[index].id);
+        this.surfs.length == 0 ? this.surf = undefined : this.activate(this.surfs[index - 1].id);
       }
     }
     else {
       let index = findIndex(this.libSurfs, { id: id });
       this.libSurfs.splice(index, 1);
       if (this.ui.geometry['libMatl'].elementIndex == index) {
-        index > 1 ? this.activate(this.libSurfs[index - 1].id, true) : this.activate(this.libSurfs[index].id, true);
+        this.libSurfs.length == 0 ? this.surf = undefined : this.activate(this.libSurfs[index - 1].id, true);
       }
     }
   }
@@ -158,8 +160,11 @@ export class SurfaceComponent implements OnInit {
 
   /** Import from library */
   public importLibraryItem(id: string) {
-    //let libMatl = find(this.lib.surfs, function (o) { return o.id == id; });
-    // Check if import ramps
+    let libSurf = find(this.lib.surfs, function (o) { return o.id == id; });
+    let surf = cloneDeep(libSurf);
+    let idGeneratorService = new IdGeneratorService;
+    surf.uuid = idGeneratorService.genUUID()
+    this.surfs.push(surf);
   }
 
   // COMPONENT METHODS

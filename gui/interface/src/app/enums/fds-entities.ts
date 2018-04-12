@@ -11827,7 +11827,7 @@ export const FdsEntities =
           },
           MASS_FLUX: {
             type: 'Real',
-            'default': 0,
+            default: 0,
             units: 'kg/(m^2s)',
             help: '',
             pattern: '',
@@ -12727,7 +12727,7 @@ export const FdsEntities =
           TMP_FRONT: {
             type: 'Real',
             units: '^{\\circ}C',
-            'default': [20.],
+            default: 20.,
             help: '',
             pattern: '',
             valid_ranges: [
@@ -12766,9 +12766,7 @@ export const FdsEntities =
           },
           TRANSPARENCY: {
             type: 'Real',
-            'default': [
-              1.
-            ],
+            default: 1.,
             help: '',
             pattern: '',
             valid_ranges: [
@@ -12786,7 +12784,7 @@ export const FdsEntities =
           },
           VEL: {
             type: 'Real',
-            'default': 0,
+            default: 0,
             units: 'm/s',
             help: '',
             pattern: '',
@@ -12862,7 +12860,7 @@ export const FdsEntities =
           },
           VOLUME_FLOW: {
             type: 'Real',
-            'default': [0],
+            default: 0,
             units: 'm^3/s',
             help: '',
             pattern: '',

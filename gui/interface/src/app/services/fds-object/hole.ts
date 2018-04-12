@@ -5,7 +5,7 @@ import { Xb } from './primitives';
 import { Devc } from './devc';
 import { get, find, toArray } from 'lodash';
 
-export interface ObstObject {
+export interface HoleObject {
 	id: string,
 	uuid: string,
 	idAC: number,
@@ -24,8 +24,8 @@ export class Hole {
 
 	constructor(jsonString: string, surfs: Surf[] = undefined, devcs: Devc[] = undefined) {
 
-		let base: ObstObject;
-		base = <ObstObject>JSON.parse(jsonString);
+		let base: HoleObject;
+		base = <HoleObject>JSON.parse(jsonString);
 
 		let idGeneratorService = new IdGeneratorService;
 
@@ -36,10 +36,10 @@ export class Hole {
 		this.idAC = base.idAC || 0;
 		this.elevation = base.elevation || 0;
 
-		this.xb = new Xb(toArray(base.xb)) || new Xb(HOLE.XB.default);
+		this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
 
 		// Create device based on devc_id
-		this.devc = get(base, 'devc') === undefined ? undefined : find(devcs, (devc) => { return devc.id == base.devc_id; });
+		this.devc = get(base, 'devc') === undefined ? this.devc = undefined : this.devc = find(devcs, (devc) => { return devc.id == base.devc_id; });
 	}
 
 	public get id(): string {
@@ -91,14 +91,18 @@ export class Hole {
 	}
 
 	public toJSON(): object {
-		var obst = {
+
+        let devc_id;
+		this.devc == undefined ? devc_id = '': devc_id = this.devc.id;
+
+		var hole = {
 			id: this.id,
 			uuid: this.uuid,
 			idAC: this.idAC,
 			elevation: this.elevation,
-			xb: this.xb,
-			devc_id: this.devc.id,
+			xb: this.xb.toJSON(),
+			devc_id: devc_id,
 		}
-		return obst;
+		return hole;
 	}
 }

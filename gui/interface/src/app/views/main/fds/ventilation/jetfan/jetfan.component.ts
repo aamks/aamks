@@ -12,6 +12,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { set, cloneDeep, find, forEach, findIndex } from 'lodash';
 import { LibraryService } from '../../../../../services/library/library.service';
 import { Library } from '../../../../../services/library/library';
+import { IdGeneratorService } from '../../../../../services/id-generator/id-generator.service';
 
 @Component({
   selector: 'app-jetfan',
@@ -51,6 +52,7 @@ export class JetfanComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    console.clear();
     // Subscribe main object
     this.mainService.getMain().subscribe(main => this.main = main);
     this.uiStateService.getUiState().subscribe(ui => this.ui = ui);
@@ -89,7 +91,7 @@ export class JetfanComponent implements OnInit {
   ngAfterViewInit() {
     // Set scrollbars position y after view rendering and set last selected element
     this.jetfanScrollbar.directiveRef.scrollToY(this.ui.ventilation['jetfan'].scrollPosition);
-    this.activate(this.jetfans[this.ui.ventilation['jetfan'].elementIndex].id);
+    this.jetfans.length > 0 && this.activate(this.jetfans[this.ui.ventilation['jetfan'].elementIndex].id);
   }
 
   /** Activate element on click */
@@ -114,10 +116,12 @@ export class JetfanComponent implements OnInit {
     if (!library) {
       let element = { id: 'JETFAN' + this.mainService.getListId(this.jetfans, 'jetfan') };
       this.jetfans.push(new JetFan(JSON.stringify(element), this.ramps));
+      this.activate(element.id);
     }
     else {
       let element = { id: 'JETFAN' + this.mainService.getListId(this.libJetfans, 'jetfan') };
       this.libJetfans.push(new JetFan(JSON.stringify(element), this.libRamps));
+      this.activate(element.id, true);
     }
   }
 
@@ -127,14 +131,14 @@ export class JetfanComponent implements OnInit {
       let index = findIndex(this.jetfans, { id: id });
       this.jetfans.splice(index, 1);
       if (this.ui.ventilation['jetfan'].elementIndex == index) {
-        index >= 1 ? this.activate(this.jetfans[index - 1].id) : this.jetfan = undefined;
+        this.jetfans.length == 0 ? this.jetfan = undefined : this.activate(this.jetfans[index - 1].id);
       }
     }
     else {
       let index = findIndex(this.libJetfans, { id: id });
       this.libJetfans.splice(index, 1);
       if (this.ui.ventilation['libJetfan'].elementIndex == index) {
-        index >= 1 ? this.activate(this.libJetfans[index - 1].id, true) : this.jetfan = undefined;
+        this.libJetfans.length == 0 ? this.jetfan = undefined : this.activate(this.libJetfans[index - 1].id, true);
       }
     }
   }
@@ -158,9 +162,10 @@ export class JetfanComponent implements OnInit {
   /** Import from library */
   public importLibraryItem(id: string) {
     let libJetfan = find(this.lib.jetfans, function (o) { return o.id == id; });
-    // Check if import ramps
-    console.log(libJetfan);
-
+    let jetfan = cloneDeep(libJetfan);
+    let idGeneratorService = new IdGeneratorService;
+    jetfan.uuid = idGeneratorService.genUUID()
+    this.jetfans.push(jetfan);
   }
 
   // COMPONENT METHODS

@@ -19,8 +19,8 @@ export class UiState {
 
 	constructor() {
 		this.fdsMenu = {
-			geometry: false,
-			ventilation: false,
+			geometry: true,
+			ventilation: true,
 			fire: false,
 			output: true,
 			species: true

@@ -64,4 +64,9 @@ export class HeaderComponent implements OnInit {
     this.fdsScenarioService.setCurrentFdsScenario(projectId, fdsScenarioId).subscribe();
   }
 
+  /** Update FDS scenario */
+  updateFdsScenario() {
+    this.fdsScenarioService.updateFdsScenario();
+  }
+
 }

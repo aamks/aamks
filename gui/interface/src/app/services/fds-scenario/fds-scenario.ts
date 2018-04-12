@@ -35,14 +35,14 @@ export class FdsScenario {
         this.fdsFile = base.fdsFile || '';
 
         if (base.fdsObject) {
-            this._fdsObject = new Fds(JSON.stringify(base.fdsObject));
+            this.fdsObject = new Fds(JSON.stringify(base.fdsObject));
         }
         else {
-            this._fdsObject = new Fds('{}');
+            this.fdsObject = new Fds('{}');
         }
 
-        this._acFile = base.acFile || '';
-        this._acHash = base.acHash || '';
+        this.acFile = base.acFile || '';
+        this.acHash = base.acHash || '';
     }
 
     public get id(){
@@ -108,7 +108,7 @@ export class FdsScenario {
 		this._acHash = value;
 	}
 
-    public toJSON(): string {
+    public toJSON(): object {
         let fdsScenario:object = {
             id: this.id,
             projectId: this.projectId,
@@ -120,7 +120,7 @@ export class FdsScenario {
             acHash: this.acHash,
             uiState: {}
         }
-        return JSON.stringify(fdsScenario);
+        return fdsScenario;
     }
 
 }

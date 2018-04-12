@@ -42,7 +42,7 @@ export class Fds {
   ramps = { ramps: [] };
   parts = { parts: [] };
   species = { species: [], surfs: [] } //vents: []
-  fires = { fires: [], combustion: {}, radiation: {} };
+  fires = { fires: [], combustion: new Combustion(JSON.stringify({})), radiation: {} };
   output = { general: {}, devcs: [], props: [], bndfs: [], slcfs: [], isofs: [], ctrls: [] };
 
   constructor(jsonString: string) {
@@ -148,7 +148,6 @@ export class Fds {
       mass_file: _.toNumber(_.get(base, 'output.general.mass_file', DUMP.MASS_FILE.default[0])),
       smoke3d: _.toNumber(_.get(base, 'output.general.smoke3d', DUMP.SMOKE3D.default[0])),
       status_files: _.toNumber(_.get(base, 'output.general.status_files', DUMP.STATUS_FILES.default[0]))
-
     };
 
     let ENUMS = FdsEnums.BNDF;
@@ -198,6 +197,27 @@ export class Fds {
         opens: _.map(this.geometry.opens, (open: Open) => { return open.toJSON(); }),
         matls: _.map(this.geometry.matls, (matl: Matl) => { return matl.toJSON(); }),
         surfs: _.map(this.geometry.surfs, (surf: Surf) => { return surf.toJSON(); }),
+        obsts: _.map(this.geometry.obsts, (obst: Obst) => { return obst.toJSON(); }),
+        holes: _.map(this.geometry.holes, (hole: Hole) => { return hole.toJSON(); }),
+      },
+      ventilation: {
+        surfs: _.map(this.ventilation.surfs, (surf: SurfVent) => { return surf.toJSON(); }),
+        vents: _.map(this.ventilation.vents, (vent: Vent) => { return vent.toJSON(); }),
+        jetfans: _.map(this.ventilation.jetfans, (jetfan: JetFan) => { return jetfan.toJSON(); }),
+      },
+      fires: {
+        fires: _.map(this.fires.fires, (fire: Fire) => { return fire.toJSON(); }),
+        combustion: this.fires.combustion.toJSON(),
+        radiation: this.fires.radiation,
+      },
+      output: {
+        general: this.output.general,
+        bndfs: _.map(this.output.bndfs, (bndf: Bndf) => { return bndf.toJSON(); }),
+        slcfs: _.map(this.output.slcfs, (slcf: Slcf) => { return slcf.toJSON(); }),
+        isofs: _.map(this.output.isofs, (isof: Isof) => { return isof.toJSON(); }),
+        devcs: _.map(this.output.devcs, (devc: Devc) => { return devc.toJSON(); }),
+        props: _.map(this.output.props, (prop: Prop) => { return prop.toJSON(); }),
+        ctrls: _.map(this.output.ctrls, (ctrl: Ctrl) => { return ctrl.toJSON(); })
       },
       ramps: this.ramps
     }

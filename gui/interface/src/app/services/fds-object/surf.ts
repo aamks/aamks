@@ -1,7 +1,7 @@
 import { Matl } from './matl';
 import { FdsEntities } from '../../enums/fds-entities';
 import { IdGeneratorService } from '../id-generator/id-generator.service';
-import * as _ from 'lodash';
+import { map, toString, get, toNumber, each, find } from 'lodash';
 
 export interface Layers {
     materials: object[],
@@ -46,24 +46,24 @@ export class Surf {
         this.idAC = base.idAC || 0;
 
         this.editable = base.editable || true;
-        this.color = _.toString(_.get(base, 'color', SURF.COLOR.default[0]));
+        this.color = toString(get(base, 'color', SURF.COLOR.default[0]));
 
-        this.adiabatic = (_.get(base, 'adiabatic', SURF.ADIABATIC.default[0]) == true);
-        this.transparency = _.toNumber(_.get(base, 'transparency', SURF.TRANSPARENCY.default[0]));
-        this.backing = _.toString(_.get(base, 'backing', SURF.BACKING.default[0]));
+        this.adiabatic = (get(base, 'adiabatic', SURF.ADIABATIC.default[0]) == true);
+        this.transparency = toNumber(get(base, 'transparency', SURF.TRANSPARENCY.default));
+        this.backing = toString(get(base, 'backing', SURF.BACKING.default[0]));
 
         this.layers = [];
 
         // If matls isset add layers and materials
         if (matls) {
-            _.each(base.layers, (layer) => {
+            each(base.layers, (layer) => {
                 this.addLayer();
                 var index = this.layers.length - 1;
                 this.layers[index].thickness = layer.thickness;
-                _.each(layer['materials'], (matl) => {
+                each(layer['materials'], (matl) => {
                     this.addMaterial(index);
                     let matlIndex = this.layers[index].materials.length - 1;
-                    let material = _.find(matls, function (material) {
+                    let material = find(matls, function (material) {
                         return material.id == matl['matl_id'];
                     });
                     this.layers[index].materials[matlIndex]['material'] = material;
@@ -182,8 +182,8 @@ export class Surf {
             backing: this.backing,
             adiabatic: this.adiabatic,
             transparency: this.transparency,
-            layers: _.map(this.layers, function (layer) {
-                let materials = _.map(layer.materials, function (value) {
+            layers: map(this.layers, function (layer) {
+                let materials = map(layer.materials, function (value) {
                     return { matl_id: value['material']['id'], fraction: value['fraction'] }
                 });
                 return { thickness: layer.thickness, materials: materials };

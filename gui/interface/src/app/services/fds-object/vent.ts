@@ -2,8 +2,8 @@ import { FdsEntities } from '../../enums/fds-entities';
 import { IdGeneratorService } from '../id-generator/id-generator.service';
 import { Surf } from './surf';
 import { Xb } from './primitives';
-import * as _ from 'lodash';
 import { Devc } from './devc';
+import { find, toArray } from 'lodash';
 
 export interface VentObject {
     id: string,
@@ -37,17 +37,9 @@ export class Vent {
         this.idAC = base.idAC || 0;
         this.elevation = base.elevation || 0;
 
-        this.xb = new Xb(_.toArray(base.xb)) || new Xb(VENT.XB.default);
+		this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
 
-        if (!surfs) {
-            this.surf = {
-                surf_id: _.get(base, 'surf.surf_id', '')
-            }
-        } else {
-            this.surf = _.find(surfs, function (surf) {
-                return surf.id == base['surf_id'];
-            });
-        }
+        surfs && base.surf_id != undefined ? this.surf = find(surfs, function (surf) { return surf.id == base.surf_id; }) : this.surf = undefined;
 
     }
 
@@ -105,24 +97,19 @@ export class Vent {
     }
 
     public toJSON(): object {
+
+        let surf_id;
+        this.surf == undefined ? surf_id = '' : surf_id = this.surf.id;
+
         var vent = {
             id: this.id,
             uuid: this.uuid,
             idAC: this.idAC,
             elevation: this.elevation,
-            surf_id: this.surf.id,
-            xb: {
-                x1: this.xb.x1,
-                x2: this.xb.x2,
-                y1: this.xb.y1,
-                y2: this.xb.y2,
-                z1: this.xb.z1,
-                z2: this.xb.z2
-            }
+            surf_id: surf_id,
+            xb: this.xb.toJSON()
         }
         return vent;
     }
-
-
 
 }

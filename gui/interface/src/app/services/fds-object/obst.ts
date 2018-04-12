@@ -57,7 +57,7 @@ export class Obst {
 		this.uuid = base.uuid || idGeneratorService.genUUID();
 		this.idAC = base.idAC || 0;
 
-		this.xb = new Xb(toArray(base.xb)) || new Xb(OBST.XB.default);
+		this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
 
 		this.elevation = base.elevation || 0;
 
@@ -135,10 +135,10 @@ export class Obst {
 		this.removable = get(base, 'removable', OBST.REMOVABLE.default[0]);
 
 		// TODO check
-		this.ctrl = get(base, 'ctrl') === undefined ? undefined : new Ctrl(JSON.stringify({}));
+		this.ctrl = get(base, 'ctrl') === undefined ? this.ctrl = undefined : new Ctrl(JSON.stringify({}));
 
 		// Create device based on devc_id
-		this.devc = get(base, 'devc') === undefined ? undefined : find(devcs, (devc) => { return devc.id == base.devc_id; });
+		this.devc = get(base, 'devc') === undefined ? this.devc = undefined : this.devc = find(devcs, (devc) => { return devc.id == base.devc_id; });
 	}
 
 	/** Change surf type and assign surfs */
@@ -321,6 +321,13 @@ export class Obst {
 		} else {
 			surf = undefined;
 		}
+
+        let devc_id;
+		this.devc == undefined ? devc_id = '': devc_id = this.devc.id;
+
+        let ctrl_id;
+		this.ctrl == undefined ? ctrl_id = '': ctrl_id = this.ctrl.id;
+
 		var obst = {
 			id: this.id,
 			uuid: this.uuid,
@@ -331,8 +338,8 @@ export class Obst {
 			overlay: this.overlay,
 			removable: this.removable,
 			xb: this.xb,
-			ctrl_id: this.ctrl['id'],
-			devc_id: this.devc.id,
+			ctrl_id: ctrl_id,
+			devc_id: devc_id,
 			surf: surf
 		}
 		return obst;

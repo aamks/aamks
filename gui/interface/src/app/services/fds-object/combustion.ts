@@ -110,6 +110,16 @@ export class Combustion {
         }
     }
 
+	public toJSON(): object {
+		var combustion = {
+			id: this.id,
+			uuid: this.uuid,
+            idAC: this.idAC,
+            fuel: this.fuel,
+            turnOnReaction: this.turnOnReaction
+		}
+		return combustion;
+	}
     //if(!fires) {
     //	this.fires=base['fires']||[];
     //} else {

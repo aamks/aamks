@@ -88,8 +88,8 @@ export class ProjectsComponent implements OnInit {
   }
 
   /** Set fds scenario name  */
-  updateFdsScenario(projectId:number, fdsScenarioId:number) {
-    this.fdsScenarioService.updateFdsScenario(projectId, fdsScenarioId, 'head');
+  updateFdsScenario() {
+    this.fdsScenarioService.updateFdsScenario('head');
   }
 
   /** Download fds file */

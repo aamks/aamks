@@ -59,24 +59,16 @@ export class FdsScenarioService {
    * @param fdsScenarioId 
    * @param syncType Default value: 'all'
    */
-  updateFdsScenario(projectId: number, fdsScenarioId: number, syncType: string = 'all') {
-    // Find project
-    let project = find(this.main.projects, (project) => {
-      return project.id == projectId;
-    });
-    // Find scenario
-    let fdsScenario = find(project.fdsScenarios, (fdsScenario) => {
-      return fdsScenario.id == fdsScenarioId;
-    });
-    console.log(JSON.stringify(fdsScenario.fdsObject));
+  updateFdsScenario(syncType: string = 'all') {
     // Sync only main info without fds object
+    let fdsScenario = this.main.currentFdsScenario;
     if (syncType == 'head') {
-      this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/fdsScenario/' + fdsScenarioId, JSON.stringify({ type: "head", data: { id: fdsScenario.id, name: fdsScenario.name } })).then((result: Result) => {
+      this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/fdsScenario/' + fdsScenario.id, JSON.stringify({ type: "head", data: { id: fdsScenario.id, name: fdsScenario.name } })).then((result: Result) => {
 
       });
     }
     else if (syncType == 'all') {
-      this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/fdsScenario/' + fdsScenarioId, fdsScenario.toJSON()).then((result: Result) => {
+      this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/fdsScenario/' + fdsScenario.id, JSON.stringify({type: 'all', data: fdsScenario.toJSON() } )).then((result: Result) => {
 
       });
     }

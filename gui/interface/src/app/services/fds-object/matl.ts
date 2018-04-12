@@ -41,21 +41,10 @@ export class Matl {
 		this.density = toNumber(get(base, 'density', MATL.DENSITY.default[0]));
 
 		this.conductivity = toNumber(get(base, 'conductivity', MATL.CONDUCTIVITY.default[0]));
-
-		// Generate ramp from predefined ramps using id
-		if(ramps) {
-			this.conductivity_ramp = get(base, 'conductivity_ramp') === undefined ? undefined : find(ramps, (ramp) => { return ramp.id == base.conductivity_ramp; });
-		} else {
-			this.conductivity_ramp = undefined;
-		}
+		ramps && base.conductivity_ramp != undefined ? this.conductivity_ramp = find(ramps, function (ramp) { return ramp.id == base.conductivity_ramp; }) : this.conductivity_ramp = undefined;
 
 		this.specific_heat = toNumber(get(base, 'specific_heat', MATL.SPECIFIC_HEAT.default[0]));
-
-		if(ramps) {
-			this.specific_heat_ramp = get(base, 'specific_heat_ramp') === undefined ? undefined : find(ramps, (ramp) => { return ramp.id == base.specific_heat_ramp; });
-		} else {
-			this.specific_heat_ramp = undefined;
-		}
+		ramps && base.specific_heat_ramp != undefined ? this.specific_heat_ramp = find(ramps, function (ramp) { return ramp.id == base.specific_heat_ramp; }) : this.specific_heat_ramp = undefined;
 
 		this.emissivity = toNumber(get(base, 'emissivity', MATL.EMISSIVITY.default[0]));
 		this.absorption_coefficient = toNumber(get(base, 'absorption_coefficient', MATL.ABSORPTION_COEFFICIENT.default[0]));
@@ -134,20 +123,23 @@ export class Matl {
 	}
 
 	toJSON(): object {
+        let conductivity_ramp;
+		this.conductivity_ramp == undefined ? conductivity_ramp = '' : conductivity_ramp = this.conductivity_ramp.id;
+
+        let specific_heat_ramp;
+		this.specific_heat_ramp == undefined ? specific_heat_ramp = '' : specific_heat_ramp = this.specific_heat_ramp.id;
+
 		let matl: object = {
 			id: this.id,
 			uuid: this.uuid,
 			density: this.density,
 			conductivity: this.conductivity,
-			conductivity_ramp: {},
+			conductivity_ramp: conductivity_ramp,
 			specific_heat: this.specific_heat,
-			specific_heat_ramp: {},
+			specific_heat_ramp: specific_heat_ramp,
 			emissivity: this.emissivity,
 			absorption_coefficient: this.absorption_coefficient
 		}
-		if (this.conductivity_ramp != undefined) matl['conductivity_ramp'] = this.conductivity_ramp.id;
-		if (this.specific_heat_ramp != undefined) matl['specific_heat_ramp'] = this.specific_heat_ramp.id;
-
 		return matl;
 	}
 }

@@ -43,6 +43,7 @@ export class ObstructionComponent implements OnInit {
   constructor(private mainService: MainService, private websocketService: WebsocketService, private uiStateService: UiStateService) { }
 
   ngOnInit() {
+    console.clear();
     // Subscribe main object
     this.mainService.getMain().subscribe(main => this.main = main);
     this.uiStateService.getUiState().subscribe(ui => this.ui = ui);
@@ -55,8 +56,8 @@ export class ObstructionComponent implements OnInit {
     this.holes = this.main.currentFdsScenario.fdsObject.geometry.holes;
 
     // Activate last element
-    this.obsts.length > 0 ? this.obst = this.obsts[this.ui.geometry['obst'].elementIndex] : undefined;
-    this.holes.length > 0 ? this.hole = this.holes[this.ui.geometry['hole'].elementIndex] : undefined;
+    this.obsts.length > 0 ? this.obst = this.obsts[this.ui.geometry['obst'].elementIndex] : this.obst = undefined;
+    this.holes.length > 0 ? this.hole = this.holes[this.ui.geometry['hole'].elementIndex] : this.hole = undefined;
 
     // Subscribe websocket requests status for websocket CAD sync
     this.websocketService.requestStatus.subscribe(
@@ -81,8 +82,8 @@ export class ObstructionComponent implements OnInit {
     // Set scrollbars position y after view rendering and set last selected element
     this.obstScrollbar.directiveRef.scrollToY(this.ui.geometry['obst'].scrollPosition);
     this.holeScrollbar.directiveRef.scrollToY(this.ui.geometry['hole'].scrollPosition);
-    this.activate(this.obsts[this.ui.geometry['obst'].elementIndex].id, 'obst');
-    this.activate(this.holes[this.ui.geometry['hole'].elementIndex].id, 'hole');
+    this.obsts.length > 0 && this.activate(this.obsts[this.ui.geometry['obst'].elementIndex].id, 'obst');
+    this.holes.length > 0 && this.activate(this.holes[this.ui.geometry['hole'].elementIndex].id, 'hole');
   }
 
   /** Activate element on click */
@@ -104,10 +105,12 @@ export class ObstructionComponent implements OnInit {
     if (type == 'obst') {
       let element = { id: 'OBST' + this.mainService.getListId(this.obsts) };
       this.obsts.push(new Obst(JSON.stringify(element)));
+      this.activate(element.id, 'obst');
     }
     else if (type == 'hole') {
       let element = { id: 'HOLE' + this.mainService.getListId(this.holes) };
       this.holes.push(new Hole(JSON.stringify(element)));
+      this.activate(element.id, 'hole');
     }
   }
 
@@ -117,14 +120,14 @@ export class ObstructionComponent implements OnInit {
       let index = findIndex(this.obsts, { id: id });
       this.obsts.splice(index, 1);
       if (this.ui.geometry['obst'].elementIndex == index) {
-        index > 1 ? this.activate(this.obsts[index - 1].id) : this.activate(this.obsts[index].id);
+        this.obsts.length == 0 ? this.obst = undefined : this.activate(this.obsts[index - 1].id);
       }
     }
     else if (type == 'hole') {
       let index = findIndex(this.holes, { id: id });
       this.holes.splice(index, 1);
       if (this.ui.geometry['hole'].elementIndex == index) {
-        index > 1 ? this.activate(this.holes[index - 1].id) : this.activate(this.holes[index].id);
+        this.holes.length == 0 ? this.hole = undefined : this.activate(this.holes[index - 1].id);
       }
     }
   }

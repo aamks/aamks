@@ -34,8 +34,8 @@ export class VentFire {
         this.idAC = base.idAC || 0;
         this.elevation = base.elevation || 0;
 
-        this.xb = new Xb(_.toArray(base.xb)) || new Xb(VENT.XB.default);
-        this.xyz = new Xyz(_.toArray(base.xyz)) || new Xyz(VENT.XYZ.default);
+		this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
+        this.xyz = new Xyz(JSON.stringify(base.xyz)) || new Xyz(JSON.stringify({}));
     }
 
 	public get id(): number {
@@ -91,14 +91,7 @@ export class VentFire {
             id: this.id,
             uuid: this.uuid,
             idAC: this.idAC,
-            xb: {
-                x1: this.xb.x1,
-                x2: this.xb.x2,
-                y1: this.xb.y1,
-                y2: this.xb.y2,
-                z1: this.xb.z1,
-                z2: this.xb.z2
-            },
+            xb: this.xb.toJSON(),
             xyz: {
                 x: this.xyz.x,
                 y: this.xyz.y,

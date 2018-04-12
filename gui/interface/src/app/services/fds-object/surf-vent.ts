@@ -1,7 +1,7 @@
 import { FdsEntities } from '../../enums/fds-entities';
 import { IdGeneratorService } from '../id-generator/id-generator.service';
-import * as _ from 'lodash';
 import { Ramp } from './ramp';
+import { get, toString, toNumber, find, round } from 'lodash';
 
 export interface SurfVentObject {
     id: string,
@@ -39,44 +39,34 @@ export class SurfVent {
         this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
-        this.color = _.toString(_.get(base, 'color', SURF.COLOR.default[0]));
-        this.transparency = _.toNumber(_.get(base, 'transparency', SURF.TRANSPARENCY.default[0]));
+        this.color = toString(get(base, 'color', SURF.COLOR.default[0]));
+        this.transparency = toNumber(get(base, 'transparency', SURF.TRANSPARENCY.default[0]));
 
         this.flow = {
-            type: _.get(base, 'flow.type', 'velocity'),
+            type: get(base, 'flow.type', 'velocity'),
             oldType: 'velocity',
-            volume_flow: _.toNumber(_.get(base, 'flow.volume_flow', SURF.VOLUME_FLOW.default[0])),
-            volume_flow_per_hour: _.toNumber(_.get(base, 'flow.volume_flow_per_hour', SURF.VOLUME_FLOW.default[0] * 3600)),
-            mass_flow: _.toNumber(_.get(base, 'flow.mass_flow', SURF.MASS_FLUX.default[0])),
-            velocity: _.toNumber(_.get(base, 'flow.velocity', SURF.VEL.default[0]))
+            volume_flow: toNumber(get(base, 'flow.volume_flow', SURF.VOLUME_FLOW.default)),
+            volume_flow_per_hour: toNumber(get(base, 'flow.volume_flow_per_hour', SURF.VOLUME_FLOW.default * 3600)),
+            mass_flow: toNumber(get(base, 'flow.mass_flow', SURF.MASS_FLUX.default)),
+            velocity: toNumber(get(base, 'flow.velocity', SURF.VEL.default))
         }
 
         this.heater = {
-            active: (_.get(base, 'heater.active', false) == true),
-            tmp_front: _.toNumber(_.get(base, 'heater.tmp_front', SURF.TMP_FRONT.default[0])),
+            active: (get(base, 'heater.active', false) == true),
+            tmp_front: toNumber(get(base, 'heater.tmp_front', SURF.TMP_FRONT.default)),
         }
 
         this.louver = {
-            active: (_.get(base, 'louver.active', false) == true),
-            tangential1: _.toNumber(_.get(base, 'louver.tangential1', SURF.VEL_T.default[0])),
-            tangential2: _.toNumber(_.get(base, 'louver.tangential2', SURF.VEL_T.default[1]))
+            active: (get(base, 'louver.active', false) == true),
+            tangential1: toNumber(get(base, 'louver.tangential1', SURF.VEL_T.default[0])),
+            tangential2: toNumber(get(base, 'louver.tangential2', SURF.VEL_T.default[1]))
         }
 
-        this.ramp = {};
-        if (typeof base.ramp === 'object' && base.ramp != null) {
-            this.ramp = base.ramp;
-        }
-        // Jezeli jest nazwa
-        else {
-            if (ramps) {
-                this.ramp = _.find(ramps, function (ramp) {
-                    return ramp.id == base.ramp_id;
-                });
-            }
-        }
+        ramps && base.ramp != undefined ? this.ramp = find(ramps, function (ramp) { return ramp.id == base.ramp_id; }) : this.ramp = undefined;
 
     }
 
+    /** Change flow type */
     public changeFlowType() {
 
         if (this.flow.type == 'velocity') {
@@ -105,6 +95,18 @@ export class SurfVent {
             }
             this.flow.volume_flow = 0;
             this.flow.mass_flow = 0;
+        }
+    }
+
+    /** Recalculate volume flow */
+    public calcVolumeFlow(event: any, perHour?: boolean) {
+        if (perHour) {
+            this.flow.volume_flow = event;
+            this.flow.volume_flow_per_hour = this.flow.volume_flow * 3600
+        }
+        else {
+            this.flow.volume_flow_per_hour = event;
+            this.flow.volume_flow = round(this.flow.volume_flow_per_hour / 3600, 4);
         }
     }
 
@@ -181,7 +183,7 @@ export class SurfVent {
     }
 
     public toJSON() {
-        var flow = {};
+        let flow = {};
 
         if (this.flow.type == 'velocity') {
             flow = {
@@ -194,17 +196,17 @@ export class SurfVent {
                 volume_flow: this.flow.volume_flow,
                 volume_flow_per_hour: this.flow.volume_flow_per_hour
             }
-
         } else if (this.flow.type == 'massFlow') {
             flow = {
                 type: 'massFlow',
                 mass_flow: this.flow.mass_flow
             }
-
-
         } else {
             flow = {};
         }
+
+        let ramp_id;
+        this.ramp == undefined ? ramp_id = '' : ramp_id = this.ramp['id'];
 
         var surf = {
             id: this.id,
@@ -221,7 +223,7 @@ export class SurfVent {
                 tangential1: this.louver['tangential1'],
                 tangential2: this.louver['tangential2']
             },
-            ramp_id: this.ramp['id']
+            ramp_id: ramp_id
         }
         return surf;
     }

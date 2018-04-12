@@ -13,6 +13,7 @@ import { Main } from '../../../../../services/main/main';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { SurfVent } from '../../../../../services/fds-object/surf-vent';
 import { find, findIndex, cloneDeep, set } from 'lodash';
+import { IdGeneratorService } from '../../../../../services/id-generator/id-generator.service';
 
 @Component({
   selector: 'app-basic',
@@ -42,7 +43,7 @@ export class BasicComponent implements OnInit {
 
   // Scrolbars containers
   @ViewChild('ventScrollbar') ventScrollbar: PerfectScrollbarComponent;
-  @ViewChild('surfVentScrollbar') surfScrollbar: PerfectScrollbarComponent;
+  @ViewChild('surfScrollbar') surfScrollbar: PerfectScrollbarComponent;
   @ViewChild('surfLibScrollbar') surfLibScrollbar: PerfectScrollbarComponent;
 
   // Enums
@@ -56,6 +57,7 @@ export class BasicComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    console.clear();
     // Subscribe main object
     this.mainService.getMain().subscribe(main => this.main = main);
     this.uiStateService.getUiState().subscribe(ui => this.ui = ui);
@@ -71,8 +73,8 @@ export class BasicComponent implements OnInit {
     this.libSurfs = this.lib.ventsurfs;
 
     // Activate last element
-    this.vents.length > 0 ? this.vent = this.vents[this.ui.ventilation['vent'].elementIndex] : undefined;
-    this.surfs.length > 0 ? this.surf = this.surfs[this.ui.ventilation['surf'].elementIndex] : undefined;
+    this.vents.length > 0 ? this.vent = this.vents[this.ui.ventilation['vent'].elementIndex] : this.vent = undefined;
+    this.surfs.length > 0 ? this.surf = this.surfs[this.ui.ventilation['surf'].elementIndex] : this.surf = undefined;
 
     // Subscribe websocket requests status for websocket CAD sync
     this.websocketService.requestStatus.subscribe(
@@ -97,8 +99,8 @@ export class BasicComponent implements OnInit {
     // Set scrollbars position y after view rendering and set last selected element
     this.ventScrollbar.directiveRef.scrollToY(this.ui.ventilation['vent'].scrollPosition);
     this.surfScrollbar.directiveRef.scrollToY(this.ui.ventilation['surf'].scrollPosition);
-    this.activate(this.vents[this.ui.ventilation['vent'].elementIndex].id, 'vent');
-    this.activate(this.surfs[this.ui.ventilation['surf'].elementIndex].id, 'surf');
+    this.vents.length > 0 && this.activate(this.vents[this.ui.ventilation['vent'].elementIndex].id, 'vent');
+    this.surfs.length > 0 && this.activate(this.surfs[this.ui.ventilation['surf'].elementIndex].id, 'surf');
   }
 
   /** Activate element on click */
@@ -129,15 +131,18 @@ export class BasicComponent implements OnInit {
     if (type == 'vent') {
       let element = { id: 'VENT' + this.mainService.getListId(this.vents) };
       this.vents.push(new Vent(JSON.stringify(element)));
+      this.activate(element.id, 'vent');
     }
     else if (type == 'surf') {
       if (!library) {
         let element = { id: 'SURF' + this.mainService.getListId(this.surfs) };
         this.surfs.push(new SurfVent(JSON.stringify(element), this.ramps));
+        this.activate(element.id, 'surf');
       }
       else {
         let element = { id: 'SURF' + this.mainService.getListId(this.libSurfs) };
         this.libSurfs.push(new SurfVent(JSON.stringify(element), this.libRamps));
+        this.activate(element.id, 'surf', true);
       }
     }
   }
@@ -148,7 +153,7 @@ export class BasicComponent implements OnInit {
       let index = findIndex(this.vents, { id: id });
       this.vents.splice(index, 1);
       if (this.ui.ventilation['vent'].elementIndex == index) {
-        index > 1 ? this.activate(this.vents[index - 1].id) : this.activate(this.vents[index].id);
+        this.vents.length == 0 ? this.vent = undefined : this.activate(this.vents[index - 1].id);
       }
     }
     else if (type == 'surf') {
@@ -156,14 +161,14 @@ export class BasicComponent implements OnInit {
         let index = findIndex(this.surfs, { id: id });
         this.surfs.splice(index, 1);
         if (this.ui.ventilation['surf'].elementIndex == index) {
-          index > 1 ? this.activate(this.surfs[index - 1].id) : this.activate(this.surfs[index].id);
+          this.surfs.length == 0 ? this.surf = undefined : this.activate(this.surfs[index - 1].id);
         }
       }
       else {
         let index = findIndex(this.libSurfs, { id: id });
         this.libSurfs.splice(index, 1);
         if (this.ui.ventilation['libSurf'].elementIndex == index) {
-          index > 1 ? this.activate(this.libSurfs[index - 1].id, 'surf', true) : this.activate(this.libSurfs[index].id, 'surf', true);
+          this.libSurfs.length == 0 ? this.surf = undefined : this.activate(this.libSurfs[index - 1].id, 'surf', true);
         }
       }
     }
@@ -194,9 +199,10 @@ export class BasicComponent implements OnInit {
   /** Import from library */
   public importLibraryItem(id: string) {
     let libSurf = find(this.lib.ventsurfs, function (o) { return o.id == id; });
-    // Check if import ramps
-    console.log(libSurf);
-
+    let surf = cloneDeep(libSurf);
+    let idGeneratorService = new IdGeneratorService;
+    surf.uuid = idGeneratorService.genUUID()
+    this.surfs.push(surf);
   }
 
   // COMPONENT METHODS

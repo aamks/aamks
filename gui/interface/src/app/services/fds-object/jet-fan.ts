@@ -1,8 +1,8 @@
 import { Xb } from './primitives';
 import { FdsEntities } from '../../enums/fds-entities';
 import { IdGeneratorService } from '../id-generator/id-generator.service';
-import * as _ from 'lodash';
 import { Ramp } from './ramp';
+import { find, get, toNumber, toArray, toString, round } from 'lodash';
 
 export interface JetFanObject {
     id: string,
@@ -12,7 +12,14 @@ export interface JetFanObject {
     transparency: number,
     elevation: number,
     xb: Xb,
-    flow: any,
+    flow: {
+        type: string,
+        oldType: string,
+        volume_flow: number,
+        volume_flow_per_hour: number,
+        mass_flow: number,
+        velocity: number
+    },
     heater: object,
     louver: object,
     ramp: any,
@@ -51,59 +58,48 @@ export class JetFan {
         this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
-        this.color = _.toString(_.get(base, 'color', SURF.COLOR.default[0]));
-        this.transparency = _.toNumber(_.get(base, 'transparency', SURF.TRANSPARENCY.default[0]));
+        this.color = toString(get(base, 'color', SURF.COLOR.default[0]));
+        this.transparency = toNumber(get(base, 'transparency', SURF.TRANSPARENCY.default));
 
-        this.xb = new Xb(_.toArray(base.xb)) || new Xb(VENT.XB.default);
+        this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
 
         this.flow = {
-            type: _.get(base, 'flow.type', 'volumeFlow'),
+            type: get(base, 'flow.type', 'volumeFlow'),
             oldType: 'volumeFlow',
-            volume_flow: _.toNumber(_.get(base, 'flow.volume_flow', SURF.VOLUME_FLOW.default[0])),
-            volume_flow_per_hour: _.toNumber(_.get(base, 'flow.volume_flow_per_hour', SURF.VOLUME_FLOW.default[0] * 3600)),
-            mass_flow: _.toNumber(_.get(base, 'flow.mass_flow', SURF.MASS_FLUX.default[0])),
-            velocity: _.toNumber(_.get(base, 'flow.velocity', SURF.VEL.default[0]))
+            volume_flow: toNumber(get(base, 'flow.volume_flow', SURF.VOLUME_FLOW.default)),
+            volume_flow_per_hour: toNumber(get(base, 'flow.volume_flow_per_hour', SURF.VOLUME_FLOW.default * 3600)),
+            mass_flow: toNumber(get(base, 'flow.mass_flow', SURF.MASS_FLUX.default)),
+            velocity: toNumber(get(base, 'flow.velocity', SURF.VEL.default))
         }
 
         this.heater = {
-            active: (_.get(base, 'heater.active', false) == true),
-            tmp_front: _.toNumber(_.get(base, 'heater.tmp_front', SURF.TMP_FRONT.default[0])),
+            active: (get(base, 'heater.active', false) == true),
+            tmp_front: toNumber(get(base, 'heater.tmp_front', SURF.TMP_FRONT.default)),
         }
 
-        this.direction = _.get(base, 'direction', '+x');
+        this.direction = get(base, 'direction', '+x');
 
         this.louver = {
-            active: (_.get(base, 'louver.active', false) == true),
-            tangential1: _.toNumber(_.get(base, 'louver.tangential1', SURF.VEL_T.default[0])),
-            tangential2: _.toNumber(_.get(base, 'louver.tangential2', SURF.VEL_T.default[1])),
-            tangential3: _.toNumber(_.get(base, 'louver.tangential2', SURF.VEL_T.default[2]))
+            active: (get(base, 'louver.active', false) == true),
+            tangential1: toNumber(get(base, 'louver.tangential1', SURF.VEL_T.default[0])),
+            tangential2: toNumber(get(base, 'louver.tangential2', SURF.VEL_T.default[1])),
+            tangential3: toNumber(get(base, 'louver.tangential2', SURF.VEL_T.default[2]))
         }
 
         this.area = {
-            type: _.get(base, 'area.type', 'area'),
+            type: get(base, 'area.type', 'area'),
             oldType: 'area',
-            area: _.toNumber(_.get(base, 'area.area', HVAC.AREA.default[0])),
-            diameter: _.toNumber(_.get(base, 'area.diameter', HVAC.DIAMETER.default[0])),
-            perimeter: _.toNumber(_.get(base, 'area.perimeter', HVAC.PERIMETER.default[0]))
+            area: toNumber(get(base, 'area.area', HVAC.AREA.default[0])),
+            diameter: toNumber(get(base, 'area.diameter', HVAC.DIAMETER.default[0])),
+            perimeter: toNumber(get(base, 'area.perimeter', HVAC.PERIMETER.default[0]))
         }
 
         this.devc = {
-            active: (_.get(base, 'devc.active', false) == true),
-            setpoint: _.toNumber(_.get(base, 'devc.setpoint', DEVC.SETPOINT.default[0]))
+            active: (get(base, 'devc.active', false) == true),
+            setpoint: toNumber(get(base, 'devc.setpoint', DEVC.SETPOINT.default[0]))
         }
 
-        this.ramp = {};
-        if (typeof base.ramp === 'object' && base.ramp != null) {
-            this.ramp = base.ramp;
-        }
-        // Jezeli jest nazwa
-        else {
-            if (ramps) {
-                this.ramp = _.find(ramps, function (ramp) {
-                    return ramp.id == base.ramp_id;
-                });
-            }
-        }
+        ramps && base.ramp != undefined ? this.ramp = find(ramps, function (ramp) { return ramp.id == base.ramp_id; }) : this.ramp = undefined;
 
     }
 
@@ -150,6 +146,18 @@ export class JetFan {
         }
     }
 
+    /** Recalculate volume flow */
+    public calcVolumeFlow(event: any, perHour?: boolean) {
+        if (perHour) {
+            this.flow.volume_flow = event;
+            this.flow.volume_flow_per_hour = this.flow.volume_flow * 3600
+        }
+        else {
+            this.flow.volume_flow_per_hour = event;
+            this.flow.volume_flow = round(this.flow.volume_flow_per_hour / 3600, 4);
+        }
+    }
+
     public get id(): string {
         return this._id;
     }
@@ -190,13 +198,13 @@ export class JetFan {
         this._transparency = value;
     }
 
-	public get elevation(): number {
-		return this._elevation;
-	}
+    public get elevation(): number {
+        return this._elevation;
+    }
 
-	public set elevation(value: number) {
-		this._elevation = value;
-	}
+    public set elevation(value: number) {
+        this._elevation = value;
+    }
 
     public get xb(): Xb {
         return this._xb;
@@ -238,29 +246,29 @@ export class JetFan {
         this._ramp = value;
     }
 
-	public get direction(): string {
-		return this._direction;
-	}
+    public get direction(): string {
+        return this._direction;
+    }
 
-	public set direction(value: string) {
-		this._direction = value;
-	}
+    public set direction(value: string) {
+        this._direction = value;
+    }
 
-	public get area(): object {
-		return this._area;
-	}
+    public get area(): object {
+        return this._area;
+    }
 
-	public set area(value: object) {
-		this._area = value;
-	}
+    public set area(value: object) {
+        this._area = value;
+    }
 
-	public get devc(): object {
-		return this._devc;
-	}
+    public get devc(): object {
+        return this._devc;
+    }
 
-	public set devc(value: object) {
-		this._devc = value;
-	}
+    public set devc(value: object) {
+        this._devc = value;
+    }
 
     public toJSON() {
         var flow = {};
@@ -308,6 +316,9 @@ export class JetFan {
             area = {};
         }
 
+        let ramp_id;
+        this.ramp == undefined ? ramp_id = '' : ramp_id = this.ramp['id'];
+
         let jetfan = {
             id: this.id,
             uuid: this.uuid,
@@ -316,21 +327,14 @@ export class JetFan {
             elevation: this.elevation,
             flow: flow,
             area: area,
-            ramp_id: this.ramp['id'],
+            ramp_id: ramp_id,
             louver: {
                 active: this.louver['active'],
                 tangential1: this.louver['tangential1'],
                 tangential2: this.louver['tangential2'],
                 tangential3: this.louver['tangential3']
             },
-            xb: {
-                x1: this.xb.x1,
-                x2: this.xb.x2,
-                y1: this.xb.y1,
-                y2: this.xb.y2,
-                z1: this.xb.z1,
-                z2: this.xb.z2
-            },
+            xb: this.xb.toJSON(),
             devc: {
                 active: this.devc['active'],
                 setpoint: this.devc['setpoint'],

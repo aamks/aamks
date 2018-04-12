@@ -28,7 +28,7 @@ export class Open {
         this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
-        this.xb = base.xb || new Xb(VENT.XB.default);
+		this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
         this.surfId = base.surf_id || 'OPEN';
     }
 
@@ -125,8 +125,8 @@ export class Open {
             id: this.id,
             uuid: this.uuid,
             idAC: this.idAC,
-            xb: this._xb,
-            surf_id: this._surf_id
+            xb: this.xb.toJSON(),
+            surf_id: this.surf_id
         };
         return open;
     }

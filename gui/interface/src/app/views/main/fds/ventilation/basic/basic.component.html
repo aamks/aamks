@@ -39,6 +39,7 @@
             <label>Surface:</label>
             <div class="field-container">
               <select [(ngModel)]="vent.surf">
+                <option [ngValue]="undefined">No SURF</option>
                 <option *ngFor="let surf of surfs" [ngValue]="surf">{{surf.id}}</option>
               </select>
             </div>
@@ -160,9 +161,9 @@
           <div *ngIf="surf.flow.type=='volumeFlow'">
             <label>Volume flow:</label>
             <div class="field-container">
-              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.flow.volume_flow" (blur)="updateCad('hole')" decimalInput>
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [ngModel]="surf.flow.volume_flow" (ngModelChange)="surf.calcVolumeFlow($event, true)" decimalInput>
               <ng-katex equation="m^3/s"></ng-katex>
-              <input class="ml+" type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.flow.volume_flow_per_hour" decimalInput>
+              <input class="ml+" type="text" [ngModelOptions]="{updateOn:'blur'}" [ngModel]="surf.flow.volume_flow_per_hour" (ngModelChange)="surf.calcVolumeFlow($event, false)" decimalInput>
               <ng-katex equation="m^3/h"></ng-katex>
             </div>
           </div>
@@ -197,13 +198,13 @@
           <div>
             <label>Heater:</label>
             <div class="field-container">
-              <input type=checkbox [(ngModel)]="surf.heater.active" />
+              <input type="checkbox" [(ngModel)]="surf.heater.active" />
             </div>
           </div>
           <div *ngIf="surf.heater.active">
             <label>Temperature:</label>
             <div class="field-container">
-              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.heater.temperature" decimalInput>
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="surf.heater.tmp_front" decimalInput>
               <ng-katex equation="\degree C"></ng-katex>
             </div>
           </div>
@@ -250,7 +251,7 @@
               <div class="list-items">
                 <div class="list-item" *ngFor="let surfItem of libSurfs | slice: ui.ventilation.libSurf.begin:(ui.ventilation.libSurf.begin + ui.listRange)">
                   <a (click)="activate(surfItem.id, 'surf', true)" [ngClass]="{active: surfItem === surf}">{{surfItem.id}}</a>
-                  <i class="material-icons" ng-click="importLibraryItem(surfItem.id)">content_copy</i>
+                  <i class="material-icons" (click)="importLibraryItem(surfItem.id)">content_copy</i>
                   <i class="material-icons red" (click)="delete(surfItem.id, 'surf', true)">delete_forever</i>
                 </div>
               </div>

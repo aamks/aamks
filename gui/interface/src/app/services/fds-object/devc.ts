@@ -106,8 +106,8 @@ export class Devc {
             }
         }
 
-        this.xb = new Xb(_.toArray(base.xb)) || new Xb(DEVC.XB.default);
-        this.xyz = new Xyz(_.toArray(base.xyz)) || new Xyz(DEVC.XYZ.default);
+        this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
+        this.xyz = new Xyz(JSON.stringify(base.xyz)) || new Xyz(JSON.stringify({}));
 
         this.setpoint = _.toNumber(_.get(base, 'setpoint', DEVC.SETPOINT.default[0]));
         this.initial_state = (_.get(base, 'initial_state', DEVC.INITIAL_STATE.default[0]) == true);
@@ -281,19 +281,8 @@ export class Devc {
             trip_direction: this.trip_direction,
             spec_id: _.get(self, 'spec_id.id', undefined),
             part_id: _.get(self, 'part_id.id', undefined),
-            xb: {
-                x1: this.xb.x1,
-                x2: this.xb.x2,
-                y1: this.xb.y1,
-                y2: this.xb.y2,
-                z1: this.xb.z1,
-                z2: this.xb.z2
-            },
-            xyz: {
-                x: this.xyz.x,
-                y: this.xyz.y,
-                z: this.xyz.z
-            },
+            xb: this.xb.toJSON(),
+            xyz: this.xyz.toJSON(),
             statistics: this.statistics
         }
         return devc;

@@ -98,7 +98,7 @@
         </div>
       </div>
       <ramp-chart *ngIf="matl.specific_heat_ramp && matl.specific_heat_ramp.steps.length > 0" [rampId]="matl.specific_heat_ramp.id"
-        [value]="matl.specific_heat" [xLabel]="'Temperature'" [yLabel]="'Specific heat'" [units]="['\\degree C','kJ/(kg K)']"></ramp-chart>
+        [value]="matl.specific_heat" [objectType]="objectType" [xLabel]="'Temperature'" [yLabel]="'Conductivity'" [units]="['\\degree C','W/(m K)']"></ramp-chart>
     </div>
   </div>
 
@@ -118,7 +118,7 @@
             <div class="list-items">
               <div class="list-item" *ngFor="let matlItem of lib.matls | slice: ui.geometry.libMatl.begin:(ui.geometry.libMatl.begin + ui.listRange)">
                 <a (click)="activate(matlItem.id, true)" [ngClass]="{active: matlItem === matl}">{{matlItem.id}}</a>
-                <i class="material-icons" ng-click="importLibraryItem(matlItem.id)">content_copy</i>
+                <i class="material-icons" (click)="importLibraryItem(matlItem.id)">content_copy</i>
                 <i class="material-icons red" (click)="delete(matlItem.id, true)">delete_forever</i>
               </div>
             </div>

@@ -3,7 +3,7 @@ import { FdsEntities } from '../../enums/fds-entities'
 import { Xb } from './primitives';
 import { WebsocketService } from '../websocket/websocket.service';
 import { Injector } from '@angular/core/src/di/injector';
-import * as _ from 'lodash';
+import { get, round, toNumber, toString } from 'lodash';
 
 export interface MeshObject {
     id: string,
@@ -47,103 +47,217 @@ export class Mesh {
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
 
-        this.xb = base.xb || new Xb(MESH.XB.default);
+        this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
 
-        (base.isize && base.xb) ? this._i = Math.round((base.xb.x2 - base.xb.x1) / base.isize) : this._i = base.i || MESH.IJK.default[0];
-        (base.jsize && base.xb) ? this._j = Math.round((base.xb.y2 - base.xb.y1) / base.jsize) : this._j = base.j || MESH.IJK.default[1];
-        (base.ksize && base.xb) ? this._k = Math.round((base.xb.z2 - base.xb.z1) / base.ksize) : this._k = base.k || MESH.IJK.default[2];
+        this.i = toNumber(get(base, 'i', MESH.IJK.default[0]));
+        this.j = toNumber(get(base, 'j', MESH.IJK.default[1]));
+        this.i = toNumber(get(base, 'k', MESH.IJK.default[2]));
 
-        this.isize = base.isize || 0.1;
-        this.jsize = base.jsize || 0.1;
-        this.ksize = base.ksize || 0.1;
+        this.isize = toNumber(get(base, 'isize', 0.1));
+        this.jsize = toNumber(get(base, 'jsize', 0.1));
+        this.ksize = toNumber(get(base, 'ksize', 0.1));
+
         this.cells = this.calcCells();
-        this.color = base.color || MESH.COLOR.default[0];
+        this.color = toString(get(base, 'color', MESH.COLOR.default[0]));
     }
 
-    /** getter/setter id */
-    public get id(): string {
-        return this._id;
-    }
-    public set id(id: string) {
-        this._id = id;
-    }
+    /**
+     * Getter id
+     * @return {string}
+     */
+	public get id(): string {
+		return this._id;
+	}
 
-    /** getter/setter uuid */
-    get uuid() {
-        return this._uuid;
-    }
-    set uuid(uuid: string) {
-        this._uuid = uuid;
-    }
+    /**
+     * Setter id
+     * @param {string} value
+     */
+	public set id(value: string) {
+		this._id = value;
+	}
 
-    /** getter/setter idAC */
-    get idAC() {
-        return this._idAC;
-    }
-    set idAC(idAC: number) {
-        this._idAC = idAC;
-    }
+    /**
+     * Getter uuid
+     * @return {string}
+     */
+	public get uuid(): string {
+		return this._uuid;
+	}
 
-    /** getter/setter isize */
-    get isize() {
-        return this._isize;
-    }
-    set isize(isize: number) {
-        this._isize = _.round(isize, 6);
-        this._i = _.round((this.xb.x2 - this.xb.x1) / isize, 6);
-    }
+    /**
+     * Setter uuid
+     * @param {string} value
+     */
+	public set uuid(value: string) {
+		this._uuid = value;
+	}
 
-    /** getter/setter jsize */
-    get jsize() {
-        return this._jsize;
-    }
-    set jsize(jsize: number) {
-        this._jsize = _.round(jsize, 6);
-        this._j = _.round((this.xb.y2 - this.xb.y1) / jsize, 6);
-    }
+    /**
+     * Getter idAC
+     * @return {number}
+     */
+	public get idAC(): number {
+		return this._idAC;
+	}
 
-    /** getter/setter ksize */
-    get ksize() {
-        return this._ksize;
-    }
-    set ksize(ksize: number) {
-        this._ksize = _.round(ksize, 6);
-        this._k = _.round((this.xb.z2 - this.xb.z1) / ksize, 6);
-    }
+    /**
+     * Setter idAC
+     * @param {number} value
+     */
+	public set idAC(value: number) {
+		this._idAC = value;
+	}
 
-    /** getter/setter i */
-    get i() {
-        return this._i;
-    }
-    set i(i: number) {
-        this._i = _.round(i, 6);
-        this._isize = _.round((this.xb.x2 - this.xb.x1) / i, 6);
-    }
+    /**
+     * Getter isize
+     * @return {number}
+     */
+	public get isize(): number {
+		return this._isize;
+	}
 
-    /** getter/setter j */
-    get j() {
-        return this._j;
-    }
-    set j(j: number) {
-        this._j = _.round(j, 6);
-        this._jsize = _.round((this.xb.y2 - this.xb.y1) / j, 6);
-    }
+    /**
+     * Setter isize
+     * @param {number} value
+     */
+	public set isize(value: number) {
+        this._isize = round(value, 6);
+        this._i = round((this.xb.x2 - this.xb.x1) / value, 6);
+	}
 
-    /** getter/setter k */
-    get k() {
-        return this._k;
-    }
-    set k(k: number) {
-        this._k = _.round(k, 6);
-        this._ksize = _.round((this.xb.z2 - this.xb.z1) / k, 6);
-    }
+    /**
+     * Getter jsize
+     * @return {number}
+     */
+	public get jsize(): number {
+		return this._jsize;
+	}
 
-    /** getter/setter xb */
-    get xb() {
-        return this._xb;
-    }
-    set xb(xb: Xb) {
-        this._xb = xb;
+    /**
+     * Setter jsize
+     * @param {number} value
+     */
+	public set jsize(value: number) {
+        this._jsize = round(value, 6);
+        this._j = round((this.xb.y2 - this.xb.y1) / value, 6);
+	}
+
+    /**
+     * Getter ksize
+     * @return {number}
+     */
+	public get ksize(): number {
+		return this._ksize;
+	}
+
+    /**
+     * Setter ksize
+     * @param {number} value
+     */
+	public set ksize(value: number) {
+        this._ksize = round(value, 6);
+        this._k = round((this.xb.z2 - this.xb.z1) / value, 6);
+	}
+
+    /**
+     * Getter i
+     * @return {number}
+     */
+	public get i(): number {
+		return this._i;
+	}
+
+    /**
+     * Setter i
+     * @param {number} value
+     */
+	public set i(value: number) {
+        this._i = round(value, 6);
+        this._isize = round((this.xb.x2 - this.xb.x1) / value, 6);
+	}
+
+    /**
+     * Getter j
+     * @return {number}
+     */
+	public get j(): number {
+		return this._j;
+	}
+
+    /**
+     * Setter j
+     * @param {number} value
+     */
+	public set j(value: number) {
+        this._j = round(value, 6);
+        this._jsize = round((this.xb.y2 - this.xb.y1) / value, 6);
+	}
+
+    /**
+     * Getter k
+     * @return {number}
+     */
+	public get k(): number {
+		return this._k;
+	}
+
+    /**
+     * Setter k
+     * @param {number} value
+     */
+	public set k(value: number) {
+        this._k = round(value, 6);
+        this._ksize = round((this.xb.z2 - this.xb.z1) / value, 6);
+	}
+
+
+    /**
+     * Getter xb
+     * @return {Xb}
+     */
+	public get xb(): Xb {
+		return this._xb;
+	}
+
+    /**
+     * Setter xb
+     * @param {Xb} value
+     */
+	public set xb(value: Xb) {
+		this._xb = value;
+	}
+
+    /**
+     * Getter cells
+     * @return {number}
+     */
+	public get cells(): number {
+		return this._cells;
+	}
+
+    /**
+     * Setter cells
+     * @param {number} value
+     */
+	public set cells(value: number) {
+		this._cells = value;
+	}
+
+    /**
+     * Getter color
+     * @return {string}
+     */
+	public get color(): string {
+		return this._color;
+	}
+
+    /**
+     * Setter color
+     * @param {string} value
+     */
+	public set color(value: string) {
+		this._color = value;
     }
 
     /** getter/setter x1 */
@@ -152,7 +266,7 @@ export class Mesh {
     }
     set x1(x1: number) {
         this.xb.x1 = x1;
-        this._i = _.round((this.xb.x2 - this.xb.x1) / this.isize, 6);
+        this._i = round((this.xb.x2 - this.xb.x1) / this.isize, 6);
     }
 
     /** getter/setter x2 */
@@ -161,7 +275,7 @@ export class Mesh {
     }
     set x2(x2: number) {
         this.xb.x2 = x2;
-        this._i = _.round((this.xb.x2 - this.xb.x1) / this.isize, 6);
+        this.i = round((this.xb.x2 - this.xb.x1) / this.isize, 6);
     }
 
     /** getter/setter x1 */
@@ -170,7 +284,7 @@ export class Mesh {
     }
     set y1(y1: number) {
         this.xb.y1 = y1;
-        this._j = _.round((this.xb.y2 - this.xb.y1) / this.jsize, 6);
+        this.j = round((this.xb.y2 - this.xb.y1) / this.jsize, 6);
     }
 
     /** getter/setter x2 */
@@ -179,7 +293,7 @@ export class Mesh {
     }
     set y2(y2: number) {
         this.xb.y2 = y2;
-        this._j = _.round((this.xb.y2 - this.xb.x1) / this.jsize, 6);
+        this.j = round((this.xb.y2 - this.xb.x1) / this.jsize, 6);
     }
 
     /** getter/setter x1 */
@@ -188,7 +302,7 @@ export class Mesh {
     }
     set z1(z1: number) {
         this.xb.z1 = z1;
-        this._k = _.round((this.xb.z2 - this.xb.z1) / this.ksize, 6);
+        this.k = round((this.xb.z2 - this.xb.z1) / this.ksize, 6);
     }
 
     /** getter/setter x2 */
@@ -197,27 +311,11 @@ export class Mesh {
     }
     set z2(z2: number) {
         this.xb.z2 = z2;
-        this._k = _.round((this.xb.z2 - this.xb.x1) / this.ksize, 6);
+        this.k = round((this.xb.z2 - this.xb.x1) / this.ksize, 6);
     }
-
-    /** getter/setter z2 */
-    get cells() {
-        return this._cells;
-    }
-    set cells(cells: number) {
-        this._cells = cells;
-    }
-
+    
     calcCells(): number {
         return this.i * this.j * this.k;
-    }
-
-    /** getter/setter color */
-    get color() {
-        return this._color;
-    }
-    set color(color: string) {
-        this._color = color;
     }
 
     toJSON(): object {
@@ -231,7 +329,7 @@ export class Mesh {
             isize: this.isize,
             jsize: this.jsize,
             ksize: this.ksize,
-            xb: this._xb,
+            xb: this.xb.toJSON(),
             color: this._color
         }
         return mesh;

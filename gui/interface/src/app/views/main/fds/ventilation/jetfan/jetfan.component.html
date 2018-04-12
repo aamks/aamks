@@ -105,9 +105,9 @@
         <div *ngIf="jetfan.flow.type=='volumeFlow'">
           <label>Volume flow:</label>
           <div class="field-container">
-            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.flow.volume_flow" decimalInput>
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [ngModel]="jetfan.flow.volume_flow" (ngModelChange)="jetfan.calcVolumeFlow($event, true)" decimalInput>
             <ng-katex equation="{m^3}/s"></ng-katex>
-            <input class="ml+" type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="jetfan.flow.volume_flow_per_hour" decimalInput>
+            <input class="ml+" type="text" [ngModelOptions]="{updateOn:'blur'}" [ngModel]="jetfan.flow.volume_flow_per_hour" (ngModelChange)="jetfan.calcVolumeFlow($event, false)" decimalInput>
             <ng-katex equation="{m^3}/h"></ng-katex>
           </div>
         </div>
@@ -216,14 +216,8 @@
           </div>
         </div>
       </div>
-
-
-
     </div>
   </div>
-
-
-
 
   <div class="lib-wrapper">
     <div class="lib-drawer" [ngClass]="ui.ventilation.jetfan.lib == 'closed' ? 'closed' : 'opened'">
@@ -241,7 +235,7 @@
             <div class="list-items">
               <div class="list-item" *ngFor="let jetfanItem of lib.jetfans | slice: ui.ventilation.libJetfan.begin:(ui.ventilation.libJetfan.begin + ui.listRange)">
                 <a (click)="activate(jetfanItem.id, true)" [ngClass]="{active: jetfanItem === jetfan}">{{jetfanItem.id}}</a>
-                <i class="material-icons" ng-click="importLibraryItem(jetfanItem.id)">content_copy</i>
+                <i class="material-icons" (click)="importLibraryItem(jetfanItem.id)">content_copy</i>
                 <i class="material-icons red" (click)="delete(jetfanItem.id, true)">delete_forever</i>
               </div>
             </div>

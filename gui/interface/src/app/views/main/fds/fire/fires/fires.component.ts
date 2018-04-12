@@ -13,6 +13,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { set, cloneDeep, find, forEach, findIndex } from 'lodash';
 import { LibraryService } from '../../../../../services/library/library.service';
 import { Library } from '../../../../../services/library/library';
+import { IdGeneratorService } from '../../../../../services/id-generator/id-generator.service';
 
 @Component({
   selector: 'app-fires',
@@ -51,6 +52,7 @@ export class FiresComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    console.clear();
     // Subscribe main object
     this.mainService.getMain().subscribe(main => this.main = main);
     this.uiStateService.getUiState().subscribe(ui => this.ui = ui);
@@ -64,7 +66,7 @@ export class FiresComponent implements OnInit {
     this.libRamps = this.lib.ramps;
 
     // Activate last element
-    this.fires.length > 0 ? this.fire = this.fires[this.ui.fires['fire'].elementIndex] : undefined;
+    this.fires.length > 0 ? this.fire = this.fires[this.ui.fires['fire'].elementIndex] : this.fire = undefined;
 
     // Subscribe websocket requests status for websocket CAD sync
     this.websocketService.requestStatus.subscribe(
@@ -88,7 +90,7 @@ export class FiresComponent implements OnInit {
   ngAfterViewInit() {
     // Set scrollbars position y after view rendering and set last selected element
     this.fireScrollbar.directiveRef.scrollToY(this.ui.fires['fire'].scrollPosition);
-    this.activate(this.fires[this.ui.fires['fire'].elementIndex].id);
+    this.fires.length > 0 && this.activate(this.fires[this.ui.fires['fire'].elementIndex].id);
   }
 
   /** Activate element on click */
@@ -111,12 +113,14 @@ export class FiresComponent implements OnInit {
   public add(library?: boolean) {
     // Create new fire object with unique id
     if (!library) {
-      let element = { id: 'MATL' + this.mainService.getListId(this.fires) };
+      let element = { id: 'FIRE' + this.mainService.getListId(this.fires, 'fire') };
       this.fires.push(new Fire(JSON.stringify(element), this.ramps));
+      this.activate(element.id);
     }
     else {
-      let element = { id: 'MATL' + this.mainService.getListId(this.libFires) };
+      let element = { id: 'FIRE' + this.mainService.getListId(this.libFires, 'fire') };
       this.libFires.push(new Fire(JSON.stringify(element), this.libRamps));
+      this.activate(element.id, true);
     }
   }
 
@@ -126,14 +130,14 @@ export class FiresComponent implements OnInit {
       let index = findIndex(this.fires, { id: id });
       this.fires.splice(index, 1);
       if (this.ui.fires['fire'].elementIndex == index) {
-        index > 1 ? this.activate(this.fires[index - 1].id) : this.activate(this.fires[index].id);
+        this.fires.length == 0 ? this.fire = undefined : this.activate(this.fires[index - 1].id);
       }
     }
     else {
       let index = findIndex(this.libFires, { id: id });
       this.libFires.splice(index, 1);
       if (this.ui.fires['libFire'].elementIndex == index) {
-        index > 1 ? this.activate(this.libFires[index - 1].id, true) : this.activate(this.libFires[index].id, true);
+        this.libFires.length == 0 ? this.fire = undefined : this.activate(this.libFires[index - 1].id, true);
       }
     }
   }
@@ -157,9 +161,10 @@ export class FiresComponent implements OnInit {
   /** Import from library */
   public importLibraryItem(id: string) {
     let libFire = find(this.lib.fires, function (o) { return o.id == id; });
-    // Check if import ramps
-    console.log(libFire);
-
+    let fire = cloneDeep(libFire);
+    let idGeneratorService = new IdGeneratorService;
+    fire.uuid = idGeneratorService.genUUID()
+    this.fires.push(fire);
   }
 
   // COMPONENT METHODS

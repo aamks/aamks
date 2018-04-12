@@ -52,7 +52,10 @@ export class AppComponent {
     this.libraryService.loadLibrary();
     this.libraryService.getLibrary().subscribe(library => this.lib = library);
     this.categoryService.getCategories();
-    this.setCurrentFdsScenario(177, 687)
+  }
+
+  ngAfterViewInit() {
+    this.setCurrentFdsScenario(1, 1);
   }
 
   setCurrentFdsScenario(projectId: number, fdsScenarioId: number) {

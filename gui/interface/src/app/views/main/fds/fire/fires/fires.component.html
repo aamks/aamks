@@ -275,7 +275,7 @@
               <div class="list-item " *ngFor="let fireItem of lib.fires | slice: ui.fires.libFire.begin:(ui.fires.libFire.begin
                   + ui.listRange) ">
                 <a (click)="activate(fireItem.id, true) " [ngClass]="{active: fireItem===fire} ">{{fireItem.id}}</a>
-                <i class="material-icons " ng-click="importLibraryItem(fireItem.id) ">content_copy</i>
+                <i class="material-icons " (click)="importLibraryItem(fireItem.id) ">content_copy</i>
                 <i class="material-icons red " (click)="delete(fireItem.id, true) ">delete_forever</i>
               </div>
             </div>

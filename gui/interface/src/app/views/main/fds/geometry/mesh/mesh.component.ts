@@ -41,6 +41,7 @@ export class MeshComponent implements OnInit {
   constructor(private mainService: MainService, private websocketService: WebsocketService, private uiStateService: UiStateService) { }
 
   ngOnInit() {
+    console.clear();
     // Subscribe main object
     this.mainService.getMain().subscribe(main => this.main = main);
     this.uiStateService.getUiState().subscribe(ui => this.ui = ui);
@@ -52,8 +53,8 @@ export class MeshComponent implements OnInit {
     this.opens = this.main.currentFdsScenario.fdsObject.geometry.opens;
 
     // Activate last element
-    this.meshes.length > 0 ? this.mesh = this.meshes[this.ui.geometry['mesh'].elementIndex] : undefined;
-    this.opens.length > 0 ? this.open = this.opens[this.ui.geometry['open'].elementIndex] : undefined;
+    this.meshes.length > 0 ? this.mesh = this.meshes[this.ui.geometry['mesh'].elementIndex] : this.mesh = undefined;
+    this.opens.length > 0 ? this.open = this.opens[this.ui.geometry['open'].elementIndex] : this.open = undefined;
 
     // Subscribe websocket requests status for websocket CAD sync
     this.websocketService.requestStatus.subscribe(
@@ -78,8 +79,8 @@ export class MeshComponent implements OnInit {
     // Set scrollbars position y after view rendering and set last selected element
     this.meshScrollbar.directiveRef.scrollToY(this.ui.geometry['mesh'].scrollPosition);
     this.openScrollbar.directiveRef.scrollToY(this.ui.geometry['open'].scrollPosition);
-    this.activate(this.meshes[this.ui.geometry['mesh'].elementIndex].id, 'mesh');
-    this.activate(this.opens[this.ui.geometry['open'].elementIndex].id, 'open');
+    this.meshes.length > 0 && this.activate(this.meshes[this.ui.geometry['mesh'].elementIndex].id, 'mesh');
+    this.opens.length > 0 && this.activate(this.opens[this.ui.geometry['open'].elementIndex].id, 'open');
   }
 
   /** Activate element on click */
@@ -101,10 +102,12 @@ export class MeshComponent implements OnInit {
     if (type == 'mesh') {
       let element = { id: 'MESH' + this.mainService.getListId(this.meshes) };
       this.meshes.push(new Mesh(JSON.stringify(element)));
+      this.activate(element.id, 'mesh');
     }
     else if (type == 'open') {
       let element = { id: 'OPEN' + this.mainService.getListId(this.opens) };
       this.opens.push(new Open(JSON.stringify(element)));
+      this.activate(element.id, 'open');
     }
   }
 
@@ -114,14 +117,14 @@ export class MeshComponent implements OnInit {
       let index = findIndex(this.meshes, { id: id });
       this.meshes.splice(index, 1);
       if (this.ui.geometry['mesh'].elementIndex == index) {
-        index > 1 ? this.activate(this.meshes[index - 1].id) : this.activate(this.meshes[index].id);
+        this.meshes.length == 0 ? this.mesh = undefined : this.activate(this.meshes[index - 1].id);
       }
     }
     else if (type == 'open') {
       let index = findIndex(this.opens, { id: id });
       this.opens.splice(index, 1);
       if (this.ui.geometry['open'].elementIndex == index) {
-        index > 1 ? this.activate(this.opens[index - 1].id) : this.activate(this.opens[index].id);
+        this.opens.length == 0 ? this.open = undefined : this.activate(this.opens[index - 1].id);
       }
     }
   }
