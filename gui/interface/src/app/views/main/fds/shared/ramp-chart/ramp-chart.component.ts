@@ -28,6 +28,8 @@ export class RampChartComponent implements OnInit, OnChanges {
   @Input() private units: string[];
   @Input() private value: any;
   @Input() private objectType: string;
+  @Input() private containerWidth: string;
+  @Input() private editor: boolean;
 
   private main: Main;
   private lib: Library;
@@ -58,12 +60,24 @@ export class RampChartComponent implements OnInit, OnChanges {
       this.createChart();
       this.updateChart();
     }
+
+    console.log(this.editor);
   }
 
   ngOnChanges() {
     if (this.svg) {
       this.updateChart();
     }
+  }
+
+  /** Get ramp f value without calc */
+  private getPureF(stepIndex: number) {
+    return this.ramp.steps[stepIndex].f;
+  }
+
+  /** Set ramp f value without calc */
+  private setPureF(fValue: number, stepIndex: number) {
+    this.ramp.steps[stepIndex].f = fValue;
   }
 
   /** Get ramp f value */
@@ -107,6 +121,7 @@ export class RampChartComponent implements OnInit, OnChanges {
   private createChart() {
     // Init chart
     const element = this.chartContainer.nativeElement;
+    element.style.width = this.containerWidth == undefined ? '400px' : this.containerWidth;
 
     // Prepare data - convert object array to nuber array
     let steps = this.prepareData();

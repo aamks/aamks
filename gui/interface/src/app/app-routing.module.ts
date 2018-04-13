@@ -23,6 +23,7 @@ import { BuildingCharacteristicComponent } from './views/main/risk/building-char
 import { BuildingInfrastructureComponent } from './views/main/risk/building-infrastructure/building-infrastructure.component';
 import { SettingsComponent } from './views/main/risk/settings/settings.component';
 import { ResultsComponent } from './views/main/risk/results/results.component';
+import { RampComponent } from './views/main/fds/ramp/ramp.component';
 
 const routes: Routes = [
   {
@@ -88,6 +89,10 @@ const routes: Routes = [
   {
     path: 'fds/output/device',
     component: DeviceComponent
+  },
+  {
+    path: 'fds/ramp',
+    component: RampComponent
   },
   {
     path: 'fds/input',

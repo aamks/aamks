@@ -15,7 +15,7 @@
     <div class="list-bottom" *ngIf="ventilation.jetfans.length > ui.listRange">
       <i class="material-icons" *ngIf="ui.ventilation.jetfan.begin > 0" (click)="uiStateService.decreaseRange('ventilation.jetfan')">chevron_left</i>
       <div>{{ui.ventilation.jetfan.begin}} - {{ui.ventilation.jetfan.begin + ui.listRange > ventilation.jetfans.length ? ventilation.jetfans.length
-        : ui.ventilation.obst.begin + ui.listRange}}</div>
+        : ui.ventilation.jetfans.begin + ui.listRange}}</div>
       <i class="material-icons" *ngIf="ui.ventilation.jetfan.begin + ui.listRange < ventilation.jetfans.length" (click)="uiStateService.increaseRange('ventilation.jetfan')">chevron_right</i>
     </div>
   </div>

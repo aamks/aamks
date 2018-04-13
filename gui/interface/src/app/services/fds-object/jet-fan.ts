@@ -22,7 +22,7 @@ export interface JetFanObject {
     },
     heater: object,
     louver: object,
-    ramp: any,
+    ramp: Ramp,
     ramp_id: any,
     direction: string
 }
@@ -38,7 +38,7 @@ export class JetFan {
     private _flow: any;
     private _heater: object;
     private _louver: object;
-    private _ramp: object;
+    private _ramp: Ramp;
     private _direction: string;
     private _area: object;
     private _devc: object;
@@ -238,11 +238,11 @@ export class JetFan {
         this._louver = value;
     }
 
-    public get ramp(): object {
+    public get ramp(): Ramp {
         return this._ramp;
     }
 
-    public set ramp(value: object) {
+    public set ramp(value: Ramp) {
         this._ramp = value;
     }
 

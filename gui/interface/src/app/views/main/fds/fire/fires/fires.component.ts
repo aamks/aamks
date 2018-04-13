@@ -160,9 +160,20 @@ export class FiresComponent implements OnInit {
 
   /** Import from library */
   public importLibraryItem(id: string) {
-    let libFire = find(this.lib.fires, function (o) { return o.id == id; });
-    let fire = cloneDeep(libFire);
     let idGeneratorService = new IdGeneratorService;
+    let libFire = find(this.lib.fires, function (o) { return o.id == id; });
+    if (libFire.surf.ramp.id) {
+      // Check if ramp already exists
+      let libRamp = find(this.ramps, function (o) { return o.id == libFire.surf.ramp.id });
+      // If ramp do not exists import from library
+      if (libRamp == undefined) {
+        let libRamp = find(this.lib.ramps, function (o) { return o.id == libFire.surf.ramp.id });
+        let ramp = cloneDeep(libRamp);
+        ramp.uuid = idGeneratorService.genUUID();
+        this.ramps.push(ramp);
+      }
+    }
+    let fire = cloneDeep(libFire);
     fire.uuid = idGeneratorService.genUUID()
     this.fires.push(fire);
   }

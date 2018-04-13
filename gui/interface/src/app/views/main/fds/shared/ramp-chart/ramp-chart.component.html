@@ -29,10 +29,16 @@
         </div>
       </div>
       <div>
-        <div class="field-container">
+        <div *ngIf="editor == undefined" class="field-container">
           <!--<input [ngModelOptions]="{ updateOn:'blur' }" [(ngModel)]="step.f" decimalInput>
           <input [value]="step.f * value" (input)="calcF($event.target.value, stepIndex)" (blur)="updateChart()">-->
           <input [ngModel]="getF(stepIndex)" [ngModelOptions]="{ updateOn:'blur' }" (ngModelChange)="setF($event, stepIndex)" (blur)="updateChart()" decimalInput>
+          <ng-katex equation="{{units[1]}}"></ng-katex>
+        </div>
+        <div *ngIf="editor" class="field-container">
+          <!--<input [ngModelOptions]="{ updateOn:'blur' }" [(ngModel)]="step.f" decimalInput>
+          <input [value]="step.f * value" (input)="calcF($event.target.value, stepIndex)" (blur)="updateChart()">-->
+          <input [ngModel]="getPureF(stepIndex)" [ngModelOptions]="{ updateOn:'blur' }" (ngModelChange)="setPureF($event, stepIndex)" (blur)="updateChart()" decimalInput>
           <ng-katex equation="{{units[1]}}"></ng-katex>
         </div>
       </div>

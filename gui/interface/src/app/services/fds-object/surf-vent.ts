@@ -12,7 +12,7 @@ export interface SurfVentObject {
     flow: any,
     heater: object,
     louver: object,
-    ramp: any,
+    ramp: Ramp,
     ramp_id: any
 }
 
@@ -25,7 +25,7 @@ export class SurfVent {
     private _flow: any;
     private _heater: object;
     private _louver: object;
-    private _ramp: object;
+    private _ramp: Ramp;
 
     constructor(jsonString: string, ramps: Ramp[]) {
 
@@ -174,11 +174,11 @@ export class SurfVent {
         this._louver = value;
     }
 
-    public get ramp(): object {
+    public get ramp(): Ramp {
         return this._ramp;
     }
 
-    public set ramp(value: object) {
+    public set ramp(value: Ramp) {
         this._ramp = value;
     }
 

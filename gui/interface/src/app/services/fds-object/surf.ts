@@ -4,7 +4,10 @@ import { IdGeneratorService } from '../id-generator/id-generator.service';
 import { map, toString, get, toNumber, each, find } from 'lodash';
 
 export interface Layers {
-    materials: object[],
+    materials: {
+        material: Matl,
+        fraction: number
+    }[],
     thickness: number
 }
 
@@ -90,7 +93,7 @@ export class Surf {
     public addMaterial(layerIndex) {
         let layer = this._layers[layerIndex];
         layer.materials.push({
-            material: {},
+            material: undefined,
             fraction: 0
         });
     };

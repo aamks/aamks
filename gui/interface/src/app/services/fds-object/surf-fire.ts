@@ -29,7 +29,7 @@ export class SurfFire {
     private _color: string;
     private _fire_type: string;
     private _hrr: object;
-    private _ramp: object;
+    private _ramp: Ramp;
 
     constructor(jsonString: string, ramps: Ramp[] = undefined) {
 
@@ -61,7 +61,7 @@ export class SurfFire {
             this.hrr['area'] = 0;
 
         if (base['ramp_id'] == '') {
-            this.ramp = { id: '' };
+            this.ramp = undefined;
         }
         // Jeeli kopiujemy z biblioteki
         else if (typeof base['ramp'] === 'object' && base['ramp'] != null) {
@@ -70,13 +70,13 @@ export class SurfFire {
         // Jezeli jest nazwa
         else {
             if (!ramps) {
-                this.ramp = { id: '' };
+                this.ramp = undefined;
             } else {
                 this.ramp = _.find(ramps, (ramp) => {
                     return ramp.id == base.ramp_id;
                 });
                 if (this.ramp === undefined)
-                    this.ramp = { id: '' };
+                    this.ramp = undefined;
             }
         }
 
@@ -130,11 +130,11 @@ export class SurfFire {
         this._hrr = value;
     }
 
-    public get ramp(): object {
+    public get ramp(): Ramp {
         return this._ramp;
     }
 
-    public set ramp(value: object) {
+    public set ramp(value: Ramp) {
         this._ramp = value;
     }
 

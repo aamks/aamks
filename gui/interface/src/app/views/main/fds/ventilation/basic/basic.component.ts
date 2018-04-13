@@ -198,9 +198,20 @@ export class BasicComponent implements OnInit {
 
   /** Import from library */
   public importLibraryItem(id: string) {
-    let libSurf = find(this.lib.ventsurfs, function (o) { return o.id == id; });
-    let surf = cloneDeep(libSurf);
     let idGeneratorService = new IdGeneratorService;
+    let libSurf = find(this.lib.ventsurfs, function (o) { return o.id == id; });
+    if (libSurf.ramp.id) {
+      // Check if ramp already exists
+      let libRamp = find(this.ramps, function (o) { return o.id == libSurf.ramp.id });
+      // If ramp do not exists import from library
+      if (libRamp == undefined) {
+        let libRamp = find(this.lib.ramps, function (o) { return o.id == libSurf.ramp.id });
+        let ramp = cloneDeep(libRamp);
+        ramp.uuid = idGeneratorService.genUUID();
+        this.ramps.push(ramp);
+      }
+    }
+    let surf = cloneDeep(libSurf);
     surf.uuid = idGeneratorService.genUUID()
     this.surfs.push(surf);
   }

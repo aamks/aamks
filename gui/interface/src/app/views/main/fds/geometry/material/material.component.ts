@@ -157,10 +157,33 @@ export class MaterialComponent implements OnInit {
 
   /** Import from library */
   public importLibraryItem(id: string) {
-    let libMatl = find(this.lib.matls, function (o) { return o.id == id; });
-    let matl = cloneDeep(libMatl);
     let idGeneratorService = new IdGeneratorService;
-    matl.uuid = idGeneratorService.genUUID()
+    let libMatl = find(this.lib.matls, function (o) { return o.id == id; });
+    // Import ramps if exists
+    if (libMatl.conductivity_ramp.id) {
+      // Check if ramp already exists
+      let libRamp = find(this.ramps, function (o) { return o.id == libMatl.conductivity_ramp.id });
+      // If ramp do not exists import from library
+      if (libRamp == undefined) {
+        libRamp = find(this.lib.ramps, function (o) { return o.id == libMatl.conductivity_ramp.id });
+        let ramp = cloneDeep(libRamp);
+        ramp.uuid = idGeneratorService.genUUID();
+        this.ramps.push(ramp);
+      }
+    }
+    if (libMatl.specific_heat_ramp.id) {
+      // Check if ramp already exists
+      let libRamp = find(this.ramps, function (o) { return o.id == libMatl.specific_heat_ramp.id });
+      // If ramp do not exists import from library
+      if (libRamp == undefined) {
+        libRamp = find(this.lib.ramps, function (o) { return o.id == libMatl.specific_heat_ramp.id });
+        let ramp = cloneDeep(libRamp);
+        ramp.uuid = idGeneratorService.genUUID();
+        this.ramps.push(ramp);
+      }
+    }
+    let matl = cloneDeep(libMatl);
+    matl.uuid = idGeneratorService.genUUID();
     this.matls.push(matl);
   }
 

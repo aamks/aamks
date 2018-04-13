@@ -77,6 +77,11 @@
 
   <div class="n1">
     <i class="material-icons null"></i>
+    <a routerLink="fds/ramp" (click)="activate('ramp')" [ngClass]="{'active': uiState.fdsActive == 'ramp'}">Ramp</a>
+  </div>
+
+  <div class="n1">
+    <i class="material-icons null"></i>
     <a routerLink="fds/input" (click)="activate('input')" [ngClass]="{'active': uiState.fdsActive == 'input'}">Input file</a>
   </div>
 

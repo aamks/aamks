@@ -10,7 +10,7 @@ import { UiState } from '../../../../../services/ui-state/ui-state';
 import { Fds } from '../../../../../services/fds-object/fds-object';
 import { Main } from '../../../../../services/main/main';
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { cloneDeep, find, set, findIndex } from 'lodash';
+import { cloneDeep, find, set, findIndex, each } from 'lodash';
 import { FdsEnums } from '../../../../../enums/fds-enums';
 import { IdGeneratorService } from '../../../../../services/id-generator/id-generator.service';
 
@@ -160,9 +160,26 @@ export class SurfaceComponent implements OnInit {
 
   /** Import from library */
   public importLibraryItem(id: string) {
-    let libSurf = find(this.lib.surfs, function (o) { return o.id == id; });
-    let surf = cloneDeep(libSurf);
     let idGeneratorService = new IdGeneratorService;
+    let libSurf = find(this.lib.surfs, function (o) { return o.id == id; });
+    if (libSurf.layers) {
+      each(libSurf.layers, (layer) => {
+        if (layer.materials) {
+          each(layer.materials, (material) => {
+            // Check if already exists in current matl list
+            let libMatl = find(this.matls, function (o) { return o.id == material.material.id });
+            // If libMatl undefinded import from library
+            if (libMatl == undefined) {
+              libMatl = find(this.lib.matls, function (o) { return o.id == material.material.id });
+              let matl = cloneDeep(libMatl);
+              matl.uuid = idGeneratorService.genUUID();
+              this.matls.push(matl);
+            }
+          });
+        }
+      });
+    }
+    let surf = cloneDeep(libSurf);
     surf.uuid = idGeneratorService.genUUID()
     this.surfs.push(surf);
   }

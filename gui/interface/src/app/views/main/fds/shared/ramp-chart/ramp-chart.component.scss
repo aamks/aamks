@@ -1,6 +1,8 @@
 .ramp-container {
-    display: grid;
-    grid-template-columns: 60% 40%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
 
     .ramp-chart {
         width: 100%;
