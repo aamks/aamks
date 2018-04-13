@@ -33,30 +33,14 @@ export class HeaderComponent implements OnInit {
   showDiagnosticData() {
     console.clear();
     console.log("======== Diagnostic ========");
-    //console.log("--- Main -------------------");
-    //console.log(this.main);
-    //console.log();
+    console.log("--- Main -------------------");
+    console.log(this.main);
     console.log("--- Current fds scenario ---");
     console.log(this.main.currentFdsScenario);
-    console.log();
-
     console.log("--- Current risk scenario ---");
     console.log(this.main.currentRiskScenario);
-    console.log();
-    //console.log("--- Library ---");
-    //console.log(this.lib);
-    //console.log();
-    if (this.main.currentFdsScenario != undefined) {
-      //console.log("--- Fds object -------------");
-      //console.log(this.main.currentFdsScenario.fdsObject);
-      //console.log();
-      //console.log("--- Fds object toJSON ------");
-      //console.log(this.main.currentFdsScenario.fdsObject.toJSON());
-      //console.log();
-      //console.log("--- Ventilation object -----");
-      //console.log(this.main.currentFdsScenario.fdsObject.ventilation);
-      //console.log();
-    }
+    console.log("--- Library ---");
+    console.log(this.lib);
     console.log("======== End Diagnostic ========");
   }
 
@@ -67,6 +51,11 @@ export class HeaderComponent implements OnInit {
   /** Update FDS scenario */
   updateFdsScenario() {
     this.fdsScenarioService.updateFdsScenario();
+  }
+
+  /** Update FDS library */
+  updateFdsLibrary() {
+    this.libraryService.updateLibrary();
   }
 
 }

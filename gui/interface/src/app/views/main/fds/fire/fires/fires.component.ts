@@ -162,19 +162,22 @@ export class FiresComponent implements OnInit {
   public importLibraryItem(id: string) {
     let idGeneratorService = new IdGeneratorService;
     let libFire = find(this.lib.fires, function (o) { return o.id == id; });
+    let ramp = undefined;
+    let libRamp = undefined;
     if (libFire.surf.ramp.id) {
       // Check if ramp already exists
-      let libRamp = find(this.ramps, function (o) { return o.id == libFire.surf.ramp.id });
+      libRamp = find(this.ramps, function (o) { return o.id == libFire.surf.ramp.id });
       // If ramp do not exists import from library
       if (libRamp == undefined) {
-        let libRamp = find(this.lib.ramps, function (o) { return o.id == libFire.surf.ramp.id });
-        let ramp = cloneDeep(libRamp);
+        libRamp = find(this.lib.ramps, function (o) { return o.id == libFire.surf.ramp.id });
+        ramp = cloneDeep(libRamp);
         ramp.uuid = idGeneratorService.genUUID();
         this.ramps.push(ramp);
       }
     }
     let fire = cloneDeep(libFire);
     fire.uuid = idGeneratorService.genUUID()
+    fire.surf.ramp = ramp != undefined ? ramp : libRamp;
     this.fires.push(fire);
   }
 

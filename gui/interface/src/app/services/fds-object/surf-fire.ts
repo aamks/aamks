@@ -139,6 +139,10 @@ export class SurfFire {
     }
 
     public toJSON(): object {
+
+        let ramp_id;
+        this.ramp == undefined ? ramp_id = '' : ramp_id = this.ramp['id'];
+
         var surf = {
             id: this.id,
             uuid: this.uuid,
@@ -153,7 +157,7 @@ export class SurfFire {
                 alpha: this.hrr['alpha'],
                 tau_q: this.hrr['tau_q'],
             },
-            ramp_id: this.ramp['id']
+            ramp_id: ramp_id
         }
         return surf;
     }

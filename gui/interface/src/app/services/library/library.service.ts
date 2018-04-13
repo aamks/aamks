@@ -19,20 +19,16 @@ export class LibraryService {
 
   /** Get library from database */
   loadLibrary() {
-
     this.httpManager.get('https://aamks.inf.sgsp.edu.pl/api/library').then((result: Result) => {
-      console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-      //Create new library
-      console.log(result.data);
       this.library = new Library(JSON.stringify(result.data));
-      console.log(this.library);
-      console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
     });
   }
 
   /** Update library in database */
   updateLibrary() {
+    this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/library', JSON.stringify(this.library.toJSON())).then((result: Result) => {
 
+    });
   }
 
 

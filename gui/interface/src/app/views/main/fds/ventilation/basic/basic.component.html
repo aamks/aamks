@@ -93,10 +93,11 @@
           </div>
         </div>
 
-
       </div>
     </div>
   </div>
+
+
 
   <div class="single-amper-container">
     <div class="list">
@@ -107,7 +108,7 @@
         <div class="list-items">
           <div class="list-item" *ngFor="let surfItem of ventilation.surfs | slice:ui.ventilation.surf.begin:(ui.ventilation.surf.begin + ui.listRange)">
             <a [ngClass]="{active: surfItem===surf}" (click)="activate(surfItem.id, 'surf')"> {{surfItem.id}} </a>
-            <i class="material-icons red" (click)="remove(surfItem.id, 'surf')">delete_forever</i>
+            <i class="material-icons red" (click)="delete(surfItem.id, 'surf')">delete_forever</i>
           </div>
         </div>
       </perfect-scrollbar>

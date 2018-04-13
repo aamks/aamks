@@ -1,5 +1,5 @@
-import {Fire} from '../fds-object/fire';
-import {JetFan} from '../fds-object/jet-fan';
+import { Fire } from '../fds-object/fire';
+import { JetFan } from '../fds-object/jet-fan';
 import { Surf } from '../fds-object/surf';
 import { Matl } from '../fds-object/matl';
 import { Ramp } from '../fds-object/ramp';
@@ -45,12 +45,12 @@ export class Library {
 			return new SurfVent(JSON.stringify(ventsurf), this.ramps);
 		});
 
-		this.jetfans = get(base, 'jetfans') === undefined ? []: map(base.jetfans, (jetfan) => {
+		this.jetfans = get(base, 'jetfans') === undefined ? [] : map(base.jetfans, (jetfan) => {
 			return new JetFan(JSON.stringify(jetfan), this.ramps);
 
 		});
 
-		this.fires = get(base, 'fires') === undefined ? []: map(base.fires, (fire) => {
+		this.fires = get(base, 'fires') === undefined ? [] : map(base.fires, (fire) => {
 			return new Fire(JSON.stringify(fire), this.ramps);
 		});
 
@@ -104,4 +104,15 @@ export class Library {
 		this._fires = value;
 	}
 
+	public toJSON(): object {
+		let library = {
+			ramps: this.ramps,
+			matls: this.matls,
+			surfs: this.surfs,
+			ventsurfs: this.ventsurfs,
+			jetfans: this.jetfans,
+			fires: this.fires
+		}
+		return library;
+	}
 }

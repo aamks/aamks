@@ -99,7 +99,7 @@ export class JetFan {
             setpoint: toNumber(get(base, 'devc.setpoint', DEVC.SETPOINT.default[0]))
         }
 
-        ramps && base.ramp != undefined ? this.ramp = find(ramps, function (ramp) { return ramp.id == base.ramp_id; }) : this.ramp = undefined;
+        ramps && base.ramp_id != '' ? this.ramp = find(ramps, function (ramp) { return ramp.id == base.ramp_id; }) : this.ramp = undefined;
 
     }
 

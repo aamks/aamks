@@ -36,6 +36,14 @@
             <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="ramp.id" stringInput>
           </div>
         </div>
+        <div>
+          <label>Ramp type:</label>
+          <div class="field-container">
+            <select [(ngModel)]="ramp.type">
+              <option *ngFor="let element of RAMP_TYPE" [ngValue]="element.value">{{element.label}}</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div class="form-row">
@@ -55,7 +63,7 @@
       <div class="lib-area">
         <div class="list">
           <div class="list-title" (click)="add(true)">
-            <i class="material-icons">add_box</i> Add JETFAN
+            <i class="material-icons">add_box</i> Add RAMP
           </div>
           <perfect-scrollbar #rampLibScrollbar (psScrollY)="scrollbarUpdate('libRamp')">
             <div class="list-items">

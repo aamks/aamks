@@ -163,19 +163,22 @@ export class JetfanComponent implements OnInit {
   public importLibraryItem(id: string) {
     let idGeneratorService = new IdGeneratorService;
     let libJetfan = find(this.lib.jetfans, function (o) { return o.id == id; });
+    let ramp = undefined;
+    let libRamp = undefined;
     if (libJetfan.ramp.id) {
       // Check if ramp already exists
-      let libRamp = find(this.ramps, function (o) { return o.id == libJetfan.ramp.id });
+      libRamp = find(this.ramps, function (o) { return o.id == libJetfan.ramp.id });
       // If ramp do not exists import from library
       if (libRamp == undefined) {
-        let libRamp = find(this.lib.ramps, function (o) { return o.id == libJetfan.ramp.id });
-        let ramp = cloneDeep(libRamp);
+        libRamp = find(this.lib.ramps, function (o) { return o.id == libJetfan.ramp.id });
+        ramp = cloneDeep(libRamp);
         ramp.uuid = idGeneratorService.genUUID();
         this.ramps.push(ramp);
       }
     }
     let jetfan = cloneDeep(libJetfan);
     jetfan.uuid = idGeneratorService.genUUID()
+    jetfan.ramp = ramp != undefined ? ramp : libRamp;
     this.jetfans.push(jetfan);
   }
 

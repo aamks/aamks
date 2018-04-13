@@ -61,7 +61,6 @@ export class RampChartComponent implements OnInit, OnChanges {
       this.updateChart();
     }
 
-    console.log(this.editor);
   }
 
   ngOnChanges() {

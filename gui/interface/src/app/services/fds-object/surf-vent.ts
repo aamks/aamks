@@ -62,7 +62,7 @@ export class SurfVent {
             tangential2: toNumber(get(base, 'louver.tangential2', SURF.VEL_T.default[1]))
         }
 
-        ramps && base.ramp != undefined ? this.ramp = find(ramps, function (ramp) { return ramp.id == base.ramp_id; }) : this.ramp = undefined;
+        ramps && base.ramp_id != '' ? this.ramp = find(ramps, function (ramp) { return ramp.id == base.ramp_id; }) : this.ramp = undefined;
 
     }
 
