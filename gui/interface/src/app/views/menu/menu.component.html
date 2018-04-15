@@ -1,4 +1,10 @@
 <div>
+
+  <div class="n0">
+    <i class="material-icons null"></i>
+    <a routerLink="/" (click)="activate('projects')" [ngClass]="{'active': uiState.fdsActive == 'projects'}">Projects</a>
+  </div>
+
   <app-fds-menu *ngIf='main.currentFdsScenario != undefined'></app-fds-menu>
   <app-risk-menu *ngIf='main.currentRiskScenario != undefined'></app-risk-menu>
 </div>

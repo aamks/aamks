@@ -6,10 +6,17 @@ $close-time-lib: 1.0s;
 $open-curve: ease-out;
 $close-curve: ease-in;
 
-//.n1:first-child {
-//    background-color: $grey1;
-//    border: none;
-//}
+.n0 {
+    background-color: $grey1;
+	height: 1.5rem;
+	padding: 0.5rem;
+    border: none;
+}
+.n0:hover {
+	color: $blue;
+	cursor: pointer;
+}
+
 
 .n1 {
     background-color: $grey2;

@@ -28,9 +28,7 @@ export class FdsMenuComponent implements OnInit {
   }
 
   activate(option: string) {
-    console.log(option);
     this.uiState.fdsActive = option;
-
   }
 
 

@@ -22,4 +22,8 @@ export class MenuComponent implements OnInit {
     this.uiStateService.getUiState().subscribe(uiState => this.uiState = uiState);
   }
 
+  activate(option: string) {
+    this.uiState.fdsActive = option;
+  }
+
 }

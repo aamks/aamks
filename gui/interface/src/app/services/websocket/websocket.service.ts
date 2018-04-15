@@ -216,6 +216,16 @@ export class WebsocketService {
       this.fds.geometry.meshes.push(mesh);
     });
 
+    /** Opens */
+    // Transform CAD elements
+    let newOpens = this.cadService.transformOpens(data.geometry.opens, this.fds.geometry.opens);
+    // Clone and delete current elements
+    remove(this.fds.geometry.opens);
+    // Set new meshes to current scenario
+    each(newOpens, (open) => {
+      this.fds.geometry.opens.push(open);
+    });
+
     /** Obsts */
     // Transform CAD elements
     let newObsts = this.cadService.transformObsts(data.geometry.obsts, this.fds.geometry.obsts);
@@ -226,6 +236,55 @@ export class WebsocketService {
       this.fds.geometry.obsts.push(obst);
     });
 
+    /** Holes */
+    // Transform CAD elements
+    let newHoles = this.cadService.transformHoles(data.geometry.holes, this.fds.geometry.holes);
+    // Clone and delete current elements
+    remove(this.fds.geometry.holes);
+    // Set new holes to current scenario
+    each(newHoles, (hole) => {
+      this.fds.geometry.holes.push(hole);
+    });
+
+    /** Vent Surfs */
+    // Transform CAD elements
+    let newVentSurfs = this.cadService.transformVentSurfs(data.ventilation.surfs, this.fds.ventilation.surfs);
+    // Clone and delete current elements
+    remove(this.fds.ventilation.surfs);
+    // Set new meshes to current scenario
+    each(newVentSurfs, (surf) => {
+      this.fds.ventilation.surfs.push(surf);
+    });
+
+    /** Vent */
+    // Transform CAD elements
+    let newVents = this.cadService.transformVents(data.ventilation.vents, this.fds.ventilation.vents);
+    // Clone and delete current elements
+    remove(this.fds.ventilation.vents);
+    // Set new meshes to current scenario
+    each(newVents, (vent) => {
+      this.fds.ventilation.vents.push(vent);
+    });
+
+    /** Vent Surfs */
+    // Transform CAD elements
+    let newJetfans = this.cadService.transformJetfans(data.ventilation.jetfans, this.fds.ventilation.jetfans);
+    // Clone and delete current elements
+    remove(this.fds.ventilation.jetfans);
+    // Set new meshes to current scenario
+    each(newJetfans, (jetfan) => {
+      this.fds.ventilation.jetfans.push(jetfan);
+    });
+
+    /** Vent Surfs */
+    // Transform CAD elements
+    let newFires = this.cadService.transformFires(data.fires, this.fds.fires.fires);
+    // Clone and delete current elements
+    remove(this.fds.fires.fires);
+    // Set new meshes to current scenario
+    each(newFires, (fire) => {
+      this.fds.fires.fires.push(fire);
+    });
 
 
   }
