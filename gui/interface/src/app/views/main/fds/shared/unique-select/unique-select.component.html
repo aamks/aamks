@@ -1,3 +1,4 @@
-<select [(ngModel)]="currentElement">
+<select [(ngModel)]="currentElement" (change)="changeMaterial()">
+  <option [ngValue]="undefined">No MATL</option>
   <option *ngFor="let element of elements" [ngValue]="element">{{element.id}}</option>
 </select>

@@ -1,5 +1,5 @@
-import { Component, OnInit, ViewEncapsulation, ViewChild, ElementRef, Input } from '@angular/core';
-import { forEach, find } from 'lodash';
+import { Component, OnInit, ViewEncapsulation, ViewChild, ElementRef, Input, Output, EventEmitter, OnChanges, HostListener } from '@angular/core';
+import { find, each } from 'lodash';
 
 @Component({
   selector: 'unique-select',
@@ -7,30 +7,69 @@ import { forEach, find } from 'lodash';
   styleUrls: ['./unique-select.component.scss'],
   encapsulation: ViewEncapsulation.None
 })
-export class UniqueSelectComponent implements OnInit {
+export class UniqueSelectComponent implements OnInit, OnChanges {
 
   //@ViewChild('rampChart') private chartContainer: ElementRef;
   @Input() private allElements: object[];
   @Input() private usedElements: object[];
-  @Input() public currentElement: object[];
+  @Input() public currentElement: object;
+  @Output() public currentElementChange: EventEmitter<object> = new EventEmitter<object>();
 
   public elements: object[] = [];
 
   constructor() { }
 
-  // TODO Monitor changing of usedElements ...
-  ngOnInit() {
-    console.log(this.allElements);
-    console.log(this.usedElements);
-    console.log(this.currentElement);
-
-    forEach(this.allElements, (element) => {
-      if(find(this.usedElements, function (o) { return o['material']['id'] == element['id']}) == undefined || element == this.currentElement) {
+  /** On mose hover update list */
+  @HostListener('mouseenter') onMouseEnter() {
+    this.elements = [];
+    each(this.allElements, (element) => {
+      if (find(this.usedElements, function (o) {
+        if (o['material'] != undefined) {
+          return o['material']['id'] == element['id']
+        }
+        else {
+          return undefined;
+        }
+      }) == undefined || element == this.currentElement) {
         this.elements.push(element);
       }
     });
   }
 
-  // TODO onChange
+  ngOnInit() {
+    this.elements = [];
+    each(this.allElements, (element) => {
+      if (find(this.usedElements, function (o) {
+        if (o['material'] != undefined) {
+          return o['material']['id'] == element['id']
+        }
+        else {
+          return undefined;
+        }
+      }) == undefined || element == this.currentElement) {
+        this.elements.push(element);
+      }
+    });
+  }
+
+  ngOnChanges() {
+    this.elements = [];
+    each(this.allElements, (element) => {
+      if (find(this.usedElements, function (o) {
+        if (o['material'] != undefined) {
+          return o['material']['id'] == element['id']
+        }
+        else {
+          return undefined;
+        }
+      }) == undefined || element == this.currentElement) {
+        this.elements.push(element);
+      }
+    });
+  }
+
+  changeMaterial() {
+    this.currentElementChange.emit(this.currentElement);
+  }
 
 }

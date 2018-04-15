@@ -6,25 +6,27 @@ import { find, get, set, toArray } from 'lodash';
 import { Ctrl } from './ctrl';
 import { FdsEntities } from '../../enums/fds-entities';
 
+export interface SurfObject {
+		type?: string,
+		oldType?: string,
+		surf_id?: string | Surf, // base object include only id to not export to db whole object of surf
+		surf_idx?: string | Surf,
+		surf_idy?: string | Surf,
+		surf_idz?: string | Surf,
+		surf_id1?: string | Surf,
+		surf_id2?: string | Surf,
+		surf_id3?: string | Surf,
+		surf_id4?: string | Surf,
+		surf_id5?: string | Surf,
+		surf_id6?: string | Surf
+}
+
 export interface ObstObject {
 	id: string,
 	uuid: string,
 	idAC: number,
 	xb: Xb,
-	surf: {
-		type: string,
-		oldType: string,
-		surf_id: string, // base object include only id to not export to db whole object of surf
-		surf_idx: string,
-		surf_idy: string,
-		surf_idz: string,
-		surf_id1: string,
-		surf_id2: string,
-		surf_id3: string,
-		surf_id4: string,
-		surf_id5: string,
-		surf_id6: string
-	},
+	surf: SurfObject,
 	elevation: number,
 	ctrl_id: string,
 	devc_id: string
@@ -35,7 +37,7 @@ export class Obst {
 	private _uuid: string;
 	private _idAC: number;
 	private _xb: Xb;
-	private _surf: object;
+	private _surf: SurfObject;
 	private _elevation: number;
 	private _thicken: boolean;
 	private _overlay: boolean;
@@ -229,11 +231,11 @@ export class Obst {
 		this._xb = value;
 	}
 
-	public get surf(): object {
+	public get surf(): SurfObject {
 		return this._surf;
 	}
 
-	public set surf(value: object) {
+	public set surf(value: SurfObject) {
 		this._surf = value;
 	}
 

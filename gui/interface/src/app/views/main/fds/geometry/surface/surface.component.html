@@ -120,79 +120,24 @@
             <div>
               <label>Select material:</label>
               <div class="field-container">
-                <unique-select [allElements]="matls" [usedElements]="layer.materials" [currentElement]="material.material"></unique-select> 
-
-      <!--<ramp-chart *ngIf="matl.conductivity_ramp && matl.conductivity_ramp.steps.length > 0" [rampId]="matl.conductivity_ramp.id"
-        [value]="matl.conductivity" [objectType]="objectType" [xLabel]="'Temperature'" [yLabel]="'Conductivity'" [units]="['\\degree C','W/(m K)']"></ramp-chart>-->
-
+                <unique-select *ngIf="objectType == 'current'" [allElements]="matls" [usedElements]="layer.materials" [(currentElement)]="material.material"></unique-select> 
+                <unique-select *ngIf="objectType == 'library'" [allElements]="libMatls" [usedElements]="layer.materials" [(currentElement)]="material.material"></unique-select> 
               </div>
             </div>
             <div>
-              <!--<wf-unique-select list="geometry.matls" used="$parent.layer.materials" model="material.material" />-->
               <label>Mass fraction:</label>
               <div class="field-container">
                 <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="material.fraction" decimalInput>
               </div>
             </div>
-
             <div>
               <label>Delete material:</label>
               <div class="field-container">
                 <i class="material-icons red" (click)="deleteMaterial(layerIndex, materialIndex)">delete_forever</i>
               </div>
-
-            </div>
-
-
-
-          </div>
-
-        </div>
-
-        <!--
-        <div class="from-row" *ngFor="let layer of surf.layers">
-          <div class="form-row-top">
-            <div class="form-row-bottom">
-              <div class="form-row-small">
-                <div>Layer {{$index}}:</div>
-              </div>
-              <div class="form-row-small">
-                <div>
-                  <label>Thickness:</label>
-                  <div>
-                    <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="layer.thickness" />
-                    <ng-katex equation="m"></ng-katex>
-                  </div>
-                </div>
-              </div>
-              <div class="form-row-link" (click)="functions.surf.layer.remove($index)">
-                <i class="material-icons red">delete_forever</i>
-                <div>Delete layer</div>
-              </div>
-              <div class="form-row-link" (click)="functions.surf.layer.material.newMaterial($index)">
-                <i class="material-icons">add_box</i>
-                <div>Add material</div>
-              </div>
-            </div>
-            <div class="form-row-bottom">
-              <div class="form-row-small-top">
-                <div>
-                  <div class="form-row-small" *ngFor="let material of layer.materials">
-                    <div>
-                      <wf-unique-select list="geometry.matls" used="$parent.layer.materials" model="material.material" />
-                    </div>
-                    <div>
-                      <label>Mass fraction:</label>
-                      <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="material.fraction" />
-                    </div>
-                    <i class="material-icons red" (click)="functions.surf.layer.material.remove($parent.$index, $index)">delete_forever</i>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
-      -->
       </div>
     </div>
   </div>

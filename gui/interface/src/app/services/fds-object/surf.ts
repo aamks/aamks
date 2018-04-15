@@ -91,7 +91,7 @@ export class Surf {
 
     /** Add material to layer in surf */
     public addMaterial(layerIndex) {
-        let layer = this._layers[layerIndex];
+        let layer = this.layers[layerIndex];
         layer.materials.push({
             material: undefined,
             fraction: 0
@@ -187,7 +187,10 @@ export class Surf {
             transparency: this.transparency,
             layers: map(this.layers, function (layer) {
                 let materials = map(layer.materials, function (value) {
-                    return { matl_id: value['material']['id'], fraction: value['fraction'] }
+                    if(value.material != undefined)
+                        return { matl_id: value.material.id, fraction: value.fraction };
+                    else
+                        return { matl_id: '', fraction: value.fraction };
                 });
                 return { thickness: layer.thickness, materials: materials };
             })

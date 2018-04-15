@@ -140,15 +140,15 @@ import { BuildingInfrastructureComponent } from './views/main/risk/building-infr
   providers: [
     MainService,
     HttpManagerService,
+    LibraryService,
     WebsocketService,
     ProjectService,
     FdsScenarioService,
     RiskScenarioService,
     IdGeneratorService,
-    CadService,
-    LibraryService,
     UiStateService,
     CategoryService,
+    CadService,
     {
       provide: HTTP_INTERCEPTORS,
       useClass: HttpManagerInterceptor,

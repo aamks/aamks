@@ -13,6 +13,8 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { cloneDeep, find, set, findIndex, each } from 'lodash';
 import { FdsEnums } from '../../../../../enums/fds-enums';
 import { IdGeneratorService } from '../../../../../services/id-generator/id-generator.service';
+import { By } from '@angular/platform-browser';
+import { UniqueSelectComponent } from '../../shared/unique-select/unique-select.component';
 
 @Component({
   selector: 'app-surface',
@@ -52,6 +54,7 @@ export class SurfaceComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    console.clear();
     // Subscribe main object
     this.mainService.getMain().subscribe(main => this.main = main);
     this.uiStateService.getUiState().subscribe(ui => this.ui = ui);
@@ -196,10 +199,6 @@ export class SurfaceComponent implements OnInit {
 
   public addMaterial(layerIndex: number) {
     this.surf.addMaterial(layerIndex);
-  }
-
-  public changeMaterial() {
-    console.log('dupaaaa');
   }
 
   public deleteMaterial(layerIndex: number, materialIndex: number) {
