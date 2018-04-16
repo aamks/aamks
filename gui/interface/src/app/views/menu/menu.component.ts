@@ -23,7 +23,7 @@ export class MenuComponent implements OnInit {
   }
 
   activate(option: string) {
-    this.uiState.fdsActive = option;
+    this.uiState.active = option;
   }
 
 }

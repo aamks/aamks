@@ -18,10 +18,11 @@ export interface BuildingInfrastructureObject {
     alarming: string,
     sprinklers: {
         activationTemperature: number,
-        activationObscuration: number,
+        activationObscuration: number, // ? do sprawdzenia 
         rti: number,
         sprayDensity: number
     },
+    detectorType: string,
     detectors: {
         rti: number,
         activationTemperature: number,

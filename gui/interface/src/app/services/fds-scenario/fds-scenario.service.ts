@@ -59,9 +59,15 @@ export class FdsScenarioService {
    * @param fdsScenarioId 
    * @param syncType Default value: 'all'
    */
-  updateFdsScenario(syncType: string = 'all') {
+  updateFdsScenario(projectId: number, fdsScenarioId: number, syncType: string = 'all') {
+    // Find project
+    let project = find(this.main.projects, (project) => {
+      return project.id == projectId;
+    });
+    let fdsScenario = find(project.fdsScenarios, (fdsScenario) => {
+      return fdsScenario.id == fdsScenarioId;
+    });
     // Sync only main info without fds object
-    let fdsScenario = this.main.currentFdsScenario;
     if (syncType == 'head') {
       this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/fdsScenario/' + fdsScenario.id, JSON.stringify({ type: "head", data: { id: fdsScenario.id, name: fdsScenario.name } })).then((result: Result) => {
 

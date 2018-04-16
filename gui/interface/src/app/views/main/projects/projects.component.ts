@@ -16,15 +16,15 @@ import { RiskScenarioService } from '../../../services/risk-scenario/risk-scenar
   styleUrls: ['./projects.component.scss']
 })
 export class ProjectsComponent implements OnInit {
-  main:Main;
-  projects:Project[] = [];
+  main: Main;
+  projects: Project[] = [];
 
-  constructor(private mainService:MainService, 
-              private projectService:ProjectService, 
-              private fdsScenarioService:FdsScenarioService,
-              private riskScenarioService:RiskScenarioService,
-              private categoryService:CategoryService
-            ) { }
+  constructor(private mainService: MainService,
+    private projectService: ProjectService,
+    private fdsScenarioService: FdsScenarioService,
+    private riskScenarioService: RiskScenarioService,
+    private categoryService: CategoryService
+  ) { }
 
   ngOnInit() {
     this.mainService.getMain().subscribe(main => this.main = main);
@@ -32,7 +32,7 @@ export class ProjectsComponent implements OnInit {
   }
 
   /** Set/unset project to current in main object */
-  setCurrentProject(index:number) {
+  setCurrentProject(index: number) {
     this.projectService.setCurrnetProject(index);
   }
   unsetCurrentProject() {
@@ -45,21 +45,21 @@ export class ProjectsComponent implements OnInit {
   }
 
   /** Update project name/desc/category in DB */
-  updateProject(index:number) {
+  updateProject(index: number) {
     this.projectService.updateProject(index);
   }
 
   /** Delete project from DB */
-  deleteProject(index:number){
+  deleteProject(index: number) {
     this.projectService.deleteProject(index);
   }
 
   /** Check if category is visible (turned on/off) */
-  checkProjectCategory(categoryUuid:string) {
-    let category = _.find(this.main.categories, function(category) {
+  checkProjectCategory(categoryUuid: string) {
+    let category = _.find(this.main.categories, function (category) {
       return category.uuid == categoryUuid;
     });
-    if(category && category.active == true) {
+    if (category && category.active == true) {
       return true;
     } else {
       return false;
@@ -67,9 +67,9 @@ export class ProjectsComponent implements OnInit {
   }
 
   /** Change category activity */
-  changeCategoryActivity(categoryUuid:string, categoryIndex:number) {
-    if(this.main.currentProject != undefined && this.main.currentProject.category == categoryUuid) {
-      if(this.main.currentFdsScenario != undefined) {
+  changeCategoryActivity(categoryUuid: string, categoryIndex: number) {
+    if (this.main.currentProject != undefined && this.main.currentProject.category == categoryUuid) {
+      if (this.main.currentFdsScenario != undefined) {
         this.main.currentFdsScenario = undefined;
       }
       this.main.currentProject = undefined;
@@ -78,47 +78,47 @@ export class ProjectsComponent implements OnInit {
   }
 
   /** Set fds scenario to current */
-  setCurrentFdsScenario(projectId:number, fdsScenarioId:number) {
+  setCurrentFdsScenario(projectId: number, fdsScenarioId: number) {
     this.fdsScenarioService.setCurrentFdsScenario(projectId, fdsScenarioId).subscribe();
   }
 
   /** Add fds scenario */
-  addFdsScenario(projectId:number) {
+  addFdsScenario(projectId: number) {
     this.fdsScenarioService.createFdsScenario(projectId);
   }
 
   /** Set fds scenario name  */
-  updateFdsScenario() {
-    this.fdsScenarioService.updateFdsScenario('head');
+  updateFdsScenario(projectId: number, fdsScenarioId: number) {
+    this.fdsScenarioService.updateFdsScenario(projectId, fdsScenarioId, 'head');
   }
 
   /** Download fds file */
-  downloadFdsScenario(projectId:number, fdsScenarioId:number) {
+  downloadFdsScenario(projectId: number, fdsScenarioId: number) {
     console.log("download fds scenario");
   }
 
   /** Delete fds scenario */
-  deleteFdsScenario(projectIndex:number, fdsScenarioIndex:number) {
+  deleteFdsScenario(projectIndex: number, fdsScenarioIndex: number) {
     this.fdsScenarioService.deleteFdsScenario(projectIndex, fdsScenarioIndex);
   }
 
   /** Set risk scenario to current */
-  setCurrentRiskScenario(projectId:number, riskScenarioId:number) {
+  setCurrentRiskScenario(projectId: number, riskScenarioId: number) {
     this.riskScenarioService.setCurrentRiskScenario(projectId, riskScenarioId).subscribe();
   }
 
   /** Add risk scenario */
-  addRiskScenario(projectId:number) {
+  addRiskScenario(projectId: number) {
     this.riskScenarioService.createRiskScenario(projectId);
   }
 
   /** Update risk scenario */
-  updateRiskScenario(projectId:number, riskScenarioId:number) {
+  updateRiskScenario(projectId: number, riskScenarioId: number) {
     this.riskScenarioService.updateRiskScenario(projectId, riskScenarioId, 'head');
   }
 
   /** Delete fds scenario */
-  deleteRiskScenario(projectIndex:number, riskScenarioIndex:number) {
+  deleteRiskScenario(projectIndex: number, riskScenarioIndex: number) {
     this.riskScenarioService.deleteRiskScenario(projectIndex, riskScenarioIndex);
   }
 

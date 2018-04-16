@@ -9,11 +9,10 @@ export class UiState {
 	private _parts: any;
 	private _ramps: any;
 
-	private _fdsMenu: any;
-	private _fdsActive: string;
+	private _active: string;
 
+	private _fdsMenu: any;
 	private _riskMenu: any;
-	private _riskActive: string;
 	
 	private _listRange: number = 200;
 
@@ -174,19 +173,37 @@ export class UiState {
 	}
 
     /**
-     * Getter fdsActive
+     * Getter active
      * @return {string}
      */
-	public get fdsActive(): string {
-		return this._fdsActive;
+	public get active(): string {
+		return this._active;
 	}
 
     /**
-     * Setter fdsActive
+     * Setter active
      * @param {string} value
      */
-	public set fdsActive(value: string) {
-		this._fdsActive = value;
+	public set active(value: string) {
+		this._active = value;
 	}
+
+    /**
+     * Getter riskMenu
+     * @return {any}
+     */
+	public get riskMenu(): any {
+		return this._riskMenu;
+	}
+
+    /**
+     * Setter riskMenu
+     * @param {any} value
+     */
+	public set riskMenu(value: any) {
+		this._riskMenu = value;
+	}
+
+
 
 }

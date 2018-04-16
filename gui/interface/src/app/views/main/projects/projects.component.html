@@ -43,7 +43,7 @@
                 <i class="material-icons ico">apps</i>
             </div>
             <div class="scenario-controls">
-                <input type="text" [(ngModel)]="fdsScenario.name" [ngModelOptions]="{updateOn:'blur'}" (blur)="updateFdsScenario()" />
+                <input type="text" [(ngModel)]="fdsScenario.name" [ngModelOptions]="{updateOn:'blur'}" (blur)="updateFdsScenario(project.id, fdsScenario.id)" />
                 <i class="material-icons ml+" (click)="downloadFdsScenario(project.id, fdsScenario.id)">file_download</i>
                 <i class="material-icons ml+ red" (click)="deleteFdsScenario(projectIndex, fdsScenarioIndex)">delete_forever</i>
             </div>

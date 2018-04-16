@@ -2,7 +2,7 @@
 
   <div class="n0">
     <i class="material-icons null"></i>
-    <a routerLink="/" (click)="activate('projects')" [ngClass]="{'active': uiState.fdsActive == 'projects'}">Projects</a>
+    <a routerLink="/" (click)="activate('projects')" [ngClass]="{'active': uiState.active == 'projects'}">Projects</a>
   </div>
 
   <app-fds-menu *ngIf='main.currentFdsScenario != undefined'></app-fds-menu>

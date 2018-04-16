@@ -14,15 +14,18 @@
         <i class="material-icons">view_list</i>
         <a routerLink="">Projects</a>
         <span *ngIf="main.currentProject != undefined">
-          &nbsp;| Active project: {{main.currentProject.name}}
+          &nbsp;| Active project: {{main.currentProject.name}} ({{main.currentProject.id}})
         </span>
         <span *ngIf="main.currentProject != undefined && main.currentFdsScenario != undefined">
-          &nbsp;| Active scenario: {{main.currentFdsScenario.name}}
+          &nbsp;| Active scenario: {{main.currentFdsScenario.name}} ({{main.currentFdsScenario.id}})
+        </span>
+        <span *ngIf="main.currentProject != undefined && main.currentRiskScenario != undefined">
+          &nbsp;| Active scenario: {{main.currentRiskScenario.name}} ({{main.currentRiskScenario.id}})
         </span>
       </div>
     </div>
     <div>
-      <span *ngIf="main.currentFdsScenario != undefined" (click)="updateFdsScenario()">Save FDS scenario
+      <span *ngIf="main.currentFdsScenario != undefined" (click)="updateFdsScenario(main.currentProject.id, main.currentFdsScenario.id)">Save FDS scenario
         <i class="material-icons">save</i>
       </span>
       <span *ngIf="main.currentRiskScenario != undefined" (click)="updateRiskScenario()">Save Risk scenario

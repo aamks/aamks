@@ -1,22 +1,22 @@
 <div>
   <div class="n1">
     <i class="material-icons null"></i>
-    <a routerLink="risk/general">General</a>
+    <a routerLink="risk/general" (click)="activate('general')" [ngClass]="{'active': uiState.active == 'general'}">General</a>
   </div>
   <div class="n1">
     <i class="material-icons null"></i>
-    <a routerLink="risk/characteristic">Characteristic</a>
+    <a routerLink="risk/characteristic" (click)="activate('characteristic')" [ngClass]="{'active': uiState.active == 'characteristic'}">Characteristic</a>
   </div>
   <div class="n1">
     <i class="material-icons null"></i>
-    <a routerLink="risk/infrastructure">Infrastructure</a>
+    <a routerLink="risk/infrastructure" (click)="activate('infrastructure')" [ngClass]="{'active': uiState.active == 'infrastructure'}">Infrastructure</a>
   </div>
   <div class="n1">
     <i class="material-icons null"></i>
-    <a routerLink="risk/settings">Settings</a>
+    <a routerLink="risk/settings" (click)="activate('settings')" [ngClass]="{'active': uiState.active == 'settings'}">Settings</a>
   </div>
   <div class="n1">
     <i class="material-icons null"></i>
-    <a routerLink="risk/results">Results</a>
+    <a routerLink="risk/results" (click)="activate('results')" [ngClass]="{'active': uiState.active == 'results'}">Results</a>
   </div>
 </div>
