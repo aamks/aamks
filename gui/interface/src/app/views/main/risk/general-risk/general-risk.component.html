@@ -8,7 +8,7 @@
       <div>
         <label>Scenario name:</label>
         <div class="field-container">
-          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.project_name" stringInput>
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.projectName" stringInput>
         </div>
       </div>
       <div>
@@ -20,28 +20,28 @@
       <div>
         <label>Simulation time:</label>
         <div class="field-container">
-          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.simulation_time" decimalInput>
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.simulationTime" decimalInput>
           <ng-katex equation="s"></ng-katex>
         </div>
       </div>
       <div>
         <label>Number of simulations:</label>
         <div class="field-container">
-          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.number_of_simulations" decimalInput>
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.numberOfSimulations" decimalInput>
           <ng-katex equation="s"></ng-katex>
         </div>
       </div>
       <div>
         <label>Indoor temperature:</label>
         <div class="field-container">
-          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoor_temp" decimalInput>
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoorTemperature" decimalInput>
           <ng-katex equation="s"></ng-katex>
         </div>
       </div>
       <div>
         <label>Indoor pressure:</label>
         <div class="field-container">
-          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoor_pressure" decimalInput>
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoorPressure" decimalInput>
         </div>
       </div>
     </div>
