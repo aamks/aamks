@@ -5,9 +5,10 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { of } from 'rxjs/observable/of';
-import { find } from 'lodash';
+import { find, findIndex } from 'lodash';
 import { FdsScenario, FdsScenarioObject } from './fds-scenario';
 import { Fds } from '../fds-object/fds-object';
+import { Project } from '../project/project';
 
 @Injectable()
 export class FdsScenarioService {
@@ -60,22 +61,30 @@ export class FdsScenarioService {
    * @param syncType Default value: 'all'
    */
   updateFdsScenario(projectId: number, fdsScenarioId: number, syncType: string = 'all') {
-    // Find project
-    let project = find(this.main.projects, (project) => {
-      return project.id == projectId;
-    });
-    let fdsScenario = find(project.fdsScenarios, (fdsScenario) => {
-      return fdsScenario.id == fdsScenarioId;
-    });
+
     // Sync only main info without fds object
     if (syncType == 'head') {
+      let projectIndex = findIndex(this.main.projects, function (o) {
+        return o.id == projectId;
+      });
+      let fdsScenarioIndex = findIndex(this.main.projects[projectIndex].fdsScenarios, function (o) {
+        return o.id == fdsScenarioId;
+      });
+      let fdsScenario = this.main.projects[projectIndex].fdsScenarios[fdsScenarioIndex];
       this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/fdsScenario/' + fdsScenario.id, JSON.stringify({ type: "head", data: { id: fdsScenario.id, name: fdsScenario.name } })).then((result: Result) => {
-
+        this.main.currentFdsScenario = fdsScenario;
       });
     }
     else if (syncType == 'all') {
-      this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/fdsScenario/' + fdsScenario.id, JSON.stringify({type: 'all', data: fdsScenario.toJSON() } )).then((result: Result) => {
-
+      let fdsScenario = this.main.currentFdsScenario;
+      this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/fdsScenario/' + fdsScenario.id, JSON.stringify({ type: 'all', data: fdsScenario.toJSON() })).then((result: Result) => {
+        let projectIndex = findIndex(this.main.projects, function (o) {
+          return o.id == projectId;
+        });
+        let fdsScenarioIndex = findIndex(this.main.projects[projectIndex].fdsScenarios, function (o) {
+          return o.id == fdsScenarioId;
+        });
+        this.main.projects[projectIndex].fdsScenarios[fdsScenarioIndex] = fdsScenario;
       });
     }
   }

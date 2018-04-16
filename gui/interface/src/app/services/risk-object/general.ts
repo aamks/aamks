@@ -2,71 +2,71 @@ import { get } from 'lodash';
 import { RiskEntities } from '../../enums/risk-entities';
 
 export interface GeneralObject {
-    project_name: string,
-    simulation_time: number,
-    number_of_simulations: number,
-    indoor_temperature: number,
-    elevation: number,
-    indoor_pressure: number,
-    humidity: number
+	projectName: string,
+	simulationTime: number,
+	numberOfSimulations: number,
+	indoorTemperature: number,
+	elevation: number,
+	indoorPressure: number,
+	humidity: number
 }
 
 export class General {
 
-    private _project_name: string;
-    private _simulation_time: number;
-    private _number_of_simulations: number;
-    private _indoor_temp: number;
-    private _elevation: number;
-    private _indoor_pressure: number;
-    private _humidity: number;
+	private _projectName: string;
+	private _simulationTime: number;
+	private _numberOfSimulations: number;
+	private _indoorTemperature: number;
+	private _elevation: number;
+	private _indoorPressure: number;
+	private _humidity: number;
 
-    constructor(jsonString: string) {
+	constructor(jsonString: string) {
 
-        let base: GeneralObject;
-        base = <GeneralObject>JSON.parse(jsonString);
+		let base: GeneralObject;
+		base = <GeneralObject>JSON.parse(jsonString);
 
-        let GENERAL = RiskEntities.general;
+		let GENERAL = RiskEntities.general;
 
-        this.project_name = get(base, 'project_name', GENERAL.projectName.default) as string;
-        this.simulation_time = get(base, 'simulation_time', GENERAL.simulationTime.default) as number;
-        this.number_of_simulations = get(base, 'number_of_simulations', GENERAL.numberOfSimulations.default) as number;
-        this.indoor_temp = get(base, 'indoor_temp', GENERAL.indoorTemperature.default) as number;
-        this.elevation = get(base, 'elevation', GENERAL.elevation.default) as number;
-        this.indoor_pressure = get(base, 'indoor_pressure', GENERAL.indoorPressure.default) as number;
-        this.humidity = get(base, 'humidity', GENERAL.humidity.default) as number;
-    }
-
-	public get project_name(): string {
-		return this._project_name;
+		this.projectName = get(base, 'projectName', GENERAL.projectName.default) as string;
+		this.simulationTime = get(base, 'simulationTime', GENERAL.simulationTime.default) as number;
+		this.numberOfSimulations = get(base, 'numberOfSimulations', GENERAL.numberOfSimulations.default) as number;
+		this.indoorTemperature = get(base, 'indoorTemperature', GENERAL.indoorTemperature.default) as number;
+		this.elevation = get(base, 'elevation', GENERAL.elevation.default) as number;
+		this.indoorPressure = get(base, 'indoorPressure', GENERAL.indoorPressure.default) as number;
+		this.humidity = get(base, 'humidity', GENERAL.humidity.default) as number;
 	}
 
-	public set project_name(value: string) {
-		this._project_name = value;
+	public get projectName(): string {
+		return this._projectName;
 	}
 
-	public get simulation_time(): number {
-		return this._simulation_time;
+	public set projectName(value: string) {
+		this._projectName = value;
 	}
 
-	public set simulation_time(value: number) {
-		this._simulation_time = value;
+	public get simulationTime(): number {
+		return this._simulationTime;
 	}
 
-	public get number_of_simulations(): number {
-		return this._number_of_simulations;
+	public set simulationTime(value: number) {
+		this._simulationTime = value;
 	}
 
-	public set number_of_simulations(value: number) {
-		this._number_of_simulations = value;
+	public get numberOfSimulations(): number {
+		return this._numberOfSimulations;
 	}
 
-	public get indoor_temp(): number {
-		return this._indoor_temp;
+	public set numberOfSimulations(value: number) {
+		this._numberOfSimulations = value;
 	}
 
-	public set indoor_temp(value: number) {
-		this._indoor_temp = value;
+	public get indoorTemperature(): number {
+		return this._indoorTemperature;
+	}
+
+	public set indoorTemperature(value: number) {
+		this._indoorTemperature = value;
 	}
 
 	public get elevation(): number {
@@ -77,12 +77,12 @@ export class General {
 		this._elevation = value;
 	}
 
-	public get indoor_pressure(): number {
-		return this._indoor_pressure;
+	public get indoorPressure(): number {
+		return this._indoorPressure;
 	}
 
-	public set indoor_pressure(value: number) {
-		this._indoor_pressure = value;
+	public set indoorPressure(value: number) {
+		this._indoorPressure = value;
 	}
 
 	public get humidity(): number {
@@ -92,5 +92,19 @@ export class General {
 	public set humidity(value: number) {
 		this._humidity = value;
 	}
+
+	public toJSON(): object {
+		let general = {
+			projectName: this.projectName,
+			simulationTime: this.simulationTime,
+			numberOfSimulations: this.numberOfSimulations,
+			indoorTemperature: this.indoorTemperature,
+			elevation: this.elevation,
+			indoorPressure: this.indoorPressure,
+			humidity: this.humidity
+		}
+		return general;
+	}
+
 
 }

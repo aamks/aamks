@@ -1,32 +1,32 @@
 import { Fds, FdsObject } from '../fds-object/fds-object';
 
 export interface FdsScenarioObject {
-    id:number,
-    projectId:number,
-    name:string,
-    description:string,
-    fdsFile:string,
-    fdsObject:Fds,
-    acFile:string,
-    acHash:string,
+    id: number,
+    projectId: number,
+    name: string,
+    description: string,
+    fdsFile: string,
+    fdsObject: Fds,
+    acFile: string,
+    acHash: string,
     //_ui_state=base['ui_state']|| {}; // make ui state object / service
 }
 
 export class FdsScenario {
-    private _id:number;
-    private _projectId:number;
-    private _name:string;
-    private _description:string;
-    private _fdsFile:string;
-    private _fdsObject:Fds;
-    private _acFile:string;
-    private _acHash:string;
+    private _id: number;
+    private _projectId: number;
+    private _name: string;
+    private _description: string;
+    private _fdsFile: string;
+    private _fdsObject: Fds;
+    private _acFile: string;
+    private _acHash: string;
     //_ui_state=base['ui_state']|| {}; // make ui state object / service
 
-    constructor(jsonString:string) {
+    constructor(jsonString: string) {
 
-        let base:FdsScenarioObject;
-        base = <FdsScenarioObject>JSON.parse(jsonString); 
+        let base: FdsScenarioObject;
+        base = <FdsScenarioObject>JSON.parse(jsonString);
 
         this.id = base.id || 0;
         this.projectId = base.projectId || 0;
@@ -45,77 +45,77 @@ export class FdsScenario {
         this.acHash = base.acHash || '';
     }
 
-    public get id(){
+    public get id() {
         return this._id;
     }
-    public set id(id:number){
+    public set id(id: number) {
         this._id = id;
     }
 
-	public get projectId(): number {
-		return this._projectId;
-	}
+    public get projectId(): number {
+        return this._projectId;
+    }
 
-	public set projectId(value: number) {
-		this._projectId = value;
-	}
+    public set projectId(value: number) {
+        this._projectId = value;
+    }
 
-	public get name(): string {
-		return this._name;
-	}
+    public get name(): string {
+        return this._name;
+    }
 
-	public set name(value: string) {
-		this._name = value;
-	}
+    public set name(value: string) {
+        this._name = value;
+    }
 
-	public get description(): string {
-		return this._description;
-	}
+    public get description(): string {
+        return this._description;
+    }
 
-	public set description(value: string) {
-		this._description = value;
-	}
+    public set description(value: string) {
+        this._description = value;
+    }
 
-	public get fdsFile(): string {
-		return this._fdsFile;
-	}
+    public get fdsFile(): string {
+        return this._fdsFile;
+    }
 
-	public set fdsFile(value: string) {
-		this._fdsFile = value;
-	}
+    public set fdsFile(value: string) {
+        this._fdsFile = value;
+    }
 
-	public get fdsObject(): Fds {
-		return this._fdsObject;
-	}
+    public get fdsObject(): Fds {
+        return this._fdsObject;
+    }
 
-	public set fdsObject(value: Fds) {
-		this._fdsObject = value;
-	}
+    public set fdsObject(value: Fds) {
+        this._fdsObject = value;
+    }
 
-	public get acFile(): string {
-		return this._acFile;
-	}
+    public get acFile(): string {
+        return this._acFile;
+    }
 
-	public set acFile(value: string) {
-		this._acFile = value;
-	}
+    public set acFile(value: string) {
+        this._acFile = value;
+    }
 
-	public get acHash(): string {
-		return this._acHash;
-	}
+    public get acHash(): string {
+        return this._acHash;
+    }
 
-	public set acHash(value: string) {
-		this._acHash = value;
-	}
+    public set acHash(value: string) {
+        this._acHash = value;
+    }
 
     public toJSON(): object {
-        let fdsScenario:object = {
+        let fdsScenario: object = {
             id: this.id,
             projectId: this.projectId,
             name: this.name,
             description: this.description,
             fdsFile: this.fdsFile,
-            fdsObject: this.fdsObject,
+            fdsObject: this.fdsObject.toJSON(),
             acFile: this.acFile,
             acHash: this.acHash,
             uiState: {}

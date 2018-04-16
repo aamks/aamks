@@ -108,6 +108,15 @@ export class BuildingCharacteristic {
         this._materials = value;
     }
 
+    public toJSON(): object {
+        let buildingCharacteristic = {
+            type: this.type,
+            complexity: this.complexity,
+            managment: this.managment,
+            materials: this.materials
+        }
+        return buildingCharacteristic;
+    }
 
 }
 

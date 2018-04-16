@@ -11,6 +11,7 @@ import { resolve } from 'q';
 import { MeshObject } from '../fds-object/mesh';
 import { cloneDeep, remove, each } from 'lodash';
 import { Fds } from '../fds-object/fds-object';
+import { Risk } from '../risk-object/risk-object';
 
 @Injectable()
 export class WebsocketService {
@@ -24,14 +25,15 @@ export class WebsocketService {
 
   main: Main;
   fds: Fds;
+  risk: Risk;
 
   requestCallbacks: object = {};
   requestStatus = new Subject<string>();
 
   constructor(
-    private mainService: MainService, 
+    private mainService: MainService,
     private cadService: CadService
-  ) { 
+  ) {
     this.mainService.getMain().subscribe(main => this.main = main);
   }
 
@@ -145,7 +147,6 @@ export class WebsocketService {
    * Creates new fds object with new geometry.
    */
   private requestMessage(message: WebsocketMessage) {
-    this.fds = this.main.currentFdsScenario.fdsObject;
 
     console.clear();
     console.log("Request from CAD ...");
@@ -162,16 +163,34 @@ export class WebsocketService {
 
     try {
       switch (message.method) {
-        case "fExport": {
-          console.log("fExport");
-          this.main.currentFdsScenario != undefined ? this.fExport(message.data) : console.log("Currnet scenario undefined");
+        case 'fExport': {
+          console.log('fExport');
+          if (this.main.currentFdsScenario != undefined) {
+            this.fds = this.main.currentFdsScenario.fdsObject;
+            this.fExport(message.data);
+          }
+          else {
+            answer.status = "error";
+          }
+          break;
+        }
+
+        case 'fSelect': {
 
           break;
         }
-        case "fSelect": {
 
+        case 'cExport': {
+          console.log('cExport');
+          if (this.main.currentRiskScenario != undefined) {
+            this.main.currentRiskScenario.riskObject.geometry = message.data;
+          }
+          else {
+            answer.status = "error";
+          }
           break;
         }
+
         default: {
 
           break;

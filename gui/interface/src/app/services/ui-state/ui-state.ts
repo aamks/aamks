@@ -25,6 +25,8 @@ export class UiState {
 			species: true
 		}
 
+		this.active = "projects";
+
 		this.general = { tab: 0, list: 0, elementIndex: 0 }
 
 		this.geometry = {

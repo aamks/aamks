@@ -40,6 +40,7 @@ export class BuildingInfrastructure {
     private _hasNshevs: boolean;
     private _alarming: string;
     private _sprinklers: any;
+    private _detectorType: any;
     private _detectors: any;
     private _nshevs: any;
 
@@ -154,6 +155,22 @@ export class BuildingInfrastructure {
     }
 
     /**
+     * Getter detectorType
+     * @return {any}
+     */
+    public get detectorType(): any {
+        return this._detectorType;
+    }
+
+    /**
+     * Setter detectorType
+     * @param {any} value
+     */
+    public set detectorType(value: any) {
+        this._detectorType = value;
+    }
+
+    /**
      * Getter detectors
      * @return {any}
      */
@@ -185,7 +202,19 @@ export class BuildingInfrastructure {
         this._nshevs = value;
     }
 
-
+    public toJSON(): object {
+        let buildingInfrastructure = {
+            hasDetectors: this.hasDetectors,
+            hasSprinklers: this.hasSprinklers,
+            hasNshevs: this.hasNshevs,
+            alarming: this.alarming,
+            sprinklers: this.sprinklers,
+            detectorType: this.detectorType,
+            detectors: this.detectors,
+            nshevs: this.nshevs
+        }
+        return buildingInfrastructure;
+    }
 
 }
 

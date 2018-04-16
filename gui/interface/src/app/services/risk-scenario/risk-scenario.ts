@@ -98,18 +98,18 @@ export class RiskScenario {
         this._acHash = value;
     }
 
-    public toJSON(): string {
-        let riskScenario:object = {
+    public toJSON(): object {
+        let riskScenario: object = {
             id: this.id,
             projectId: this.projectId,
             name: this.name,
             description: this.description,
-            riskObject: this.riskObject,
+            riskObject: this.riskObject.toJSON(),
             acFile: this.acFile,
             acHash: this.acHash,
             uiState: {}
         }
-        return JSON.stringify(riskScenario);
+        return riskScenario;
     }
 
 }

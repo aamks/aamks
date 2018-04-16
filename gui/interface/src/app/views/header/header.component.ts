@@ -5,6 +5,7 @@ import { WebsocketService } from '../../services/websocket/websocket.service';
 import { FdsScenarioService } from '../../services/fds-scenario/fds-scenario.service';
 import { Library } from '../../services/library/library';
 import { LibraryService } from '../../services/library/library.service';
+import { RiskScenarioService } from '../../services/risk-scenario/risk-scenario.service';
 
 @Component({
   selector: 'app-header',
@@ -20,6 +21,7 @@ export class HeaderComponent implements OnInit {
     private mainService: MainService, 
     private websocket: WebsocketService, 
     private fdsScenarioService: FdsScenarioService, 
+    private riskScenarioService: RiskScenarioService, 
     private libraryService: LibraryService
   ) {}
 
@@ -30,7 +32,7 @@ export class HeaderComponent implements OnInit {
     }, 1000)
   }
 
-  showDiagnosticData() {
+  public showDiagnosticData() {
     console.clear();
     console.log("======== Diagnostic ========");
     console.log("--- Main -------------------");
@@ -44,17 +46,27 @@ export class HeaderComponent implements OnInit {
     console.log("======== End Diagnostic ========");
   }
 
-  setCurrentFdsScenario(projectId: number, fdsScenarioId: number) {
+  public setCurrentFdsScenario(projectId: number, fdsScenarioId: number) {
     this.fdsScenarioService.setCurrentFdsScenario(projectId, fdsScenarioId).subscribe();
   }
 
   /** Update FDS scenario */
-  updateFdsScenario(projectId: number, fdsScenarioId: number) {
+  public updateFdsScenario(projectId: number, fdsScenarioId: number) {
     this.fdsScenarioService.updateFdsScenario(projectId, fdsScenarioId);
   }
 
+  /** Update risk scenario */
+  public updateRiskScenario(projectId: number, riskScenarioId: number) {
+    this.riskScenarioService.updateRiskScenario(projectId, riskScenarioId);
+  }
+
+  /** Run risk scenario */
+  public runRiskScenario() {
+    this.riskScenarioService.runRiskScenario();
+  }
+
   /** Update FDS library */
-  updateFdsLibrary() {
+  public updateFdsLibrary() {
     this.libraryService.updateLibrary();
   }
 

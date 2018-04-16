@@ -6,7 +6,7 @@ import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { of } from 'rxjs/observable/of';
 import { RiskScenario } from './risk-scenario';
-import { find } from 'lodash';
+import { find, findIndex } from 'lodash';
 import { Risk } from '../risk-object/risk-object';
 
 @Injectable()
@@ -24,9 +24,9 @@ export class RiskScenarioService {
    * @param riskScenarioId 
    */
   public setCurrentRiskScenario(projectId: number, riskScenarioId: number): Observable<RiskScenario> {
+
     // Set current scenario in main object
     this.httpManager.get('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId).then((result: Result) => {
-
       this.main.currentRiskScenario = new RiskScenario(JSON.stringify(result.data));
       this.main.currentFdsScenario = undefined;
       console.log(this.main.currentRiskScenario.riskObject);
@@ -42,8 +42,12 @@ export class RiskScenarioService {
     return of(this.main.currentRiskScenario)
   }
 
-  /** Create risk scenario */
+  /**
+   * Create risk scenario
+   * @param projectId 
+   */
   public createRiskScenario(projectId: number) {
+
     // Request
     this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + projectId, JSON.stringify({})).then((result: Result) => {
       let data = result.data;
@@ -54,40 +58,61 @@ export class RiskScenarioService {
   }
 
   /**
-   * Update risk Scenario
+   * Update risk scenario
    * @param projectId 
    * @param riskScenarioId 
    * @param syncType Default value: 'all'
    */
   public updateRiskScenario(projectId: number, riskScenarioId: number, syncType: string = 'all') {
-    // Find project
-    let project = find(this.main.projects, (project) => {
-      return project.id == projectId;
-    });
-    // Find scenario
-    let riskScenario = find(project.riskScenarios, (riskScenario) => {
-      return riskScenario.id == riskScenarioId;
-    });
-    console.log(JSON.stringify(riskScenario.riskObject));
+
     // Sync only main info without risk object
     if (syncType == 'head') {
-      this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId, JSON.stringify({ type: "head", data: { id: riskScenario.id, name: riskScenario.name } })).then((result: Result) => {
-
+      // Sync currentScenario with scenario from list
+      let projectIndex = findIndex(this.main.projects, function (o) {
+        return o.id == projectId;
+      });
+      let riskScenarioIndex = findIndex(this.main.projects[projectIndex].riskScenarios, function (o) {
+        return o.id == riskScenarioId;
+      });
+      let riskScenario = this.main.projects[projectIndex].riskScenarios[riskScenarioIndex];
+      this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId, JSON.stringify({ type: 'head', data: { id: riskScenario.id, name: riskScenario.name } })).then((result: Result) => {
+        this.main.currentRiskScenario = riskScenario;
       });
     }
     else if (syncType == 'all') {
-      this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId, riskScenario.toJSON()).then((result: Result) => {
-
+      // Sync scenario from list with currentScenario
+      let riskScenario = this.main.currentRiskScenario;
+      this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId, JSON.stringify({ type: 'all', data: riskScenario.toJSON() })).then((result: Result) => {
+        let projectIndex = findIndex(this.main.projects, function (o) {
+          return o.id == projectId;
+        });
+        let riskScenarioIndex = findIndex(this.main.projects[projectIndex].riskScenarios, function (o) {
+          return o.id == riskScenarioId;
+        });
+        this.main.projects[projectIndex].riskScenarios[riskScenarioIndex] = riskScenario;
       });
     }
   }
-  /** Delete risk scenario */
+
+  /**
+   * Delete risk scenario
+   * @param projectIndex 
+   * @param riskScenarioIndex 
+   */
   public deleteRiskScenario(projectIndex: number, riskScenarioIndex: number) {
+
     let riskScenarioId = this.main.projects[projectIndex].riskScenarios[riskScenarioIndex].id;
     this.httpManager.delete('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId).then((result: Result) => {
       this.main.projects[projectIndex].riskScenarios.splice(riskScenarioIndex, 1);
     });
+  }
 
+  public runRiskScenario() {
+    let riskScenario = this.main.currentRiskScenario;
+    this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/runRiskScenario/' + riskScenario.id, JSON.stringify(riskScenario.toJSON())).then((result: Result) => {
+
+    });
+    
   }
 
 }

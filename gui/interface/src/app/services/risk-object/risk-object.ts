@@ -14,6 +14,7 @@ export interface RiskObject {
 export class Risk {
 
     general: General;
+    geometry: any;
     buildingCharacteristic: BuildingCharacteristic;
     buildingInfrastructure: BuildingInfrastructure;
     settings: Settings;
@@ -25,6 +26,7 @@ export class Risk {
 
         // Create general
         this.general = get(base, 'general') === undefined ? new General("{}") : new General(JSON.stringify(base.general));
+        this.geometry = get(base, 'geometry', {});
         this.buildingCharacteristic = get(base, 'buildingCharacteristic') === undefined ? new BuildingCharacteristic("{}") : new BuildingCharacteristic(JSON.stringify(base.buildingCharacteristic));
         this.buildingInfrastructure = get(base, 'buildingInfrastructure') === undefined ? new BuildingInfrastructure("{}") : new BuildingInfrastructure(JSON.stringify(base.buildingInfrastructure));
         this.settings = get(base, 'settings') === undefined ? new Settings("{}") : new Settings(JSON.stringify(base.buildingInfrastructure));
@@ -32,13 +34,13 @@ export class Risk {
 
     public toJSON() : object {
         let risk = {
-            general: this.general,
-            buildingCharacteristic: this.buildingCharacteristic,
-            buildingInfrastructure: this.buildingInfrastructure,
+            general: this.general.toJSON(),
+            geometry: this.geometry,
+            buildingCharacteristic: this.buildingCharacteristic.toJSON(),
+            buildingInfrastructure: this.buildingInfrastructure.toJSON(),
             settings: this.settings
         }
         return risk;
     }
-
 
 }
