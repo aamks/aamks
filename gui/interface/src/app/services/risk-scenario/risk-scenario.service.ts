@@ -76,7 +76,8 @@ export class RiskScenarioService {
       });
       let riskScenario = this.main.projects[projectIndex].riskScenarios[riskScenarioIndex];
       this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId, JSON.stringify({ type: 'head', data: { id: riskScenario.id, name: riskScenario.name } })).then((result: Result) => {
-        this.main.currentRiskScenario = riskScenario;
+        if (this.main.currentRiskScenario != undefined)
+          this.main.currentRiskScenario = riskScenario;
       });
     }
     else if (syncType == 'all') {
@@ -112,7 +113,7 @@ export class RiskScenarioService {
     this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/runRiskScenario/' + riskScenario.id, JSON.stringify(riskScenario.toJSON())).then((result: Result) => {
 
     });
-    
+
   }
 
 }

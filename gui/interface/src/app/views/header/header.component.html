@@ -25,18 +25,20 @@
       </div>
     </div>
     <div>
-      <span *ngIf="main.currentFdsScenario != undefined" (click)="updateFdsScenario(main.currentProject.id, main.currentFdsScenario.id)">Save FDS scenario
-        <i class="material-icons">save</i>
-      </span>
-      <span *ngIf="main.currentFdsScenario != undefined" (click)="updateFdsLibrary()">Save library
-        <i class="material-icons">save</i>
-      </span>
-      <span *ngIf="main.currentRiskScenario != undefined" (click)="updateRiskScenario(main.currentProject.id, main.currentRiskScenario.id)">Save risk scenario
-        <i class="material-icons">save</i>
-      </span>
-      <span *ngIf="main.currentRiskScenario != undefined" (click)="runRiskScenario()">Run risk scenario
-        <i class="material-icons">save</i>
-      </span>
+      <div class="right-bottom">
+        <span *ngIf="main.currentFdsScenario != undefined" (click)="updateFdsScenario(main.currentProject.id, main.currentFdsScenario.id)">Save FDS scenario
+          <i class="material-icons">save</i>
+        </span>
+        <span *ngIf="main.currentFdsScenario != undefined" (click)="updateFdsLibrary()">Save library
+          <i class="material-icons">save</i>
+        </span>
+        <span *ngIf="main.currentRiskScenario != undefined" (click)="updateRiskScenario(main.currentProject.id, main.currentRiskScenario.id)">Save risk scenario
+          <i class="material-icons">save</i>
+        </span>
+        <span *ngIf="main.currentRiskScenario != undefined" (click)="runRiskScenario()">Run risk scenario
+          <i class="material-icons">save</i>
+        </span>
+      </div>
     </div>
   </div>
 

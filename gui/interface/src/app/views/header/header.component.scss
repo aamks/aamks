@@ -12,11 +12,21 @@
         grid-template-columns: 50% auto;
         grid-template-rows: 4rem auto;
         align-self: center;
+        margin-right: 1rem;
 
         .left-bottom {
             display: flex;
             flex-direction: row;
             align-items: center;
+            background-color: $grey1;
+            height: 1.5rem;
+            padding: .5rem;
+        }
+        .right-bottom {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-end;
             background-color: $grey1;
             height: 1.5rem;
             padding: .5rem;

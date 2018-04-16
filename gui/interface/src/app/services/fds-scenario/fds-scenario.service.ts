@@ -72,7 +72,8 @@ export class FdsScenarioService {
       });
       let fdsScenario = this.main.projects[projectIndex].fdsScenarios[fdsScenarioIndex];
       this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/fdsScenario/' + fdsScenario.id, JSON.stringify({ type: "head", data: { id: fdsScenario.id, name: fdsScenario.name } })).then((result: Result) => {
-        this.main.currentFdsScenario = fdsScenario;
+        if (this.main.currentFdsScenario != undefined)
+          this.main.currentFdsScenario = fdsScenario;
       });
     }
     else if (syncType == 'all') {
