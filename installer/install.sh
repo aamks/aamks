@@ -95,31 +95,31 @@ CREATE TABLE users (---{{{
     email character varying(50),
     password character varying(70),
     userName character varying(80),
-	editor varchar(10),
-	current_project_id varchar(100),
-	current_scenario_id varchar(100),
-	websocket_host varchar(100),
-	websocket_port varchar(20),
-	session_id varchar(100),
+	editor text,
+	current_project_id text,
+	current_scenario_id text,
+	websocket_host text,
+	websocket_port text,
+	session_id text,
 	access_time timestamp,
-	access_ip varchar(100),
+	access_ip text,
 	created timestamp default current_timestamp
 );
 ---}}}
 CREATE TABLE projects (---{{{
 	id serial PRIMARY KEY, 
     user_id smallint,
-    name varchar(200),
+    name text,
     description text,
-    category_id varchar(40),
+    category_id text,
 	modified timestamp default current_timestamp
 );
 ---}}}
 CREATE TABLE categories (---{{{
 	id serial PRIMARY KEY, 
     user_id smallint,
-    label varchar(200),
-  	uuid varchar(100), 
+    label text,
+  	uuid text, 
 	active boolean,
 	visible boolean,
 	modified timestamp default current_timestamp
@@ -131,23 +131,23 @@ insert into categories(user_id, label, uuid, active, visible) values (1, 'finish
 CREATE TABLE scenarios (---{{{
 	id serial PRIMARY KEY, 
     project_id smallint,
-	name varchar(200),
+	name text,
     fds_file text,
 	fds_object text,
 	ui_state text,
     ac_file text,
-    ac_hash varchar(50),
+    ac_hash text,
 	modified timestamp default current_timestamp
 );
 ---}}}
 CREATE TABLE risk_scenarios (---{{{
 	id serial PRIMARY KEY, 
     project_id smallint,
-	name varchar(200),
+	name text,
 	risk_object text,
 	ui_state text,
     ac_file text,
-    ac_hash varchar(50),
+    ac_hash text,
 	modified timestamp default current_timestamp
 );
 ---}}}
