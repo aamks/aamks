@@ -96,8 +96,8 @@ CREATE TABLE users (---{{{
     password character varying(70),
     userName character varying(80),
 	editor text,
-	current_project_id text,
-	current_scenario_id text,
+	current_project_id smallint,
+	current_scenario_id smallint,
 	websocket_host text,
 	websocket_port text,
 	session_id text,
@@ -124,9 +124,6 @@ CREATE TABLE categories (---{{{
 	visible boolean,
 	modified timestamp default current_timestamp
 );
-insert into categories(user_id, label, uuid, active, visible) values (1, 'current', uuid_generate_v4(), true, true);
-insert into categories(user_id, label, uuid, active, visible) values (1, 'archive', uuid_generate_v4(), true, true);
-insert into categories(user_id, label, uuid, active, visible) values (1, 'finished', uuid_generate_v4(), true, true);
 ---}}}
 CREATE TABLE scenarios (---{{{
 	id serial PRIMARY KEY, 
