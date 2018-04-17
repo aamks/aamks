@@ -1,5 +1,6 @@
 import { RiskEntities } from "../../enums/risk-entities";
 import { get } from "lodash";
+import { RiskEnums } from "../../enums/risk-enums";
 /*
 Infrastracutre
 
@@ -18,7 +19,6 @@ export interface BuildingInfrastructureObject {
     alarming: string,
     sprinklers: {
         activationTemperature: number,
-        activationObscuration: number, // ? do sprawdzenia 
         rti: number,
         sprayDensity: number
     },
@@ -40,7 +40,7 @@ export class BuildingInfrastructure {
     private _hasNshevs: boolean;
     private _alarming: string;
     private _sprinklers: any;
-    private _detectorType: any;
+    private _detectorType: string;
     private _detectors: any;
     private _nshevs: any;
 
@@ -54,13 +54,15 @@ export class BuildingInfrastructure {
         let NSHEVS = RiskEntities.nshevs;
         let INFRASTRUCTURE = RiskEntities.infrastructure;
 
-        this.hasDetectors = get(base, 'has_fire_detectors', INFRASTRUCTURE.hasDetectors.default) as boolean;
-        this.hasSprinklers = get(base, 'has_sprinklers', INFRASTRUCTURE.hasSprinklers.default) as boolean;
-        this.hasNshevs = get(base, 'has_nshevs', INFRASTRUCTURE.has_nshevs.default) as boolean;
+        this.hasDetectors = get(base, 'hasDetectors', INFRASTRUCTURE.hasDetectors.default) as boolean;
+        this.hasSprinklers = get(base, 'hasSprinklers', INFRASTRUCTURE.hasSprinklers.default) as boolean;
+        this.hasNshevs = get(base, 'hasNshevs', INFRASTRUCTURE.hasNshevs.default) as boolean;
+        
+        this.alarming = get(base, 'alarming', 'a1');
+        this.detectorType = get(base, 'detectorType', 'heat');
 
         this.sprinklers = {
             activationTemperature: get(base.sprinklers, 'activationTemperature', SPRINKLERS.activationTemperature.default),
-            activationObscuration: get(base.sprinklers, 'activationObscuration', SPRINKLERS.activationObscuration.default),
             rti: get(base.sprinklers, 'rti', SPRINKLERS.rti.default),
             sprayDensity: get(base.sprinklers, 'sprayDensity', SPRINKLERS.sprayDensity.default)
         };
@@ -156,17 +158,17 @@ export class BuildingInfrastructure {
 
     /**
      * Getter detectorType
-     * @return {any}
+     * @return {string}
      */
-    public get detectorType(): any {
+    public get detectorType(): string {
         return this._detectorType;
     }
 
     /**
      * Setter detectorType
-     * @param {any} value
+     * @param {string} value
      */
-    public set detectorType(value: any) {
+    public set detectorType(value: string) {
         this._detectorType = value;
     }
 

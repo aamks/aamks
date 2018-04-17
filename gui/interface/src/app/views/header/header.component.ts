@@ -19,7 +19,7 @@ export class HeaderComponent implements OnInit {
 
   constructor(
     private mainService: MainService, 
-    private websocket: WebsocketService, 
+    private websocketService: WebsocketService, 
     private fdsScenarioService: FdsScenarioService, 
     private riskScenarioService: RiskScenarioService, 
     private libraryService: LibraryService
@@ -68,6 +68,11 @@ export class HeaderComponent implements OnInit {
   /** Update FDS library */
   public updateFdsLibrary() {
     this.libraryService.updateLibrary();
+  }
+
+  /** Connect to CAD */
+  public connectCad() {
+
   }
 
 }

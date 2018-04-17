@@ -1,4 +1,8 @@
 import { Component, OnInit } from '@angular/core';
+import { Main } from '../../../../services/main/main';
+import { RiskEnums } from '../../../../enums/risk-enums';
+import { MainService } from '../../../../services/main/main.service';
+import { BuildingInfrastructure } from '../../../../services/risk-object/building-infrastructure';
 
 @Component({
   selector: 'app-building-infrastructure',
@@ -7,9 +11,18 @@ import { Component, OnInit } from '@angular/core';
 })
 export class BuildingInfrastructureComponent implements OnInit {
 
-  constructor() { }
+  main: Main;
+  buildingInfrastructure: BuildingInfrastructure;
+
+  ALARMING = RiskEnums.alarming;
+  DETECTOR_TYPE = RiskEnums.detectorType;
+
+  constructor(private mainService: MainService) { }
 
   ngOnInit() {
+    // Subscribe main object
+    this.mainService.getMain().subscribe(main => this.main = main);
+    this.buildingInfrastructure = this.main.currentRiskScenario.riskObject.buildingInfrastructure;
   }
 
 }

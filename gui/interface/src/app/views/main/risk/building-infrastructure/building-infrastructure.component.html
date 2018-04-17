@@ -1,3 +1,98 @@
-<p>
-  building-infrastructure works!
-</p>
+<div class="amper-container">
+  <div class="form-box">
+
+    <div class="form-title">
+      <label class='header'>Alarming level and devices</label>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Alarming type:</label>
+        <div class="field-container">
+          <select [(ngModel)]="buildingInfrastructure.alarming">
+            <option *ngFor="let element of ALARMING" [ngValue]="element.value">{{element.label}}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Has detectors:</label>
+        <div class="field-container">
+          <input type="checkbox" [(ngModel)]="buildingInfrastructure.hasDetectors" />
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors">
+        <label>Detector type:</label>
+        <div class="field-container">
+          <select [(ngModel)]="buildingInfrastructure.detectorType">
+            <option *ngFor="let element of DETECTOR_TYPE" [ngValue]="element.value">{{element.label}}</option>
+          </select>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectorType == 'heat'">
+        <label>RTI:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.rti" decimalInput>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectorType == 'heat'">
+        <label>Activation temperature:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.activationTemperature" decimalInput>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectorType == 'smoke'">
+        <label>Activation obscuration:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.activationObscuration" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Has sprinklers:</label>
+        <div class="field-container">
+          <input type="checkbox" [(ngModel)]="buildingInfrastructure.hasSprinklers" />
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasSprinklers">
+        <label>RTI:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.rti" decimalInput>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasSprinklers">
+        <label>Activation temperature:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.activationTemperature" decimalInput>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasSprinklers">
+        <label>Spray density:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.sprayDensity" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Has NSHEVS:</label>
+        <div class="field-container">
+          <input type="checkbox" [(ngModel)]="buildingInfrastructure.hasNshevs" />
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasNshevs">
+        <label>Activation time:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.nshevs.activationTime" decimalInput>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>

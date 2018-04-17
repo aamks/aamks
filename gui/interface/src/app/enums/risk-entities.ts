@@ -249,10 +249,10 @@ export const RiskEntities =
                 help: '',
                 pattern: ''
             },
-            has_nshevs: {
+            hasNshevs: {
                 type: 'Logical',
                 units: '',
-                'default': false,
+                default: false,
                 help: '',
                 pattern: ''
             },
@@ -268,26 +268,7 @@ export const RiskEntities =
             activationTemperature: {
                 type: 'Real',
                 units: 'C',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            activationObscuration: {
-                type: 'Real',
-                units: '',
-                'default': '0',
+                default: 0,
                 help: '',
                 pattern: '',
                 valid_ranges: [
@@ -306,7 +287,7 @@ export const RiskEntities =
             rti: {
                 type: 'Real',
                 units: '',
-                'default': '0',
+                default: 0,
                 help: '',
                 pattern: '',
                 valid_ranges: [
@@ -325,7 +306,7 @@ export const RiskEntities =
             sprayDensity: {
                 type: 'Real',
                 units: '',
-                'default': '0',
+                default: 0,
                 help: '',
                 pattern: '',
                 valid_ranges: [

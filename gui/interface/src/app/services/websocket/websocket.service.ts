@@ -38,7 +38,7 @@ export class WebsocketService {
   }
 
   /** Generates random id for websocket messages */
-  idGenerator() {
+  public idGenerator() {
     var id = Date.now() + '';
     var rand = Math.round(1000 * Math.random()) + '';
     id = id + rand;
@@ -46,7 +46,7 @@ export class WebsocketService {
   }
 
   /** Method initalize websocket connection */
-  initializeWebSocket() {
+  public initializeWebSocket() {
     console.log("Initializing CAD connection ...");
     this.isConnected = false;
 

@@ -17,6 +17,8 @@
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.elevation" decimalInput>
         </div>
       </div>
+    </div>
+    <div class="form-row">
       <div>
         <label>Simulation time:</label>
         <div class="field-container">
@@ -31,6 +33,8 @@
           <ng-katex equation="s"></ng-katex>
         </div>
       </div>
+    </div>
+    <div class="form-row">
       <div>
         <label>Indoor temperature:</label>
         <div class="field-container">
@@ -45,5 +49,43 @@
         </div>
       </div>
     </div>
+
+    <div class="form-title">
+      <label class='header'>Fire settings</label>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Minimum HRR:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.heatReleaseRate.maxHrr[0]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Maximum HRR:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.heatReleaseRate.maxHrr[1]" decimalInput>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Alpha min:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.heatReleaseRate.alfaMinModeMax[0]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Alpha mod:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.heatReleaseRate.alfaMinModeMax[1]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Alpha max:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.heatReleaseRate.alfaMinModeMax[2]" decimalInput>
+        </div>
+      </div>
+
+    </div>
   </div>
-</div>

@@ -42,6 +42,20 @@ export const RiskEnums =
                 value: 'lognormal'
             }
         ],
+        alarming: [
+            {
+                label: 'Level A1',
+                value: 'a1'
+            },
+            {
+                label: 'Level A2',
+                value: 'a2'
+            },
+            {
+                label: 'Level A3',
+                value: 'a3'
+            }
+        ],
         complexity: [
             {
                 label: 'Level B1',
@@ -84,6 +98,16 @@ export const RiskEnums =
                 value: 'concrete'
             }
         ],
+        detectorType: [
+            {
+                label: 'Heat detector',
+                value: 'heat'
+            },
+            {
+                label: 'Smoke detector',
+                value: 'smoke'
+            }
+        ],
         buildingType: [
             {
                 label: 'Hotel',
@@ -121,14 +145,14 @@ export const RiskEnums =
                 type: 'a',
                 pre: {
                     m1: {
-                        b1: { a1: { pre1: 30, pre2: 60 }, a2: { pre1: 30, pre2: 60 } },
-                        b2: { a1: { pre1: 30, pre2: 60 }, a2: { pre1: 30, pre2: 60 } },
-                        b3: { a1: { pre1: 60, pre2: 90 }, a2: { pre1: 60, pre2: 90 } }
+                        b1: { a1: { pre1: 30, pre2: 31 }, a2: { pre1: 60, pre2: 61 } },
+                        b2: { a1: { pre1: 40, pre2: 41 }, a2: { pre1: 70, pre2: 71 } },
+                        b3: { a1: { pre1: 50, pre2: 51 }, a2: { pre1: 80, pre2: 82 } }
                     },
                     m2: {
-                        b1: { a1: { pre1: 30, pre2: 60 }, a2: { pre1: 30, pre2: 60 } },
-                        b2: { a1: { pre1: 30, pre2: 60 }, a2: { pre1: 30, pre2: 60 } },
-                        b3: { a1: { pre1: 30, pre2: 60 }, a2: { pre1: 30, pre2: 60 }, a3: { pre1: 30, pre2: 60 } }
+                        b1: { a1: { pre1: 3, pre2: 6 }, a2: { pre1: 9, pre2: 12 } },
+                        b2: { a1: { pre1: 4, pre2: 7 }, a2: { pre1: 10, pre2: 13 } },
+                        b3: { a1: { pre1: 5, pre2: 8 }, a2: { pre1: 11, pre2: 14 }, a3: { pre1: 30, pre2: 60 } }
                     },
                     m3: {
                         b1: { a1: { pre1: 30, pre2: 60 }, a2: { pre1: 30, pre2: 60 } },
