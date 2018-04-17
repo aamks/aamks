@@ -58,8 +58,8 @@ export class BuildingInfrastructure {
         this.hasSprinklers = get(base, 'hasSprinklers', INFRASTRUCTURE.hasSprinklers.default) as boolean;
         this.hasNshevs = get(base, 'hasNshevs', INFRASTRUCTURE.hasNshevs.default) as boolean;
         
-        this.alarming = get(base, 'alarming', 'a1');
-        this.detectorType = get(base, 'detectorType', 'heat');
+        this.alarming = get(base, 'alarming', 'a1') as string;
+        this.detectorType = get(base, 'detectorType', 'heat') as string;
 
         this.sprinklers = {
             activationTemperature: get(base.sprinklers, 'activationTemperature', SPRINKLERS.activationTemperature.default),

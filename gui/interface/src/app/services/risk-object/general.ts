@@ -46,8 +46,8 @@ export class General {
 		this.indoorPressure = get(base, 'indoorPressure', GENERAL.indoorPressure.default) as number;
 		this.humidity = get(base, 'humidity', GENERAL.humidity.default) as number;
 
-		this.heatReleaseRate = get(base, 'heatReleaseRate', { maxHrr: [1200, 900], alfaMinModeMax: [0.1, 0.025, 0.05]})
-		this.originOfFire = get(base, 'originOfFire', { fireStartsInRoomProbability: 0.5 });
+		this.heatReleaseRate = get(base, 'heatReleaseRate', { maxHrr: [1200, 900], alfaMinModeMax: [0.1, 0.025, 0.05]}) as object;
+		this.originOfFire = get(base, 'originOfFire', { fireStartsInRoomProbability: 0.5 }) as object;
 	}
 
     /**
