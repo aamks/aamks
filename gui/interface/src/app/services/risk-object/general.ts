@@ -28,8 +28,8 @@ export class General {
 	private _indoorPressure: number;
 	private _humidity: number;
 
-	private _heatReleaseRate: object;
-	private _originOfFire: object;
+	private _heatReleaseRate: any;
+	private _originOfFire: any;
 
 	constructor(jsonString: string) {
 
@@ -164,33 +164,33 @@ export class General {
 
     /**
      * Getter heatReleaseRate
-     * @return {object}
+     * @return {any}
      */
-	public get heatReleaseRate(): object {
+	public get heatReleaseRate(): any {
 		return this._heatReleaseRate;
 	}
 
     /**
      * Setter heatReleaseRate
-     * @param {object} value
+     * @param {any} value
      */
-	public set heatReleaseRate(value: object) {
+	public set heatReleaseRate(value: any) {
 		this._heatReleaseRate = value;
 	}
 
     /**
      * Getter originOfFire
-     * @return {object}
+     * @return {any}
      */
-	public get originOfFire(): object {
+	public get originOfFire(): any {
 		return this._originOfFire;
 	}
 
     /**
      * Setter originOfFire
-     * @param {object} value
+     * @param {any} value
      */
-	public set originOfFire(value: object) {
+	public set originOfFire(value: any) {
 		this._originOfFire = value;
 	}
 
