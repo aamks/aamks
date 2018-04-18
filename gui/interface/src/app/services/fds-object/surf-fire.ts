@@ -1,7 +1,17 @@
 import { FdsEntities } from '../../enums/fds-entities';
 import { IdGeneratorService } from '../id-generator/id-generator.service';
-import * as _ from 'lodash';
 import { Ramp } from './ramp';
+import { get, toString, find } from 'lodash';
+
+export interface Hrr {
+    hrr_type: string,
+    value: number,
+    spread_rate: number,
+    alpha: number,
+    time_function: string,
+    tau_q: number,
+    area: number,
+}
 
 export interface SurfFireObject {
     id: string,
@@ -9,16 +19,9 @@ export interface SurfFireObject {
     idAC: number,
     color: string,
     fire_type: string,
-    hrr: {
-        hrr_type: string,
-        value: number,
-        spread_rate: number,
-        alpha: number,
-        time_function: string,
-        tau_q: number,
-        area: number
-    },
-    ramp_id: string,
+    hrr: Hrr,
+    ramp: Ramp,
+    ramp_id: string
 }
 
 export class SurfFire {
@@ -28,7 +31,7 @@ export class SurfFire {
     private _idAC: number;
     private _color: string;
     private _fire_type: string;
-    private _hrr: object;
+    private _hrr: Hrr;
     private _ramp: Ramp;
 
     constructor(jsonString: string, ramps: Ramp[] = undefined) {
@@ -43,105 +46,138 @@ export class SurfFire {
         this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
-
-        this.color = _.toString(_.get(base, 'color', SURF.COLOR.default[0]));
-        this.fire_type = base['fire_type'] || 'constant_hrr';
+        this.color = (get(base, 'color', SURF.COLOR.default[0])) as string;
+        this.fire_type = get(base, 'fire_type', 'constant_hrr') as string;
 
         this.hrr = {
-            hrr_type: _.get(base, 'hrr.hrr_type', 'hrrpua'),
-            value: _.toNumber(_.get(base, 'hrr.value', SURF.HRRPUA.default[0])),
-            spread_rate: _.toNumber(_.get(base, 'hrr.spread_rate', 0)),
-            alpha: _.toNumber(_.get(base, 'hrr.alpha', 0)),
-            time_function: _.get(base, 'time_function', 'ramp'),
-            tau_q: _.toNumber(_.get(base, 'hrr.tau_q', SURF.TAU_Q.default[0])),
-        }
-        if (base['hrr'])
-            this.hrr['area'] = base.hrr.area || 0;
-        else
-            this.hrr['area'] = 0;
+            hrr_type: get(base, 'hrr.hrr_type', 'hrrpua') as string,
+            value: get(base, 'hrr.value', SURF.HRRPUA.default[0]) as number,
+            spread_rate: get(base, 'hrr.spread_rate', 0) as number,
+            alpha: get(base, 'hrr.alpha', 0) as number,
+            time_function: get(base, 'time_function', 'ramp') as string,
+            tau_q: get(base, 'hrr.tau_q', SURF.TAU_Q.default[0]) as number,
+            area:  get(base, 'area', 0) as number
+        };
 
-        if (base['ramp_id'] == '') {
-            this.ramp = undefined;
-        }
-        // Jeeli kopiujemy z biblioteki
-        else if (typeof base['ramp'] === 'object' && base['ramp'] != null) {
-            this.ramp = base['ramp'];
-        }
-        // Jezeli jest nazwa
-        else {
-            if (!ramps) {
-                this.ramp = undefined;
-            } else {
-                this.ramp = _.find(ramps, (ramp) => {
-                    return ramp.id == base.ramp_id;
-                });
-                if (this.ramp === undefined)
-                    this.ramp = undefined;
-            }
-        }
-
+        ramps && base.ramp_id != '' ? this.ramp = find(ramps, function (ramp) { return ramp.id == base.ramp_id; }) : this.ramp = undefined;
     }
 
-    public get id(): string {
-        return this._id;
-    }
+    /**
+     * Getter id
+     * @return {string}
+     */
+	public get id(): string {
+		return this._id;
+	}
 
-    public set id(value: string) {
-        this._id = value;
-    }
+    /**
+     * Setter id
+     * @param {string} value
+     */
+	public set id(value: string) {
+		this._id = value;
+	}
 
-    public get uuid(): string {
-        return this._uuid;
-    }
+    /**
+     * Getter uuid
+     * @return {string}
+     */
+	public get uuid(): string {
+		return this._uuid;
+	}
 
-    public set uuid(value: string) {
-        this._uuid = value;
-    }
+    /**
+     * Setter uuid
+     * @param {string} value
+     */
+	public set uuid(value: string) {
+		this._uuid = value;
+	}
 
-    public get idAC(): number {
-        return this._idAC;
-    }
+    /**
+     * Getter idAC
+     * @return {number}
+     */
+	public get idAC(): number {
+		return this._idAC;
+	}
 
-    public set idAC(value: number) {
-        this._idAC = value;
-    }
+    /**
+     * Setter idAC
+     * @param {number} value
+     */
+	public set idAC(value: number) {
+		this._idAC = value;
+	}
 
-    public get color(): string {
-        return this._color;
-    }
+    /**
+     * Getter color
+     * @return {string}
+     */
+	public get color(): string {
+		return this._color;
+	}
 
-    public set color(value: string) {
-        this._color = value;
-    }
+    /**
+     * Setter color
+     * @param {string} value
+     */
+	public set color(value: string) {
+		this._color = value;
+	}
 
-    public get fire_type(): string {
-        return this._fire_type;
-    }
+    /**
+     * Getter fire_type
+     * @return {string}
+     */
+	public get fire_type(): string {
+		return this._fire_type;
+	}
 
-    public set fire_type(value: string) {
-        this._fire_type = value;
-    }
+    /**
+     * Setter fire_type
+     * @param {string} value
+     */
+	public set fire_type(value: string) {
+		this._fire_type = value;
+	}
 
-    public get hrr(): object {
-        return this._hrr;
-    }
+    /**
+     * Getter hrr
+     * @return {Hrr}
+     */
+	public get hrr(): Hrr {
+		return this._hrr;
+	}
 
-    public set hrr(value: object) {
-        this._hrr = value;
-    }
+    /**
+     * Setter hrr
+     * @param {Hrr} value
+     */
+	public set hrr(value: Hrr) {
+		this._hrr = value;
+	}
 
-    public get ramp(): Ramp {
-        return this._ramp;
-    }
+    /**
+     * Getter ramp
+     * @return {Ramp}
+     */
+	public get ramp(): Ramp {
+		return this._ramp;
+	}
 
-    public set ramp(value: Ramp) {
-        this._ramp = value;
-    }
+    /**
+     * Setter ramp
+     * @param {Ramp} value
+     */
+	public set ramp(value: Ramp) {
+		this._ramp = value;
+	}
 
     public toJSON(): object {
 
         let ramp_id;
-        this.ramp == undefined ? ramp_id = '' : ramp_id = this.ramp['id'];
+        this.ramp == undefined ? ramp_id = '' : ramp_id = this.ramp.id;
 
         var surf = {
             id: this.id,
@@ -150,16 +186,15 @@ export class SurfFire {
             color: this.color,
             fire_type: this.fire_type,
             hrr: {
-                hrr_type: this.hrr['hrr_type'],
-                time_function: this.hrr['time_function'],
-                value: this.hrr['value'],
-                spread_rate: this.hrr['spread_rate'],
-                alpha: this.hrr['alpha'],
-                tau_q: this.hrr['tau_q'],
+                hrr_type: this.hrr.hrr_type,
+                time_function: this.hrr.time_function,
+                value: this.hrr.value,
+                spread_rate: this.hrr.spread_rate,
+                alpha: this.hrr.alpha,
+                tau_q: this.hrr.tau_q,
             },
             ramp_id: ramp_id
         }
         return surf;
     }
-
 }

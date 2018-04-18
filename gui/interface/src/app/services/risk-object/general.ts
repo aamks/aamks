@@ -9,13 +9,6 @@ export interface GeneralObject {
 	elevation: number,
 	indoorPressure: number,
 	humidity: number,
-	heatReleaseRate: {
-		maxHrr: number[],
-		alfaMinModeMax: number[]
-	},
-	originOfFire: {
-		fireStartsInRoomProbability: number
-	}
 }
 
 export class General {
@@ -46,8 +39,6 @@ export class General {
 		this.indoorPressure = get(base, 'indoorPressure', GENERAL.indoorPressure.default) as number;
 		this.humidity = get(base, 'humidity', GENERAL.humidity.default) as number;
 
-		this.heatReleaseRate = get(base, 'heatReleaseRate', { maxHrr: [1200, 900], alfaMinModeMax: [0.1, 0.025, 0.05]}) as object;
-		this.originOfFire = get(base, 'originOfFire', { fireStartsInRoomProbability: 0.5 }) as object;
 	}
 
     /**
@@ -161,39 +152,6 @@ export class General {
 	public set humidity(value: number) {
 		this._humidity = value;
 	}
-
-    /**
-     * Getter heatReleaseRate
-     * @return {any}
-     */
-	public get heatReleaseRate(): any {
-		return this._heatReleaseRate;
-	}
-
-    /**
-     * Setter heatReleaseRate
-     * @param {any} value
-     */
-	public set heatReleaseRate(value: any) {
-		this._heatReleaseRate = value;
-	}
-
-    /**
-     * Getter originOfFire
-     * @return {any}
-     */
-	public get originOfFire(): any {
-		return this._originOfFire;
-	}
-
-    /**
-     * Setter originOfFire
-     * @param {any} value
-     */
-	public set originOfFire(value: any) {
-		this._originOfFire = value;
-	}
-
 
 	public toJSON(): object {
 		let general = {

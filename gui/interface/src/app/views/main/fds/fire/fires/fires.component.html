@@ -36,13 +36,15 @@
         <div>
           <label>Id:</label>
           <div class="field-container">
-            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fire.id" />
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fire.id" stringInput/>
           </div>
         </div>
         <div>
           <label>Color:</label>
           <div class="field-container">
-            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fire.surf.color" decimalInput />
+            <select [(ngModel)]="fire.surf.color">
+              <option *ngFor="let color of COLORS" [ngValue]="color.value">{{color.label}}</option>
+            </select>
           </div>
         </div>
       </div>
@@ -110,7 +112,7 @@
               <option [ngValue]="undefined">No RAMP</option>
               <option *ngFor="let ramp of (((objectType == 'current') ? ramps : libRamps) | rampFilter:{type:'fire'})" [ngValue]="ramp">{{ramp.id}}</option>
             </select>
-            <i (click)="addRamp('matl','conductivity')" class="material-icons">add_box</i>
+            <i (click)="addRamp('fire')" class="material-icons">add_box</i>
           </div>
         </div>
         <div *ngIf="fire.surf.fire_type=='time_dependent_hrrpua' && fire.surf.hrr.time_function=='tauq'">
@@ -150,7 +152,8 @@
             <ng-katex equation="W/s^2"></ng-katex>
           </div>
         </div>
-        <div *ngIf="(fire.surf.fire_type=='radially_spreading' || fire.surf.fire_type=='constant_hrr' || (fire.surf.fire_type=='time_dependent_hrrpua' && !fire.surf.ramp.steps)) && fire.surf.hrr.hrr_type=='hrrpua'">
+        <div *ngIf="(fire.surf.fire_type=='radially_spreading' || fire.surf.fire_type=='constant_hrr' || (fire.surf.fire_type=='time_dependent_hrrpua' && !fire.surf.ramp)) && fire.surf.hrr.hrr_type=='hrrpua'">
+        <!--<div *ngIf="(fire.surf.fire_type=='radially_spreading' || fire.surf.fire_type=='constant_hrr' || (fire.surf.fire_type=='time_dependent_hrrpua' && !fire.surf.ramp.steps)) && fire.surf.hrr.hrr_type=='hrrpua'">-->
           <label>Max HRR:</label>
           <div class="field-container">
             {{ fire.totalHRR() }}

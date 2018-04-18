@@ -18,11 +18,11 @@ export class UiState {
 
 	constructor() {
 		this.fdsMenu = {
-			geometry: true,
-			ventilation: true,
-			fire: false,
-			output: true,
-			species: true
+			geometry: false,
+			ventilation: false,
+			fire: true,
+			output: false,
+			species: false
 		}
 
 		this.active = "projects";

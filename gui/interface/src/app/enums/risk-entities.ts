@@ -194,7 +194,66 @@ export const RiskEntities =
                         maxExclusive: '__'
                     }
                 ]
-            }
+            },
+            materials: {
+                thicknessWall: {
+                    type: 'Real',
+                    units: '',
+                    'default': '0',
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                thicknessCeiling: {
+                    type: 'Real',
+                    units: '',
+                    'default': '0',
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                thicknessFloor: {
+                    type: 'Real',
+                    units: '',
+                    'default': '0',
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                }
+            },
         },
         infrastructure: {
             hasDetectors: {
@@ -262,126 +321,655 @@ export const RiskEntities =
                 'default': '1',
                 help: '',
                 pattern: ''
+            },
+            sprinklers: {
+                activationTemperature: {
+                    type: 'Real',
+                    units: 'C',
+                    default: 0,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                rti: {
+                    type: 'Real',
+                    units: '',
+                    default: 0,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                sprayDensity: {
+                    type: 'Real',
+                    units: '',
+                    default: 0,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                }
+            },
+            detectors: {
+                rti: {
+                    type: 'Real',
+                    units: '',
+                    'default': '0',
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                activationTemperature: {
+                    type: 'Real',
+                    units: '',
+                    'default': '0',
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                activationObscuration: {
+                    type: 'Real',
+                    units: '',
+                    'default': '0',
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                }
             }
         },
-        sprinklers: {
-            activationTemperature: {
-                type: 'Real',
-                units: 'C',
-                default: 0,
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+        settings: {
+            heatReleaseRate: {
+                comment: { type: 'Character', units: '', default: 'desc', help: '' },
+                maxHrr: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                alfaMinModeMax: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
             },
-            rti: {
-                type: 'Real',
-                units: '',
-                default: 0,
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+
+            originOfFire: {
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
+                fireStartsInRoomProbability: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                }
             },
-            sprayDensity: {
-                type: 'Real',
-                units: '',
-                default: 0,
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+
+            evacueesConcentration: {
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
+                cor: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                stai: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                room: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                hall: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                }
+            },
+            evacueesSpeedParams: {
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
+                maxHSpeedMeanAndSd: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                maxVSpeedMeanAndSd: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                betaVMeanAndSd: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                alphaVMeanAndSd: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                }
+            },
+            preEvacuationTime: {
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
+                meanAndSdRoomOfFireOrigin: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                meanAndSdOrdinaryRoom: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                }
+            },
+            windowOpen: {
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
+                setup: []
+            },
+            outdoorTemperature: {
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
+                meanAndSd: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                }
+            },
+            doorOpen: {
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
+                electroMagnetDoorIsOpenProbability: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                doorCloserDoorIsOpenProbability: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                standardDoorIsOpenProbability: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                vventsNoFailureProbability: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+            },
+            sprinkler: {
+
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
+                triggerTemperatureMeanAndSd: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                notBrokenProbability: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                sprayDensityMeanAndSd: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                }
+            },
+            fireDetector: {
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
+                type: {
+                    type: 'Character',
+                    units: '',
+                    default: 'heat',
+                    help: ''
+                },
+                meanAndSdTriggerTemperature: {
+                    type: 'Real',
+                    units: '',
+                    default: [500, 1200],
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                notBrokenProbability: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                }
             }
         },
-        detectors: {
-            rti: {
-                type: 'Real',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            activationTemperature: {
-                type: 'Real',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            activationObscuration: {
-                type: 'Real',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
+
+
+
+
+
         nshevs: {
             activationTime: {
                 type: 'Real',
@@ -500,1042 +1088,4 @@ export const RiskEntities =
                 ]
             }
         },
-        materials: {
-            thicknessWall: {
-                type: 'Real',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            thicknessCeiling: {
-                type: 'Real',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            thicknessFloor: {
-                type: 'Real',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        evacuation: {
-            numberOfPeople: {
-                type: 'Integer',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            verticalSpeed: {
-                type: 'Real',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            horizontalSpeed: {
-                type: 'Real',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        windowOpen: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.11',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        plainDoorOpen: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.5',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.5',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        doorWithCloser: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.14',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.86',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        electricReleaseDoor: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.04',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.96',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        originOfFire: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.9',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.1',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        fireDetectorsTriggerTemperature: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '337',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '2',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        fireDetectorsFailure: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.96',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.04',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        sprinklerTriggerTemperature: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '337',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '3',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        sprinklerFailure: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.96',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.04',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        outdoorTemp: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '10',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '7',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        verticalSpeed: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.8',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.2',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        horizontalSpeed: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '1.2',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.2',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        alarmTime: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '3.7',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.5',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        fireLocation: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '12',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        fireHrr: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '1200',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '9000',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        fireAlpha: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.01',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.05',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        fireCo: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.01',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.043',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        fireSoot: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.11',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.17',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        preMovement: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '7.15',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.215',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        densityRoom: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '5',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '2',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        densityCorridor: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '20',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '2',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        alphaSpeed: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '0.706',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.069',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        },
-        betaSpeed: {
-            var1: {
-                type: 'Real',
-                units: '',
-                'default': '-0.057',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            },
-            var2: {
-                type: 'Real',
-                units: '',
-                'default': '0.015',
-                help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
-            }
-        }
     }

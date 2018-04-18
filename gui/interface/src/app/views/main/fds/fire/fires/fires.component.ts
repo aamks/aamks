@@ -39,6 +39,7 @@ export class FiresComponent implements OnInit {
 
   // Enums
   ENUMS_FIRE = FdsEnums.FIRE;
+  COLORS = FdsEnums.color;
 
   // Scrolbars containers
   @ViewChild('fireScrollbar') fireScrollbar: PerfectScrollbarComponent;
@@ -184,7 +185,21 @@ export class FiresComponent implements OnInit {
   // COMPONENT METHODS
   /** Add ramp and activate */
   public addRamp(type: string, property?: string) {
-
+    // Chcek if current or library
+    if (this.objectType == 'current') {
+      let element = { id: 'RAMP' + this.mainService.getListId(this.ramps), type: type };
+      this.ramps.push(new Ramp(JSON.stringify(element)));
+      this.fire.surf.ramp = find(this.ramps, (ramp) => {
+        return ramp.id == element.id;
+      });
+    }
+    else if (this.objectType == 'library') {
+      let element = { id: 'RAMP' + this.mainService.getListId(this.libRamps), type: type };
+      this.libRamps.push(new Ramp(JSON.stringify(element)));
+      this.fire.surf.ramp = find(this.libRamps, (ramp) => {
+        return ramp.id == element.id;
+      });
+    }
   }
 
 }

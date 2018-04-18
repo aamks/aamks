@@ -113,36 +113,19 @@ export const RiskEnums =
                 label: 'Hotel',
                 value: 'hotel',
                 type: 'c1',
-                fireGrowthRate: 1
+                alphaMod: 0.04,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
             },
-            {
-                label: 'Retail',
-                value: 'retail',
-                type: 'c1',
-                fireGrowthRate: 1
-            },
-            {
-                label: 'Office',
-                value: 'office',
-                type: 'c1',
-                fireGrowthRate: 1
-            },
-            {
-                label: 'Cinema',
-                value: 'cinema',
-                type: 'c1',
-                fireGrowthRate: 1
-            },
-            {
-                label: 'Residence',
-                value: 'residence',
-                type: 'c1',
-                fireGrowthRate: 1
-            }
         ],
         preTimes: [
             {
                 type: 'a',
+                preEvacuationRoomOfFireOrigin: [10, 0.5],
                 pre: {
                     m1: {
                         b1: { a1: { pre1: 30, pre2: 31 }, a2: { pre1: 60, pre2: 61 } },
@@ -163,6 +146,7 @@ export const RiskEnums =
             },
             {
                 type: 'b',
+                preEvacuationRoomOfFireOrigin: [10, 0.5],
                 pre: {
                     m1: {
                         b1: { a1: { pre1: 30, pre2: 60 }, a2: { pre1: 30, pre2: 60 } },
@@ -183,6 +167,7 @@ export const RiskEnums =
             },
             {
                 type: 'c1',
+                preEvacuationRoomOfFireOrigin: [10, 0.5],
                 pre: {
                     m1: {
                         b1: { a1: { pre1: 30, pre2: 60 }, a2: { pre1: 30, pre2: 60 } },
@@ -203,6 +188,7 @@ export const RiskEnums =
             },
             {
                 type: 'c2',
+                preEvacuationRoomOfFireOrigin: [10, 0.5],
                 pre: {
                     m1: {
                         b1: { a1: { pre1: 30, pre2: 60 }, a2: { pre1: 30, pre2: 60 } },
