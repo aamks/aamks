@@ -1,3 +1,228 @@
-<p>
-  settings works!
-</p>
+<div class="amper-container">
+  <div class="form-box">
+
+    <div class="form-title">
+      <label class='header'>Heat Release Rate</label>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>HRR min</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.heatReleaseRate.maxHrr[0]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>HRR max</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.heatReleaseRate.maxHrr[1]" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Alpha min</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.heatReleaseRate.alphaMinModeMax[0]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Alpha mode</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.heatReleaseRate.alphaMinModeMax[1]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Alpha max</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.heatReleaseRate.alphaMinModeMax[2]" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Probability room fire</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.originOfFire.fireStartsInRoomProbability"
+            decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-title">
+      <label class='header'>Evacuation concentration (density)</label>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Corridor</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesConcentration.cor" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Staircase</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesConcentration.stai" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Room</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesConcentration.room" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Hall</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesConcentration.hall" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-title">
+      <label class='header'>Evacuees parameters</label>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Mean horizontal speed</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesSpeedParams.maxHSpeedMeanAndSd[0]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Standard deviation</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesSpeedParams.maxHSpeedMeanAndSd[1]" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Mean vertical speed</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesSpeedParams.maxVSpeedMeanAndSd[0]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Standard deviation</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesSpeedParams.maxVSpeedMeanAndSd[1]" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Mean vertical beta</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesSpeedParams.betaVMeanAndSd[0]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Standard deviation</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesSpeedParams.betaVMeanAndSd[1]" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Mean vertical alpha</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesSpeedParams.alphaVMeanAndSd[0]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Standard deviation</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.evacueesSpeedParams.alphaVMeanAndSd[1]" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-title">
+      <label class='header'>Pre evacuation time</label>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Ordinary room mean</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.preEvacuationTime.meanAndSdOrdinaryRoom[0]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Ordinary room std</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.preEvacuationTime.meanAndSdOrdinaryRoom[1]" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Origin room mean</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.preEvacuationTime.meanAndSdRoomOfFireOrigin[0]" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Origin room std</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.preEvacuationTime.meanAndSdRoomOfFireOrigin[1]" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-title">
+      <label class='header'>Window and door</label>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Window open setup</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.windowOpen.setup" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Electromagnet door probability</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.doorOpen.electroMagnetDoorIsOpenProbability" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Door closer probability</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.doorOpen.doorCloserDoorIsOpenProbability" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Standard door probability</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.doorOpen.standardDoorIsOpenProbability" decimalInput>
+        </div>
+      </div>
+      <div>
+        <label>Vertical vents probability</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.doorOpen.vventsNoFailureProbability" decimalInput>
+        </div>
+      </div>
+      
+    </div>
+
+
+
+
+  </div>
+</div>

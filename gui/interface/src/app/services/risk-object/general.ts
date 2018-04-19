@@ -9,6 +9,8 @@ export interface GeneralObject {
 	elevation: number,
 	indoorPressure: number,
 	humidity: number,
+	outdoorTemperature: number,
+	outdoorTemperatureSd: number
 }
 
 export class General {
@@ -20,9 +22,8 @@ export class General {
 	private _elevation: number;
 	private _indoorPressure: number;
 	private _humidity: number;
-
-	private _heatReleaseRate: any;
-	private _originOfFire: any;
+	private _outdoorTemperature: number;
+	private _outdoorTemperatureSd: number;
 
 	constructor(jsonString: string) {
 
@@ -38,7 +39,8 @@ export class General {
 		this.elevation = get(base, 'elevation', GENERAL.elevation.default) as number;
 		this.indoorPressure = get(base, 'indoorPressure', GENERAL.indoorPressure.default) as number;
 		this.humidity = get(base, 'humidity', GENERAL.humidity.default) as number;
-
+		this.outdoorTemperature = get(base, 'outdoorTemperature', GENERAL.outdoorTemperature.default) as number;
+		this.outdoorTemperatureSd = get(base, 'outdoorTemperature', GENERAL.outdoorTemperatureSd.default) as number;
 	}
 
     /**
@@ -151,6 +153,38 @@ export class General {
      */
 	public set humidity(value: number) {
 		this._humidity = value;
+	}
+
+    /**
+     * Getter outdoorTemperature
+     * @return {number}
+     */
+	public get outdoorTemperature(): number {
+		return this._outdoorTemperature;
+	}
+
+    /**
+     * Setter outdoorTemperature
+     * @param {number} value
+     */
+	public set outdoorTemperature(value: number) {
+		this._outdoorTemperature = value;
+	}
+
+    /**
+     * Getter outdoorTemperatureSd
+     * @return {number}
+     */
+	public get outdoorTemperatureSd(): number {
+		return this._outdoorTemperatureSd;
+	}
+
+    /**
+     * Setter outdoorTemperatureSd
+     * @param {number} value
+     */
+	public set outdoorTemperatureSd(value: number) {
+		this._outdoorTemperatureSd = value;
 	}
 
 	public toJSON(): object {

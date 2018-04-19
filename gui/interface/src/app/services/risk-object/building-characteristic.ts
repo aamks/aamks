@@ -27,7 +27,6 @@ export class BuildingCharacteristic {
         let base: BuildingCharacteristicObject;
         base = <BuildingCharacteristicObject>JSON.parse(jsonString);
 
-        let MATERIALS = RiskEntities.materials;
         let CHARACTERISTIC = RiskEntities.characteristic;
 
         this.type = get(base, 'type', CHARACTERISTIC.type.default);
@@ -38,9 +37,9 @@ export class BuildingCharacteristic {
             wall: get(base.materials, 'wall', 'brick'),
             ceiling: get(base.materials, 'ceiling', 'concrete'),
             floor: get(base.materials, 'floor', 'concrete'),
-            thicknessWall: get(base, 'materials.thicknessWall', MATERIALS.thicknessWall.default),
-            thicknessCeiling: get(base, 'materials.thicknessCeiling', MATERIALS.thicknessCeiling.default),
-            thicknessFloor: get(base, 'materials.thicknessFloor', MATERIALS.thicknessFloor.default),
+            thicknessWall: get(base, 'materials.thicknessWall', CHARACTERISTIC.materials.thicknessWall.default),
+            thicknessCeiling: get(base, 'materials.thicknessCeiling', CHARACTERISTIC.materials.thicknessCeiling.default),
+            thicknessFloor: get(base, 'materials.thicknessFloor', CHARACTERISTIC.materials.thicknessFloor.default),
         };
     }
 

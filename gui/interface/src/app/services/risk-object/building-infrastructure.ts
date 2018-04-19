@@ -18,15 +18,23 @@ export interface BuildingInfrastructureObject {
     hasNshevs: boolean,
     alarming: string,
     sprinklers: {
+        comment: string,
         activationTemperature: number,
+        activationTemperatureSd: number,
         rti: number,
-        sprayDensity: number
+        sprayDensity: number,
+        sprayDensitySd: number,
+        notBrokenProbability: number
     },
-    detectorType: string,
     detectors: {
+        comment: string,
+        type: string,
         rti: number,
         activationTemperature: number,
-        activationObscuration: number
+        activationTemperatureSd: number,
+        activationObscuration: number,
+        activationObscurationSd: number,
+        notBrokenProbability: number
     }
     nshevs: {
         activationTime: number
@@ -40,7 +48,6 @@ export class BuildingInfrastructure {
     private _hasNshevs: boolean;
     private _alarming: string;
     private _sprinklers: any;
-    private _detectorType: string;
     private _detectors: any;
     private _nshevs: any;
 
@@ -49,8 +56,6 @@ export class BuildingInfrastructure {
         let base: BuildingInfrastructureObject;
         base = <BuildingInfrastructureObject>JSON.parse(jsonString);
 
-        let SPRINKLERS = RiskEntities.sprinklers;
-        let DETECTORS = RiskEntities.detectors;
         let NSHEVS = RiskEntities.nshevs;
         let INFRASTRUCTURE = RiskEntities.infrastructure;
 
@@ -59,17 +64,25 @@ export class BuildingInfrastructure {
         this.hasNshevs = get(base, 'hasNshevs', INFRASTRUCTURE.hasNshevs.default) as boolean;
         
         this.alarming = get(base, 'alarming', 'a1') as string;
-        this.detectorType = get(base, 'detectorType', 'heat') as string;
 
         this.sprinklers = {
-            activationTemperature: get(base.sprinklers, 'activationTemperature', SPRINKLERS.activationTemperature.default),
-            rti: get(base.sprinklers, 'rti', SPRINKLERS.rti.default),
-            sprayDensity: get(base.sprinklers, 'sprayDensity', SPRINKLERS.sprayDensity.default)
+            comment: get(base, 'comment', INFRASTRUCTURE.sprinklers.comment.default),
+            activationTemperature: get(base.sprinklers, 'activationTemperature', INFRASTRUCTURE.sprinklers.activationTemperature.default),
+            activationTemperatureSd: get(base, 'activationTemperatureSd', INFRASTRUCTURE.sprinklers.activationTemperatureSd.default),
+            rti: get(base.sprinklers, 'rti', INFRASTRUCTURE.sprinklers.rti.default),
+            sprayDensity: get(base.sprinklers, 'sprayDensity', INFRASTRUCTURE.sprinklers.sprayDensity.default),
+            sprayDensitySd: get(base, 'sprayDensitySd', INFRASTRUCTURE.sprinklers.sprayDensitySd.default),
+            notBrokenProbability: get(base, 'notBrokenProbability', INFRASTRUCTURE.sprinklers.notBrokenProbability.default),
         };
         this.detectors = {
-            rti: get(base.detectors, 'rti', DETECTORS.rti.default),
-            activationTemperature: get(base.detectors, 'activationTemperature', DETECTORS.activationTemperature.default),
-            activationObscuration: get(base.detectors, 'activationObscuration', DETECTORS.activationObscuration.default)
+            comment: get(base, 'comment', INFRASTRUCTURE.detectors.comment.default),
+            type: get(base, 'type', INFRASTRUCTURE.detectors.type.default),
+            rti: get(base.detectors, 'rti', INFRASTRUCTURE.detectors.rti.default),
+            activationTemperature: get(base.detectors, 'activationTemperature', INFRASTRUCTURE.detectors.activationTemperature.default),
+            activationTemperatureSd: get(base, 'activationTemperatureSd', INFRASTRUCTURE.detectors.activationTemperatureSd.default),
+            activationObscuration: get(base.detectors, 'activationObscuration', INFRASTRUCTURE.detectors.activationObscuration.default),
+            activationObscurationSd: get(base, 'activationObscurationSd', INFRASTRUCTURE.detectors.activationObscurationSd.default),
+            notBrokenProbability: get(base, 'notBrokenProbability', INFRASTRUCTURE.detectors.notBrokenProbability.default),
         };
         this.nshevs = {
             activationTime: get(base.nshevs, 'activationTime', NSHEVS.activationTime.default),
@@ -157,22 +170,6 @@ export class BuildingInfrastructure {
     }
 
     /**
-     * Getter detectorType
-     * @return {string}
-     */
-    public get detectorType(): string {
-        return this._detectorType;
-    }
-
-    /**
-     * Setter detectorType
-     * @param {string} value
-     */
-    public set detectorType(value: string) {
-        this._detectorType = value;
-    }
-
-    /**
      * Getter detectors
      * @return {any}
      */
@@ -204,6 +201,7 @@ export class BuildingInfrastructure {
         this._nshevs = value;
     }
 
+    /** Export to json */
     public toJSON(): object {
         let buildingInfrastructure = {
             hasDetectors: this.hasDetectors,
@@ -211,7 +209,6 @@ export class BuildingInfrastructure {
             hasNshevs: this.hasNshevs,
             alarming: this.alarming,
             sprinklers: this.sprinklers,
-            detectorType: this.detectorType,
             detectors: this.detectors,
             nshevs: this.nshevs
         }
@@ -219,12 +216,3 @@ export class BuildingInfrastructure {
     }
 
 }
-
-/*
-
-
-Settings
-
-distribution.json
-
-*/

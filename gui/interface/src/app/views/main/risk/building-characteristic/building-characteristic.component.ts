@@ -37,6 +37,7 @@ export class BuildingCharacteristicComponent implements OnInit {
     this.buildingInfrastructure = this.main.currentRiskScenario.riskObject.buildingInfrastructure;
   }
 
+  /*
   pre() {
 
     let preTime = find(this.PRE_TIMES, function(o) {
@@ -48,6 +49,7 @@ export class BuildingCharacteristicComponent implements OnInit {
     this.pre2 = preTime.pre[this.buildingCharacteristic.managment][this.buildingCharacteristic.complexity][this.buildingInfrastructure.alarming].pre2;
 
   }
+  */
 
 
 

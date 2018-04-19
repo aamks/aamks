@@ -79,6 +79,44 @@ export const RiskEntities =
                     }
                 ]
             },
+            outdoorTemperature: {
+                type: 'Real',
+                units: 'C',
+                'default': 20,
+                help: '',
+                pattern: '',
+                valid_ranges: [
+                    {
+                        minInclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ],
+                reasonable_ranges: [
+                    {
+                        minExclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ]
+            },
+            outdoorTemperatureSd: {
+                type: 'Real',
+                units: 'C',
+                'default': 5,
+                help: '',
+                pattern: '',
+                valid_ranges: [
+                    {
+                        minInclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ],
+                reasonable_ranges: [
+                    {
+                        minExclusive: '__',
+                        maxExclusive: '__'
+                    }
+                ]
+            },
             elevation: {
                 type: 'Real',
                 units: 'm',
@@ -323,10 +361,35 @@ export const RiskEntities =
                 pattern: ''
             },
             sprinklers: {
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
                 activationTemperature: {
                     type: 'Real',
                     units: 'C',
                     default: 0,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                activationTemperatureSd: {
+                    type: 'Real',
+                    units: '',
+                    default: 68,
                     help: '',
                     pattern: '',
                     valid_ranges: [
@@ -379,9 +442,59 @@ export const RiskEntities =
                             maxExclusive: '__'
                         }
                     ]
-                }
+                },
+                sprayDensitySd: {
+                    type: 'Real',
+                    units: '',
+                    default: 5,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                notBrokenProbability: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
             },
             detectors: {
+                comment: {
+                    type: 'Character',
+                    units: '',
+                    default: 'desc',
+                    help: ''
+                },
+                type: {
+                    type: 'Character',
+                    units: '',
+                    default: 'heat',
+                    help: ''
+                },
                 rti: {
                     type: 'Real',
                     units: '',
@@ -404,7 +517,26 @@ export const RiskEntities =
                 activationTemperature: {
                     type: 'Real',
                     units: '',
-                    'default': '0',
+                    default: 0,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                activationTemperatureSd: {
+                    type: 'Real',
+                    units: '',
+                    default: 5,
                     help: '',
                     pattern: '',
                     valid_ranges: [
@@ -424,6 +556,44 @@ export const RiskEntities =
                     type: 'Real',
                     units: '',
                     'default': '0',
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                activationObscurationSd: {
+                    type: 'Real',
+                    units: '',
+                    default: 5,
+                    help: '',
+                    pattern: '',
+                    valid_ranges: [
+                        {
+                            minInclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ],
+                    reasonable_ranges: [
+                        {
+                            minExclusive: '__',
+                            maxExclusive: '__'
+                        }
+                    ]
+                },
+                notBrokenProbability: {
+                    type: 'Real',
+                    units: '',
+                    default: 0.4,
                     help: '',
                     pattern: '',
                     valid_ranges: [
@@ -463,10 +633,10 @@ export const RiskEntities =
                         }
                     ]
                 },
-                alfaMinModeMax: {
+                alphaMinModeMax: {
                     type: 'Real',
                     units: '',
-                    default: [500, 1200],
+                    default: [1, 3, 4],
                     help: '',
                     pattern: '',
                     valid_ranges: [
@@ -735,33 +905,6 @@ export const RiskEntities =
                 },
                 setup: []
             },
-            outdoorTemperature: {
-                comment: {
-                    type: 'Character',
-                    units: '',
-                    default: 'desc',
-                    help: ''
-                },
-                meanAndSd: {
-                    type: 'Real',
-                    units: '',
-                    default: [500, 1200],
-                    help: '',
-                    pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
-                }
-            },
             doorOpen: {
                 comment: {
                     type: 'Character',
@@ -848,121 +991,8 @@ export const RiskEntities =
             },
             sprinkler: {
 
-                comment: {
-                    type: 'Character',
-                    units: '',
-                    default: 'desc',
-                    help: ''
-                },
-                triggerTemperatureMeanAndSd: {
-                    type: 'Real',
-                    units: '',
-                    default: [500, 1200],
-                    help: '',
-                    pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
-                },
-                notBrokenProbability: {
-                    type: 'Real',
-                    units: '',
-                    default: 0.4,
-                    help: '',
-                    pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
-                },
-                sprayDensityMeanAndSd: {
-                    type: 'Real',
-                    units: '',
-                    default: [500, 1200],
-                    help: '',
-                    pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
-                }
             },
             fireDetector: {
-                comment: {
-                    type: 'Character',
-                    units: '',
-                    default: 'desc',
-                    help: ''
-                },
-                type: {
-                    type: 'Character',
-                    units: '',
-                    default: 'heat',
-                    help: ''
-                },
-                meanAndSdTriggerTemperature: {
-                    type: 'Real',
-                    units: '',
-                    default: [500, 1200],
-                    help: '',
-                    pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
-                },
-                notBrokenProbability: {
-                    type: 'Real',
-                    units: '',
-                    default: 0.4,
-                    help: '',
-                    pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
-                }
             }
         },
 
