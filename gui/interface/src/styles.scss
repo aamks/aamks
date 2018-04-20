@@ -119,4 +119,5 @@ input:focus, select:focus, textarea:focus, button:focus { outline: none; }
 ng-katex { font-size: .9rem; }
 
 @import 'app/views/main/fds/input-file/css/codemirror.scss';
-@import "~@ng-select/ng-select/themes/default.theme.css";
+@import '~@ng-select/ng-select/themes/default.theme.css';
+@import '~angular-notifier/styles.scss'

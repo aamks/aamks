@@ -12,11 +12,23 @@ export const RiskEnums =
             { label: 'Concrete', value: 'concrete' }
         ],
         buildingType: [
-            {
+            {   // alpha: 0.0029, 0.012, 0.047, 0.188
                 label: 'Hotel',
                 value: 'hotel',
                 type: 'c1',
-                alphaMod: 0.04,
+                alphaMod: 0.047,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+            {
+                label: 'Office (closed plan)',
+                value: 'office1',
+                type: 'b',
+                alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
                 maxHrr: [100, 500],
                 evacRoomDensity: 1, // z bs 9999

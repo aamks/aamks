@@ -12,6 +12,9 @@ import { NgSelectModule } from '@ng-select/ng-select';
 // KaTex
 import { KatexModule } from 'ng-katex';
 
+// angular-notifier
+import { NotifierModule } from 'angular-notifier';
+
 // Perfect Scrollbar
 import { PerfectScrollbarModule } from 'ngx-perfect-scrollbar';
 import { PERFECT_SCROLLBAR_CONFIG } from 'ngx-perfect-scrollbar';
@@ -135,7 +138,49 @@ import { BuildingInfrastructureComponent } from './views/main/risk/building-infr
     CommonModule,
     KatexModule,
     PerfectScrollbarModule,
-    NgSelectModule
+    NgSelectModule,
+    NotifierModule.withConfig(
+      {
+        position: {
+          horizontal: {
+            position: 'left',
+            distance: 12
+          },
+          vertical: {
+            position: 'bottom',
+            distance: 12,
+            gap: 10
+          }
+        },
+        theme: 'material',
+        behaviour: {
+          autoHide: 5000,
+          onClick: false,
+          onMouseover: 'pauseAutoHide',
+          showDismissButton: true,
+          stacking: 4
+        },
+        animations: {
+          enabled: true,
+          show: {
+            preset: 'slide',
+            speed: 300,
+            easing: 'ease'
+          },
+          hide: {
+            preset: 'fade',
+            speed: 300,
+            easing: 'ease',
+            offset: 50
+          },
+          shift: {
+            speed: 300,
+            easing: 'ease'
+          },
+          overlap: 150
+        }
+      }
+    )
   ],
   providers: [
     MainService,

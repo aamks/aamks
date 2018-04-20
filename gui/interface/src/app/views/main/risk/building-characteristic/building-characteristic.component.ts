@@ -5,6 +5,7 @@ import { Main } from '../../../../services/main/main';
 import { RiskEnums } from '../../../../enums/risk-enums';
 import { find } from 'lodash';
 import { BuildingInfrastructure } from '../../../../services/risk-object/building-infrastructure';
+import { Settings } from '../../../../services/risk-object/settings';
 
 @Component({
   selector: 'app-building-characteristic',
@@ -15,11 +16,8 @@ export class BuildingCharacteristicComponent implements OnInit {
 
   main: Main;
   buildingCharacteristic: BuildingCharacteristic;
-
   buildingInfrastructure: BuildingInfrastructure;
-
-  pre1: number;
-  pre2: number;
+  settings: Settings;
 
   TYPE = RiskEnums.buildingType;
   COMPLEXITY = RiskEnums.complexity;
@@ -27,6 +25,7 @@ export class BuildingCharacteristicComponent implements OnInit {
   MATERIALS = RiskEnums.materials;
 
   PRE_TIMES = RiskEnums.preTimes;
+  BUILDING_TYPE = RiskEnums.buildingType;
 
   constructor(private mainService: MainService) { }
 
@@ -35,22 +34,23 @@ export class BuildingCharacteristicComponent implements OnInit {
     this.mainService.getMain().subscribe(main => this.main = main);
     this.buildingCharacteristic = this.main.currentRiskScenario.riskObject.buildingCharacteristic;
     this.buildingInfrastructure = this.main.currentRiskScenario.riskObject.buildingInfrastructure;
+    this.settings = this.main.currentRiskScenario.riskObject.settings;
   }
 
-  /*
-  pre() {
-
-    let preTime = find(this.PRE_TIMES, function(o) {
-      return o.type == 'a';
-      //return o.type == this.buildingCharacteristic.buildingType.type;
-    })
-
-    this.pre1 = preTime.pre[this.buildingCharacteristic.managment][this.buildingCharacteristic.complexity][this.buildingInfrastructure.alarming].pre1;
-    this.pre2 = preTime.pre[this.buildingCharacteristic.managment][this.buildingCharacteristic.complexity][this.buildingInfrastructure.alarming].pre2;
-
+  /** Sets pre-evacuation times */
+  public setPreMovementTimes() {
+    let buildingType = find(this.BUILDING_TYPE, (o) => {
+      return o.value == this.buildingCharacteristic.type;
+    });
+    let preEvacuationTime = find(this.PRE_TIMES, function(o) {
+      return o.type == buildingType.type;
+    });
+    if (preEvacuationTime != undefined) {
+      this.settings.preEvacuationTime.meanAndSdOrdinaryRoom[0] = preEvacuationTime.pre[this.buildingCharacteristic.managment][this.buildingCharacteristic.complexity][this.buildingInfrastructure.alarming].loc;
+      this.settings.preEvacuationTime.meanAndSdOrdinaryRoom[1] = preEvacuationTime.pre[this.buildingCharacteristic.managment][this.buildingCharacteristic.complexity][this.buildingInfrastructure.alarming].scale;
+      this.settings.preEvacuationTime.meanAndSdOrdinaryRoom = preEvacuationTime.preEvacuationRoomOfFireOrigin;
+    }
   }
-  */
-
 
 
 }

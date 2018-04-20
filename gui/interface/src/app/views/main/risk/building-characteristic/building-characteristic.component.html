@@ -9,7 +9,7 @@
       <div>
         <label>Building type:</label>
         <div class="field-container">
-          <select [(ngModel)]="buildingCharacteristic.type">
+          <select [(ngModel)]="buildingCharacteristic.type" (change)="setPreMovementTimes()">
             <option *ngFor="let element of TYPE" [ngValue]="element.value">{{element.label}}</option>
           </select>
         </div>
@@ -17,7 +17,7 @@
       <div>
         <label>Complexity level:</label>
         <div class="field-container">
-          <select [(ngModel)]="buildingCharacteristic.complexity">
+          <select [(ngModel)]="buildingCharacteristic.complexity" (change)="setPreMovementTimes()">
             <option *ngFor="let element of COMPLEXITY" [ngValue]="element.value">{{element.label}}</option>
           </select>
         </div>
@@ -25,7 +25,7 @@
       <div>
         <label>Managment level:</label>
         <div class="field-container">
-          <select [(ngModel)]="buildingCharacteristic.managment">
+          <select [(ngModel)]="buildingCharacteristic.managment" (change)="setPreMovementTimes()">
             <option *ngFor="let element of MANAGMENT" [ngValue]="element.value">{{element.label}}</option>
           </select>
         </div>

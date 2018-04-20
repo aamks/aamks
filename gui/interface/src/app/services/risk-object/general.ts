@@ -193,6 +193,8 @@ export class General {
 			simulationTime: this.simulationTime,
 			numberOfSimulations: this.numberOfSimulations,
 			indoorTemperature: this.indoorTemperature,
+			outdoorTemperature: this.outdoorTemperature,
+			outdoorTemperatureSd: this.outdoorTemperatureSd,
 			elevation: this.elevation,
 			indoorPressure: this.indoorPressure,
 			humidity: this.humidity
