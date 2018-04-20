@@ -24,6 +24,7 @@
     "@ng-select/ng-select": "^0.35.0",
     "@types/paper": "^0.9.14",
     "angular-in-memory-web-api": "^0.5.1",
+    "angular-notifier": "^3.0.0",
     "codemirror": "^5.35.0",
     "core-js": "^2.4.1",
     "d3": "^4.12.2",
@@ -32,6 +33,7 @@
     "lodash": "^4.17.4",
     "ng-katex": "^0.3.37",
     "ngx-perfect-scrollbar": "^5.3.1",
+    "npm": "^5.8.0",
     "paper": "^0.11.5",
     "rxjs": "^5.5.2",
     "zone.js": "^0.8.14"
