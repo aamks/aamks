@@ -2,111 +2,14 @@
 
 export const RiskEnums =
     {
-        alarmType: [
-            {
-                label: '1',
-                value: '1'
-            },
-            {
-                label: '2',
-                value: '2'
-            }
-        ],
-        distType: [
-            {
-                label: 'Custom',
-                value: 'custom'
-            },
-            {
-                label: 'Normal',
-                value: 'normal'
-            },
-            {
-                label: 'Uniform',
-                value: 'uniform'
-            },
-            {
-                label: 'Binomial',
-                value: 'binomial'
-            },
-            {
-                label: 'Triangular',
-                value: 'triangular'
-            },
-            {
-                label: 'Gamma',
-                value: 'gamma'
-            },
-            {
-                label: 'Lognormal',
-                value: 'lognormal'
-            }
-        ],
-        alarming: [
-            {
-                label: 'Level A1',
-                value: 'a1'
-            },
-            {
-                label: 'Level A2',
-                value: 'a2'
-            },
-            {
-                label: 'Level A3',
-                value: 'a3'
-            }
-        ],
-        complexity: [
-            {
-                label: 'Level B1',
-                value: 'b1'
-            },
-            {
-                label: 'Level B2',
-                value: 'b2'
-            },
-            {
-                label: 'Level B3',
-                value: 'b3'
-            }
-        ],
-        managment: [
-            {
-                label: 'Level M1',
-                value: 'm1'
-            },
-            {
-                label: 'Level M2',
-                value: 'm2'
-            },
-            {
-                label: 'Level M3',
-                value: 'm3'
-            }
-        ],
+        alarming: [{ label: 'Level A1', value: 'a1' }, { label: 'Level A2', value: 'a2' }, { label: 'Level A3', value: 'a3' }],
+        complexity: [{ label: 'Level B1', value: 'b1' }, { label: 'Level B2', value: 'b2' }, { label: 'Level B3', value: 'b3' }],
+        managment: [{ label: 'Level M1', value: 'm1' }, { label: 'Level M2', value: 'm2' }, { label: 'Level M3', value: 'm3' }],
+        detectorType: [ { label: 'Heat detector', value: 'heat' }, { label: 'Smoke detector', value: 'smoke' } ],
         materials: [
-            {
-                label: 'Gypsum',
-                value: 'gypsum'
-            },
-            {
-                label: 'Brick',
-                value: 'brick'
-            },
-            {
-                label: 'Concrete',
-                value: 'concrete'
-            }
-        ],
-        detectorType: [
-            {
-                label: 'Heat detector',
-                value: 'heat'
-            },
-            {
-                label: 'Smoke detector',
-                value: 'smoke'
-            }
+            { label: 'Gypsum', value: 'gypsum' },
+            { label: 'Brick', value: 'brick' },
+            { label: 'Concrete', value: 'concrete' }
         ],
         buildingType: [
             {
@@ -180,8 +83,8 @@ export const RiskEnums =
                         b3: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 30, scale: 60 } }
                     },
                     m3: {
-                        b1: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 594.22, scale: 59.16}},
-                        b2: { a1: { loc: 1199.94, scale: 0.59 }, a2: { loc: 1199.94, scale: 0.59 }, a3: { loc: 1199.94, scale: 0.59 }},
+                        b1: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 594.22, scale: 59.16 } },
+                        b2: { a1: { loc: 1199.94, scale: 0.59 }, a2: { loc: 1199.94, scale: 0.59 }, a3: { loc: 1199.94, scale: 0.59 } },
                         b3: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 30, scale: 60 } }
                     }
                 }
@@ -201,13 +104,13 @@ export const RiskEnums =
                         b3: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 30, scale: 60 } }
                     },
                     m3: {
-                        b1: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 594.22, scale: 59.16}},
-                        b2: { a1: { loc: 1199.94, scale: 0.59 }, a2: { loc: 1199.94, scale: 0.59 }, a3: { loc: 1199.94, scale: 0.59 }},
+                        b1: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 594.22, scale: 59.16 } },
+                        b2: { a1: { loc: 1199.94, scale: 0.59 }, a2: { loc: 1199.94, scale: 0.59 }, a3: { loc: 1199.94, scale: 0.59 } },
                         b3: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 30, scale: 60 } }
                     }
                 }
             },
-			{
+            {
                 type: 'c3',
                 preEvacuationRoomOfFireOrigin: [59.85, 1.48],
                 pre: {
@@ -222,13 +125,13 @@ export const RiskEnums =
                         b3: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 30, scale: 60 } }
                     },
                     m3: {
-                        b1: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 594.22, scale: 59.16}},
-                        b2: { a1: { loc: 1199.94, scale: 0.59 }, a2: { loc: 1199.94, scale: 0.59 }, a3: { loc: 1199.94, scale: 0.59 }},
+                        b1: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 594.22, scale: 59.16 } },
+                        b2: { a1: { loc: 1199.94, scale: 0.59 }, a2: { loc: 1199.94, scale: 0.59 }, a3: { loc: 1199.94, scale: 0.59 } },
                         b3: { a1: { loc: 30, scale: 60 }, a2: { loc: 30, scale: 60 }, a3: { loc: 30, scale: 60 } }
                     }
                 }
             },
-			{
+            {
                 type: 'd1',
                 preEvacuationRoomOfFireOrigin: [59.85, 1.48],
                 pre: {
@@ -244,15 +147,14 @@ export const RiskEnums =
                     },
                     m3: {
                         b1: { a1: { loc: 899.94, scale: 0.59 }, a2: { loc: 899.94, scale: 0.59 }, a3: { loc: 899.94, scale: 0.59 } },
-                        b2: { a1: { loc: 1199.94, scale: 0.59 }, a2: { loc: 1199.94, scale: 0.59 }, a3: { loc: 1199.94, scale: 0.59 }},
-                        b3: { a1: { loc: 1259.94, scale: 0.59 }, a2: { loc: 1259.94, scale: 0.59 }, a3: { loc: 1259.94, scale: 0.59 }}
+                        b2: { a1: { loc: 1199.94, scale: 0.59 }, a2: { loc: 1199.94, scale: 0.59 }, a3: { loc: 1199.94, scale: 0.59 } },
+                        b3: { a1: { loc: 1259.94, scale: 0.59 }, a2: { loc: 1259.94, scale: 0.59 }, a3: { loc: 1259.94, scale: 0.59 } }
                     }
                 }
             },
-			{
+            {
                 type: 'd2',
                 preEvacuationRoomOfFireOrigin: [59.85, 1.48],
-                pre: {
                 pre: {
                     m1: {
                         b2: { a1: { loc: 297.11, scale: 29.56 }, a2: { loc: 297.11, scale: 29.56 } },
@@ -268,7 +170,7 @@ export const RiskEnums =
                     }
                 }
             },
-			{
+            {
                 type: 'e',
                 preEvacuationRoomOfFireOrigin: [59.85, 1.48],
                 pre: {
