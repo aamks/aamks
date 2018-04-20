@@ -5,22 +5,8 @@ export const RiskEntities =
         general: {
             projectName: {
                 type: 'Character',
-                units: '',
                 default: 'New Project',
                 help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
             },
             simulationTime: {
                 type: 'Real',
@@ -28,18 +14,8 @@ export const RiskEntities =
                 default: 0,
                 help: '',
                 pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: 0,
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+                valid_ranges: [{ minInclusive: 0, maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
             numberOfSimulations: {
                 type: 'Integer',
@@ -47,249 +23,107 @@ export const RiskEntities =
                 default: 5000,
                 help: '',
                 pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: 1,
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '3000',
-                        maxExclusive: '20000'
-                    }
-                ]
+                valid_ranges: [{ minInclusive: 1, maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '3000', maxExclusive: '20000' }]
             },
             indoorTemperature: {
                 type: 'Real',
                 units: 'C',
-                'default': 20,
+                default: 20,
                 help: '',
                 pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+                valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
             outdoorTemperature: {
                 type: 'Real',
                 units: 'C',
-                'default': 20,
+                default: 20,
                 help: '',
                 pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+                valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
             outdoorTemperatureSd: {
                 type: 'Real',
                 units: 'C',
-                'default': 5,
+                default: 5,
                 help: '',
                 pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+                valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
             elevation: {
                 type: 'Real',
                 units: 'm',
-                'default': 0,
+                default: 0,
                 help: '',
                 pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+                valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
             indoorPressure: {
                 type: 'Real',
                 units: 'Pa',
-                'default': 101325,
+                default: 101325,
                 help: '',
                 pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: 0,
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+                valid_ranges: [{ minInclusive: 0, maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
             humidity: {
                 type: 'Real',
                 units: '%',
-                'default': 40,
+                default: 40,
                 help: '',
                 pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: 0,
-                        maxInclusive: 100
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+                valid_ranges: [{ minInclusive: 0, maxInclusive: 100 }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             }
         },
         characteristic: {
             type: {
                 type: 'Character',
-                units: '',
                 default: 'office',
                 help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
             },
             complexity: {
                 type: 'Character',
-                units: '',
                 default: 'b1',
                 help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
             },
             managment: {
                 type: 'Character',
-                units: '',
                 default: 'm1',
                 help: '',
-                pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
             },
             materials: {
                 thicknessWall: {
                     type: 'Real',
                     units: '',
-                    'default': '0',
+                    default: '0',
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                    reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
                 },
                 thicknessCeiling: {
                     type: 'Real',
                     units: '',
-                    'default': '0',
+                    default: '0',
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                    reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
                 },
                 thicknessFloor: {
                     type: 'Real',
                     units: '',
-                    'default': '0',
+                    default: '0',
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                    reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
                 }
             },
         },
@@ -297,52 +131,32 @@ export const RiskEntities =
             hasDetectors: {
                 type: 'Logical',
                 units: '',
-                'default': false,
+                default: false,
                 help: '',
                 pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+                valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
             hasSprinklers: {
                 type: 'Logical',
                 units: '',
-                'default': false,
+                default: false,
                 help: '',
                 pattern: '',
-                valid_ranges: [
-                    {
-                        minInclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ],
-                reasonable_ranges: [
-                    {
-                        minExclusive: '__',
-                        maxExclusive: '__'
-                    }
-                ]
+                valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
             hasTrainedStaff: {
                 type: 'Logical',
                 units: '',
-                'default': false,
+                default: false,
                 help: '',
                 pattern: ''
             },
             hasVa: {
                 type: 'Logical',
                 units: '',
-                'default': false,
+                default: false,
                 help: '',
                 pattern: ''
             },
@@ -355,15 +169,12 @@ export const RiskEntities =
             },
             alarming_level: {
                 type: 'Character',
-                units: '',
-                'default': '1',
+                default: '1',
                 help: '',
-                pattern: ''
             },
             sprinklers: {
                 comment: {
                     type: 'Character',
-                    units: '',
                     default: 'desc',
                     help: ''
                 },
@@ -373,18 +184,8 @@ export const RiskEntities =
                     default: 0,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 activationTemperatureSd: {
                     type: 'Real',
@@ -392,18 +193,8 @@ export const RiskEntities =
                     default: 68,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 rti: {
                     type: 'Real',
@@ -411,18 +202,8 @@ export const RiskEntities =
                     default: 0,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 sprayDensity: {
                     type: 'Real',
@@ -430,18 +211,8 @@ export const RiskEntities =
                     default: 0,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 sprayDensitySd: {
                     type: 'Real',
@@ -449,18 +220,8 @@ export const RiskEntities =
                     default: 5,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 notBrokenProbability: {
                     type: 'Real',
@@ -468,51 +229,29 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
             },
             detectors: {
                 comment: {
                     type: 'Character',
-                    units: '',
                     default: 'desc',
                     help: ''
                 },
                 type: {
                     type: 'Character',
-                    units: '',
                     default: 'heat',
                     help: ''
                 },
                 rti: {
                     type: 'Real',
                     units: '',
-                    'default': '0',
+                    default: '0',
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 activationTemperature: {
                     type: 'Real',
@@ -520,18 +259,8 @@ export const RiskEntities =
                     default: 0,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 activationTemperatureSd: {
                     type: 'Real',
@@ -539,37 +268,17 @@ export const RiskEntities =
                     default: 5,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 activationObscuration: {
                     type: 'Real',
                     units: '',
-                    'default': '0',
+                    default: '0',
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 activationObscurationSd: {
                     type: 'Real',
@@ -577,18 +286,8 @@ export const RiskEntities =
                     default: 5,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 notBrokenProbability: {
                     type: 'Real',
@@ -596,18 +295,8 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 }
             }
         },
@@ -620,18 +309,8 @@ export const RiskEntities =
                     default: [500, 1200],
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 alphaMinModeMax: {
                     type: 'Real',
@@ -639,25 +318,14 @@ export const RiskEntities =
                     default: [1, 3, 4],
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
             },
 
             originOfFire: {
                 comment: {
                     type: 'Character',
-                    units: '',
                     default: 'desc',
                     help: ''
                 },
@@ -667,25 +335,14 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 }
             },
 
             evacueesConcentration: {
                 comment: {
                     type: 'Character',
-                    units: '',
                     default: 'desc',
                     help: ''
                 },
@@ -695,18 +352,8 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 stai: {
                     type: 'Real',
@@ -714,18 +361,8 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 room: {
                     type: 'Real',
@@ -733,18 +370,8 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 hall: {
                     type: 'Real',
@@ -752,24 +379,13 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 }
             },
             evacueesSpeedParams: {
                 comment: {
                     type: 'Character',
-                    units: '',
                     default: 'desc',
                     help: ''
                 },
@@ -779,18 +395,8 @@ export const RiskEntities =
                     default: [500, 1200],
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 maxVSpeedMeanAndSd: {
                     type: 'Real',
@@ -798,18 +404,8 @@ export const RiskEntities =
                     default: [500, 1200],
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 betaVMeanAndSd: {
                     type: 'Real',
@@ -817,18 +413,8 @@ export const RiskEntities =
                     default: [500, 1200],
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 alphaVMeanAndSd: {
                     type: 'Real',
@@ -836,24 +422,13 @@ export const RiskEntities =
                     default: [500, 1200],
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 }
             },
             preEvacuationTime: {
                 comment: {
                     type: 'Character',
-                    units: '',
                     default: 'desc',
                     help: ''
                 },
@@ -863,18 +438,8 @@ export const RiskEntities =
                     default: [500, 1200],
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 meanAndSdOrdinaryRoom: {
                     type: 'Real',
@@ -882,24 +447,13 @@ export const RiskEntities =
                     default: [500, 1200],
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 }
             },
             windowOpen: {
                 comment: {
                     type: 'Character',
-                    units: '',
                     default: 'desc',
                     help: ''
                 },
@@ -908,7 +462,6 @@ export const RiskEntities =
             doorOpen: {
                 comment: {
                     type: 'Character',
-                    units: '',
                     default: 'desc',
                     help: ''
                 },
@@ -918,18 +471,8 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 doorCloserDoorIsOpenProbability: {
                     type: 'Real',
@@ -937,18 +480,8 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 standardDoorIsOpenProbability: {
                     type: 'Real',
@@ -956,18 +489,8 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
                 vventsNoFailureProbability: {
                     type: 'Real',
@@ -975,24 +498,9 @@ export const RiskEntities =
                     default: 0.4,
                     help: '',
                     pattern: '',
-                    valid_ranges: [
-                        {
-                            minInclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ],
-                    reasonable_ranges: [
-                        {
-                            minExclusive: '__',
-                            maxExclusive: '__'
-                        }
-                    ]
+                    valid_ranges: [ { minInclusive: '__', maxExclusive: '__' } ],
+                    reasonable_ranges: [ { minExclusive: '__', maxExclusive: '__' } ]
                 },
-            },
-            sprinkler: {
-
-            },
-            fireDetector: {
             }
         },
 
@@ -1000,11 +508,12 @@ export const RiskEntities =
 
 
 
+        // For futher development
         nshevs: {
             activationTime: {
                 type: 'Real',
                 units: '',
-                'default': '0',
+                default: '0',
                 help: '',
                 pattern: '',
                 valid_ranges: [
@@ -1025,7 +534,7 @@ export const RiskEntities =
             flow: {
                 type: 'Real',
                 units: '',
-                'default': '0',
+                default: '0',
                 help: '',
                 pattern: '',
                 valid_ranges: [
@@ -1044,7 +553,7 @@ export const RiskEntities =
             beginDropoffPressure: {
                 type: 'Real',
                 units: '',
-                'default': '0',
+                default: '0',
                 help: '',
                 pattern: '',
                 valid_ranges: [
@@ -1063,7 +572,7 @@ export const RiskEntities =
             zeroFlowPressure: {
                 type: 'Real',
                 units: '',
-                'default': '0',
+                default: '0',
                 help: '',
                 pattern: '',
                 valid_ranges: [
@@ -1082,7 +591,7 @@ export const RiskEntities =
             initialOpeningFraction: {
                 type: 'Real',
                 units: '',
-                'default': '0',
+                default: '0',
                 help: '',
                 pattern: '',
                 valid_ranges: [
@@ -1101,7 +610,7 @@ export const RiskEntities =
             filterEfficiency: {
                 type: 'Real',
                 units: '',
-                'default': '0',
+                default: '0',
                 help: '',
                 pattern: '',
                 valid_ranges: [
