@@ -27,8 +27,6 @@ export class Fire {
 
         let idGeneratorService = new IdGeneratorService;
 
-        //let HOLE = FdsEntities.HOLE;
-
         this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;

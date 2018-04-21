@@ -24,6 +24,8 @@ import { BuildingInfrastructureComponent } from './views/main/risk/building-infr
 import { SettingsComponent } from './views/main/risk/settings/settings.component';
 import { ResultsComponent } from './views/main/risk/results/results.component';
 import { RampComponent } from './views/main/fds/ramp/ramp.component';
+import { FuelComponent } from './views/main/fds/fire/fuel/fuel.component';
+import { SpecComponent } from './views/main/fds/specie/spec/spec.component';
 
 const routes: Routes = [
   {
@@ -51,7 +53,6 @@ const routes: Routes = [
     path: 'fds/geometry/obstruction',
     component: ObstructionComponent
   },
-
   {
     path: 'fds/ventilation/basic',
     component: BasicComponent
@@ -60,14 +61,21 @@ const routes: Routes = [
     path: 'fds/ventilation/jetfan',
     component: JetfanComponent
   },
-
   {
-    path: 'fds/fire/fires',
+    path: 'fds/fire/fire',
     component: FiresComponent
+  },
+  {
+    path: 'fds/fire/fuel',
+    component: FuelComponent
   },
   {
     path: 'fds/fire/combustion',
     component: CombustionComponent
+  },
+  {
+    path: 'fds/specie/spec',
+    component: SpecComponent
   },
   {
     path: 'fds/output/dump',

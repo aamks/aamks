@@ -45,10 +45,24 @@
   </div>
   <div class="ng2" [ngClass]="uiState.fdsMenu.fire ? 'open' : 'close'">
     <div class="n2">
-      <a routerLink="fds/fire/fires" (click)="activate('fires')" [ngClass]="{'active': uiState.active == 'fires'}">Fires</a>
+      <a routerLink="fds/fire/fire" (click)="activate('fires')" [ngClass]="{'active': uiState.active == 'fires'}">Fire</a>
+    </div>
+    <div class="n2">
+      <a routerLink="fds/fire/fuel" (click)="activate('fuel')" [ngClass]="{'active': uiState.active == 'fuel'}">Fuel</a>
     </div>
     <div class="n2">
       <a routerLink="fds/fire/combustion" (click)="activate('combustion')" [ngClass]="{'active': uiState.active == 'combustion'}">Combustion</a>
+    </div>
+  </div>
+
+  <div class="n1" (click)="toggleMenu('specie')">
+    <i *ngIf="!uiState.fdsMenu.specie" class="material-icons">expand_more</i>
+    <i *ngIf="uiState.fdsMenu.specie" class="material-icons">expand_less</i>
+    <a>Specie</a>
+  </div>
+  <div class="ng2" [ngClass]="uiState.fdsMenu.specie ? 'open' : 'close'">
+    <div class="n2">
+      <a routerLink="fds/specie/spec" (click)="activate('spec')" [ngClass]="{'active': uiState.active == 'spec'}">Spec</a>
     </div>
   </div>
 

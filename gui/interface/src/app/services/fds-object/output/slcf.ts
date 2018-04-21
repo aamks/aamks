@@ -1,7 +1,7 @@
 import { FdsEntities } from '../../../enums/fds-entities';
 import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { Xb } from '../primitives';
-import { Specie } from '../specie';
+import { Spec } from '../specie/spec';
 import { Part } from './part';
 import { FdsEnums } from '../../../enums/fds-enums';
 import { map, toString, get, toNumber, find } from 'lodash';
@@ -27,7 +27,7 @@ export class Slcf {
     private _spec: boolean;
     private _part: boolean;
 
-    constructor(jsonString: string, specs: Specie[] = undefined, parts: Part[] = undefined) {
+    constructor(jsonString: string, specs: Spec[] = undefined, parts: Part[] = undefined) {
 
         let base: DevcObject;
         base = <DevcObject>JSON.parse(jsonString);

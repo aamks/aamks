@@ -1,6 +1,6 @@
 import { FdsEntities } from '../../../enums/fds-entities';
 import { IdGeneratorService } from '../../id-generator/id-generator.service';
-import { Specie } from '../specie';
+import { Spec } from '../specie/spec';
 import { Part } from './part';
 import { FdsEnums } from '../../../enums/fds-enums';
 import { get, map, find } from 'lodash';
@@ -29,7 +29,7 @@ export class Isof {
     private _part: boolean;
     private _parts: object[];
 
-    constructor(jsonString: string, specs: Specie[] = undefined, parts: Part[] = undefined) {
+    constructor(jsonString: string, specs: Spec[] = undefined, parts: Part[] = undefined) {
 
         let base: IsofObject;
         base = <IsofObject>JSON.parse(jsonString);

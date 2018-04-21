@@ -3,16 +3,14 @@ import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { Ramp } from "../ramp/ramp";
 import { SurfFire } from './surf-fire';
 import { VentFire } from './vent-fire';
-import { Specie } from '../specie';
+import { Spec } from '../specie/spec';
 import { FdsEnums } from '../../../enums/fds-enums';
-import { find, toNumber } from 'lodash';
+import { find, toNumber, get } from 'lodash';
 
 export interface FuelObject {
     id: string,
     uuid: string,
-    idAC: number,
     editable: boolean,
-    fuel: any,
     spec: any,
     formula: string,
     c: number,
@@ -23,16 +21,13 @@ export interface FuelObject {
     soot_yield: number,
     heat_of_combustion: number,
     radiative_fraction: number,
-    fuel_radcal_id: any,
-    value: any
+    fuel_radcal_id: string,
 }
 
 export class Fuel {
     private _id: string;
     private _uuid: string;
-    private _idAC: number;
     private _editable: boolean;
-    private _fuel: any;
     private _spec: any;
     private _formula: string;
     private _c: number;
@@ -42,10 +37,11 @@ export class Fuel {
     private _co_yield: number;
     private _soot_yield: number;
     private _heat_of_combustion: number;
+    private _radiation: boolean;
     private _radiative_fraction: number;
-    private _fuel_radcal_id: any;
+    private _fuel_radcal_id: string;
 
-    constructor(jsonString: string, specs: Specie[] = undefined) {
+    constructor(jsonString: string, specs?: Spec[]) {
 
         let base: FuelObject;
         base = <FuelObject>JSON.parse(jsonString);
@@ -55,189 +51,284 @@ export class Fuel {
         let REAC = FdsEntities.REAC;
         let RADCALS = FdsEnums.radcals;
 
-        this.id = base.id || '';
+        this.id = base.id || 'My fuel';
         this.uuid = base.uuid || idGeneratorService.genUUID();
-        this.idAC = base.idAC || 0;
 
-        this.fuel = base['fuel'];
-        if (!specs) {
-            this.spec = base['spec'] || undefined;
-        } else {
-            if (base.editable == false) {
-                this.spec = find(specs, function (spec) {
-                    return spec.id == base['value'];
-                })
+        // Get from specs
+        this.spec = (base.spec != '' && base.spec != undefined && specs != undefined && specs.length > 0) ? find(specs, function(o) { return o.id == base.spec }) : undefined;
 
-            } else {
-                if (base) {
-                    this.spec = find(specs, function (spec) {
-                        return spec.id == base.value;
-                    })
-                } else {
-                    this.spec = undefined;
-                }
-            }
+        this.formula = get(base, 'formula', REAC.FORMULA.default[0]) as string;
+        this.c = get(base, 'c', REAC.C.default[0]) as number;
+        this.o = get(base, 'o', REAC.O.default[0]) as number;
+        this.h = get(base, 'h', REAC.H.default[0]) as number;
+        this.n = get(base, 'n', REAC.N.default[0]) as number;
+        this.co_yield = get(base, 'co_yield', REAC.CO_YIELD.default[0]) as number;
+        this.soot_yield = get(base, 'soot_yield', REAC.SOOT_YIELD.default[0]);
+        this.heat_of_combustion = get(base, 'heat_of_combustion', REAC.HEAT_OF_COMBUSTION.default[0]);
+        this.radiative_fraction = get(base, 'radiative_fraction', REAC.RADIATIVE_FRACTION.default[0]);
+
+        if (base.fuel_radcal_id != '') {
+            let fuelRadcal = find(RADCALS, function (o) { 
+                return o.value == base.fuel_radcal_id; 
+            });
+            this.fuel_radcal_id = fuelRadcal != undefined ? fuelRadcal.value : REAC.FUEL_RADCAL_ID.default[0];
+        } 
+        else {
+            this.fuel_radcal_id = REAC.FUEL_RADCAL_ID.default[0];
         }
-
-        this.formula = base['formula'] || REAC.FORMULA.default[0];
-        // Michal wylaczylem w partialsu set_formula bo nie mozna przypisac pustej '' wartosci
-        this.c = toNumber(base['c'] || REAC.C.default[0]);
-        this.o = toNumber(base['o'] || REAC.O.default[0]);
-        this.h = toNumber(base['h'] || REAC.H.default[0]);
-        this.n = toNumber(base['n'] || REAC.N.default[0]);
-        this.co_yield = toNumber(base['co_yield'] || REAC.CO_YIELD.default[0]);
-        this.soot_yield = toNumber(base['soot_yield'] || REAC.SOOT_YIELD.default[0]);
-        this.heat_of_combustion = toNumber(base['heat_of_combustion'] || REAC.HEAT_OF_COMBUSTION.default[0]);
-        this.radiative_fraction = toNumber(base['radiative_fraction'] || REAC.RADIATIVE_FRACTION.default[0]);
-        this.fuel_radcal_id = base['fuel_radcal_id'] || REAC.FUEL_RADCAL_ID.default[0];
-
-        this.fuel_radcal_id = find(RADCALS, (element) => {
-            var id;
-            if (base['fuel_radcal_id'] != undefined) {
-                id = base['fuel_radcal_id'];
-            } else if (this.spec && this.spec.editable == false && find(RADCALS, (element) => { return element.value == this.spec.id })) {
-                id = this.spec.id;
-            } else {
-                id = REAC.FUEL_RADCAL_ID.default[0];
-
-            }
-            return element.value == id;
-        })['value'];
 
     }
 
-	public get id(): string {
-		return this._id;
-	}
+    /**
+     * Getter id
+     * @return {string}
+     */
+    public get id(): string {
+        return this._id;
+    }
 
-	public set id(value: string) {
-		this._id = value;
-	}
+    /**
+     * Setter id
+     * @param {string} value
+     */
+    public set id(value: string) {
+        this._id = value;
+    }
 
-	public get uuid(): string {
-		return this._uuid;
-	}
 
-	public set uuid(value: string) {
-		this._uuid = value;
-	}
+    /**
+     * Getter uuid
+     * @return {string}
+     */
+    public get uuid(): string {
+        return this._uuid;
+    }
 
-	public get idAC(): number {
-		return this._idAC;
-	}
+    /**
+     * Setter uuid
+     * @param {string} value
+     */
+    public set uuid(value: string) {
+        this._uuid = value;
+    }
 
-	public set idAC(value: number) {
-		this._idAC = value;
-	}
+    /**
+     * Getter editable
+     * @return {boolean}
+     */
+    public get editable(): boolean {
+        return this._editable;
+    }
 
-	public get fuel(): any {
-		return this._fuel;
-	}
+    /**
+     * Setter editable
+     * @param {boolean} value
+     */
+    public set editable(value: boolean) {
+        this._editable = value;
+    }
 
-	public set fuel(value: any) {
-		this._fuel = value;
-	}
+    /**
+     * Getter spec
+     * @return {any}
+     */
+    public get spec(): any {
+        return this._spec;
+    }
 
-	public get spec(): any {
-		return this._spec;
-	}
+    /**
+     * Setter spec
+     * @param {any} value
+     */
+    public set spec(value: any) {
+        this._spec = value;
+    }
 
-	public set spec(value: any) {
-		this._spec = value;
-	}
+    /**
+     * Getter formula
+     * @return {string}
+     */
+    public get formula(): string {
+        return this._formula;
+    }
 
-	public get formula(): string {
-		return this._formula;
-	}
+    /**
+     * Setter formula
+     * @param {string} value
+     */
+    public set formula(value: string) {
+        this._formula = value;
+    }
 
-	public set formula(value: string) {
-		this._formula = value;
-	}
+    /**
+     * Getter c
+     * @return {number}
+     */
+    public get c(): number {
+        return this._c;
+    }
 
-	public get c(): number {
-		return this._c;
-	}
+    /**
+     * Setter c
+     * @param {number} value
+     */
+    public set c(value: number) {
+        this._c = value;
+    }
 
-	public set c(value: number) {
-		this._c = value;
-	}
+    /**
+     * Getter o
+     * @return {number}
+     */
+    public get o(): number {
+        return this._o;
+    }
 
-	public get o(): number {
-		return this._o;
-	}
+    /**
+     * Setter o
+     * @param {number} value
+     */
+    public set o(value: number) {
+        this._o = value;
+    }
 
-	public set o(value: number) {
-		this._o = value;
-	}
+    /**
+     * Getter h
+     * @return {number}
+     */
+    public get h(): number {
+        return this._h;
+    }
 
-	public get h(): number {
-		return this._h;
-	}
+    /**
+     * Setter h
+     * @param {number} value
+     */
+    public set h(value: number) {
+        this._h = value;
+    }
 
-	public set h(value: number) {
-		this._h = value;
-	}
+    /**
+     * Getter n
+     * @return {number}
+     */
+    public get n(): number {
+        return this._n;
+    }
 
-	public get n(): number {
-		return this._n;
-	}
+    /**
+     * Setter n
+     * @param {number} value
+     */
+    public set n(value: number) {
+        this._n = value;
+    }
 
-	public set n(value: number) {
-		this._n = value;
-	}
+    /**
+     * Getter co_yield
+     * @return {number}
+     */
+    public get co_yield(): number {
+        return this._co_yield;
+    }
 
-	public get co_yield(): number {
-		return this._co_yield;
-	}
+    /**
+     * Setter co_yield
+     * @param {number} value
+     */
+    public set co_yield(value: number) {
+        this._co_yield = value;
+    }
 
-	public set co_yield(value: number) {
-		this._co_yield = value;
-	}
+    /**
+     * Getter soot_yield
+     * @return {number}
+     */
+    public get soot_yield(): number {
+        return this._soot_yield;
+    }
 
-	public get soot_yield(): number {
-		return this._soot_yield;
-	}
+    /**
+     * Setter soot_yield
+     * @param {number} value
+     */
+    public set soot_yield(value: number) {
+        this._soot_yield = value;
+    }
 
-	public set soot_yield(value: number) {
-		this._soot_yield = value;
-	}
+    /**
+     * Getter heat_of_combustion
+     * @return {number}
+     */
+    public get heat_of_combustion(): number {
+        return this._heat_of_combustion;
+    }
 
-	public get heat_of_combustion(): number {
-		return this._heat_of_combustion;
-	}
+    /**
+     * Setter heat_of_combustion
+     * @param {number} value
+     */
+    public set heat_of_combustion(value: number) {
+        this._heat_of_combustion = value;
+    }
 
-	public set heat_of_combustion(value: number) {
-		this._heat_of_combustion = value;
-	}
+    /**
+     * Getter radiation
+     * @return {boolean}
+     */
+    public get radiation(): boolean {
+        return this._radiation;
+    }
 
-	public get radiative_fraction(): number {
-		return this._radiative_fraction;
-	}
+    /**
+     * Setter radiation
+     * @param {boolean} value
+     */
+    public set radiation(value: boolean) {
+        this._radiation = value;
+    }
 
-	public set radiative_fraction(value: number) {
-		this._radiative_fraction = value;
-	}
+    /**
+     * Getter radiative_fraction
+     * @return {number}
+     */
+    public get radiative_fraction(): number {
+        return this._radiative_fraction;
+    }
 
-	public get fuel_radcal_id(): any {
+    /**
+     * Setter radiative_fraction
+     * @param {number} value
+     */
+    public set radiative_fraction(value: number) {
+        this._radiative_fraction = value;
+    }
+
+
+    /**
+     * Getter fuel_radcal_id
+     * @return {string}
+     */
+	public get fuel_radcal_id(): string {
 		return this._fuel_radcal_id;
 	}
 
-	public set fuel_radcal_id(value: any) {
+    /**
+     * Setter fuel_radcal_id
+     * @param {string} value
+     */
+	public set fuel_radcal_id(value: string) {
 		this._fuel_radcal_id = value;
 	}
 
     public toJSON(): object {
-        var spec_id;
-        if (this.spec)
-            spec_id = this.spec.id;
-        else
-            spec_id = "";
+        let spec = this.spec != undefined ? this.spec.id : '';
 
         var fuel = {
-            fuel: this.id,
+            id: this.id,
             uuid: this.uuid,
             formula: this.formula,
-            spec: spec_id,
+            spec: spec,
             c: this.c,
             o: this.o,
             h: this.h,

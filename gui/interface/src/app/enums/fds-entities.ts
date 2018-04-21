@@ -9765,7 +9765,7 @@ export const FdsEntities =
           },
           FUEL_RADCAL_ID: {
             type: 'Character',
-            'default': [
+            default: [
               'methane'
             ],
             help: '',

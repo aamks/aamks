@@ -5,7 +5,7 @@ export class UiState {
 	private _ventilation: any;
 	private _fires: any;
 	private _output: any;
-	private _species: any;
+	private _specie: any;
 	private _parts: any;
 	private _ramps: any;
 
@@ -22,7 +22,7 @@ export class UiState {
 			ventilation: false,
 			fire: true,
 			output: false,
-			species: false
+			specie: false
 		}
 
 		this.active = "projects";
@@ -53,10 +53,8 @@ export class UiState {
 			tab: 0,
 			fire: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
 			libFire: { scrollPosition: 0, begin: 0, elementIndex: 0 },
+			fuel: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
 			libFuel: { scrollPosition: 0, begin: 0, elementIndex: 0 },
-			// Not needed for now below
-			group: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' },
-			fuel: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' },
 		}
 
 		this.output = {
@@ -71,10 +69,10 @@ export class UiState {
 			ctrl: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' }
 		}
 
-		this.species = {
+		this.specie = {
 			tab: 0,
-			specie: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
-			libSpecie: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' },
+			spec: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
+			libSpec: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' },
 			vent: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
 			libVent: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' },
 			surf: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
@@ -134,12 +132,12 @@ export class UiState {
 		this._output = value;
 	}
 
-	public get species(): any {
-		return this._species;
+	public get specie(): any {
+		return this._specie;
 	}
 
-	public set species(value: any) {
-		this._species = value;
+	public set specie(value: any) {
+		this._specie = value;
 	}
 
 	public get parts(): any {

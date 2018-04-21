@@ -19,79 +19,6 @@
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.id" />
         </div>
       </div>
-      <div>
-        <label>Fuel specie:</label>
-        <div class="field-container">
-          <select [(ngModel)]="fires.combustion.fuel.spec" (blur)="fires.combustion.changeFuel()">
-            <option [ngValue]="undefined">No specie</option>
-            <!--<option *ngFor="let spec of species" [ngValue]="spec">{{spec.id}}</option>-->
-          </select>
-        </div>
-      </div>
-    </div>
-    <div class="form-title">
-      <label class="header">Chemical reaction definition</label>
-    </div>
-    <div class="form-row" ng-hide="fires.combustion.fuel.spec">
-      <div>
-        <label>Fuel name:</label>
-        <div class="field-container">
-          <input type="text" [(ngModel)]="fires.combustion.fuel.id" decimalInput>
-        </div>
-      </div>
-    </div>
-    <div class="form-row">
-      <div>
-        <label>Formula:</label>
-        <div class="field-container">
-          <input type="text" [(ngModel)]="fires.combustion.fuel.formula" />
-        </div>
-      </div>
-      <div *ngIf="fires.combustion.fuel.formula == ''">
-        <label>C:</label>
-        <div class="field-container">
-          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.fuel.c" decimalInput>
-        </div>
-      </div>
-      <div *ngIf="fires.combustion.fuel.formula == ''">
-        <label>H:</label>
-        <div class="field-container">
-          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.fuel.h" decimalInput>
-        </div>
-      </div>
-      <div *ngIf="fires.combustion.fuel.formula == ''">
-        <label>O:</label>
-        <div class="field-container">
-          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.fuel.o" decimalInput>
-        </div>
-      </div>
-      <div *ngIf="fires.combustion.fuel.formula == ''">
-        <label>N:</label>
-        <div class="field-container">
-          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.fuel.n" decimalInput>
-        </div>
-      </div>
-    </div>
-    <div class="form-row">
-      <div>
-        <label>Heat of combustion:</label>
-        <div class="field-container">
-          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.fuel.heat_of_combustion" decimalInput>
-          <ng-katex equation="kJ/kg"></ng-katex>
-        </div>
-      </div>
-      <div>
-        <label>Soot yield:</label>
-        <div class="field-container">
-          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.fuel.soot_yield" decimalInput>
-        </div>
-      </div>
-      <div>
-        <label>CO yield:</label>
-        <div class="field-container">
-          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.fuel.co_yield" decimalInput>
-        </div>
-      </div>
     </div>
 
     <div class="form-title">
@@ -114,7 +41,7 @@
         <label>Radcal ID:</label>
         <div class="field-container">
           <select [(ngModel)]="fires.combustion.fuel.fuel_radcal_id">
-            <option *ngFor="let element of radcals" [ngValue]="element.value">{{element.label}}</option>
+            <option *ngFor="let element of RADCALS" [ngValue]="element.value">{{element.label}}</option>
           </select>
         </div>
       </div>

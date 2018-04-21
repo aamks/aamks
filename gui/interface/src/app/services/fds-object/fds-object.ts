@@ -12,7 +12,7 @@ import { Vent } from './ventilation/vent';
 import { JetFan } from './ventilation/jet-fan';
 import { Ramp } from './ramp/ramp';
 import { Part } from './output/part';
-import { Specie } from './specie';
+import { Spec } from './specie/spec';
 import { Fire } from './fire/fire';
 import { Combustion } from './fire/combustion';
 import { Devc } from './output/devc';
@@ -22,17 +22,16 @@ import { Slcf } from './output/slcf';
 import { Isof } from './output/isof';
 import { Ctrl } from './output/ctrl';
 import { get, map, toNumber, find } from 'lodash';
+import { Fuel } from './fire/fuel';
 
 export interface FdsObject {
-
-
-  general: {},
+  general: General,
   geometry: { obsts: Obst[], holes: Hole[], opens: Open[], matls: Matl[], meshes: Mesh[], surfs: Surf[] },
   ventilation: { surfs: SurfVent[], vents: Vent[], jetfans: JetFan[] },
   ramps: { ramps: Ramp[] },
   parts: { parts: Part[] },
-  species: { species: Specie[], surfs: Surf[] }, //vents: Vent[] 
-  fires: { fires: Fire[], combustion: Combustion, radiation: {} };
+  specie: { specs: Spec[], surfs: Surf[] }, //vents: Vent[] 
+  fires: { fires: Fire[], combustion: Combustion, fuels: Fuel[] };
   output: { devcs: Devc[], props: Prop[], bndfs: Bndf[], slcfs: Slcf[], isofs: Isof[], ctrls: Ctrl[] },
 }
 
@@ -43,8 +42,8 @@ export class Fds {
   ventilation = { surfs: [], vents: [], jetfans: [] };
   ramps = { ramps: [] };
   parts = { parts: [] };
-  species = { species: [], surfs: [] } //vents: []
-  fires = { fires: [], combustion: new Combustion(JSON.stringify({})), radiation: {} };
+  specie = { specs: [], surfs: [], vents: [] } 
+  fires = { fires: [], combustion: new Combustion(JSON.stringify({})), fuels: [] };
   output = { general: {}, devcs: [], props: [], bndfs: [], slcfs: [], isofs: [], ctrls: [] };
 
   constructor(jsonString: string) {
@@ -73,13 +72,14 @@ export class Fds {
     });
 
     // Create species
-    this.species.species = get(base, 'species.species') === undefined ? [] : map(base.species.species, function (specie) {
-      return new Specie(JSON.stringify(specie));
+    this.specie.specs = get(base, 'specie.specs') === undefined ? [] : map(base.specie.specs, function (spec) {
+      return new Spec(JSON.stringify(spec));
     })
+    // Create surfs & vents
 
     // Create devices after props, parts and species initialization
     this.output.devcs = get(base, 'output.devcs') === undefined ? [] : map(base.output.devcs, (devc) => {
-      return new Devc(JSON.stringify(devc), this.output.props, this.species.species, this.parts.parts);
+      return new Devc(JSON.stringify(devc), this.output.props, this.specie.specs, this.parts.parts);
     });
 
     // Create geometry objects
@@ -115,32 +115,14 @@ export class Fds {
       return new Vent(JSON.stringify(vent), this.ventilation.surfs);
     });
 
-    let RADI = FdsEntities.RADI;
-
     // Create fire elements
-    // General structure:
-    // fires:
-    //      - fires
-    //      - combustion -> fuel
-    //      - radiation
-    this.fires.fires = (get(base, 'fires.fires') === undefined ? [] : map(base.fires.fires, (fire) => {
+    this.fires.fires = get(base, 'fires.fires') === undefined ? [] : map(base.fires.fires, (fire) => {
       return new Fire(JSON.stringify(fire), this.ramps.ramps);
-    }));
-    this.fires.combustion = (get(base, 'fires.combustion') === undefined ? new Combustion(JSON.stringify({}), this.species.species) : new Combustion(JSON.stringify(base.fires.combustion), this.species.species));
-    this.fires.radiation = {
-      radiation: get(base, 'fires.radiation.radiation', RADI.RADIATION.default[0]),
-      number_radiation_angles: get(base, 'fires.radiation.number_radiation_angles', RADI.NUMBER_RADIATION_ANGLES.default[0]),
-      time_step_increment: get(base, 'fires.radiation.time_step_increment', RADI.TIME_STEP_INCREMENT.default[0])
-    };
-    // TODO probably to remove 
-    /*
-    fuels:(get(base, 'fires.fuels')===undefined ? []: map(base.fires.fuels, function(fuel) {
-      return new Fuel(fuel);	
-    })),
-    combustion:(get(base, 'fires.combustion')===undefined ? new Combustion({}, self.species.species) : map(base.fires.combustion, function(combustion) {
-      return new Combustion(combustion, self.species.species);
-    })),
-    */
+    });
+    this.fires.combustion = get(base, 'fires.combustion') === undefined ? new Combustion(JSON.stringify({})) : new Combustion(JSON.stringify(base.fires.combustion));
+    this.fires.fuels = get(base, 'fires.fuels') === undefined ? [] : map(base.fires.fuels, (fuel) => {
+      return new Fuel(JSON.stringify(fuel), this.specie.specs);
+    });
 
     // Create output elements
     let DUMP = FdsEntities.DUMP;
@@ -156,15 +138,15 @@ export class Fds {
     this.output.bndfs = get(base, 'output.bndfs') === undefined ? this.bndfInit() : map(base.output.bndfs, (bndf) => {
       let getLabel = find(ENUMS.bndfQuantity, { 'quantity': bndf.quantity });
       bndf.label = getLabel.label;
-      return new Bndf(JSON.stringify(bndf), this.species.species, this.parts.parts);
+      return new Bndf(JSON.stringify(bndf), this.specie.specs, this.parts.parts);
     });
 
     this.output.slcfs = get(base, 'output.slcfs') === undefined ? [] : map(base.output.slcfs, (slcf) => {
-      return new Slcf(JSON.stringify(slcf), this.species.species, this.parts.parts);
+      return new Slcf(JSON.stringify(slcf), this.specie.specs, this.parts.parts);
     });
 
     this.output.isofs = get(base, 'output.isofs') === undefined ? [] : map(base.output.isofs, (isof) => {
-      return new Isof(JSON.stringify(isof), this.species.species, this.parts.parts);
+      return new Isof(JSON.stringify(isof), this.specie.specs, this.parts.parts);
     });
 
     this.output.props = get(base, 'output.props') === undefined ? [] : map(base.output.props, (prop) => {
@@ -210,7 +192,7 @@ export class Fds {
       fires: {
         fires: map(this.fires.fires, (fire: Fire) => { return fire.toJSON(); }),
         combustion: this.fires.combustion.toJSON(),
-        radiation: this.fires.radiation,
+        fuels: map(this.fires.fuels, (fuel: Fuel) => { return fuel.toJSON() })
       },
       output: {
         general: this.output.general,

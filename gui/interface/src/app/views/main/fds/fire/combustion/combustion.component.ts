@@ -10,6 +10,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { set, cloneDeep, find, forEach, findIndex } from 'lodash';
 import { LibraryService } from '../../../../../services/library/library.service';
 import { Library } from '../../../../../services/library/library';
+import { Combustion } from '../../../../../services/fds-object/fire/combustion';
 
 @Component({
   selector: 'app-combustion',
@@ -23,16 +24,13 @@ export class CombustionComponent implements OnInit {
   fds: Fds;
   fires: any;
   ui: UiState;
-  lib: Library;
 
   // Component objects
+  combustion: Combustion;
   objectType: string = 'current'; // Lib or current
 
   // Enums
-  radcals = FdsEnums.radcals;
-
-  // Scrolbars containers
-  @ViewChild('fuelLibScrollbar') fuelLibScrollbar: PerfectScrollbarComponent;
+  RADCALS = FdsEnums.radcals;
 
   constructor(
     private mainService: MainService,
@@ -44,7 +42,6 @@ export class CombustionComponent implements OnInit {
     // Subscribe main object
     this.mainService.getMain().subscribe(main => this.main = main);
     this.uiStateService.getUiState().subscribe(ui => this.ui = ui);
-    this.libraryService.getLibrary().subscribe(lib => this.lib = lib);
 
     // Assign to local variables
     this.fds = this.main.currentFdsScenario.fdsObject;
@@ -52,24 +49,6 @@ export class CombustionComponent implements OnInit {
   }
 
   ngAfterViewInit() {
-  }
-
-  /** Update scroll position */
-  public scrollbarUpdate(element: string) {
-    set(this.ui.fires, element + '.scrollPosition', this[element + 'Scrollbar'].directiveRef.geometry().y);
-  }
-
-  /** Toggle library */
-  public toggleLibrary() {
-    this.ui.fires['fuel'].lib == 'closed' ? this.ui.fires['fuel'].lib = 'opened' : this.ui.fires['fuel'].lib = 'closed';
-  }
-
-  /** Import from library */
-  public importLibraryItem(id: string) {
-    let libFuel = find(this.lib.matls, function (o) { return o.id == id; });
-    // Check if import ramps
-    console.log(libFuel);
-
   }
 
   // COMPONENT METHODS

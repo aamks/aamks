@@ -1,0 +1,97 @@
+<div class="single-amper-container">
+
+  <div class="list">
+    <div class="list-title" (click)="add()">
+      <i class="material-icons">add_box</i> Add FUEL
+    </div>
+    <perfect-scrollbar #specScrollbar (psScrollY)="scrollbarUpdate('spec')">
+      <div class="list-items">
+        <div class="list-item" *ngFor="let specItem of specs | slice: ui.specie.spec.begin:(ui.specie.spec.begin + ui.listRange)">
+          <a (click)="activate(specItem.id)" [ngClass]="{active: specItem === spec}">{{specItem.id}}</a>
+          <i class="material-icons red" (click)="delete(specItem.id)">delete_forever</i>
+        </div>
+      </div>
+    </perfect-scrollbar>
+    <div class="list-bottom" *ngIf="specs.length > ui.listRange">
+      <i class="material-icons" *ngIf="ui.specie.spec.begin > 0" (click)="uiStateService.decreaseRange('specs.spec')">chevron_left</i>
+      <div>{{ui.specie.spec.begin}} - {{ui.specie.spec.begin + ui.listRange > specs.length ? specs.length : ui.specie.obst.begin
+        + ui.listRange}}</div>
+      <i class="material-icons" *ngIf="ui.specie.spec.begin + ui.listRange < specs.length" (click)="uiStateService.increaseRange('specs.spec')">chevron_right</i>
+    </div>
+  </div>
+
+  <div class="form-box" [ngClass]="objectType == 'current' ? 'current' : 'library'">
+    <div *ngIf="!spec">
+      <label>Select or add new material</label>
+    </div>
+    <div *ngIf="spec">
+
+      <div class="form-title">
+        <label>{{spec.id}} definition</label>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Id:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="spec.id" stringInput/>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-row">
+          <div>
+            <label>Formula:</label>
+            <div class="field-container">
+              <input type="text" [(ngModel)]="spec.formula" />
+            </div>
+          </div>
+          <div *ngIf="spec.formula == ''">
+            <label>Molecular weight:</label>
+            <div class="field-container">
+              <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="spec.mw" decimalInput />
+              <ng-katex equation="g/mol"></ng-katex>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class=" lib-wrapper ">
+    <div class="lib-drawer " [ngClass]="ui.specie.spec.lib=='closed' ? 'closed' : 'opened' ">
+      <div class="lib-label-wrapper ">
+        <div class="lib-label " (click)="toggleLibrary() ">
+          <label>LIBRARY</label>
+        </div>
+      </div>
+      <div class="lib-area ">
+        <div class="list ">
+          <div class="list-title " (click)="add(true) ">
+            <i class="material-icons ">add_box</i> Add SPEC
+          </div>
+          <perfect-scrollbar #specLibScrollbar (psScrollY)="scrollbarUpdate( 'libSpec') ">
+            <div class="list-items ">
+              <div class="list-item " *ngFor="let specItem of lib.specs | slice: ui.specie.libSpec.begin:(ui.specie.libSpec.begin
+                  + ui.listRange) ">
+                <a (click)="activate(specItem.id, true) " [ngClass]="{active: specItem===spec} ">{{specItem.id}}</a>
+                <i class="material-icons " (click)="importLibraryItem(specItem.id) ">content_copy</i>
+                <i class="material-icons red " (click)="delete(specItem.id, true) ">delete_forever</i>
+              </div>
+            </div>
+          </perfect-scrollbar>
+          <div class="list-bottom " *ngIf="libSpecs.length> ui.listRange">
+            <i class="material-icons" *ngIf="ui.specie.libSpec.begin > 0" (click)="uiStateService.decreaseRange('specs.libSpec')">chevron_left</i>
+            <div>{{ui.specie.libSpec.begin}} - {{ui.specie.libSpec.begin + ui.listRange > libSpecs.length ? libSpecs.length :
+              ui.specie.obst.begin + ui.listRange}}</div>
+            <i class="material-icons" *ngIf="ui.specie.libSpec.begin + ui.listRange < libSpecs.length" (click)="uiStateService.increaseRange('specs.libSpec')">chevron_right</i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

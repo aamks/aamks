@@ -2,7 +2,7 @@ import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { Xb, Xyz } from '../primitives';
 import { FdsEntities } from '../../../enums/fds-entities';
 import { Prop } from './prop';
-import { Specie } from '../specie';
+import { Spec } from '../specie/spec';
 import { Part } from './part';
 import { FdsGuiEntities } from '../../../enums/fds-gui-entities';
 import { FdsEnums } from '../../../enums/fds-enums';
@@ -49,7 +49,7 @@ export class Devc {
     private _smoothing_factor: number;
     private _statistics: object;
 
-    constructor(jsonString: string, props: Prop[] = undefined, specs: Specie[] = undefined, parts: Part[] = undefined) {
+    constructor(jsonString: string, props: Prop[] = undefined, specs: Spec[] = undefined, parts: Part[] = undefined) {
 
         let base: DevcObject;
         base = <DevcObject>JSON.parse(jsonString);
