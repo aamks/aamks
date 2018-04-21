@@ -1,11 +1,11 @@
 import {FdsEnums} from '../../../../../enums/fds-enums';
-import {Fire} from '../../../../../services/fds-object/fire';
-import { Ramp } from '../../../../../services/fds-object/ramp';
+import {Fire} from '../../../../../services/fds-object/fire/fire';
+import { Ramp } from '../../../../../services/fds-object/ramp/ramp';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';
 import { WebsocketService } from '../../../../../services/websocket/websocket.service';
 import { MainService } from '../../../../../services/main/main.service';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
-import { Matl } from '../../../../../services/fds-object/matl';
+import { Matl } from '../../../../../services/fds-object/geometry/matl';
 import { UiState } from '../../../../../services/ui-state/ui-state';
 import { Fds } from '../../../../../services/fds-object/fds-object';
 import { Main } from '../../../../../services/main/main';

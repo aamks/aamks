@@ -1,17 +1,8 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Ramp } from './ramp';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Ramp } from '../ramp/ramp';
 import { get, toString, find } from 'lodash';
-
-export interface Hrr {
-    hrr_type: string,
-    value: number,
-    spread_rate: number,
-    alpha: number,
-    time_function: string,
-    tau_q: number,
-    area: number,
-}
+import { Hrr } from './hrr';
 
 export interface SurfFireObject {
     id: string,
@@ -49,15 +40,7 @@ export class SurfFire {
         this.color = (get(base, 'color', SURF.COLOR.default[0])) as string;
         this.fire_type = get(base, 'fire_type', 'constant_hrr') as string;
 
-        this.hrr = {
-            hrr_type: get(base, 'hrr.hrr_type', 'hrrpua') as string,
-            value: get(base, 'hrr.value', SURF.HRRPUA.default[0]) as number,
-            spread_rate: get(base, 'hrr.spread_rate', 0) as number,
-            alpha: get(base, 'hrr.alpha', 0) as number,
-            time_function: get(base, 'time_function', 'ramp') as string,
-            tau_q: get(base, 'hrr.tau_q', SURF.TAU_Q.default[0]) as number,
-            area:  get(base, 'area', 0) as number
-        };
+        this.hrr = new Hrr(base.hrr)
 
         ramps && base.ramp_id != '' ? this.ramp = find(ramps, function (ramp) { return ramp.id == base.ramp_id; }) : this.ramp = undefined;
     }

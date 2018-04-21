@@ -53,7 +53,6 @@ import { IntegerInputDirective } from './directives/inputs/integer-input.directi
 
 import { NotificationComponent } from './views/main/notification/notification.component';
 import { IdGeneratorService } from './services/id-generator/id-generator.service';
-import { Mesh } from './services/fds-object/mesh';
 import { CadService } from './services/cad/cad.service';
 import { LibraryService } from './services/library/library.service';
 import { DecimalInputDirective } from './directives/inputs/decimal-input.directive';

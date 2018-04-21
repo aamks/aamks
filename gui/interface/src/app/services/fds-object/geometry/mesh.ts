@@ -1,7 +1,7 @@
-import { IdGeneratorService } from '../../services/id-generator/id-generator.service'
-import { FdsEntities } from '../../enums/fds-entities'
-import { Xb } from './primitives';
-import { WebsocketService } from '../websocket/websocket.service';
+import { IdGeneratorService } from '../../../services/id-generator/id-generator.service'
+import { FdsEntities } from '../../../enums/fds-entities'
+import { Xb } from '../primitives';
+import { WebsocketService } from '../../websocket/websocket.service';
 import { Injector } from '@angular/core/src/di/injector';
 import { get, round, toNumber, toString } from 'lodash';
 

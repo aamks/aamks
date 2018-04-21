@@ -1,5 +1,5 @@
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Ramp } from "./ramp";
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Ramp } from "../ramp/ramp";
 import { SurfFire } from './surf-fire';
 import { VentFire } from './vent-fire';
 
@@ -34,7 +34,6 @@ export class Fire {
         this.idAC = base.idAC || 0;
         this.editable = (base.editable == true);
 
-        this.surf = base.surf || new SurfFire(JSON.stringify({}));
         if (base.surf) {
             if (!ramps) {
                 this.surf = new SurfFire(JSON.stringify(base.surf));
@@ -48,27 +47,39 @@ export class Fire {
             this.surf.id = this.id;
         }
 
-        if (base['vent']) {
+        if (base.vent != undefined) {
             this.vent = new VentFire(JSON.stringify(base.vent));
+            this.surf.hrr.area = this.vent.xb.area;
+
         } else {
             this.vent = new VentFire(JSON.stringify({}));
+            this.surf.hrr.area = this.vent.xb.area;
         }
 
     }
 
-    public totalHRR() {
+    /** Calculate total heat release rate */
+    public totalHrr() {
         var area = Math.abs(this.vent.xb.x2 - this.vent.xb.x1) * Math.abs(this.vent.xb.y2 - this.vent.xb.y1);
         var hrrpua = 0;
         if (this.surf.hrr['hrr_type'] == 'hrrpua') {
-            hrrpua = this.surf.hrr['value'];
+            hrrpua = this.surf.hrr.value;
             this.surf.hrr['area'] = area;
         }
         return 1 * area * hrrpua;
     }
 
+    /** Calculate total time of fire spreading */
     public totalTime() {
-        var time = (Math.sqrt(this.totalHRR() / this.surf.hrr['alpha'])).toFixed(0);
+        var time = (Math.sqrt(this.totalHrr() / this.surf.hrr['alpha'])).toFixed(0);
         return time;
+    }
+
+    /** Recalculate vent area and fire params */
+    public calcArea() {
+        setTimeout(() => {
+            this.surf.hrr.area = this.vent.xb.area;
+        }, 100);
     }
 
 	public get id(): string {

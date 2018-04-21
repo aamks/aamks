@@ -1,11 +1,11 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Ramp } from "./ramp";
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Ramp } from "../ramp/ramp";
 import { SurfFire } from './surf-fire';
 import { VentFire } from './vent-fire';
-import { Specie } from './specie';
-import * as _ from 'lodash';
-import { FdsEnums } from '../../enums/fds-enums';
+import { Specie } from '../specie';
+import { FdsEnums } from '../../../enums/fds-enums';
+import { find, toNumber } from 'lodash';
 
 export interface FuelObject {
     id: string,
@@ -64,13 +64,13 @@ export class Fuel {
             this.spec = base['spec'] || undefined;
         } else {
             if (base.editable == false) {
-                this.spec = _.find(specs, function (spec) {
+                this.spec = find(specs, function (spec) {
                     return spec.id == base['value'];
                 })
 
             } else {
                 if (base) {
-                    this.spec = _.find(specs, function (spec) {
+                    this.spec = find(specs, function (spec) {
                         return spec.id == base.value;
                     })
                 } else {
@@ -81,21 +81,21 @@ export class Fuel {
 
         this.formula = base['formula'] || REAC.FORMULA.default[0];
         // Michal wylaczylem w partialsu set_formula bo nie mozna przypisac pustej '' wartosci
-        this.c = _.toNumber(base['c'] || REAC.C.default[0]);
-        this.o = _.toNumber(base['o'] || REAC.O.default[0]);
-        this.h = _.toNumber(base['h'] || REAC.H.default[0]);
-        this.n = _.toNumber(base['n'] || REAC.N.default[0]);
-        this.co_yield = _.toNumber(base['co_yield'] || REAC.CO_YIELD.default[0]);
-        this.soot_yield = _.toNumber(base['soot_yield'] || REAC.SOOT_YIELD.default[0]);
-        this.heat_of_combustion = _.toNumber(base['heat_of_combustion'] || REAC.HEAT_OF_COMBUSTION.default[0]);
-        this.radiative_fraction = _.toNumber(base['radiative_fraction'] || REAC.RADIATIVE_FRACTION.default[0]);
+        this.c = toNumber(base['c'] || REAC.C.default[0]);
+        this.o = toNumber(base['o'] || REAC.O.default[0]);
+        this.h = toNumber(base['h'] || REAC.H.default[0]);
+        this.n = toNumber(base['n'] || REAC.N.default[0]);
+        this.co_yield = toNumber(base['co_yield'] || REAC.CO_YIELD.default[0]);
+        this.soot_yield = toNumber(base['soot_yield'] || REAC.SOOT_YIELD.default[0]);
+        this.heat_of_combustion = toNumber(base['heat_of_combustion'] || REAC.HEAT_OF_COMBUSTION.default[0]);
+        this.radiative_fraction = toNumber(base['radiative_fraction'] || REAC.RADIATIVE_FRACTION.default[0]);
         this.fuel_radcal_id = base['fuel_radcal_id'] || REAC.FUEL_RADCAL_ID.default[0];
 
-        this.fuel_radcal_id = _.find(RADCALS, (element) => {
+        this.fuel_radcal_id = find(RADCALS, (element) => {
             var id;
             if (base['fuel_radcal_id'] != undefined) {
                 id = base['fuel_radcal_id'];
-            } else if (this.spec && this.spec.editable == false && _.find(RADCALS, (element) => { return element.value == this.spec.id })) {
+            } else if (this.spec && this.spec.editable == false && find(RADCALS, (element) => { return element.value == this.spec.id })) {
                 id = this.spec.id;
             } else {
                 id = REAC.FUEL_RADCAL_ID.default[0];

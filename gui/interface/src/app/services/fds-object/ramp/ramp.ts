@@ -1,5 +1,5 @@
-import { IdGeneratorService } from '../../services/id-generator/id-generator.service';
-import { FdsEntities } from '../../enums/fds-entities';
+import { IdGeneratorService } from '../../../services/id-generator/id-generator.service';
+import { FdsEntities } from '../../../enums/fds-entities';
 import { forEach, last } from 'lodash';
 
 export interface RampObject {

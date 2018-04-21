@@ -1,6 +1,6 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import * as _ from 'lodash';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { get } from 'lodash';
 
 export interface GeneralObject {
     head: {
@@ -49,30 +49,30 @@ export class General {
         let INIT = FdsEntities.INIT;
 
         this.head = {
-            title: _.get(base, 'head.title', HEAD.TITLE.default[0]),
-            chid: _.get(base, 'head.chid', HEAD.CHID.default[0])
+            title: get(base, 'head.title', HEAD.TITLE.default[0]),
+            chid: get(base, 'head.chid', HEAD.CHID.default[0])
         }
 
         this.time = {
-            t_begin: _.get(base, 'time.t_begin', TIME.T_BEGIN.default[0]),
-            t_end: _.get(base, 'time.t_end', TIME.T_END.default[0]),
-            dt: _.get(base, 'time.dt', ''),
-            lock_time_step: _.get(base, 'time.lock_time_step', TIME.LOCK_TIME_STEP.default[0]),
-            restrict_time_step: _.get(base, 'time.restrict_time_step', TIME.RESTRICT_TIME_STEP.default[0])
+            t_begin: get(base, 'time.t_begin', TIME.T_BEGIN.default[0]),
+            t_end: get(base, 'time.t_end', TIME.T_END.default[0]),
+            dt: get(base, 'time.dt', ''),
+            lock_time_step: get(base, 'time.lock_time_step', TIME.LOCK_TIME_STEP.default[0]),
+            restrict_time_step: get(base, 'time.restrict_time_step', TIME.RESTRICT_TIME_STEP.default[0])
         };
 
         this.misc = {
-            tmpa: _.get(base, 'misc.tmpa', MISC.TMPA.default[0]),
-            p_inf: _.get(base, 'misc.p_inf', MISC.P_INF.default[0]),
-            humidity: _.get(base, 'misc.humidity', MISC.HUMIDITY.default[0]),
-            gvec_x: _.get(base, 'misc.gvec_x', MISC.GVEC.default[0]),
-            gvec_y: _.get(base, 'misc.gvec_y', MISC.GVEC.default[1]),
-            gvec_z: _.get(base, 'misc.gvec_z', MISC.GVEC.default[2]),
-            restart: _.get(base, 'misc.restart', MISC.RESTART.default[0]),
-            dns: _.get(base, 'misc.dns', MISC.DNS.default[0]),
-            overwrite: _.get(base, 'misc.overwrite', MISC.OVERWRITE.default[0]),
-            noise: _.get(base, 'misc.noise', MISC.NOISE.default[0]),
-            noise_velocity: _.get(base, 'misc.noise_velocity', MISC.NOISE_VELOCITY.default[0])
+            tmpa: get(base, 'misc.tmpa', MISC.TMPA.default[0]),
+            p_inf: get(base, 'misc.p_inf', MISC.P_INF.default[0]),
+            humidity: get(base, 'misc.humidity', MISC.HUMIDITY.default[0]),
+            gvec_x: get(base, 'misc.gvec_x', MISC.GVEC.default[0]),
+            gvec_y: get(base, 'misc.gvec_y', MISC.GVEC.default[1]),
+            gvec_z: get(base, 'misc.gvec_z', MISC.GVEC.default[2]),
+            restart: get(base, 'misc.restart', MISC.RESTART.default[0]),
+            dns: get(base, 'misc.dns', MISC.DNS.default[0]),
+            overwrite: get(base, 'misc.overwrite', MISC.OVERWRITE.default[0]),
+            noise: get(base, 'misc.noise', MISC.NOISE.default[0]),
+            noise_velocity: get(base, 'misc.noise_velocity', MISC.NOISE_VELOCITY.default[0])
         };
 
         this.init = {}

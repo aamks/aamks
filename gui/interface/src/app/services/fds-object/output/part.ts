@@ -1,8 +1,7 @@
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Xb } from './primitives';
-import { FdsEntities } from '../../enums/fds-entities';
-import * as _ from 'lodash';
-
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Xb } from '../primitives';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { get } from 'lodash';
 
 export interface PartObject {
     id:number,
@@ -28,7 +27,7 @@ export class Part {
         this.id = base.id || 0;
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
-        this.diameter = _.get(base, 'diameter', PART.DIAMETER.default[0]);
+        this.diameter = get(base, 'diameter', PART.DIAMETER.default[0]);
     }
 
     public toJSON(): object {

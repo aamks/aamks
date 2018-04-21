@@ -1,7 +1,6 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Xb, Xyz } from './primitives';
-import * as _ from 'lodash';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Xb, Xyz } from '../primitives';
 
 export interface VentObject {
     id: number,
@@ -34,7 +33,7 @@ export class VentFire {
         this.idAC = base.idAC || 0;
         this.elevation = base.elevation || 0;
 
-		this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
+		this.xb = new Xb(JSON.stringify(base.xb), 'vent') || new Xb(JSON.stringify({}), 'vent');
         this.xyz = new Xyz(JSON.stringify(base.xyz)) || new Xyz(JSON.stringify({}));
     }
 

@@ -1,7 +1,7 @@
 import { WebsocketService } from '../../../../../services/websocket/websocket.service';
 import { Fds } from '../../../../../services/fds-object/fds-object';
-import { Hole } from '../../../../../services/fds-object/hole';
-import { Obst } from '../../../../../services/fds-object/obst';
+import { Hole } from '../../../../../services/fds-object/geometry/hole';
+import { Obst } from '../../../../../services/fds-object/geometry/obst';
 import { Main } from '../../../../../services/main/main';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MainService } from '../../../../../services/main/main.service';

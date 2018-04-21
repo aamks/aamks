@@ -2,7 +2,7 @@ import {FdsEnums} from '../../../../../enums/fds-enums';
 import {PerfectScrollbarComponent} from 'ngx-perfect-scrollbar';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';
 import { MainService } from '../../../../../services/main/main.service';
-import { Matl } from '../../../../../services/fds-object/matl';
+import { Matl } from '../../../../../services/fds-object/geometry/matl';
 import { UiState } from '../../../../../services/ui-state/ui-state';
 import { Fds } from '../../../../../services/fds-object/fds-object';
 import { Main } from '../../../../../services/main/main';

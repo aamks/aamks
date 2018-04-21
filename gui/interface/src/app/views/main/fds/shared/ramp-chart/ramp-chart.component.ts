@@ -1,7 +1,7 @@
 import { Main } from '../../../../../services/main/main';
 import { MainService } from '../../../../../services/main/main.service';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
-import { Ramp } from '../../../../../services/fds-object/ramp';
+import { Ramp } from '../../../../../services/fds-object/ramp/ramp';
 import { Component, OnInit, OnChanges, ViewChild, ElementRef, Input, ViewEncapsulation } from '@angular/core';
 
 import * as d3Selection from 'd3-selection';

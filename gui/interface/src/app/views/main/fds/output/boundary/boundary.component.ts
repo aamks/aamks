@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Main } from '../../../../../services/main/main';
 import { MainService } from '../../../../../services/main/main.service';
 import { WebsocketService } from '../../../../../services/websocket/websocket.service';
-import { Bndf } from '../../../../../services/fds-object/bndf';
+import { Bndf } from '../../../../../services/fds-object/output/bndf';
 import { forEach, find, findIndex } from 'lodash';
 
 @Component({

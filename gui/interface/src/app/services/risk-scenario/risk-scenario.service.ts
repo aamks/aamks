@@ -8,13 +8,14 @@ import { of } from 'rxjs/observable/of';
 import { RiskScenario } from './risk-scenario';
 import { find, findIndex } from 'lodash';
 import { Risk } from '../risk-object/risk-object';
+import { NotifierService } from 'angular-notifier';
 
 @Injectable()
 export class RiskScenarioService {
 
   main: Main;
 
-  constructor(private mainService: MainService, private httpManager: HttpManagerService) {
+  constructor(private mainService: MainService, private httpManager: HttpManagerService, private readonly notifierService: NotifierService) {
     this.mainService.getMain().subscribe(main => this.main = main);
   }
 
@@ -36,7 +37,7 @@ export class RiskScenarioService {
         return o.id == projectId;
       });
       this.main.currentProject = project;
-
+      this.notifierService.notify(result.meta.status, result.meta.details[0]);
     });
 
     return of(this.main.currentRiskScenario)
@@ -54,6 +55,7 @@ export class RiskScenarioService {
       let riskScenario = new RiskScenario(JSON.stringify({ id: data['id'], projectId: data['projectId'], name: data['name'], riskObject: new Risk(JSON.stringify({})) }));
       // add ui state in riskscenario constructor ???
       this.main.currentProject.riskScenarios.push(riskScenario);
+      this.notifierService.notify(result.meta.status, result.meta.details[0]);
     });
   }
 
@@ -78,6 +80,7 @@ export class RiskScenarioService {
       this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId, JSON.stringify({ type: 'head', data: { id: riskScenario.id, name: riskScenario.name } })).then((result: Result) => {
         if (this.main.currentRiskScenario != undefined)
           this.main.currentRiskScenario = riskScenario;
+          this.notifierService.notify(result.meta.status, result.meta.details[0]);
       });
     }
     else if (syncType == 'all') {
@@ -91,6 +94,7 @@ export class RiskScenarioService {
           return o.id == riskScenarioId;
         });
         this.main.projects[projectIndex].riskScenarios[riskScenarioIndex] = riskScenario;
+        this.notifierService.notify(result.meta.status, result.meta.details[0]);
       });
     }
   }
@@ -105,13 +109,14 @@ export class RiskScenarioService {
     let riskScenarioId = this.main.projects[projectIndex].riskScenarios[riskScenarioIndex].id;
     this.httpManager.delete('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId).then((result: Result) => {
       this.main.projects[projectIndex].riskScenarios.splice(riskScenarioIndex, 1);
+      this.notifierService.notify(result.meta.status, result.meta.details[0]);
     });
   }
 
   public runRiskScenario() {
     let riskScenario = this.main.currentRiskScenario;
     this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/runRiskScenario/' + riskScenario.id, JSON.stringify(riskScenario.toJSON())).then((result: Result) => {
-
+      this.notifierService.notify(result.meta.status, result.meta.details[0]);
     });
 
   }

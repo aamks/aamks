@@ -3,7 +3,6 @@ import { Component, OnInit } from '@angular/core';
 
 import { MainService } from './services/main/main.service';
 import { Main, MainObject } from './services/main/main';
-import * as _ from 'lodash';
 import { WebsocketService } from './services/websocket/websocket.service';
 import { Library } from './services/library/library';
 import { LibraryService } from './services/library/library.service';

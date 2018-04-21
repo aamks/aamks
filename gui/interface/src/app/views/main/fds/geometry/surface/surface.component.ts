@@ -1,10 +1,10 @@
-import { Matl } from '../../../../../services/fds-object/matl';
+import { Matl } from '../../../../../services/fds-object/geometry/matl';
 import { LibraryService } from '../../../../../services/library/library.service';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';
 import { WebsocketService } from '../../../../../services/websocket/websocket.service';
 import { MainService } from '../../../../../services/main/main.service';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
-import { Surf } from '../../../../../services/fds-object/surf';
+import { Surf } from '../../../../../services/fds-object/geometry/surf';
 import { Library } from '../../../../../services/library/library';
 import { UiState } from '../../../../../services/ui-state/ui-state';
 import { Fds } from '../../../../../services/fds-object/fds-object';

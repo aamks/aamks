@@ -1,10 +1,10 @@
-import { Fire } from '../fds-object/fire';
-import { JetFan } from '../fds-object/jet-fan';
-import { Surf } from '../fds-object/surf';
-import { Matl } from '../fds-object/matl';
-import { Ramp } from '../fds-object/ramp';
+import { Fire } from '../fds-object/fire/fire';
+import { JetFan } from '../fds-object/ventilation/jet-fan';
+import { Surf } from '../fds-object/geometry/surf';
+import { Matl } from '../fds-object/geometry/matl';
+import { Ramp } from '../fds-object/ramp/ramp';
 import { get, map } from 'lodash';
-import { SurfVent } from '../fds-object/surf-vent';
+import { SurfVent } from '../fds-object/ventilation/surf-vent';
 
 export interface LibraryObject {
 	ramps: Ramp[],

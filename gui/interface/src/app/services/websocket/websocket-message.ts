@@ -1,4 +1,4 @@
-export interface WebsocketMessage {
+export interface WebsocketMessageObject {
     method: string,
     data: object,
     id: string,

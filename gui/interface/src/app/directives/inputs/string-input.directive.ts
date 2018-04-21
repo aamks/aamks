@@ -1,5 +1,4 @@
 import { Directive, HostListener, ElementRef, OnInit, Input } from '@angular/core';
-import * as _ from 'lodash';
 
 @Directive({
   selector: '[stringInput]'

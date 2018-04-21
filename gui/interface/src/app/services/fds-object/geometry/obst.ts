@@ -1,10 +1,10 @@
 import { Surf } from './surf';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Xb } from "./primitives";
-import { Devc } from './devc';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Xb } from "../primitives";
+import { Devc } from '../output/devc';
 import { find, get, set, toArray } from 'lodash';
-import { Ctrl } from './ctrl';
-import { FdsEntities } from '../../enums/fds-entities';
+import { Ctrl } from '../output/ctrl';
+import { FdsEntities } from '../../../enums/fds-entities';
 
 export interface SurfObject {
 		type?: string,

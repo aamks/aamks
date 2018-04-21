@@ -1,6 +1,6 @@
-import { Xb } from './primitives';
-import { IdGeneratorService } from '../../services/id-generator/id-generator.service'
-import { FdsEntities } from '../../enums/fds-entities'
+import { Xb } from '../primitives';
+import { IdGeneratorService } from '../../../services/id-generator/id-generator.service'
+import { FdsEntities } from '../../../enums/fds-entities'
 
 export interface OpenObject {
     id: string,
@@ -28,7 +28,7 @@ export class Open {
         this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
-		this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
+		this.xb = new Xb(JSON.stringify(base.xb), 'open') || new Xb(JSON.stringify({}), 'open');
         this.surfId = base.surf_id || 'OPEN';
     }
 

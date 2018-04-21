@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 
 import { Project } from '../../../services/project/project';
-import * as _ from 'lodash';
 import { MainService } from '../../../services/main/main.service';
 import { ProjectService } from '../../../services/project/project.service';
 import { FdsScenarioService } from '../../../services/fds-scenario/fds-scenario.service';
@@ -9,6 +8,7 @@ import { Main } from '../../../services/main/main';
 import { CategoryService } from '../../../services/category/category.service';
 import { CategoryObject } from '../../../services/category/category';
 import { RiskScenarioService } from '../../../services/risk-scenario/risk-scenario.service';
+import { find } from 'lodash';
 
 @Component({
   selector: 'app-projects',
@@ -56,7 +56,7 @@ export class ProjectsComponent implements OnInit {
 
   /** Check if category is visible (turned on/off) */
   checkProjectCategory(categoryUuid: string) {
-    let category = _.find(this.main.categories, function (category) {
+    let category = find(this.main.categories, function (category) {
       return category.uuid == categoryUuid;
     });
     if (category && category.active == true) {

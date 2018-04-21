@@ -1,9 +1,9 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import {IdGeneratorService} from '../id-generator/id-generator.service';
-import * as _ from 'lodash';
-import { FdsGuiEntities } from '../../enums/fds-gui-entities';
-import { FdsEnums } from '../../enums/fds-enums';
-import { Ramp } from './ramp';
+import { FdsEntities } from '../../../enums/fds-entities';
+import {IdGeneratorService} from '../../id-generator/id-generator.service';
+import { FdsGuiEntities } from '../../../enums/fds-gui-entities';
+import { FdsEnums } from '../../../enums/fds-enums';
+import { Ramp } from '../ramp/ramp';
+import { get, toNumber, clone, find, each, toString, toInteger } from 'lodash';
 
 export interface PropObject {
     id:number,
@@ -84,39 +84,39 @@ export class Prop {
         this.id = base.id || 0;
         this.uuid = base.uuid || idGeneratorService.genUUID(); 
 
-        this.type = _.toString(_.get(base, 'type', GUI_PROP.TYPE.default[0]));
-        this.flow_type = _.toString(_.get(base, 'type', GUI_PROP.FLOW_TYPE.default[0]));
-        this.activation_temperature = _.toNumber(_.get(base, 'activation_temperature', PROP.ACTIVATION_TEMPERATURE.default[0]));
-        this.initial_temperature = _.toNumber(_.get(base, 'initial_temperature', PROP.INITIAL_TEMPERATURE.default[0]));
-        this.rti = _.toNumber(_.get(base, 'rti', PROP.RTI.default[0]));
+        this.type = toString(get(base, 'type', GUI_PROP.TYPE.default[0]));
+        this.flow_type = toString(get(base, 'type', GUI_PROP.FLOW_TYPE.default[0]));
+        this.activation_temperature = toNumber(get(base, 'activation_temperature', PROP.ACTIVATION_TEMPERATURE.default[0]));
+        this.initial_temperature = toNumber(get(base, 'initial_temperature', PROP.INITIAL_TEMPERATURE.default[0]));
+        this.rti = toNumber(get(base, 'rti', PROP.RTI.default[0]));
         /*
         this.path_length=base['path_length']||def.prop.path_length.value;
         this.set_path_length=function(arg){
             return accessor.setter(this, 'path_length', def.prop.path_length, arg);
         }
         */
-        this.smoke_detector_model = _.toString(_.get(base, 'smoke_detector_model', GUI_PROP.SMOKE_DETECTOR_MODEL.default[0]));
-        this.smoke_detector_model_type = _.toString(_.get(base, 'smoke_detector_model_type', GUI_PROP.SMOKE_DETECTOR_MODEL_TYPE.default[0]));
+        this.smoke_detector_model = toString(get(base, 'smoke_detector_model', GUI_PROP.SMOKE_DETECTOR_MODEL.default[0]));
+        this.smoke_detector_model_type = toString(get(base, 'smoke_detector_model_type', GUI_PROP.SMOKE_DETECTOR_MODEL_TYPE.default[0]));
 
-        this.cleary_params = _.clone(_.find(CLEARY_PARAMS, (model) => {
+        this.cleary_params = clone(find(CLEARY_PARAMS, (model) => {
             return model.value == this.smoke_detector_model_type;
         }));
 
-        this.activation_obscuration = _.toNumber(_.get(base, 'activation_obscuration', PROP.ACTIVATION_OBSCURATION.default[0]));
-        this.path_length = _.toNumber(_.get(base, 'path_length', PROP.PATH_LENGTH.default[0]));
+        this.activation_obscuration = toNumber(get(base, 'activation_obscuration', PROP.ACTIVATION_OBSCURATION.default[0]));
+        this.path_length = toNumber(get(base, 'path_length', PROP.PATH_LENGTH.default[0]));
     
-        this.offset = _.toNumber(_.get(base, 'offset', PROP.OFFSET.default[0]));
-        this.flow_rate = _.toNumber(_.get(base, 'flow_rate', PROP.FLOW_RATE));
-        this.mass_flow_rate = _.toNumber(_.get(base, 'mass_flow_rate', PROP.MASS_FLOW_RATE.default[0]));
-        this.operating_pressure=_.toNumber(_.get(base, 'operating_pressure', PROP.OPERATING_PRESSURE.default[0]));
-        this.k_factor=_.toNumber(_.get(base, 'k_factor', PROP.K_FACTOR.default[0]));
-        this.orifice_diameter=_.toNumber(_.get(base, 'orifice_diameter', PROP.ORIFICE_DIAMETER.default[0]));
-        this.c_factor=_.toNumber(_.get(base, 'c_factor', PROP.C_FACTOR.default[0]));
-        this.particle_velocity=_.toNumber(_.get(base, 'particle_velocity', PROP.PARTICLE_VELOCITY.default[0]));
+        this.offset = toNumber(get(base, 'offset', PROP.OFFSET.default[0]));
+        this.flow_rate = toNumber(get(base, 'flow_rate', PROP.FLOW_RATE));
+        this.mass_flow_rate = toNumber(get(base, 'mass_flow_rate', PROP.MASS_FLOW_RATE.default[0]));
+        this.operating_pressure=toNumber(get(base, 'operating_pressure', PROP.OPERATING_PRESSURE.default[0]));
+        this.k_factor=toNumber(get(base, 'k_factor', PROP.K_FACTOR.default[0]));
+        this.orifice_diameter=toNumber(get(base, 'orifice_diameter', PROP.ORIFICE_DIAMETER.default[0]));
+        this.c_factor=toNumber(get(base, 'c_factor', PROP.C_FACTOR.default[0]));
+        this.particle_velocity=toNumber(get(base, 'particle_velocity', PROP.PARTICLE_VELOCITY.default[0]));
 
         if(base.spray_angle && base.spray_angle.length > 0) {
             this.spray_angle = [];
-            _.each(base.spray_angle, (spray_angle) => {
+            each(base.spray_angle, (spray_angle) => {
                 this.addAngle(spray_angle['sp1'], spray_angle['sp2']);	
             });
         } else {
@@ -124,17 +124,17 @@ export class Prop {
             this.addAngle(PROP.SPRAY_ANGLE.default[0], PROP.SPRAY_ANGLE.default[1]);
         }
 
-        this.spray_pattern_shape = _.toString(_.get(base, 'spray_pattern_shape', "gaussian"));
-        this.spray_pattern_mu = _.toInteger(_.get(base, 'spray_pattern_mu', PROP.SPRAY_PATTERN_MU.default[0]));
-        this.spray_pattern_beta = _.toInteger(_.get(base, 'spray_pattern_beta', PROP.SPRAY_PATTERN_BETA.default[0]));
-        this.spray_angle1 = _.toNumber(_.get(base, 'spray_angle1', PROP.SPRAY_ANGLE.default[0]));
-        this.spray_angle2 = _.toNumber(_.get(base, 'spray_angle1', PROP.SPRAY_ANGLE.default[1]));
-        this.smokeview_id = _.toString(_.get(base, 'smokeview_id', PROP.SMOKEVIEW_ID.default[0]));
+        this.spray_pattern_shape = toString(get(base, 'spray_pattern_shape', "gaussian"));
+        this.spray_pattern_mu = toInteger(get(base, 'spray_pattern_mu', PROP.SPRAY_PATTERN_MU.default[0]));
+        this.spray_pattern_beta = toInteger(get(base, 'spray_pattern_beta', PROP.SPRAY_PATTERN_BETA.default[0]));
+        this.spray_angle1 = toNumber(get(base, 'spray_angle1', PROP.SPRAY_ANGLE.default[0]));
+        this.spray_angle2 = toNumber(get(base, 'spray_angle1', PROP.SPRAY_ANGLE.default[1]));
+        this.smokeview_id = toString(get(base, 'smokeview_id', PROP.SMOKEVIEW_ID.default[0]));
     
         if(!ramps) {
             this.pressure_ramp = base.pressure_ramp || {};
         } else {
-            this.pressure_ramp = _.find(ramps, (ramp) => {
+            this.pressure_ramp = find(ramps, (ramp) => {
                 //?? TODO check
                 return ramp.id == base.pressure_ramp.id;
             })
@@ -143,7 +143,7 @@ export class Prop {
         if(!parts) {
             this.part_id = base.part_id || {};
         } else {
-            this.part_id= _.find(parts, function(part) {
+            this.part_id= find(parts, function(part) {
                 return part['id'] == base.part_id['id'];
             });
         }
@@ -153,7 +153,7 @@ export class Prop {
     /** Change smoke detector model type */
     changeSmokeDetectorModelType() {
         let CLEARY_PARAMS = FdsEnums.SPEC.cleary;
-        this.cleary_params= _.clone(_.find(CLEARY_PARAMS, function(model){
+        this.cleary_params= clone(find(CLEARY_PARAMS, function(model){
             return model.value == this.smoke_detector_model_type;
         }));
     }

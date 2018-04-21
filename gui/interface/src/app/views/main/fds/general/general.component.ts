@@ -2,7 +2,7 @@ import { Main } from '../../../../services/main/main';
 import { MainService } from '../../../../services/main/main.service';
 import { WebsocketService } from '../../../../services/websocket/websocket.service';
 import { Component, OnInit } from '@angular/core';
-import { General } from '../../../../services/fds-object/general';
+import { General } from '../../../../services/fds-object/general/general';
 
 @Component({
   selector: 'app-general',

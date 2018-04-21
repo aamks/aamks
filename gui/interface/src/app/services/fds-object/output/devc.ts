@@ -1,12 +1,12 @@
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Xb, Xyz } from './primitives';
-import { FdsEntities } from '../../enums/fds-entities';
-import * as _ from 'lodash';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Xb, Xyz } from '../primitives';
+import { FdsEntities } from '../../../enums/fds-entities';
 import { Prop } from './prop';
-import { Specie } from './specie';
+import { Specie } from '../specie';
 import { Part } from './part';
-import { FdsGuiEntities } from '../../enums/fds-gui-entities';
-import { FdsEnums } from '../../enums/fds-enums';
+import { FdsGuiEntities } from '../../../enums/fds-gui-entities';
+import { FdsEnums } from '../../../enums/fds-enums';
+import { get, toString, find, toNumber, toInteger } from 'lodash';
 
 export interface DevcObject {
     id: string,
@@ -63,12 +63,12 @@ export class Devc {
         this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
-        this.type = _.toString(_.get(base, 'type', GUI_DEVC.TYPE.default[0]));
-        this.geometrical_type = _.toString(_.get(base, 'geometrical_type', GUI_DEVC.GEOMETRICAL_TYPE.default[0]));
-        this.quantity_type = _.toString(_.get(base, 'quantity_type'));
+        this.type = toString(get(base, 'type', GUI_DEVC.TYPE.default[0]));
+        this.geometrical_type = toString(get(base, 'geometrical_type', GUI_DEVC.GEOMETRICAL_TYPE.default[0]));
+        this.quantity_type = toString(get(base, 'quantity_type'));
 
         // TODO check toJSON <-> fdsObject
-        this.quantity = _.get(base, 'quantity') === undefined ? {} : _.find(ENUMS.devcQuantity, (devc) => {
+        this.quantity = get(base, 'quantity') === undefined ? {} : find(ENUMS.devcQuantity, (devc) => {
             return devc.quantity == base.quantity;
         });
 
@@ -76,7 +76,7 @@ export class Devc {
             if (!specs) {
                 this.spec_id = base.spec_id || {};
             } else {
-                let specie = _.find(specs, (spec) => {
+                let specie = find(specs, (spec) => {
                     return spec.id == base.quantity['spec'];
                 });
                 this.spec_id = specie;
@@ -86,7 +86,7 @@ export class Devc {
             if (!parts) {
                 this.part_id = base['part_id'] || {};
             } else {
-                let part = _.find(parts, function (elem) {
+                let part = find(parts, function (elem) {
                     // TODO ??
                     return elem.id == part;
                 });
@@ -98,7 +98,7 @@ export class Devc {
             if (!props) {
                 this.prop_id = base.prop_id || {};
             } else {
-                var prop = _.find(props, function (elem) {
+                var prop = find(props, function (elem) {
                     // TODO ??
                     return elem.id == prop;
                 });
@@ -106,18 +106,18 @@ export class Devc {
             }
         }
 
-        this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
+        this.xb = new Xb(JSON.stringify(base.xb), 'devc') || new Xb(JSON.stringify({}), 'devc');
         this.xyz = new Xyz(JSON.stringify(base.xyz)) || new Xyz(JSON.stringify({}));
 
-        this.setpoint = _.toNumber(_.get(base, 'setpoint', DEVC.SETPOINT.default[0]));
-        this.initial_state = (_.get(base, 'initial_state', DEVC.INITIAL_STATE.default[0]) == true);
-        this.latch = (_.get(base, 'latch', DEVC.LATCH.default[0] == true));
-        this.trip_direction = _.toInteger(_.get(base, 'trip_direction', DEVC.TRIP_DIRECTION.default[0]));
-        this.smoothing_factor = _.toNumber(_.get(base, 'smoothing_factor', DEVC.SMOOTHING_FACTOR.default[0]));
+        this.setpoint = toNumber(get(base, 'setpoint', DEVC.SETPOINT.default[0]));
+        this.initial_state = (get(base, 'initial_state', DEVC.INITIAL_STATE.default[0]) == true);
+        this.latch = (get(base, 'latch', DEVC.LATCH.default[0] == true));
+        this.trip_direction = toInteger(get(base, 'trip_direction', DEVC.TRIP_DIRECTION.default[0]));
+        this.smoothing_factor = toNumber(get(base, 'smoothing_factor', DEVC.SMOOTHING_FACTOR.default[0]));
         this.statistics = {
-            integral_lower: _.toNumber(_.get(base, 'statistics.integral_lower', DEVC.QUANTITY_RANGE.default[0])),
-            integral_upper: _.toNumber(_.get(base, 'statistics.integral_upper', DEVC.QUANTITY_RANGE.default[1])),
-            statistics: _.toString(_.get(base, 'statistics.statistics', ""))
+            integral_lower: toNumber(get(base, 'statistics.integral_lower', DEVC.QUANTITY_RANGE.default[0])),
+            integral_upper: toNumber(get(base, 'statistics.integral_upper', DEVC.QUANTITY_RANGE.default[1])),
+            statistics: toString(get(base, 'statistics.statistics', ""))
         }
     }
 
@@ -274,13 +274,13 @@ export class Devc {
             geometrical_type: this.geometrical_type,
             quantity_type: this.quantity_type,
             quantity: this.quantity['quantity'],
-            prop_id: _.get(this, 'prop_id.id', undefined),
+            prop_id: get(this, 'prop_id.id', undefined),
             setpoint: this.setpoint,
             initial_state: this.initial_state,
             latch: this.latch,
             trip_direction: this.trip_direction,
-            spec_id: _.get(self, 'spec_id.id', undefined),
-            part_id: _.get(self, 'part_id.id', undefined),
+            spec_id: get(self, 'spec_id.id', undefined),
+            part_id: get(self, 'part_id.id', undefined),
             xb: this.xb.toJSON(),
             xyz: this.xyz.toJSON(),
             statistics: this.statistics

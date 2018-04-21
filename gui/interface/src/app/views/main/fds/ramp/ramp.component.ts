@@ -3,7 +3,7 @@ import { Main } from '../../../../services/main/main';
 import { Fds } from '../../../../services/fds-object/fds-object';
 import { UiState } from '../../../../services/ui-state/ui-state';
 import { Library } from '../../../../services/library/library';
-import { Ramp } from '../../../../services/fds-object/ramp';
+import { Ramp } from '../../../../services/fds-object/ramp/ramp';
 import { FdsEnums } from '../../../../enums/fds-enums';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
 import { MainService } from '../../../../services/main/main.service';

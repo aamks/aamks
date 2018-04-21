@@ -1,9 +1,9 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import * as _ from 'lodash';
-import { Specie } from './specie';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Specie } from '../specie';
 import { Part } from './part';
-import { FdsEnums } from '../../enums/fds-enums';
+import { FdsEnums } from '../../../enums/fds-enums';
+import { get, map, find } from 'lodash';
 
 export interface DevcObject {
     id: number,
@@ -48,15 +48,15 @@ export class Bndf {
         this.label = base['label'] || '';
 
         this.marked = (base.marked == false);
-        this.quantity = _.get(base, 'quantity', '');
+        this.quantity = get(base, 'quantity', '');
 
         if (base.part) {
             this.part = true;
             if (!parts) {
                 this.parts = base.parts || [];
             } else {
-                this.parts = _.map(base['parts'], function (part) {
-                    var particle = _.find(parts, function (elem) {
+                this.parts = map(base['parts'], function (part) {
+                    var particle = find(parts, function (elem) {
                         return elem['id'] == part['id'];
                     });
 
@@ -71,9 +71,9 @@ export class Bndf {
             if (!specs) {
                 this.specs = base['specs'] || [];
             } else {
-                this.specs = _.map(base['specs'], function (spec) {
+                this.specs = map(base['specs'], function (spec) {
 
-                    var specie = _.find(specs, function (elem) {
+                    var specie = find(specs, function (elem) {
                         return elem.id == spec['id'];
                     });
 
@@ -192,7 +192,7 @@ export class Bndf {
         var specs;
         var parts;
         if (this.specs && this.specs.length > 0) {
-            specs = _.map(this.specs, function (spec) {
+            specs = map(this.specs, function (spec) {
                 return spec['spec'].id;
             })
         } else {
@@ -200,7 +200,7 @@ export class Bndf {
         }
 
         if (this.parts && this.parts.length > 0) {
-            parts = _.map(this.parts, function (part) {
+            parts = map(this.parts, function (part) {
                 return part['part'].id;
             })
         } else {

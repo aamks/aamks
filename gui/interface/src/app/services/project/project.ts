@@ -1,6 +1,6 @@
 import { FdsScenario, FdsScenarioObject } from '../fds-scenario/fds-scenario';
 import { RiskScenario } from '../risk-scenario/risk-scenario';
-import * as _ from 'lodash';
+import { forEach } from 'lodash';
 
 export interface ProjectObject {
     id: number,
@@ -30,14 +30,14 @@ export class Project {
         this._category = base.category || '';
         this._fdsScenarios = [];
         if (base.fdsScenarios) {
-            _.forEach(base.fdsScenarios, (scenario) => {
+            forEach(base.fdsScenarios, (scenario) => {
                 this._fdsScenarios.push(new FdsScenario(JSON.stringify(scenario)));
                 //this._fdsScenarios.push(new FdsScenario(JSON.stringify(scenario)));
             });
         }
         this._riskScenarios = [];
         if (base.riskScenarios) {
-            _.forEach(base.riskScenarios, (scenario) => {
+            forEach(base.riskScenarios, (scenario) => {
                 console.log(scenario);
                 this._riskScenarios.push(new RiskScenario(JSON.stringify(scenario)));
             });

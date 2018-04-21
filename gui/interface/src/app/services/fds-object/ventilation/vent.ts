@@ -1,8 +1,8 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Surf } from './surf';
-import { Xb } from './primitives';
-import { Devc } from './devc';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { SurfVent } from './surf-vent';
+import { Xb } from '../primitives';
+import { Devc } from '../output/devc';
 import { find, toArray } from 'lodash';
 
 export interface VentObject {
@@ -23,7 +23,7 @@ export class Vent {
     private _elevation: number;
     private _surf: any;
 
-    constructor(jsonString: string, surfs: Surf[] = undefined) {
+    constructor(jsonString: string, surfs: SurfVent[] = undefined) {
 
         let base: VentObject;
         base = <VentObject>JSON.parse(jsonString);
@@ -37,7 +37,7 @@ export class Vent {
         this.idAC = base.idAC || 0;
         this.elevation = base.elevation || 0;
 
-		this.xb = new Xb(JSON.stringify(base.xb)) || new Xb(JSON.stringify({}));
+		this.xb = new Xb(JSON.stringify(base.xb), 'vent') || new Xb(JSON.stringify({}), 'vent');
 
         surfs && base.surf_id != undefined ? this.surf = find(surfs, function (surf) { return surf.id == base.surf_id; }) : this.surf = undefined;
 

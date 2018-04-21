@@ -1,22 +1,21 @@
 import { Injectable } from '@angular/core';
-import * as _ from 'lodash';
-import { Mesh } from '../fds-object/mesh';
+import { Mesh } from '../fds-object/geometry/mesh';
 import { map, sortBy, filter, each, find, cloneDeep } from 'lodash';
-import { Obst } from '../fds-object/obst';
-import { Surf } from '../fds-object/surf';
+import { Obst } from '../fds-object/geometry/obst';
+import { Surf } from '../fds-object/geometry/surf';
 import { MainService } from '../main/main.service';
 import { Main } from '../main/main';
 import { Library } from '../library/library';
 import { LibraryService } from '../library/library.service';
 import { Xb } from '../fds-object/primitives';
-import { Ramp } from '../fds-object/ramp';
-import { Matl } from '../fds-object/matl';
-import { Open } from '../fds-object/open';
-import { Hole } from '../fds-object/hole';
-import { SurfVent } from '../fds-object/surf-vent';
-import { Vent } from '../fds-object/vent';
-import { JetFan } from '../fds-object/jet-fan';
-import { Fire } from '../fds-object/fire';
+import { Ramp } from '../fds-object/ramp/ramp';
+import { Matl } from '../fds-object/geometry/matl';
+import { Open } from '../fds-object/geometry/open';
+import { Hole } from '../fds-object/geometry/hole';
+import { SurfVent } from '../fds-object/ventilation/surf-vent';
+import { Vent } from '../fds-object/ventilation/vent';
+import { JetFan } from '../fds-object/ventilation/jet-fan';
+import { Fire } from '../fds-object/fire/fire';
 
 @Injectable()
 export class CadService {

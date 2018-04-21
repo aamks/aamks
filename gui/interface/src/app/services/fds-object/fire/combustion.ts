@@ -1,9 +1,9 @@
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Specie } from "./specie";
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Specie } from "../specie";
 import { Fuel } from './fuel';
-import * as _ from 'lodash';
-import { FdsEnums } from '../../enums/fds-enums';
-import { FdsEntities } from '../../enums/fds-entities';
+import { FdsEnums } from '../../../enums/fds-enums';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { get, find } from 'lodash';
 
 export interface CombustionObject {
     id: string,
@@ -31,14 +31,14 @@ export class Combustion {
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
 
-        this.turnOnReaction = (_.get(base, 'turnOnReaction', true) == true);
+        this.turnOnReaction = (get(base, 'turnOnReaction', true) == true);
 
         //this.fuel=(lodash.get(base, 'fuel')===undefined ? new Fuel(lodash.find(defSpec, function(spec) {
         //			return spec.value==defWiz.reac.spec.value;
         //		}), species) : lodash.map(base.fuel, function(fuel) {
         //			return new Fuel(fuel, species);
         //		}));
-        this.fuel = _.get(base, 'fuel') === undefined ? new Fuel(JSON.stringify({})) : new Fuel(JSON.stringify(base.fuel), species);
+        this.fuel = get(base, 'fuel') === undefined ? new Fuel(JSON.stringify({})) : new Fuel(JSON.stringify(base.fuel), species);
 
     }
 
@@ -88,7 +88,7 @@ export class Combustion {
 
         if (this.fuel['spec']) {
             if (this.fuel['spec'].editable == false) {
-                var spec = _.find(SPECIES, (spec) => {
+                var spec = find(SPECIES, (spec) => {
                     return this.fuel['spec'].id == spec.value;
                 })
                 //this.fuel = new Fuel(JSON.stringify(spec), species);

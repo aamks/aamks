@@ -12505,7 +12505,7 @@ export const FdsEntities =
           TAU_Q: {
             type: 'Real',
             units: 's',
-            'default': [ 1. ],
+            default: [ 1. ],
             help: '',
             pattern: '',
             valid_ranges: [

@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { of } from 'rxjs/observable/of';
-import * as _ from 'lodash';
 
 import { Main, MainObject } from './main';
 import { Project } from '../project/project';
@@ -10,6 +9,7 @@ import { FdsScenario } from '../fds-scenario/fds-scenario';
 import { RiskScenario } from '../risk-scenario/risk-scenario';
 import { HttpManagerService, Result } from '../http-manager/http-manager.service';
 import { FdsScenarioService } from '../fds-scenario/fds-scenario.service';
+import { each } from 'lodash';
 
 @Injectable()
 export class MainService {
@@ -36,7 +36,7 @@ export class MainService {
       let id: number;
 
       // Check max Id of existing elements
-      _.each(list, function (element) {
+      each(list, function (element) {
         if (element['id'] != "") {
           if(type == 'jetfan') {
             id = Number(element['id'].toString().substr(6));

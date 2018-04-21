@@ -1,5 +1,5 @@
 import { Directive, HostListener, ElementRef, OnInit, Input } from '@angular/core';
-import { isNumber } from 'lodash';
+import { isNumber, toNumber, isNaN } from 'lodash';
 
 @Directive({
   selector: '[decimalInput]'
@@ -21,8 +21,11 @@ export class DecimalInputDirective {
       this.el.size = this.el.value.length;
     }
 
+    // Replace comma to dot
+    this.el.value = this.el.value.replace(/,/g,'.');
+
     // Set background if invalid value
-    if (!isNumber(+this.el.value)) {
+    if (isNaN(toNumber(this.el.value))) {
       this.el.style.borderBottom = 'solid 2px red';
       this.el.style.boxShadow = 'none';
     }
@@ -30,6 +33,7 @@ export class DecimalInputDirective {
       this.el.style.borderBottom = '1px solid #808080';
       this.el.style.boxShadow = '0 -1px 0 #303030 inset'
     }
+
 
   }
 

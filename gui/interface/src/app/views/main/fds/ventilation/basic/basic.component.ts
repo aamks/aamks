@@ -1,17 +1,17 @@
 import { LibraryService } from '../../../../../services/library/library.service';
 import { Library } from '../../../../../services/library/library';
-import { Ramp } from '../../../../../services/fds-object/ramp';
+import { Ramp } from '../../../../../services/fds-object/ramp/ramp';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';
 import { WebsocketService } from '../../../../../services/websocket/websocket.service';
 import { MainService } from '../../../../../services/main/main.service';
 import { FdsEnums } from '../../../../../enums/fds-enums';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
-import { Vent } from '../../../../../services/fds-object/vent';
+import { Vent } from '../../../../../services/fds-object/ventilation/vent';
 import { UiState } from '../../../../../services/ui-state/ui-state';
 import { Fds } from '../../../../../services/fds-object/fds-object';
 import { Main } from '../../../../../services/main/main';
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { SurfVent } from '../../../../../services/fds-object/surf-vent';
+import { SurfVent } from '../../../../../services/fds-object/ventilation/surf-vent';
 import { find, findIndex, cloneDeep, set } from 'lodash';
 import { IdGeneratorService } from '../../../../../services/id-generator/id-generator.service';
 

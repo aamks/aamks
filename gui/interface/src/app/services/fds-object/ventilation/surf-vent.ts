@@ -1,6 +1,6 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Ramp } from './ramp';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Ramp } from '../ramp/ramp';
 import { get, toString, toNumber, find, round } from 'lodash';
 
 export interface SurfVentObject {

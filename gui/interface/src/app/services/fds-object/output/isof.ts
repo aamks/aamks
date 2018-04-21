@@ -1,9 +1,9 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import * as _ from 'lodash';
-import { Specie } from './specie';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Specie } from '../specie';
 import { Part } from './part';
-import { FdsEnums } from '../../enums/fds-enums';
+import { FdsEnums } from '../../../enums/fds-enums';
+import { get, map, find } from 'lodash';
 
 export interface IsofObject {
     id: number,
@@ -45,9 +45,9 @@ export class Isof {
 
         // TODO refactor specs / quantity 
         if (!specs) {
-            this.quantity = _.get(base, 'quantity', {});
+            this.quantity = get(base, 'quantity', {});
         } else {
-            this.quantity = _.find(ENUMS.isofQuantity, (elem) => {
+            this.quantity = find(ENUMS.isofQuantity, (elem) => {
                 return elem.quantity == base.quantity['id'];
             });
         }
@@ -56,7 +56,7 @@ export class Isof {
             if (!specs) {
                 this.spec_id = base['spec_id'] || {};
             } else {
-                var specie = _.find(specs, function (elem) {
+                var specie = find(specs, function (elem) {
                     return elem.id == base.quantity['spec'];
                 })
 
@@ -68,7 +68,7 @@ export class Isof {
 
         if (base['values'] && base['values'].length > 0 && this.quantity && this.quantity != {}) {
             //var self = this;
-            //_.each(base['values'], function (value) {
+            //each(base['values'], function (value) {
             //    self.values.push({
             //        value: self.quantity.validator.value, set_value: function (arg) {
             //            return accessor.setter(this, 'value', self.quantity.validator, arg);
@@ -170,7 +170,7 @@ export class Isof {
 
     public toJSON(): object {
         var self = this;
-        var values = _.map(this.values, function (value) {
+        var values = map(this.values, function (value) {
             return value['value'];
         })
 
@@ -179,7 +179,7 @@ export class Isof {
             uuid: this.uuid,
             quantity: this.quantity['quantity'],
             values: values,
-            spec_id: _.get(self, 'spec_id.id', undefined)
+            spec_id: get(self, 'spec_id.id', undefined)
         }
         return isof;
     }

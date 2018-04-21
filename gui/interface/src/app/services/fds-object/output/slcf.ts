@@ -1,10 +1,10 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Xb } from './primitives';
-import * as _ from 'lodash';
-import { Specie } from './specie';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Xb } from '../primitives';
+import { Specie } from '../specie';
 import { Part } from './part';
-import { FdsEnums } from '../../enums/fds-enums';
+import { FdsEnums } from '../../../enums/fds-enums';
+import { map, toString, get, toNumber, find } from 'lodash';
 
 export interface DevcObject {
     id: number,
@@ -42,20 +42,20 @@ export class Slcf {
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
 
-        this.direction = _.toString(_.get(base, 'direction', 'x'));
-        this.value = _.toNumber(_.get(base, 'value', 0));
+        this.direction = toString(get(base, 'direction', 'x'));
+        this.value = toNumber(get(base, 'value', 0));
 
         if (base['quantities']) {
-            this.quantities = _.map(ENUMS.slcfQuantity, (value) => {
-                var baseQuantity = _.find(base.quantities, (quantity) => {
+            this.quantities = map(ENUMS.slcfQuantity, (value) => {
+                var baseQuantity = find(base.quantities, (quantity) => {
                     return value.quantity == quantity.name;
                 });
                 var quantity = { label: value.label, name: value.quantity, marked: (baseQuantity.marked == true) };
                 if (baseQuantity['spec']) {
                     this.spec = true;
                     if (specs) {
-                        quantity['specs'] = _.map(baseQuantity['specs'], (spec) => {
-                            var specie = _.find(specs, function (elem) {
+                        quantity['specs'] = map(baseQuantity['specs'], (spec) => {
+                            var specie = find(specs, function (elem) {
                                 return elem.id == spec;
                             })
                             return specie;
@@ -67,8 +67,8 @@ export class Slcf {
                 if (baseQuantity['part']) {
                     this.part = true;
                     if (parts) {
-                        quantity['parts'] = _.map(baseQuantity['parts'], (part) => {
-                            var particle = _.find(parts, function (elem) {
+                        quantity['parts'] = map(baseQuantity['parts'], (part) => {
+                            var particle = find(parts, function (elem) {
                                 return elem.id == part;
                             })
                             return particle;
@@ -81,7 +81,7 @@ export class Slcf {
                 return quantity;
             })
         } else {
-            this.quantities = _.map(ENUMS.slcfQuantity, (value) => {
+            this.quantities = map(ENUMS.slcfQuantity, (value) => {
                 var base = { label: value.label, name: value.quantity, marked: false };
                 if (value.spec) {
                     base['spec'] = true;
@@ -186,20 +186,20 @@ export class Slcf {
     }
 
     public toJSON(): object {
-        let slcfQuantities = _.map(this.quantities, (value) => {
+        let slcfQuantities = map(this.quantities, (value) => {
             var specs = undefined;
             var parts = undefined;
             var res = { label: value['label'], name: value['name'], marked: value['marked'] };
 
             if (value['spec'] && value['specs'] && value['specs'].length > 0) {
-                specs = _.map(value['specs'], function (spec) {
+                specs = map(value['specs'], function (spec) {
                     return spec['spec'].id
                 })
                 res['spec'] = true;
                 res['specs'] = specs;
             }
             if (value['part'] && value['parts'] && value['parts'].length > 0) {
-                parts = _.map(value['parts'], function (part) {
+                parts = map(value['parts'], function (part) {
                     return part['part'].id
                 })
                 res['part'] = true;

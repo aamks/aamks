@@ -1,6 +1,6 @@
 import {FdsEnums} from '../../../../../enums/fds-enums';
-import { JetFan } from '../../../../../services/fds-object/jet-fan';
-import { Ramp } from '../../../../../services/fds-object/ramp';
+import { JetFan } from '../../../../../services/fds-object/ventilation/jet-fan';
+import { Ramp } from '../../../../../services/fds-object/ramp/ramp';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';
 import { WebsocketService } from '../../../../../services/websocket/websocket.service';
 import { MainService } from '../../../../../services/main/main.service';

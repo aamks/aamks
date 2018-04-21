@@ -1,4 +1,4 @@
-import { Open } from '../../../../../services/fds-object/open';
+import { Open } from '../../../../../services/fds-object/geometry/open';
 import { FdsEnums } from '../../../../../enums/fds-enums';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
 import { UiState } from '../../../../../services/ui-state/ui-state';
@@ -6,7 +6,7 @@ import { UiStateService } from '../../../../../services/ui-state/ui-state.servic
 import { Component, OnInit, ViewChild } from '@angular/core';
 
 import { Fds, FdsObject } from '../../../../../services/fds-object/fds-object';
-import { Mesh, MeshObject } from '../../../../../services/fds-object/mesh';
+import { Mesh, MeshObject } from '../../../../../services/fds-object/geometry/mesh';
 
 import { set, cloneDeep, find, forEach, findIndex } from 'lodash';
 import { MainService } from '../../../../../services/main/main.service';

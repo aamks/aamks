@@ -1,14 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Observable, Observer, Subject, BehaviorSubject } from 'rxjs';
-import { WebsocketMessage } from './websocket-message';
+import { WebsocketMessageObject } from './websocket-message';
 import { DefaultRouteReuseStrategy } from '@angular/router/src/route_reuse_strategy';
 import { Main } from '../main/main';
 import { MainService } from '../main/main.service';
-import * as _ from 'lodash';
 import { timeout } from 'rxjs/operators/timeout';
 import { CadService } from '../cad/cad.service';
 import { resolve } from 'q';
-import { MeshObject } from '../fds-object/mesh';
 import { cloneDeep, remove, each } from 'lodash';
 import { Fds } from '../fds-object/fds-object';
 import { Risk } from '../risk-object/risk-object';
@@ -76,7 +74,7 @@ export class WebsocketService {
         // tutaj trzeba to obczaic
         observer.next(JSON.parse(e.data));
 
-        let message: WebsocketMessage = JSON.parse(e.data);
+        let message: WebsocketMessageObject = JSON.parse(e.data);
         if (message.requestID) {
           // answer from CAD
           this.answerMessage(message);
@@ -114,7 +112,7 @@ export class WebsocketService {
   }
 
   /** Method sends message to CAD software */
-  public sendMessage(message: WebsocketMessage) {
+  public sendMessage(message: WebsocketMessageObject) {
     console.log("\nMessage sent to CAD:")
     console.log(message);
     console.log("====================\n")
@@ -128,7 +126,7 @@ export class WebsocketService {
   }
 
   /** Method register answer/confirmation from CAD software */
-  private answerMessage(message: WebsocketMessage) {
+  private answerMessage(message: WebsocketMessageObject) {
     console.log("\nAnswer from CAD:");
     console.log(message);
     console.log("====================\n")
@@ -146,19 +144,19 @@ export class WebsocketService {
    * Method processes message from CAD software.
    * Creates new fds object with new geometry.
    */
-  private requestMessage(message: WebsocketMessage) {
+  private requestMessage(message: WebsocketMessageObject) {
 
     console.clear();
     console.log("Request from CAD ...");
     console.log(message);
 
     // Send answer to CAD software;
-    let answer: WebsocketMessage = {
-      method: message.method,
+    let answer: WebsocketMessageObject = {
       id: this.idGenerator(),
       requestID: message.id,
+      status: "success",
+      method: message.method,
       data: {},
-      status: "success"
     }
 
     try {
@@ -334,7 +332,7 @@ export class WebsocketService {
 
     if (this.isConnected && data != undefined) {
       // Create message
-      let message: WebsocketMessage = {
+      let message: WebsocketMessageObject = {
         method: method,
         data: data,
         id: this.idGenerator(),

@@ -156,25 +156,19 @@
         <!--<div *ngIf="(fire.surf.fire_type=='radially_spreading' || fire.surf.fire_type=='constant_hrr' || (fire.surf.fire_type=='time_dependent_hrrpua' && !fire.surf.ramp.steps)) && fire.surf.hrr.hrr_type=='hrrpua'">-->
           <label>Max HRR:</label>
           <div class="field-container">
-            {{ fire.totalHRR() }}
+            {{ fire.totalHrr() }} &nbsp;
             <ng-katex equation="kW"></ng-katex>
           </div>
         </div>
         <div *ngIf="fire.surf.fire_type=='radially_spreading' && fire.surf.hrr.hrr_type=='hrrpua'">
           <label>Max HRR after:</label>
           <div class="field-container">
-            {{ fire.totalTime() }}
+            {{ fire.totalTime() }} &nbsp;
             <ng-katex equation="s"></ng-katex>
           </div>
         </div>
-        <div *ngIf="fire.surf.ramp && fire.surf.ramp.id && fire.surf.fire_type=='time_dependent_hrrpua' && fire.surf.hrr.time_function=='ramp'">
-          <label>Add step:</label>
-          <div class="field-container">
-            <i class="material-icons" (click)="functions.fire.addRampStep()">add_box</i>
-          </div>
-        </div>
-
       </div>
+
       <ramp-chart *ngIf="fire.surf.ramp && fire.surf.ramp.id && fire.surf.fire_type=='time_dependent_hrrpua' && fire.surf.hrr.time_function=='ramp'"
         [rampId]="fire.surf.ramp.id" [value]="fire.surf.hrr.value" [objectType]="objectType" [xLabel]="'Time'" [yLabel]="'HRR'"
         [units]="['s','kW']"></ramp-chart>
@@ -191,21 +185,21 @@
         <div>
           <label>X1:</label>
           <div class="field-container">
-            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fire.vent.xb.x1" decimalInput />
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fire.vent.xb.x1" (change)="fire.calcArea()" decimalInput />
             <ng-katex equation="m"></ng-katex>
           </div>
         </div>
         <div>
           <label>X2:</label>
           <div class=" field-container ">
-            <input type="text " [ngModelOptions]="{updateOn: 'blur'} " [(ngModel)]="fire.vent.xb.x2 " decimalInput />
+            <input type="text " [ngModelOptions]="{updateOn: 'blur'} " [(ngModel)]="fire.vent.xb.x2" (change)="fire.calcArea()" decimalInput />
             <ng-katex equation="m"></ng-katex>
           </div>
         </div>
         <div>
           <label>Y1:</label>
           <div class="field-container">
-            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fire.vent.xb.y1" decimalInput />
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fire.vent.xb.y1" (change)="fire.calcArea()" decimalInput />
 
             <ng-katex equation="m"></ng-katex>
           </div>
@@ -213,22 +207,29 @@
         <div>
           <label>Y2:</label>
           <div class=" field-container ">
-            <input type="text " [ngModelOptions]="{updateOn: 'blur'} " [(ngModel)]="fire.vent.xb.y2 " decimalInput />
+            <input type="text " [ngModelOptions]="{updateOn: 'blur'} " [(ngModel)]="fire.vent.xb.y2" (change)="fire.calcArea()" decimalInput />
             <ng-katex equation="m"></ng-katex>
           </div>
         </div>
         <div>
           <label>Z1:</label>
           <div class="field-container">
-            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fire.vent.xb.z1" decimalInput />
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fire.vent.xb.z1" (change)="fire.calcArea()" decimalInput />
             <ng-katex equation="m"></ng-katex>
           </div>
         </div>
         <div>
           <label>Z2:</label>
           <div class=" field-container ">
-            <input type="text " [ngModelOptions]="{updateOn: 'blur'} " [(ngModel)]="fire.vent.xb.z2 " decimalInput />
+            <input type="text " [ngModelOptions]="{updateOn: 'blur'} " [(ngModel)]="fire.vent.xb.z2" (change)="fire.calcArea()" decimalInput />
             <ng-katex equation="m"></ng-katex>
+          </div>
+        </div>
+        <div>
+          <label>Total area:</label>
+          <div class=" field-container ">
+            {{ fire.surf.hrr.area }} &nbsp;
+            <ng-katex equation="m^2"></ng-katex>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { FdsEntities } from '../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { FdsEntities } from '../../../enums/fds-entities';
 import { toPlainObject, get, toNumber, map } from 'lodash';
 
 export interface CtrlObject {

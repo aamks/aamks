@@ -1,5 +1,5 @@
 import { Directive, HostListener, ElementRef, OnInit, Input } from '@angular/core';
-import * as _ from 'lodash';
+import { isInteger, toNumber } from 'lodash';
 
 @Directive({
   selector: '[integerInput]'
@@ -28,7 +28,7 @@ export class IntegerInputDirective {
     //}
 
     // Set background if invalid value
-    if (!_.isInteger(Number(this.el.value))) {
+    if (!isInteger(toNumber(this.el.value))) {
       this.el.style.borderBottom = 'solid 2px red';
       this.el.style.boxShadow = 'none';
     }

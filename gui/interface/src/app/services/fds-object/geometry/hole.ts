@@ -1,8 +1,8 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { Surf } from './surf';
-import { Xb } from './primitives';
-import { Devc } from './devc';
+import { Xb } from '../primitives';
+import { Devc } from '../output/devc';
 import { get, find, toArray } from 'lodash';
 
 export interface HoleObject {

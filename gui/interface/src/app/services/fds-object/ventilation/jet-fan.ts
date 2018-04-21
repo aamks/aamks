@@ -1,7 +1,7 @@
-import { Xb } from './primitives';
-import { FdsEntities } from '../../enums/fds-entities';
-import { IdGeneratorService } from '../id-generator/id-generator.service';
-import { Ramp } from './ramp';
+import { Xb } from '../primitives';
+import { FdsEntities } from '../../../enums/fds-entities';
+import { IdGeneratorService } from '../../id-generator/id-generator.service';
+import { Ramp } from '../ramp/ramp';
 import { find, get, toNumber, toArray, toString, round } from 'lodash';
 
 export interface JetFanObject {
