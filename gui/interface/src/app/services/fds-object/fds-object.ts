@@ -140,8 +140,6 @@ export class Fds {
     });
 
     this.output.bndfs = get(base, 'output.bndfs') === undefined ? [] : map(base.output.bndfs, (bndf) => {
-      // Add label, because only value is in db
-      bndf.label = find(QUANTITIES, { 'quantity': bndf.quantity }).label;
       return new Bndf(JSON.stringify(bndf), this.specie.specs, this.parts.parts);
     });
 
@@ -161,16 +159,6 @@ export class Fds {
       return new Ctrl(JSON.stringify(ctrl));
     });
   }
-
-  // TODO refactor to empty constructor 
-  //public bndfInit() {
-  //  let ENUMS = FdsEnums.BNDF;
-  //  var bndfs = map(ENUMS.bndfQuantity, function (value) {
-  //    var base = { quantity: value.quantity, marked: false, spec: value.spec, part: value.part, label: value.label };
-  //    return new Bndf(JSON.stringify(base));
-  //  });
-  //  return bndfs;
-  //}
 
   // TODO Removers !!!
 

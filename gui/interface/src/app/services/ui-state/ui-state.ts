@@ -20,8 +20,8 @@ export class UiState {
 		this.fdsMenu = {
 			geometry: false,
 			ventilation: false,
-			fire: true,
-			output: false,
+			fire: false,
+			output: true,
 			specie: false
 		}
 

@@ -1,3 +1,131 @@
-<p>
-  slice works!
-</p>
+<div class="single-amper-container">
+
+  <div class="list">
+    <div class="list-title" (click)="add()">
+      <i class="material-icons">add_box</i> Add SLCF
+    </div>
+    <perfect-scrollbar #slcfScrollbar (psScrollY)="scrollbarUpdate('slcf')">
+      <div class="list-items">
+        <div class="list-item" *ngFor="let slcfItem of slcfs | slice: ui.output.slcf.begin:(ui.output.slcf.begin + ui.listRange)">
+          <a (click)="activate(slcfItem.id)" [ngClass]="{active: slcfItem === slcf}">{{slcfItem.id}}</a>
+          <i class="material-icons red" (click)="delete(slcfItem.id)">delete_forever</i>
+        </div>
+      </div>
+    </perfect-scrollbar>
+    <div class="list-bottom" *ngIf="slcfs.length > ui.listRange">
+      <i class="material-icons" *ngIf="ui.output.slcf.begin > 0" (click)="uiStateService.decreaseRange('slcfs.slcf')">chevron_left</i>
+      <div>{{ui.output.slcf.begin}} - {{ui.output.slcf.begin + ui.listRange > slcfs.length ? slcfs.length : ui.output.slcf.begin
+        + ui.listRange}}</div>
+      <i class="material-icons" *ngIf="ui.output.slcf.begin + ui.listRange < slcfs.length" (click)="uiStateService.increaseRange('slcfs.slcf')">chevron_right</i>
+    </div>
+  </div>
+
+  <div class="form-box" [ngClass]="objectType == 'current' ? 'current' : 'library'">
+    <div *ngIf="!slcf">
+      <label>Select or add new slice</label>
+    </div>
+    <div *ngIf="slcf">
+
+      <div class="form-title">
+        <label>{{slcf.id}} definition</label>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Id:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="slcf.id" stringInput/>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Direction: </label>
+          <div class="field-container">
+            <ng-select [items]="DIRECTIONS" bindLabel="label" bindValue="value" placeholder="Select direction" [(ngModel)]="slcf.direction"
+              [searchable]="false" [clearable]="false"></ng-select>
+          </div>
+        </div>
+        <div>
+          <label>Value:</label>
+          <div class="field-container">
+            <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="slcf.value" (blur)="updateCad('hole')" decimalInput>
+            <ng-katex equation="m"></ng-katex>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Select qunatities:</label>
+          <div class="field-container">
+            <ng-select [items]="QUANTITIES" bindLabel="id" placeholder="Select slice quantities" multiple="true" hideSelected="true"
+              [(ngModel)]="slcf.quantities" [closeOnSelect]="false"></ng-select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-title" *ngIf="showSpecs()">
+        <label class='header'>Species</label>
+      </div>
+      <div class="form-row" *ngFor="let quantity of slcf.quantities">
+        <div *ngIf="quantity.spec == true">
+          <label>Add {{ quantity.id }} species:</label>
+          <div class="field-container">
+            <ng-select [items]="SPECIES" bindLabel="id" placeholder="Select species" multiple="true" hideSelected="true" [(ngModel)]="quantity.specs"
+              [closeOnSelect]="false"></ng-select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-title" *ngIf="showParts()">
+        <label class='header'>Parts</label>
+      </div>
+      <div class="form-row" *ngFor="let quantity of slcf.quantities">
+        <div *ngIf="quantity.part == true">
+          <label>Add {{ quantity.id }} parts:</label>
+          <div class="field-container">
+            <ng-select [items]="SPECIES" bindLabel="id" placeholder="Select species" multiple="true" hideSelected="true" [(ngModel)]="quantity.parts"
+              [closeOnSelect]="false"></ng-select>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class=" lib-wrapper ">
+    <div class="lib-drawer " [ngClass]="ui.output.slcf.lib=='closed' ? 'closed' : 'opened' ">
+      <div class="lib-label-wrapper ">
+        <div class="lib-label " (click)="toggleLibrary() ">
+          <label>LIBRARY</label>
+        </div>
+      </div>
+      <div class="lib-area ">
+        <div class="list ">
+          <div class="list-title " (click)="add(true)">
+            <i class="material-icons ">add_box</i> Add SLCF
+          </div>
+          <perfect-scrollbar #slcfLibScrollbar (psScrollY)="scrollbarUpdate( 'libSlcf') ">
+            <div class="list-items ">
+              <div class="list-item " *ngFor="let slcfItem of lib.slcfs | slice: ui.output.libSlcf.begin:(ui.output.libSlcf.begin + ui.listRange) ">
+                <a (click)="activate(slcfItem.id, true) " [ngClass]="{active: slcfItem===slcf} ">{{slcfItem.id}}</a>
+                <i class="material-icons " (click)="mergeLibraryItem(slcfItem.id) ">merge_type</i>
+                <i class="material-icons " (click)="importLibraryItem(slcfItem.id) ">content_copy</i>
+                <i class="material-icons red " (click)="delete(slcfItem.id, true) ">delete_forever</i>
+              </div>
+            </div>
+          </perfect-scrollbar>
+          <div class="list-bottom " *ngIf="libSlcfs.length> ui.listRange">
+            <i class="material-icons" *ngIf="ui.output.libSlcf.begin > 0" (click)="uiStateService.decreaseRange('slcfs.libSlcf')">chevron_left</i>
+            <div>{{ui.output.libSlcf.begin}} - {{ui.output.libSlcf.begin + ui.listRange > libSlcfs.length ? libSlcfs.length :
+              ui.output.obst.begin + ui.listRange}}</div>
+            <i class="material-icons" *ngIf="ui.output.libSlcf.begin + ui.listRange < libSlcfs.length" (click)="uiStateService.increaseRange('slcfs.libSlcf')">chevron_right</i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

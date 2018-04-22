@@ -162,6 +162,7 @@ export class FuelComponent implements OnInit {
     fuel.spec = spec != undefined ? spec : libSpec;
     remove(this.fuels);
     this.fuels.push(fuel);
+    this.activate(this.fuels[0].id);
   }
 
   // COMPONENT METHODS

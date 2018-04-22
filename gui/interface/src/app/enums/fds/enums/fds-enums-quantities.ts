@@ -3,11 +3,11 @@
 export const quantities =
     [
         {
-            label: 'Absorption coefficient',
+            id: 'Absorption coefficient',
             quantity: 'absorption coefficient',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -19,11 +19,11 @@ export const quantities =
             }
         },
         {
-            label: 'Actuated sprinklers',
+            id: 'Actuated sprinklers',
             quantity: 'actuated sprinklers',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -35,11 +35,11 @@ export const quantities =
             }
         },
         {
-            label: 'Adiabatic surface temperature',
+            id: 'Adiabatic surface temperature',
             quantity: 'adiabatic surface temperature',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -51,11 +51,11 @@ export const quantities =
             }
         },
         {
-            label: 'Aerosol volume fraction',
+            id: 'Aerosol volume fraction',
             quantity: 'aerosol volume fraction',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -67,11 +67,11 @@ export const quantities =
             }
         },
         {
-            label: 'AMPUA',
+            id: 'AMPUA',
             quantity: 'ampua',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: true,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -83,11 +83,11 @@ export const quantities =
             }
         },
         {
-            label: 'AMPUA_Z',
+            id: 'AMPUA_Z',
             quantity: 'ampua_z',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -99,11 +99,11 @@ export const quantities =
             }
         },
         {
-            label: 'Aspiration',
+            id: 'Aspiration',
             quantity: 'aspiration',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -115,11 +115,11 @@ export const quantities =
             }
         },
         {
-            label: 'Background pressure',
+            id: 'Background pressure',
             quantity: 'background pressure',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -131,11 +131,11 @@ export const quantities =
             }
         },
         {
-            label: 'Back wall temperature',
+            id: 'Back wall temperature',
             quantity: 'back wall temperature',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -147,11 +147,11 @@ export const quantities =
             }
         },
         {
-            label: 'Burning rate',
+            id: 'Burning rate',
             quantity: 'burning rate',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -163,11 +163,11 @@ export const quantities =
             }
         },
         {
-            label: 'Chamber obscuration',
+            id: 'Chamber obscuration',
             quantity: 'chamber obscuration',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -179,11 +179,11 @@ export const quantities =
             }
         },
         {
-            label: 'CHI_R',
+            id: 'CHI_R',
             quantity: 'chi_r',
             type: ['d', 'i', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -195,11 +195,11 @@ export const quantities =
             }
         },
         {
-            label: 'Conductivity',
+            id: 'Conductivity',
             quantity: 'conductivity',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -211,11 +211,11 @@ export const quantities =
             }
         },
         {
-            label: 'Control',
+            id: 'Control',
             quantity: 'control',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -227,11 +227,11 @@ export const quantities =
             }
         },
         {
-            label: 'Control value',
+            id: 'Control value',
             quantity: 'control value',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -243,11 +243,11 @@ export const quantities =
             }
         },
         {
-            label: 'Convective heat flux',
+            id: 'Convective heat flux',
             quantity: 'convective heat flux',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -259,11 +259,11 @@ export const quantities =
             }
         },
         {
-            label: 'CPUA',
+            id: 'CPUA',
             quantity: 'cpua',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: true,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -275,11 +275,11 @@ export const quantities =
             }
         },
         {
-            label: 'CPUA_Z',
+            id: 'CPUA_Z',
             quantity: 'cpua_z',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -291,11 +291,11 @@ export const quantities =
             }
         },
         {
-            label: 'Cpu time',
+            id: 'Cpu time',
             quantity: 'cpu time',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -307,11 +307,11 @@ export const quantities =
             }
         },
         {
-            label: 'Density',
+            id: 'Density',
             quantity: 'density',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -323,11 +323,11 @@ export const quantities =
             }
         },
         {
-            label: 'Deposition velocity',
+            id: 'Deposition velocity',
             quantity: 'deposition velocity',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -339,11 +339,11 @@ export const quantities =
             }
         },
         {
-            label: 'Divergence',
+            id: 'Divergence',
             quantity: 'divergence',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -355,11 +355,11 @@ export const quantities =
             }
         },
         {
-            label: 'Enthalpy',
+            id: 'Enthalpy',
             quantity: 'enthalpy',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -371,11 +371,11 @@ export const quantities =
             }
         },
         {
-            label: 'Extinction coefficient',
+            id: 'Extinction coefficient',
             quantity: 'extinction coefficient',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -387,11 +387,11 @@ export const quantities =
             }
         },
         {
-            label: 'FED',
+            id: 'FED',
             quantity: 'fed',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -403,11 +403,11 @@ export const quantities =
             }
         },
         {
-            label: 'FIC',
+            id: 'FIC',
             quantity: 'fic',
             type: ['d', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -419,11 +419,11 @@ export const quantities =
             }
         },
         {
-            label: 'Friction velocity',
+            id: 'Friction velocity',
             quantity: 'friction velocity',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -435,11 +435,11 @@ export const quantities =
             }
         },
         {
-            label: 'Gauge heat flux',
+            id: 'Gauge heat flux',
             quantity: 'gauge heat flux',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -451,11 +451,11 @@ export const quantities =
             }
         },
         {
-            label: 'Heat flow',
+            id: 'Heat flow',
             quantity: 'heat flow',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -467,11 +467,11 @@ export const quantities =
             }
         },
         {
-            label: 'Heat flow wall',
+            id: 'Heat flow wall',
             quantity: 'heat flow wall',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -483,11 +483,11 @@ export const quantities =
             }
         },
         {
-            label: 'Net heat flux',
+            id: 'Net heat flux',
             quantity: 'net heat flux',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -499,11 +499,11 @@ export const quantities =
             }
         },
         {
-            label: 'HRR',
+            id: 'HRR',
             quantity: 'hrr',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -515,11 +515,11 @@ export const quantities =
             }
         },
         {
-            label: 'HRRPUA',
+            id: 'HRRPUA',
             quantity: 'hrrpua',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -531,11 +531,11 @@ export const quantities =
             }
         },
         {
-            label: 'HRRPUV',
+            id: 'HRRPUV',
             quantity: 'hrrpuv',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -547,11 +547,11 @@ export const quantities =
             }
         },
         {
-            label: 'Incident heat flux',
+            id: 'Incident heat flux',
             quantity: 'incident heat flux',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -563,11 +563,11 @@ export const quantities =
             }
         },
         {
-            label: 'Inside wall temperature',
+            id: 'Inside wall temperature',
             quantity: 'inside wall temperature',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -579,11 +579,11 @@ export const quantities =
             }
         },
         {
-            label: 'Iteration',
+            id: 'Iteration',
             quantity: 'iteration',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -595,11 +595,11 @@ export const quantities =
             }
         },
         {
-            label: 'Layer height',
+            id: 'Layer height',
             quantity: 'layer height',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -611,11 +611,11 @@ export const quantities =
             }
         },
         {
-            label: 'Link temperature',
+            id: 'Link temperature',
             quantity: 'link temperature',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -627,11 +627,11 @@ export const quantities =
             }
         },
         {
-            label: 'Lower temperature',
+            id: 'Lower temperature',
             quantity: 'lower temperature',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -643,11 +643,11 @@ export const quantities =
             }
         },
         {
-            label: 'Mass flow',
+            id: 'Mass flow',
             quantity: 'mass flow',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -659,11 +659,11 @@ export const quantities =
             }
         },
         {
-            label: 'Mass flow wall',
+            id: 'Mass flow wall',
             quantity: 'mass flow wall',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -675,11 +675,11 @@ export const quantities =
             }
         },
         {
-            label: 'Mass flux',
+            id: 'Mass flux',
             quantity: 'mass flux',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -691,11 +691,11 @@ export const quantities =
             }
         },
         {
-            label: 'Mass flux x',
+            id: 'Mass flux x',
             quantity: 'mass flux x',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -707,11 +707,11 @@ export const quantities =
             }
         },
         {
-            label: 'Mass flux y',
+            id: 'Mass flux y',
             quantity: 'mass flux y',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -723,11 +723,11 @@ export const quantities =
             }
         },
         {
-            label: 'Mass flux z',
+            id: 'Mass flux z',
             quantity: 'mass flux z',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -739,11 +739,11 @@ export const quantities =
             }
         },
         {
-            label: 'Mass fraction',
+            id: 'Mass fraction',
             quantity: 'mass fraction',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -755,11 +755,11 @@ export const quantities =
             }
         },
         {
-            label: 'Mixture fraction',
+            id: 'Mixture fraction',
             quantity: 'mixture fraction',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -771,11 +771,11 @@ export const quantities =
             }
         },
         {
-            label: 'MPUA',
+            id: 'MPUA',
             quantity: 'mpua',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: true,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -787,11 +787,11 @@ export const quantities =
             }
         },
         {
-            label: 'MPUA_Z',
+            id: 'MPUA_Z',
             quantity: 'mpua_z',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -803,11 +803,11 @@ export const quantities =
             }
         },
         {
-            label: 'Mpuv',
+            id: 'Mpuv',
             quantity: 'mpuv',
             type: ['d', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: true,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -819,11 +819,11 @@ export const quantities =
             }
         },
         {
-            label: 'MPUV_Z',
+            id: 'MPUV_Z',
             quantity: 'mpuv_z',
             type: ['d', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -835,11 +835,11 @@ export const quantities =
             }
         },
         {
-            label: 'Normal velocity',
+            id: 'Normal velocity',
             quantity: 'normal velocity',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -851,11 +851,11 @@ export const quantities =
             }
         },
         {
-            label: 'Number of particles',
+            id: 'Number of particles',
             quantity: 'number of particles',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -867,11 +867,11 @@ export const quantities =
             }
         },
         {
-            label: 'Open nozzles',
+            id: 'Open nozzles',
             quantity: 'open nozzles',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -883,11 +883,11 @@ export const quantities =
             }
         },
         {
-            label: 'Optical density',
+            id: 'Optical density',
             quantity: 'optical density',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -899,11 +899,11 @@ export const quantities =
             }
         },
         {
-            label: 'Path obscuration',
+            id: 'Path obscuration',
             quantity: 'path obscuration',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -915,11 +915,11 @@ export const quantities =
             }
         },
         {
-            label: 'Pressure',
+            id: 'Pressure',
             quantity: 'pressure',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -931,11 +931,11 @@ export const quantities =
             }
         },
         {
-            label: 'Pressure coefficient',
+            id: 'Pressure coefficient',
             quantity: 'pressure coefficient',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -947,11 +947,11 @@ export const quantities =
             }
         },
         {
-            label: 'Pressure zone',
+            id: 'Pressure zone',
             quantity: 'pressure zone',
             type: ['d', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -963,11 +963,11 @@ export const quantities =
             }
         },
         {
-            label: 'Radiative heat flux',
+            id: 'Radiative heat flux',
             quantity: 'radiative heat flux',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -979,11 +979,11 @@ export const quantities =
             }
         },
         {
-            label: 'Radiative heat flux gas',
+            id: 'Radiative heat flux gas',
             quantity: 'radiative heat flux gas',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -995,11 +995,11 @@ export const quantities =
             }
         },
         {
-            label: 'Radiometer',
+            id: 'Radiometer',
             quantity: 'radiometer',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1011,11 +1011,11 @@ export const quantities =
             }
         },
         {
-            label: 'Relative humidity',
+            id: 'Relative humidity',
             quantity: 'relative humidity',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1027,11 +1027,11 @@ export const quantities =
             }
         },
         {
-            label: 'Sensible enthalpy',
+            id: 'Sensible enthalpy',
             quantity: 'sensible enthalpy',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1043,11 +1043,11 @@ export const quantities =
             }
         },
         {
-            label: 'Solid conductivity',
+            id: 'Solid conductivity',
             quantity: 'solid conductivity',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1059,11 +1059,11 @@ export const quantities =
             }
         },
         {
-            label: 'Solid density',
+            id: 'Solid density',
             quantity: 'solid density',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1075,11 +1075,11 @@ export const quantities =
             }
         },
         {
-            label: 'Solid specific heat',
+            id: 'Solid specific heat',
             quantity: 'solid specific heat',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1091,11 +1091,11 @@ export const quantities =
             }
         },
         {
-            label: 'Specific enthalpy',
+            id: 'Specific enthalpy',
             quantity: 'specific enthalpy',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1107,11 +1107,11 @@ export const quantities =
             }
         },
         {
-            label: 'Specific heat',
+            id: 'Specific heat',
             quantity: 'specific heat',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1123,11 +1123,11 @@ export const quantities =
             }
         },
         {
-            label: 'Specific sensible enthalpy',
+            id: 'Specific sensible enthalpy',
             quantity: 'specific sensible enthalpy',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1139,11 +1139,11 @@ export const quantities =
             }
         },
         {
-            label: 'Sprinkler link temperature',
+            id: 'Sprinkler link temperature',
             quantity: 'sprinkler link temperature',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1155,11 +1155,11 @@ export const quantities =
             }
         },
         {
-            label: 'Surface density',
+            id: 'Surface density',
             quantity: 'surface density',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1171,11 +1171,11 @@ export const quantities =
             }
         },
         {
-            label: 'Surface deposition',
+            id: 'Surface deposition',
             quantity: 'surface deposition',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1187,11 +1187,11 @@ export const quantities =
             }
         },
         {
-            label: 'Temperature',
+            id: 'Temperature',
             quantity: 'temperature',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1203,11 +1203,11 @@ export const quantities =
             }
         },
         {
-            label: 'Thermocouple',
+            id: 'Thermocouple',
             quantity: 'thermocouple',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1219,11 +1219,11 @@ export const quantities =
             }
         },
         {
-            label: 'Time',
+            id: 'Time',
             quantity: 'time',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1235,11 +1235,11 @@ export const quantities =
             }
         },
         {
-            label: 'Time step',
+            id: 'Time step',
             quantity: 'time step',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1251,11 +1251,11 @@ export const quantities =
             }
         },
         {
-            label: 'Transmission',
+            id: 'Transmission',
             quantity: 'transmission',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1267,11 +1267,11 @@ export const quantities =
             }
         },
         {
-            label: 'U-velocity',
+            id: 'U-velocity',
             quantity: 'u-velocity',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1283,11 +1283,11 @@ export const quantities =
             }
         },
         {
-            label: 'V-velocity',
+            id: 'V-velocity',
             quantity: 'v-velocity',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1299,11 +1299,11 @@ export const quantities =
             }
         },
         {
-            label: 'W-velocity',
+            id: 'W-velocity',
             quantity: 'w-velocity',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1315,11 +1315,11 @@ export const quantities =
             }
         },
         {
-            label: 'Upper temperature',
+            id: 'Upper temperature',
             quantity: 'upper temperature',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1331,11 +1331,11 @@ export const quantities =
             }
         },
         {
-            label: 'Velocity',
+            id: 'Velocity',
             quantity: 'velocity',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1347,11 +1347,11 @@ export const quantities =
             }
         },
         {
-            label: 'Viscosity',
+            id: 'Viscosity',
             quantity: 'viscosity',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1363,11 +1363,11 @@ export const quantities =
             }
         },
         {
-            label: 'Visibility',
+            id: 'Visibility',
             quantity: 'visibility',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1379,11 +1379,11 @@ export const quantities =
             }
         },
         {
-            label: 'Volume flow',
+            id: 'Volume flow',
             quantity: 'volume flow',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1395,11 +1395,11 @@ export const quantities =
             }
         },
         {
-            label: 'Volume flow wall',
+            id: 'Volume flow wall',
             quantity: 'volume flow wall',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1411,11 +1411,11 @@ export const quantities =
             }
         },
         {
-            label: 'Volume fraction',
+            id: 'Volume fraction',
             quantity: 'volume fraction',
             type: ['d', 'i', 'p', 's'],
-            spec: 'false',
-            part: 'true',
+            spec: true,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1427,11 +1427,11 @@ export const quantities =
             }
         },
         {
-            label: 'Wall clock time',
+            id: 'Wall clock time',
             quantity: 'wall clock time',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1443,11 +1443,11 @@ export const quantities =
             }
         },
         {
-            label: 'Wall clock time iterations',
+            id: 'Wall clock time iterations',
             quantity: 'wall clock time iterations',
             type: ['d'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1459,11 +1459,11 @@ export const quantities =
             }
         },
         {
-            label: 'Wall temperature',
+            id: 'Wall temperature',
             quantity: 'wall temperature',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',
@@ -1475,11 +1475,11 @@ export const quantities =
             }
         },
         {
-            label: 'Wall thickness',
+            id: 'Wall thickness',
             quantity: 'wall thickness',
             type: ['b', 'd'],
-            spec: 'false',
-            part: 'true',
+            spec: false,
+            part: false,
             validator: {
                 type: 'Real',
                 value: '0',

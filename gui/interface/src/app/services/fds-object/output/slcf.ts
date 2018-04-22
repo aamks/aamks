@@ -1,221 +1,184 @@
 import { FdsEntities } from '../../../enums/fds/entities/fds-entities';
 import { IdGeneratorService } from '../../id-generator/id-generator.service';
-import { Xb } from '../primitives';
+import { Xb, Quantity } from '../primitives';
 import { Spec } from '../specie/spec';
 import { Part } from './part';
 import { FdsEnums } from '../../../enums/fds/enums/fds-enums';
-import { map, toString, get, toNumber, find, filter, includes } from 'lodash';
+import { map, toString, get, toNumber, find, filter, includes, forEach } from 'lodash';
 import { quantities } from '../../../enums/fds/enums/fds-enums-quantities';
 
-export interface DevcObject {
-    id: number,
+
+export interface SlcfObject {
+    id: string,
     uuid: string,
     idAC: number,
     xb: Xb,
     direction: string,
     value: number,
-    quantities: object
+    quantities: Quantity[],
 }
 
 export class Slcf {
-    private _id: number;
+    private _id: string;
     private _uuid: string;
     private _idAC: number;
     private _xb: Xb;
     private _direction: string;
     private _value: number;
-    private _quantities: object[];
-    private _spec: boolean;
-    private _part: boolean;
+    private _quantities: Quantity[];
 
-    constructor(jsonString: string, specs: Spec[] = undefined, parts: Part[] = undefined) {
+    constructor(jsonString: string, specs?: Spec[], parts?: Part[]) {
 
-        let base: DevcObject;
-        base = <DevcObject>JSON.parse(jsonString);
+        let base: SlcfObject;
+        base = <SlcfObject>JSON.parse(jsonString);
 
         let idGeneratorService = new IdGeneratorService;
 
         //let SLCF = FdsEntities.SLCF;
         //let GUI_DEVC = FdsGuiEntities.DEVC;
-        let QUANTITIES = filter(quantities, function(o) { return includes(o.type, 's') });
+        //let QUANTITIES = filter(quantities, function(o) { return includes(o.type, 's') });
 
-        this.id = base.id || 0;
+        this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
 
         this.direction = toString(get(base, 'direction', 'x'));
         this.value = toNumber(get(base, 'value', 0));
 
-        if (base['quantities']) {
-            this.quantities = map(QUANTITIES, (o) => {
-                var baseQuantity = find(base.quantities, (quantity) => {
-                    return o.quantity == quantity.name;
-                });
-                var quantity = { label: o.label, name: o.quantity, marked: (baseQuantity.marked == true) };
-                if (baseQuantity['spec']) {
-                    this.spec = true;
-                    if (specs) {
-                        quantity['specs'] = map(baseQuantity['specs'], (spec) => {
-                            var specie = find(specs, function (elem) {
-                                return elem.id == spec;
-                            })
-                            return specie;
-                        });
-                    } else {
+        this.quantities = base.quantities != undefined && base.quantities.length > 0 ? base.quantities : [];
 
-                    }
-                }
-                if (baseQuantity['part']) {
-                    this.part = true;
-                    if (parts) {
-                        quantity['parts'] = map(baseQuantity['parts'], (part) => {
-                            var particle = find(parts, function (elem) {
-                                return elem.id == part;
-                            })
-                            return particle;
+        forEach(this.quantities, function(o) {
+            o.specs = o.specs != undefined && o.specs.length > 0 ? map(o.specs, function(e) { return new Spec(JSON.stringify(e)); }) : [];
+            o.parts = o.parts != undefined && o.parts.length > 0 ? map(o.parts, function(e) { return new Part(JSON.stringify(e)); }) : [];
+        });
 
-                        })
-                    } else {
-
-                    }
-                }
-                return quantity;
-            })
-        } else {
-            this.quantities = map(QUANTITIES, (o) => {
-                var base = { label: o.label, name: o.quantity, marked: false };
-                if (o.spec) {
-                    base['spec'] = true;
-                    base['specs'] = [];
-                }
-                if (o.part) {
-                    base['part'] = true;
-                    base['parts'] = [];
-                }
-                return base;
-            });
-
-        }
     }
 
-    public addSpec(index) {
-        this.quantities[index]['specs'].push({ spec: {} });
-    }
-    
-    public removeSpec(parent, index) {
-        this.quantities[parent]['specs'].splice(index, 1);
-    }
+    /**
+     * Getter id
+     * @return {string}
+     */
+	public get id(): string {
+		return this._id;
+	}
 
-    public addPart(index) {
-        this.quantities[index]['parts'].push({ spec: {} });
-    }
+    /**
+     * Setter id
+     * @param {string} value
+     */
+	public set id(value: string) {
+		this._id = value;
+	}
 
-    public removePart(parent, index) {
-        this.quantities[parent]['parts'].splice(index, 1);
-    }
+    /**
+     * Getter uuid
+     * @return {string}
+     */
+	public get uuid(): string {
+		return this._uuid;
+	}
 
-    public get id(): number {
-        return this._id;
-    }
+    /**
+     * Setter uuid
+     * @param {string} value
+     */
+	public set uuid(value: string) {
+		this._uuid = value;
+	}
 
-    public set id(value: number) {
-        this._id = value;
-    }
+    /**
+     * Getter idAC
+     * @return {number}
+     */
+	public get idAC(): number {
+		return this._idAC;
+	}
 
-    public get uuid(): string {
-        return this._uuid;
-    }
+    /**
+     * Setter idAC
+     * @param {number} value
+     */
+	public set idAC(value: number) {
+		this._idAC = value;
+	}
 
-    public set uuid(value: string) {
-        this._uuid = value;
-    }
+    /**
+     * Getter xb
+     * @return {Xb}
+     */
+	public get xb(): Xb {
+		return this._xb;
+	}
 
-    public get idAC(): number {
-        return this._idAC;
-    }
+    /**
+     * Setter xb
+     * @param {Xb} value
+     */
+	public set xb(value: Xb) {
+		this._xb = value;
+	}
 
-    public set idAC(value: number) {
-        this._idAC = value;
-    }
+    /**
+     * Getter direction
+     * @return {string}
+     */
+	public get direction(): string {
+		return this._direction;
+	}
 
-    public get xb(): Xb {
-        return this._xb;
-    }
+    /**
+     * Setter direction
+     * @param {string} value
+     */
+	public set direction(value: string) {
+		this._direction = value;
+	}
 
-    public set xb(value: Xb) {
-        this._xb = value;
-    }
+    /**
+     * Getter value
+     * @return {number}
+     */
+	public get value(): number {
+		return this._value;
+	}
 
-    public get direction(): string {
-        return this._direction;
-    }
+    /**
+     * Setter value
+     * @param {number} value
+     */
+	public set value(value: number) {
+		this._value = value;
+	}
 
-    public set direction(value: string) {
-        this._direction = value;
-    }
+    /**
+     * Getter quantities
+     * @return {Quantity[]}
+     */
+	public get quantities(): Quantity[] {
+		return this._quantities;
+	}
 
-    public get value(): number {
-        return this._value;
-    }
+    /**
+     * Setter quantities
+     * @param {Quantity[]} value
+     */
+	public set quantities(value: Quantity[]) {
+		this._quantities = value;
+	}
 
-    public set value(value: number) {
-        this._value = value;
-    }
-
-    public get quantities(): object[] {
-        return this._quantities;
-    }
-
-    public set quantities(value: object[]) {
-        this._quantities = value;
-    }
-
-    public get spec(): boolean {
-        return this._spec;
-    }
-
-    public set spec(value: boolean) {
-        this._spec = value;
-    }
-
-    public get part(): boolean {
-        return this._part;
-    }
-
-    public set part(value: boolean) {
-        this._part = value;
-    }
-
+    /** Export to json */
     public toJSON(): object {
-        let slcfQuantities = map(this.quantities, (value) => {
-            var specs = undefined;
-            var parts = undefined;
-            var res = { label: value['label'], name: value['name'], marked: value['marked'] };
 
-            if (value['spec'] && value['specs'] && value['specs'].length > 0) {
-                specs = map(value['specs'], function (spec) {
-                    return spec['spec'].id
-                })
-                res['spec'] = true;
-                res['specs'] = specs;
-            }
-            if (value['part'] && value['parts'] && value['parts'].length > 0) {
-                parts = map(value['parts'], function (part) {
-                    return part['part'].id
-                })
-                res['part'] = true;
-                res['parts'] = parts;
-            }
-            return res;
-        })
+        let quantities = this.quantities.length > 0 ? map(this.quantities, (o) => { return o.toJSON() }) : [];
+        console.log(quantities);
 
-        var slcf = {
+        let slcf = {
             id: this.id,
             uuid: this.uuid,
             idAC: this.idAC,
             direction: this.direction,
             value: this.value,
-            quantities: slcfQuantities
+            quantities: quantities
         }
         return slcf;
     }

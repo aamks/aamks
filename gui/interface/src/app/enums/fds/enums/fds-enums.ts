@@ -167,4 +167,11 @@ export const FdsEnums =
                 { label: 'Total mass flux', value: 'totalMassFlux' }
             ],
         },
+        SLCF: {
+            directions: [
+                { label: 'X direction', value: 'x' },
+                { label: 'Y direction', value: 'y' },
+                { label: 'Z direction', value: 'z' }
+            ]
+        }
     }

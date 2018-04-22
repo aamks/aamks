@@ -48,6 +48,7 @@ export class AppComponent {
   }
 
   ngOnInit() {
+    console.clear();
     this.mainService.getMain().subscribe(main => this.main = main);
     this.projectService.getProjects();
     this.libraryService.loadLibrary();
@@ -56,6 +57,14 @@ export class AppComponent {
 
     // Navigate after page is reloaded
     this.router.navigate(['']);
+
+    // For developing purpose
+    setTimeout(() => {
+      //this.setCurrentFdsScenario(6, 21);
+    }, 1000);
+    setTimeout(() => {
+      //this.router.navigate(['fds/output/slice'])
+    }, 2000);
   }
 
   ngAfterViewInit() {

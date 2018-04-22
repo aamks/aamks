@@ -105,7 +105,7 @@ i { display: inline-block; vertical-align: middle; height: 24px; width: 24px; cu
 i:hover { color: $blue; }
 i.red:hover { color: $red; }
 
-input { box-shadow: none; border-radius: none; border: none; background: none; font-size: 1rem; padding-bottom: 0; color: $orange; font-family: Consolas, Lucida Console, monospace; }
+input { box-shadow: none; border-radius: none; border: none; background: none; font-size: 0.95rem; padding-bottom: 0; color: $orange; font-family: Consolas, Lucida Console, monospace; }
 input { color: $orange; border-bottom: 1px solid $grey6; box-shadow: 0 -1px 0 $grey1 inset; padding: 0 0 0 0; }
 input:focus, select:focus, textarea:focus, button:focus { outline: none; }
 
@@ -119,7 +119,26 @@ input:focus, select:focus, textarea:focus, button:focus { outline: none; }
 ng-katex { font-size: .9rem; }
 
 @import 'app/views/main/fds/input-file/css/codemirror.scss';
+
+// ng-select import & modifications
 @import '~@ng-select/ng-select/themes/default.theme.css';
+.ng-select {
+	.ng-control {
+		min-height: 26px;
+		height: 26px;
+		font-size: 0.9rem !important;
+	}
+}
+.ng-single {
+	.ng-control {
+		min-height: 26px;
+		height: 26px !important;
+		font-size: 0.9rem !important;
+	}
+}
+span.ng-option-label {
+	font-size: 0.9rem !important;
+}
 
 // Angular notifier import & modifications
 @import '~angular-notifier/styles.scss';

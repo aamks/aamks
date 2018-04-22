@@ -7,6 +7,7 @@ import { get, map } from 'lodash';
 import { SurfVent } from '../fds-object/ventilation/surf-vent';
 import { Fuel } from '../fds-object/fire/fuel';
 import { Spec } from '../fds-object/specie/spec';
+import { Slcf } from '../fds-object/output/slcf';
 
 export interface LibraryObject {
 	ramps: Ramp[],
@@ -16,7 +17,8 @@ export interface LibraryObject {
 	jetfans: JetFan[],
 	fires: Fire[],
 	fuels: Fuel[],
-	specs: Spec[]
+	specs: Spec[],
+	slcfs: Slcf[],
 }
 
 export class Library {
@@ -29,6 +31,7 @@ export class Library {
 	private _fires: Fire[];
 	private _fuels: Fuel[];
 	private _specs: Spec[];
+	private _slcfs: Slcf[];
 
 	constructor(jsonString: string) {
 
@@ -67,6 +70,11 @@ export class Library {
 		this.specs = get(base, 'specs') === undefined ? [] : map(base.specs, (spec) => {
 			return new Spec(JSON.stringify(spec));
 		});
+
+		this.slcfs = get(base, 'slcfs') === undefined ? [] : map(base.slcfs, (spec) => {
+			return new Slcf(JSON.stringify(spec));
+		});
+
 
 	}
 
@@ -199,6 +207,23 @@ export class Library {
 		this._specs = value;
 	}
 
+    /**
+     * Getter slcfs
+     * @return {Slcf[]}
+     */
+	public get slcfs(): Slcf[] {
+		return this._slcfs;
+	}
+
+    /**
+     * Setter slcfs
+     * @param {Slcf[]} value
+     */
+	public set slcfs(value: Slcf[]) {
+		this._slcfs = value;
+	}
+
+	/** Export to json */
 	public toJSON(): object {
 		let library = {
 			ramps: this.ramps,
@@ -208,7 +233,8 @@ export class Library {
 			jetfans: this.jetfans,
 			fires: this.fires,
 			fuels: this.fuels,
-			specs: this.specs
+			specs: this.specs,
+			slcfs: this.slcfs,
 		}
 		return library;
 	}

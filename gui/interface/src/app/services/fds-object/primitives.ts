@@ -1,4 +1,6 @@
-import { get } from "lodash";
+import { get, map } from "lodash";
+import { Spec } from "./specie/spec";
+import { Part } from "./output/part";
 
 export interface XbObject {
     x1: number,
@@ -58,17 +60,17 @@ export class Xb {
      * Getter area
      * @return {number}
      */
-	public get area(): number {
-		return this._area;
-	}
+    public get area(): number {
+        return this._area;
+    }
 
     /**
      * Setter area
      * @param {number} value
      */
-	public set area(value: number) {
-		this._area = value;
-	}
+    public set area(value: number) {
+        this._area = value;
+    }
 
     /**
      * Getter x1
@@ -264,3 +266,146 @@ export class Xyz {
 
 }
 
+export interface QuantityObject {
+    id: string,
+    quantity: string,
+    spec: boolean,
+    specs: Spec[],
+    part: boolean,
+    parts: Part[]
+}
+export class Quantity {
+    private _id: string;
+    private _quantity: string;
+    private _spec: boolean;
+    private _specs: Spec[];
+    private _part: boolean;
+    private _parts: Part[];
+
+    constructor(jsonString: string) {
+
+        let base: QuantityObject;
+        base = <QuantityObject>JSON.parse(jsonString);
+
+        this.id = get(base, 'id', '');
+        this.quantity = get(base, 'quantity');
+
+        this.spec = (get(base, 'spec', true) == true);
+        this.part = (get(base, 'part', true) == true);
+
+        this.specs = base.specs != undefined && base.specs.length > 0 ? map(base.specs, function (o) { return new Spec(JSON.stringify(o)) }) : [];
+        this.parts = base.parts != undefined && base.parts.length > 0 ? map(base.parts, function (o) { return new Part(JSON.stringify(o)) }) : [];
+
+    }
+
+    /**
+     * Getter id
+     * @return {string}
+     */
+    public get id(): string {
+        return this._id;
+    }
+
+    /**
+     * Setter id
+     * @param {string} value
+     */
+    public set id(value: string) {
+        this._id = value;
+    }
+
+    /**
+     * Getter quantity
+     * @return {string}
+     */
+    public get quantity(): string {
+        return this._quantity;
+    }
+
+    /**
+     * Setter quantity
+     * @param {string} value
+     */
+    public set quantity(value: string) {
+        this._quantity = value;
+    }
+
+    /**
+     * Getter spec
+     * @return {boolean}
+     */
+    public get spec(): boolean {
+        return this._spec;
+    }
+
+    /**
+     * Setter spec
+     * @param {boolean} value
+     */
+    public set spec(value: boolean) {
+        this._spec = value;
+    }
+
+    /**
+     * Getter specs
+     * @return {Spec[]}
+     */
+    public get specs(): Spec[] {
+        return this._specs;
+    }
+
+    /**
+     * Setter specs
+     * @param {Spec[]} value
+     */
+    public set specs(value: Spec[]) {
+        this._specs = value;
+    }
+
+    /**
+     * Getter part
+     * @return {boolean}
+     */
+    public get part(): boolean {
+        return this._part;
+    }
+
+    /**
+     * Setter part
+     * @param {boolean} value
+     */
+    public set part(value: boolean) {
+        this._part = value;
+    }
+
+    /**
+     * Getter parts
+     * @return {Part[]}
+     */
+    public get parts(): Part[] {
+        return this._parts;
+    }
+
+    /**
+     * Setter parts
+     * @param {Part[]} value
+     */
+    public set parts(value: Part[]) {
+        this._parts = value;
+    }
+
+    toJSON(): object {
+        let specs = this.specs.length > 0 ? map(this.specs, function (o) { return o.toJSON() }) : [];
+        let parts = this.parts.length > 0 ? map(this.parts, function (o) { return o.toJSON() }) : [];
+
+        let quantity: object = {
+            id: this.id,
+            quantity: this.quantity,
+            spec: this.spec,
+            specs: specs,
+            part: this.part,
+            parts: parts
+        }
+        return quantity;
+    }
+}

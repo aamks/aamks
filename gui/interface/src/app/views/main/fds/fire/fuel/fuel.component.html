@@ -140,7 +140,7 @@
             <div class="list-items ">
               <div class="list-item " *ngFor="let fuelItem of lib.fuels | slice: ui.fires.libFuel.begin:(ui.fires.libFuel.begin + ui.listRange) ">
                 <a (click)="activate(fuelItem.id, true) " [ngClass]="{active: fuelItem===fuel} ">{{fuelItem.id}}</a>
-                <i class="material-icons " (click)="importLibraryItem(fuelItem.id) ">content_copy</i>
+                <i class="material-icons " (click)="importLibraryItem(fuelItem.id) ">merge_type</i>
                 <i class="material-icons red " (click)="delete(fuelItem.id, true) ">delete_forever</i>
               </div>
             </div>

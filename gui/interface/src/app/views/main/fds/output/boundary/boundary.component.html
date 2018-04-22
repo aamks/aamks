@@ -7,10 +7,37 @@
             <div>
                 <label>Select qunatities:</label>
                 <div class="field-container">
-                    <ng-select [items]="bndfs" bindLabel="label" bindValue="quantity" placeholder="Select boundary quantity" multiple="true"
-                        hideSelected="true" [(ngModel)]="selectedBndfs" (change)="selectBndf()"></ng-select>
+                    <ng-select [items]="QUANTITIES" bindLabel="id" placeholder="Select boundary quantities" multiple="true" hideSelected="true"
+                        [(ngModel)]="main.currentFdsScenario.fdsObject.output.bndfs" [closeOnSelect]="false"></ng-select>
                 </div>
             </div>
         </div>
+
+        <div class="form-title" *ngIf="showSpecs()">
+            <label class='header'>Species</label>
+        </div>
+        <div class="form-row" *ngFor="let bndf of main.currentFdsScenario.fdsObject.output.bndfs">
+            <div *ngIf="bndf.spec == true">
+                <label>Add {{ bndf.id }} species:</label>
+                <div class="field-container">
+                    <ng-select [items]="SPECIES" bindLabel="id" placeholder="Select species" multiple="true" hideSelected="true" [(ngModel)]="bndf.specs"
+                        [closeOnSelect]="false"></ng-select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-title" *ngIf="showParts()">
+            <label class='header'>Parts</label>
+        </div>
+        <div class="form-row" *ngFor="let bndf of main.currentFdsScenario.fdsObject.output.bndfs">
+            <div *ngIf="bndf.part == true">
+                <label>Add {{ bndf.id }} parts:</label>
+                <div class="field-container">
+                    <ng-select [items]="SPECIES" bindLabel="id" placeholder="Select species" multiple="true" hideSelected="true" [(ngModel)]="bndf.parts"
+                        [closeOnSelect]="false"></ng-select>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
