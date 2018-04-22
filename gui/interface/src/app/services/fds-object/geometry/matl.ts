@@ -1,6 +1,6 @@
 import { Xb } from '../primitives';
 import { IdGeneratorService } from '../../../services/id-generator/id-generator.service'
-import { FdsEntities } from '../../../enums/fds-entities'
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities'
 import { Ramp } from '../ramp/ramp';
 import { toNumber, get, set, find } from 'lodash';
 

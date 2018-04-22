@@ -11,10 +11,11 @@ import { Fds } from '../../../../../services/fds-object/fds-object';
 import { Main } from '../../../../../services/main/main';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { cloneDeep, find, set, findIndex, each } from 'lodash';
-import { FdsEnums } from '../../../../../enums/fds-enums';
+import { FdsEnums } from '../../../../../enums/fds/enums/fds-enums';
 import { IdGeneratorService } from '../../../../../services/id-generator/id-generator.service';
 import { By } from '@angular/platform-browser';
 import { UniqueSelectComponent } from '../../shared/unique-select/unique-select.component';
+import { colors } from '../../../../../enums/fds/enums/fds-enums-colors';
 
 @Component({
   selector: 'app-surface',
@@ -43,7 +44,7 @@ export class SurfaceComponent implements OnInit {
   @ViewChild('surfScrollbar') surfScrollbar: PerfectScrollbarComponent;
 
   // Enums
-  COLORS = FdsEnums.color;
+  COLORS = colors;
   BACKING = FdsEnums.SURF.surfaceBacking;
 
   constructor(

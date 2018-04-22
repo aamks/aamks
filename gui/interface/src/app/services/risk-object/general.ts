@@ -1,5 +1,5 @@
 import { get } from 'lodash';
-import { RiskEntities } from '../../enums/risk-entities';
+import { RiskEntities } from '../../enums/risk/entities/risk-entities';
 
 export interface GeneralObject {
 	projectName: string,

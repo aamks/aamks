@@ -4,7 +4,7 @@ import { Ramp } from '../../../../../services/fds-object/ramp/ramp';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';
 import { WebsocketService } from '../../../../../services/websocket/websocket.service';
 import { MainService } from '../../../../../services/main/main.service';
-import { FdsEnums } from '../../../../../enums/fds-enums';
+import { FdsEnums } from '../../../../../enums/fds/enums/fds-enums';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
 import { Vent } from '../../../../../services/fds-object/ventilation/vent';
 import { UiState } from '../../../../../services/ui-state/ui-state';

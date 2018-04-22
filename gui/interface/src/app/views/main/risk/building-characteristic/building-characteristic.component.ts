@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { BuildingCharacteristic } from '../../../../services/risk-object/building-characteristic';
 import { MainService } from '../../../../services/main/main.service';
 import { Main } from '../../../../services/main/main';
-import { RiskEnums } from '../../../../enums/risk-enums';
+import { RiskEnums } from '../../../../enums/risk/enums/risk-enums';
 import { find } from 'lodash';
 import { BuildingInfrastructure } from '../../../../services/risk-object/building-infrastructure';
 import { Settings } from '../../../../services/risk-object/settings';

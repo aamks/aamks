@@ -1,5 +1,5 @@
 import { get, toNumber, round } from "lodash";
-import { FdsEntities } from "../../../enums/fds-entities";
+import { FdsEntities } from "../../../enums/fds/entities/fds-entities";
 
 export interface HrrObject {
     hrr_type: string,

@@ -120,4 +120,14 @@ ng-katex { font-size: .9rem; }
 
 @import 'app/views/main/fds/input-file/css/codemirror.scss';
 @import '~@ng-select/ng-select/themes/default.theme.css';
-@import '~angular-notifier/styles.scss'
+
+// Angular notifier import & modifications
+@import '~angular-notifier/styles.scss';
+.notifier__notification--material {
+	padding: {
+		top: 2px;
+		right: 22px;
+		bottom: 1px;
+		left: 22px;
+	}
+}

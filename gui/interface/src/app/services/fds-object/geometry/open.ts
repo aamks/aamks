@@ -1,6 +1,6 @@
 import { Xb } from '../primitives';
 import { IdGeneratorService } from '../../../services/id-generator/id-generator.service'
-import { FdsEntities } from '../../../enums/fds-entities'
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities'
 
 export interface OpenObject {
     id: string,

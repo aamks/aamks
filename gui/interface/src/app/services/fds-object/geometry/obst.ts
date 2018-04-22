@@ -4,7 +4,7 @@ import { Xb } from "../primitives";
 import { Devc } from '../output/devc';
 import { find, get, set, toArray } from 'lodash';
 import { Ctrl } from '../output/ctrl';
-import { FdsEntities } from '../../../enums/fds-entities';
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities';
 
 export interface SurfObject {
 		type?: string,

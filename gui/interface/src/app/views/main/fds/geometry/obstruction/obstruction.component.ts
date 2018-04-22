@@ -9,7 +9,7 @@ import { UiStateService } from '../../../../../services/ui-state/ui-state.servic
 import { UiState } from '../../../../../services/ui-state/ui-state';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
 import { set, find, cloneDeep, findIndex } from 'lodash';
-import { FdsEnums } from '../../../../../enums/fds-enums';
+import { FdsEnums } from '../../../../../enums/fds/enums/fds-enums';
 
 @Component({
   selector: 'app-obstruction',

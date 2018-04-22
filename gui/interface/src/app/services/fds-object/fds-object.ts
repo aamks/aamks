@@ -1,5 +1,5 @@
-import { FdsEntities } from '../../enums/fds-entities';
-import { FdsEnums } from '../../enums/fds-enums';
+import { FdsEntities } from '../../enums/fds/entities/fds-entities';
+import { FdsEnums } from '../../enums/fds/enums/fds-enums';
 import { General } from './general/general';
 import { Obst } from './geometry/obst';
 import { Hole } from './geometry/hole';
@@ -21,8 +21,9 @@ import { Bndf } from './output/bndf';
 import { Slcf } from './output/slcf';
 import { Isof } from './output/isof';
 import { Ctrl } from './output/ctrl';
-import { get, map, toNumber, find } from 'lodash';
+import { get, map, toNumber, find, filter, includes } from 'lodash';
 import { Fuel } from './fire/fuel';
+import { quantities } from '../../enums/fds/enums/fds-enums-quantities';
 
 export interface FdsObject {
   general: General,
@@ -120,7 +121,7 @@ export class Fds {
       return new Fire(JSON.stringify(fire), this.ramps.ramps);
     });
     this.fires.combustion = get(base, 'fires.combustion') === undefined ? new Combustion(JSON.stringify({})) : new Combustion(JSON.stringify(base.fires.combustion));
-    this.fires.fuels = get(base, 'fires.fuels') === undefined ? [] : map(base.fires.fuels, (fuel) => {
+    this.fires.fuels = get(base, 'fires.fuels') === undefined ? [ new Fuel(JSON.stringify({})) ] : map(base.fires.fuels, (fuel) => {
       return new Fuel(JSON.stringify(fuel), this.specie.specs);
     });
 
@@ -134,10 +135,13 @@ export class Fds {
       status_files: toNumber(get(base, 'output.general.status_files', DUMP.STATUS_FILES.default[0]))
     };
 
-    let ENUMS = FdsEnums.BNDF;
-    this.output.bndfs = get(base, 'output.bndfs') === undefined ? this.bndfInit() : map(base.output.bndfs, (bndf) => {
-      let getLabel = find(ENUMS.bndfQuantity, { 'quantity': bndf.quantity });
-      bndf.label = getLabel.label;
+    let QUANTITIES = filter(quantities, function(o) {
+      return includes(o.type, 'b');
+    });
+
+    this.output.bndfs = get(base, 'output.bndfs') === undefined ? [] : map(base.output.bndfs, (bndf) => {
+      // Add label, because only value is in db
+      bndf.label = find(QUANTITIES, { 'quantity': bndf.quantity }).label;
       return new Bndf(JSON.stringify(bndf), this.specie.specs, this.parts.parts);
     });
 
@@ -156,18 +160,17 @@ export class Fds {
     this.output.ctrls = get(base, 'output.ctrls') === undefined ? [] : map(base.output.ctrls, (ctrl) => {
       return new Ctrl(JSON.stringify(ctrl));
     });
-
   }
 
   // TODO refactor to empty constructor 
-  public bndfInit() {
-    let ENUMS = FdsEnums.BNDF;
-    var bndfs = map(ENUMS.bndfQuantity, function (value) {
-      var base = { quantity: value.quantity, marked: false, spec: value.spec, part: value.part, label: value.label };
-      return new Bndf(JSON.stringify(base));
-    });
-    return bndfs;
-  }
+  //public bndfInit() {
+  //  let ENUMS = FdsEnums.BNDF;
+  //  var bndfs = map(ENUMS.bndfQuantity, function (value) {
+  //    var base = { quantity: value.quantity, marked: false, spec: value.spec, part: value.part, label: value.label };
+  //    return new Bndf(JSON.stringify(base));
+  //  });
+  //  return bndfs;
+  //}
 
   // TODO Removers !!!
 

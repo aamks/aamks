@@ -84,7 +84,7 @@ export const RiskEntities =
         characteristic: {
             type: {
                 type: 'Character',
-                default: 'office',
+                default: 'office1',
                 help: '',
             },
             complexity: {

@@ -1,6 +1,6 @@
-import { RiskEntities } from "../../enums/risk-entities";
+import { RiskEntities } from "../../enums/risk/entities/risk-entities";
 import { get } from "lodash";
-import { RiskEnums } from "../../enums/risk-enums";
+import { RiskEnums } from "../../enums/risk/enums/risk-enums";
 /*
 Infrastracutre
 

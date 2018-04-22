@@ -1,5 +1,5 @@
 import { Matl } from './matl';
-import { FdsEntities } from '../../../enums/fds-entities';
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities';
 import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { map, toString, get, toNumber, each, find } from 'lodash';
 

@@ -1,4 +1,4 @@
-import { FdsEntities } from '../../../enums/fds-entities';
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities';
 import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { Xb, Xyz } from '../primitives';
 

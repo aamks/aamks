@@ -1,5 +1,5 @@
 import { Open } from '../../../../../services/fds-object/geometry/open';
-import { FdsEnums } from '../../../../../enums/fds-enums';
+import { FdsEnums } from '../../../../../enums/fds/enums/fds-enums';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
 import { UiState } from '../../../../../services/ui-state/ui-state';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';

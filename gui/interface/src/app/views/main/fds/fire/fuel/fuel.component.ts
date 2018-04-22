@@ -5,14 +5,15 @@ import { UiState } from '../../../../../services/ui-state/ui-state';
 import { Library } from '../../../../../services/library/library';
 import { Fire } from '../../../../../services/fds-object/fire/fire';
 import { Fuel } from '../../../../../services/fds-object/fire/fuel';
-import { FdsEnums } from '../../../../../enums/fds-enums';
+import { FdsEnums } from '../../../../../enums/fds/enums/fds-enums';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
 import { MainService } from '../../../../../services/main/main.service';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';
 import { LibraryService } from '../../../../../services/library/library.service';
-import { findIndex, find, cloneDeep, set } from 'lodash';
+import { findIndex, find, cloneDeep, set, remove } from 'lodash';
 import { Spec } from '../../../../../services/fds-object/specie/spec';
 import { IdGeneratorService } from '../../../../../services/id-generator/id-generator.service';
+import { NotifierService } from 'angular-notifier';
 
 @Component({
   selector: 'app-fuel',
@@ -37,7 +38,7 @@ export class FuelComponent implements OnInit {
   objectType: string = 'current'; // Lib or current
 
   // Enums
-  RADCALS = FdsEnums.radcals;
+  RADCALS = FdsEnums.FIRE.radcals;
 
   // Scrolbars containers
   @ViewChild('fuelScrollbar') fuelScrollbar: PerfectScrollbarComponent;
@@ -46,7 +47,8 @@ export class FuelComponent implements OnInit {
   constructor(
     private mainService: MainService,
     private uiStateService: UiStateService,
-    private libraryService: LibraryService
+    private libraryService: LibraryService,
+    private readonly notifierService: NotifierService
   ) { }
 
   ngOnInit() {
@@ -94,9 +96,14 @@ export class FuelComponent implements OnInit {
   public add(library?: boolean) {
     // Create new fire object with unique id
     if (!library) {
-      let element = { id: 'FUEL' + this.mainService.getListId(this.fuels, 'fuel') };
-      this.fuels.push(new Fuel(JSON.stringify(element), this.specs));
-      this.activate(element.id);
+      if (this.fuels.length < 1) {
+        let element = { id: 'FUEL' + this.mainService.getListId(this.fuels, 'fuel') };
+        this.fuels.push(new Fuel(JSON.stringify(element), this.specs));
+        this.activate(element.id);
+      }
+      else {
+        this.notifierService.notify('warning', 'You can specify only one fuel');
+      }
     }
     else {
       let element = { id: 'FUEL' + this.mainService.getListId(this.libFuels, 'fuel') };
@@ -139,8 +146,8 @@ export class FuelComponent implements OnInit {
     let libFuel = find(this.lib.fuels, function (o) { return o.id == id; });
     let spec = undefined;
     let libSpec = undefined;
-    if (libFuel.spec.id) {
-      // Check if ramp already exists
+    if (libFuel.spec != undefined && libFuel.spec.id) {
+      // Check if pec already exists
       libSpec = find(this.specs, function (o) { return o.id == libFuel.spec.id });
       // If ramp do not exists import from library
       if (libSpec == undefined) {
@@ -153,6 +160,7 @@ export class FuelComponent implements OnInit {
     let fuel = cloneDeep(libFuel);
     fuel.uuid = idGeneratorService.genUUID()
     fuel.spec = spec != undefined ? spec : libSpec;
+    remove(this.fuels);
     this.fuels.push(fuel);
   }
 

@@ -1,12 +1,13 @@
 import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { Xb, Xyz } from '../primitives';
-import { FdsEntities } from '../../../enums/fds-entities';
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities';
 import { Prop } from './prop';
 import { Spec } from '../specie/spec';
 import { Part } from './part';
-import { FdsGuiEntities } from '../../../enums/fds-gui-entities';
-import { FdsEnums } from '../../../enums/fds-enums';
-import { get, toString, find, toNumber, toInteger } from 'lodash';
+import { FdsGuiEntities } from '../../../enums/fds/entities/fds-gui-entities';
+import { FdsEnums } from '../../../enums/fds/enums/fds-enums';
+import { get, toString, find, toNumber, toInteger, includes, filter } from 'lodash';
+import { quantities } from '../../../enums/fds/enums/fds-enums-quantities';
 
 export interface DevcObject {
     id: string,
@@ -58,7 +59,7 @@ export class Devc {
 
         let DEVC = FdsEntities.DEVC;
         let GUI_DEVC = FdsGuiEntities.DEVC;
-        let ENUMS = FdsEnums.DEVC;
+        let QUANTITIES = filter(quantities, function(o) { return includes(o.type, 'd') });
 
         this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
@@ -68,8 +69,8 @@ export class Devc {
         this.quantity_type = toString(get(base, 'quantity_type'));
 
         // TODO check toJSON <-> fdsObject
-        this.quantity = get(base, 'quantity') === undefined ? {} : find(ENUMS.devcQuantity, (devc) => {
-            return devc.quantity == base.quantity;
+        this.quantity = get(base, 'quantity') === undefined ? {} : find(QUANTITIES, function(o) {
+            return o.quantity == base.quantity;
         });
 
         if (base.quantity && base.quantity['spec']) {

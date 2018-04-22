@@ -16,7 +16,11 @@ export class FdsScenarioService {
 
   main: Main;
 
-  constructor(private mainService: MainService, private httpManager: HttpManagerService, private readonly notifierService: NotifierService) {
+  constructor(
+    private mainService: MainService, 
+    private httpManager: HttpManagerService, 
+    private readonly notifierService: NotifierService
+  ) {
     this.mainService.getMain().subscribe(main => this.main = main);
   }
 

@@ -1,5 +1,5 @@
-import {FdsEnums} from '../../../../../enums/fds-enums';
-import {Fire} from '../../../../../services/fds-object/fire/fire';
+import { FdsEnums } from '../../../../../enums/fds/enums/fds-enums';
+import { Fire } from '../../../../../services/fds-object/fire/fire';
 import { Ramp } from '../../../../../services/fds-object/ramp/ramp';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';
 import { WebsocketService } from '../../../../../services/websocket/websocket.service';
@@ -14,6 +14,7 @@ import { set, cloneDeep, find, forEach, findIndex } from 'lodash';
 import { LibraryService } from '../../../../../services/library/library.service';
 import { Library } from '../../../../../services/library/library';
 import { IdGeneratorService } from '../../../../../services/id-generator/id-generator.service';
+import { colors } from '../../../../../enums/fds/enums/fds-enums-colors';
 
 @Component({
   selector: 'app-fires',
@@ -39,7 +40,7 @@ export class FiresComponent implements OnInit {
 
   // Enums
   ENUMS_FIRE = FdsEnums.FIRE;
-  COLORS = FdsEnums.color;
+  COLORS = colors;
 
   // Scrolbars containers
   @ViewChild('fireScrollbar') fireScrollbar: PerfectScrollbarComponent;

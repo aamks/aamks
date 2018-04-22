@@ -4,7 +4,7 @@ import { Fds } from '../../../../services/fds-object/fds-object';
 import { UiState } from '../../../../services/ui-state/ui-state';
 import { Library } from '../../../../services/library/library';
 import { Ramp } from '../../../../services/fds-object/ramp/ramp';
-import { FdsEnums } from '../../../../enums/fds-enums';
+import { FdsEnums } from '../../../../enums/fds/enums/fds-enums';
 import { PerfectScrollbarComponent } from 'ngx-perfect-scrollbar';
 import { MainService } from '../../../../services/main/main.service';
 import { UiStateService } from '../../../../services/ui-state/ui-state.service';
@@ -34,7 +34,7 @@ export class RampComponent implements OnInit {
   objectType: string = 'current'; // Lib or current
 
   // Enums
-  RAMP_TYPE = FdsEnums.rampType;
+  RAMP_TYPE = FdsEnums.RAMP.rampType;
 
   // Scrolbars containers
   @ViewChild('rampScrollbar') rampScrollbar: PerfectScrollbarComponent;

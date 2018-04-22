@@ -12,14 +12,6 @@
         </div>
       </div>
     </div>
-    <div class="form-row">
-      <div>
-        <label>Id: </label>
-        <div class="field-container">
-          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.id" />
-        </div>
-      </div>
-    </div>
 
     <div class="form-title">
       <label class="header">Radiataion</label>
@@ -28,19 +20,19 @@
       <div>
         <label>Turn on radiation:</label>
         <div class="field-container">
-          <input type="checkbox" [(ngModel)]="fires.radiation.radiation" />
+          <input type="checkbox" [(ngModel)]="fires.combustion.radiation" />
         </div>
       </div>
-      <div>
+      <div *ngIf="fires.fuels.length > 0">
         <label>Radiative fraction:</label>
         <div class="field-container">
-          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.fuel.radiative_fraction" decimalInput>
+          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.fuels[0].radiative_fraction" decimalInput>
         </div>
       </div>
-      <div>
+      <div *ngIf="fires.fuels.length > 0">
         <label>Radcal ID:</label>
         <div class="field-container">
-          <select [(ngModel)]="fires.combustion.fuel.fuel_radcal_id">
+          <select [(ngModel)]="fires.fuels[0].fuel_radcal_id">
             <option *ngFor="let element of RADCALS" [ngValue]="element.value">{{element.label}}</option>
           </select>
         </div>
@@ -48,13 +40,13 @@
       <div>
         <label>Number of radiation angles:</label>
         <div class="field-container">
-          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.radiation.number_radiation_angles" decimalInput>
+          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.number_radiation_angles" decimalInput>
         </div>
       </div>
       <div>
         <label>Time step increment:</label>
         <div class="field-container">
-          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.radiation.time_step_increment" decimalInput>
+          <input type=text [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="fires.combustion.time_step_increment" decimalInput>
         </div>
       </div>
     </div>

@@ -1,9 +1,10 @@
-import { FdsEntities } from '../../../enums/fds-entities';
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities';
 import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { Spec } from '../specie/spec';
 import { Part } from './part';
-import { FdsEnums } from '../../../enums/fds-enums';
-import { get, map, find } from 'lodash';
+import { FdsEnums } from '../../../enums/fds/enums/fds-enums';
+import { get, map, find, filter, includes } from 'lodash';
+import { quantities } from '../../../enums/fds/enums/fds-enums-quantities';
 
 export interface IsofObject {
     id: number,
@@ -38,7 +39,7 @@ export class Isof {
 
         let ISOF = FdsEntities.ISOF;
         //let GUI_DEVC = FdsGuiEntities.DEVC;
-        let ENUMS = FdsEnums.ISOF;
+        let QUANTITIES = filter(quantities, function(o) { return includes(o.type, 'd') });
 
         this.id = base.id || 0;
         this.uuid = base.uuid || idGeneratorService.genUUID();
@@ -47,8 +48,8 @@ export class Isof {
         if (!specs) {
             this.quantity = get(base, 'quantity', {});
         } else {
-            this.quantity = find(ENUMS.isofQuantity, (elem) => {
-                return elem.quantity == base.quantity['id'];
+            this.quantity = find(QUANTITIES, (o) => {
+                return o.quantity == base.quantity['id'];
             });
         }
 

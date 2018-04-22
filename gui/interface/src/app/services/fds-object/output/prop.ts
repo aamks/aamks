@@ -1,7 +1,7 @@
-import { FdsEntities } from '../../../enums/fds-entities';
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities';
 import {IdGeneratorService} from '../../id-generator/id-generator.service';
-import { FdsGuiEntities } from '../../../enums/fds-gui-entities';
-import { FdsEnums } from '../../../enums/fds-enums';
+import { FdsGuiEntities } from '../../../enums/fds/entities/fds-gui-entities';
+import { FdsEnums } from '../../../enums/fds/enums/fds-enums';
 import { Ramp } from '../ramp/ramp';
 import { get, toNumber, clone, find, each, toString, toInteger } from 'lodash';
 
@@ -79,7 +79,7 @@ export class Prop {
         
         let PROP = FdsEntities.PROP;
         let GUI_PROP = FdsGuiEntities.PROP;
-        let CLEARY_PARAMS = FdsEnums.SPEC.cleary;
+        let CLEARY_PARAMS = FdsEnums.DEVC.cleary;
 
         this.id = base.id || 0;
         this.uuid = base.uuid || idGeneratorService.genUUID(); 
@@ -152,7 +152,7 @@ export class Prop {
 
     /** Change smoke detector model type */
     changeSmokeDetectorModelType() {
-        let CLEARY_PARAMS = FdsEnums.SPEC.cleary;
+        let CLEARY_PARAMS = FdsEnums.DEVC.cleary;
         this.cleary_params= clone(find(CLEARY_PARAMS, function(model){
             return model.value == this.smoke_detector_model_type;
         }));

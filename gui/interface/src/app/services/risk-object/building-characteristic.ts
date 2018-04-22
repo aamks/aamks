@@ -1,4 +1,4 @@
-import { RiskEntities } from "../../enums/risk-entities";
+import { RiskEntities } from "../../enums/risk/entities/risk-entities";
 import { get } from "lodash";
 
 export interface BuildingCharacteristicObject {

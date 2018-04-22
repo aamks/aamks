@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Main } from '../../../../services/main/main';
-import { RiskEnums } from '../../../../enums/risk-enums';
+import { RiskEnums } from '../../../../enums/risk/enums/risk-enums';
 import { MainService } from '../../../../services/main/main.service';
 import { BuildingInfrastructure } from '../../../../services/risk-object/building-infrastructure';
 import { BuildingCharacteristic } from '../../../../services/risk-object/building-characteristic';

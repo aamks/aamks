@@ -1,10 +1,11 @@
-import { FdsEntities } from '../../../enums/fds-entities';
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities';
 import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { Xb } from '../primitives';
 import { Spec } from '../specie/spec';
 import { Part } from './part';
-import { FdsEnums } from '../../../enums/fds-enums';
-import { map, toString, get, toNumber, find } from 'lodash';
+import { FdsEnums } from '../../../enums/fds/enums/fds-enums';
+import { map, toString, get, toNumber, find, filter, includes } from 'lodash';
+import { quantities } from '../../../enums/fds/enums/fds-enums-quantities';
 
 export interface DevcObject {
     id: number,
@@ -36,7 +37,7 @@ export class Slcf {
 
         //let SLCF = FdsEntities.SLCF;
         //let GUI_DEVC = FdsGuiEntities.DEVC;
-        let ENUMS = FdsEnums.SLCF;
+        let QUANTITIES = filter(quantities, function(o) { return includes(o.type, 's') });
 
         this.id = base.id || 0;
         this.uuid = base.uuid || idGeneratorService.genUUID();
@@ -46,11 +47,11 @@ export class Slcf {
         this.value = toNumber(get(base, 'value', 0));
 
         if (base['quantities']) {
-            this.quantities = map(ENUMS.slcfQuantity, (value) => {
+            this.quantities = map(QUANTITIES, (o) => {
                 var baseQuantity = find(base.quantities, (quantity) => {
-                    return value.quantity == quantity.name;
+                    return o.quantity == quantity.name;
                 });
-                var quantity = { label: value.label, name: value.quantity, marked: (baseQuantity.marked == true) };
+                var quantity = { label: o.label, name: o.quantity, marked: (baseQuantity.marked == true) };
                 if (baseQuantity['spec']) {
                     this.spec = true;
                     if (specs) {
@@ -81,13 +82,13 @@ export class Slcf {
                 return quantity;
             })
         } else {
-            this.quantities = map(ENUMS.slcfQuantity, (value) => {
-                var base = { label: value.label, name: value.quantity, marked: false };
-                if (value.spec) {
+            this.quantities = map(QUANTITIES, (o) => {
+                var base = { label: o.label, name: o.quantity, marked: false };
+                if (o.spec) {
                     base['spec'] = true;
                     base['specs'] = [];
                 }
-                if (value.part) {
+                if (o.part) {
                     base['part'] = true;
                     base['parts'] = [];
                 }

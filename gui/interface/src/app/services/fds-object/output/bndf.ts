@@ -1,9 +1,10 @@
-import { FdsEntities } from '../../../enums/fds-entities';
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities';
 import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { Spec } from '../specie/spec';
 import { Part } from './part';
-import { FdsEnums } from '../../../enums/fds-enums';
-import { get, map, find } from 'lodash';
+import { FdsEnums } from '../../../enums/fds/enums/fds-enums';
+import { get, map, find, filter, includes } from 'lodash';
+import { quantities } from '../../../enums/fds/enums/fds-enums-quantities';
 
 export interface DevcObject {
     id: number,
@@ -40,7 +41,7 @@ export class Bndf {
 
         let SLCF = FdsEntities.SLCF;
         //let GUI_DEVC = FdsGuiEntities.DEVC;
-        let ENUMS = FdsEnums.SLCF;
+        let QUANTITIES = filter(quantities, function(o) { return includes(o.type, 'b') });
 
         this.id = base.id || 0;
         this.uuid = base.uuid || idGeneratorService.genUUID();

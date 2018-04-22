@@ -1,10 +1,10 @@
-import { FdsEntities } from '../../../enums/fds-entities';
+import { FdsEntities } from '../../../enums/fds/entities/fds-entities';
 import { IdGeneratorService } from '../../id-generator/id-generator.service';
 import { Ramp } from "../ramp/ramp";
 import { SurfFire } from './surf-fire';
 import { VentFire } from './vent-fire';
 import { Spec } from '../specie/spec';
-import { FdsEnums } from '../../../enums/fds-enums';
+import { FdsEnums } from '../../../enums/fds/enums/fds-enums';
 import { find, toNumber, get } from 'lodash';
 
 export interface FuelObject {
@@ -49,9 +49,9 @@ export class Fuel {
         let idGeneratorService = new IdGeneratorService;
 
         let REAC = FdsEntities.REAC;
-        let RADCALS = FdsEnums.radcals;
+        let RADCALS = FdsEnums.FIRE.radcals;
 
-        this.id = base.id || 'My fuel';
+        this.id = base.id || 'FUEL1';
         this.uuid = base.uuid || idGeneratorService.genUUID();
 
         // Get from specs

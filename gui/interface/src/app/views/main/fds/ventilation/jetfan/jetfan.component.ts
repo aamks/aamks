@@ -1,4 +1,4 @@
-import {FdsEnums} from '../../../../../enums/fds-enums';
+import {FdsEnums} from '../../../../../enums/fds/enums/fds-enums';
 import { JetFan } from '../../../../../services/fds-object/ventilation/jet-fan';
 import { Ramp } from '../../../../../services/fds-object/ramp/ramp';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';

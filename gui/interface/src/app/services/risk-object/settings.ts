@@ -1,6 +1,6 @@
 import { get, keyBy } from 'lodash';
-import { RiskEntities } from '../../enums/risk-entities';
-import { RiskEnums } from '../../enums/risk-enums';
+import { RiskEntities } from '../../enums/risk/entities/risk-entities';
+import { RiskEnums } from '../../enums/risk/enums/risk-enums';
 import { SettingsObject, HeatReleaseRate, OriginOfFire, EvacueesConcentration, EvacueesSpeedParams, PreEvacuationTime, WindowOpen, OutdoorTemperature, DoorOpen } from './settings-interface';
 
 export class Settings {

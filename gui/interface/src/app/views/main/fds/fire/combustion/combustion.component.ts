@@ -1,4 +1,4 @@
-import {FdsEnums} from '../../../../../enums/fds-enums';
+import {FdsEnums} from '../../../../../enums/fds/enums/fds-enums';
 import {PerfectScrollbarComponent} from 'ngx-perfect-scrollbar';
 import { UiStateService } from '../../../../../services/ui-state/ui-state.service';
 import { MainService } from '../../../../../services/main/main.service';
@@ -27,10 +27,9 @@ export class CombustionComponent implements OnInit {
 
   // Component objects
   combustion: Combustion;
-  objectType: string = 'current'; // Lib or current
 
   // Enums
-  RADCALS = FdsEnums.radcals;
+  RADCALS = FdsEnums.FIRE.radcals;
 
   constructor(
     private mainService: MainService,
@@ -52,6 +51,5 @@ export class CombustionComponent implements OnInit {
   }
 
   // COMPONENT METHODS
-
 
 }
