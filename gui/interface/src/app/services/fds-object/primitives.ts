@@ -1,4 +1,4 @@
-import { get, map } from "lodash";
+import { get, map, toString } from "lodash";
 import { Spec } from "./specie/spec";
 import { Part } from "./output/part";
 
@@ -287,8 +287,8 @@ export class Quantity {
         let base: QuantityObject;
         base = <QuantityObject>JSON.parse(jsonString);
 
-        this.id = get(base, 'id', '');
-        this.quantity = get(base, 'quantity');
+        this.id = toString(get(base, 'id', ''));
+        this.quantity = toString(get(base, 'quantity'));
 
         this.spec = (get(base, 'spec', true) == true);
         this.part = (get(base, 'part', true) == true);
