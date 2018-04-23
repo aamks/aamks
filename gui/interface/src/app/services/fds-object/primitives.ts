@@ -288,7 +288,7 @@ export class Quantity {
         base = <QuantityObject>JSON.parse(jsonString);
 
         this.id = toString(get(base, 'id', ''));
-        this.quantity = toString(get(base, 'quantity'));
+        this.quantity = toString(get(base, 'quantity', ''));
 
         this.spec = (get(base, 'spec', true) == true);
         this.part = (get(base, 'part', true) == true);

@@ -13,7 +13,7 @@ export class UiState {
 
 	private _fdsMenu: any;
 	private _riskMenu: any;
-	
+
 	private _listRange: number = 200;
 
 	constructor() {
@@ -61,11 +61,12 @@ export class UiState {
 			tab: 0,
 			slcf: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
 			libSlcf: { scrollPosition: 0, begin: 0, elementIndex: 0, },
-			isof: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' },
+			isof: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
+			libIsof: { scrollPosition: 0, begin: 0, elementIndex: 0, },
 			prop: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
 			libProp: { scrollPosition: 0, begin: 0, elementIndex: 0 },
 			devc: { scrollPosition: 0, begin: 0, elementIndex: 0, lib: 'closed', help: 'closed' },
-			libDevc: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' },
+			libDevc: { scrollPosition: 0, begin: 0, elementIndex: 0 },
 			ctrl: { scrollPosition: 0, begin: 0, elementIndex: 0, help: 'closed' }
 		}
 

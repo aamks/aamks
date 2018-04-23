@@ -34,10 +34,6 @@ export class Slcf {
 
         let idGeneratorService = new IdGeneratorService;
 
-        //let SLCF = FdsEntities.SLCF;
-        //let GUI_DEVC = FdsGuiEntities.DEVC;
-        //let QUANTITIES = filter(quantities, function(o) { return includes(o.type, 's') });
-
         this.id = base.id || '';
         this.uuid = base.uuid || idGeneratorService.genUUID();
         this.idAC = base.idAC || 0;
@@ -45,13 +41,12 @@ export class Slcf {
         this.direction = toString(get(base, 'direction', 'x'));
         this.value = toNumber(get(base, 'value', 0));
 
-        this.quantities = base.quantities != undefined && base.quantities.length > 0 ? base.quantities : [];
+        this.quantities = base.quantities != undefined && base.quantities.length > 0 ? map(base.quantities, function(o) { return new Quantity(JSON.stringify(o)) } ) : [];
 
         forEach(this.quantities, function(o) {
             o.specs = o.specs != undefined && o.specs.length > 0 ? map(o.specs, function(e) { return new Spec(JSON.stringify(e)); }) : [];
             o.parts = o.parts != undefined && o.parts.length > 0 ? map(o.parts, function(e) { return new Part(JSON.stringify(e)); }) : [];
         });
-
     }
 
     /**

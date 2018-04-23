@@ -8,6 +8,7 @@ import { SurfVent } from '../fds-object/ventilation/surf-vent';
 import { Fuel } from '../fds-object/fire/fuel';
 import { Spec } from '../fds-object/specie/spec';
 import { Slcf } from '../fds-object/output/slcf';
+import { Isof } from '../fds-object/output/isof';
 
 export interface LibraryObject {
 	ramps: Ramp[],
@@ -19,6 +20,7 @@ export interface LibraryObject {
 	fuels: Fuel[],
 	specs: Spec[],
 	slcfs: Slcf[],
+	isofs: Isof[],
 }
 
 export class Library {
@@ -32,6 +34,7 @@ export class Library {
 	private _fuels: Fuel[];
 	private _specs: Spec[];
 	private _slcfs: Slcf[];
+	private _isofs: Isof[];
 
 	constructor(jsonString: string) {
 
@@ -71,10 +74,13 @@ export class Library {
 			return new Spec(JSON.stringify(spec));
 		});
 
-		this.slcfs = get(base, 'slcfs') === undefined ? [] : map(base.slcfs, (spec) => {
-			return new Slcf(JSON.stringify(spec));
+		this.slcfs = get(base, 'slcfs') === undefined ? [] : map(base.slcfs, (slcf) => {
+			return new Slcf(JSON.stringify(slcf));
 		});
 
+		this.isofs = get(base, 'isofs') === undefined ? [] : map(base.isofs, (isof) => {
+			return new Isof(JSON.stringify(isof));
+		});
 
 	}
 
@@ -223,6 +229,22 @@ export class Library {
 		this._slcfs = value;
 	}
 
+    /**
+     * Getter isofs
+     * @return {Isof[]}
+     */
+	public get isofs(): Isof[] {
+		return this._isofs;
+	}
+
+    /**
+     * Setter isofs
+     * @param {Isof[]} value
+     */
+	public set isofs(value: Isof[]) {
+		this._isofs = value;
+	}
+
 	/** Export to json */
 	public toJSON(): object {
 		let library = {
@@ -235,6 +257,7 @@ export class Library {
 			fuels: this.fuels,
 			specs: this.specs,
 			slcfs: this.slcfs,
+			isofs: this.isofs,
 		}
 		return library;
 	}
