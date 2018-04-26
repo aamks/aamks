@@ -36,6 +36,66 @@ export const RiskEnums =
                 evacStaircaseDensity: 1, // z bs 9999
                 evacHallDensity: 1, // z bs 9999
             },
+			{
+                label: 'Admisitration office',
+                value: 'office2',
+                type: 'a',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Amusement arcade',
+                value: 'arcade',
+                type: 'b',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Archive/library',
+                value: 'library',
+                type: 'b',
+                alphaMod: 0.047,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Art gallery',
+                value: 'gallery',
+                type: 'b',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Assembly hall',
+                value: 'assembly',
+                type: 'b',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
         ],
         preTimes: [
             {
