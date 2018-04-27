@@ -96,6 +96,138 @@ export const RiskEnums =
                 evacStaircaseDensity: 1, // z bs 9999
                 evacHallDensity: 1, // z bs 9999
             },
+			{
+                label: 'Bank',
+                value: 'bank',
+                type: 'b',
+                alphaMod: 0.0029,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Bar',
+                value: 'bar',
+                type: 'b',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Bazaar',
+                value: 'bazaar',
+                type: 'b',
+                alphaMod: 0.047,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Business centre',
+                value: 'business',
+                type: 'b',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Canteen',
+                value: 'canteen',
+                type: 'a',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'School',
+                value: 'school',
+                type: 'a',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Schopping mall',
+                value: 'mall',
+                type: 'b',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Dance area',
+                value: 'dance',
+                type: 'b',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Dromitory',
+                value: 'dormitory',
+                type: 'c2',
+                alphaMod: 0.012,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Exhibiotion area',
+                value: 'exibition',
+                type: 'b',
+                alphaMod: 0.047,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
+			{
+                label: 'Factory area',
+                value: 'factory',
+                type: 'a',
+                alphaMod: 0.047,
+                hrrpua: 500, // pokazac w ustawieniach
+                maxHrr: [100, 500],
+                evacRoomDensity: 1, // z bs 9999
+                evacCorridorDensity: 1, // z bs 9999
+                evacStaircaseDensity: 1, // z bs 9999
+                evacHallDensity: 1, // z bs 9999
+            },
         ],
         preTimes: [
             {
