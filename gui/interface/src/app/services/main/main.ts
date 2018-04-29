@@ -1,5 +1,4 @@
 import { Project } from '../project/project';
-import { FdsScenario } from '../fds-scenario/fds-scenario';
 import { RiskScenario } from '../risk-scenario/risk-scenario';
 import { Category } from '../category/category';
 
@@ -12,7 +11,6 @@ export interface MainObject {
     websocket:object, // ?? chyba nie potrzbne - wszystkie zmienne mam w websocketservice
     timeout:number,
     currentProject:Project,
-    currentFdsScenario:FdsScenario,
     currentRiskScenario:RiskScenario,
     categories:Category[]
 }
@@ -25,7 +23,6 @@ export class Main {
     private _websocket:object = {};
     private _timeout:number;
     private _currentProject:Project;
-    private _currentFdsScenario:FdsScenario;
     private _currentRiskScenario:RiskScenario;
     private _categories:Category[];
 
@@ -47,7 +44,6 @@ export class Main {
         };
         this.timeout = base.timeout || 3600;
         this.currentProject = undefined;
-        this.currentFdsScenario = undefined;
         this.currentRiskScenario = undefined;
         this.categories = [];
     }
@@ -106,13 +102,6 @@ export class Main {
     }
     public set currentProject(currentProject:Project){
         this._currentProject = currentProject;
-    }
-    /** getter/setter currentFdsScenario */
-    public get currentFdsScenario(){
-        return this._currentFdsScenario;
-    }
-    public set currentFdsScenario(currentFdsScenario:FdsScenario){
-        this._currentFdsScenario = currentFdsScenario;
     }
 
     /** getter/setter currentRiskScenario */

@@ -6,6 +6,7 @@ export interface GeneralObject {
 	simulationTime: number,
 	numberOfSimulations: number,
 	indoorTemperature: number,
+	indoorTemperatureSd: number,
 	elevation: number,
 	indoorPressure: number,
 	humidity: number,
@@ -19,6 +20,7 @@ export class General {
 	private _simulationTime: number;
 	private _numberOfSimulations: number;
 	private _indoorTemperature: number;
+	private _indoorTemperatureSd: number;
 	private _elevation: number;
 	private _indoorPressure: number;
 	private _humidity: number;
@@ -38,6 +40,7 @@ export class General {
 		this.indoorTemperature = get(base, 'indoorTemperature', GENERAL.indoorTemperature.default) as number;
 		this.elevation = get(base, 'elevation', GENERAL.elevation.default) as number;
 		this.indoorPressure = get(base, 'indoorPressure', GENERAL.indoorPressure.default) as number;
+		this.indoorTemperatureSd = get(base, 'indoorTemperature', GENERAL.indoorTemperatureSd.default) as number;
 		this.humidity = get(base, 'humidity', GENERAL.humidity.default) as number;
 		this.outdoorTemperature = get(base, 'outdoorTemperature', GENERAL.outdoorTemperature.default) as number;
 		this.outdoorTemperatureSd = get(base, 'outdoorTemperature', GENERAL.outdoorTemperatureSd.default) as number;
@@ -105,6 +108,22 @@ export class General {
      */
 	public set indoorTemperature(value: number) {
 		this._indoorTemperature = value;
+	}
+
+    /**
+     * Getter indoorTemperatureSd
+     * @return {number}
+     */
+	public get indoorTemperatureSd(): number {
+		return this._indoorTemperatureSd;
+	}
+
+    /**
+     * Setter indoorTemperatureSd
+     * @param {number} value
+     */
+	public set indoorTemperatureSd(value: number) {
+		this._indoorTemperatureSd = value;
 	}
 
     /**
@@ -193,6 +212,7 @@ export class General {
 			simulationTime: this.simulationTime,
 			numberOfSimulations: this.numberOfSimulations,
 			indoorTemperature: this.indoorTemperature,
+			indoorTemperatureSd: this.indoorTemperatureSd,
 			outdoorTemperature: this.outdoorTemperature,
 			outdoorTemperatureSd: this.outdoorTemperatureSd,
 			elevation: this.elevation,

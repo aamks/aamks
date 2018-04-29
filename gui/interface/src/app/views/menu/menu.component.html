@@ -5,6 +5,5 @@
     <a routerLink="/" (click)="activate('projects')" [ngClass]="{'active': uiState.active == 'projects'}">Projects</a>
   </div>
 
-  <app-fds-menu *ngIf='main.currentFdsScenario != undefined'></app-fds-menu>
   <app-risk-menu *ngIf='main.currentRiskScenario != undefined'></app-risk-menu>
 </div>

@@ -46,6 +46,13 @@
         </div>
       </div>
       <div>
+        <label>Indoor temperature std:</label>
+        <div class="field-container">
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoorTemperatureSd" decimalInput>
+          <ng-katex equation="s"></ng-katex>
+        </div>
+      </div>
+      <div>
         <label>Outdoor temperature:</label>
         <div class="field-container">
           <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.outdoorTemperature" decimalInput>

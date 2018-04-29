@@ -1,4 +1,3 @@
-import { FdsScenario, FdsScenarioObject } from '../fds-scenario/fds-scenario';
 import { RiskScenario } from '../risk-scenario/risk-scenario';
 import { forEach } from 'lodash';
 
@@ -7,7 +6,6 @@ export interface ProjectObject {
     name: string,
     description: string,
     category: string,
-    fdsScenarios: FdsScenario[],
     riskScenarios: RiskScenario[]
 }
 
@@ -16,7 +14,6 @@ export class Project {
     _name: string;
     _description: string;
     _category: string;
-    _fdsScenarios: FdsScenario[];
     _riskScenarios: RiskScenario[];
 
     constructor(jsonString: string) {
@@ -28,13 +25,6 @@ export class Project {
         this._name = base.name || '';
         this._description = base.description || '';
         this._category = base.category || '';
-        this._fdsScenarios = [];
-        if (base.fdsScenarios) {
-            forEach(base.fdsScenarios, (scenario) => {
-                this._fdsScenarios.push(new FdsScenario(JSON.stringify(scenario)));
-                //this._fdsScenarios.push(new FdsScenario(JSON.stringify(scenario)));
-            });
-        }
         this._riskScenarios = [];
         if (base.riskScenarios) {
             forEach(base.riskScenarios, (scenario) => {
@@ -74,14 +64,6 @@ export class Project {
     }
     set category(category: string) {
         this._category = category;
-    }
-
-    /** getter/setter fdsScenarios */
-    get fdsScenarios() {
-        return this._fdsScenarios;
-    }
-    set fdsScenarios(fdsScenarios: FdsScenario[]) {
-        this._fdsScenarios = fdsScenarios;
     }
 
     /** getter/setter riskScenario */

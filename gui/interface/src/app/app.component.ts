@@ -1,12 +1,9 @@
 import { Router } from '@angular/router';
-import { FdsScenarioService } from './services/fds-scenario/fds-scenario.service';
 import { Component, OnInit } from '@angular/core';
 
 import { MainService } from './services/main/main.service';
 import { Main, MainObject } from './services/main/main';
 import { WebsocketService } from './services/websocket/websocket.service';
-import { Library } from './services/library/library';
-import { LibraryService } from './services/library/library.service';
 import { ProjectService } from './services/project/project.service';
 import { CategoryService } from './services/category/category.service';
 
@@ -18,13 +15,10 @@ import { CategoryService } from './services/category/category.service';
 export class AppComponent {
   title: string = 'app';
   main: Main;
-  lib: Library;
 
   constructor(private mainService: MainService,
     private websocket: WebsocketService,
-    private libraryService: LibraryService,
     private projectService: ProjectService,
-    private fdsScenarioService: FdsScenarioService,
     private categoryService: CategoryService,
     private router: Router
   ) {
@@ -51,8 +45,6 @@ export class AppComponent {
     console.clear();
     this.mainService.getMain().subscribe(main => this.main = main);
     this.projectService.getProjects();
-    this.libraryService.loadLibrary();
-    this.libraryService.getLibrary().subscribe(library => this.lib = library);
     this.categoryService.getCategories();
 
     // Navigate after page is reloaded
@@ -60,19 +52,15 @@ export class AppComponent {
 
     // For developing purpose
     setTimeout(() => {
-      //this.setCurrentFdsScenario(6, 21);
+
     }, 1000);
     setTimeout(() => {
-      //this.router.navigate(['fds/output/slice'])
+
     }, 2000);
   }
 
   ngAfterViewInit() {
 
-  }
-
-  setCurrentFdsScenario(projectId: number, fdsScenarioId: number) {
-    this.fdsScenarioService.setCurrentFdsScenario(projectId, fdsScenarioId).subscribe();
   }
   /**
    * ngOnInit:

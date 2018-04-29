@@ -35,6 +35,15 @@ export const RiskEntities =
                 valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
                 reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
+            indoorTemperatureSd: {
+                type: 'Real',
+                units: 'C',
+                default: 5,
+                help: '',
+                pattern: '',
+                valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
+            },
             outdoorTemperature: {
                 type: 'Real',
                 units: 'C',

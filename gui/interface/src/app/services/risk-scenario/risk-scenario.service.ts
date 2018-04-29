@@ -29,7 +29,6 @@ export class RiskScenarioService {
     // Set current scenario in main object
     this.httpManager.get('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId).then((result: Result) => {
       this.main.currentRiskScenario = new RiskScenario(JSON.stringify(result.data));
-      this.main.currentFdsScenario = undefined;
       console.log(this.main.currentRiskScenario.riskObject);
 
       // Set current project in main object

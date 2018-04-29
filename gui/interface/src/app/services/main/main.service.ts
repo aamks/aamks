@@ -5,10 +5,8 @@ import { of } from 'rxjs/observable/of';
 
 import { Main, MainObject } from './main';
 import { Project } from '../project/project';
-import { FdsScenario } from '../fds-scenario/fds-scenario';
 import { RiskScenario } from '../risk-scenario/risk-scenario';
 import { HttpManagerService, Result } from '../http-manager/http-manager.service';
-import { FdsScenarioService } from '../fds-scenario/fds-scenario.service';
 import { each } from 'lodash';
 
 @Injectable()

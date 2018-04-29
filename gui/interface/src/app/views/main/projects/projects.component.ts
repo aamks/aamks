@@ -3,7 +3,6 @@ import { Component, OnInit } from '@angular/core';
 import { Project } from '../../../services/project/project';
 import { MainService } from '../../../services/main/main.service';
 import { ProjectService } from '../../../services/project/project.service';
-import { FdsScenarioService } from '../../../services/fds-scenario/fds-scenario.service';
 import { Main } from '../../../services/main/main';
 import { CategoryService } from '../../../services/category/category.service';
 import { CategoryObject } from '../../../services/category/category';
@@ -21,7 +20,6 @@ export class ProjectsComponent implements OnInit {
 
   constructor(private mainService: MainService,
     private projectService: ProjectService,
-    private fdsScenarioService: FdsScenarioService,
     private riskScenarioService: RiskScenarioService,
     private categoryService: CategoryService
   ) { }
@@ -69,37 +67,9 @@ export class ProjectsComponent implements OnInit {
   /** Change category activity */
   changeCategoryActivity(categoryUuid: string, categoryIndex: number) {
     if (this.main.currentProject != undefined && this.main.currentProject.category == categoryUuid) {
-      if (this.main.currentFdsScenario != undefined) {
-        this.main.currentFdsScenario = undefined;
-      }
       this.main.currentProject = undefined;
     }
     this.categoryService.updataCategory(categoryUuid, this.main.categories[categoryIndex]);
-  }
-
-  /** Set fds scenario to current */
-  setCurrentFdsScenario(projectId: number, fdsScenarioId: number) {
-    this.fdsScenarioService.setCurrentFdsScenario(projectId, fdsScenarioId).subscribe();
-  }
-
-  /** Add fds scenario */
-  addFdsScenario(projectId: number) {
-    this.fdsScenarioService.createFdsScenario(projectId);
-  }
-
-  /** Set fds scenario name  */
-  updateFdsScenario(projectId: number, fdsScenarioId: number) {
-    this.fdsScenarioService.updateFdsScenario(projectId, fdsScenarioId, 'head');
-  }
-
-  /** Download fds file */
-  downloadFdsScenario(projectId: number, fdsScenarioId: number) {
-    console.log("download fds scenario");
-  }
-
-  /** Delete fds scenario */
-  deleteFdsScenario(projectIndex: number, fdsScenarioIndex: number) {
-    this.fdsScenarioService.deleteFdsScenario(projectIndex, fdsScenarioIndex);
   }
 
   /** Set risk scenario to current */
@@ -117,7 +87,7 @@ export class ProjectsComponent implements OnInit {
     this.riskScenarioService.updateRiskScenario(projectId, riskScenarioId, 'head');
   }
 
-  /** Delete fds scenario */
+  /** Delete risk scenario */
   deleteRiskScenario(projectIndex: number, riskScenarioIndex: number) {
     this.riskScenarioService.deleteRiskScenario(projectIndex, riskScenarioIndex);
   }

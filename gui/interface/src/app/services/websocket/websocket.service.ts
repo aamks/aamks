@@ -8,7 +8,6 @@ import { timeout } from 'rxjs/operators/timeout';
 import { CadService } from '../cad/cad.service';
 import { resolve } from 'q';
 import { cloneDeep, remove, each } from 'lodash';
-import { Fds } from '../fds-object/fds-object';
 import { Risk } from '../risk-object/risk-object';
 
 @Injectable()
@@ -22,7 +21,6 @@ export class WebsocketService {
   isConnected: boolean;
 
   main: Main;
-  fds: Fds;
   risk: Risk;
 
   requestCallbacks: object = {};
@@ -142,7 +140,6 @@ export class WebsocketService {
 
   /** 
    * Method processes message from CAD software.
-   * Creates new fds object with new geometry.
    */
   private requestMessage(message: WebsocketMessageObject) {
 
@@ -161,23 +158,6 @@ export class WebsocketService {
 
     try {
       switch (message.method) {
-        case 'fExport': {
-          console.log('fExport');
-          if (this.main.currentFdsScenario != undefined) {
-            this.fds = this.main.currentFdsScenario.fdsObject;
-            this.fExport(message.data);
-          }
-          else {
-            answer.status = "error";
-          }
-          break;
-        }
-
-        case 'fSelect': {
-
-          break;
-        }
-
         case 'cExport': {
           console.log('cExport');
           if (this.main.currentRiskScenario != undefined) {
@@ -209,147 +189,5 @@ export class WebsocketService {
     this.sendMessage(answer);
     return;
   }
-
-  /** Importing CAD geometry */
-  private fExport(data) {
-
-    /** Surfs */
-    // Transform CAD elements
-    let newSurfs = this.cadService.transformSurfs(data.geometry.surfs, this.fds.geometry.surfs);
-    // Clone and delete current elements
-    remove(this.fds.geometry.surfs);
-    // Set new meshes to current scenario
-    each(newSurfs, (surf) => {
-      this.fds.geometry.surfs.push(surf);
-    });
-
-    /** Meshes */
-    // Transform CAD elements
-    let newMeshes = this.cadService.transformMeshes(data.geometry.meshes, this.fds.geometry.meshes);
-    // Clone and delete current elements
-    remove(this.fds.geometry.meshes);
-    // Set new meshes to current scenario
-    each(newMeshes, (mesh) => {
-      this.fds.geometry.meshes.push(mesh);
-    });
-
-    /** Opens */
-    // Transform CAD elements
-    let newOpens = this.cadService.transformOpens(data.geometry.opens, this.fds.geometry.opens);
-    // Clone and delete current elements
-    remove(this.fds.geometry.opens);
-    // Set new meshes to current scenario
-    each(newOpens, (open) => {
-      this.fds.geometry.opens.push(open);
-    });
-
-    /** Obsts */
-    // Transform CAD elements
-    let newObsts = this.cadService.transformObsts(data.geometry.obsts, this.fds.geometry.obsts);
-    // Clone and delete current elements
-    remove(this.fds.geometry.obsts);
-    // Set new obsts to current scenario
-    each(newObsts, (obst) => {
-      this.fds.geometry.obsts.push(obst);
-    });
-
-    /** Holes */
-    // Transform CAD elements
-    let newHoles = this.cadService.transformHoles(data.geometry.holes, this.fds.geometry.holes);
-    // Clone and delete current elements
-    remove(this.fds.geometry.holes);
-    // Set new holes to current scenario
-    each(newHoles, (hole) => {
-      this.fds.geometry.holes.push(hole);
-    });
-
-    /** Vent Surfs */
-    // Transform CAD elements
-    let newVentSurfs = this.cadService.transformVentSurfs(data.ventilation.surfs, this.fds.ventilation.surfs);
-    // Clone and delete current elements
-    remove(this.fds.ventilation.surfs);
-    // Set new meshes to current scenario
-    each(newVentSurfs, (surf) => {
-      this.fds.ventilation.surfs.push(surf);
-    });
-
-    /** Vent */
-    // Transform CAD elements
-    let newVents = this.cadService.transformVents(data.ventilation.vents, this.fds.ventilation.vents);
-    // Clone and delete current elements
-    remove(this.fds.ventilation.vents);
-    // Set new meshes to current scenario
-    each(newVents, (vent) => {
-      this.fds.ventilation.vents.push(vent);
-    });
-
-    /** Vent Surfs */
-    // Transform CAD elements
-    let newJetfans = this.cadService.transformJetfans(data.ventilation.jetfans, this.fds.ventilation.jetfans);
-    // Clone and delete current elements
-    remove(this.fds.ventilation.jetfans);
-    // Set new meshes to current scenario
-    each(newJetfans, (jetfan) => {
-      this.fds.ventilation.jetfans.push(jetfan);
-    });
-
-    /** Vent Surfs */
-    // Transform CAD elements
-    let newFires = this.cadService.transformFires(data.fires, this.fds.fires.fires);
-    // Clone and delete current elements
-    remove(this.fds.fires.fires);
-    // Set new meshes to current scenario
-    each(newFires, (fire) => {
-      this.fds.fires.fires.push(fire);
-    });
-
-
-  }
-
-  /** Sync CAD object with GUI form */
-  syncUpdateItem(elementType: string, element: object) {
-
-    let method;
-    let data = {};
-
-    switch (elementType) {
-
-      case "mesh":
-        method = "updateMeshWeb";
-        data['idAC'] = element['idAC'];
-        data['xb'] = element['xb'];
-        break;
-
-      case "obst":
-        method = "updateObstWeb";
-        data['idAC'] = element['idAC'];
-        data['xb'] = element['xb'];
-        break;
-
-      default:
-        data = undefined;
-    }
-
-    if (this.isConnected && data != undefined) {
-      // Create message
-      let message: WebsocketMessageObject = {
-        method: method,
-        data: data,
-        id: this.idGenerator(),
-        requestID: '',
-        status: "waiting"
-      }
-      // Send message to CAD
-      this.sendMessage(message);
-
-    }
-    // Register offline changes ... if needed ??
-    else {
-      console.log("No CAD connected ...");
-
-    }
-
-  }
-
 
 }

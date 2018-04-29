@@ -32,22 +32,8 @@
                     <i class="material-icons">add_box</i>
                     <label>Add Risk Scenario</label>
                 </div>
-                <div class="add-button" (click)="addFdsScenario(project.id)">
-                    <i class="material-icons ml+">add_box</i>
-                    <label>Add FDS Scenario</label>
-                </div>
             </div>
         </div>
-        <div class="scenario-item" *ngFor="let fdsScenario of project.fdsScenarios; index as fdsScenarioIndex;" [ngClass]="main.currentFdsScenario != undefined && fdsScenario.id == main.currentFdsScenario.id ? 'active' : ''">
-            <div class="scenario-signature" (click)="setCurrentFdsScenario(project.id, fdsScenario.id)">
-                <i class="material-icons ico">apps</i>
-            </div>
-            <div class="scenario-controls">
-                <input type="text" [(ngModel)]="fdsScenario.name" [ngModelOptions]="{updateOn:'blur'}" (blur)="updateFdsScenario(project.id, fdsScenario.id)" />
-                <i class="material-icons ml+" (click)="downloadFdsScenario(project.id, fdsScenario.id)">file_download</i>
-                <i class="material-icons ml+ red" (click)="deleteFdsScenario(projectIndex, fdsScenarioIndex)">delete_forever</i>
-            </div>
-        </div>	
         <div class="scenario-item" *ngFor="let riskScenario of project.riskScenarios; index as riskScenarioIndex;" [ngClass]="main.currentRiskScenario != undefined && riskScenario.id == main.currentRiskScenario.id ? 'active' : ''"> 
             <div class="scenario-signature" (click)="setCurrentRiskScenario(project.id, riskScenario.id)">
                 <i class="material-icons ico">equalizer</i>
