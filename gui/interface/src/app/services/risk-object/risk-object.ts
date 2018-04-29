@@ -5,7 +5,8 @@ import { General } from "./general";
 import { get } from "lodash";
 
 export interface RiskObject {
-    general: {},
+    general: General,
+    geometry: any,
     buildingCharacteristic: BuildingCharacteristic,
     buildingInfrastructure: BuildingInfrastructure,
     settings: Settings
@@ -29,7 +30,7 @@ export class Risk {
         this.geometry = get(base, 'geometry', {});
         this.buildingCharacteristic = get(base, 'buildingCharacteristic') === undefined ? new BuildingCharacteristic("{}") : new BuildingCharacteristic(JSON.stringify(base.buildingCharacteristic));
         this.buildingInfrastructure = get(base, 'buildingInfrastructure') === undefined ? new BuildingInfrastructure("{}") : new BuildingInfrastructure(JSON.stringify(base.buildingInfrastructure));
-        this.settings = get(base, 'settings') === undefined ? new Settings("{}") : new Settings(JSON.stringify(base.buildingInfrastructure));
+        this.settings = get(base, 'settings') === undefined ? new Settings("{}") : new Settings(JSON.stringify(base.settings));
     }
 
     public toJSON() : object {
@@ -38,7 +39,7 @@ export class Risk {
             geometry: this.geometry,
             buildingCharacteristic: this.buildingCharacteristic.toJSON(),
             buildingInfrastructure: this.buildingInfrastructure.toJSON(),
-            settings: this.settings
+            settings: this.settings.toJSON()
         }
         return risk;
     }

@@ -10,7 +10,7 @@
         <label>Alarming type:</label>
         <div class="field-container">
           <select [(ngModel)]="buildingInfrastructure.alarming" (change)="setPreMovementTimes()">
-            <option *ngFor="let element of ALARMING" [ngValue]="element.value">{{element.label}}</option>
+            <option *ngFor="let element of ALARMING | slice:alarmingSliceMin:alarmingSliceMax" [ngValue]="element.value">{{element.label}}</option>
           </select>
         </div>
       </div>

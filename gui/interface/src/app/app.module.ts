@@ -65,6 +65,7 @@ import { ResultsComponent } from './views/main/risk/results/results.component';
 import { SettingsComponent } from './views/main/risk/settings/settings.component';
 import { GeneralRiskComponent } from './views/main/risk/general-risk/general-risk.component';
 import { BuildingInfrastructureComponent } from './views/main/risk/building-infrastructure/building-infrastructure.component';
+import { JsonRiskService } from './services/json-risk/json-risk.service';
 
 
 @NgModule({
@@ -113,6 +114,7 @@ import { BuildingInfrastructureComponent } from './views/main/risk/building-infr
     UiStateService,
     CategoryService,
     CadService,
+    JsonRiskService,
     {
       provide: HTTP_INTERCEPTORS,
       useClass: HttpManagerInterceptor,

@@ -1,6 +1,6 @@
 export interface HeatReleaseRate {
     comment?: string,
-    maxHrr: number[],
+    hrrpuaMinModeMax: number[],
     alphaMinModeMax: number[]
 }
 
@@ -47,9 +47,10 @@ export interface DoorOpen {
 export interface SettingsObject {
     heatReleaseRate: HeatReleaseRate,
     originOfFire: OriginOfFire,
+    cConst: number,
+    preEvacuationTime: PreEvacuationTime,
     evacueesConcentration: EvacueesConcentration,
     evacueesSpeedParams: EvacueesSpeedParams,
-    preEvacuationTime: PreEvacuationTime,
     windowOpen: WindowOpen,
     outdoorTemperature: OutdoorTemperature,
     doorOpen: DoorOpen,

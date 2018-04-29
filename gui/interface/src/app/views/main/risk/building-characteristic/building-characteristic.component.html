@@ -15,18 +15,18 @@
         </div>
       </div>
       <div>
-        <label>Complexity level:</label>
-        <div class="field-container">
-          <select [(ngModel)]="buildingCharacteristic.complexity" (change)="setPreMovementTimes()">
-            <option *ngFor="let element of COMPLEXITY" [ngValue]="element.value">{{element.label}}</option>
-          </select>
-        </div>
-      </div>
-      <div>
         <label>Managment level:</label>
         <div class="field-container">
           <select [(ngModel)]="buildingCharacteristic.managment" (change)="setPreMovementTimes()">
             <option *ngFor="let element of MANAGMENT" [ngValue]="element.value">{{element.label}}</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Complexity level:</label>
+        <div class="field-container">
+          <select [(ngModel)]="buildingCharacteristic.complexity" (change)="setPreMovementTimes()">
+            <option *ngFor="let element of COMPLEXITY | slice:complexitySliceMin:complexitySliceMax" [ngValue]="element.value">{{element.label}}</option>
           </select>
         </div>
       </div>

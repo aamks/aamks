@@ -1,7 +1,7 @@
 import { get } from 'lodash';
 import { RiskEntities } from '../../enums/risk/entities/risk-entities';
 
-export interface GeneralObject {
+export interface GeneralInterface {
 	projectName: string,
 	simulationTime: number,
 	numberOfSimulations: number,
@@ -29,8 +29,8 @@ export class General {
 
 	constructor(jsonString: string) {
 
-		let base: GeneralObject;
-		base = <GeneralObject>JSON.parse(jsonString);
+		let base: GeneralInterface;
+		base = <GeneralInterface>JSON.parse(jsonString);
 
 		let GENERAL = RiskEntities.general;
 

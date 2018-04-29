@@ -9,13 +9,19 @@ import { RiskScenario } from './risk-scenario';
 import { find, findIndex } from 'lodash';
 import { Risk } from '../risk-object/risk-object';
 import { NotifierService } from 'angular-notifier';
+import { JsonRiskService } from '../json-risk/json-risk.service';
 
 @Injectable()
 export class RiskScenarioService {
 
   main: Main;
 
-  constructor(private mainService: MainService, private httpManager: HttpManagerService, private readonly notifierService: NotifierService) {
+  constructor(
+    private mainService: MainService, 
+    private httpManager: HttpManagerService, 
+    private readonly notifierService: NotifierService,
+    private jsonRiskService: JsonRiskService
+  ) {
     this.mainService.getMain().subscribe(main => this.main = main);
   }
 
@@ -28,9 +34,11 @@ export class RiskScenarioService {
 
     // Set current scenario in main object
     this.httpManager.get('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId).then((result: Result) => {
+      console.log('Result data:');
+      console.log(result.data);
       this.main.currentRiskScenario = new RiskScenario(JSON.stringify(result.data));
-      console.log(this.main.currentRiskScenario.riskObject);
-
+      console.log('currentRiskScenario');
+      console.log(this.main.currentRiskScenario);
       // Set current project in main object
       let project = find(this.main.projects, function (o) {
         return o.id == projectId;
@@ -114,7 +122,8 @@ export class RiskScenarioService {
 
   public runRiskScenario() {
     let riskScenario = this.main.currentRiskScenario;
-    this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/runRiskScenario/' + riskScenario.id, JSON.stringify(riskScenario.toJSON())).then((result: Result) => {
+    let inputJson = this.jsonRiskService.createInputFile();
+    this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/runRiskScenario/' + riskScenario.id, JSON.stringify(inputJson)).then((result: Result) => {
       this.notifierService.notify(result.meta.status, result.meta.details[0]);
     });
 

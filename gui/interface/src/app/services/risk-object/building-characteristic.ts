@@ -1,18 +1,20 @@
 import { RiskEntities } from "../../enums/risk/entities/risk-entities";
 import { get } from "lodash";
 
-export interface BuildingCharacteristicObject {
+export interface MaterialsInterface {
+    wall: string,
+    ceiling: string,
+    floor: string,
+    thicknessWall: number,
+    thicknessCeiling: number,
+    thicknessFloor: number
+}
+
+export interface BuildingCharacteristicInterface {
     type: any,
     complexity: string,
     managment: string,
-    materials: {
-        wall: any,
-        ceiling: any,
-        floor: any,
-        thicknessWall: any,
-        thicknessCeiling: any,
-        thicknessFloor: any
-    }
+    materials: MaterialsInterface
 }
 
 export class BuildingCharacteristic {
@@ -20,26 +22,26 @@ export class BuildingCharacteristic {
     private _type: any;
     private _complexity: string;
     private _managment: string;
-    private _materials: any;
+    private _materials: MaterialsInterface;
 
     constructor(jsonString: string) {
 
-        let base: BuildingCharacteristicObject;
-        base = <BuildingCharacteristicObject>JSON.parse(jsonString);
+        let base: BuildingCharacteristicInterface;
+        base = <BuildingCharacteristicInterface>JSON.parse(jsonString);
 
         let CHARACTERISTIC = RiskEntities.characteristic;
 
         this.type = get(base, 'type', CHARACTERISTIC.type.default);
-        this.complexity = get(base, 'simulation_time', CHARACTERISTIC.complexity.default) as string;
-        this.managment = get(base, 'number_of_simulations', CHARACTERISTIC.managment.default) as string;
+        this.complexity = get(base, 'complexity', CHARACTERISTIC.complexity.default) as string;
+        this.managment = get(base, 'managment', CHARACTERISTIC.managment.default) as string;
 
         this.materials = {
-            wall: get(base.materials, 'wall', 'brick'),
-            ceiling: get(base.materials, 'ceiling', 'concrete'),
-            floor: get(base.materials, 'floor', 'concrete'),
-            thicknessWall: get(base, 'materials.thicknessWall', CHARACTERISTIC.materials.thicknessWall.default),
-            thicknessCeiling: get(base, 'materials.thicknessCeiling', CHARACTERISTIC.materials.thicknessCeiling.default),
-            thicknessFloor: get(base, 'materials.thicknessFloor', CHARACTERISTIC.materials.thicknessFloor.default),
+            wall: get(base.materials, 'wall', 'brick') as string,
+            ceiling: get(base.materials, 'ceiling', 'concrete') as string,
+            floor: get(base.materials, 'floor', 'concrete') as string,
+            thicknessWall: get(base.materials, 'thicknessWall', CHARACTERISTIC.materials.thicknessWall.default) as number,
+            thicknessCeiling: get(base.materials, 'thicknessCeiling', CHARACTERISTIC.materials.thicknessCeiling.default) as number,
+            thicknessFloor: get(base.materials, 'thicknessFloor', CHARACTERISTIC.materials.thicknessFloor.default) as number,
         };
     }
 
@@ -93,19 +95,20 @@ export class BuildingCharacteristic {
 
     /**
      * Getter materials
-     * @return {any}
+     * @return {MaterialsInterface}
      */
-    public get materials(): any {
-        return this._materials;
-    }
+	public get materials(): MaterialsInterface {
+		return this._materials;
+	}
 
     /**
      * Setter materials
-     * @param {any} value
+     * @param {MaterialsInterface} value
      */
-    public set materials(value: any) {
-        this._materials = value;
-    }
+	public set materials(value: MaterialsInterface) {
+		this._materials = value;
+	}
+
 
     public toJSON(): object {
         let buildingCharacteristic = {

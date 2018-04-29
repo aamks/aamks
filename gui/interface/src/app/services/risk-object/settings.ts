@@ -5,11 +5,13 @@ import { SettingsObject, HeatReleaseRate, OriginOfFire, EvacueesConcentration, E
 
 export class Settings {
 
+    private _userDefinedData: boolean;
     private _heatReleaseRate: HeatReleaseRate;
     private _originOfFire: OriginOfFire;
+    private _cConst: number;
+    private _preEvacuationTime: PreEvacuationTime;
     private _evacueesConcentration: EvacueesConcentration;
     private _evacueesSpeedParams: EvacueesSpeedParams;
-    private _preEvacuationTime: PreEvacuationTime;
     private _windowOpen: WindowOpen;
     private _outdoorTemperature: OutdoorTemperature;
     private _doorOpen: DoorOpen;
@@ -21,15 +23,23 @@ export class Settings {
 
         let SETTINGS = RiskEntities.settings;
 
+        this.userDefinedData = get(base, 'userDefinedData', false);
+
         this.heatReleaseRate = {
             comment: get(base.heatReleaseRate, 'comment', SETTINGS.heatReleaseRate.comment.default) as string,
-            maxHrr: get(base.heatReleaseRate, 'max_hrr', SETTINGS.heatReleaseRate.maxHrr.default) as number[],
+            hrrpuaMinModeMax: get(base.heatReleaseRate, 'hrrpuaMinModeMax', SETTINGS.heatReleaseRate.hrrpuaMinModeMax.default) as number[],
             alphaMinModeMax: get(base.heatReleaseRate, 'alphaMinModeMax', SETTINGS.heatReleaseRate.alphaMinModeMax.default) as number[]
         }
 
         this.originOfFire = {
             comment: get(base.originOfFire, 'comment', SETTINGS.originOfFire.comment.default) as string,
             fireStartsInRoomProbability: get(base.originOfFire, 'fireStartsInRoomProbability', SETTINGS.originOfFire.fireStartsInRoomProbability.default) as number,
+        }
+        this.cConst = get(base, 'cConst', SETTINGS.cConst.default) as number,
+        this.preEvacuationTime = {
+            comment: get(base.preEvacuationTime, 'comment', SETTINGS.preEvacuationTime.comment.default) as string,
+            meanAndSdOrdinaryRoom: get(base.preEvacuationTime, 'meanAndSdOrdinaryRoom', SETTINGS.preEvacuationTime.meanAndSdOrdinaryRoom.default) as number[],
+            meanAndSdRoomOfFireOrigin: get(base.preEvacuationTime, 'meanAndSdRoomOfFireOrigin', SETTINGS.preEvacuationTime.meanAndSdRoomOfFireOrigin.default) as number[],
         }
         this.evacueesConcentration = {
             comment: get(base.evacueesConcentration, 'comment', SETTINGS.evacueesConcentration.comment.default) as string,
@@ -40,15 +50,10 @@ export class Settings {
         }
         this.evacueesSpeedParams = {
             comment: get(base.evacueesSpeedParams, 'comment', SETTINGS.evacueesSpeedParams.comment.default) as string,
-            maxHSpeedMeanAndSd: get(base.evacueesSpeedParams, 'max_hSpeedMeanAndSd', SETTINGS.evacueesSpeedParams.maxHSpeedMeanAndSd.default) as number[],
-            maxVSpeedMeanAndSd: get(base.evacueesSpeedParams, 'max_vSpeedMeanAndSd', SETTINGS.evacueesSpeedParams.maxVSpeedMeanAndSd.default) as number[],
-            betaVMeanAndSd: get(base.evacueesSpeedParams, 'beta_vMeanAndSd', SETTINGS.evacueesSpeedParams.betaVMeanAndSd.default) as number[],
-            alphaVMeanAndSd: get(base.evacueesSpeedParams, 'alpha_vMeanAndSd', SETTINGS.evacueesSpeedParams.alphaVMeanAndSd.default) as number[],
-        }
-        this.preEvacuationTime = {
-            comment: get(base.preEvacuationTime, 'comment', SETTINGS.preEvacuationTime.comment.default) as string,
-            meanAndSdOrdinaryRoom: get(base.preEvacuationTime, 'meanAndSdOrdinaryRoom', SETTINGS.preEvacuationTime.meanAndSdOrdinaryRoom.default) as number[],
-            meanAndSdRoomOfFireOrigin: get(base.preEvacuationTime, 'meanAndSdRoomOfFireOrigin', SETTINGS.preEvacuationTime.meanAndSdRoomOfFireOrigin.default) as number[],
+            maxHSpeedMeanAndSd: get(base.evacueesSpeedParams, 'maxHSpeedMeanAndSd', SETTINGS.evacueesSpeedParams.maxHSpeedMeanAndSd.default) as number[],
+            maxVSpeedMeanAndSd: get(base.evacueesSpeedParams, 'maxVSpeedMeanAndSd', SETTINGS.evacueesSpeedParams.maxVSpeedMeanAndSd.default) as number[],
+            betaVMeanAndSd: get(base.evacueesSpeedParams, 'betaVMeanAndSd', SETTINGS.evacueesSpeedParams.betaVMeanAndSd.default) as number[],
+            alphaVMeanAndSd: get(base.evacueesSpeedParams, 'alphaVMeanAndSd', SETTINGS.evacueesSpeedParams.alphaVMeanAndSd.default) as number[],
         }
         this.windowOpen = {
             comment: get(base.windowOpen, 'comment', SETTINGS.windowOpen.comment.default) as string,
@@ -57,12 +62,28 @@ export class Settings {
         this.doorOpen = {
             comment: get(base.doorOpen, 'comment', SETTINGS.doorOpen.comment.default) as string,
             electroMagnetDoorIsOpenProbability: get(base.doorOpen, 'electroMagnetDoorIsOpenProbability', SETTINGS.doorOpen.electroMagnetDoorIsOpenProbability.default) as number,
-            doorCloserDoorIsOpenProbability: get(base.doorOpen, 'door_closerDoorIsOpenProbability', SETTINGS.doorOpen.electroMagnetDoorIsOpenProbability.default) as number,
+            doorCloserDoorIsOpenProbability: get(base.doorOpen, 'doorCloserDoorIsOpenProbability', SETTINGS.doorOpen.doorCloserDoorIsOpenProbability.default) as number,
             standardDoorIsOpenProbability: get(base.doorOpen, 'standardDoorIsOpenProbability', SETTINGS.doorOpen.standardDoorIsOpenProbability.default) as number,
             vventsNoFailureProbability: get(base.doorOpen, 'vventsNoFailureProbability', SETTINGS.doorOpen.vventsNoFailureProbability.default) as number,
         }
 
     }
+
+    /**
+     * Getter userDefinedData
+     * @return {boolean}
+     */
+	public get userDefinedData(): boolean {
+		return this._userDefinedData;
+	}
+
+    /**
+     * Setter userDefinedData
+     * @param {boolean} value
+     */
+	public set userDefinedData(value: boolean) {
+		this._userDefinedData = value;
+	}
 
     /**
      * Getter heatReleaseRate
@@ -95,6 +116,22 @@ export class Settings {
     public set originOfFire(value: OriginOfFire) {
         this._originOfFire = value;
     }
+
+    /**
+     * Getter cConst
+     * @return {number}
+     */
+	public get cConst(): number {
+		return this._cConst;
+	}
+
+    /**
+     * Setter cConst
+     * @param {number} value
+     */
+	public set cConst(value: number) {
+		this._cConst = value;
+	}
 
     /**
      * Getter evacueesConcentration
@@ -195,11 +232,13 @@ export class Settings {
     /** Export to json */
     public toJSON(): object {
         let settings = {
+            userDefinedData: this.userDefinedData,
             heatReleaseRate: this.heatReleaseRate,
             originOfFire: this.originOfFire,
+            cConst: this.cConst,
+            preEvacuationTime: this.preEvacuationTime,
             evacueesConcentration: this.evacueesConcentration,
             evacueesSpeedParams: this.evacueesSpeedParams,
-            preEvacuationTime: this.preEvacuationTime,
             windowOpen: this.windowOpen,
             doorOpen: this.doorOpen
         }

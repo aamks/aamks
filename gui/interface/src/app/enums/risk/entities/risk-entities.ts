@@ -11,7 +11,7 @@ export const RiskEntities =
             simulationTime: {
                 type: 'Real',
                 units: 's',
-                default: 0,
+                default: 1200,
                 help: '',
                 pattern: '',
                 valid_ranges: [{ minInclusive: 0, maxExclusive: '__' }],
@@ -109,8 +109,8 @@ export const RiskEntities =
             materials: {
                 thicknessWall: {
                     type: 'Real',
-                    units: '',
-                    default: '0',
+                    units: 'm',
+                    default: '0.2',
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -118,8 +118,8 @@ export const RiskEntities =
                 },
                 thicknessCeiling: {
                     type: 'Real',
-                    units: '',
-                    default: '0',
+                    units: 'm',
+                    default: '0.3',
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -127,8 +127,8 @@ export const RiskEntities =
                 },
                 thicknessFloor: {
                     type: 'Real',
-                    units: '',
-                    default: '0',
+                    units: 'm',
+                    default: '0.3',
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -139,42 +139,29 @@ export const RiskEntities =
         infrastructure: {
             hasDetectors: {
                 type: 'Logical',
-                units: '',
                 default: false,
                 help: '',
-                pattern: '',
-                valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
-                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
             hasSprinklers: {
                 type: 'Logical',
-                units: '',
                 default: false,
                 help: '',
-                pattern: '',
-                valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
-                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
             },
             hasTrainedStaff: {
                 type: 'Logical',
-                units: '',
                 default: false,
                 help: '',
-                pattern: ''
             },
             hasVa: {
                 type: 'Logical',
-                units: '',
                 default: false,
                 help: '',
                 pattern: ''
             },
             hasNshevs: {
                 type: 'Logical',
-                units: '',
                 default: false,
                 help: '',
-                pattern: ''
             },
             alarming_level: {
                 type: 'Character',
@@ -190,7 +177,7 @@ export const RiskEntities =
                 activationTemperature: {
                     type: 'Real',
                     units: 'C',
-                    default: 0,
+                    default: 68,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -199,7 +186,7 @@ export const RiskEntities =
                 activationTemperatureSd: {
                     type: 'Real',
                     units: '',
-                    default: 68,
+                    default: 3,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -208,7 +195,7 @@ export const RiskEntities =
                 rti: {
                     type: 'Real',
                     units: '',
-                    default: 0,
+                    default: 50,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -217,7 +204,7 @@ export const RiskEntities =
                 sprayDensity: {
                     type: 'Real',
                     units: '',
-                    default: 0,
+                    default: 0.0005,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -226,7 +213,7 @@ export const RiskEntities =
                 sprayDensitySd: {
                     type: 'Real',
                     units: '',
-                    default: 5,
+                    default: 0.0001,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -235,7 +222,7 @@ export const RiskEntities =
                 notBrokenProbability: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 0.96,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -265,7 +252,7 @@ export const RiskEntities =
                 activationTemperature: {
                     type: 'Real',
                     units: '',
-                    default: 0,
+                    default: 68,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -301,7 +288,7 @@ export const RiskEntities =
                 notBrokenProbability: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 0.96,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -312,10 +299,10 @@ export const RiskEntities =
         settings: {
             heatReleaseRate: {
                 comment: { type: 'Character', units: '', default: 'desc', help: '' },
-                maxHrr: {
+                hrrpuaMinModeMax: {
                     type: 'Real',
                     units: '',
-                    default: [500, 1200],
+                    default: [300, 1000, 1300],
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -324,14 +311,13 @@ export const RiskEntities =
                 alphaMinModeMax: {
                     type: 'Real',
                     units: '',
-                    default: [1, 3, 4],
+                    default: [0.0029, 0.047, 0.188],
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
                     reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
                 },
             },
-
             originOfFire: {
                 comment: {
                     type: 'Character',
@@ -348,7 +334,15 @@ export const RiskEntities =
                     reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
                 }
             },
-
+            cConst: {
+                type: 'Real',
+                units: '',
+                default: 58,
+                help: '',
+                pattern: '',
+                valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
+                reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
+            },
             evacueesConcentration: {
                 comment: {
                     type: 'Character',
@@ -358,7 +352,7 @@ export const RiskEntities =
                 cor: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 50,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -367,7 +361,7 @@ export const RiskEntities =
                 stai: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 50,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -376,7 +370,7 @@ export const RiskEntities =
                 room: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 7,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -385,7 +379,7 @@ export const RiskEntities =
                 hall: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 50,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -401,7 +395,7 @@ export const RiskEntities =
                 maxHSpeedMeanAndSd: {
                     type: 'Real',
                     units: '',
-                    default: [500, 1200],
+                    default: [120, 20],
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -410,7 +404,7 @@ export const RiskEntities =
                 maxVSpeedMeanAndSd: {
                     type: 'Real',
                     units: '',
-                    default: [500, 1200],
+                    default: [80, 20],
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -419,7 +413,7 @@ export const RiskEntities =
                 betaVMeanAndSd: {
                     type: 'Real',
                     units: '',
-                    default: [500, 1200],
+                    default: [-0.057, 0.015],
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -428,7 +422,7 @@ export const RiskEntities =
                 alphaVMeanAndSd: {
                     type: 'Real',
                     units: '',
-                    default: [500, 1200],
+                    default: [0.706, 0.069],
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -444,7 +438,7 @@ export const RiskEntities =
                 meanAndSdRoomOfFireOrigin: {
                     type: 'Real',
                     units: '',
-                    default: [500, 1200],
+                    default: [2.74, 0.58],
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -453,7 +447,7 @@ export const RiskEntities =
                 meanAndSdOrdinaryRoom: {
                     type: 'Real',
                     units: '',
-                    default: [500, 1200],
+                    default: [5.246, 0.101],
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -482,7 +476,7 @@ export const RiskEntities =
                 electroMagnetDoorIsOpenProbability: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 0.04,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -491,7 +485,7 @@ export const RiskEntities =
                 doorCloserDoorIsOpenProbability: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 0.14,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -500,7 +494,7 @@ export const RiskEntities =
                 standardDoorIsOpenProbability: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 0.5,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -509,7 +503,7 @@ export const RiskEntities =
                 vventsNoFailureProbability: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 0.96,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
