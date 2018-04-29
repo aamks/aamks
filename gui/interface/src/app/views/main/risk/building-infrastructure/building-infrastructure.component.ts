@@ -24,8 +24,8 @@ export class BuildingInfrastructureComponent implements OnInit {
   settings: Settings;
 
   // Component elements
-  private alarmingSliceMin: number = 0;
-  private alarmingSliceMax: number = 3;
+  alarmingSliceMin: number = 0;
+  alarmingSliceMax: number = 3;
 
   ALARMING = RiskEnums.alarming;
   DETECTOR_TYPE = RiskEnums.detectorType;

@@ -23,8 +23,8 @@ export class BuildingCharacteristicComponent implements OnInit {
   settings: Settings;
 
   // Component elements
-  private complexitySliceMin: number = 0;
-  private complexitySliceMax: number = 3;
+  complexitySliceMin: number = 0;
+  complexitySliceMax: number = 3;
 
   TYPE = sortBy(RiskEnums.buildingType, ['label']);
   COMPLEXITY = RiskEnums.complexity;
