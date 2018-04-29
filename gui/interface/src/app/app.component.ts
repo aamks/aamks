@@ -52,7 +52,7 @@ export class AppComponent {
 
     // For developing purpose
     setTimeout(() => {
-      this.router.navigate(['risk/results']);
+     //this.router.navigate(['risk/results']);
 
     }, 1000);
     setTimeout(() => {
