@@ -21,8 +21,8 @@ import zipfile
 from include import SendMessage
 
 
-SIMULATION_TYPE = 'NO_CFAST'
-#SIMULATION_TYPE = 1
+#SIMULATION_TYPE = 'NO_CFAST'
+SIMULATION_TYPE = 1
 SendMessage("mimooh")
 
 

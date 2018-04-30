@@ -46,7 +46,7 @@ class OnInit():
             pass
 # }}}
     def _create_iterations_sequence(self):# {{{
-        ''' 
+        '''
         For a given project we may run simulation 0 to 999. Then we may wish to
         run 100 simulations more and have them numbered here: from=1000 to=1099
         These from and to numbers are unique for the project and are used as
@@ -56,8 +56,8 @@ class OnInit():
         max(iteration)+1 
         '''
 
-        project=self.conf['PROJECT_NAME']
-        how_many=self.conf['NUMBER_OF_SIMULATIONS']
+        project=self.conf['general']['project_id']
+        how_many=self.conf['general']['number_of_simulations']
 
         r=[]
         try:
@@ -78,7 +78,7 @@ class OnInit():
         irange=self._create_iterations_sequence()
         for i in range(*irange):
             os.makedirs("{}/{}".format(workers_dir,i), exist_ok=True)
-            self.p.query("INSERT INTO simulations(iteration,project) VALUES(%s,%s)", (i,self.conf['PROJECT_NAME']))
+            self.p.query("INSERT INTO simulations(iteration,project) VALUES(%s,%s)", (i,self.conf['general']['project_id']))
 
 # }}}
     def _setup_vis(self):# {{{
@@ -144,7 +144,7 @@ class OnInit():
     def _info(self):# {{{
         print("Your AAMKS variables can be adjusted in your ~/.bashrc")
         Popen('env | grep AAMKS', shell=True)
-        print("Project name:", self.conf['PROJECT_NAME'])
+        print("Project id:", self.conf['general']['project_id'])
 # }}}
     def _http_serve(self):# {{{
         ''' 
@@ -194,8 +194,8 @@ class OnEnd():
         ''' If we chosen to see the animated demo of aamks. '''
 
         if self.conf['PROJECT_NAME'] == 'aanim':
-            si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
-            project=self.conf['PROJECT_NAME']
+            si=SimIterations(self.conf['general']['project_id'], self.conf['general']['number_of_simulations'])
+            project=self.conf['general']['project_id']
             for i in range(*si.get()):
                 worker_dir="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                 shutil.copyfile("{}/examples/aanim/f0.zip".format(os.environ['AAMKS_PATH'])    , "{}/f0.zip".format(worker_dir))

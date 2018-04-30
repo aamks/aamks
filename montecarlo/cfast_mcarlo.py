@@ -40,10 +40,10 @@ class CfastMcarlo():
         self.p=Psql()
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        self.dists=self.json.read("{}/distributions.json".format(os.environ['AAMKS_PROJECT']))
+        #self.dists=self.json.read("{}/distributions.json".format(os.environ['AAMKS_PROJECT']))
         self._psql_collector=OrderedDict()
 
-        si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
+        si=SimIterations(self.conf['general']['project_id'], self.conf['general']['number_of_simulations'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._new_psql_log()
@@ -53,13 +53,13 @@ class CfastMcarlo():
 
 # DISTRIBUTIONS / DRAWS
     def _draw_outdoor_temp(self):# {{{
-        mean,std_dev=self.dists['outdoor_temperature']['mean_and_sd']
+        mean,std_dev=self.conf['general']['outdoor_temperature']
         outdoor_temp=round(normal(mean,std_dev),2)
         self._psql_log_variable('outdoort',outdoor_temp)
         return outdoor_temp
 # }}}
     def _draw_fire(self):# {{{
-        origin_in_room=binomial(1,self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['origin_of_fire']['fire_starts_in_room_probability'])
+        origin_in_room=binomial(1,self.conf['settings']['fire_starts_in_room_probability'])
         
         self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY name") ]
         self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY name") ]
@@ -110,9 +110,11 @@ class CfastMcarlo():
         middle, then fading on the right. At the end read hrrs at given times.
         '''
 
-        i=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['heat_release_rate']
-        hrr_peak=int(uniform(i['max_HRR'][0],i['max_HRR'][1])*1000)
-        alpha=int(triangular(i['alfa_min_mode_max'][0], i['alfa_min_mode_max'][1], i['alfa_min_mode_max'][2])*1000)
+        i=self.conf['settings']['heat_release_rate']
+        #'TODO:' HRR_PEAK is calculted as each room has 10 m2, by HRRPUA times 10. It should be better address, by choosing room area and vent characteristics
+        hrr_peak=int(triangular(i['hrrpua_min_mode_max'][0], i['hrrpua_min_mode_max'][1], i['hrrpua_min_mode_max'][2]) * 10)
+        print("PEAK", hrr_peak)
+        alpha=int(triangular(i['alpha_min_mode_max'][0], i['alpha_min_mode_max'][1], i['alpha_min_mode_max'][2])*1000)
 
         self._psql_log_variable('hrrpeak',hrr_peak)
         self._psql_log_variable('alpha',alpha/1000.0)
@@ -167,16 +169,16 @@ class CfastMcarlo():
         '''
 
         if Type=='D':
-            how_much_open=binomial(1,self.dists['door_open']['standard_door_is_open_probability'])
+            how_much_open=binomial(1,self.conf['settings']['door_open']['standard_door_is_open_probability'])
             self._psql_log_variable(Type.lower(),how_much_open)
         elif Type=='C':
-            how_much_open=binomial(1,self.dists['door_open']['door_closer_door_is_open_probability'])
+            how_much_open=binomial(1,self.conf['settings']['door_open']['door_closer_door_is_open_probability'])
             self._psql_log_variable(Type.lower(),how_much_open)
         elif Type=='E':
-            how_much_open=binomial(1,self.dists['door_open']['electro_magnet_door_is_open_probability'])
+            how_much_open=binomial(1,self.conf['settings']['door_open']['electro_magnet_door_is_open_probability'])
             self._psql_log_variable(Type.lower(),how_much_open)
         elif Type=='VNT':
-            how_much_open=binomial(1,self.dists['door_open']['vvents_no_failure_probability'])
+            how_much_open=binomial(1,self.conf['settings']['door_open']['vvents_no_failure_probability'])
             self._psql_log_variable(Type.lower(),how_much_open)
         elif Type=='HOLE':
             how_much_open=1
@@ -184,15 +186,15 @@ class CfastMcarlo():
         return how_much_open
 # }}}
     def _draw_fire_detector_triggers(self):# {{{
-        mean,std_dev=self.dists['fire_detector_trigger_temperature']['mean_and_sd']
-        zero_or_one=binomial(1,self.dists['fire_detector_trigger_temperature']['not_broken_probability'])
+        mean,std_dev=self.conf['infrastructure']['detectors']['trigger_temperature_mean_and_sd']
+        zero_or_one=binomial(1,self.conf['infrastructure']['detectors']['not_broken_probability'])
         chosen=round(normal(mean, std_dev),2) * zero_or_one
         self._psql_log_variable('detector',chosen)
         return str(chosen)
 # }}}
     def _draw_sprinkler_triggers(self):# {{{
-        mean,std_dev=self.dists['sprinkler_trigger_temperature']['mean_and_sd']
-        zero_or_one=binomial(1,self.dists['sprinkler_trigger_temperature']['not_broken_probability'])
+        mean,std_dev=self.conf['infrastructure']['sprinklers']['trigger_temperature_mean_and_sd']
+        zero_or_one=binomial(1,self.conf['infrastructure']['sprinklers']['not_broken_probability'])
         chosen=round(normal(mean, std_dev),2) * zero_or_one
         self._psql_log_variable('sprinkler',chosen)
         return str(chosen)
@@ -230,7 +232,7 @@ class CfastMcarlo():
         '''
 
         txt=(
-        'VERSN,7,{}'.format(self.conf['PROJECT_NAME']),
+        'VERSN,7,{}_{}'.format('SIM', self.conf['general']['project_id']),
         'TIMES,600,-120,10,10',
         'EAMB,{},101300,0'.format(273+outdoor_temp),
         'TAMB,293.15,101300,0,50',
@@ -452,7 +454,7 @@ class CfastMcarlo():
         want in each of your 1.000 cfast.in files.
         '''
 
-        txt=self.conf['CFAST_STATIC_RECORDS']
+        txt=self.conf['infrastructure']['cfast_static_records']
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
 
@@ -494,7 +496,7 @@ class CfastMcarlo():
         for k,v in self._psql_collector[self._sim_id].items():
             pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
         data=', '.join(pairs)
-        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self.conf['PROJECT_NAME'], self._sim_id))
+        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self.conf['general']['project_id'], self._sim_id))
 
         self.json.write(self.conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
 #}}}

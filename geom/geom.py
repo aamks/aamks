@@ -152,7 +152,7 @@ class Geom():
         name='{}_{}'.format(k[0], global_type_id)
 
         #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , 'material_ceiling'            , 'material_floor'            , 'material_wall'            , 'sprinkler' , 'detector' , 'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z' , 'fire_model_ignore')
-        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['MATERIAL_CEILING'] , self.conf['MATERIAL_FLOOR'] , self.conf['MATERIAL_WALL'] , 0           , 0          , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
+        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['characteristic']['material_ceiling'] , self.conf['characteristic']['material_floor'] , self.conf['characteristic']['material_wall'] , 0           , 0          , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
 
 # }}}
     def _init_helper_variables(self):# {{{
@@ -269,9 +269,9 @@ class Geom():
 
 # }}}
     def _auto_detectors_and_sprinklers(self):# {{{
-        if self.conf['AUTO_DETECTORS'] == 1:
+        if self.conf['infrastructure']['has_detectors']:
             self.s.query("UPDATE aamks_geom set detector = 1 WHERE type_pri='COMPA'")
-        if self.conf['AUTO_SPRINKLERS'] == 1:
+        if self.conf['infrastructure']['has_sprinklers']:
             self.s.query("UPDATE aamks_geom set sprinkler = 1 WHERE type_pri='COMPA'")
 # }}}
     def _make_elem_counter(self):# {{{
