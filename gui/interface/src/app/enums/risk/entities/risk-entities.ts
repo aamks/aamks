@@ -47,7 +47,7 @@ export const RiskEntities =
             outdoorTemperature: {
                 type: 'Real',
                 units: 'C',
-                default: 20,
+                default: 10.75,
                 help: '',
                 pattern: '',
                 valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -56,7 +56,7 @@ export const RiskEntities =
             outdoorTemperatureSd: {
                 type: 'Real',
                 units: 'C',
-                default: 5,
+                default: 6.5,
                 help: '',
                 pattern: '',
                 valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
