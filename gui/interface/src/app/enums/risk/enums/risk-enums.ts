@@ -29,10 +29,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 8, // z bs 9999
+                evacCorridorDensity: 20, // z bs 9999
+                evacStaircaseDensity: 50, // z bs 9999
+                evacHallDensity: 30, // z bs 9999
             },
             {
                 label: 'Office (open plan)',
@@ -40,10 +40,10 @@ export const RiskEnums =
                 type: 'a',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 50, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 50, // z bs 9999
+                evacHallDensity: 10, // z bs 9999
             },
             {
                 label: 'Amusement arcade',
@@ -51,9 +51,9 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 2, // z bs 9999
-                evacStaircaseDensity: 3, // z bs 9999
+                evacRoomDensity: 0.5, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 30, // z bs 9999
                 evacHallDensity: 4, // z bs 9999
             },
             {
@@ -62,10 +62,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.047,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 5, // z bs 9999
+                evacCorridorDensity: 20, // z bs 9999
+                evacStaircaseDensity: 20, // z bs 9999
+                evacHallDensity: 20, // z bs 9999
             },
             {
                 label: 'Art gallery',
@@ -73,10 +73,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 5, // z bs 9999
+                evacCorridorDensity: 20, // z bs 9999
+                evacStaircaseDensity: 20, // z bs 9999
+                evacHallDensity: 20, // z bs 9999
             },
             {
                 label: 'Assembly hall',
@@ -84,10 +84,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 30, // z bs 9999
+                evacCorridorDensity: 30, // z bs 9999
+                evacStaircaseDensity: 30, // z bs 9999
+                evacHallDensity: 30, // z bs 9999
             },
             {
                 label: 'Bank',
@@ -95,10 +95,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.0029,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 3, // z bs 9999
+                evacCorridorDensity: 20, // z bs 9999
+                evacStaircaseDensity: 20, // z bs 9999
+                evacHallDensity: 20, // z bs 9999
             },
             {
                 label: 'Bar',
@@ -106,10 +106,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 0.3, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 10, // z bs 9999
+                evacHallDensity: 10, // z bs 9999
             },
             {
                 label: 'Bazaar',
@@ -117,10 +117,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.047,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 2, // z bs 9999
+                evacCorridorDensity: 20, // z bs 9999
+                evacStaircaseDensity: 20, // z bs 9999
+                evacHallDensity: 20, // z bs 9999
             },
             {
                 label: 'Business centre',
@@ -128,10 +128,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 7, // z bs 9999
+                evacCorridorDensity: 20, // z bs 9999
+                evacStaircaseDensity: 20, // z bs 9999
+                evacHallDensity: 20, // z bs 9999
             },
             {
                 label: 'Canteen',
@@ -140,9 +140,9 @@ export const RiskEnums =
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
                 evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 20, // z bs 9999
+                evacHallDensity: 10, // z bs 9999
             },
             {
                 label: 'School',
@@ -150,10 +150,10 @@ export const RiskEnums =
                 type: 'a',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 2, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 20, // z bs 9999
+                evacHallDensity: 20, // z bs 9999
             },
             {
                 label: 'Schopping mall',
@@ -161,10 +161,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 4, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 10, // z bs 9999
+                evacHallDensity: 4, // z bs 9999
             },
             {
                 label: 'Dance area',
@@ -172,7 +172,7 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
+                evacRoomDensity: 0.5, // z bs 9999
                 evacCorridorDensity: 1, // z bs 9999
                 evacStaircaseDensity: 1, // z bs 9999
                 evacHallDensity: 1, // z bs 9999
@@ -183,10 +183,10 @@ export const RiskEnums =
                 type: 'c2',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 5, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 10, // z bs 9999
+                evacHallDensity: 10, // z bs 9999
             },
             {
                 label: 'Exhibiotion area',
@@ -194,10 +194,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.047,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 1.5, // z bs 9999
+                evacCorridorDensity: 1.5, // z bs 9999
+                evacStaircaseDensity: 10, // z bs 9999
+                evacHallDensity: 1.5, // z bs 9999
             },
             {
                 label: 'Factory area',
@@ -205,10 +205,10 @@ export const RiskEnums =
                 type: 'a',
                 alphaMod: 0.047,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 5, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 20, // z bs 9999
+                evacHallDensity: 10, // z bs 9999
             },
             {
                 label: 'Gym or leisure centre',
@@ -228,10 +228,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 0.6, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 10, // z bs 9999
+                evacHallDensity: 10, // z bs 9999
             },
             {
                 label: 'Restaurant',
@@ -240,9 +240,9 @@ export const RiskEnums =
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
                 evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 10, // z bs 9999
+                evacHallDensity: 10, // z bs 9999
             },
             {
                 label: 'Shop sales',
@@ -250,10 +250,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.047,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 2, // z bs 9999
+                evacCorridorDensity: 5, // z bs 9999
+                evacStaircaseDensity: 10, // z bs 9999
+                evacHallDensity: 2, // z bs 9999
             },
             {
                 label: 'Storage or warehousing',
@@ -261,10 +261,10 @@ export const RiskEnums =
                 type: 'a',
                 alphaMod: 0.18,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 30, // z bs 9999
+                evacCorridorDensity: 30, // z bs 9999
+                evacStaircaseDensity: 30, // z bs 9999
+                evacHallDensity: 30, // z bs 9999
             },
             {
                 label: 'Theatre cinema concert hall',
@@ -272,10 +272,10 @@ export const RiskEnums =
                 type: 'b',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 0.4, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 10, // z bs 9999
+                evacHallDensity: 10, // z bs 9999
             },
             {
                 label: 'Medical day centre',
@@ -283,10 +283,10 @@ export const RiskEnums =
                 type: 'd1',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 7, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 10, // z bs 9999
+                evacHallDensity: 10, // z bs 9999
             },
             {
                 label: 'Hospital, nursing home',
@@ -294,10 +294,10 @@ export const RiskEnums =
                 type: 'd2',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 10, // z bs 9999
+                evacCorridorDensity: 20, // z bs 9999
+                evacStaircaseDensity: 20, // z bs 9999
+                evacHallDensity: 20, // z bs 9999
             },
             {
                 label: 'Railway, bus station or airport',
@@ -305,10 +305,10 @@ export const RiskEnums =
                 type: 'e',
                 alphaMod: 0.012,
                 hrrpua: 500, // pokazac w ustawieniach
-                evacRoomDensity: 1, // z bs 9999
-                evacCorridorDensity: 1, // z bs 9999
-                evacStaircaseDensity: 1, // z bs 9999
-                evacHallDensity: 1, // z bs 9999
+                evacRoomDensity: 2, // z bs 9999
+                evacCorridorDensity: 10, // z bs 9999
+                evacStaircaseDensity: 10, // z bs 9999
+                evacHallDensity: 10, // z bs 9999
             },
         ],
         preTimes: [
