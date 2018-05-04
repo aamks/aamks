@@ -69,4 +69,8 @@ export class HeaderComponent implements OnInit {
     window.location.href = this.main.hostAddres + '/logout';
   }
 
+  activate(option: string) {
+    this.uiState.active = option;
+  }
+
 }
