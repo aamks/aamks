@@ -28,6 +28,7 @@ from include import Sqlite
 from include import Json
 from include import Dump as dd
 from include import SimIterations
+from scipy.stats.distributions import lognorm
 
 # }}}
 
@@ -38,11 +39,11 @@ class EvacMcarlo():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        self.dists=self.json.read("{}/distributions.json".format(os.environ['AAMKS_PROJECT']))
+        #self.dists=self.json.read("{}/distributions.json".format(os.environ['AAMKS_PROJECT']))
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._make_doors_centers()
 
-        si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
+        si=SimIterations(self.conf['general']['project_id'], self.conf['general']['number_of_simulations'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._dispatch_evacuees()
@@ -61,7 +62,7 @@ class EvacMcarlo():
         First we try to return ROOM_1_2, then ROOM_FLOOR_1, then ROOM
         '''
 
-        z=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['evacuees_concentration']
+        z=self.conf['settings']['evacuees_concentration']
         for i in [name, "{}_FLOOR_{}".format(type_sec,floor), type_sec]:
             if i in z.keys():
                 return z[i]
@@ -142,15 +143,15 @@ class EvacMcarlo():
         ''' An evacuee pre_evacuates from either ordinary room or from the room of fire origin. '''
 
         if room != self.conf['ROOM_OF_FIRE_ORIGIN']:
-            pre_evacuation=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['pre_evacuation_time']['mean_and_sd_ordinary_room']
+            pre_evacuation=self.conf['settings']['pre_evacuation_time']['mean_and_sd_ordinary_room']
         else:
-            pre_evacuation=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['pre_evacuation_time']['mean_and_sd_room_of_fire_origin']
-        return round(lognormal(pre_evacuation[0], pre_evacuation[1]), 2)
+            pre_evacuation=self.conf['settings']['pre_evacuation_time']['mean_and_sd_room_of_fire_origin']
+        return round(lognorm(s=1, loc=pre_evacuation[0], scale=pre_evacuation[1]).rvs(), 2)
 # }}}
 
     def _static_evac_conf(self):# {{{
         self._evac_conf=self.conf
-        self._evac_conf['WORKSPACE']="{}_{:04d}".format(self.conf['PROJECT_NAME'], self._sim_id)
+        self._evac_conf['WORKSPACE']="{}_{:04d}".format(self.conf['general']['project_id'], self._sim_id)
         self._evac_conf['SIM_ID']=self._sim_id
         self._evac_conf['SERVER']=os.environ['AAMKS_SERVER']
 # }}}
@@ -173,7 +174,7 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ROADMAP_ROOMS']  = self.evacuees_roadmaps_rooms[floor][i]
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION'] = self._evacuee_pre_evacuation(self.evacuees_roadmaps_rooms[floor][i])
 
-                speeds=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['evacuees_speed_params']
+                speeds=self.conf['settings']['evacuees_speed_params']
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ALPHA_V']        = round(normal(*speeds['alpha_v_mean_and_sd'])     , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['BETA_V']         = round(normal(*speeds['beta_v_mean_and_sd'])      , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(*speeds['max_h_speed_mean_and_sd']) , 2)

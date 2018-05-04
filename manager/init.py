@@ -182,8 +182,8 @@ class OnEnd():
         if os.environ['AAMKS_USE_GEARMAN']=='0':
             return
 
-        si=SimIterations(self.conf['PROJECT_NAME'], self.conf['NUMBER_OF_SIMULATIONS'])
-        project=self.conf['PROJECT_NAME']
+        si=SimIterations(self.conf['general']['project_id'], self.conf['general']['number_of_simulations'])
+        project=self.conf['general']['project_id']
         for i in range(*si.get()):
             worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
             gearman="gearman -f aRun 'http://{}/users{} {} &'".format(os.environ['AAMKS_SERVER'],worker.replace("/home/aamks_users",""), project)
@@ -193,7 +193,7 @@ class OnEnd():
     def _visualize_aanim(self):# {{{
         ''' If we chosen to see the animated demo of aamks. '''
 
-        if self.conf['PROJECT_NAME'] == 'aanim':
+        if self.conf['general']['project_id'] == 'aanim':
             si=SimIterations(self.conf['general']['project_id'], self.conf['general']['number_of_simulations'])
             project=self.conf['general']['project_id']
             for i in range(*si.get()):

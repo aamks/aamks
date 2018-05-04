@@ -172,7 +172,7 @@ class EvacEnv:
 
         json_content = {'number_of_evacuees': self.sim.getNumAgents(),
              'frame_rate': self.config['TIME_STEP'] * self.config['VISUALIZATION_RESOLUTION'],
-             'project_name': self.general['PROJECT_NAME'],
+             'project_name': self.general['general']['project_id'],
              'simulation_id': self.general['SIM_ID'],
              'simulation_time': self.get_simulation_time(),
              'time_shift': self.evacuees.get_first_evacuees_time(),

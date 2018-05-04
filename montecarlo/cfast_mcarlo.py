@@ -104,6 +104,7 @@ class CfastMcarlo():
         result['heatcom']=str(i['heatcom'])
         return result
 # }}}
+    @property
     def _draw_fire_development(self): # {{{
         ''' 
         Generate the fire. Alpha t square on the left, then constant in the
@@ -112,11 +113,10 @@ class CfastMcarlo():
 
         i=self.conf['settings']['heat_release_rate']
         #'TODO:' HRR_PEAK is calculted as each room has 10 m2, by HRRPUA times 10. It should be better address, by choosing room area and vent characteristics
-        hrr_peak=int(triangular(i['hrrpua_min_mode_max'][0], i['hrrpua_min_mode_max'][1], i['hrrpua_min_mode_max'][2]) * 10)
-        print("PEAK", hrr_peak)
+        hrr_peak=int(triangular(i['hrrpua_min_mode_max'][0], i['hrrpua_min_mode_max'][1], i['hrrpua_min_mode_max'][2]) * 10000)
         alpha=int(triangular(i['alpha_min_mode_max'][0], i['alpha_min_mode_max'][1], i['alpha_min_mode_max'][2])*1000)
 
-        self._psql_log_variable('hrrpeak',hrr_peak)
+        self._psql_log_variable('hrrpeak',hrr_peak/1000)
         self._psql_log_variable('alpha',alpha/1000.0)
 
         # left
@@ -139,7 +139,9 @@ class CfastMcarlo():
         times=list(times0 + times1 + times2)
         hrrs=list(hrrs0 + hrrs1 + hrrs2)
 
-        return (times,hrrs)
+        return times, hrrs
+
+
 # }}}
     def _draw_window_opening(self,outdoor_temp): # {{{
         ''' 
@@ -249,6 +251,7 @@ class CfastMcarlo():
         'MATL,GYPSUM,0.3,1000,1000,0.02,0.85,gipsum',
         'MATL,GLASS,0.8,840,2500,0.013,0.9,glass',
         'MATL,BLOCK,0.3,840,800,0.03,0.85,floor',
+        'MATL,BRICK,0.3,840,800,0.03,0.85,brick',
         '',
         )
         return "\n".join(txt)
@@ -424,7 +427,7 @@ class CfastMcarlo():
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
     def _section_fire(self):# {{{
-        times, hrrs=self._draw_fire_development()
+        times, hrrs=self._draw_fire_development
         fire_properties = self._draw_fire_properties(len(times))
         area = (((npa(hrrs)/1000)/(fire_properties['q_star'] * 1.204 * 1.005 * 293 * sqrt(9.81))) ** (2/5)) + 0.0001
         txt=(
