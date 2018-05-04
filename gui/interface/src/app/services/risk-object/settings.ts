@@ -15,6 +15,7 @@ export class Settings {
     private _windowOpen: WindowOpen;
     private _outdoorTemperature: OutdoorTemperature;
     private _doorOpen: DoorOpen;
+    private _cfastStaticRecords: string[];
 
     constructor(jsonString: string) {
 
@@ -228,6 +229,22 @@ export class Settings {
     public set doorOpen(value: DoorOpen) {
         this._doorOpen = value;
     }
+
+    /**
+     * Getter cfastStaticRecords
+     * @return {string[]}
+     */
+	public get cfastStaticRecords(): string[] {
+		return this._cfastStaticRecords;
+	}
+
+    /**
+     * Setter cfastStaticRecords
+     * @param {string[]} value
+     */
+	public set cfastStaticRecords(value: string[]) {
+		this._cfastStaticRecords = value;
+	}
 
     /** Export to json */
     public toJSON(): object {

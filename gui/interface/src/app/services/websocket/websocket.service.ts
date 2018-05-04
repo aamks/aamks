@@ -9,6 +9,7 @@ import { CadService } from '../cad/cad.service';
 import { resolve } from 'q';
 import { cloneDeep, remove, each } from 'lodash';
 import { Risk } from '../risk-object/risk-object';
+import { NotifierService } from 'angular-notifier';
 
 @Injectable()
 export class WebsocketService {
@@ -16,7 +17,7 @@ export class WebsocketService {
   WS_URL: string = "ws://localhost:2012";
   wsObservable: Observable<any>;
   wsObserver: Observer<any>;
-  private ws;
+  ws;
   public dataStream: BehaviorSubject<any>;
   isConnected: boolean;
 
@@ -28,7 +29,8 @@ export class WebsocketService {
 
   constructor(
     private mainService: MainService,
-    private cadService: CadService
+    private cadService: CadService,
+    private readonly notifierService: NotifierService
   ) {
     this.mainService.getMain().subscribe(main => this.main = main);
   }
@@ -43,14 +45,14 @@ export class WebsocketService {
 
   /** Method initalize websocket connection */
   public initializeWebSocket() {
-    console.log("Initializing CAD connection ...");
+
     this.isConnected = false;
 
     this.wsObservable = Observable.create((observer) => {
       this.ws = new WebSocket(this.WS_URL);
       this.ws.onopen = (e) => {
         this.isConnected = true;
-        console.log("CAD connection opened ...");
+        this.notifierService.notify('success', 'CAD connection opened');
       };
 
       this.ws.onclose = (e) => {
@@ -85,7 +87,7 @@ export class WebsocketService {
       }
 
       return () => {
-        console.log("CAD Connection closed ...");
+        this.notifierService.notify('warning', 'CAD connection closed');
         this.ws.close();
         this.isConnected = false;
       };

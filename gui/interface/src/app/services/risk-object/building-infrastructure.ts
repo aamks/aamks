@@ -40,7 +40,8 @@ export interface BuildingInfrastructureInterface {
     detectors: DetectorsInterface,
     nshevs: {
         activationTime: number
-    }
+    },
+    cfastStaticRecords: string[]
 }
 
 export class BuildingInfrastructure {
@@ -52,6 +53,7 @@ export class BuildingInfrastructure {
     private _sprinklers: SprinklersInterface;
     private _detectors: DetectorsInterface;
     private _nshevs: any;
+    private _cfastStaticRecords: string[];
 
     constructor(jsonString: string) {
 
@@ -89,6 +91,7 @@ export class BuildingInfrastructure {
         this.nshevs = {
             activationTime: get(base.nshevs, 'activationTime', NSHEVS.activationTime.default) as number,
         };
+        this.cfastStaticRecords = get(base, 'cfastStaticRecords', []) as string[];
     }
 
     /**
@@ -203,6 +206,22 @@ export class BuildingInfrastructure {
         this._nshevs = value;
     }
 
+    /**
+     * Getter cfastStaticRecords
+     * @return {string[]}
+     */
+	public get cfastStaticRecords(): string[] {
+		return this._cfastStaticRecords;
+	}
+
+    /**
+     * Setter cfastStaticRecords
+     * @param {string[]} value
+     */
+	public set cfastStaticRecords(value: string[]) {
+		this._cfastStaticRecords = value;
+	}
+
     /** Export to json */
     public toJSON(): object {
         let buildingInfrastructure = {
@@ -212,7 +231,8 @@ export class BuildingInfrastructure {
             alarming: this.alarming,
             sprinklers: this.sprinklers,
             detectors: this.detectors,
-            nshevs: this.nshevs
+            nshevs: this.nshevs,
+            cfastStaticRecords: this.cfastStaticRecords
         }
         return buildingInfrastructure;
     }

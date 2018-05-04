@@ -1,38 +1,70 @@
 <div class="header-container">
 
   <div class="header-left">
-    <button (click)="showDiagnosticData()">Diagnostic</button>
+    <img src="assets/images/aamks.png">
   </div>
+
 
   <div class="header-right">
-    <div></div>
-    <div>
+
+    <div class="left-top">
+      <button (click)="showDiagnosticData()">Diagnostic</button>
     </div>
-    <div>
-      <div class="left-bottom">
-        <i class="material-icons">view_list</i>
-        <a routerLink="">Projects</a>
-        <span *ngIf="main.currentProject != undefined">
-          &nbsp;| Active project: {{main.currentProject.name}} ({{main.currentProject.id}})
+
+    <div class="center-top">
+
+    </div>
+
+    <div class="right-top">
+      {{ main.userName }}({{ main.userId }})
+    </div>
+
+    <div class="left-bottom">
+      <span>
+        <a routerLink="">
+          <i class="material-icons" (click)="activate('projects')" [ngClass]="{'active': uiState.active == 'projects'}">view_list</i>
+        </a>
+      </span>
+      <span *ngIf="main.currentProject != undefined">
+        &nbsp;|&nbsp; {{main.currentProject.name}} ({{main.currentProject.id}}) &nbsp;|&nbsp;
+      </span>
+      <span *ngIf="main.currentProject != undefined && main.currentRiskScenario != undefined">
+        &nbsp;|&nbsp; {{main.currentRiskScenario.name}} ({{main.currentRiskScenario.id}}) &nbsp;|&nbsp;
+      </span>
+    </div>
+
+    <div class="center-bottom">
+      <div *ngIf="main.currentProject != undefined && main.currentRiskScenario != undefined">
+        &nbsp;|&nbsp;
+        <span *ngIf="main.currentRiskScenario != undefined" (click)="updateRiskScenario(main.currentProject.id, main.currentRiskScenario.id)">
+          <i class="material-icons">save</i>
         </span>
-        <span *ngIf="main.currentProject != undefined && main.currentRiskScenario != undefined">
-          &nbsp;| Active scenario: {{main.currentRiskScenario.name}} ({{main.currentRiskScenario.id}})
+        &nbsp;|&nbsp;
+        <span *ngIf="main.currentRiskScenario != undefined" (click)="runRiskScenario()">
+          <i class="material-icons">directions_run</i>
         </span>
+        &nbsp;|&nbsp;
       </div>
     </div>
-    <div>
-      <div class="right-bottom">
-        <span *ngIf="main.currentRiskScenario != undefined" (click)="updateRiskScenario(main.currentProject.id, main.currentRiskScenario.id)">Save risk scenario
-          <i class="material-icons">save</i>
+
+    <div class="right-bottom">
+      <div>
+        |&nbsp;
+        <span (click)="connectCad()">
+          <i class="material-icons" [ngClass]="{'connected':websocket.isConnected}">cast</i>
         </span>
-        <span *ngIf="main.currentRiskScenario != undefined" (click)="runRiskScenario()">Run risk scenario
-          <i class="material-icons">save</i>
+        &nbsp;|&nbsp;
+        <span>
+          <a routerLink="settings">
+            <i class="material-icons" (click)="activate('settings')" [ngClass]="{'active': uiState.active == 'settings'}">settings</i>
+          </a>
         </span>
-        <span (click)="connectCad()">Connect CAD
-          <i class="material-icons">save</i>
+        &nbsp;|&nbsp;
+        <span (click)="connectCad()">
+          <i class="material-icons" (click)="logOut()">exit_to_app</i>
         </span>
+        &nbsp;|
       </div>
     </div>
   </div>
-
 </div>

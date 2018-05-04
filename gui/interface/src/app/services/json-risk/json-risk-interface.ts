@@ -38,7 +38,8 @@ export interface JsonRiskInterface {
         has_nshevs: boolean,
         nshevs: {
             activation_time: number
-        }
+        },
+        cfast_static_records: string[]
     },
     settings: {
         heat_release_rate: {
@@ -77,6 +78,10 @@ export interface JsonRiskInterface {
             beta_v_mean_and_sd: number[],
             alpha_v_mean_and_sd: number[]
         },
+        origin_of_fire: {
+            comment: string,
+            fire_starts_in_room_probability: number
+        }
     },
     geometry: any
 }

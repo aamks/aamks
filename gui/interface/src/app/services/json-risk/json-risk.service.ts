@@ -71,7 +71,8 @@ export class JsonRiskService {
         has_nshevs: this.riskObject.buildingInfrastructure.hasNshevs,
         nshevs: {
           activation_time: this.riskObject.buildingInfrastructure.nshevs.activationTime
-        }
+        },
+        cfast_static_records: this.riskObject.buildingInfrastructure.cfastStaticRecords
       },
       settings: {
         heat_release_rate: {
@@ -103,7 +104,6 @@ export class JsonRiskService {
           ROOM: this.riskObject.settings.evacueesConcentration.room,
           HALL: this.riskObject.settings.evacueesConcentration.hall
         },
-
         evacuees_speed_params: {
           comment: this.riskObject.settings.evacueesSpeedParams.comment,
           max_h_speed_mean_and_sd: this.riskObject.settings.evacueesSpeedParams.maxHSpeedMeanAndSd,
@@ -111,6 +111,10 @@ export class JsonRiskService {
           beta_v_mean_and_sd: this.riskObject.settings.evacueesSpeedParams.betaVMeanAndSd,
           alpha_v_mean_and_sd: this.riskObject.settings.evacueesSpeedParams.alphaVMeanAndSd
         },
+        origin_of_fire: {
+            comment: this.riskObject.settings.originOfFire.comment,
+            fire_starts_in_room_probability: this.riskObject.settings.originOfFire.fireStartsInRoomProbability
+        }
       },
       geometry: this.riskObject.geometry
     }

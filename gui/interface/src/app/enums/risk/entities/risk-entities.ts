@@ -327,7 +327,7 @@ export const RiskEntities =
                 fireStartsInRoomProbability: {
                     type: 'Real',
                     units: '',
-                    default: 0.4,
+                    default: 0.8,
                     help: '',
                     pattern: '',
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
@@ -509,7 +509,8 @@ export const RiskEntities =
                     valid_ranges: [{ minInclusive: '__', maxExclusive: '__' }],
                     reasonable_ranges: [{ minExclusive: '__', maxExclusive: '__' }]
                 },
-            }
+            },
+            cfastStaticRecords: []
         },
 
 

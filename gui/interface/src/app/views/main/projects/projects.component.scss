@@ -4,6 +4,7 @@ $open-time: .1s;
 $close-time: .1s;
 $open-curve: ease-out;
 $close-curve: ease-in;
+$red: #FF516D;
 
 .project-header {
     display: flex;
@@ -16,6 +17,10 @@ $close-curve: ease-in;
     background-color: $grey1;
     box-shadow: 0 -1px 0 $shadow-dark inset;
     
+    label {
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
     div.add-project {
         display: flex;
         flex-direction: row;
@@ -44,7 +49,7 @@ $close-curve: ease-in;
             margin-left: 2px;
             background-color: $passive;
         }
-        .project-category.active {
+        .project-category.activeCategory {
             background-color: $active1;
         }
     }
@@ -55,12 +60,12 @@ $close-curve: ease-in;
 
 
 .project {
+    display: grid;
+    grid-template-columns: 25% 10% 40% auto;
+    grid-column-gap: 1rem;
     padding-left: 1rem;
     padding-right: 1rem;
-    display: flex;
-    flex-direction: row;
     align-items: center;
-    justify-content: flex-start;
     height: 2.5rem;
 	//border-bottom: 1px solid $border-light;
     box-shadow: 0 -1px 0 $shadow-dark inset;
@@ -70,6 +75,28 @@ $close-curve: ease-in;
         box-shadow: none;
         background-color: none;
         width: 18rem;
+    }
+    label {
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+    .project-controls {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        align-items: center;
+        .add-button:hover {
+            color: $blue;
+            i {
+                color: $blue;
+            }
+        }
+        .delete-button:hover {
+            color: $red;
+            i {
+                color: $red;
+            }
+        }
     }
     
 }
@@ -85,45 +112,11 @@ $close-curve: ease-in;
         box-shadow: none;
         width: 16rem;
     }
-    .scenario-title {
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		height: 2.5rem;
-		padding-left: 4rem;
-		padding-right: 1rem;
-		border-bottom: 1px solid $border-light;
-		box-shadow: 0 -1px 0 $shadow-dark inset;
-		.scenario-signature {
-			display: flex;
-			flex-direction: row;
-			align-items: center;
-			flex-basis: 20%;
-		}
-		.scenario-controls {
-			display: flex;
-			flex-direction: row;
-			align-items: center;
-			justify-content: flex-start;
-			flex-basis: 80%;
-			div.add-button {
-				cursor: pointer;
-				label {
-					cursor: pointer;
-				}
-			}
-			.add-button:hover {
-				color: $blue;
-				i {
-					color: $blue;
-				}
-			}
-		}
-    }
     .scenario-item {
-		display: flex;
-		flex-direction: row;
-		align-items: center;
+        display: grid;
+        grid-template-columns: 70% auto;
+        grid-column-gap: 1rem;
+        align-items: center;
 		height: 2.5rem;
 		cursor: pointer;
 		border-left: 2px solid $grey3;
@@ -131,15 +124,14 @@ $close-curve: ease-in;
 			display: flex;
 			flex-direction: row;
 			align-items: center;
-			flex-basis: 5%;
-			padding-left: 4rem;
+			justify-content: flex-start;
+			padding-left: 2rem;
 		}
 		.scenario-controls {
 			display: flex;
 			flex-direction: row;
 			align-items: center;
-			justify-content: flex-start;
-			flex-basis: 95%;
+			justify-content: flex-end;
 			padding-right: 1rem;
 		}
 	}
@@ -154,7 +146,7 @@ $close-curve: ease-in;
 		border-bottom: none;
 	}
 
-	.scenario-item.active {
+	.scenario-item.activeScenario {
 		background-color: $grey-hover;
 		border-left: 2px solid $blue;
 		i.ico {

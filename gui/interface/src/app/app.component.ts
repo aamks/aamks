@@ -21,31 +21,15 @@ export class AppComponent {
     private projectService: ProjectService,
     private categoryService: CategoryService,
     private router: Router
-  ) {
-
-    this.websocket.initializeWebSocket();
-    // Check??
-    this.websocket.dataStream.subscribe(
-      (data) => {
-        if (data) {
-          //console.log(data);
-        }
-      },
-      (err) => {
-        console.log(err);
-      },
-      () => {
-        console.log("Websocket disconnected ...");
-      }
-    );
-
-  }
+  ) { }
 
   ngOnInit() {
     console.clear();
     this.mainService.getMain().subscribe(main => this.main = main);
     this.projectService.getProjects();
     this.categoryService.getCategories();
+
+    this.websocket.initializeWebSocket();
 
     // Navigate after page is reloaded
     this.router.navigate(['']);

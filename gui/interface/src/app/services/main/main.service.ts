@@ -8,6 +8,7 @@ import { Project } from '../project/project';
 import { RiskScenario } from '../risk-scenario/risk-scenario';
 import { HttpManagerService, Result } from '../http-manager/http-manager.service';
 import { each } from 'lodash';
+import { NotifierService } from 'angular-notifier';
 
 @Injectable()
 export class MainService {
@@ -15,7 +16,20 @@ export class MainService {
   // This is the main object including all current data
   main: Main = new Main('{ }');
 
-  constructor(private httpManager: HttpManagerService) { }
+  constructor(
+    private httpManager: HttpManagerService,
+    private readonly notifierService: NotifierService
+  ) { 
+    this.httpManager.get(this.main.hostAddres + '/api/settings').then((result:Result) => {
+      let main = new Main(JSON.stringify(result.data));
+      this.main.hostAddres = main.hostAddres;
+      this.main.editor = main.editor;
+      this.main.timeout = main.timeout;
+      this.main.userId = main.userId;
+      this.main.userName = main.userName;
+      this.notifierService.notify(result.meta.status, result.meta.details[0]);
+    });
+  }
 
   getMain(): Observable<Main> {
     return of(this.main);
