@@ -1,5 +1,5 @@
 declare var require: any;
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import * as THREE from 'three';
 var OrbitControls = require('three-orbit-controls')(THREE);
 
@@ -8,7 +8,7 @@ var OrbitControls = require('three-orbit-controls')(THREE);
   templateUrl: './results.component.html',
   styleUrls: ['./results.component.scss']
 })
-export class ResultsComponent implements OnInit, AfterViewInit {
+export class ResultsComponent implements OnInit {
 
   @ViewChild('rendererContainer') public rendererContainer: ElementRef;
   camera;
@@ -23,6 +23,9 @@ export class ResultsComponent implements OnInit, AfterViewInit {
 
   }
 
+}
+
+/*
   ngAfterViewInit() {
 
     let width = this.rendererContainer.nativeElement.offsetWidth;
@@ -88,5 +91,4 @@ export class ResultsComponent implements OnInit, AfterViewInit {
 
 
   }
-
-}
+  */

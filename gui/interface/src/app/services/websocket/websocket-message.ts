@@ -1,6 +1,6 @@
 export interface WebsocketMessageObject {
     method: string,
-    data: object,
+    data: "",
     id: string,
     requestID: string,
     status: string

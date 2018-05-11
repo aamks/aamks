@@ -123,6 +123,7 @@ export class RiskScenarioService {
   public runRiskScenario() {
     let riskScenario = this.main.currentRiskScenario;
     let inputJson = this.jsonRiskService.createInputFile();
+    console.log(inputJson);
     this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/runRiskScenario/' + riskScenario.id, JSON.stringify(inputJson)).then((result: Result) => {
       this.notifierService.notify(result.meta.status, result.meta.details[0]);
     });

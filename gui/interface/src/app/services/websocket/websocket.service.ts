@@ -155,7 +155,7 @@ export class WebsocketService {
       requestID: message.id,
       status: "success",
       method: message.method,
-      data: {},
+      data: "",
     }
 
     try {
@@ -163,7 +163,8 @@ export class WebsocketService {
         case 'cExport': {
           console.log('cExport');
           if (this.main.currentRiskScenario != undefined) {
-            this.main.currentRiskScenario.riskObject.geometry = message.data;
+            console.log(JSON.parse(message.data));
+            this.main.currentRiskScenario.riskObject.geometry = JSON.parse(message.data);
           }
           else {
             answer.status = "error";
