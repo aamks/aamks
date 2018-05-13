@@ -37,6 +37,7 @@ export class AppComponent {
     // For developing purpose
     setTimeout(() => {
      //this.router.navigate(['risk/results']);
+     this.projectService.setCurrnetProject(8);
 
     }, 1000);
     setTimeout(() => {
