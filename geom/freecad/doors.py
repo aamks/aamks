@@ -5,7 +5,17 @@ v=Gui.activeDocument().activeView()
 class AddDoors:
     def __init__(self, view):
         self.view = view
+        self.draw_rectangles()
         self.doors=0
+
+    def draw_rectangles(self):
+        pl = FreeCAD.Placement()
+        pl.Rotation.Q = (0.0,-0.0,-0.0,1.0)
+        pl.Base = FreeCAD.Vector(0,0,0)
+        Draft.makeRectangle(length=0.5,height=0.5,placement=pl,face=True,support=None)
+
+        pl.Base = FreeCAD.Vector(1,1,0)
+        Draft.makeRectangle(length=0.5,height=0.5,placement=pl,face=True,support=None)
 
     def edge_orientation(self):
         ''' 
