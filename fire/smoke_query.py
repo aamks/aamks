@@ -186,7 +186,6 @@ class SmokeQuery:
             for m in range(len(needed_record)):
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
                     self._compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
-        dd(self._compa_conditions['R_1'])
         return 1
 # }}}
     def get_conditions(self,q):# {{{
@@ -215,6 +214,9 @@ class SmokeQuery:
         logging.debug('Query visibility at time: {} on position: {}'.format(time, position))
 
         hgt = conditions['HGT']
+        if hgt == None:
+            return 0
+
         if hgt > self.config['layer_height']:
             return conditions['LLOD']
         else:
@@ -224,6 +226,8 @@ class SmokeQuery:
         logging.debug('Query FED at time: {} on position: {}'.format(time, position))
         conditions = self.get_conditions(position)
         hgt = conditions['HGT']
+        if hgt == None:
+            return 0.
 
         if hgt > self.config['layer_height']:
             layer = 'U'

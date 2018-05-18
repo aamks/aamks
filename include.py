@@ -2,14 +2,11 @@ from collections import OrderedDict
 import os
 import sys
 import sqlite3
+import psycopg2
+import psycopg2.extras
 import inspect
 import json
 from subprocess import Popen,PIPE
-try:
-    import psycopg2 # Blender cannot import psycopg2. 
-    import psycopg2.extras 
-except:
-    pass
 
 class SendMessage:# {{{
     def __init__(self,msg):
