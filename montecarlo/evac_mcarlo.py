@@ -5,8 +5,6 @@ import os
 import shutil
 import math
 from collections import OrderedDict
-import psycopg2
-import psycopg2.extras # needed? 
 import json
 import getopt
 from pprint import pprint

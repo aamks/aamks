@@ -14,7 +14,7 @@ class Manager():
     def __init__(self): # {{{
         ''' This is the manager of aamks jobs via gearman. '''
         try:
-            os.remove("{}/manage_aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+            os.remove("/tmp/manage_aamks.sqlite")
         except OSError:
             pass
             
@@ -29,7 +29,7 @@ class Manager():
         print("")
 # }}}
     def _access_hosts(self):# {{{
-        self.s=Sqlite("{}/manage_aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.s=Sqlite("/tmp/manage_aamks.sqlite")
         self._sqlite_import_hosts()
 # }}}
     def ping_workers(self):# {{{

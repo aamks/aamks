@@ -7,6 +7,7 @@ import json
 from subprocess import Popen,PIPE
 try:
     import psycopg2 # Blender cannot import psycopg2. 
+    import psycopg2.extras 
 except:
     pass
 
@@ -67,7 +68,17 @@ class SimIterations():# {{{
         
 # }}}
 class Sqlite(): # {{{
-    def __init__(self, handle):
+
+    def __init__(self, handle, must_exist=0):
+        '''
+        must_exist=0: we are creating the database
+        must_exist=1: Exception if there's no such file
+        '''
+
+        if must_exist == 1:
+            assert os.path.exists(handle), "Expected to find an existing sqlite file at: {}.\nCWD: {}".format(handle, os.getcwd())
+
+
         self.SQLITE = sqlite3.connect(handle)
         self.SQLITE.row_factory=self._sql_assoc
         self.sqlitedb=self.SQLITE.cursor()

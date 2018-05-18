@@ -13,9 +13,13 @@ from numpy.random import randint
 # }}}
 
 def _read_records():
+    ''' 
+    Imitates CFAST producing 14 csv records in 5 seconds intervals
+    '''
+
     data=OrderedDict()
     for letter in ['n', 's', 'w']:
-        data[letter] = open('{}/fire/test/cfast_{}.csv'.format(os.environ['AAMKS_PATH'], letter)).readlines()
+        data[letter] = open('{}/fire/examples/cfast_{}.csv'.format(os.environ['AAMKS_PATH'], letter)).readlines()
 
     try:
         os.remove("/tmp/cfast_n.csv")
