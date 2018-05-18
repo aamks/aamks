@@ -60,6 +60,8 @@ sudo chown -R $USER $AAMKS_PATH
 sudo chown -R $USER /home/aamks
 sudo chown -R $USER /home/aamks_users
 
+# www gui installer
+
 echo; echo; echo;
 echo "Running psql commands with" 
 echo "sudo -u postgres psql -c 'sql commands'"

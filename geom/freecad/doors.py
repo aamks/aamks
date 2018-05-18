@@ -1,3 +1,7 @@
+import Draft
+App.newDocument()
+v=Gui.activeDocument().activeView()
+
 class AddDoors:
     def __init__(self, view):
         self.view = view
@@ -52,7 +56,5 @@ class AddDoors:
        
 
 # wywolanie klasy
-App.newDocument()
-v=Gui.activeDocument().activeView()
 o = AddDoors(v)
 c = v.addEventCallback("SoMouseButtonEvent",o.make_doors) 
