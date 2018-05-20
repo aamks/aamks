@@ -1,4 +1,4 @@
-![alt text](http://www.inf.sgsp.edu.pl/pub/MALUNKI/NOWE/aamks.svg)
+![alt text](logo_aamks.svg)
 
 
 Aamks is a linux platform for assesing fire safety of humans in buildings. It
