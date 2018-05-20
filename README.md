@@ -1,4 +1,4 @@
-![alt text](logo_aamks.svg)
+![alt text](logo.svg)
 
 
 Aamks is a linux platform for assesing fire safety of humans in buildings. It
