@@ -3,21 +3,25 @@ App.newDocument()
 v=Gui.activeDocument().activeView()
 
 class AddDoors:
-    def __init__(self, view):
+    def __init__(self, view):# {{{
         self.view = view
         self.draw_rectangles()
         self.doors=0
-
-    def draw_rectangles(self):
+# }}}
+    def draw_rectangles(self):# {{{
         pl = FreeCAD.Placement()
         pl.Rotation.Q = (0.0,-0.0,-0.0,1.0)
         pl.Base = FreeCAD.Vector(0,0,0)
         Draft.makeRectangle(length=0.5,height=0.5,placement=pl,face=True,support=None)
 
-        pl.Base = FreeCAD.Vector(1,1,0)
+        pl.Base = FreeCAD.Vector(0,1,0)
         Draft.makeRectangle(length=0.5,height=0.5,placement=pl,face=True,support=None)
 
-    def edge_orientation(self):
+        pl.Base = FreeCAD.Vector(0,2,0)
+        Draft.makeRectangle(length=0.5,height=0.5,placement=pl,face=True,support=None)
+
+# }}}
+    def edge_orientation(self):# {{{
         ''' 
         Znajduje dwa punkty krewedzi (Edge) i zwraca orientacje v lub h
         v=vertical, h=horizontal
@@ -32,26 +36,23 @@ class AddDoors:
         except:
             return None
 
-
-    def make_doors(self, mouse):
+# }}}
+    def make_doors(self, mouse):# {{{
         '''
-        Dziala dla obiektow typu Draft > Recatangle.
+        Dziala dla obiektow typu Draft > Rectangle.
         Przy kazdym kliknieciu myszy sprawdzamy czy kliknieto w Edge (info['Component']).
         W zaleznosci od orientacji Edge rysujemy drzwi od punktu w gore lub w prawo.
         Zmienna self.doors zawiera zawsze numer ostatnio utworzonych drzwi.
         '''
 
-        down = (mouse["State"] == "DOWN")
-        pos = mouse["Position"]
-
-        if (down):
-            info = self.view.getObjectInfo(pos)
+        if (mouse["State"] == "DOWN"):
+            info = self.view.getObjectInfo(mouse["Position"])
             FreeCAD.Console.PrintMessage("info: {}\n".format(info))
 
             if info['Component'][:4] == 'Edge':
 
                 if self.edge_orientation() == 'v':
-                    points=[FreeCAD.Vector(info['x'],info['y'],0),FreeCAD.Vector(info['x'],info['y']+0.8)]
+                    points=[FreeCAD.Vector(info['x'],info['y'],0.00001),FreeCAD.Vector(info['x'],info['y']+0.8, 0.00001)]
                     line = Draft.makeWire(points,closed=False,face=True,support=None)
                     self.doors+=1
                     line.Label='D{}'.format(self.doors)
@@ -64,6 +65,7 @@ class AddDoors:
                     line.Label='D{}'.format(self.doors)
                     FreeCAD.ActiveDocument.getObjectsByLabel(line.Label)[0].ViewObject.LineColor=(0.3,0.7,1.0)
        
+# }}}
 
 # wywolanie klasy
 o = AddDoors(v)
