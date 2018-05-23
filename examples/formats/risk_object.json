@@ -1,0 +1,346 @@
+{
+    "buildingCharacteristic": {
+        "complexity": "b1",
+        "managment": "m1",
+        "materials": {
+            "ceiling": "concrete",
+            "floor": "concrete",
+            "thicknessCeiling": "0.3",
+            "thicknessFloor": "0.3",
+            "thicknessWall": "0.2",
+            "wall": "brick"
+        },
+        "type": "office1"
+    },
+    "buildingInfrastructure": {
+        "alarming": "a1",
+        "cfastStaticRecords": [],
+        "detectors": {
+            "activationObscuration": 0,
+            "activationObscurationSd": 5,
+            "activationTemperature": 68,
+            "activationTemperatureSd": 5,
+            "comment": "desc",
+            "notBrokenProbability": 0.96,
+            "rti": 50,
+            "type": "heat"
+        },
+        "hasDetectors": true,
+        "hasNshevs": true,
+        "hasSprinklers": true,
+        "nshevs": {
+            "activationTime": "60"
+        },
+        "sprinklers": {
+            "activationTemperature": 68,
+            "activationTemperatureSd": 3,
+            "comment": "desc",
+            "notBrokenProbability": 0.96,
+            "rti": 50,
+            "sprayDensity": 0.0005,
+            "sprayDensitySd": 0.0001
+        }
+    },
+    "general": {
+        "elevation": 0,
+        "humidity": 40,
+        "indoorPressure": 101325,
+        "indoorTemperature": 20,
+        "indoorTemperatureSd": 20,
+        "numberOfSimulations": "100",
+        "outdoorTemperature": 10.75,
+        "outdoorTemperatureSd": 10.75,
+        "projectName": "dupa",
+        "simulationTime": 1200
+    },
+    "geometry": {
+        "0": {
+            "C": [],
+            "COR": [
+                [
+                    [
+                        1,
+                        4.8,
+                        0
+                    ],
+                    [
+                        17.8,
+                        7.6,
+                        3
+                    ]
+                ]
+            ],
+            "D": [
+                [
+                    [
+                        18.9,
+                        2.7,
+                        0
+                    ],
+                    [
+                        20,
+                        2.7,
+                        2
+                    ]
+                ],
+                [
+                    [
+                        17.8,
+                        5.9,
+                        0
+                    ],
+                    [
+                        17.8,
+                        6.8,
+                        2
+                    ]
+                ],
+                [
+                    [
+                        14.3,
+                        4.8,
+                        0
+                    ],
+                    [
+                        15.2,
+                        4.8,
+                        2
+                    ]
+                ],
+                [
+                    [
+                        8.9,
+                        4.8,
+                        0
+                    ],
+                    [
+                        9.8,
+                        4.8,
+                        2
+                    ]
+                ],
+                [
+                    [
+                        2.6,
+                        4.8,
+                        0
+                    ],
+                    [
+                        3.5,
+                        4.8,
+                        2
+                    ]
+                ]
+            ],
+            "E": [],
+            "HALL": [],
+            "HOLE": [],
+            "I": [],
+            "ROOM": [
+                [
+                    [
+                        12.4,
+                        1.1,
+                        0
+                    ],
+                    [
+                        17.8,
+                        4.8,
+                        3
+                    ]
+                ],
+                [
+                    [
+                        6.2,
+                        1.1,
+                        0
+                    ],
+                    [
+                        12.4,
+                        4.8,
+                        3
+                    ]
+                ],
+                [
+                    [
+                        1,
+                        1.1,
+                        0
+                    ],
+                    [
+                        6.2,
+                        4.8,
+                        3
+                    ]
+                ]
+            ],
+            "STAI": [
+                [
+                    [
+                        17.8,
+                        2.7,
+                        0
+                    ],
+                    [
+                        21.2,
+                        7.6,
+                        3
+                    ]
+                ]
+            ],
+            "VNT": [
+                [
+                    [
+                        18.9,
+                        5,
+                        3
+                    ],
+                    [
+                        20.1,
+                        6.1,
+                        3
+                    ]
+                ],
+                [
+                    [
+                        11.6,
+                        5.9,
+                        3
+                    ],
+                    [
+                        13,
+                        6.8,
+                        3
+                    ]
+                ],
+                [
+                    [
+                        7.2,
+                        5.9,
+                        3
+                    ],
+                    [
+                        8.7,
+                        6.7,
+                        3
+                    ]
+                ],
+                [
+                    [
+                        3.1,
+                        5.9,
+                        3
+                    ],
+                    [
+                        4.4,
+                        6.8,
+                        3
+                    ]
+                ]
+            ],
+            "W": []
+        }
+    },
+    "settings": {
+        "cConst": 58,
+        "doorOpen": {
+            "comment": "desc",
+            "doorCloserDoorIsOpenProbability": 0.14,
+            "electroMagnetDoorIsOpenProbability": 0.04,
+            "standardDoorIsOpenProbability": 0.5,
+            "vventsNoFailureProbability": 0.96
+        },
+        "evacueesConcentration": {
+            "comment": "desc",
+            "cor": 20,
+            "hall": 30,
+            "room": 8,
+            "stai": 50
+        },
+        "evacueesSpeedParams": {
+            "alphaVMeanAndSd": [
+                0.706,
+                0.069
+            ],
+            "betaVMeanAndSd": [
+                -0.057,
+                0.015
+            ],
+            "comment": "desc",
+            "maxHSpeedMeanAndSd": [
+                120,
+                20
+            ],
+            "maxVSpeedMeanAndSd": [
+                80,
+                20
+            ]
+        },
+        "heatReleaseRate": {
+            "alphaMinModeMax": [
+                0.0029,
+                0.012,
+                0.188
+            ],
+            "comment": "desc",
+            "hrrpuaMinModeMax": [
+                150,
+                500,
+                650
+            ]
+        },
+        "originOfFire": {
+            "comment": "desc",
+            "fireStartsInRoomProbability": 0.8
+        },
+        "preEvacuationTime": {
+            "comment": "desc",
+            "meanAndSdOrdinaryRoom": [
+                29.13,
+                8.87
+            ],
+            "meanAndSdRoomOfFireOrigin": [
+                59.85,
+                1.48
+            ]
+        },
+        "userDefinedData": false,
+        "windowOpen": {
+            "comment": "desc",
+            "setup": [
+                {
+                    "outside_temperature_range": [
+                        -99999,
+                        -5
+                    ],
+                    "window_is_full_open_probability": 0.11,
+                    "window_is_quarter_open_probability": 0
+                },
+                {
+                    "outside_temperature_range": [
+                        -5,
+                        15
+                    ],
+                    "window_is_full_open_probability": 0.5,
+                    "window_is_quarter_open_probability": 0
+                },
+                {
+                    "outside_temperature_range": [
+                        15,
+                        27
+                    ],
+                    "window_is_full_open_probability": 0.45,
+                    "window_is_quarter_open_probability": 0.45
+                },
+                {
+                    "outside_temperature_range": [
+                        27,
+                        99999
+                    ],
+                    "window_is_full_open_probability": 0.5,
+                    "window_is_quarter_open_probability": 0
+                }
+            ]
+        }
+    }
+}
