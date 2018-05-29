@@ -6,7 +6,9 @@ export class UiState {
 
 	constructor() {
 		this.active = "projects";
-
+		this.riskMenu = {
+            results: false
+        }
 	}
 
     /**

@@ -7,7 +7,7 @@ import { MainService } from '../main/main.service';
 import { timeout } from 'rxjs/operators/timeout';
 import { CadService } from '../cad/cad.service';
 import { resolve } from 'q';
-import { cloneDeep, remove, each } from 'lodash';
+import { cloneDeep, remove, each, isArray, forEach } from 'lodash';
 import { Risk } from '../risk-object/risk-object';
 import { NotifierService } from 'angular-notifier';
 
@@ -163,7 +163,6 @@ export class WebsocketService {
         case 'cExport': {
           console.log('cExport');
           if (this.main.currentRiskScenario != undefined) {
-            console.log(JSON.parse(message.data));
             this.main.currentRiskScenario.riskObject.geometry = JSON.parse(message.data);
           }
           else {

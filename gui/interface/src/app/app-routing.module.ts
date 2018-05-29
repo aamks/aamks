@@ -7,7 +7,8 @@ import { GeneralRiskComponent } from './views/main/risk/general-risk/general-ris
 import { BuildingCharacteristicComponent } from './views/main/risk/building-characteristic/building-characteristic.component';
 import { BuildingInfrastructureComponent } from './views/main/risk/building-infrastructure/building-infrastructure.component';
 import { SettingsComponent } from './views/main/risk/settings/settings.component';
-import { ResultsComponent } from './views/main/risk/results/results.component';
+import { DistributionsComponent } from './views/main/risk/results/distributions/distributions.component';
+import { VisualizationComponent } from './views/main/risk/results/visualization/visualization.component';
 
 const routes: Routes = [
   {
@@ -31,8 +32,12 @@ const routes: Routes = [
     component: SettingsComponent
   },
   {
-    path: 'risk/results',
-    component: ResultsComponent
+    path: 'risk/results/visualization',
+    component: VisualizationComponent
+  },
+  {
+    path: 'risk/results/distributions',
+    component: DistributionsComponent
   },
 ];
 

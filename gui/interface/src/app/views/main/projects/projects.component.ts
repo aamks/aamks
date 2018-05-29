@@ -31,10 +31,18 @@ export class ProjectsComponent implements OnInit {
 
   /** Set/unset project to current in main object */
   setCurrentProject(index: number) {
+    if(this.main.currentProject != undefined && this.main.currentRiskScenario != undefined) {
+      this.riskScenarioService.updateRiskScenario(this.main.currentProject.id, this.main.currentRiskScenario.id);
+    }
     this.projectService.setCurrnetProject(index);
+    this.main.currentRiskScenario = undefined;
   }
   unsetCurrentProject() {
+    if(this.main.currentProject != undefined && this.main.currentRiskScenario != undefined) {
+      this.riskScenarioService.updateRiskScenario(this.main.currentProject.id, this.main.currentRiskScenario.id);
+    }
     this.main.currentProject = undefined;
+    this.main.currentRiskScenario = undefined;
   }
 
   /** Add new project */
@@ -89,6 +97,9 @@ export class ProjectsComponent implements OnInit {
 
   /** Delete risk scenario */
   deleteRiskScenario(projectIndex: number, riskScenarioIndex: number) {
+    if (this.main.currentRiskScenario != undefined && this.main.currentRiskScenario.id == this.main.projects[projectIndex].riskScenarios[riskScenarioIndex].id) 
+      this.main.currentRiskScenario = undefined;
+
     this.riskScenarioService.deleteRiskScenario(projectIndex, riskScenarioIndex);
   }
 

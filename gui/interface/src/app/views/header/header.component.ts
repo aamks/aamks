@@ -5,6 +5,8 @@ import { WebsocketService } from '../../services/websocket/websocket.service';
 import { RiskScenarioService } from '../../services/risk-scenario/risk-scenario.service';
 import { UiState } from '../../services/ui-state/ui-state';
 import { UiStateService } from '../../services/ui-state/ui-state.service';
+import { size } from 'lodash';
+import { NotifierService } from 'angular-notifier';
 
 @Component({
   selector: 'app-header',
@@ -21,7 +23,8 @@ export class HeaderComponent implements OnInit {
     private mainService: MainService,
     private websocketService: WebsocketService,
     private riskScenarioService: RiskScenarioService,
-    private uiStateService: UiStateService
+    private uiStateService: UiStateService,
+    private readonly notifierService: NotifierService,
   ) { }
 
   ngOnInit() {
@@ -47,7 +50,13 @@ export class HeaderComponent implements OnInit {
 
   /** Run risk scenario */
   public runRiskScenario() {
-    this.riskScenarioService.runRiskScenario();
+    if(size(this.main.currentRiskScenario.riskObject.geometry) > 0) {
+      this.riskScenarioService.runRiskScenario();
+      this.notifierService.notify('success', 'Simulation sent to server. Wait for message from server.');
+    }
+    else {
+      this.notifierService.notify('warning', 'Simulation not run. There is no geometry defined.');
+    }
   }
 
   /** Connect to CAD */

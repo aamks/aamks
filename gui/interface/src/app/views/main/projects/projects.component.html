@@ -27,7 +27,7 @@
             />
         </div>
         <div class="project-controls">
-            <div class="add-button" (click)="addRiskScenario(project.id)">
+            <div class="add-button" (click)="setCurrentProject(project.id); addRiskScenario(project.id)">
                 <label>Add Risk Scenario</label>
                 <i class="material-icons">add_box</i>
             </div>
@@ -41,7 +41,7 @@
     </div>
 
     <div class="scenario" [ngClass]="main.currentProject != undefined && project.id == main.currentProject.id ? 'open' : 'close'">
-        <div class="scenario-item" *ngFor="let riskScenario of project.riskScenarios; index as riskScenarioIndex;" [ngClass]="main.currentriskScenario != undefined && riskScenario.id == main.currentRiskScenario.id ? 'activeScenario' : ''">
+        <div class="scenario-item" *ngFor="let riskScenario of project.riskScenarios; index as riskScenarioIndex;" [ngClass]="main.currentRiskScenario != undefined && riskScenario.id == main.currentRiskScenario.id ? 'activeScenario' : ''">
             <div class="scenario-signature" (click)="setCurrentRiskScenario(project.id, riskScenario.id)">
                 <i class="material-icons ico mr+">apps</i>
                 <input type="text" [(ngModel)]="riskScenario.name" [ngModelOptions]="{updateOn:'blur'}" (blur)="updateRiskScenario(project.id, riskScenario.id)"

@@ -15,8 +15,17 @@
     <i class="material-icons null"></i>
     <a routerLink="risk/settings" (click)="activate('settings')" [ngClass]="{'active': uiState.active == 'settings'}">Settings</a>
   </div>
-  <div class="n1">
-    <i class="material-icons null"></i>
-    <a routerLink="risk/results" (click)="activate('results')" [ngClass]="{'active': uiState.active == 'results'}">Results</a>
+  <div class="n1" (click)="toggleMenu('results')">
+    <i *ngIf="!uiState.riskMenu.results" class="material-icons">expand_more</i>
+    <i *ngIf="uiState.riskMenu.results" class="material-icons">expand_less</i>
+    <a>Results</a>
+  </div>
+  <div class="ng2" [ngClass]="uiState.riskMenu.results ? 'open' : 'close'">
+    <div class="n2">
+      <a routerLink="risk/results/visualization" (click)="activate('visualization')" [ngClass]="{'active': uiState.active == 'visualization'}">Visualization</a>
+    </div>
+    <div class="n2">
+      <a routerLink="risk/results/distributions" (click)="activate('distributions')" [ngClass]="{'active': uiState.active == 'distributions'}">Distributions</a>
+    </div>
   </div>
 </div>

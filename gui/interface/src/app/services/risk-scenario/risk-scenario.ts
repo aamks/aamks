@@ -8,7 +8,7 @@ export interface RiskScenarioObject {
     riskObject: Risk,
     acFile: string,
     acHash: string,
-    //_ui_state=base['ui_state']|| {}; // make ui state object / service
+    uiState: string
 }
 
 export class RiskScenario {
@@ -19,6 +19,7 @@ export class RiskScenario {
     private _riskObject: Risk;
     private _acFile: string;
     private _acHash: string;
+    private _uiState: string;
 
     constructor(jsonString: string) {
 
@@ -29,75 +30,147 @@ export class RiskScenario {
         this.projectId = base.projectId || 0;
         this.name = base.name || '';
         this.description = base.description || '';
+        this.riskObject = base.riskObject != undefined ? this._riskObject = new Risk(JSON.stringify(base.riskObject)) : this._riskObject = new Risk('{}');
 
-        if (base.riskObject) {
-            this._riskObject = new Risk(JSON.stringify(base.riskObject));
-        }
-        else {
-            this._riskObject = new Risk('{}');
-        }
-
-        this._acFile = base.acFile || '';
-        this._acHash = base.acHash || '';
+        // Todo
+        this.acFile = base.acFile || '';
+        this.acHash = base.acHash || '';
+        this.uiState = base.uiState || '';
 
     }
 
-    public get id(): number {
-        return this._id;
-    }
 
-    public set id(value: number) {
-        this._id = value;
-    }
+    /**
+     * Getter id
+     * @return {number}
+     */
+	public get id(): number {
+		return this._id;
+	}
 
-    public get projectId(): number {
-        return this._projectId;
-    }
+    /**
+     * Setter id
+     * @param {number} value
+     */
+	public set id(value: number) {
+		this._id = value;
+	}
 
-    public set projectId(value: number) {
-        this._projectId = value;
-    }
+    /**
+     * Getter projectId
+     * @return {number}
+     */
+	public get projectId(): number {
+		return this._projectId;
+	}
 
-    public get name(): string {
-        return this._name;
-    }
+    /**
+     * Setter projectId
+     * @param {number} value
+     */
+	public set projectId(value: number) {
+		this._projectId = value;
+	}
 
-    public set name(value: string) {
-        this._name = value;
-    }
+    /**
+     * Getter name
+     * @return {string}
+     */
+	public get name(): string {
+		return this._name;
+	}
 
-    public get description(): string {
-        return this._description;
-    }
+    /**
+     * Setter name
+     * @param {string} value
+     */
+	public set name(value: string) {
+		this._name = value;
+	}
 
-    public set description(value: string) {
-        this._description = value;
-    }
+    /**
+     * Getter description
+     * @return {string}
+     */
+	public get description(): string {
+		return this._description;
+	}
 
-    public get riskObject(): Risk {
-        return this._riskObject;
-    }
+    /**
+     * Setter description
+     * @param {string} value
+     */
+	public set description(value: string) {
+		this._description = value;
+	}
 
-    public set riskObject(value: Risk) {
-        this._riskObject = value;
-    }
+    /**
+     * Getter riskObject
+     * @return {Risk}
+     */
+	public get riskObject(): Risk {
+		return this._riskObject;
+	}
 
-    public get acFile(): string {
-        return this._acFile;
-    }
+    /**
+     * Setter riskObject
+     * @param {Risk} value
+     */
+	public set riskObject(value: Risk) {
+		this._riskObject = value;
+	}
 
-    public set acFile(value: string) {
-        this._acFile = value;
-    }
+    /**
+     * Getter acFile
+     * @return {string}
+     */
+	public get acFile(): string {
+		return this._acFile;
+	}
 
-    public get acHash(): string {
-        return this._acHash;
-    }
+    /**
+     * Setter acFile
+     * @param {string} value
+     */
+	public set acFile(value: string) {
+		this._acFile = value;
+	}
 
-    public set acHash(value: string) {
-        this._acHash = value;
-    }
+    /**
+     * Getter acHash
+     * @return {string}
+     */
+	public get acHash(): string {
+		return this._acHash;
+	}
 
+    /**
+     * Setter acHash
+     * @param {string} value
+     */
+	public set acHash(value: string) {
+		this._acHash = value;
+	}
+
+    /**
+     * Getter uiState
+     * @return {string}
+     */
+	public get uiState(): string {
+		return this._uiState;
+	}
+
+    /**
+     * Setter uiState
+     * @param {string} value
+     */
+	public set uiState(value: string) {
+		this._uiState = value;
+	}
+
+    /**
+     * Export to json
+     */
     public toJSON(): object {
         let riskScenario: object = {
             id: this.id,
@@ -107,7 +180,7 @@ export class RiskScenario {
             riskObject: this.riskObject.toJSON(),
             acFile: this.acFile,
             acHash: this.acHash,
-            uiState: {}
+            uiState: this.uiState
         }
         return riskScenario;
     }

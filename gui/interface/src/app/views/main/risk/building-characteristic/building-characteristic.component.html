@@ -48,6 +48,7 @@
         <label>Thickness:</label>
         <div class="field-container">
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingCharacteristic.materials.thicknessWall" decimalInput>
+          <ng-katex equation="m"></ng-katex>
         </div>
       </div>
     </div>
@@ -64,6 +65,7 @@
         <label>Thickness:</label>
         <div class="field-container">
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingCharacteristic.materials.thicknessCeiling" decimalInput>
+          <ng-katex equation="m"></ng-katex>
         </div>
       </div>
     </div>
@@ -80,6 +82,7 @@
         <label>Thickness:</label>
         <div class="field-container">
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingCharacteristic.materials.thicknessFloor" decimalInput>
+          <ng-katex equation="m"></ng-katex>
         </div>
       </div>
     </div>

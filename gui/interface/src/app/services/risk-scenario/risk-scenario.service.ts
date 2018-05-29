@@ -17,8 +17,8 @@ export class RiskScenarioService {
   main: Main;
 
   constructor(
-    private mainService: MainService, 
-    private httpManager: HttpManagerService, 
+    private mainService: MainService,
+    private httpManager: HttpManagerService,
     private readonly notifierService: NotifierService,
     private jsonRiskService: JsonRiskService
   ) {
@@ -55,13 +55,13 @@ export class RiskScenarioService {
    * @param projectId 
    */
   public createRiskScenario(projectId: number) {
-
     // Request
-    this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + projectId, JSON.stringify({})).then((result: Result) => {
+    return this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + projectId, JSON.stringify({})).then((result: Result) => {
       let data = result.data;
       let riskScenario = new RiskScenario(JSON.stringify({ id: data['id'], projectId: data['projectId'], name: data['name'], riskObject: new Risk(JSON.stringify({})) }));
       // add ui state in riskscenario constructor ???
       this.main.currentProject.riskScenarios.push(riskScenario);
+      this.main.currentRiskScenario = riskScenario;
       this.notifierService.notify(result.meta.status, result.meta.details[0]);
     });
   }
@@ -87,7 +87,7 @@ export class RiskScenarioService {
       this.httpManager.put('https://aamks.inf.sgsp.edu.pl/api/riskScenario/' + riskScenarioId, JSON.stringify({ type: 'head', data: { id: riskScenario.id, name: riskScenario.name } })).then((result: Result) => {
         if (this.main.currentRiskScenario != undefined)
           this.main.currentRiskScenario = riskScenario;
-          this.notifierService.notify(result.meta.status, result.meta.details[0]);
+        this.notifierService.notify(result.meta.status, result.meta.details[0]);
       });
     }
     else if (syncType == 'all') {
@@ -120,14 +120,37 @@ export class RiskScenarioService {
     });
   }
 
+  /**
+   * Run risk scenario
+   */
   public runRiskScenario() {
     let riskScenario = this.main.currentRiskScenario;
     let inputJson = this.jsonRiskService.createInputFile();
-    console.log(inputJson);
     this.httpManager.post('https://aamks.inf.sgsp.edu.pl/api/runRiskScenario/' + riskScenario.id, JSON.stringify(inputJson)).then((result: Result) => {
       this.notifierService.notify(result.meta.status, result.meta.details[0]);
     });
+  }
 
+  /**
+   * Generate risk results
+   */
+  public generateResults() {
+    let riskScenario = this.main.currentRiskScenario;
+    let promise = new Promise((resolve, reject) => {
+      this.httpManager.get('https://aamks.inf.sgsp.edu.pl/api/riskScenario/generateResults/' + riskScenario.projectId + '/' + riskScenario.id).then((result: Result) => {
+        this.notifierService.notify(result.meta.status, result.meta.details[0]);
+        resolve(result);
+      });
+    });
+    return promise;
+  }
+
+  /**
+   * Are results generated
+   */
+  public isGeneratedResults() {
+    let riskScenario = this.main.currentRiskScenario;
+    return this.httpManager.get('https://aamks.inf.sgsp.edu.pl/api/riskScenario/isGeneratedResults/' + riskScenario.projectId + '/' + riskScenario.id);
   }
 
 }

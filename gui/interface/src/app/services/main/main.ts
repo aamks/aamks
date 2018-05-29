@@ -15,7 +15,8 @@ export interface MainObject {
     currentProject: Project,
     currentRiskScenario: RiskScenario,
     categories: Category[],
-    hostAddres: string
+    hostAddres: string,
+    email: string
 }
 export class Main {
     private _userId: number;
@@ -28,6 +29,7 @@ export class Main {
     private _currentRiskScenario: RiskScenario;
     private _categories: Category[];
     private _hostAddres: string;
+    private _email: string;
 
     constructor(jsonString: string) {
 
@@ -47,6 +49,7 @@ export class Main {
         this.currentRiskScenario = undefined;
         this.categories = [];
         this.hostAddres = base.hostAddres || 'https://aamks.inf.sgsp.edu.pl';
+        this.email = base.email || undefined;
     }
 
     /**
@@ -207,5 +210,22 @@ export class Main {
      */
 	public set hostAddres(value: string) {
 		this._hostAddres = value;
+    }
+
+    /**
+     * Getter email
+     * @return {string}
+     */
+	public get email(): string {
+		return this._email;
 	}
+
+    /**
+     * Setter email
+     * @param {string} value
+     */
+	public set email(value: string) {
+		this._email = value;
+	}
+
 }

@@ -5,6 +5,7 @@ import { HttpManagerService } from '../http-manager/http-manager.service';
 import { NotifierService } from 'angular-notifier';
 import { JsonRiskInterface } from './json-risk-interface';
 import { RiskObject } from '../risk-object/risk-object';
+import { toNumber } from 'lodash';
 
 
 @Injectable()
@@ -33,13 +34,13 @@ export class JsonRiskService {
     let json: JsonRiskInterface;
     json = {
       general: {
-        project_id: this.main.currentProject.id,
-        scenario_id: this.main.currentRiskScenario.id,
-        number_of_simulations: this.riskObject.general.numberOfSimulations,
-        simulation_time: this.riskObject.general.simulationTime,
+        project_id: toNumber(this.main.currentProject.id),
+        scenario_id: toNumber(this.main.currentRiskScenario.id),
+        number_of_simulations: toNumber(this.riskObject.general.numberOfSimulations),
+        simulation_time: toNumber(this.riskObject.general.simulationTime),
         indoor_temperature: [this.riskObject.general.indoorTemperature, this.riskObject.general.indoorTemperatureSd],
         outdoor_temperature: [this.riskObject.general.outdoorTemperature, this.riskObject.general.outdoorTemperatureSd],
-        indoor_pressure: this.riskObject.general.indoorPressure,
+        indoor_pressure: toNumber(this.riskObject.general.indoorPressure),
         auto_stircaser: false,
       },
       characteristic: {
@@ -70,7 +71,7 @@ export class JsonRiskService {
         },
         has_nshevs: this.riskObject.buildingInfrastructure.hasNshevs,
         nshevs: {
-          activation_time: this.riskObject.buildingInfrastructure.nshevs.activationTime
+          activation_time: toNumber(this.riskObject.buildingInfrastructure.nshevs.activationTime)
         },
         cfast_static_records: this.riskObject.buildingInfrastructure.cfastStaticRecords
       },
@@ -91,7 +92,8 @@ export class JsonRiskService {
           standard_door_is_open_probability: this.riskObject.settings.doorOpen.standardDoorIsOpenProbability,
           vvents_no_failure_probability: this.riskObject.settings.doorOpen.vventsNoFailureProbability
         },
-        c_const: this.riskObject.settings.cConst,
+        //c_const: toNumber(this.riskObject.settings.cConst),
+        c_const: 8,
         pre_evacuation_time: {
           comment: this.riskObject.settings.preEvacuationTime.comment,
           mean_and_sd_room_of_fire_origin: this.riskObject.settings.preEvacuationTime.meanAndSdRoomOfFireOrigin,

@@ -61,11 +61,12 @@ import { RampFilterPipe } from './pipes/ramp-filter/ramp-filter.pipe';
 import { StepsSortPipe } from './pipes/steps-sort/steps-sort.pipe';
 import { RiskScenarioService } from './services/risk-scenario/risk-scenario.service';
 import { BuildingCharacteristicComponent } from './views/main/risk/building-characteristic/building-characteristic.component';
-import { ResultsComponent } from './views/main/risk/results/results.component';
+import { VisualizationComponent } from './views/main/risk/results/visualization/visualization.component';
 import { SettingsComponent } from './views/main/risk/settings/settings.component';
 import { GeneralRiskComponent } from './views/main/risk/general-risk/general-risk.component';
 import { BuildingInfrastructureComponent } from './views/main/risk/building-infrastructure/building-infrastructure.component';
 import { JsonRiskService } from './services/json-risk/json-risk.service';
+import { DistributionsComponent } from './views/main/risk/results/distributions/distributions.component';
 
 
 @NgModule({
@@ -85,10 +86,11 @@ import { JsonRiskService } from './services/json-risk/json-risk.service';
     RampFilterPipe,
     StepsSortPipe,
     BuildingCharacteristicComponent,
-    ResultsComponent,
+    VisualizationComponent,
     SettingsComponent,
     GeneralRiskComponent,
     BuildingInfrastructureComponent,
+    DistributionsComponent,
   ],
   imports: [
     BrowserModule,
@@ -101,7 +103,7 @@ import { JsonRiskService } from './services/json-risk/json-risk.service';
     NgSelectModule,
     NotifierModule.withConfig({
         position: { horizontal: { position: 'right', } },
-        behaviour: { autoHide: 3000, },
+        behaviour: { autoHide: 5000, },
       })
   ],
   providers: [

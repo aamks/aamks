@@ -27,6 +27,7 @@ export class MainService {
       this.main.timeout = main.timeout;
       this.main.userId = main.userId;
       this.main.userName = main.userName;
+      this.main.email = main.email;
       this.notifierService.notify(result.meta.status, result.meta.details[0]);
     });
   }

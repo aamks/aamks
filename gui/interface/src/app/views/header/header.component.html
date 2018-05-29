@@ -8,7 +8,7 @@
   <div class="header-right">
 
     <div class="left-top">
-      <button (click)="showDiagnosticData()">Diagnostic</button>
+      <button *ngIf="main.userId == 1" (click)="showDiagnosticData()">Diagnostic</button>
     </div>
 
     <div class="center-top">
@@ -16,7 +16,8 @@
     </div>
 
     <div class="right-top">
-      {{ main.userName }}({{ main.userId }})
+      <p>{{ main.userName }}</p>
+      <p class="email">(id: {{ main.userId }}, {{ main.email }})</p>
     </div>
 
     <div class="left-bottom">

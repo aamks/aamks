@@ -12,12 +12,6 @@
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.projectName" stringInput>
         </div>
       </div>
-      <div>
-        <label>Elevation:</label>
-        <div class="field-container">
-          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.elevation" decimalInput>
-        </div>
-      </div>
     </div>
 
     <div class="form-row">
@@ -32,7 +26,6 @@
         <label>Number of simulations:</label>
         <div class="field-container">
           <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.numberOfSimulations" decimalInput>
-          <ng-katex equation="s"></ng-katex>
         </div>
       </div>
     </div>
@@ -42,28 +35,14 @@
         <label>Indoor temperature:</label>
         <div class="field-container">
           <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoorTemperature" decimalInput>
-          <ng-katex equation="s"></ng-katex>
-        </div>
-      </div>
-      <div>
-        <label>Indoor temperature std:</label>
-        <div class="field-container">
-          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoorTemperatureSd" decimalInput>
-          <ng-katex equation="s"></ng-katex>
+          <ng-katex equation="\degree C"></ng-katex>
         </div>
       </div>
       <div>
         <label>Outdoor temperature:</label>
         <div class="field-container">
           <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.outdoorTemperature" decimalInput>
-          <ng-katex equation="s"></ng-katex>
-        </div>
-      </div>
-      <div>
-        <label>Outdoor temperature std:</label>
-        <div class="field-container">
-          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.outdoorTemperatureSd" decimalInput>
-          <ng-katex equation="s"></ng-katex>
+          <ng-katex equation="\degree C"></ng-katex>
         </div>
       </div>
     </div>
@@ -73,12 +52,14 @@
         <label>Indoor pressure:</label>
         <div class="field-container">
           <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoorPressure" decimalInput>
+          <ng-katex equation="Pa"></ng-katex>
         </div>
       </div>
       <div>
         <label>Humidity:</label>
         <div class="field-container">
           <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.humidity" decimalInput>
+          <ng-katex equation="\%"></ng-katex>
         </div>
       </div>
     </div>

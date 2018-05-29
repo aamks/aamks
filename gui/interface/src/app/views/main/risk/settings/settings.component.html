@@ -13,6 +13,152 @@
   <div class="form-box" *ngIf="settings.userDefinedData">
 
     <div class="form-title">
+      <label class='header'>General</label>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Indoor temperature:</label>
+        <div class="field-container">
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoorTemperature" decimalInput>
+          <ng-katex equation="\degree C"></ng-katex>
+        </div>
+      </div>
+      <div>
+        <label>Indoor temperature std:</label>
+        <div class="field-container">
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.indoorTemperatureSd" decimalInput>
+          <ng-katex equation="\degree C"></ng-katex>
+        </div>
+      </div>
+      <div>
+        <label>Outdoor temperature:</label>
+        <div class="field-container">
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.outdoorTemperature" decimalInput>
+          <ng-katex equation="\degree C"></ng-katex>
+        </div>
+      </div>
+      <div>
+        <label>Outdoor temperature std:</label>
+        <div class="field-container">
+          <input [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="general.outdoorTemperatureSd" decimalInput>
+          <ng-katex equation="\degree C"></ng-katex>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-title">
+      <label class='header'>Sprinklers</label>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Has sprinklers:</label>
+        <div class="field-container">
+          <input type="checkbox" [(ngModel)]="buildingInfrastructure.hasSprinklers" />
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasSprinklers">
+        <label>RTI:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.rti" decimalInput>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasSprinklers">
+        <label>Activation temperature:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.activationTemperature" decimalInput>
+          <ng-katex equation="\degree C"></ng-katex>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasSprinklers">
+        <label>Activation temperature std:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.activationTemperatureSd" decimalInput>
+          <ng-katex equation="\degree C"></ng-katex>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasSprinklers">
+        <label>Spray density:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.sprayDensity" decimalInput>
+          <ng-katex equation=""></ng-katex>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasSprinklers">
+        <label>Spray density std:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.sprayDensitySd" decimalInput>
+          <ng-katex equation=""></ng-katex>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasSprinklers">
+        <label>Not broken probability:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.notBrokenProbability" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-title">
+      <label class='header'>Fire detectors</label>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Has detectors:</label>
+        <div class="field-container">
+          <input type="checkbox" [(ngModel)]="buildingInfrastructure.hasDetectors" />
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors">
+        <label>Detector type:</label>
+        <div class="field-container">
+          <select [(ngModel)]="buildingInfrastructure.detectors.type">
+            <option *ngFor="let element of DETECTOR_TYPE" [ngValue]="element.value">{{element.label}}</option>
+          </select>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectors.type == 'heat'">
+        <label>RTI:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.rti" decimalInput>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectors.type == 'heat'">
+        <label>Activation temperature:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.activationTemperature" decimalInput>
+          <ng-katex equation="\degree C"></ng-katex>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectors.type == 'heat'">
+        <label>Activation temperature std:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.activationTemperatureSd" decimalInput>
+          <ng-katex equation="\degree C"></ng-katex>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectors.type == 'smoke'">
+        <label>Activation obscuration:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.activationObscuration" decimalInput>
+          <ng-katex equation=""></ng-katex>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectors.type == 'smoke'">
+        <label>Activation obscuration std:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.activationObscurationSd" decimalInput>
+          <ng-katex equation=""></ng-katex>
+        </div>
+      </div>
+      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectors.type == 'smoke'">
+        <label>Not broken probability:</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.notBrokenProbability" decimalInput>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-title">
       <label class='header'>Heat Release Rate</label>
     </div>
 
@@ -235,6 +381,8 @@
         </div>
       </div>
     </div>
+
+
 
   </div>
 </div>

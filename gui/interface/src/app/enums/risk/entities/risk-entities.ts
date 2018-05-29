@@ -20,7 +20,7 @@ export const RiskEntities =
             numberOfSimulations: {
                 type: 'Integer',
                 units: '',
-                default: 5000,
+                default: 5,
                 help: '',
                 pattern: '',
                 valid_ranges: [{ minInclusive: 1, maxExclusive: '__' }],

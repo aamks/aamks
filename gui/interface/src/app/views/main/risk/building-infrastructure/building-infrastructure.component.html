@@ -41,30 +41,14 @@
         <label>Activation temperature:</label>
         <div class="field-container">
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.activationTemperature" decimalInput>
-        </div>
-      </div>
-      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectors.type == 'heat'">
-        <label>Activation temperature std:</label>
-        <div class="field-container">
-          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.activationTemperatureSd" decimalInput>
+          <ng-katex equation="\degree C"></ng-katex>
         </div>
       </div>
       <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectors.type == 'smoke'">
         <label>Activation obscuration:</label>
         <div class="field-container">
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.activationObscuration" decimalInput>
-        </div>
-      </div>
-      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectors.type == 'smoke'">
-        <label>Activation obscuration std:</label>
-        <div class="field-container">
-          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.activationObscurationSd" decimalInput>
-        </div>
-      </div>
-      <div *ngIf="buildingInfrastructure.hasDetectors && buildingInfrastructure.detectors.type == 'smoke'">
-        <label>Not broken probability:</label>
-        <div class="field-container">
-          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.detectors.notBrokenProbability" decimalInput>
+          <ng-katex equation=""></ng-katex>
         </div>
       </div>
     </div>
@@ -80,36 +64,14 @@
         <label>RTI:</label>
         <div class="field-container">
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.rti" decimalInput>
+          <ng-katex equation=""></ng-katex>
         </div>
       </div>
       <div *ngIf="buildingInfrastructure.hasSprinklers">
         <label>Activation temperature:</label>
         <div class="field-container">
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.activationTemperature" decimalInput>
-        </div>
-      </div>
-      <div *ngIf="buildingInfrastructure.hasSprinklers">
-        <label>Activation temperature std:</label>
-        <div class="field-container">
-          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.activationTemperatureSd" decimalInput>
-        </div>
-      </div>
-      <div *ngIf="buildingInfrastructure.hasSprinklers">
-        <label>Spray density:</label>
-        <div class="field-container">
-          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.sprayDensity" decimalInput>
-        </div>
-      </div>
-      <div *ngIf="buildingInfrastructure.hasSprinklers">
-        <label>Spray density std:</label>
-        <div class="field-container">
-          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.sprayDensitySd" decimalInput>
-        </div>
-      </div>
-      <div *ngIf="buildingInfrastructure.hasSprinklers">
-        <label>Not broken probability:</label>
-        <div class="field-container">
-          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.sprinklers.notBrokenProbability" decimalInput>
+          <ng-katex equation="\degree C"></ng-katex>
         </div>
       </div>
     </div>
@@ -125,10 +87,20 @@
         <label>Activation time:</label>
         <div class="field-container">
           <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="buildingInfrastructure.nshevs.activationTime" decimalInput>
+          <ng-katex equation="s"></ng-katex>
         </div>
       </div>
     </div>
 
+    <div class="form-row">
+      <div>
+        <label>Emergency evacuation lighting (C const.):</label>
+        <div class="field-container">
+          <input type="text" [ngModelOptions]="{updateOn:'blur'}" [(ngModel)]="settings.cConst" decimalInput>
+          <ng-katex equation=""></ng-katex>
+        </div>
+      </div>
+    </div>
 
   </div>
 </div>

@@ -106,8 +106,9 @@ i:hover { color: $blue; }
 i.red:hover { color: $red; }
 
 input { box-shadow: none; border-radius: none; border: none; background: none; font-size: 0.95rem; padding-bottom: 0; color: $orange; font-family: Consolas, Lucida Console, monospace; }
-input { color: $orange; border-bottom: 1px solid $grey6; box-shadow: 0 -1px 0 $grey1 inset; padding: 0 0 0 0; }
+input { color: $orange; border-bottom: 1px solid $grey6; box-shadow: 0 -1px 0 $grey1 inset; padding: 0 0.5rem 0 0.2rem; }
 input:focus, select:focus, textarea:focus, button:focus { outline: none; }
+input:focus { border-bottom: 1px solid $orange; box-shadow: 0 -1px 0 $orange inset; }
 
 .mr\+ { margin-right: 1rem; }
 .mr\+\+ { margin-right: 2rem; }

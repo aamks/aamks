@@ -149,4 +149,5 @@ class Vis():
 
         z = records + z
         self.json.write(z, "{}/anims.json".format(self.vis_dir))
+        os.chmod("{}/anims.json".format(self.vis_dir), 0o777)
 # }}}
