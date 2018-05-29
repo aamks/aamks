@@ -60,7 +60,7 @@ class CfastMcarlo():
         FIRE_ORIGIN is passed via fire_origin.json to evac.in 
         TODO: we should have a better way of passing FIRE_ORIGIN, psql perhaps?
         '''
-        origin_in_room=binomial(1,self.conf['settings']['origin_of_fire']['fire_starts_in_room_probability'])
+        origin_in_room=binomial(1,self.conf['settings']['fire_starts_in_room_probability'])
         
         self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY name") ]
         self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY name") ]
@@ -75,7 +75,7 @@ class CfastMcarlo():
         self.conf['ROOM_OF_FIRE_ORIGIN']=chosen
 
         compa=self.s.query("SELECT * FROM aamks_geom WHERE name=? and type_pri='COMPA'", (chosen,))[0]
-        self.json.write(FIRE_ORIGIN, "{}/workers/{}/fire_origin.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
+        self.json.write(chosen, "{}/workers/{}/fire_origin.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
         x=round(compa['width']/(2.0*100),2)
         y=round(compa['depth']/(2.0*100),2)
         z=round(compa['height']/100.0 * (1-math.log10(uniform(1,10))),2)

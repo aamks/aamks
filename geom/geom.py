@@ -542,7 +542,6 @@ class Geom():
             as_points[floor]=obstacles
             data['points']=as_points
             data['named']=rectangles
-        self.s.query("CREATE TABLE obstacles(json)")
         self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
 # }}}
     def _obstacles_into_rectangles(self,obstacles):# {{{

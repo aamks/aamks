@@ -69,10 +69,10 @@ class EvacMcarlo():
         '''
 
         if room != self._evac_conf['FIRE_ORIGIN']:
-            pre_evacuation=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['pre_evacuation_time']['mean_and_sd_ordinary_room']
+            pre_evacuation=self.conf['settings']['pre_evacuation_time']['mean_and_sd_ordinary_room']
         else:
-            pre_evacuation=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['pre_evacuation_time']['mean_and_sd_room_of_fire_origin']
-        return round(lognormal(pre_evacuation[0], pre_evacuation[1]), 2)
+            pre_evacuation=self.conf['settings']['pre_evacuation_time']['mean_and_sd_room_of_fire_origin']
+        return round(lognorm(s=1, loc=pre_evacuation[0], scale=pre_evacuation[1]).rvs(), 2)
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
         ''' Special selectors from distributions.json
@@ -118,7 +118,7 @@ class EvacMcarlo():
             z=self.s.query("SELECT z0 FROM aamks_geom WHERE floor=?", (floor,))[0]['z0']
             for i,pos in enumerate(self.dispatched_evacuees[floor]):
                 e_id='E{}'.format(i)
-                speeds=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['evacuees_speed_params']
+                speeds=self.conf['settings']['evacuees_speed_params']
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]=OrderedDict()
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ORIGIN']         = (pos[0]/100, pos[1]/100, z/100)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION'] = self.pre_evacuation[floor][i]
