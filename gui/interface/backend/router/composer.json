@@ -1,0 +1,6 @@
+{
+    "require": {
+		"ronan-gloo/jadephp": "dev-master",
+        "nikic/fast-route": "^0.6.0"
+    }
+}
