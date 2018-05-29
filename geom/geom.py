@@ -127,7 +127,7 @@ class Geom():
                     record=self._prepare_geom_record(k,[p0,p1],width,depth,height,floor)
                     if record != False:
                         data.append(record)
-        self.s.query("CREATE TABLE aamks_geom('name','floor','global_type_id','hvent_room_seq','vvent_room_seq','type_pri','type_sec','type_tri','x0','y0','z0','width','depth','height','cfast_width','sill','face','face_offset','vent_from','vent_to','material_ceiling','material_floor','material_wall','sprinkler','detector','is_vertical','vent_from_name','vent_to_name', 'how_much_open', 'room_area', 'x1', 'y1', 'z1', 'center_x', 'center_y', 'center_z', 'fire_model_ignore')")
+        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,sprinkler,detector,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
     def _obstacles2sqlite(self):# {{{
@@ -456,8 +456,6 @@ class Geom():
             if len(v) not in (2,3):
                 self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
             update.append((v[0], v[1], vent_id))
-            #self.s.query("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", (v[0],v[1],vent_id))
-        # TODO: executemany is faster, but same results?
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", update)
 
 # }}}
