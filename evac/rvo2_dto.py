@@ -72,7 +72,7 @@ class EvacEnv:
     def update_agents_position(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
-                self.sim.setAgentPosition(i, (10000+i, 10000))
+                self.sim.setAgentPosition(i, (10000+i * 200, 10000))
                 continue
             else:
                 self.evacuees.set_position_to_pedestrian(i, self.sim.getAgentPosition(i))
@@ -172,7 +172,7 @@ class EvacEnv:
 
         json_content = {'number_of_evacuees': self.sim.getNumAgents(),
              'frame_rate': self.config['TIME_STEP'] * self.config['VISUALIZATION_RESOLUTION'],
-             'project_name': self.general['PROJECT_NAME'],
+             'project_name': self.general['general']['project_id'],
              'simulation_id': self.general['SIM_ID'],
              'simulation_time': self.get_simulation_time(),
              'time_shift': self.evacuees.get_first_evacuees_time(),
@@ -181,7 +181,8 @@ class EvacEnv:
         return json_content
 
     def do_simulation(self, time):
-        for step in range(int(time/self.config['TIME_STEP'])):
+        time_range = int(time/self.config['TIME_STEP'])
+        for step in range(time_range - 100, time_range):
             self.sim.doStep()
             logging.debug('Simulation step: {}'.format(step))
             self.update_agents_position()

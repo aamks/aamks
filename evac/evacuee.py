@@ -88,5 +88,5 @@ class Evacuee:
 
     def update_speed(self, extinction_coefficient):
         if self.beta_v == 0:
-            self.beta_v = 0.000001
+            self.beta_v = 0.00000001
         self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.alpha_v/self.beta_v * extinction_coefficient))
