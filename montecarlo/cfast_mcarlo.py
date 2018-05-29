@@ -38,11 +38,9 @@ class CfastMcarlo():
         self.p=Psql()
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        self.dists=self.json.read("{}/distributions.json".format(os.environ['AAMKS_PROJECT']))
         self._psql_collector=OrderedDict()
-        self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
-        si=SimIterations(self._project_name, self.conf['NUMBER_OF_SIMULATIONS'])
+        si=SimIterations(self.conf['general']['project_id'], self.conf['general']['number_of_simulations'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._new_psql_log()
@@ -52,29 +50,32 @@ class CfastMcarlo():
 
 # DISTRIBUTIONS / DRAWS
     def _draw_outdoor_temp(self):# {{{
-        mean,std_dev=self.dists['outdoor_temperature']['mean_and_sd']
+        mean,std_dev=self.conf['general']['outdoor_temperature']
         outdoor_temp=round(normal(mean,std_dev),2)
         self._psql_log_variable('outdoort',outdoor_temp)
         return outdoor_temp
 # }}}
     def _draw_fire(self):# {{{
-        ''' FIRE_ORIGIN is passed via fire_origin.json to evac.in '''
-        is_origin_in_the_room=binomial(1,self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['origin_of_fire']['fire_starts_in_room_probability'])
+        ''' 
+        FIRE_ORIGIN is passed via fire_origin.json to evac.in 
+        TODO: we should have a better way of passing FIRE_ORIGIN, psql perhaps?
+        '''
+        origin_in_room=binomial(1,self.conf['settings']['origin_of_fire']['fire_starts_in_room_probability'])
         
         self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY name") ]
         self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY name") ]
-        if is_origin_in_the_room == 1 or len(self.all_corridors_and_halls) == 0:
-            FIRE_ORIGIN=str(choice(self.all_rooms))
+        if origin_in_room==1 or len(self.all_corridors_and_halls)==0:
+            chosen=str(choice(self.all_rooms))
             self._psql_log_variable('fireorig','room')
-            self._psql_log_variable('fireorigname',FIRE_ORIGIN)
+            self._psql_log_variable('fireorigname',chosen)
         else:
-            FIRE_ORIGIN=str(choice(self.all_corridors_and_halls))
+            chosen=str(choice(self.all_corridors_and_halls))
             self._psql_log_variable('fireorig','non_room')
-            self._psql_log_variable('fireorigname',FIRE_ORIGIN)
+            self._psql_log_variable('fireorigname',chosen)
+        self.conf['ROOM_OF_FIRE_ORIGIN']=chosen
 
+        compa=self.s.query("SELECT * FROM aamks_geom WHERE name=? and type_pri='COMPA'", (chosen,))[0]
         self.json.write(FIRE_ORIGIN, "{}/workers/{}/fire_origin.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
-
-        compa=self.s.query("SELECT * FROM aamks_geom WHERE name=? and type_pri='COMPA'", (FIRE_ORIGIN,))[0]
         x=round(compa['width']/(2.0*100),2)
         y=round(compa['depth']/(2.0*100),2)
         z=round(compa['height']/100.0 * (1-math.log10(uniform(1,10))),2)
@@ -111,11 +112,12 @@ class CfastMcarlo():
         middle, then fading on the right. At the end read hrrs at given times.
         '''
 
-        i=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['heat_release_rate']
-        hrr_peak=int(uniform(i['max_HRR'][0],i['max_HRR'][1])*1000)
-        alpha=int(triangular(i['alfa_min_mode_max'][0], i['alfa_min_mode_max'][1], i['alfa_min_mode_max'][2])*1000)
+        i=self.conf['settings']['heat_release_rate']
+        #'TODO:' HRR_PEAK is calculted as each room has 10 m2, by HRRPUA times 10. It should be better address, by choosing room area and vent characteristics
+        hrr_peak=int(triangular(i['hrrpua_min_mode_max'][0], i['hrrpua_min_mode_max'][1], i['hrrpua_min_mode_max'][2]) * 10000)
+        alpha=int(triangular(i['alpha_min_mode_max'][0], i['alpha_min_mode_max'][1], i['alpha_min_mode_max'][2])*1000)
 
-        self._psql_log_variable('hrrpeak',hrr_peak)
+        self._psql_log_variable('hrrpeak',hrr_peak/1000)
         self._psql_log_variable('alpha',alpha/1000.0)
 
         # left
@@ -138,7 +140,9 @@ class CfastMcarlo():
         times=list(times0 + times1 + times2)
         hrrs=list(hrrs0 + hrrs1 + hrrs2)
 
-        return (times,hrrs)
+        return (times, hrrs)
+
+
 # }}}
     def _draw_window_opening(self,outdoor_temp): # {{{
         ''' 
@@ -149,7 +153,7 @@ class CfastMcarlo():
         '''
 
         draw_value=uniform(0,1)
-        for i in self.dists['window_open']['setup']:
+        for i in self.conf['settings']['window_open']['setup']:
             if outdoor_temp > i['outside_temperature_range'][0] and outdoor_temp <= i['outside_temperature_range'][1]:
                 if draw_value < i['window_is_full_open_probability']:
                     how_much_open=1 
@@ -168,16 +172,16 @@ class CfastMcarlo():
         '''
 
         if Type=='D':
-            how_much_open=binomial(1,self.dists['door_open']['standard_door_is_open_probability'])
+            how_much_open=binomial(1,self.conf['settings']['door_open']['standard_door_is_open_probability'])
             self._psql_log_variable(Type.lower(),how_much_open)
         elif Type=='C':
-            how_much_open=binomial(1,self.dists['door_open']['door_closer_door_is_open_probability'])
+            how_much_open=binomial(1,self.conf['settings']['door_open']['door_closer_door_is_open_probability'])
             self._psql_log_variable(Type.lower(),how_much_open)
         elif Type=='E':
-            how_much_open=binomial(1,self.dists['door_open']['electro_magnet_door_is_open_probability'])
+            how_much_open=binomial(1,self.conf['settings']['door_open']['electro_magnet_door_is_open_probability'])
             self._psql_log_variable(Type.lower(),how_much_open)
         elif Type=='VNT':
-            how_much_open=binomial(1,self.dists['door_open']['vvents_no_failure_probability'])
+            how_much_open=binomial(1,self.conf['settings']['door_open']['vvents_no_failure_probability'])
             self._psql_log_variable(Type.lower(),how_much_open)
         elif Type=='HOLE':
             how_much_open=1
@@ -185,15 +189,15 @@ class CfastMcarlo():
         return how_much_open
 # }}}
     def _draw_fire_detector_triggers(self):# {{{
-        mean,std_dev=self.dists['fire_detector_trigger_temperature']['mean_and_sd']
-        zero_or_one=binomial(1,self.dists['fire_detector_trigger_temperature']['not_broken_probability'])
+        mean,std_dev=self.conf['infrastructure']['detectors']['trigger_temperature_mean_and_sd']
+        zero_or_one=binomial(1,self.conf['infrastructure']['detectors']['not_broken_probability'])
         chosen=round(normal(mean, std_dev),2) * zero_or_one
         self._psql_log_variable('detector',chosen)
         return str(chosen)
 # }}}
     def _draw_sprinkler_triggers(self):# {{{
-        mean,std_dev=self.dists['sprinkler_trigger_temperature']['mean_and_sd']
-        zero_or_one=binomial(1,self.dists['sprinkler_trigger_temperature']['not_broken_probability'])
+        mean,std_dev=self.conf['infrastructure']['sprinklers']['trigger_temperature_mean_and_sd']
+        zero_or_one=binomial(1,self.conf['infrastructure']['sprinklers']['not_broken_probability'])
         chosen=round(normal(mean, std_dev),2) * zero_or_one
         self._psql_log_variable('sprinkler',chosen)
         return str(chosen)
@@ -231,7 +235,7 @@ class CfastMcarlo():
         '''
 
         txt=(
-        'VERSN,7,{}'.format(self._project_name),
+        'VERSN,7,{}_{}'.format('SIM', self.conf['general']['project_id']),
         'TIMES,600,-120,10,10',
         'EAMB,{},101300,0'.format(273+outdoor_temp),
         'TAMB,293.15,101300,0,50',
@@ -244,10 +248,11 @@ class CfastMcarlo():
     def _section_matl(self):# {{{
         txt=(
         '!! MATL,name,param1,param2,param3,param4,param5,param6',
-        'MATL,CONCRETE,1.7,840,2500,0.4,0.9,concrete',
-        'MATL,GYPSUM,0.3,1000,1000,0.02,0.85,gipsum',
-        'MATL,GLASS,0.8,840,2500,0.013,0.9,glass',
-        'MATL,BLOCK,0.3,840,800,0.03,0.85,floor',
+        'MATL,concrete,1.7,840,2500,0.4,0.9,concrete',
+        'MATL,gypsum,0.3,1000,1000,0.02,0.85,gipsum',
+        'MATL,glass,0.8,840,2500,0.013,0.9,glass',
+        'MATL,block,0.3,840,800,0.03,0.85,floor',
+        'MATL,brick,0.3,840,800,0.03,0.85,brick',
         '',
         )
         return "\n".join(txt)
@@ -335,7 +340,6 @@ class CfastMcarlo():
 # }}}
     def _section_vvent(self):# {{{
         # VVENT AREA, SHAPE, INITIAL_FRACTION
-        # TODO: check room_area
         txt=['!! VVENT,top,bottom,id,area,shape,rel_type,criterion,target,i_time, i_frac, f_time, f_frac, offset_x, offset_y']
         for v in self.s.query("SELECT distinct v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_pri='VVENT' AND c.type_pri = 'COMPA' ORDER BY v.vent_from,v.vent_to"):
             collect=[]
@@ -343,7 +347,8 @@ class CfastMcarlo():
             collect.append(v['vent_from'])                                  # COMPARTMENT1
             collect.append(v['vent_to'])                                    # COMPARTMENT2
             collect.append(v['vvent_room_seq'])                             # VENT_NUMBER
-            collect.append(v['room_area'])                                  # AREA OF THE ROOM, feb.2018: previously: round((v['width']*v['depth'])/1e4, 2)
+            # TODO: we have it calcuated, right? collect.append(v['room_area'])                                 # AREA OF THE ROOM, feb.2018: previously: round((v['width']*v['depth'])/1e4, 2) 
+            collect.append(round((v['width']*v['depth'])/1e4, 2))                                  # AREA OF THE ROOM, feb.2018: previously: round((v['width']*v['depth'])/1e4, 2)
             collect.append(2)                                               # Type of dumper 1 - round, 2 - squere
             collect.append('TIME')                                          # Type of realease
             collect.append('')                                              # empty for time release
@@ -453,7 +458,7 @@ class CfastMcarlo():
         want in each of your 1.000 cfast.in files.
         '''
 
-        txt=self.conf['CFAST_STATIC_RECORDS']
+        txt=self.conf['infrastructure']['cfast_static_records']
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
 
@@ -493,6 +498,7 @@ class CfastMcarlo():
         for k,v in self._psql_collector[self._sim_id].items():
             pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
         data=', '.join(pairs)
-        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self._project_name, self._sim_id))
+        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self.conf['general']['project_id'], self._sim_id))
+
 #}}}
 

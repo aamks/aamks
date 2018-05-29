@@ -15,12 +15,13 @@ import shutil
 from event_tree_en import EventTreeFED
 from event_tree_en import EventTreeSteel
 import scipy.stats as stat
+import collections
 
 
 class processDists:
 
     def __init__(self):
-        self.losses = []
+        self.losses = dict()
         self.labels = []
         self.losses_num = []
         self.t_k = 0
@@ -44,7 +45,7 @@ class processDists:
 
     def plot_dcbe_dist(self):
 #        plt.clf()
-        query = "SELECT dcbe_time FROM simulations where project like '{}%' AND dcbe_time is not null".format(self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT dcbe_time FROM simulations where project = {} AND dcbe_time is not null".format(self.configs['general']['project_id'])
         results = self.query(query)
         dcbe = [int(i[0]) for i in results]
         sns_plot = sns.distplot(dcbe)
@@ -54,10 +55,14 @@ class processDists:
         plt.clf()
 
     def plot_wcbe_dist(self):
-        query = "SELECT wcbe FROM simulations where project like '{}%' AND dcbe_time is not null".format(self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT wcbe FROM simulations where project = {} AND dcbe_time is not null".format(self.configs['general']['project_id'])
         results = self.query(query)
-        dcbe = [int(i[0]) for i in results]
-        sns_plot = sns.distplot(dcbe)
+        wcbe = list()
+        dcbe = [json.loads(i[0]) for i in results]
+        for i in dcbe:
+            for value in i.values():
+                wcbe.append(value)
+        sns_plot = sns.distplot(wcbe)
 #        plt.xlabel('WCBE [s]')
 #        plt.ylabel('Prawdopodobieństwo')
         fig = sns_plot.get_figure()
@@ -65,8 +70,8 @@ class processDists:
         plt.clf()
 
     def plot_min_height(self):
-        query = "SELECT min_height * 100 FROM simulations where project like '{}%' AND min_height < 12.8"\
-            .format(self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT min_hgt_compa * 100 FROM simulations where project = {} AND min_hgt_compa < 12.8"\
+            .format(self.configs['general']['project_id'])
         results = self.query(query)
         dcbe = [float(i[0]) for i in results]
         sns_plot = sns.distplot(dcbe)
@@ -76,8 +81,21 @@ class processDists:
         fig.savefig("{}/picts/height.png".format(self.dir))
         plt.clf()
 
+    def plot_min_height_cor(self):
+        query = "SELECT min_hgt_cor * 100 FROM simulations where project = {} AND min_hgt_cor < 12.8"\
+            .format(self.configs['general']['project_id'])
+        results = self.query(query)
+        dcbe = [float(i[0]) for i in results]
+        sns_plot = sns.distplot(dcbe)
+#        sns.plt.xlabel('Wysokość warstwy dymu [cm]')
+#        sns.plt.ylabel('Prawdopodobieństwo')
+        fig = sns_plot.get_figure()
+        fig.savefig("{}/picts/hgt_cor.png".format(self.dir))
+        plt.clf()
+
+
     def plot_min_vis(self):
-        query = "SELECT min_vis FROM simulations where project like '{}%' AND min_vis < 60".format(self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT min_vis_compa FROM simulations where project = {} AND min_vis_compa < 60".format(self.configs['general']['project_id'])
         results = self.query(query)
         vis = [float(i[0]) for i in results]
         sns_plot = sns.distplot(vis, bins=30)
@@ -87,9 +105,21 @@ class processDists:
         fig.savefig("{}/picts/vis.png".format(self.dir))
         plt.clf()
 
+    def plot_min_vis_cor(self):
+        query = "SELECT min_vis_cor FROM simulations where project = {} AND min_vis_cor < 60".format(self.configs['general']['project_id'])
+        results = self.query(query)
+        vis = [float(i[0]) for i in results]
+        sns_plot = sns.distplot(vis, bins=30)
+        #sns.plt.xlabel('Zasięg widzialności [m]')
+        #sns.plt.ylabel('Prawdopodobieństwo')
+        fig = sns_plot.get_figure()
+        fig.savefig("{}/picts/vis_cor.png".format(self.dir))
+        plt.clf()
+
+
     def plot_max_temp(self):
-        query = "SELECT max_temp FROM simulations where project like '{}%' and dcbe_time is " \
-                "not null".format(self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT max_temp FROM simulations where project = {} and dcbe_time is " \
+                "not null".format(self.configs['general']['project_id'])
         results = self.query(query)
         dcbe = [float(i[0]) for i in results]
         dist = getattr(stat, 'norm')
@@ -105,50 +135,30 @@ class processDists:
         plt.clf()
 
     def calculate_ccdf(self):
-        query = "SELECT fed, id FROM simulations where project like '{}%' " \
-                "and dcbe_time IS NOT NULL".format(self.configs['GENERAL']['PROJECT_NAME'])
+        losses={'dead': list(), 'heavy': list(), 'light': list(), 'neglegible': list()}
+
+        query = "SELECT fed, id FROM simulations where project = {} " \
+                "and dcbe_time IS NOT NULL".format(self.configs['general']['project_id'])
         results = self.query(query)
         self.total = len(results)
-        fed_col = []
-        for i in results:
-            fed = i[0][1:-1].split(',')
-            fed = np.array([float(i) for i in fed])
-            fed_col.append([fed, i[1]])
+        row = [json.loads(i[0]) for i in results]
+        fed=list()
+        for i in row:
+            for values in i.values():
+                 fed.append(collections.Counter(np.array(values)))
 
-        dead_p, heavy_p, light_p, neg_p, dcbe_p = [], [], [], [], []
-        dead_id = []
-        for i in fed_col:
-            dead = len(i[0][i[0] >= 1])
-            if dead > 2:
-                dead_id.append(i[1])
-            heavy = len(i[0][(i[0] < 1) & (i[0] >= 0.3)])
-            light = len(i[0][(i[0] < 0.3) & (i[0] >= 0.01)])
-            neg = len(i[0][(i[0] < 0.01) & (i[0] >= 0.001)])
-            dcbe = len(i[0][i[0] >= 0.001])
-            dead_p.append(dead)
-            heavy_p.append(heavy)
-            light_p.append(light)
-            neg_p.append(neg)
-            dcbe_p.append(dcbe)
-        #with open('./dead_ids.csv', 'w') as f:
-        #    f.write(str(dead_id))
-        #print('Większe od 1: ', len(dead_id))
-        self.dead = len(dead_id)
-        k = 0
-        typy = ['Lethal', 'Heavy', 'Light', 'Neglegible', 'Total']
-        for data in dead_p, heavy_p, light_p, neg_p, dcbe_p:
-            n = 0
-            for i in data:
-                if i > 1:
-                    n += 1
-            #print('Followers: ', typy[k], n)
-            self.losses_num.append(n)
-            k += 1
+        for item in fed:
+            for key in item.keys():
+                if key == 'H':
+                    losses['dead'].append(item[key])
+                if key == 'M':
+                    losses['heavy'].append(item[key])
+                if key == 'L':
+                    losses['light'].append(item[key])
+                if key == 'N':
+                    losses['neglegible'].append(item[key])
 
-        losses = [dead_p, heavy_p, light_p, dcbe_p]
-        labels = ['Lethal', 'Heavy injury', 'Light injury', 'Neglegible', 'Total']
         self.losses = losses
-        self.labels = labels
 
     def plot_ccdf(self):
         fig = plt.figure(figsize=(12, 3))
@@ -156,12 +166,16 @@ class processDists:
 
         xtic = tic.MaxNLocator(3)
 
-        for i in range(3):
-            dane = ecdf(self.losses[i])
-            axs[i].plot(sorted(self.losses[i]), 1-dane(sorted(self.losses[i])))
-            axs[i].set_xlabel('Number of people')
-            axs[i].set_ylabel('Likelihood')
-            axs[i].set_title(self.labels[i])
+        wykres = 0
+        for key in self.losses.keys():
+            if key == 'neglegible':
+                continue
+            dane = ecdf(self.losses[key])
+            axs[wykres].plot(sorted(self.losses[key]), 1-dane(sorted(self.losses[key])))
+            axs[wykres].set_xlabel('Number of people')
+            axs[wykres].set_ylabel('Likelihood')
+            axs[wykres].set_title(key)
+            wykres += 1
             #axs[i].xaxis.set_major_formatter(tic.FormatStrFormatter('%4.f'))
 
         fig.tight_layout()
@@ -207,19 +221,21 @@ class processDists:
 
 
     def plot_losses_hist(self):
-        labels = ['Death', 'Heavy injury', 'Light injury']
-        for i in range(3):
+        labels = ['Death', 'Heavy injury', 'Light injury', 'Neglegible']
+
+        wykres = 0
+        for key in self.losses.keys():
             fig = plt.figure()
-            plt.hist(self.losses[i], bins=20)
-            plt.title(labels[i])
+            plt.hist(self.losses[key], bins=20)
+            plt.title(key)
             plt.xlabel('Number of casualities')
             plt.ylabel('Number of scenarios ')
-            fig.savefig('{}/picts/losses{}.png'.format(self.dir, i))
+            fig.savefig('{}/picts/losses{}.png'.format(self.dir, key))
             fig.clf()
 
     def plot_pie_fault(self):
         fig = plt.figure()
-        sizes = [self.dead, self.total-self.losses_num[3]]
+        sizes = [len(self.losses['dead']), self.total-len(self.losses['dead'])]
         labels = 'Failure', 'Success'
         colors = ['lightcoral', 'lightskyblue']
         explode = (0.1, 0)
@@ -242,55 +258,55 @@ class processDists:
         return ignition
 
     def dcbe_values(self):
-        query = "SELECT count(*) FROM simulations where project like '{}%' AND dcbe_time < 9999".format(
-            self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT count(*) FROM simulations where project = {} AND dcbe_time < 9999".format(
+            self.configs['general']['project_id'])
         results = self.query(query)
         lower = results[0][0]/self.total
 
-        query = "SELECT avg(dcbe_time) FROM simulations where project like '{}%' AND dcbe_time < 9999".format(
-            self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT avg(dcbe_time) FROM simulations where project = {} AND dcbe_time < 9999".format(
+            self.configs['general']['project_id'])
         results = self.query(query)
         mean = results[0][0]
         return [lower, mean]
 
     def wcbe_values(self):
-        query = "SELECT avg(wcbe) FROM simulations where project like '{}%' AND dcbe_time IS NOT NULL".format(
-            self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT avg(wcbe) FROM simulations where project = {} AND dcbe_time IS NOT NULL".format(
+            self.configs['general']['project_id'])
         results = self.query(query)
         return results[0][0]
 
     def min_height_values(self):
-        query = "SELECT count(*) FROM simulations where project like '{}%' AND min_height < 1.0" \
-            .format(self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT count(*) FROM simulations where project = {} AND min_hgt_compa < 1.0" \
+            .format(self.configs['general']['project_id'])
         results = self.query(query)
         lower = results[0][0] / self.total
 
-        query = "SELECT avg(min_height) FROM simulations where project like '{}%' AND min_height < 1.8" \
-            .format(self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT avg(min_hgt_compa) FROM simulations where project = {} AND min_hgt_compa < 1.8" \
+            .format(self.configs['general']['project_id'])
         results = self.query(query)
         mean = results[0][0]
         return [lower, mean]
 
     def vis_values(self):
-        query = "SELECT count(*) FROM simulations where project like '{}%' AND min_vis < 10".format(
-            self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT count(*) FROM simulations where project = {} AND min_vis_compa < 30".format(
+            self.configs['general']['project_id'])
         results = self.query(query)
         lower = results[0][0] / self.total
 
-        query = "SELECT avg(min_vis) FROM simulations where project like '{}%' AND min_vis < 60".format(
-            self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT avg(min_vis_compa) FROM simulations where project = {} AND min_vis_compa < 60".format(
+            self.configs['general']['project_id'])
         results = self.query(query)
         mean = results[0][0]
         return [lower, mean]
 
     def temp_values(self):
-        query = "SELECT count(*) FROM simulations where project like '{}%' AND max_temp > 450".format(
-            self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT count(*) FROM simulations where project = {} AND max_temp > 450".format(
+            self.configs['general']['project_id'])
         results = self.query(query)
         lower = results[0][0] / self.total
 
-        query = "SELECT avg(max_temp) FROM simulations where project like '{}%' and dcbe_time is " \
-                "not null".format(self.configs['GENERAL']['PROJECT_NAME'])
+        query = "SELECT avg(max_temp) FROM simulations where project = {} and dcbe_time is " \
+                "not null".format(self.configs['general']['project_id'])
         results = self.query(query)
         mean = results[0][0]
         return [lower, mean]
@@ -300,34 +316,36 @@ p = processDists()
 p.plot_dcbe_dist()
 p.plot_wcbe_dist()
 p.plot_min_height()
+p.plot_min_height_cor()
 p.plot_max_temp()
 p.plot_min_vis()
+p.plot_min_vis_cor()
 #wprint(p.wcbe_time(1000))
 p.calculate_ccdf()
 p.plot_ccdf()
-p.plot_ccdf_percentage()
+#p.plot_ccdf_percentage()
 p.plot_losses_hist()
 p.plot_pie_fault()
 #print(p.total)
 bar = p.calculate_barrois(20000)*966
 #bar = 10e-6 * 142
 #print(bar)
-if p.losses_num[4] == 0:
-    p.losses_num[4] = 1e-12
+#if p.losses_num[4] == 0:
+#    p.losses_num[4] = 1e-12
 
-fed_f = float('%.3f' % (p.dead/p.losses_num[4]))
-fed_m = float('%.3f' % (p.losses_num[1]/p.losses_num[4]))
-fed_l = float('%.3f' % (p.losses_num[2]/p.losses_num[4]))
-fed_n = float('%.3f' % (p.losses_num[3]/p.losses_num[4]))
-t_kryt = float('%.3f' % (p.losses_num[4]/(p.total)))
+fed_f = float('%.3f' % (len(p.losses['dead'])/p.total))
+fed_m = float('%.3f' % (len(p.losses['heavy'])/p.total))
+fed_l = float('%.3f' % (len(p.losses['light'])/p.total))
+fed_n = float('%.3f' % (len(p.losses['neglegible'])/p.total))
+t_kryt = float('%.3f' % (len(p.losses['neglegible'])/p.total))
 p_ext = float('%.3f' % 0.17)
 p_tk = float('%.3f' % (p.t_k/p.total))
 
 with open('{}/picts/dane.txt'.format(p.dir), 'w') as g: 
     dcbe_val = p.dcbe_values()
     g.write("DCBE - PER: {}, MEAN: {}".format(dcbe_val[0], dcbe_val[1]))
-    wcbe_val = p.wcbe_values()
-    g.write("WCBE -  MEAN: {} s, {} min".format(wcbe_val, wcbe_val/60))
+    #wcbe_val = p.wcbe_values()
+    #g.write("WCBE -  MEAN: {} s, {} min".format(wcbe_val, wcbe_val/60))
     min_height_val = p.min_height_values()
     g.write("MIN_HEIGHT - PER: {}, MEAN: {}".format(min_height_val[0], min_height_val[1]))
     min_vis = p.vis_values()
@@ -344,3 +362,4 @@ s = EventTreeSteel(building=p.dir, p_general=bar, p_develop=p_ext, p_Tk=p_tk, p_
 s.draw_tree()
 #p.plot_event_tree()
 
+print('Charts are ready to display')

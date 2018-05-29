@@ -18,7 +18,6 @@ from geom.inkscapereader import InkscapeReader
 from include import Sqlite
 from include import Json
 from include import Dump as dd
-from geom.staircaser import Staircaser
 from gui.vis.vis import Vis
 
 # }}}
@@ -47,7 +46,8 @@ class Geom():
         self._add_names_to_vents_from_to()
         self._calculate_sills()
         self._auto_detectors_and_sprinklers()
-        self._staircaser()
+        self._rooms_into_obstacles()
+        self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
 # }}}
@@ -133,14 +133,9 @@ class Geom():
     def _obstacles2sqlite(self):# {{{
         ''' 
         Geometry may contain obstacles to model machines, FDS walls, bookcases,
-        etc. Users may choose our staircaser module to auto-generate stairs for
-        the staircase, or they can provide stairs themselves as obstacles here.
-        Obstacles are not visible in CFAST, since they don't belong to
+        etc. Obstacles are not visible in CFAST, since they don't belong to
         aamks_geom table. 
         '''
-
-        if self.conf['AUTO_STAIRCASER'] == 0:
-            return
 
         data=[]
         self.s.query("CREATE TABLE obstacles(json)")
@@ -192,7 +187,7 @@ class Geom():
         name='{}_{}'.format(k[0], global_type_id)
 
         #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , 'material_ceiling'            , 'material_floor'            , 'material_wall'            , 'sprinkler' , 'detector' , 'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z' , 'fire_model_ignore')
-        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['MATERIAL_CEILING'] , self.conf['MATERIAL_FLOOR'] , self.conf['MATERIAL_WALL'] , 0           , 0          , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
+        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['characteristic']['material_ceiling'] , self.conf['characteristic']['material_floor'] , self.conf['characteristic']['material_wall'] , 0           , 0          , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
 
 # }}}
     def _init_helper_variables(self):# {{{
@@ -311,9 +306,9 @@ class Geom():
 
 # }}}
     def _auto_detectors_and_sprinklers(self):# {{{
-        if self.conf['AUTO_DETECTORS'] == 1:
+        if self.conf['infrastructure']['has_detectors']:
             self.s.query("UPDATE aamks_geom set detector = 1 WHERE type_pri='COMPA'")
-        if self.conf['AUTO_SPRINKLERS'] == 1:
+        if self.conf['infrastructure']['has_sprinklers']:
             self.s.query("UPDATE aamks_geom set sprinkler = 1 WHERE type_pri='COMPA'")
 # }}}
     def _make_elem_counter(self):# {{{
@@ -502,29 +497,77 @@ class Geom():
 
 # }}}
 
-# STAIRCASER
-    def _staircaser(self):# {{{
+# OBSTACLES
+    def _rooms_into_obstacles(self):# {{{
         ''' 
-        Staircaser will autofill the staircase cuboid with stairs. 
-        We assume that each floor has the same height as floor 0.
-        Staircaser produces the staircase for a particulat variant and we
-        access it via single_staircase[0].
+        For a roomX we create a roomX_ghost, we move it by wall_width, which
+        must match the width of hvents. Then we create walls via logical
+        operations. We then intersect the walls with the doors to have openings
+        in the walls. The door's width can originate on top of the wall, but
+        such intersections don't count. Only intesections of area >
+        wall_width**2 count -- only doors that have long side on the wall. 
+        For comfortable debuging filter geoms in self.s.query(). 
         '''
-        
-        self.s.query("CREATE TABLE staircaser(json)")
 
-        if self.conf['AUTO_STAIRCASER'] == 0:
-            return
+        wall_width=4
+        rectangles=OrderedDict()
+        as_points=OrderedDict()
+        data=OrderedDict()
+        for floor in self.floors:
+            walls=[]
+            for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
+                walls.append((i['x0']+wall_width , i['y0']            , i['x0']+i['width']            , i['y0']+wall_width)                )
+                walls.append((i['x0']+i['width'] , i['y0']            , i['x0']+i['width']+wall_width , i['y0']+i['depth']+wall_width)     )
+                walls.append((i['x0']+wall_width , i['y0']+i['depth'] , i['x0']+i['width']            , i['y0']+i['depth']+wall_width)     )
+                walls.append((i['x0']            , i['y0']            , i['x0']+wall_width            , i['y0']+i['depth']+wall_width)     )
+            walls_polygons=([box(ii[0],ii[1],ii[2],ii[3]) for ii in set(walls)])
 
-        data=[]
-        fheight=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])['1']['z']/100
-        for z in self.s.query("SELECT * FROM aamks_geom WHERE type_sec='STAI' ORDER BY name"): 
-            bottom=[ (z['x0']/100, z['y0']/100, z['z0']/100), (z['x1']/100, z['y1']/100, z['z1']/100) ]
-            stairs=Staircaser(bottom=bottom, fheight=fheight, floors=len(self.floors), swidth=2, variant='0_0')
-            single_staircase=json.loads(stairs.get_json())
-            data+=single_staircase[0]
+            doors_polygons=[]
+            for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_tri='DOOR' ORDER BY name", (floor,)):
+                doors_polygons.append(box(i['x0'], i['y0'], i['x0']+i['width'], i['y0']+i['depth']))
+                
+            boxen=[]
+            for wall in walls_polygons:
+                for door in doors_polygons:
+                    if wall.intersection(door).area > wall_width**2:
+                        wall=wall.difference(door)
+                if isinstance(wall, MultiPolygon):
+                    for i in polygonize(wall):
+                        boxen.append(i)
+                elif isinstance(wall, Polygon):
+                    boxen.append(wall)
 
-        self.s.query('INSERT INTO staircaser VALUES (?)', (json.dumps(data),))
+            obstacles=[]
+            for b in boxen:
+                obstacles.append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
+            rectangles[floor]=self._obstacles_into_rectangles(obstacles)
+            as_points[floor]=obstacles
+            data['points']=as_points
+            data['named']=rectangles
+        self.s.query("CREATE TABLE obstacles(json)")
+        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
+# }}}
+    def _obstacles_into_rectangles(self,obstacles):# {{{
+        ''' 
+        Transform 4-points-obstacles:
+            [(x0,y0), (x1,y1), (x2,y2), (x3,y3)] 
+        into rectangles:
+            [(x0,y0,width,height)]
+        '''
+
+        rectangles=[]
+        for i in obstacles:
+            k=list(zip(*i))
+            coords=OrderedDict()
+            coords["x0"]=min(k[0])
+            coords["y0"]=min(k[1]) 
+            coords["x1"]=max(k[0])
+            coords["y1"]=max(k[1]) 
+            coords["width"]=max(k[0]) - min(k[0])
+            coords["depth"]=max(k[1]) - min(k[1]) 
+            rectangles.append(coords)
+
+        return rectangles
 # }}}
 
 # ASSERTIONS

@@ -13,18 +13,22 @@
 
 # CONFIGURATION
 
+AAMKS_SERVER=127.0.0.1
 AAMKS_PATH='/usr/local/aamks'
 AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 AAMKS_TESTING=0
-AAMKS_SERVER=127.0.0.1
+AAMKS_PG_PASS='hulakula' 
 AAMKS_USE_GEARMAN=1
-AAMKS_PG_PASS='hulakula'  # TODO: for developers: need to change to 'secret' 
-AAMKS_PROJECT='/home/aamks_users/mimoohowy@gmail.com/1/risk/current' # We need some default. Aamks/examples/three will be copied there.
 
 # END OF CONFIGURATION
 
 USER=`id -ru`
 [ "X$USER" == "X0" ] && { echo "Don't run as root / sudo"; exit; }
+
+
+sudo apt-get update 
+sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils
+sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
 
 # [ $AAMKS_PG_PASS == 'secret' ] && { 
 # 	echo "Password for aamks psql user needs to be changed from the default='secret'. It must match the AAMKS_PG_PASS in your ~/.bashrc."; 
@@ -34,19 +38,14 @@ USER=`id -ru`
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`
-sudo cat /etc/apache2/envvars | grep -v AAMKS_PG_PASS > $temp
-echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
+sudo cat /etc/apache2/envvars | grep -v AAMKS_ > $temp
+echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> $temp
+echo "export AAMKS_PATH='$AAMKS_PATH'" >> $temp
+echo "export AAMKS_NOTIFY='$AAMKS_NOTIFY'" >> $temp
+echo "export AAMKS_TESTING='$AAMKS_TESTING'" >> $temp
+echo "export AAMKS_PG_PASS='$AAMKS_DB_PASS'" >> $temp
 sudo cp $temp /etc/apache2/envvars
 rm $temp
-# check if service apache2 restart is needed
-
-
-sudo apt-get update 
-sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils
-sudo -H pip3 install webcolors pyhull colour shapely numpy networkx
-
-# Blender upbge engine
-sudo apt-get install blender llvm-dev libpugixml-dev 
 
 sudo rm -rf "$AAMKS_PATH/current"
 sudo mkdir -p "$AAMKS_PATH/current"
@@ -68,9 +67,9 @@ echo "sudo -u postgres psql -c 'sql commands'"
 echo 
 
 sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && { 
-	echo "Aamks already exists in psql. You may wish to clear psql from aamks by invoking";
-	echo 'sudo -u postgres psql -c "DROP DATABASE aamks;"' 
-	echo 'sudo -u postgres psql -c "DROP USER aamks;"' 
+	echo "Aamks already exists in psql. You may wish to clear psql from aamks by invoking:";
+	echo
+	echo 'sudo -u postgres psql -c "DROP DATABASE aamks"; sudo -u postgres psql -c "DROP USER aamks"' 
 	echo
 	exit;
 }
@@ -97,31 +96,31 @@ CREATE TABLE users (---{{{
     email character varying(50),
     password character varying(70),
     userName character varying(80),
-	editor text,
-	current_project_id smallint,
-	current_scenario_id smallint,
-	websocket_host text,
-	websocket_port text,
-	session_id text,
+	editor varchar(10),
+	current_project_id varchar(100),
+	current_scenario_id varchar(100),
+	websocket_host varchar(100),
+	websocket_port varchar(20),
+	session_id varchar(100),
 	access_time timestamp,
-	access_ip text,
+	access_ip varchar(100),
 	created timestamp default current_timestamp
 );
 ---}}}
 CREATE TABLE projects (---{{{
 	id serial PRIMARY KEY, 
     user_id smallint,
-    name text,
+    name varchar(200),
     description text,
-    category_id text,
+    category_id varchar(40),
 	modified timestamp default current_timestamp
 );
 ---}}}
 CREATE TABLE categories (---{{{
 	id serial PRIMARY KEY, 
     user_id smallint,
-    label text,
-  	uuid text, 
+    label varchar(200),
+  	uuid varchar(100), 
 	active boolean,
 	visible boolean,
 	modified timestamp default current_timestamp
@@ -130,23 +129,23 @@ CREATE TABLE categories (---{{{
 CREATE TABLE scenarios (---{{{
 	id serial PRIMARY KEY, 
     project_id smallint,
-	name text,
+	name varchar(200),
     fds_file text,
 	fds_object text,
 	ui_state text,
     ac_file text,
-    ac_hash text,
+    ac_hash varchar(50),
 	modified timestamp default current_timestamp
 );
 ---}}}
 CREATE TABLE risk_scenarios (---{{{
 	id serial PRIMARY KEY, 
     project_id smallint,
-	name text,
+	name varchar(200),
 	risk_object text,
 	ui_state text,
     ac_file text,
-    ac_hash text,
+    ac_hash varchar(50),
 	modified timestamp default current_timestamp
 );
 ---}}}
@@ -159,8 +158,11 @@ CREATE TABLE library(---{{{
 ---}}}
 CREATE TABLE simulations ( ---{{{
     id serial PRIMARY KEY,
-    project text,
+    project int,
+    scenario_id int,
     iteration smallint,
+    host text,
+    run_time smallint,
     fireorig text,
     fireorigname text,
     detector text,
@@ -170,26 +172,25 @@ CREATE TABLE simulations ( ---{{{
     alpha text,
     area text,
     heigh text,
+    heatcom text,
+    radfrac text,
+    q_star text,
+    trace text,
     w text,
     outdoort text,
     d text,
     c text,
-    sprinkler text,
-    heatcom text,
     e text,
-    radfrac text,
-    fed text,
-    wcbe smallint,
-    host text,
+    vnt text,
+    sprinkler text,
+    wcbe text,
     dcbe_time integer,
     dcbe_compa text,
-    run_time smallint,
-    vnt text,
-    trace text,
-    min_height decimal,
+    fed text,
+    min_hgt decimal,
+    min_vis_compa decimal,
+    min_vis_cor decimal,
     max_temp decimal,
-    q_star text,
-    min_vis decimal,
 	status text,
 	animation text,
 	inserted timestamp without time zone not null default now()

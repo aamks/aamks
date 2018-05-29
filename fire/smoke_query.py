@@ -164,9 +164,6 @@ class SmokeQuery:
         Application needs to call us prior to massive queries for conditions at (x,y).
         '''
 
-        # if self._cfast_has_time(time) == 0:   18.May/mimooh: worker.py has already checked cfast_has_time() 
-        #     return 0
-
         for letter in ['n', 's', 'w']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
@@ -217,7 +214,7 @@ class SmokeQuery:
         if hgt == None:
             return 0
 
-        if hgt > self.config['layer_height']:
+        if hgt > self.config['LAYER_HEIGHT']:
             return conditions['LLOD']
         else:
             return conditions['ULOD']
@@ -229,10 +226,10 @@ class SmokeQuery:
         if hgt == None:
             return 0.
 
-        if hgt > self.config['layer_height']:
-            layer = 'U'
-        else:
+        if hgt > self.config['LAYER_HEIGHT']:
             layer = 'L'
+        else:
+            layer = 'U'
 
         fed_co = 2.764e-5 * ((conditions[layer+'LCO'] * 10000) ** 1.036) * (self.config['TIME_STEP'] / 60)
         fed_hcn = (exp((conditions[layer+'LHCN'] * 10000) / 43) / 220 - 0.0045) * (self.config['TIME_STEP'] / 60)
@@ -244,41 +241,56 @@ class SmokeQuery:
         return fed_total
 # }}}
 
-    def read_cfast_record(self, time):# {{{
-        ''' 
-        We had parsed headers separately. Now we only parse numbers from n,s,w files. 
-        Application needs to call us prior to massive queries for conditions at (x,y).
+    def get_final_vars(self):# {{{
+        '''
+        The app should call us after CFAST produced all output. These are the
+        summaries of various min values.
         '''
 
-        for letter in ['n', 's', 'w']:
-            f = 'cfast_{}.csv'.format(letter)
-            with open(f, 'r') as csvfile:
-                reader = csv.reader(csvfile, delimiter=',')
-                for x in range(4):
-                    next(reader)
-                for row in reader:
-                    if int(float(row[0])) == time:
-                        needed_record=[float(j) for j in row]
-                        needed_record[0]=int(float(row[0]))
-                        break
-
-            for compa in self.all_compas:
-                self._compa_conditions[compa]['TIME']=needed_record[0]
-            self._compa_conditions['outside']['TIME']=needed_record[0]
-
-            for m in range(len(needed_record)):
-                if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
-                    self._compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
-        return 1
-# }}}
-    def get_final_vars(self):
-        # 1. min(time) for HGT_COR < 1.8
-        # 2. min(HGT_COR) , min(HGT_COMPA)
-        # 3. min(ULOD_COR), min(ULOD_COMPA) 
         self._collect_final_vars()
-        #dd(sorted(finals['HGTs']))
-        
+        #dd(self.sf.query('SELECT * from finals order by param,value'))
+        finals=OrderedDict()
+
+        # min(time) for HGT_COR < 1.8
+        dcbe = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='C' AND param='HGT' AND value < 1.8")[0]['MIN(time)']
+        if dcbe == None:
+            finals['dcbe'] = 9999
+        else:
+            finals['dcbe'] = dcbe
+
+        # min(HGT_COR) 
+        finals['min_hgt_cor']=self.sf.query("SELECT MIN(value) FROM finals WHERE compa_type='C' AND param='HGT'")[0]['MIN(value)']
+
+        # min(HGT_COMPA)
+        finals['min_hgt_compa']=self.sf.query("SELECT MIN(value) FROM finals WHERE param='HGT'")[0]['MIN(value)']
+
+        # min(ULT_COMPA)
+        finals['max_temp_compa']=self.sf.query("SELECT MAX(value) FROM finals WHERE param='ULT'")[0]['MAX(value)']
+
+        c_const = 5
+        # min(ULOD_COR)
+        ul_od_cor = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='C' AND param='ULOD'")[0]['MAX(value)']
+        if ul_od_cor == 0:
+            finals['min_vis_cor'] = 30
+        else:
+            finals['min_vis_cor'] = c_const / (ul_od_cor * 2.303)
+
+
+        # min(ULOD_COMPA)
+        ul_od_compa = self.sf.query("SELECT MAX(value) FROM finals WHERE param='ULOD'")[0]['MAX(value)']
+        if ul_od_compa == 0:
+            finals['min_vis_compa'] = 30
+        else:
+            finals['min_vis_compa'] = c_const /(ul_od_compa * 2.303)
+
+        return finals
+
+        # }}}
     def _collect_final_vars(self):# {{{
+        ''' 
+        Create finals.sqlite for this very sim_id. Convert CFAST csvs into sqlite.
+        '''
+
         finals=[]
 
         for letter in ['n', 's']:
@@ -290,10 +302,6 @@ class SmokeQuery:
                 for row in reader:
                     record=[float(j) for j in row]
                     record[0]=int(float(row[0]))
-                    # print(self._headers[letter]['params'])
-                    # print(self._headers[letter]['geoms'])
-                    # print(record)
-
                     for i,param in enumerate(self._headers[letter]['params']):
                         if param != 'Time':
                             if self._headers[letter]['geoms'][i] != 'Outside':
@@ -308,9 +316,4 @@ class SmokeQuery:
         self.sf=Sqlite("finals.sqlite")
         self.sf.query("CREATE TABLE finals('time','param','value','compa','compa_type')")
         self.sf.executemany('INSERT INTO finals VALUES ({})'.format(','.join('?' * len(finals[0]))), finals)
-        dd(self.sf.query("SELECT * from finals"))
-
 # }}}
-
-#z=SmokeQuery("0")
-#z.get_final_vars() 

@@ -26,6 +26,7 @@ from include import Sqlite
 from include import Json
 from include import Dump as dd
 from include import SimIterations
+from scipy.stats.distributions import lognorm
 
 # }}}
 
@@ -36,11 +37,10 @@ class EvacMcarlo():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        self.dists=self.json.read("{}/distributions.json".format(os.environ['AAMKS_PROJECT']))
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
-        si=SimIterations(self._project_name, self.conf['NUMBER_OF_SIMULATIONS'])
+        si=SimIterations(self.conf['general']['project_id'], self.conf['general']['number_of_simulations'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._static_evac_conf()
@@ -79,7 +79,7 @@ class EvacMcarlo():
         First we try to return ROOM_1_2, then ROOM_FLOOR_1, then ROOM
         '''
 
-        z=self.dists['building_category'][self.conf['BUILDING_CATEGORY']]['evacuees_concentration']
+        z=self.conf['settings']['evacuees_concentration']
         for i in [name, "{}_FLOOR_{}".format(type_sec,floor), type_sec]:
             if i in z.keys():
                 return z[i]
@@ -89,7 +89,7 @@ class EvacMcarlo():
     def _dispatch_evacuees(self):# {{{
         ''' 
         We dispatch the evacuees across the building according to the density
-        distribution. We also calculate pre_evacuation time for each evacuee.
+        distribution. 
         '''
 
         self.dispatched_evacuees=OrderedDict() 
