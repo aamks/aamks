@@ -1,5 +1,4 @@
 import bpy
-import bge
 import json
 import os
 from include import Sqlite
@@ -9,26 +8,26 @@ from include import Colors
 
 class BlenderAamksEvac():
     ''' 
-    Aamks now uses blender game engine (BGE), currently https://upbge.org/.
-    BGE has 3D rvo2 + navmesh so it should make simulation of the evacuation
-    easier. Obviously blender provides some awesome 3D visualizations too, so
-    it's a great developing environment. 
+    Blender for development debuging.
     '''
 
-    def __init__(self, sim_id='newest'):# {{{
-        self._sim_id=sim_id
-        self.s=Sqlite("{}/workers/{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT'], self._sim_id)) 
+    def __init__(self):# {{{
+        self._newest_sim_id()
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 1) 
         self.json=Json()
         self._navmesh_collector=[]
         self._init_blender()
         self._make_materials()
-        self._make_exit()
+        #self._make_exit()
         self._make_rooms()
         self._make_doors()
         self._cut_doors()
-        self._make_stairs()
+        #self._make_stairs()
         self._make_navmesh()
-        self._make_evacuees()
+        #self._make_evacuees()
+# }}}
+    def _newest_sim_id(self):# {{{
+        self._sim_id=os.popen("ls -t {}/workers | grep -v vis | head -n 1".format(os.environ['AAMKS_PROJECT'])).read().strip()
 # }}}
     def _init_blender(self):# {{{
         bpy.ops.object.lamp_add(type="SUN", radius=5, location=(0,0,50))
@@ -186,7 +185,7 @@ class BlenderAamksEvac():
         obj.game.obstacle_radius=0.27
         obj.game.physics_type='DYNAMIC'
         obj.game.radius=0.27
-        obj.game.elasticity=0.9
+        #obj.game.elasticity=0.9
 
         sensors = obj.game.sensors
         controllers = obj.game.controllers
