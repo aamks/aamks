@@ -21,4 +21,3 @@ OnEnd()
 # aamks.<example>       # once is enough
 # AA                    # run aamks
 # aamks                 # cd /usr/local/aamks
-# cd current            # current links to akrasuski@consultrisk/risk/128/

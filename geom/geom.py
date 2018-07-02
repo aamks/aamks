@@ -30,7 +30,6 @@ class Geom():
         self._make_elem_counter()
         self._geometry_reader()
         self._geometry2sqlite()
-        self._obstacles2sqlite()
         self._init_helper_variables()
         self._init_dd_geoms()
         self._make_fake_wells()
@@ -46,10 +45,11 @@ class Geom():
         self._add_names_to_vents_from_to()
         self._calculate_sills()
         self._auto_detectors_and_sprinklers()
-        self._rooms_into_obstacles()
+        self._create_obstacles()
         self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
+        #self.s.dumpall()
 # }}}
 
     def _floors_details(self):# {{{
@@ -130,31 +130,6 @@ class Geom():
         self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,sprinkler,detector,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
-    def _obstacles2sqlite(self):# {{{
-        ''' 
-        Geometry may contain obstacles to model machines, FDS walls, bookcases,
-        etc. Obstacles are not visible in CFAST, since they don't belong to
-        aamks_geom table. 
-        '''
-
-        data=[]
-        self.s.query("CREATE TABLE obstacles(json)")
-        for floor,gg in self.geometry_data.items():
-            for v in gg['OBST']:
-                p0=v[0]
-                p1=v[1]
-                center=( p0[0] + 0.5 * (p1[0]-p0[0]), p0[1] + 0.5 * (p1[1]-p0[1]), p0[2] + 0.5 * (p1[2]-p0[2]))
-                size=(center[0]-p0[0], center[1]-p0[1], center[2]-p0[2])
-
-                p0     = [ round(x,3) for x in p0 ]
-                p1     = [ round(x,3) for x in p1 ]
-                center = [ round(x,3) for x in center ]
-                size   = [ round(x,3) for x in size ]
-
-                data.append({'center': center, 'size': size, 'p0': p0, 'p1': p1})
-
-        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
-#}}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor):# {{{
         ''' Format a record for sqlite. Hvents get fixed width 4 cm '''
         # OBST
@@ -186,7 +161,7 @@ class Geom():
         global_type_id=self._elem_counter[type_pri]
         name='{}_{}'.format(k[0], global_type_id)
 
-        #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , 'material_ceiling'            , 'material_floor'            , 'material_wall'            , 'sprinkler' , 'detector' , 'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z' , 'fire_model_ignore')
+        #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , 'material_ceiling'                              , 'material_floor'                              , 'material_wall'                              , 'sprinkler' , 'detector' , 'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z' , 'fire_model_ignore')
         return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['characteristic']['material_ceiling'] , self.conf['characteristic']['material_floor'] , self.conf['characteristic']['material_wall'] , 0           , 0          , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
 
 # }}}
@@ -496,7 +471,31 @@ class Geom():
 # }}}
 
 # OBSTACLES
-    def _rooms_into_obstacles(self):# {{{
+    def _create_obstacles(self):# {{{
+        ''' 
+        Geometry may contain obstacles to model machines, FDS walls, bookcases,
+        etc. Obstacles are not visible in CFAST, since they don't belong to
+        aamks_geom table. 
+        '''
+
+        data=OrderedDict()
+        rectangles=OrderedDict()
+        as_points=OrderedDict()
+        for floor,gg in self.geometry_data.items():
+            obstacles=[]
+            for v in gg['OBST']:
+                p0=[ int(i*100) for i in v[0] ]
+                p1=[ int(i*100) for i in v[1] ]
+                obstacles.append([ (p0[0],p0[1]), (p1[0],p0[1]), (p1[0],p1[1]), (p0[0],p1[1]) ])
+            obstacles+=self._rooms_into_obstacles(floor)
+            rectangles[floor]=self._obstacles_into_rectangles(obstacles)
+            as_points[floor]=obstacles
+            data['points']=as_points
+            data['named']=rectangles
+        self.s.query("CREATE TABLE obstacles(json)")
+        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
+#}}}
+    def _rooms_into_obstacles(self,floor):# {{{
         ''' 
         For a roomX we create a roomX_ghost, we move it by wall_width, which
         must match the width of hvents. Then we create walls via logical
@@ -508,41 +507,33 @@ class Geom():
         '''
 
         wall_width=4
-        rectangles=OrderedDict()
-        as_points=OrderedDict()
-        data=OrderedDict()
-        for floor in self.floors:
-            walls=[]
-            for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
-                walls.append((i['x0']+wall_width , i['y0']            , i['x0']+i['width']            , i['y0']+wall_width)                )
-                walls.append((i['x0']+i['width'] , i['y0']            , i['x0']+i['width']+wall_width , i['y0']+i['depth']+wall_width)     )
-                walls.append((i['x0']+wall_width , i['y0']+i['depth'] , i['x0']+i['width']            , i['y0']+i['depth']+wall_width)     )
-                walls.append((i['x0']            , i['y0']            , i['x0']+wall_width            , i['y0']+i['depth']+wall_width)     )
-            walls_polygons=([box(ii[0],ii[1],ii[2],ii[3]) for ii in set(walls)])
+        walls=[]
+        for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
+            walls.append((i['x0']+wall_width , i['y0']            , i['x0']+i['width']            , i['y0']+wall_width)                )
+            walls.append((i['x0']+i['width'] , i['y0']            , i['x0']+i['width']+wall_width , i['y0']+i['depth']+wall_width)     )
+            walls.append((i['x0']+wall_width , i['y0']+i['depth'] , i['x0']+i['width']            , i['y0']+i['depth']+wall_width)     )
+            walls.append((i['x0']            , i['y0']            , i['x0']+wall_width            , i['y0']+i['depth']+wall_width)     )
+        walls_polygons=([box(ii[0],ii[1],ii[2],ii[3]) for ii in set(walls)])
 
-            doors_polygons=[]
-            for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_tri='DOOR' ORDER BY name", (floor,)):
-                doors_polygons.append(box(i['x0'], i['y0'], i['x0']+i['width'], i['y0']+i['depth']))
-                
-            boxen=[]
-            for wall in walls_polygons:
-                for door in doors_polygons:
-                    if wall.intersection(door).area > wall_width**2:
-                        wall=wall.difference(door)
-                if isinstance(wall, MultiPolygon):
-                    for i in polygonize(wall):
-                        boxen.append(i)
-                elif isinstance(wall, Polygon):
-                    boxen.append(wall)
+        doors_polygons=[]
+        for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_tri='DOOR' ORDER BY name", (floor,)):
+            doors_polygons.append(box(i['x0'], i['y0'], i['x0']+i['width'], i['y0']+i['depth']))
+            
+        boxen=[]
+        for wall in walls_polygons:
+            for door in doors_polygons:
+                if wall.intersection(door).area > wall_width**2:
+                    wall=wall.difference(door)
+            if isinstance(wall, MultiPolygon):
+                for i in polygonize(wall):
+                    boxen.append(i)
+            elif isinstance(wall, Polygon):
+                boxen.append(wall)
 
-            obstacles=[]
-            for b in boxen:
-                obstacles.append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
-            rectangles[floor]=self._obstacles_into_rectangles(obstacles)
-            as_points[floor]=obstacles
-            data['points']=as_points
-            data['named']=rectangles
-        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
+        obstacles=[]
+        for b in boxen:
+            obstacles.append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
+        return obstacles
 # }}}
     def _obstacles_into_rectangles(self,obstacles):# {{{
         ''' 

@@ -1,7 +1,7 @@
 {
     "general": {
-        "project_id": "7",
-        "scenario_id": "31",
+        "project_id": "1",
+        "scenario_id": "1",
         "number_of_simulations": 1,
         "simulation_time": "300",
         "indoor_temperature": [
