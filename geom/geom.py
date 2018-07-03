@@ -180,6 +180,12 @@ class Geom():
         circles that are written to on top of our geoms. Useful for developing
         and debugging features. Must come early, because visualization depends
         on it. 
+
+        Procedure:  
+            * z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            *   z["0"]['circles'].append({ "xy": (i['center_x'], i['center_y']),"radius": 200, "fillColor": "#fff" , "opacity": 0.3 } )
+            *   z["0"]['circles'].append({ "xy": (i['center_x'], i['center_y']),"radius": 200, "fillColor": "#fff" , "opacity": 0.3 } )
+            * self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         '''
 
         z=dict()
@@ -190,6 +196,8 @@ class Geom():
             z[floor]['circles']=[]         
             z[floor]['texts']=[]           
             z[floor]['rectangles']=[]      
+            for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' AND floor=?", (floor,)): 
+                z[floor]['circles'].append({ "xy": (i['center_x'], i['center_y']) , "radius": 200             , "fillColor": "#fff" , "opacity": 0.3 } )
 
             # Example usage anywhere inside aamks:
 
@@ -197,7 +205,6 @@ class Geom():
             # z["0"]['rectangles'].append( { "xy": (1000 , 1000) , "width": 200             , "depth": 300        , "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#f80" , "opacity": 0.7 } )
             # z["0"]['rectangles'].append( { "xy": (0    , 0)    , "width": 200              , "depth": 200        , "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#f80" , "opacity": 0.7 } )
             # z["0"]['lines'].append(      { "xy": (2000 , 200)  , "x1": 3400               , "y1": 500           , "strokeColor": "#fff" , "strokeWidth": 2  , "opacity": 0.7 } )
-            # z["0"]['circles'].append(    { "xy": (1500 , 1500) , "radius": 80             , "fillColor": "#fff" , "opacity": 0.3 } )
             # z["0"]['texts'].append(      { "xy": (1000 , 1000) , "content": "(1000x1000)" , "fontSize": 400      , "fillColor":"#06f"    , "opacity":0.7 } )
             # self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 
