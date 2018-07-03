@@ -486,23 +486,22 @@ class Geom():
         '''
 
         data=OrderedDict()
-        rectangles=OrderedDict()
-        as_points=OrderedDict()
+        data['points']=OrderedDict()
+        data['named']=OrderedDict()
         for floor,gg in self.geometry_data.items():
-            obstacles=[]
+            data['points'][floor]=[]
+            data['named'][floor]=[]
+            boxen=[]
             for v in gg['OBST']:
-                p0=[ int(i*100) for i in v[0] ]
-                p1=[ int(i*100) for i in v[1] ]
-                obstacles.append([ (p0[0],p0[1]), (p1[0],p0[1]), (p1[0],p1[1]), (p0[0],p1[1]) ])
-            obstacles+=self._rooms_into_obstacles(floor)
-            rectangles[floor]=self._obstacles_into_rectangles(obstacles)
-            as_points[floor]=obstacles
-            data['points']=as_points
-            data['named']=rectangles
+                boxen.append(box(int(v[0][0]*100), int(v[0][1]*100), int(v[1][0]*100), int(v[1][1]*100)))
+            boxen+=self._rooms_into_boxen(floor)
+            data['named'][floor]=self._boxen_into_rectangles(boxen)
+            for i in boxen:
+                data['points'][floor].append([(int(x),int(y)) for x,y in i.exterior.coords])
         self.s.query("CREATE TABLE obstacles(json)")
         self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
 #}}}
-    def _rooms_into_obstacles(self,floor):# {{{
+    def _rooms_into_boxen(self,floor):# {{{
         ''' 
         For a roomX we create a roomX_ghost, we move it by wall_width, which
         must match the width of hvents. Then we create walls via logical
@@ -536,30 +535,23 @@ class Geom():
                     boxen.append(i)
             elif isinstance(wall, Polygon):
                 boxen.append(wall)
-
-        obstacles=[]
-        for b in boxen:
-            obstacles.append([(int(i[0]), int(i[1])) for i in list(b.exterior.coords)[0:4]])
-        return obstacles
+        return boxen 
 # }}}
-    def _obstacles_into_rectangles(self,obstacles):# {{{
+    def _boxen_into_rectangles(self,boxen):# {{{
         ''' 
-        Transform 4-points-obstacles:
-            [(x0,y0), (x1,y1), (x2,y2), (x3,y3)] 
-        into rectangles:
+        Transform shapely boxen into rectangles for paperjs visualization:
             [(x0,y0,width,height)]
         '''
 
         rectangles=[]
-        for i in obstacles:
-            k=list(zip(*i))
+
+        for i in boxen:
+            m=i.bounds
             coords=OrderedDict()
-            coords["x0"]=min(k[0])
-            coords["y0"]=min(k[1]) 
-            coords["x1"]=max(k[0])
-            coords["y1"]=max(k[1]) 
-            coords["width"]=max(k[0]) - min(k[0])
-            coords["depth"]=max(k[1]) - min(k[1]) 
+            coords["x0"]=int(m[0])
+            coords["y0"]=int(m[1])
+            coords["width"]=int(m[2]-m[0])
+            coords["depth"]=int(m[3]-m[1])
             rectangles.append(coords)
 
         return rectangles
