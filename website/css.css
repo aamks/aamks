@@ -18,15 +18,14 @@ header{/*{{{*/
 	font-size: 20px;
 	left: 300px;
 	padding:20px;
-	height:40px;
+	height:160px;
 	z-index: 10;
 	-webkit-transition: 0.35s;
 	-moz-transition: 0.35s;
 	transition: 0.35s;
 	max-width:1000px;
-    //border-bottom: 1px solid #eee; 
 	color: #fff;
-	background: #46a;
+	background: #fff;
 }
 /*}}}*/
 page {/*{{{*/
@@ -34,15 +33,15 @@ page {/*{{{*/
 	padding: 20px;
 	max-width:1000px;
 	position: relative;
-	top: 80px;
+	top: 180px;
 	left: 300px;
 	width:100%;
 	z-index: 2;
 	-webkit-transition: 0.35s;
 	-moz-transition: 0.35s;
 	transition: 0.35s;
-	//box-shadow: 1px 0 25px rgba(0, 0, 0, 0.25);
 	background: #ddd;
+	padding-bottom: 200px;
 	color: #222;
 }
 /*}}}*/

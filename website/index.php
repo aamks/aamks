@@ -1,17 +1,17 @@
 <?php
 # menu/*{{{*/
 $menu=" 
-<center>
-</center>
+<br><br><br><br>
 <ul>
 <li class='lnav'><a href=?node=about>About</a>
-<li class='lnav'><a href=?node=test1>Test 1</a>
-<li class='lnav'><a href=?node=test2>Test 2</a>
+<li class='lnav'><a href=?node=tests>Tests</a>
+<li class='lnav'><a target=_blank href=https://github.com/aamks/aamks>Github</a>
+
 </ul>
 ";
 /*}}}*/
 
-$nodes['about']=array("About", /*{{{*/
+$nodes['about']=array("About Aamks", /*{{{*/
 "
 Aamks is a linux platform for assesing fire safety of humans in buildings. It
 runs hundreds or thousands of fire simulations (CFAST) and evacuation
@@ -19,15 +19,13 @@ simulations (a-evac) and then evaluates the results.
 
 ");
 /*}}}*/
-$nodes['test1']=array("Test 1", /*{{{*/
+$nodes['tests']=array("Tests", /*{{{*/
 '
-This is test1<br><br>
+<br> Test1<br><br>
 <iframe width="560" height="315" src="https://www.youtube.com/embed/ZbQIStNx9uE" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-');
-/*}}}*/
-$nodes['test2']=array("Test 2", /*{{{*/
-'
-This is test2<br><br>
+<br> Test2<br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/ZbQIStNx9uE" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Test3<br><br>
 <iframe width="560" height="315" src="https://www.youtube.com/embed/ZbQIStNx9uE" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 ');
 /*}}}*/
@@ -51,7 +49,9 @@ echo "
 <menu>$menu</menu>
 <page> <h1>$title</h1><br><br>$content 
 </page>
-<a href=/><header> Aamks</header></a>
+<a href=/aamks_website>
+<header><img src=logo.svg>  </header></a>
+
 
 ";
 /*}}}*/
