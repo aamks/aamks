@@ -1,15 +1,17 @@
 @import url(https://fonts.googleapis.com/css?family=Roboto:700,300,600,800,400);
 
 html, body {/*{{{*/
-	line-height: 24px;
+	line-height: 30px;
 	margin: 0;
 	padding: 0;
-	background: #ccc;
 	font-family: 'Roboto';
-	color: #111;
+	font-size: 20px;
+	color: #eee;
+	background: #666;
 }
 /*}}}*/
 header{/*{{{*/
+	background: #444;
 	display: block;
 	position: absolute;
 	width: 100%;
@@ -20,15 +22,12 @@ header{/*{{{*/
 	padding:20px;
 	height:160px;
 	z-index: 10;
-	-webkit-transition: 0.35s;
-	-moz-transition: 0.35s;
-	transition: 0.35s;
 	max-width:1000px;
 	color: #fff;
-	background: #fff;
 }
 /*}}}*/
 page {/*{{{*/
+	background: #444;
 	display: block;
 	padding: 20px;
 	max-width:1000px;
@@ -37,23 +36,18 @@ page {/*{{{*/
 	left: 300px;
 	width:100%;
 	z-index: 2;
-	-webkit-transition: 0.35s;
-	-moz-transition: 0.35s;
-	transition: 0.35s;
-	background: #ddd;
 	padding-bottom: 200px;
-	color: #222;
 }
 /*}}}*/
 a {
 	text-decoration: none;
 	font-weight: normal;
-	color: #04f;
+	color: #fb0;
 }
 
 menu a {
 	white-space:nowrap;
-	font-size: 14px;
+	font-size: 16px;
 	padding: 0;
 }
 a:hover {
@@ -79,11 +73,12 @@ h3 { padding-top:60px; }
 
 
 menu {
-	display: block;
+	margin: 0;
 	position: fixed;
 	width: 200px;
 	display: block;
-	top: 0px;
+	padding-top: 100px;
+	top: 0;
 	bottom: 0;
 	left: 0;
 	z-index: 1;

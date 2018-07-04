@@ -1,7 +1,6 @@
 <?php
 # menu/*{{{*/
 $menu=" 
-<br><br><br><br>
 <ul>
 <li class='lnav'><a href=?node=about>About</a>
 <li class='lnav'><a href=?node=tests>Tests</a>
@@ -47,8 +46,7 @@ echo "
 </HEAD>
 
 <menu>$menu</menu>
-<page> <h1>$title</h1><br><br>$content 
-</page>
+<page> <h1>$title<br><br></h1>$content</page>
 <a href=/aamks_website>
 <header><img src=logo.svg>  </header></a>
 
