@@ -7,31 +7,36 @@ from include import Json
 from include import Dump as dd
 from include import Colors
 
-class BlenderAamksEvac():
+class BlenderNavmesh():
     ''' 
-    Blender for development debuging. Blender produces navmesh triangles.
+    Blender navmesh triangles producer. Must be run inside blender:
+        blender -b -P blender.py
+
+    The input is rooms and doors which produce the scene of obstacles.
+    todo: how about obstacles in sqlite?
     '''
 
     def __init__(self):# {{{
-        self._newest_sim_id()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 1) 
         self.json=Json()
-        self._navmesh_collector=[]
-        self._init_blender()
         self._make_materials()
-        self._make_rooms()
-        self._make_doors()
-        self._cut_doors()
-        self._make_navmesh()
-# }}}
-    def _newest_sim_id(self):# {{{
-        self._sim_id=os.popen("ls -t {}/workers | grep -v vis | head -n 1".format(os.environ['AAMKS_PROJECT'])).read().strip()
-# }}}
-    def _init_blender(self):# {{{
-        bpy.ops.object.lamp_add(type="SUN", radius=5, location=(0,0,50))
-        bpy.context.object.data.energy=0.2
-# }}}
+        self.navmeshes={}
 
+        for floor in json.loads(self.s.query("SELECT * FROM floors")[0]['json']).keys():
+            self._blender_clear()
+            self._navmesh_collector=[]
+            self._make_rooms(floor)
+            self._make_doors(floor)
+            self._cut_doors(floor)
+            self._make_navmesh()
+            self._save_navmesh(floor)
+        self._db_write_navmeshes()
+
+# }}}
+    def _blender_clear(self):# {{{
+        bpy.ops.object.select_all(action='SELECT')
+        bpy.ops.object.delete()
+# }}}
     def _make_materials(self):# {{{
         c=Colors()
         self.materials=dict()
@@ -45,10 +50,13 @@ class BlenderAamksEvac():
             self.materials[k]=mat
 
 # }}}
-    def _make_rooms(self):# {{{
-        ''' 0.001 prevents z-fighting of overlaping polygons. '''
+    def _make_rooms(self,floor):# {{{
+        ''' 
+        Input rooms are boxen. We create obstacles (walls and floors) of them. 
+        0.001 prevents z-fighting of overlaping polygons. 
+        '''
 
-        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name"): 
+        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY name", (floor,)): 
             origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100)
             size=(0.001+0.5*i['width']/100, 0.001+0.5*i['depth']/100, 0.001+0.5*i['height']/100)
             outset=[ (i+0.1)/i for i in size ]
@@ -56,8 +64,8 @@ class BlenderAamksEvac():
             self._navmesh_collector.append(i['name'])
 
 # }}}
-    def _make_doors(self):# {{{
-        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name"): 
+    def _make_doors(self,floor):# {{{
+        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' AND floor=? ORDER BY name", (floor,)): 
             origin=(i['center_x']/100, i['center_y']/100, i['center_z']/100)
             size=[0.5*i['width']/100, 0.5*i['depth']/100, 0.5*i['height']/100]
             for s in range(len(size)):
@@ -79,45 +87,43 @@ class BlenderAamksEvac():
         ''' 
         Except from just adding the room we create an obstacle from it:
         smaller (original) cuts in bigger (outset). 
-        The smaller needs to cut ceiling in the bigger.
+        The smaller needs to cut ceiling in the bigger, so we make it taller.
         '''
 
+        ''' smaller '''
+        bpy.ops.mesh.primitive_cube_add(location=origin)
+        bpy.ops.transform.resize(value=size)
+        smaller=bpy.context.object
+        into_ceiling=0.2
+        bpy.ops.transform.resize(value=(1, 1, 1+into_ceiling))
+        smaller.location.z +=(size[2]*into_ceiling)
+
+        ''' bigger '''
         bpy.ops.mesh.primitive_cube_add(location=origin)
         bpy.ops.transform.resize(value=size)
         bigger=bpy.context.object
-        smaller=bigger.copy()
-        smaller.data=bigger.data.copy()
-
-        bigger.select=False
-        smaller.select=True
-        into_ceiling=0.2
-        bpy.ops.transform.resize(value=(1, 1, 1+into_ceiling))
-        bpy.ops.transform.translate(value=(0, 0, (size[2]*into_ceiling)))
-        smaller.select=False
-
         bigger.data.materials.append(self.materials[mat])
         bigger.show_transparent=True
         bigger.name=name
-
-        bigger.select=True
         bpy.ops.transform.resize(value=outset)
 
+        ''' bigger - smaller'''
         bpy.ops.object.modifier_add(type='BOOLEAN')
         bigger.modifiers['Boolean'].operation='DIFFERENCE'
         bigger.modifiers['Boolean'].object=smaller 
         bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Boolean')
-        bigger.select=False
 
+        bigger.select=False
         smaller.select=True
         bpy.ops.object.delete()
 
 # }}}
-    def _cut_doors(self):# {{{
+    def _cut_doors(self,floor):# {{{
         bpy.ops.object.select_all(action='DESELECT')
-        for compa in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' ORDER BY name"): 
+        for compa in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY name", (floor,)): 
             compa=bpy.data.objects[compa['name']]
             bpy.context.scene.objects.active = compa
-            for door in self.s.query("SELECT name FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name"): 
+            for door in self.s.query("SELECT name FROM aamks_geom WHERE type_tri='DOOR' AND floor=? ORDER BY name", (floor,)): 
                 door=bpy.data.objects[door['name']]
                 bpy.ops.object.modifier_add(type='BOOLEAN')
                 bpy.context.object.modifiers['Boolean'].operation='DIFFERENCE'
@@ -125,7 +131,7 @@ class BlenderAamksEvac():
                 bpy.ops.object.modifier_apply(apply_as='DATA', modifier='Boolean')
                 bpy.ops.object.select_all(action='DESELECT')
 
-        for door in self.s.query("SELECT name FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name"): 
+        for door in self.s.query("SELECT name FROM aamks_geom WHERE type_tri='DOOR' AND floor=? ORDER BY name", (floor,)): 
             door=bpy.data.objects[door['name']]
             door.select=True
             bpy.ops.object.delete()
@@ -142,20 +148,26 @@ class BlenderAamksEvac():
         bpy.ops.object.select_all(action='DESELECT')
         navmesh_input.select=True
         bpy.ops.object.delete()
-
-        current_obj = bpy.context.active_object  
-          
-        collect=''
-        for face in current_obj.data.polygons:  
+# }}}
+    def _save_navmesh(self,floor):# {{{
+        navmesh= bpy.data.objects['Navmesh'].data
+        self.navmeshes[floor]=[]
+        for face in navmesh.polygons:  
+            ff=[]
             for vert in face.vertices:
-                local_point = current_obj.data.vertices[vert].co
-                collect+="{};{};".format(local_point[0], local_point[1])
-            collect+="\n"
+                local_point = navmesh.vertices[vert].co
+                ff.append((local_point[0], local_point[1]))
+            self.navmeshes[floor].append(ff)
+# }}}
+    def _db_write_navmeshes(self):# {{{
+        try:
+            self.s.query('DROP TABLE navmeshes')
+        except: 
+            pass
 
-        with open("/home/mimooh/nav.txt", "w") as f: 
-            f.write(collect)
-        print(collect)
-
+        self.s.query('CREATE TABLE navmeshes(json)')
+        self.s.query('INSERT INTO navmeshes VALUES (?)', (json.dumps(self.navmeshes),))
+        self.s.dumpall()
 # }}}
 
-BlenderAamksEvac()
+BlenderNavmesh()
