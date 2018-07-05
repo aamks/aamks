@@ -88,16 +88,16 @@ class Geom():
         '''
 
         try:
-            self.geometry_data=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
+            self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
         except:
             InkscapeReader()
-            self.geometry_data=self.json.read("{}/svg.json".format(os.environ['AAMKS_PROJECT']))
+            self.raw_geometry=self.json.read("{}/svg.json".format(os.environ['AAMKS_PROJECT']))
 
 # }}}
     def _geometry2sqlite(self):# {{{
         ''' 
         Parse geometry and place geoms in sqlite. The lowest floor is always 0.
-        The self.geometry_data example for floor("0"):
+        The self.raw_geometry example for floor("0"):
 
             "0": [
                 "ROOM": [
@@ -116,7 +116,7 @@ class Geom():
         '''
 
         data=[]
-        for floor,gg in self.geometry_data.items():
+        for floor,gg in self.raw_geometry.items():
             for k,arr in gg.items():
                 for v in arr:
                     p0=[ int(i*100) for i in v[0] ]
@@ -488,7 +488,9 @@ class Geom():
         data=OrderedDict()
         data['points']=OrderedDict()
         data['named']=OrderedDict()
-        for floor,gg in self.geometry_data.items():
+
+        floors_meta=json.loads(self.s.query("SELECT json FROM floors")[0]['json'])
+        for floor,gg in self.raw_geometry.items():
             data['points'][floor]=[]
             data['named'][floor]=[]
             boxen=[]
@@ -497,7 +499,8 @@ class Geom():
             boxen+=self._rooms_into_boxen(floor)
             data['named'][floor]=self._boxen_into_rectangles(boxen)
             for i in boxen:
-                data['points'][floor].append([(int(x),int(y)) for x,y in i.exterior.coords])
+                data['points'][floor].append([(int(x),int(y), floors_meta[floor]['z']) for x,y in i.exterior.coords])
+        #dd(json.dumps(data['points']["1"]))
         self.s.query("CREATE TABLE obstacles(json)")
         self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
 #}}}

@@ -15,36 +15,57 @@ class BlenderNavmesh():
     '''
 
     def __init__(self):# {{{
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 1) 
         self.json=Json()
         self.navmeshes={}
-        self.floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
+        self._camera_to_units()
+        self._blender_clear()
+        self._navmesh_collector=[]
+        self._make_obstacles()
+        # self._make_ground(floor)
+        # self._make_navmesh()
+        # self._save_navmesh(floor)
+        # self._db_write_navmeshes()
 
-        for floor in self.floors.keys():
-        #for floor in ["0"]:
-            self._blender_clear()
-            self._navmesh_collector=[]
-            self._make_obstacles(floor)
-            self._make_ground(floor)
-            self._make_navmesh()
-            self._save_navmesh(floor)
-        self._db_write_navmeshes()
+# }}}
+    def _camera_to_units(self):# {{{
+        ''' 
+        Units can be metres, centimetres, etc., so blender needs the proper
+        camera clipping 
 
+        '''
+
+        for a in bpy.context.screen.areas:
+            if a.type == 'VIEW_3D':
+                for s in a.spaces:
+                    if s.type == 'VIEW_3D':
+                        s.clip_start = 10
+                        s.clip_end = 100000
 # }}}
     def _blender_clear(self):# {{{
         bpy.ops.object.select_all(action='SELECT')
         bpy.ops.object.delete()
 # }}}
-    def _make_obstacles(self,floor):# {{{
-        for ii,i in enumerate(json.loads(self.s.query("SELECT * FROM obstacles")[0]['json'])['named'][floor]):
-            name="obst_{}".format(ii)
-            origin=((i['x0']+0.5*i['width'])/100, (i['y0']+0.5*i['depth'])/100, self.floors[floor]['z']/100+0.2)
-            size=(0.001+0.5*i['width']/100, 0.001+0.5*i['depth']/100, 0.2)
-            bpy.ops.mesh.primitive_cube_add(location=origin)
-            bpy.ops.transform.resize(value=size)
-            self._navmesh_collector.append(name)
-            obst=bpy.context.object
-            obst.name=name
+    def _make_obstacles(self):# {{{
+        z=self.json.read("/home/mimooh/obst.json")
+        for verts in z:
+            edges = [(i, i+1) for i in range(0,len(verts)-1)]
+            m = bpy.data.meshes.new("m")
+            m.from_pydata(verts, edges, [])
+            m.update()
+            obj = bpy.data.objects.new("mm", m)
+            bpy.context.scene.objects.link(obj)
+        bpy.ops.object.select_all(action='SELECT')
+
+        #dd(z)
+        # for ii,i in enumerate(json.loads(self.s.query("SELECT * FROM obstacles")[0]['json'])['named'][floor]):
+        #     name="obst_{}".format(ii)
+        #     origin=((i['x0']+0.5*i['width'])/100, (i['y0']+0.5*i['depth'])/100, self.floors[floor]['z']/100+0.2)
+        #     size=(0.001+0.5*i['width']/100, 0.001+0.5*i['depth']/100, 0.2)
+        #     bpy.ops.mesh.primitive_cube_add(location=origin)
+        #     bpy.ops.transform.resize(value=size)
+        #     self._navmesh_collector.append(name)
+        #     obst=bpy.context.object
+        #     obst.name=name
 
 # }}}
     def _make_ground(self,floor):# {{{
