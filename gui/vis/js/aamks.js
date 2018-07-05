@@ -94,7 +94,7 @@ function showStaticImage(chosenAnim) {
 		wallsSize=Math.round(2/scale);
 		ballsSize=Math.round(5/scale);
 		velocitiesSize=Math.round(1/scale);
-		doorsSize=2*wallsSize;
+		doorsSize=Math.round(0.2*wallsSize);
 
 		rooms=dstatic[floor].rooms;
 		doors=dstatic[floor].doors;

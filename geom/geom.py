@@ -27,6 +27,7 @@ class Geom():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
+        self._doors_width=16
         self._make_elem_counter()
         self._geometry_reader()
         self._geometry2sqlite()
@@ -35,7 +36,6 @@ class Geom():
         self._make_fake_wells()
         self._floors_details()
         self._aamks_geom_into_polygons()
-        self._aamks_geom_orientation()
         self._make_id2compa_name()
         self._find_horiz_intersections()
         self._get_faces()
@@ -131,7 +131,7 @@ class Geom():
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor):# {{{
-        ''' Format a record for sqlite. Hvents get fixed width 4 cm '''
+        ''' Format a record for sqlite. Hvents get fixed width self._doors_width cm '''
         # OBST
         if k in ('OBST'):
             return False
@@ -149,8 +149,8 @@ class Geom():
         
         # HVENT  
         elif k in ('D', 'C', 'E', 'HOLE', 'W'): 
-            width=max(width,4)
-            depth=max(depth,4)
+            width=max(width,self._doors_width)
+            depth=max(depth,self._doors_width)
             type_pri='HVENT'
             if k in ('D', 'C', 'E', 'HOLE'): 
                 type_tri='DOOR'
@@ -166,9 +166,17 @@ class Geom():
 
 # }}}
     def _init_helper_variables(self):# {{{
+        ''' 
+        Is HVENT vertical or horizontal? Apart from what is width and height
+        for geometry, HVENTS have their cfast_width always along the wall
+        '''
+
         self.outside_compa=self.s.query("SELECT count(*) FROM aamks_geom WHERE type_pri='COMPA'")[0]['count(*)']+1
         self.floors=        [z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self.all_doors=     [z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name") ]
+
+        self.s.query("UPDATE aamks_geom SET is_vertical=0, y0=y0-{}, cfast_width=width WHERE type_pri='HVENT' AND width > depth ".format(self._doors_width/2-2))
+        self.s.query("UPDATE aamks_geom SET is_vertical=1, x0=x0-{}, cfast_width=depth WHERE type_pri='HVENT' AND width < depth ".format(self._doors_width/2-2))
 
         self.s.query("UPDATE aamks_geom SET room_area=round(width*depth/10000,2) WHERE type_pri='COMPA'")
         self.s.query("UPDATE aamks_geom SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
@@ -197,7 +205,7 @@ class Geom():
             z[floor]['texts']=[]           
             z[floor]['rectangles']=[]      
             for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' AND floor=?", (floor,)): 
-                z[floor]['circles'].append({ "xy": (i['center_x'], i['center_y']) , "radius": 200             , "fillColor": "#fff" , "opacity": 0.3 } )
+                z[floor]['circles'].append({ "xy": (i['center_x'] , i['center_y']) , "radius": 90 , "fillColor": "#fff" , "opacity": 0.05 } )
 
             # Example usage anywhere inside aamks:
 
@@ -319,31 +327,13 @@ class Geom():
             for v in self.s.query("SELECT * FROM aamks_geom WHERE floor=?", (floor,)):
                 self.aamks_polies[v['type_pri']][floor][v['global_type_id']]=box(v['x0'], v['y0'], v['x0']+v['width'], v['y0']+v['depth'])
 # }}}
-    def _aamks_geom_orientation(self):# {{{
-        ''' 
-        Is HVENT vertical or horizontal? Apart from what is width and height
-        for geometry, HVENTS have their cfast_width always along the wall
-        '''
-
-        # TODO: faster, but the same as previous?
-        self.s.query("UPDATE aamks_geom SET is_vertical=0, cfast_width=width WHERE type_pri='HVENT' AND width > depth ")
-        self.s.query("UPDATE aamks_geom SET is_vertical=1, cfast_width=depth WHERE type_pri='HVENT' AND width < depth ")
-
-        # for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='HVENT' order by name"):
-        #     print(v['width'], v['depth'])
-        #     if v['width'] > v['depth']:
-        #         self.s.query("UPDATE aamks_geom SET is_vertical=0 WHERE name=?" , (v['name']  , ))
-        #         self.s.query("UPDATE aamks_geom SET cfast_width=? WHERE name=?" , (v['width'] , v['name']))
-        #     else:
-        #         self.s.query("UPDATE aamks_geom SET is_vertical=1 WHERE name=?" , (v['name']  , ))
-        #         self.s.query("UPDATE aamks_geom SET cfast_width=? WHERE name=?" , (v['depth'] , v['name']))
-# }}}
     def _get_faces(self):# {{{
         ''' 
-        Cfast faces and offsets calculation. HVENTS have width=4, so we only
-        consider intersection.length > 4 Faces are properties of doors. They
-        are calculated in respect to the room of lower id. The orientation of
-        faces in each room:
+        Cfast faces and offsets calculation. HVENTS have self._doors_width, so
+        we only consider intersection.length > self._doors_width Faces are
+        properties of doors. They are calculated in respect to the room of
+        lower id. The orientation of faces in each room:
+
                 3
             +-------+
           4 |       | 2
@@ -362,7 +352,7 @@ class Geom():
                 lines[4]=LineString([compa[2], compa[3]])
                 lines[1]=LineString([compa[3], compa[0]])
                 for key,line in lines.items():
-                    if hvent_poly.intersection(line).length > 4:
+                    if hvent_poly.intersection(line).length > self._doors_width:
                         pt=list(zip(*line.xy))[0]
                         face=key
                         offset=hvent_poly.distance(Point(pt))
@@ -404,7 +394,7 @@ class Geom():
         We expect that HVENT intersects either:
             a) room_from, room_to  (two rectangles)
             b) room_from, outside  (one rectangle)
-        If the door originates at the very beginning of the room, then it also has a tiny intersection with some third rectangle, hence we check: intersection.length > 4
+        If the door originates at the very beginning of the room, then it also has a tiny intersection with some third rectangle, hence we check: intersection.length > self._doors_width
 
         self.aamks_polies is a dict of floors:
             COMPA: OrderedDict([(1, OrderedDict([(42, <shapely.geometry.polygon.Polygon object at 0x2b2206282e48>), (43, <shapely.geometry.polygon.Polygon object at 0x2b2206282eb8>), (44, <shapely.geometry.polygon.Polygon object at 0x2b2206282f28>)))]) ...
@@ -428,7 +418,7 @@ class Geom():
         for floor,vents_dict in self.aamks_polies['HVENT'].items():
             for vent_id,vent_poly in vents_dict.items():
                 for compa_id,compa_poly in self.aamks_polies['COMPA'][floor].items():
-                    if vent_poly.intersection(compa_poly).length > 4:
+                    if vent_poly.intersection(compa_poly).length > self._doors_width:
                         vc_intersections[vent_id].append(compa_id)
 
         update=[]
@@ -463,7 +453,7 @@ class Geom():
                 except:
                     two_floors=self.aamks_polies['COMPA'][floor]
                 for compa_id,compa_poly in two_floors.items():
-                    if vent_poly.intersection(compa_poly).length > 4:
+                    if vent_poly.intersection(compa_poly).length > self._doors_width:
                         vc_intersections[vent_id].append(compa_id)
 
         update=[]
@@ -590,8 +580,7 @@ class Geom():
             r=self.s.query("SELECT name,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
             fatal="Fatal: {}: {}".format(r['name'], title)
             Vis(r['name'], 'image', "<ered>{}</ered>".format(fatal))
-            print("\n\n{}. Running xdg-open http://localhost:8123/workers/vis/master.html. See your webbrowser.".format(fatal))
-            Popen('xdg-open http://localhost:8123/workers/vis/master.html', shell=True)
+            print("\n\n{}. See the webbrowser: todo add url.".format(fatal))
             sys.exit()
         else:
             Vis(None, 'image', title)

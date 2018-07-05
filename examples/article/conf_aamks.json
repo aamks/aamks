@@ -1,16 +1,16 @@
 {
     "general": {
-        "project_id": "1",
-        "scenario_id": "1",
+        "project_id": 1,
+        "scenario_id": 1,
         "number_of_simulations": 1,
-        "simulation_time": "300",
+        "simulation_time": 100,
         "indoor_temperature": [
             20,
             20
         ],
         "outdoor_temperature": [
-            20,
-            20
+            10.75,
+            10.75
         ],
         "indoor_pressure": 101325,
         "auto_stircaser": false
@@ -25,7 +25,7 @@
         "wall_thickness": "0.2"
     },
     "infrastructure": {
-        "has_detectors": true,
+        "has_detectors": false,
         "detectors": {
             "comment": "desc",
             "type": "heat",
@@ -39,7 +39,7 @@
             ],
             "not_broken_probability": 0.96
         },
-        "has_sprinklers": true,
+        "has_sprinklers": false,
         "sprinklers": {
             "comment": "desc",
             "trigger_temperature_mean_and_sd": [
@@ -55,25 +55,24 @@
         },
         "has_nshevs": false,
         "nshevs": {
-            "activation_time": "0"
+            "activation_time": 0
         },
-		"cfast_static_records": ""
+        "cfast_static_records": []
     },
     "settings": {
         "heat_release_rate": {
             "comment": "desc",
             "hrrpua_min_mode_max": [
-                150,
-                500,
-                650
+                300,
+                1000,
+                1300
             ],
             "alpha_min_mode_max": [
                 0.0029,
-                0.012,
+                0.047,
                 0.188
             ]
         },
-		"fire_starts_in_room_probability": 0.7,
         "window_open": {
             "comment": "desc",
             "setup": [
@@ -118,24 +117,24 @@
             "standard_door_is_open_probability": 0.5,
             "vvents_no_failure_probability": 0.96
         },
-        "c_const": 58,
+        "c_const": 8,
         "pre_evacuation_time": {
             "comment": "desc",
             "mean_and_sd_room_of_fire_origin": [
-                59.85,
-                1.48
+                2.74,
+                0.58
             ],
             "mean_and_sd_ordinary_room": [
-                88.84,
-                11.83
+                5.246,
+                0.101
             ]
         },
         "evacuees_concentration": {
             "comment": "desc",
-            "COR": 10,
-            "STAI": 10,
-            "ROOM": 5,
-            "HALL": 10
+            "COR": 50,
+            "STAI": 50,
+            "ROOM": 7,
+            "HALL": 50
         },
         "evacuees_speed_params": {
             "comment": "desc",
@@ -155,6 +154,11 @@
                 0.706,
                 0.069
             ]
+        },
+        "origin_of_fire": {
+            "comment": "desc",
+            "fire_starts_in_room_probability": 0.8
         }
     }
 }
+
