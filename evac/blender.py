@@ -7,7 +7,7 @@ from include import Json
 from include import Dump as dd
 from include import Colors
 
-class BlenderNavmesh():
+class BlenderNavmesh:
     ''' 
     Blender navmesh triangles producer. Must be run inside blender:
         blender -b -P blender.py
@@ -21,7 +21,6 @@ class BlenderNavmesh():
         self._blender_clear()
         self._navmesh_collector=[]
         self._make_obstacles()
-        # self._make_ground(floor)
         # self._make_navmesh()
         # self._save_navmesh(floor)
         # self._db_write_navmeshes()
@@ -49,34 +48,18 @@ class BlenderNavmesh():
         z=self.json.read("/home/mimooh/obst.json")
         for verts in z:
             edges = [(i, i+1) for i in range(0,len(verts)-1)]
-            m = bpy.data.meshes.new("m")
+            m = bpy.data.meshes.new("obst")
             m.from_pydata(verts, edges, [])
             m.update()
-            obj = bpy.data.objects.new("mm", m)
+            obj = bpy.data.objects.new("obst", m)
             bpy.context.scene.objects.link(obj)
         bpy.ops.object.select_all(action='SELECT')
-
-        #dd(z)
-        # for ii,i in enumerate(json.loads(self.s.query("SELECT * FROM obstacles")[0]['json'])['named'][floor]):
-        #     name="obst_{}".format(ii)
-        #     origin=((i['x0']+0.5*i['width'])/100, (i['y0']+0.5*i['depth'])/100, self.floors[floor]['z']/100+0.2)
-        #     size=(0.001+0.5*i['width']/100, 0.001+0.5*i['depth']/100, 0.2)
-        #     bpy.ops.mesh.primitive_cube_add(location=origin)
-        #     bpy.ops.transform.resize(value=size)
-        #     self._navmesh_collector.append(name)
-        #     obst=bpy.context.object
-        #     obst.name=name
-
-# }}}
-    def _make_ground(self,floor):# {{{
-        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,)):
-            origin=((i['x0']+0.5*i['width'])/100, (i['y0']+0.5*i['depth'])/100, self.floors[floor]['z']/100+0.1)
-            size=(0.001+0.5*i['width']/100, 0.001+0.5*i['depth']/100, 0.1)
-            bpy.ops.mesh.primitive_cube_add(location=origin)
-            bpy.ops.transform.resize(value=size)
-            self._navmesh_collector.append(i['name'])
-            obst=bpy.context.object
-            obst.name=i['name']
+        bpy.context.scene.objects.active = bpy.data.objects["obst"]
+        bpy.ops.object.join()
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.extrude_region()
+        bpy.ops.transform.translate(value=(0,0,100))
+        bpy.ops.object.mode_set(mode='OBJECT')
 
 # }}}
     def _make_navmesh(self):# {{{
