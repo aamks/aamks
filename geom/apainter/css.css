@@ -1,0 +1,46 @@
+body { 
+	background-color: #333;
+	font-family: 'Sans';
+	color: #eee;
+	overflow: hidden;
+}
+
+name { 
+	border: 1px solid #444;  
+}
+
+svg { 
+	background-color: #444;
+	font: 10px sans;
+}
+
+name:hover { 
+	background-color: #888; 
+}
+
+nav { 
+	display: block;
+	float: left;
+	width: 120px;
+	height: 800px;
+	margin-right: 20px;
+	background-color: #222;
+}
+
+text { 
+	fill: #eee;
+	font-size: 15px;
+	font-family: 'Sans' 
+}
+
+.legend { 
+	display: inline-block;
+	padding: 4px;  
+	background-color: #f00; 
+	margin-right: 4px;
+}
+
+.axis path, .axis line {
+	fill: none;
+	stroke: #383838;
+}
