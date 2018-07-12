@@ -214,7 +214,7 @@ class Geom():
             z[floor]['texts']=[]           
             z[floor]['rectangles']=[]      
             for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' AND floor=?", (floor,)): 
-                z[floor]['circles'].append({ "xy": (i['center_x'] , i['center_y']) , "radius": 90 , "fillColor": "#fff" , "opacity": 0.1 } )
+                z[floor]['circles'].append({ "xy": (i['center_x'] , i['center_y']) , "radius": 90 , "fillColor": "#fff" , "opacity": 0.05 } )
 
             # Example usage anywhere inside aamks:
 
@@ -487,6 +487,7 @@ class Geom():
         data=OrderedDict()
         data['points']=OrderedDict()
         data['named']=OrderedDict()
+        floors_meta=json.loads(self.s.query("SELECT json FROM floors")[0]['json'])
         for floor,gg in self.raw_geometry.items():
             data['points'][floor]=[]
             data['named'][floor]=[]
