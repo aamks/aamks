@@ -1,5 +1,5 @@
 body { 
-	background-color: #333;
+	background-color: #444;
 	font-family: 'Sans';
 	color: #eee;
 	overflow: hidden;
@@ -10,7 +10,7 @@ name {
 }
 
 svg { 
-	background-color: #444;
+	border: 1px solid #555; 
 	font: 10px sans;
 }
 
