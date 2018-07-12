@@ -18,13 +18,10 @@ name:hover {
 	background-color: #888; 
 }
 
-nav { 
+status { 
 	display: block;
-	float: left;
-	width: 120px;
-	height: 800px;
-	margin-right: 20px;
-	background-color: #222;
+	width: 1200px;
+	margin-top: 20px;
 }
 
 text { 
