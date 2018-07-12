@@ -28,10 +28,11 @@ class Geom():
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self._doors_width=16
+        self._wall_width=4
         self._make_elem_counter()
         self._geometry_reader()
         self._geometry2sqlite()
-        self._init_helper_variables()
+        self._enhancements()
         self._init_dd_geoms()
         self._make_fake_wells()
         self._floors_details()
@@ -165,10 +166,15 @@ class Geom():
         return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['characteristic']['material_ceiling'] , self.conf['characteristic']['material_floor'] , self.conf['characteristic']['material_wall'] , 0           , 0          , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
 
 # }}}
-    def _init_helper_variables(self):# {{{
+    def _enhancements(self):# {{{
         ''' 
         Is HVENT vertical or horizontal? Apart from what is width and height
         for geometry, HVENTS have their cfast_width always along the wall
+
+        Doors and Holes will be later interescted with parallel walls
+        (obstacles). We inspect is_vertical and make the doors just enough
+        smaller to avoid perpendicular intersections.
+
         '''
 
         self.outside_compa=self.s.query("SELECT count(*) FROM aamks_geom WHERE type_pri='COMPA'")[0]['count(*)']+1
@@ -180,6 +186,9 @@ class Geom():
 
         self.s.query("UPDATE aamks_geom SET room_area=round(width*depth/10000,2) WHERE type_pri='COMPA'")
         self.s.query("UPDATE aamks_geom SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
+
+        self.s.query("UPDATE aamks_geom SET y0=y0+?, depth=depth-? WHERE type_tri='DOOR' AND is_vertical=1", (self._wall_width, self._wall_width))
+        self.s.query("UPDATE aamks_geom SET x0=x0+?, width=width-? WHERE type_tri='DOOR' AND is_vertical=0", (self._wall_width, self._wall_width))
 
 # }}}
     def _init_dd_geoms(self):# {{{
@@ -205,7 +214,7 @@ class Geom():
             z[floor]['texts']=[]           
             z[floor]['rectangles']=[]      
             for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' AND floor=?", (floor,)): 
-                z[floor]['circles'].append({ "xy": (i['center_x'] , i['center_y']) , "radius": 90 , "fillColor": "#fff" , "opacity": 0.05 } )
+                z[floor]['circles'].append({ "xy": (i['center_x'] , i['center_y']) , "radius": 90 , "fillColor": "#fff" , "opacity": 0.1 } )
 
             # Example usage anywhere inside aamks:
 
@@ -478,14 +487,17 @@ class Geom():
         data=OrderedDict()
         data['points']=OrderedDict()
         data['named']=OrderedDict()
-
-        floors_meta=json.loads(self.s.query("SELECT json FROM floors")[0]['json'])
         for floor,gg in self.raw_geometry.items():
             data['points'][floor]=[]
             data['named'][floor]=[]
             boxen=[]
-            for v in gg['OBST']:
-                boxen.append(box(int(v[0][0]*100), int(v[0][1]*100), int(v[1][0]*100), int(v[1][1]*100)))
+            # TODO: once cad.json uses 'OBST': [], there's no need to try.
+            try:
+                for v in gg['OBST']:
+                    boxen.append(box(int(v[0][0]*100), int(v[0][1]*100), int(v[1][0]*100), int(v[1][1]*100)))
+            except:
+                pass
+                
             boxen+=self._rooms_into_boxen(floor)
             data['named'][floor]=self._boxen_into_rectangles(boxen)
             for i in boxen:
@@ -496,22 +508,18 @@ class Geom():
 #}}}
     def _rooms_into_boxen(self,floor):# {{{
         ''' 
-        For a roomX we create a roomX_ghost, we move it by wall_width, which
-        must match the width of hvents. Then we create walls via logical
-        operations. We then intersect the walls with the doors to have openings
-        in the walls. The door's width can originate on top of the wall, but
-        such intersections don't count. Only intesections of area >
-        wall_width**2 count -- only doors that have long side on the wall. 
-        For comfortable debuging filter geoms in self.s.query(). 
+        For a roomX we create a roomX_ghost, we move it by self._wall_width,
+        which must match the width of hvents. Then we create walls via logical
+        operations. Finally doors cut the openings in walls.
+
         '''
 
-        wall_width=4
         walls=[]
         for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
-            walls.append((i['x0']+wall_width , i['y0']            , i['x0']+i['width']            , i['y0']+wall_width)                )
-            walls.append((i['x0']+i['width'] , i['y0']            , i['x0']+i['width']+wall_width , i['y0']+i['depth']+wall_width)     )
-            walls.append((i['x0']+wall_width , i['y0']+i['depth'] , i['x0']+i['width']            , i['y0']+i['depth']+wall_width)     )
-            walls.append((i['x0']            , i['y0']            , i['x0']+wall_width            , i['y0']+i['depth']+wall_width)     )
+            walls.append((i['x0']+self._wall_width , i['y0']            , i['x0']+i['width']            , i['y0']+self._wall_width)                )
+            walls.append((i['x0']+i['width'] , i['y0']            , i['x0']+i['width']+self._wall_width , i['y0']+i['depth']+self._wall_width)     )
+            walls.append((i['x0']+self._wall_width , i['y0']+i['depth'] , i['x0']+i['width']            , i['y0']+i['depth']+self._wall_width)     )
+            walls.append((i['x0']            , i['y0']            , i['x0']+self._wall_width            , i['y0']+i['depth']+self._wall_width)     )
         walls_polygons=([box(ii[0],ii[1],ii[2],ii[3]) for ii in set(walls)])
 
         doors_polygons=[]
@@ -521,8 +529,7 @@ class Geom():
         boxen=[]
         for wall in walls_polygons:
             for door in doors_polygons:
-                if wall.intersection(door).area > wall_width**2:
-                    wall=wall.difference(door)
+                wall=wall.difference(door)
             if isinstance(wall, MultiPolygon):
                 for i in polygonize(wall):
                     boxen.append(i)
