@@ -14,7 +14,6 @@ from shapely.ops import polygonize
 from numpy.random import choice
 from math import sqrt
 import itertools
-from geom.inkscapereader import InkscapeReader
 from include import Sqlite
 from include import Json
 from include import Dump as dd
@@ -91,8 +90,9 @@ class Geom():
         try:
             self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
         except:
-            InkscapeReader()
-            self.raw_geometry=self.json.read("{}/svg.json".format(os.environ['AAMKS_PROJECT']))
+            print("TODO: apainter replaces inkscape") 
+            # InkscapeReader()
+            # self.raw_geometry=self.json.read("{}/svg.json".format(os.environ['AAMKS_PROJECT']))
 
 # }}}
     def _geometry2sqlite(self):# {{{
