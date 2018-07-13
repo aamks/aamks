@@ -11,20 +11,20 @@
 # your desktop, create your jabber account and make sure it works. Aamks may send
 # you some messages while it works. 
 
-# CONFIGURATION
+# CONFIGURATION, must copy to ~/.bashrc
 
 AAMKS_SERVER=127.0.0.1
-AAMKS_PATH='/usr/local/aamks'
 AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 AAMKS_TESTING=0
 AAMKS_PG_PASS='hulakula' 
 AAMKS_USE_GEARMAN=1
+AAMKS_PATH='/usr/local/aamks'
+PYTHONPATH="$AAMKS_PATH"
 
 # END OF CONFIGURATION
 
 USER=`id -ru`
 [ "X$USER" == "X0" ] && { echo "Don't run as root / sudo"; exit; }
-
 
 sudo apt-get update 
 sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils
