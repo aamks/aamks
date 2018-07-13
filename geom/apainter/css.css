@@ -25,8 +25,8 @@ status {
 }
 
 text { 
-	fill: #eee;
-	font-size: 15px;
+	fill: #888;
+	font-size: 11px;
 	font-family: 'Sans' 
 }
 
@@ -40,4 +40,5 @@ text {
 .axis path, .axis line {
 	fill: none;
 	stroke: #383838;
+	font-family: 'Sans' 
 }
