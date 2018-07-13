@@ -105,7 +105,7 @@ class Manager():
             cmds.append("echo \`cat /etc/hostname\` ; ")
             cmds.append("svn co https://github.com/aamks/aamks.git/branches/0.2 $AAMKS_PATH; ")
             cmds.append("svn up /home/svn/svn_mimooh/configs; ")
-            cmds.append("sudo apt-get install --yes python3-pip ipython3 python3-urllib3 gearman ; ")
+            cmds.append("sudo apt-get install --yes python3-pip ipython3 python3-urllib3 gearman sendxmpp; ")
             cmds.append("sudo -H pip3 install --upgrade pip ; ")
             cmds.append("sudo -H pip3 install networkX numpy ; ")
             cmds.append("rm -rf ~/.cache/; ")
