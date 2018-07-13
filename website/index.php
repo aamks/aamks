@@ -4,6 +4,7 @@ $menu="
 <ul>
 <li class='lnav'><a href=?node=about>About</a>
 <li class='lnav'><a href=?node=tests>Tests</a>
+<li class='lnav'><a href=?node=demos>Demos</a>
 <li class='lnav'><a target=_blank href=https://github.com/aamks/aamks>Github</a>
 
 </ul>
@@ -12,9 +13,11 @@ $menu="
 
 $nodes['about']=array("About Aamks", /*{{{*/
 "
-Aamks is a linux platform for assesing fire safety of humans in buildings. It
-runs hundreds or thousands of fire simulations (CFAST) and evacuation
-simulations (a-evac) and then evaluates the results.
+Aamks is an open-source linux platform for assesing fire safety of humans in
+buildings. It runs hundreds or thousands of fire simulations (CFAST) and
+evacuation simulations (a-evac) and then evaluates the results.
+
+
 
 ");
 /*}}}*/
@@ -26,6 +29,15 @@ $nodes['tests']=array("Tests", /*{{{*/
 <iframe width="560" height="315" src="https://www.youtube.com/embed/ZbQIStNx9uE" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 <br> Test3<br><br>
 <iframe width="560" height="315" src="https://www.youtube.com/embed/ZbQIStNx9uE" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+');
+/*}}}*/
+$nodes['demos']=array("Demos", /*{{{*/
+'
+Aamks is a work in progress, but you can see some aspects of it here
+<ul>
+<li> An example of a resulting <a target=blank_ href=>visualization</a>
+<li> Aamks geometries are normally created with Autocad, but we are also working on a web-based <a target=blank_ href=/blob/aamks/geom/apainter/>solution</a> 
+</ul>
 ');
 /*}}}*/
 
