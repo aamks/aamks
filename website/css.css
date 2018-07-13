@@ -11,7 +11,6 @@ html, body {/*{{{*/
 }
 /*}}}*/
 header{/*{{{*/
-	background: #444;
 	display: block;
 	position: absolute;
 	width: 100%;
@@ -27,7 +26,6 @@ header{/*{{{*/
 }
 /*}}}*/
 page {/*{{{*/
-	background: #444;
 	display: block;
 	padding: 20px;
 	max-width:1000px;
@@ -43,6 +41,9 @@ a {
 	text-decoration: none;
 	font-weight: normal;
 	color: #fb0;
+}
+menu { 
+	background-color: #444;
 }
 
 menu a {

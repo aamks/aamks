@@ -42,7 +42,7 @@ $(function()  {
 		.attr("x", 0)
 		.attr("y", 0)
 		.attr("opacity", 0.3)
-		.attr("xlink:href", "/apainter/gfx.jpg");
+		.attr("xlink:href", "gfx.jpg");
 //}}}
 // keyboard//{{{
 	$(this).keypress((e) => { 
