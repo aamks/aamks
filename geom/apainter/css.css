@@ -42,10 +42,44 @@ text {
 	padding: 4px;  
 	background-color: #f00; 
 	margin-right: 4px;
+	color: #333;
 }
 
 .axis path, .axis line {
 	fill: none;
 	stroke: #383838;
 	font-family: 'Sans' 
+}
+
+show-setup-box {
+    cursor: default;
+    float: right;
+}
+show-setup-box:hover {
+    opacity: 0.5;
+}
+
+setup-box {
+    opacity: 0.9;
+	min-width:300px;
+    background-color: #800;
+    z-index:100;
+    display: none;
+    padding: 4px;
+    color: #fff;
+    border: 1px solid #f00;
+    position: absolute;
+    right:0px;
+    top:40px;
+}
+
+
+table {
+	border-collapse: collapse;
+}
+
+table td {
+    white-space:nowrap;
+	padding: 2px;
+	border: 1px solid #a00; 
 }

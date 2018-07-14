@@ -3,15 +3,41 @@ $(function()  {
 	var db=TAFFY(); // http://taffydb.com/working_with_data.html
 	var selected_rect='';
 	var zt={'x':0, 'y':0, 'k':1}; // zoom transform
-	var colors={ ROOM:"#006694" , COR:"#002244" , D:"#888800" , HALL:"#00300a" , W:"#55aaff" , HOLE:"#008800" , STAI:"#280033" , C:"#883d00"  , E:"#660000" , VNT:"#aa00aa"   };
-	var letters={ ROOM:"r"      , COR:"q"       , D:"d"       , HALL:"a"       , W:"w"       , HOLE:"z"       , STAI:"s"       , C:"c"        , E:"e"       , VNT:"v" };
-	var anames={ ROOM:"Room"    , COR:"Corr"    , D:"Door"    , HALL:"Hall"    , W:"Win"     , HOLE:"Hole"    , STAI:"Stair"   , E:"D.Electr" , C:"D.Closr" , VNT:"Vvent"   };
+	var gg=make_gg();
 	var svg;
 	var counter=0;
 	var g_aamks;
 	var ax={};
+	var snap_dist=20;
 	site();
 
+// gg geoms //{{{
+function make_gg() {
+	// tango https://sobac.com/sobac/tangocolors.htm
+	// Aluminium   #eeeeec #d3d7cf #babdb6
+	// Butter      #fce94f #edd400 #c4a000
+	// Chameleon   #8ae234 #73d216 #4e9a06
+	// Orange      #fcaf3e #f57900 #ce5c00
+	// Chocolate   #e9b96e #c17d11 #8f5902
+	// Sky Blue    #729fcf #3465a4 #204a87
+	// Plum        #ad7fa8 #75507b #5c3566
+	// Slate       #888a85 #555753 #2e3436
+	// Scarlet Red #ef2929 #cc0000 #a40000
+
+	return {
+		ROOM : { l: "r" , c: "#729fcf" },
+		COR  : { l: "q" , c: "#3465a4" },
+		DOOR : { l: "d" , c: "#fce94f" },
+		HOLE : { l: "z" , c: "#e9b96e" },
+		WIN  : { l: "w" , c: "#cc0000" },
+		STAI : { l: "s" , c: "#5c3566" },
+		HALL : { l: "a" , c: "#ad7fa8" },
+		ClosD: { l: "c" , c: "#8f5902" },
+		ElktD: { l: "e" , c: "#ce5c00" },
+		VVNT : { l: "v" , c: "#ef2929" }
+	}
+}
+//}}}
 // zoomer//{{{
 	svg.append("rect")
 		.attr("id", 'zoomer')
@@ -47,8 +73,8 @@ $(function()  {
 //}}}
 // keyboard//{{{
 	$(this).keypress((e) => { 
-		for(var key in letters) {
-			if (e.key == letters[key]) { rect_create(colors[key], letters[key]); }
+		for(var key in gg) {
+			if (e.key == gg[key].l) { rect_create(gg[key].c, gg[key].l); }
 		}
 	});
 
@@ -105,18 +131,16 @@ $(function()  {
 				mouse = d3.mouse(this);
 				self.rr.x1=(mouse[0]-zt.x)/zt.k;
 				self.rr.y1=(mouse[1]-zt.y)/zt.k;
+				if (event.shiftKey) {
+					$('#snapper').attr('opacity', 0);
+				} else { 
+					intersectRect(mouse,self);
+				}
 				updateRect();
 			});  
 		});
 
 		function updateRect() {  
-			$("logger").html(JSON.stringify({mouse})+JSON.stringify(intersectRect(mouse)));
-
-			$("#snapper").attr({
-				cx: self.rr.x1 ,
-				cy: self.rr.y1 
-			});
-
 			$("#"+self.name).attr({
 				x: Math.min(self.rr.x0   , self.rr.x1) ,
 				y: Math.min(self.rr.y0   , self.rr.y1) ,
@@ -136,18 +160,17 @@ $(function()  {
 	}
 //}}}
 	function legend() { //{{{
-		for(var key in colors) {
-			$('legend').append("<div class=legend style='background-color: "+colors[key]+"'>"+letters[key]+" "+anames[key]+"</div>");
+		for(var key in gg) {
+			$('legend').append("<div class=legend style='background-color: "+gg[key].c+"'>"+gg[key].l+" "+key+"</div>");
 		}
-		$('legend').append(" ctrl+middlemouse: zoom/drag, letters draw, x deletes selected");
 	}
 
 //}}}
 	function db_insert(geom) { //{{{
-		var points=[];
-		points.push([geom.rr.x0, geom.rr.y0], [geom.rr.x1, geom.rr.y0], [geom.rr.x1, geom.rr.y1], [geom.rr.x0, geom.rr.y1]);
-		db.insert({"name": geom.name, "points": points });
-		var x=db().select("name", "points");
+		var lines=[];
+		lines.push([geom.rr.x0, geom.rr.y0], [geom.rr.x1, geom.rr.y0], [geom.rr.x1, geom.rr.y1], [geom.rr.x0, geom.rr.y1]);
+		db.insert({"name": geom.name, "lines": lines });
+		var x=db().select("name", "lines");
 		$("status").html(JSON.stringify(x));
 	}
 //}}}
@@ -179,7 +202,22 @@ function axes() { //{{{
 		.call(ax.yAxis);
 }
 //}}}
+function make_setup_box() {//{{{
+	$('show-setup-box').click(function() {
+		$('setup-box').toggle(400);
+	});
+	d3.select('body').append('setup-box').html("				\
+		<table>													\
+		<tr><td>letter + mouse1 <td> create						\
+		<tr><td>ctrl + mouse2	    <td> zoom/drag              \
+		<tr><td>x				    <td> deletes selected       \
+		<tr><td>shift			    <td> disable snapping       \
+		</table>                                                \
+		");
+}
+//}}}
 function site() { //{{{
+	d3.select('body').append('show-setup-box').html("[help]");
 	d3.select('body').append('legend');
 	d3.select('body').append('logger').html("logger");
 	svg = d3.select('body').append('svg').attr("width", canvas[0]).attr("height", canvas[1]);
@@ -187,19 +225,33 @@ function site() { //{{{
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity',1).attr('fill', "#ff8800");
 	legend();
+	make_setup_box();
 	d3.select('body').append('br');
 	d3.select('body').append('status');
 }
 //}}}
-
 // intersection//{{{
-function intersectRect(mouse) {
-return 1;
-// var r1={"x0": 200, "y0": 200, "x1": 400, "y1": 400};
-//   return !(mouse[0] > r1.x1 || 
-//            mouse[1] < r1.x0 || 
-//            r2.y1 < r1.y0 ||
-//            r2.y0 > r1.y1 );
+function intersectRect(m,rect) {
+	$("logger").html(JSON.stringify({m}));
+	$('#snapper').attr('opacity', 0);
+	var lines=db().select("lines");
+	for(var points in lines) {
+		for(var p in lines[points]) {
+			px=lines[points][p][0]
+			py=lines[points][p][1]
+			if (	
+				m[0] > px - snap_dist &&
+				m[0] < px + snap_dist &&
+				m[1] > py - snap_dist &&
+				m[1] < py + snap_dist ) { 
+					$('#snapper').attr('opacity', 1).attr({ cx: px , cy: py });
+					rect.rr.x1=px;
+					rect.rr.y1=py;
+					return;
+			}
+		}
+	}
+				
 }
 //}}}
 
