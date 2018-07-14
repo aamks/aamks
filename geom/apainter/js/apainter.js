@@ -7,6 +7,7 @@ $(function()  {
 	var letters={ ROOM:"r"      , COR:"q"       , D:"d"       , HALL:"a"       , W:"w"       , HOLE:"z"       , STAI:"s"       , C:"c"        , E:"e"       , VNT:"v" };
 	var anames={ ROOM:"Room"    , COR:"Corr"    , D:"Door"    , HALL:"Hall"    , W:"Win"     , HOLE:"Hole"    , STAI:"Stair"   , E:"D.Electr" , C:"D.Closr" , VNT:"Vvent"   };
 	var svg;
+	var counter=0;
 	var g_aamks;
 	var ax={};
 	site();
@@ -90,39 +91,48 @@ $(function()  {
 	function rect_create(color, geom) {//{{{
 		var self = this;
 		var mouse;
-		var x0;
-		var y0;
 
 		svg.on('mousedown', function() {
 			mouse=d3.mouse(this);
-			name=db_insert(geom);
-			x0=(mouse[0]-zt.x)/zt.k;
-			y0=(mouse[1]-zt.y)/zt.k;
-			self.name = name
-			self.rectData = [ { x: x0, y: y0 }, { x: x0, y: y0 } ];
-			self.rect=g_aamks.append('rect').attr('id', name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
+			var x0=(mouse[0]-zt.x)/zt.k;
+			var y0=(mouse[1]-zt.y)/zt.k;
+			self.name=geom+"_"+counter;
+			counter++;
+			self.rr = { 'x0': x0, 'y0': y0, 'x1': x0, 'y1': y0 };
+			self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
 
 			svg.on('mousemove', function() {
 				mouse = d3.mouse(this);
-				self.rectData[1] = { x: (mouse[0]-zt.x)/zt.k, y: (mouse[1]-zt.y)/zt.k };
+				self.rr.x1=(mouse[0]-zt.x)/zt.k;
+				self.rr.y1=(mouse[1]-zt.y)/zt.k;
 				updateRect();
 			});  
 		});
 
+		function updateRect() {  
+			$("logger").html(JSON.stringify({mouse})+JSON.stringify(intersectRect(mouse)));
+
+			$("#snapper").attr({
+				cx: self.rr.x1 ,
+				cy: self.rr.y1 
+			});
+
+			$("#"+self.name).attr({
+				x: Math.min(self.rr.x0   , self.rr.x1) ,
+				y: Math.min(self.rr.y0   , self.rr.y1) ,
+				x1: Math.max(self.rr.x0  , self.rr.x1) ,
+				y1: Math.max(self.rr.y0  , self.rr.y1) ,
+				width: Math.abs(self.rr.x1 - self.rr.x0) ,
+				height: Math.abs(self.rr.y1 - self.rr.y0)
+			});   
+		}
+
 		svg.on('mouseup', function() {
 			svg.on('mousedown', null);
 			svg.on('mousemove', null);
+			db_insert(self);
 		});
 
-		function updateRect() {  
-			$("#"+self.name).attr({
-				x: self.rectData[1].x - self.rectData[0].x > 0 ? self.rectData[0].x :  self.rectData[1].x,
-				y: self.rectData[1].y - self.rectData[0].y > 0 ? self.rectData[0].y :  self.rectData[1].y,
-				width: Math.abs(self.rectData[1].x - self.rectData[0].x),
-				height: Math.abs(self.rectData[1].y - self.rectData[0].y)
-			});   
-
-		}
 	}
 //}}}
 	function legend() { //{{{
@@ -134,12 +144,11 @@ $(function()  {
 
 //}}}
 	function db_insert(geom) { //{{{
-		var next=db({'geom':geom}).max("id") + 1;
-		var name=geom+"_"+next;
-		db.insert({"id": next, "geom": geom, "name": name, "x": "100.0", "y": "100.0" });
-		var x=db().select("name");
+		var points=[];
+		points.push([geom.rr.x0, geom.rr.y0], [geom.rr.x1, geom.rr.y0], [geom.rr.x1, geom.rr.y1], [geom.rr.x0, geom.rr.y1]);
+		db.insert({"name": geom.name, "points": points });
+		var x=db().select("name", "points");
 		$("status").html(JSON.stringify(x));
-		return name; 
 	}
 //}}}
 function axes() { //{{{
@@ -172,14 +181,26 @@ function axes() { //{{{
 //}}}
 function site() { //{{{
 	d3.select('body').append('legend');
+	d3.select('body').append('logger').html("logger");
 	svg = d3.select('body').append('svg').attr("width", canvas[0]).attr("height", canvas[1]);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
+	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity',1).attr('fill', "#ff8800");
 	legend();
 	d3.select('body').append('br');
 	d3.select('body').append('status');
 }
 //}}}
 
+// intersection//{{{
+function intersectRect(mouse) {
+return 1;
+// var r1={"x0": 200, "y0": 200, "x1": 400, "y1": 400};
+//   return !(mouse[0] > r1.x1 || 
+//            mouse[1] < r1.x0 || 
+//            r2.y1 < r1.y0 ||
+//            r2.y0 > r1.y1 );
+}
+//}}}
 
 });

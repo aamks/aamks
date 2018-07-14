@@ -23,6 +23,13 @@ status {
 	width: 1200px;
 	margin-top: 20px;
 }
+logger { 
+	position: fixed;
+	height: 20px;
+	top: 40px;
+	left: 40px;
+	z-index: 10;
+}
 
 text { 
 	fill: #888;
