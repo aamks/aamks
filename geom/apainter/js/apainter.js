@@ -7,8 +7,10 @@ $(function()  {
 	var svg;
 	var counter=0;
 	var g_aamks;
+	var g_snap_lines;
 	var ax={};
 	var snap_dist=20;
+	var snap_lines={};
 	site();
 
 // gg geoms //{{{
@@ -93,7 +95,7 @@ function make_gg() {
 //}}}
 // selected //{{{
 	$('body').click(function(evt){
-		if (evt.target.id != '' && ( evt.target.id != 'g_aamks' && evt.target.id != 'zoomer' && evt.target.id != 'img' )) { 
+		if (evt.target.id != '' && ( evt.target.id != 'g_snap_lines' && evt.target.id != 'g_aamks' && evt.target.id != 'zoomer' && evt.target.id != 'img' )) { 
 			d3.selectAll('rect').attr('fill-opacity', 0.4);
 			$("#"+evt.target.id).attr('fill-opacity', 0.1);
 			selected_rect=evt.target.id;
@@ -114,6 +116,33 @@ function make_gg() {
 		}
 	});
 	//}}}
+	function make_snap_lines() { //{{{
+		var lines=db().select("lines");
+		snap_lines['horiz']=[];
+		snap_lines['vert']=[];
+
+		for(var points in lines) { 
+			snap_lines['horiz'].push(lines[points][0][1]);
+			snap_lines['horiz'].push(lines[points][2][1]);
+			snap_lines['vert'].push(lines[points][0][0]);
+			snap_lines['vert'].push(lines[points][1][0]);
+		}
+		snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
+		snap_lines['vert']=Array.from(new Set(snap_lines['vert']));
+	}
+//}}}
+	function show_snap_lines() { //{{{
+		d3.select("#g_snap_lines").selectAll("line").remove();
+		for(var i in snap_lines['vert']) { 
+			co=snap_lines['vert'][i];
+			g_snap_lines.append('line').attr('id', 'vert_'+i).attr('class', 'snap_lines').attr('x1', co).attr('x2', co).attr('y1', -1000).attr('y2', 1000);
+		}
+		for(var i in snap_lines['horiz']) { 
+			co=snap_lines['horiz'][i];
+			g_snap_lines.append('line').attr('id', 'horiz_'+i).attr('class', 'snap_lines').attr('y1', co).attr('y2', co).attr('x1', -1000).attr('x2', 1000);
+		}
+	}
+//}}}
 	function rect_create(color, geom) {//{{{
 		var self = this;
 		var mouse;
@@ -126,16 +155,13 @@ function make_gg() {
 			counter++;
 			self.rr = { 'x0': x0, 'y0': y0, 'x1': x0, 'y1': y0 };
 			self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
+			intersectRect(mouse,self,'x0');
 
 			svg.on('mousemove', function() {
 				mouse = d3.mouse(this);
 				self.rr.x1=(mouse[0]-zt.x)/zt.k;
 				self.rr.y1=(mouse[1]-zt.y)/zt.k;
-				if (event.shiftKey) {
-					$('#snapper').attr('opacity', 0);
-				} else { 
-					intersectRect(mouse,self);
-				}
+				intersectRect(mouse,self,'x1');
 				updateRect();
 			});  
 		});
@@ -155,6 +181,8 @@ function make_gg() {
 			svg.on('mousedown', null);
 			svg.on('mousemove', null);
 			db_insert(self);
+			make_snap_lines();
+			show_snap_lines();
 		});
 
 	}
@@ -211,7 +239,7 @@ function make_setup_box() {//{{{
 		<tr><td>letter + mouse1 <td> create						\
 		<tr><td>ctrl + mouse2	    <td> zoom/drag              \
 		<tr><td>x				    <td> deletes selected       \
-		<tr><td>shift			    <td> disable snapping       \
+		<tr><td>hold shift			<td> disable snapping       \
 		</table>                                                \
 		");
 }
@@ -223,6 +251,7 @@ function site() { //{{{
 	svg = d3.select('body').append('svg').attr("width", canvas[0]).attr("height", canvas[1]);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
+	g_snap_lines= svg.append("g").attr("id", "g_snap_lines");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity',1).attr('fill', "#ff8800");
 	legend();
 	make_setup_box();
@@ -230,8 +259,12 @@ function site() { //{{{
 	d3.select('body').append('status');
 }
 //}}}
-// intersection//{{{
-function intersectRect(m,rect) {
+// snap //{{{
+function intersectRect(m,rect,tt) {
+	if (event.shiftKey) {
+		$('#snapper').attr('opacity', 0);
+		return;
+	} 
 	$("logger").html(JSON.stringify({m}));
 	$('#snapper').attr('opacity', 0);
 	var lines=db().select("lines");
@@ -245,8 +278,13 @@ function intersectRect(m,rect) {
 				m[1] > py - snap_dist &&
 				m[1] < py + snap_dist ) { 
 					$('#snapper').attr('opacity', 1).attr({ cx: px , cy: py });
-					rect.rr.x1=px;
-					rect.rr.y1=py;
+					if(tt=='x1') { 
+						rect.rr.x1=px;
+						rect.rr.y1=py;
+					} else {
+						rect.rr.x0=px;
+						rect.rr.y0=py;
+					}
 					return;
 			}
 		}

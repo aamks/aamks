@@ -61,11 +61,10 @@ show-setup-box:hover {
 
 setup-box {
     opacity: 0.9;
-	min-width:300px;
     background-color: #800;
     z-index:100;
     display: none;
-    padding: 4px;
+    padding: 10px;
     color: #fff;
     border: 1px solid #f00;
     position: absolute;
@@ -80,6 +79,13 @@ table {
 
 table td {
     white-space:nowrap;
-	padding: 2px;
+	padding: 6px;
 	border: 1px solid #a00; 
+}
+
+.snap_lines { 
+	stroke            : #888;
+	stroke-width      : 1;
+	stroke-dasharray  : 4;
+	stroke-opacity    : 0.5;
 }
