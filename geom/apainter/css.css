@@ -83,9 +83,9 @@ table td {
 	border: 1px solid #a00; 
 }
 
-.snap_lines { 
-	stroke            : #888;
-	stroke-width      : 1;
-	stroke-dasharray  : 4;
-	stroke-opacity    : 0.5;
+.snap_v, .snap_h { 
+	stroke            : #f80;
+	stroke-width      : 0.5;
+	stroke-dasharray  : 3;
+	stroke-opacity    : 1;
 }

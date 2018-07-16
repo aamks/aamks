@@ -1,5 +1,5 @@
 $(function()  { 
-	var canvas=[screen.width*0.99,screen.height-300];
+	var canvas=[screen.width*0.99,screen.height-250];
 	var db=TAFFY(); // http://taffydb.com/working_with_data.html
 	var selected_rect='';
 	var zt={'x':0, 'y':0, 'k':1}; // zoom transform
@@ -8,9 +8,11 @@ $(function()  {
 	var counter=0;
 	var g_aamks;
 	var g_snap_lines;
+	var g_snap_points;
 	var ax={};
 	var snap_dist=20;
 	var snap_lines={};
+	var snap_points={};
 	site();
 
 // gg geoms //{{{
@@ -81,13 +83,13 @@ function make_gg() {
 	});
 
 	$(this).keydown((e) => { 
-		if (e.key == 'Control') { 
+		if (e.key == 'Shift') { 
 			$("#zoomer").attr("visibility", "visible");
 		}
 	});
 
 	$(this).keyup((e) => { 
-		if (e.key == 'Control') { 
+		if (e.key == 'Shift') { 
 			$("#zoomer").attr("visibility", "hidden");
 		}
 	});
@@ -95,13 +97,12 @@ function make_gg() {
 //}}}
 // selected //{{{
 	$('body').click(function(evt){
-		if (evt.target.id != '' && ( evt.target.id != 'g_snap_lines' && evt.target.id != 'g_aamks' && evt.target.id != 'zoomer' && evt.target.id != 'img' )) { 
+		if (evt.target.id != '' && ! ['g_snap_lines', 'g_aamks', 'zoomer', 'img'].includes(evt.target.id)) { 
 			d3.selectAll('rect').attr('fill-opacity', 0.4);
 			$("#"+evt.target.id).attr('fill-opacity', 0.1);
 			selected_rect=evt.target.id;
 			var x=db({'name':selected_rect}).select("name", "id", "geom", "x", "y");
 			$("status").html("INFO: "+JSON.stringify(x));
-			console.log("selected", selected_rect);
 		}
 		if (evt.target.id != '' && ( evt.target.id == 'zoomer' || evt.target.id == 'img' )) { 
 			d3.selectAll('rect').attr('fill-opacity', 0.4);
@@ -117,29 +118,39 @@ function make_gg() {
 	});
 	//}}}
 	function make_snap_lines() { //{{{
+		d3.select("#g_snap_lines").selectAll("line").remove();
 		var lines=db().select("lines");
 		snap_lines['horiz']=[];
 		snap_lines['vert']=[];
+		var below, above, right, left;
 
 		for(var points in lines) { 
-			snap_lines['horiz'].push(lines[points][0][1]);
-			snap_lines['horiz'].push(lines[points][2][1]);
-			snap_lines['vert'].push(lines[points][0][0]);
-			snap_lines['vert'].push(lines[points][1][0]);
+			below=lines[points][0][1];
+			above=lines[points][2][1];
+			right=lines[points][0][0];
+			left=lines[points][1][0];
+
+			snap_lines['horiz'].push(below);
+			snap_lines['horiz'].push(above);
+			snap_lines['vert'].push(right);
+			snap_lines['vert'].push(left);
+
+			g_snap_lines.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , -1000).attr('x2' , 1000).attr("visibility", "hidden");
+			g_snap_lines.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , -1000).attr('x2' , 1000).attr("visibility", "hidden");
+			g_snap_lines.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , -1000).attr('y2' , 1000).attr("visibility", "hidden");
+			g_snap_lines.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , -1000).attr('y2' , 1000).attr("visibility", "hidden");
+
 		}
 		snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
 		snap_lines['vert']=Array.from(new Set(snap_lines['vert']));
 	}
 //}}}
-	function show_snap_lines() { //{{{
-		d3.select("#g_snap_lines").selectAll("line").remove();
-		for(var i in snap_lines['vert']) { 
-			co=snap_lines['vert'][i];
-			g_snap_lines.append('line').attr('id', 'vert_'+i).attr('class', 'snap_lines').attr('x1', co).attr('x2', co).attr('y1', -1000).attr('y2', 1000);
-		}
-		for(var i in snap_lines['horiz']) { 
-			co=snap_lines['horiz'][i];
-			g_snap_lines.append('line').attr('id', 'horiz_'+i).attr('class', 'snap_lines').attr('y1', co).attr('y2', co).attr('x1', -1000).attr('x2', 1000);
+	function make_snap_points() { //{{{
+		snap_points=[];
+		for(var vert in snap_lines['vert']) { 
+			for(var horiz in snap_lines['horiz']) { 
+				snap_points.push([snap_lines['vert'][vert], snap_lines['horiz'][horiz]]);
+			}
 		}
 	}
 //}}}
@@ -155,13 +166,13 @@ function make_gg() {
 			counter++;
 			self.rr = { 'x0': x0, 'y0': y0, 'x1': x0, 'y1': y0 };
 			self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
-			intersectRect(mouse,self,'x0');
+			snap_me(mouse,self,'x0');
 
 			svg.on('mousemove', function() {
 				mouse = d3.mouse(this);
 				self.rr.x1=(mouse[0]-zt.x)/zt.k;
 				self.rr.y1=(mouse[1]-zt.y)/zt.k;
-				intersectRect(mouse,self,'x1');
+				snap_me(mouse,self,'x1');
 				updateRect();
 			});  
 		});
@@ -182,7 +193,7 @@ function make_gg() {
 			svg.on('mousemove', null);
 			db_insert(self);
 			make_snap_lines();
-			show_snap_lines();
+			make_snap_points();
 		});
 
 	}
@@ -237,9 +248,9 @@ function make_setup_box() {//{{{
 	d3.select('body').append('setup-box').html("				\
 		<table>													\
 		<tr><td>letter + mouse1 <td> create						\
-		<tr><td>ctrl + mouse2	    <td> zoom/drag              \
+		<tr><td>shift + mouse2	    <td> zoom/drag              \
 		<tr><td>x				    <td> deletes selected       \
-		<tr><td>hold shift			<td> disable snapping       \
+		<tr><td>hold ctrl			<td> disable snapping       \
 		</table>                                                \
 		");
 }
@@ -252,6 +263,7 @@ function site() { //{{{
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	g_snap_lines= svg.append("g").attr("id", "g_snap_lines");
+	g_snap_points= svg.append("g").attr("id", "g_snap_points");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity',1).attr('fill', "#ff8800");
 	legend();
 	make_setup_box();
@@ -259,38 +271,55 @@ function site() { //{{{
 	d3.select('body').append('status');
 }
 //}}}
-// snap //{{{
-function intersectRect(m,rect,tt) {
-	if (event.shiftKey) {
+function snap_me(m,rect,tt) {//{{{
+	d3.selectAll('.snap_v').attr('visibility', 'hidden');
+	d3.selectAll('.snap_h').attr('visibility', 'hidden');
+	if (event.ctrlKey) {
 		$('#snapper').attr('opacity', 0);
 		return;
 	} 
+	var corner=[];
 	$("logger").html(JSON.stringify({m}));
 	$('#snapper').attr('opacity', 0);
-	var lines=db().select("lines");
-	for(var points in lines) {
-		for(var p in lines[points]) {
-			px=lines[points][p][0]
-			py=lines[points][p][1]
-			if (	
-				m[0] > px - snap_dist &&
-				m[0] < px + snap_dist &&
-				m[1] > py - snap_dist &&
-				m[1] < py + snap_dist ) { 
-					$('#snapper').attr('opacity', 1).attr({ cx: px , cy: py });
-					if(tt=='x1') { 
-						rect.rr.x1=px;
-						rect.rr.y1=py;
-					} else {
-						rect.rr.x0=px;
-						rect.rr.y0=py;
-					}
-					return;
-			}
+
+	for(var point in snap_lines['vert']) {
+		p=snap_lines['vert'][point];
+		if (	
+			m[0] > p - snap_dist &&
+			m[0] < p + snap_dist ) { 
+				if(tt=='x1') { 
+					rect.rr.x1=p;
+				} else {
+					rect.rr.x0=p;
+				}
+				$("#sv_"+p).attr("visibility", "visible");
+				$('#snapper').attr('opacity', 1).attr({ r: 2, cy: m[1], cx: p });
+				corner.push(p);
+				break;
 		}
 	}
-				
+
+	for(var point in snap_lines['horiz']) {
+		p=snap_lines['horiz'][point];
+		if (	
+			m[1] > p - snap_dist &&
+			m[1] < p + snap_dist ) { 
+				if(tt=='x1') { 
+					rect.rr.y1=p;
+				} else {
+					rect.rr.y0=p;
+				}
+				$("#sh_"+p).attr("visibility", "visible");
+				$('#snapper').attr('opacity', 1).attr({ r: 2, cx: m[0], cy: p });
+				corner.push(p);
+				break;
+		}
+	}
+	if(corner.length==2) { 
+		$('#snapper').attr({ r: 5, cx: corner[0], cy: corner[1]});
+	}
 }
+
 //}}}
 
 });
