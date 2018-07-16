@@ -5,6 +5,7 @@ $menu="
 <li class='lnav'><a href=?node=about>About</a>
 <li class='lnav'><a href=?node=tests>Tests</a>
 <li class='lnav'><a href=?node=demos>Demos</a>
+<li class='lnav'><a href=?node=papers>Papers</a>
 <li class='lnav'><a target=_blank href=https://github.com/aamks/aamks>Github</a>
 
 </ul>
@@ -23,12 +24,25 @@ evacuation simulations (a-evac) and then evaluates the results.
 /*}}}*/
 $nodes['tests']=array("Tests", /*{{{*/
 '
-<br> Test1<br><br>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ZbQIStNx9uE" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-<br> Test2<br><br>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ZbQIStNx9uE" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-<br> Test3<br><br>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ZbQIStNx9uE" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Verif 1_1 <br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/8OOwM3hcTZw" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Verif_2_1<br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/nK5QWX4otP8" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Verif_2_3<br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/7OKO1P6Ju1A" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Verif_2_4<br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/c714B5FAZjo" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Verif_2_5<br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/ysjOF7TZg68" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Verif_2_6<br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/R7rar76V5rE" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Verif_2_8<br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/3NNIFSQXasQ?list=PLcR1x6fD9inVo59Gt3gHmy8QLRBonH-H1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Verif_3_1<br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/6m-3JYUX3oY?list=PLcR1x6fD9inVo59Gt3gHmy8QLRBonH-H1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Real building evacuation test<br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/X6JcT1bwU9Q?list=PLcR1x6fD9inVo59Gt3gHmy8QLRBonH-H1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
 ');
 /*}}}*/
 $nodes['demos']=array("Demos", /*{{{*/
