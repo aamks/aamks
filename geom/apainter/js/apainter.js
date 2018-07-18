@@ -8,11 +8,11 @@ $(function()  {
 	var counter=0;
 	var g_aamks;
 	var g_snap_lines;
-	var g_snap_points;
 	var ax={};
-	var snap_dist=20;
+	var snap_dist=15;
 	var snap_lines={};
 	var snap_points={};
+	var current_snapping=[];
 	site();
 
 // gg geoms //{{{
@@ -31,12 +31,12 @@ function make_gg() {
 	return {
 		ROOM : { l: "r" , c: "#729fcf" },
 		COR  : { l: "q" , c: "#3465a4" },
-		DOOR : { l: "d" , c: "#fce94f" },
-		HOLE : { l: "z" , c: "#e9b96e" },
+		DOOR : { l: "d" , c: "#73d216" },
+		HOLE : { l: "z" , c: "#c4a000" },
 		WIN  : { l: "w" , c: "#cc0000" },
 		STAI : { l: "s" , c: "#5c3566" },
 		HALL : { l: "a" , c: "#ad7fa8" },
-		ClosD: { l: "c" , c: "#8f5902" },
+		ClosD: { l: "c" , c: "#fce94f" },
 		ElktD: { l: "e" , c: "#ce5c00" },
 		VVNT : { l: "v" , c: "#ef2929" }
 	}
@@ -54,8 +54,8 @@ function make_gg() {
 		.call(d3.zoom()
 			.scaleExtent([1 / 10, 40])
 			.filter(function(){
-			return (event.button === 0 ||
-					  event.button === 1);
+			return ( event.button === 0 ||
+					 event.button === 1);
 			})
 			.translateExtent([[-10000, -10000], [10000 , 10000]])
 			.on("zoom", zoomed));
@@ -117,7 +117,7 @@ function make_gg() {
 		}
 	});
 	//}}}
-	function make_snap_lines() { //{{{
+	function make_snap_data() { //{{{
 		d3.select("#g_snap_lines").selectAll("line").remove();
 		var lines=db().select("lines");
 		snap_lines['horiz']=[];
@@ -125,10 +125,10 @@ function make_gg() {
 		var below, above, right, left;
 
 		for(var points in lines) { 
-			below=lines[points][0][1];
-			above=lines[points][2][1];
-			right=lines[points][0][0];
-			left=lines[points][1][0];
+			below = Math.round(lines[points][0][1]);
+			above = Math.round(lines[points][2][1]);
+			right = Math.round(lines[points][0][0]);
+			left  = Math.round(lines[points][1][0]);
 
 			snap_lines['horiz'].push(below);
 			snap_lines['horiz'].push(above);
@@ -143,6 +143,7 @@ function make_gg() {
 		}
 		snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
 		snap_lines['vert']=Array.from(new Set(snap_lines['vert']));
+		make_snap_points();
 	}
 //}}}
 	function make_snap_points() { //{{{
@@ -154,50 +155,6 @@ function make_gg() {
 		}
 	}
 //}}}
-	function rect_create(color, geom) {//{{{
-		var self = this;
-		var mouse;
-
-		svg.on('mousedown', function() {
-			mouse=d3.mouse(this);
-			var x0=(mouse[0]-zt.x)/zt.k;
-			var y0=(mouse[1]-zt.y)/zt.k;
-			self.name=geom+"_"+counter;
-			counter++;
-			self.rr = { 'x0': x0, 'y0': y0, 'x1': x0, 'y1': y0 };
-			self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
-			snap_me(mouse,self,'x0');
-
-			svg.on('mousemove', function() {
-				mouse = d3.mouse(this);
-				self.rr.x1=(mouse[0]-zt.x)/zt.k;
-				self.rr.y1=(mouse[1]-zt.y)/zt.k;
-				snap_me(mouse,self,'x1');
-				updateRect();
-			});  
-		});
-
-		function updateRect() {  
-			$("#"+self.name).attr({
-				x: Math.min(self.rr.x0   , self.rr.x1) ,
-				y: Math.min(self.rr.y0   , self.rr.y1) ,
-				x1: Math.max(self.rr.x0  , self.rr.x1) ,
-				y1: Math.max(self.rr.y0  , self.rr.y1) ,
-				width: Math.abs(self.rr.x1 - self.rr.x0) ,
-				height: Math.abs(self.rr.y1 - self.rr.y0)
-			});   
-		}
-
-		svg.on('mouseup', function() {
-			svg.on('mousedown', null);
-			svg.on('mousemove', null);
-			db_insert(self);
-			make_snap_lines();
-			make_snap_points();
-		});
-
-	}
-//}}}
 	function legend() { //{{{
 		for(var key in gg) {
 			$('legend').append("<div class=legend style='background-color: "+gg[key].c+"'>"+gg[key].l+" "+key+"</div>");
@@ -207,10 +164,14 @@ function make_gg() {
 //}}}
 	function db_insert(geom) { //{{{
 		var lines=[];
-		lines.push([geom.rr.x0, geom.rr.y0], [geom.rr.x1, geom.rr.y0], [geom.rr.x1, geom.rr.y1], [geom.rr.x0, geom.rr.y1]);
+		x0 = Math.round(geom.rr.x0);
+		x1 = Math.round(geom.rr.x1);
+		y0 = Math.round(geom.rr.y0);
+		y1 = Math.round(geom.rr.y1);
+		lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
 		db.insert({"name": geom.name, "lines": lines });
-		var x=db().select("name", "lines");
-		$("status").html(JSON.stringify(x));
+		var x=db().select("name");
+		$("status").html(x.length + " | " + JSON.stringify(x));
 	}
 //}}}
 function axes() { //{{{
@@ -258,43 +219,39 @@ function make_setup_box() {//{{{
 function site() { //{{{
 	d3.select('body').append('show-setup-box').html("[help]");
 	d3.select('body').append('legend');
-	d3.select('body').append('logger').html("logger");
 	svg = d3.select('body').append('svg').attr("width", canvas[0]).attr("height", canvas[1]);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	g_snap_lines= svg.append("g").attr("id", "g_snap_lines");
-	g_snap_points= svg.append("g").attr("id", "g_snap_points");
-	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity',1).attr('fill', "#ff8800");
+	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend();
 	make_setup_box();
 	d3.select('body').append('br');
 	d3.select('body').append('status');
 }
 //}}}
-function snap_me(m,rect,tt) {//{{{
+function snap_me(m,rect,first_click) {//{{{
 	d3.selectAll('.snap_v').attr('visibility', 'hidden');
 	d3.selectAll('.snap_h').attr('visibility', 'hidden');
+	$('#snapper').attr('fill-opacity', 0);
 	if (event.ctrlKey) {
-		$('#snapper').attr('opacity', 0);
 		return;
 	} 
-	var corner=[];
-	$("logger").html(JSON.stringify({m}));
-	$('#snapper').attr('opacity', 0);
+	current_snapping=[];
 
 	for(var point in snap_lines['vert']) {
 		p=snap_lines['vert'][point];
 		if (	
 			m[0] > p - snap_dist &&
 			m[0] < p + snap_dist ) { 
-				if(tt=='x1') { 
+				if(first_click==1) { 
 					rect.rr.x1=p;
 				} else {
 					rect.rr.x0=p;
 				}
 				$("#sv_"+p).attr("visibility", "visible");
-				$('#snapper').attr('opacity', 1).attr({ r: 2, cy: m[1], cx: p });
-				corner.push(p);
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: m[1], cx: p });
+				current_snapping.push(p);
 				break;
 		}
 	}
@@ -304,22 +261,84 @@ function snap_me(m,rect,tt) {//{{{
 		if (	
 			m[1] > p - snap_dist &&
 			m[1] < p + snap_dist ) { 
-				if(tt=='x1') { 
+				if(first_click==1) { 
 					rect.rr.y1=p;
 				} else {
 					rect.rr.y0=p;
 				}
 				$("#sh_"+p).attr("visibility", "visible");
-				$('#snapper').attr('opacity', 1).attr({ r: 2, cx: m[0], cy: p });
-				corner.push(p);
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: m[0], cy: p });
+				current_snapping.push(p);
 				break;
 		}
 	}
-	if(corner.length==2) { 
-		$('#snapper').attr({ r: 5, cx: corner[0], cy: corner[1]});
+	if(current_snapping.length==2) { 
+		$('#snapper').attr({ r: 5, cx: current_snapping[0], cy: current_snapping[1]});
 	}
+	console.log("current_snapping",current_snapping);
 }
 
+//}}}
+	function rect_create(color, geom) {//{{{
+		var self = this;
+		var mouse;
+		var first_click=0;
+
+		function before_first_click() {
+			if (first_click==1) { return; }
+			var x0=(mouse[0]-zt.x)/zt.k;
+			var y0=(mouse[1]-zt.y)/zt.k;
+			self.rr = { 'x0': x0, 'y0': y0, 'x1': x0, 'y1': y0 };
+		}
+
+		svg.on('mousedown', function() {
+			mouse=d3.mouse(this);
+			before_first_click();
+			counter++;
+			self.name=geom+"_"+counter;
+			self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
+			first_click=1;
+		});
+
+		svg.on('mousemove', function() {
+			mouse=d3.mouse(this);
+			before_first_click();
+			self.rr.x1=(mouse[0]-zt.x)/zt.k;
+			self.rr.y1=(mouse[1]-zt.y)/zt.k;
+			if (first_click==0) { 
+				snap_me(mouse,self,0);
+			} else {
+				snap_me(mouse,self,1);
+			}
+			updateRect();
+		});  
+
+		svg.on('mouseup', function() {
+			svg.on('mousedown', null);
+			svg.on('mousemove', null);
+			first_click=0;
+			if(self.rr.x0 == self.rr.x1 && self.rr.y0 == self.rr.y1) { 
+				$("#"+this.name).remove();
+				counter--;
+			} else {
+				db_insert(self);
+				make_snap_data();
+			}
+		});
+
+		function updateRect() {  
+			if(first_click==0) { return; }
+			$("#"+self.name).attr({
+				x: Math.min(self.rr.x0   , self.rr.x1) ,
+				y: Math.min(self.rr.y0   , self.rr.y1) ,
+				x1: Math.max(self.rr.x0  , self.rr.x1) ,
+				y1: Math.max(self.rr.y0  , self.rr.y1) ,
+				width: Math.abs(self.rr.x1 - self.rr.x0) ,
+				height: Math.abs(self.rr.y1 - self.rr.y0)
+			});   
+		}
+
+	}
 //}}}
 
 });
