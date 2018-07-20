@@ -95,16 +95,15 @@ function make_gg() {
 	});
 
 //}}}
-// selected //{{{
+// select //{{{
 	$('body').click(function(evt){
-		if (evt.target.id != '' && ! ['g_snap_lines', 'g_aamks', 'zoomer', 'img'].includes(evt.target.id)) { 
+		if (evt.target.id != '' && ! ['svg', 'g_snap_lines', 'g_aamks', 'zoomer', 'img'].includes(evt.target.id)) { 
 			d3.selectAll('rect').attr('fill-opacity', 0.4);
 			$("#"+evt.target.id).attr('fill-opacity', 0.1);
 			selected_rect=evt.target.id;
-			var x=db({'name':selected_rect}).select("name", "id", "geom", "x", "y");
-			$("status").html("INFO: "+JSON.stringify(x));
+			show_selected_properties(selected_rect);
 		}
-		if (evt.target.id != '' && ( evt.target.id == 'zoomer' || evt.target.id == 'img' )) { 
+		if (evt.target.id != '' && ['svg', 'g_snap_lines', 'g_aamks', 'zoomer', 'img'].includes(evt.target.id)) { 
 			d3.selectAll('rect').attr('fill-opacity', 0.4);
 			selected_rect=''
 		}
@@ -114,9 +113,25 @@ function make_gg() {
 		if (e.key == 'x' && selected_rect != "") { 
 			$("#"+selected_rect).remove();
 			db({"name":selected_rect}).remove();
+			make_snap_lines();
 		}
 	});
 	//}}}
+function show_selected_properties(selected_rect) {//{{{
+	d3.select('setup-box').html(
+		"<table>"+
+		"<tr><td>id <td>"+db({'name':selected_rect}).select("name")[0]+
+		"<tr><td>x0	<td>"+db({'name':selected_rect}).select("x0")[0]+
+		"<tr><td>y0	<td>"+db({'name':selected_rect}).select("y0")[0]+
+		"<tr><td>dim X<td>"+db({'name':selected_rect}).select("width")[0]+
+		"<tr><td>dim Y<td>"+db({'name':selected_rect}).select("depth")[0]+
+		"<tr><td>dim Z<td>"+db({'name':selected_rect}).select("height")[0]+
+		"<tr><td>x				    <td> deletes selected"+
+		"</table>"
+		);
+	$('setup-box').fadeIn(400);
+}
+//}}}
 	function make_snap_lines() { //{{{
 		d3.select("#g_snap_lines").selectAll("line").remove();
 		var lines=db().select("lines");
@@ -135,10 +150,10 @@ function make_gg() {
 			snap_lines['vert'].push(right);
 			snap_lines['vert'].push(left);
 
-			g_snap_lines.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , -1000).attr('x2' , 1000).attr("visibility", "hidden");
-			g_snap_lines.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , -1000).attr('x2' , 1000).attr("visibility", "hidden");
-			g_snap_lines.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , -1000).attr('y2' , 1000).attr("visibility", "hidden");
-			g_snap_lines.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , -1000).attr('y2' , 1000).attr("visibility", "hidden");
+			g_snap_lines.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
+			g_snap_lines.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
+			g_snap_lines.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , 0).attr('y2' , 100000).attr("visibility", "hidden");
+			g_snap_lines.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
 
 		}
 		snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
@@ -159,9 +174,9 @@ function make_gg() {
 		y0 = Math.round(geom.rr.y0);
 		y1 = Math.round(geom.rr.y1);
 		lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
-		db.insert({"name": geom.name, "lines": lines });
-		var x=db().select("name");
-		$("status").html(x.length + " | " + JSON.stringify(x));
+		db.insert({"name": geom.name, "lines": lines, "x0": x0, "y0": y0, "width": x1-x0, "depth": y1-y0, "height": 11 });
+		// var x=db().select("name");
+		// $("status").html(x.length + " | " + JSON.stringify(x));
 	}
 //}}}
 function axes() { //{{{
@@ -193,17 +208,18 @@ function axes() { //{{{
 }
 //}}}
 function make_setup_box() {//{{{
+	d3.select('body').append('setup-box');
 	$('show-setup-box').click(function() {
-		$('setup-box').toggle(400);
+		d3.select('setup-box').html(
+			"<table>"+
+			"<tr><td>letter + mouse1     <td> create"+
+			"<tr><td>shift + mouse2	    <td> zoom/drag"+
+			"<tr><td>mouse1 on element<td> properties"+
+			"<tr><td>hold ctrl			<td> disable snapping"+ 
+			"</table>"
+			);
+		$('setup-box').toggle();
 	});
-	d3.select('body').append('setup-box').html("				\
-		<table>													\
-		<tr><td>letter + mouse1     <td> create					\
-		<tr><td>shift + mouse2	    <td> zoom/drag              \
-		<tr><td>x				    <td> deletes selected       \
-		<tr><td>hold ctrl			<td> disable snapping       \
-		</table>                                                \
-		");
 }
 //}}}
 function snap_me(m,rect,after_click) {//{{{
@@ -266,6 +282,7 @@ function snap_me(m,rect,after_click) {//{{{
 		self.name=geom+"_"+counter;
 		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
 		var mx, my;
+		$('setup-box').fadeOut(400);
 
 		svg.on('mousedown', function() {
 			after_click=1;
@@ -288,9 +305,6 @@ function snap_me(m,rect,after_click) {//{{{
 		});  
 
 		svg.on('mouseup', function() {
-			svg.on('mousedown', null);
-			svg.on('mousemove', null);
-			after_click=0;
 			if(self.rr.x0 == self.rr.x1 && self.rr.y0 == self.rr.y1) { 
 				$("#"+this.name).remove();
 				counter--;
@@ -298,6 +312,11 @@ function snap_me(m,rect,after_click) {//{{{
 				db_insert(self);
 				make_snap_lines();
 			}
+			after_click=0;
+			$('#snapper').attr('fill-opacity', 0);
+			svg.on('mousedown', null);
+			svg.on('mousemove', null);
+			svg.on('mouseup', null);
 		});
 
 		function updateRect() {  
@@ -315,7 +334,7 @@ function snap_me(m,rect,after_click) {//{{{
 function site() { //{{{
 	d3.select('body').append('show-setup-box').html("[help]");
 	d3.select('body').append('legend');
-	svg = d3.select('body').append('svg').attr("width", canvas[0]).attr("height", canvas[1]);
+	svg = d3.select('body').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	g_snap_lines= svg.append("g").attr("id", "g_snap_lines");
