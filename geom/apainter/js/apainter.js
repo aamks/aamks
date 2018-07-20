@@ -13,6 +13,9 @@ $(function()  {
 	var ax={};
 	var snap_dist=15;
 	var snap_lines={};
+	var door_dimz=200;
+	var door_width=90;
+	var floor_dimz=350;
 	site();
 //}}}
 // gg geoms //{{{
@@ -30,13 +33,13 @@ function make_gg() {
 
 	return {
 		ROOM : { l: "r" , c: "#729fcf" },
-		COR  : { l: "q" , c: "#3465a4" },
+		COR  : { l: "c" , c: "#3465a4" },
 		DOOR : { l: "d" , c: "#73d216" },
 		HOLE : { l: "z" , c: "#c4a000" },
 		WIN  : { l: "w" , c: "#cc0000" },
 		STAI : { l: "s" , c: "#5c3566" },
 		HALL : { l: "a" , c: "#ad7fa8" },
-		ClosD: { l: "c" , c: "#fce94f" },
+		ClosD: { l: "q" , c: "#fce94f" },
 		ElktD: { l: "e" , c: "#ce5c00" },
 		VVNT : { l: "v" , c: "#ef2929" }
 	}
@@ -97,15 +100,17 @@ function make_gg() {
 //}}}
 // select //{{{
 	$('body').click(function(evt){
-		if (evt.target.id != '' && ! ['svg', 'g_snap_lines', 'g_aamks', 'zoomer', 'img'].includes(evt.target.id)) { 
+		var not_geoms_arr=['svg', 'g_snap_lines', 'g_aamks', 'zoomer', 'img', 'setup-box'];
+		if (evt.target.id != '' && ! not_geoms_arr.includes(evt.target.id)) { 
 			d3.selectAll('rect').attr('fill-opacity', 0.4);
 			$("#"+evt.target.id).attr('fill-opacity', 0.1);
 			selected_rect=evt.target.id;
 			show_selected_properties(selected_rect);
 		}
-		if (evt.target.id != '' && ['svg', 'g_snap_lines', 'g_aamks', 'zoomer', 'img'].includes(evt.target.id)) { 
+		if (evt.target.id != '' && not_geoms_arr.includes(evt.target.id)) { 
 			d3.selectAll('rect').attr('fill-opacity', 0.4);
 			selected_rect=''
+			$('setup-box').fadeOut(0);
 		}
 	});
 
@@ -120,16 +125,15 @@ function make_gg() {
 function show_selected_properties(selected_rect) {//{{{
 	d3.select('setup-box').html(
 		"<table>"+
-		"<tr><td>id <td>"+db({'name':selected_rect}).select("name")[0]+
+		"<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_rect}).select("name")[0]+">"+db({'name':selected_rect}).select("name")[0]+
 		"<tr><td>x0	<td>"+db({'name':selected_rect}).select("x0")[0]+
 		"<tr><td>y0	<td>"+db({'name':selected_rect}).select("y0")[0]+
-		"<tr><td>dim X<td>"+db({'name':selected_rect}).select("width")[0]+
-		"<tr><td>dim Y<td>"+db({'name':selected_rect}).select("depth")[0]+
-		"<tr><td>dim Z<td>"+db({'name':selected_rect}).select("height")[0]+
-		"<tr><td>x				    <td> deletes selected"+
+		"<tr><td>x-dim<td>"+db({'name':selected_rect}).select("width")[0]+
+		"<tr><td>y-dim<td>"+db({'name':selected_rect}).select("depth")[0]+
+		"<tr><td>z-dim<td><input id=alter_dimz type=text size=3 value="+db({'name':selected_rect}).select("height")[0]+">"+
 		"</table>"
 		);
-	$('setup-box').fadeIn(400);
+	$('setup-box').fadeIn();
 }
 //}}}
 	function make_snap_lines() { //{{{
@@ -169,14 +173,14 @@ function show_selected_properties(selected_rect) {//{{{
 //}}}
 	function db_insert(geom) { //{{{
 		var lines=[];
-		x0 = Math.round(geom.rr.x0);
-		x1 = Math.round(geom.rr.x1);
-		y0 = Math.round(geom.rr.y0);
-		y1 = Math.round(geom.rr.y1);
+		x0 = Math.min(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
+		x1 = Math.max(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
+		y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
+		y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
 		lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
-		db.insert({"name": geom.name, "lines": lines, "x0": x0, "y0": y0, "width": x1-x0, "depth": y1-y0, "height": 11 });
-		// var x=db().select("name");
-		// $("status").html(x.length + " | " + JSON.stringify(x));
+		db.insert({"name": geom.name, "lines": lines, "x0": x0, "y0": y0, "width": x1-x0, "depth": y1-y0, "height": door_dimz });
+		var x=db().select("name");
+		$("status").html(x.length + " | " + JSON.stringify(x));
 	}
 //}}}
 function axes() { //{{{
@@ -207,18 +211,39 @@ function axes() { //{{{
 		.call(ax.yAxis);
 }
 //}}}
+function rewrite_setup_box() {//{{{
+	d3.select('setup-box').html(
+		"<table>"+
+		"<tr><td>letter + mouse1     <td> create"+
+		"<tr><td>shift + mouse2	    <td> zoom/drag"+
+		"<tr><td>mouse1 on element<td> properties"+
+		"<tr><td>hold ctrl			<td> disable snapping"+ 
+		"<tr><td>x	<td> deletes selected"+
+		"<tr><td colspan=2 style='text-align: center'><br>Since now"+
+		"<tr><td>door's width		<td><input id=door_width type=text size=2   name=door_width  value="+door_width+">"+
+		"<tr><td>door's z-dim <td><input id=door_dimz type=text size=2	name=door_dimz value="+door_dimz+">"+
+		"<tr><td>room's z-dim <td><input id=floor_dimz type=text size=2 name=floor_dimz value="+floor_dimz+">"+
+		"</table>"
+		);
+}
+//}}}
 function make_setup_box() {//{{{
 	d3.select('body').append('setup-box');
 	$('show-setup-box').click(function() {
-		d3.select('setup-box').html(
-			"<table>"+
-			"<tr><td>letter + mouse1     <td> create"+
-			"<tr><td>shift + mouse2	    <td> zoom/drag"+
-			"<tr><td>mouse1 on element<td> properties"+
-			"<tr><td>hold ctrl			<td> disable snapping"+ 
-			"</table>"
-			);
 		$('setup-box').toggle();
+		rewrite_setup_box();
+	});
+	$('setup-box').mouseleave(function() {
+		if ($("#door_dimz").val() != null) { 
+			door_dimz=$("#door_dimz").val();
+			door_width=$("#door_width").val();
+			floor_dimz=$("#floor_dimz").val();
+		} else if ($("#alter_dimz").val() != null) { 
+			db({"name":$("#alter_name").val() }) .update({ "height": $("#alter_dimz").val() });
+		}
+
+		$('setup-box').fadeOut(0);
+		rewrite_setup_box();
 	});
 }
 //}}}
@@ -282,7 +307,7 @@ function snap_me(m,rect,after_click) {//{{{
 		self.name=geom+"_"+counter;
 		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
 		var mx, my;
-		$('setup-box').fadeOut(400);
+		$('setup-box').fadeOut(0);
 
 		svg.on('mousedown', function() {
 			after_click=1;
@@ -332,7 +357,7 @@ function snap_me(m,rect,after_click) {//{{{
 	}
 //}}}
 function site() { //{{{
-	d3.select('body').append('show-setup-box').html("[help]");
+	d3.select('body').append('show-setup-box').html("[setup]");
 	d3.select('body').append('legend');
 	svg = d3.select('body').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	axes();
