@@ -1,4 +1,6 @@
 $(function()  { 
+
+// globals//{{{
 	var canvas=[screen.width*0.99,screen.height-250];
 	var db=TAFFY(); // http://taffydb.com/working_with_data.html
 	var selected_rect='';
@@ -11,10 +13,8 @@ $(function()  {
 	var ax={};
 	var snap_dist=15;
 	var snap_lines={};
-	var snap_points={};
-	var current_snapping=[];
 	site();
-
+//}}}
 // gg geoms //{{{
 function make_gg() {
 	// tango https://sobac.com/sobac/tangocolors.htm
@@ -78,7 +78,7 @@ function make_gg() {
 // keyboard//{{{
 	$(this).keypress((e) => { 
 		for(var key in gg) {
-			if (e.key == gg[key].l) { rect_create(gg[key].c, gg[key].l); }
+			if (e.key == gg[key].l) { create_rect(gg[key].c, gg[key].l); }
 		}
 	});
 
@@ -117,7 +117,7 @@ function make_gg() {
 		}
 	});
 	//}}}
-	function make_snap_data() { //{{{
+	function make_snap_lines() { //{{{
 		d3.select("#g_snap_lines").selectAll("line").remove();
 		var lines=db().select("lines");
 		snap_lines['horiz']=[];
@@ -143,16 +143,6 @@ function make_gg() {
 		}
 		snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
 		snap_lines['vert']=Array.from(new Set(snap_lines['vert']));
-		make_snap_points();
-	}
-//}}}
-	function make_snap_points() { //{{{
-		snap_points=[];
-		for(var vert in snap_lines['vert']) { 
-			for(var horiz in snap_lines['horiz']) { 
-				snap_points.push([snap_lines['vert'][vert], snap_lines['horiz'][horiz]]);
-			}
-		}
 	}
 //}}}
 	function legend() { //{{{
@@ -208,13 +198,119 @@ function make_setup_box() {//{{{
 	});
 	d3.select('body').append('setup-box').html("				\
 		<table>													\
-		<tr><td>letter + mouse1 <td> create						\
+		<tr><td>letter + mouse1     <td> create					\
 		<tr><td>shift + mouse2	    <td> zoom/drag              \
 		<tr><td>x				    <td> deletes selected       \
 		<tr><td>hold ctrl			<td> disable snapping       \
 		</table>                                                \
 		");
 }
+//}}}
+function snap_me(m,rect,after_click) {//{{{
+	d3.selectAll('.snap_v').attr('visibility', 'hidden');
+	d3.selectAll('.snap_h').attr('visibility', 'hidden');
+	$('#snapper').attr('fill-opacity', 0);
+	if (event.ctrlKey) {
+		return;
+	} 
+	var vh_snap=[];
+
+	for(var point in snap_lines['vert']) {
+		p=snap_lines['vert'][point];
+		if (	
+			m[0] > p - snap_dist &&
+			m[0] < p + snap_dist ) { 
+				if(after_click==1) { 
+					rect.rr.x1=p;
+				} else {
+					rect.rr.x0=p;
+				}
+				$("#sv_"+p).attr("visibility", "visible");
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: m[1], cx: p });
+				vh_snap.push(p);
+				break;
+		}
+	}
+
+	for(var point in snap_lines['horiz']) {
+		p=snap_lines['horiz'][point];
+		if (	
+			m[1] > p - snap_dist &&
+			m[1] < p + snap_dist ) { 
+				if(after_click==1) { 
+					rect.rr.y1=p;
+				} else {
+					rect.rr.y0=p;
+				}
+				$("#sh_"+p).attr("visibility", "visible");
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: m[0], cy: p });
+				vh_snap.push(p);
+				break;
+		}
+	}
+	if(vh_snap.length==2) { 
+		$('#snapper').attr({ r: 5, cx: vh_snap[0], cy: vh_snap[1]});
+	}
+}
+
+//}}}
+	function create_rect(color, geom) {//{{{
+		// After a letter is clicked we react to mouse events
+		// The most tricky scenario is when first mouse click happens before mousemove.
+
+		counter++;
+		var mouse;
+		var after_click=0;
+		var self = this;
+		self.rr={};
+		self.name=geom+"_"+counter;
+		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
+		var mx, my;
+
+		svg.on('mousedown', function() {
+			after_click=1;
+		});
+
+		svg.on('mousemove', function() {
+			mouse=d3.mouse(this);
+			mx=(mouse[0]-zt.x)/zt.k;
+			my=(mouse[1]-zt.y)/zt.k;
+			if (after_click==0) { 
+				self.rr = { 'x0': mx, 'y0': my, 'x1': mx, 'y1': my };
+			}
+			else if (after_click==1 && self.rr.x0 == null) { 
+				self.rr = { 'x0': mx, 'y0': my };
+			}
+			self.rr.x1=mx;
+			self.rr.y1=my;
+			snap_me(mouse,self,after_click);
+			updateRect();
+		});  
+
+		svg.on('mouseup', function() {
+			svg.on('mousedown', null);
+			svg.on('mousemove', null);
+			after_click=0;
+			if(self.rr.x0 == self.rr.x1 && self.rr.y0 == self.rr.y1) { 
+				$("#"+this.name).remove();
+				counter--;
+			} else {
+				db_insert(self);
+				make_snap_lines();
+			}
+		});
+
+		function updateRect() {  
+			if(after_click==0) { return; }
+			$("#"+self.name).attr({
+				x: Math.min(self.rr.x0   , self.rr.x1) ,
+				y: Math.min(self.rr.y0   , self.rr.y1) ,
+				width: Math.abs(self.rr.x1 - self.rr.x0) ,
+				height: Math.abs(self.rr.y1 - self.rr.y0)
+			});   
+		}
+
+	}
 //}}}
 function site() { //{{{
 	d3.select('body').append('show-setup-box').html("[help]");
@@ -229,116 +325,6 @@ function site() { //{{{
 	d3.select('body').append('br');
 	d3.select('body').append('status');
 }
-//}}}
-function snap_me(m,rect,first_click) {//{{{
-	d3.selectAll('.snap_v').attr('visibility', 'hidden');
-	d3.selectAll('.snap_h').attr('visibility', 'hidden');
-	$('#snapper').attr('fill-opacity', 0);
-	if (event.ctrlKey) {
-		return;
-	} 
-	current_snapping=[];
-
-	for(var point in snap_lines['vert']) {
-		p=snap_lines['vert'][point];
-		if (	
-			m[0] > p - snap_dist &&
-			m[0] < p + snap_dist ) { 
-				if(first_click==1) { 
-					rect.rr.x1=p;
-				} else {
-					rect.rr.x0=p;
-				}
-				$("#sv_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: m[1], cx: p });
-				current_snapping.push(p);
-				break;
-		}
-	}
-
-	for(var point in snap_lines['horiz']) {
-		p=snap_lines['horiz'][point];
-		if (	
-			m[1] > p - snap_dist &&
-			m[1] < p + snap_dist ) { 
-				if(first_click==1) { 
-					rect.rr.y1=p;
-				} else {
-					rect.rr.y0=p;
-				}
-				$("#sh_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: m[0], cy: p });
-				current_snapping.push(p);
-				break;
-		}
-	}
-	if(current_snapping.length==2) { 
-		$('#snapper').attr({ r: 5, cx: current_snapping[0], cy: current_snapping[1]});
-	}
-	console.log("current_snapping",current_snapping);
-}
-
-//}}}
-	function rect_create(color, geom) {//{{{
-		var self = this;
-		var mouse;
-		var first_click=0;
-
-		function before_first_click() {
-			if (first_click==1) { return; }
-			var x0=(mouse[0]-zt.x)/zt.k;
-			var y0=(mouse[1]-zt.y)/zt.k;
-			self.rr = { 'x0': x0, 'y0': y0, 'x1': x0, 'y1': y0 };
-		}
-
-		svg.on('mousedown', function() {
-			mouse=d3.mouse(this);
-			before_first_click();
-			counter++;
-			self.name=geom+"_"+counter;
-			self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
-			first_click=1;
-		});
-
-		svg.on('mousemove', function() {
-			mouse=d3.mouse(this);
-			before_first_click();
-			self.rr.x1=(mouse[0]-zt.x)/zt.k;
-			self.rr.y1=(mouse[1]-zt.y)/zt.k;
-			if (first_click==0) { 
-				snap_me(mouse,self,0);
-			} else {
-				snap_me(mouse,self,1);
-			}
-			updateRect();
-		});  
-
-		svg.on('mouseup', function() {
-			svg.on('mousedown', null);
-			svg.on('mousemove', null);
-			first_click=0;
-			if(self.rr.x0 == self.rr.x1 && self.rr.y0 == self.rr.y1) { 
-				$("#"+this.name).remove();
-				counter--;
-			} else {
-				db_insert(self);
-				make_snap_data();
-			}
-		});
-
-		function updateRect() {  
-			if(first_click==0) { return; }
-			$("#"+self.name).attr({
-				x: Math.min(self.rr.x0   , self.rr.x1) ,
-				y: Math.min(self.rr.y0   , self.rr.y1) ,
-				x1: Math.max(self.rr.x0  , self.rr.x1) ,
-				y1: Math.max(self.rr.y0  , self.rr.y1) ,
-				width: Math.abs(self.rr.x1 - self.rr.x0) ,
-				height: Math.abs(self.rr.y1 - self.rr.y0)
-			});   
-		}
-
-	}
 //}}}
 
 });
