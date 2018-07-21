@@ -18,12 +18,6 @@ name:hover {
 	background-color: #888; 
 }
 
-status { 
-	display: block;
-	width: 1200px;
-	margin-top: 20px;
-}
-
 text { 
 	fill: #888;
 	font-size: 11px;
@@ -43,6 +37,10 @@ text {
 	stroke: #383838;
 	font-family: 'Sans' 
 }
+status {
+    cursor: default;
+    float: right;
+}
 
 show-setup-box {
     cursor: default;
@@ -61,8 +59,8 @@ setup-box {
     color: #fff;
     border: 1px solid #f00;
     position: absolute;
-    right:0px;
-    top:40px;
+	top:40px;
+	right:0px;
 }
 
 

@@ -1,7 +1,7 @@
 $(function()  { 
 
 // globals//{{{
-	var canvas=[screen.width*0.99,screen.height-250];
+	var canvas=[screen.width*0.99,screen.height-180];
 	var db=TAFFY(); // http://taffydb.com/working_with_data.html
 	var selected_rect='';
 	var zt={'x':0, 'y':0, 'k':1}; // zoom transform
@@ -100,17 +100,19 @@ function make_gg() {
 //}}}
 // select //{{{
 	$('body').click(function(evt){
-		var not_geoms_arr=['svg', 'g_snap_lines', 'g_aamks', 'zoomer', 'img', 'setup-box'];
-		if (evt.target.id != '' && ! not_geoms_arr.includes(evt.target.id)) { 
-			d3.selectAll('rect').attr('fill-opacity', 0.4);
-			$("#"+evt.target.id).attr('fill-opacity', 0.1);
-			selected_rect=evt.target.id;
-			show_selected_properties(selected_rect);
-		}
-		if (evt.target.id != '' && not_geoms_arr.includes(evt.target.id)) { 
+		if (evt.target.parentElement.id == 'g_aamks') { 
+			if ($("#"+evt.target.id).attr('fill-opacity') == "0.4") {
+				d3.selectAll('rect').attr('fill-opacity', 0.4);
+				$("#"+evt.target.id).attr('fill-opacity', 0.1);
+				selected_rect=evt.target.id;
+				show_selected_properties(selected_rect);
+			} else {
+				d3.selectAll('rect').attr('fill-opacity', 0.4);
+				$('setup-box').fadeOut(0);
+			}
+		} else {
 			d3.selectAll('rect').attr('fill-opacity', 0.4);
 			selected_rect=''
-			$('setup-box').fadeOut(0);
 		}
 	});
 
@@ -126,11 +128,12 @@ function show_selected_properties(selected_rect) {//{{{
 	d3.select('setup-box').html(
 		"<table>"+
 		"<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_rect}).select("name")[0]+">"+db({'name':selected_rect}).select("name")[0]+
-		"<tr><td>x0	<td>"+db({'name':selected_rect}).select("x0")[0]+
-		"<tr><td>y0	<td>"+db({'name':selected_rect}).select("y0")[0]+
-		"<tr><td>x-dim<td>"+db({'name':selected_rect}).select("width")[0]+
-		"<tr><td>y-dim<td>"+db({'name':selected_rect}).select("depth")[0]+
-		"<tr><td>z-dim<td><input id=alter_dimz type=text size=3 value="+db({'name':selected_rect}).select("height")[0]+">"+
+
+		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_rect}).select("x0")[0]+">"+
+		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_rect}).select("y0")[0]+">"+
+		"<tr><td>x-dim<td>	<input id=alter_dimx type=text size=3 value="+db({'name':selected_rect}).select("width")[0]+">"+
+		"<tr><td>y-dim<td>	<input id=alter_dimy type=text size=3 value="+db({'name':selected_rect}).select("depth")[0]+">"+
+		"<tr><td>z-dim<td>  <input id=alter_dimz type=text size=3 value="+db({'name':selected_rect}).select("height")[0]+">"+
 		"</table>"
 		);
 	$('setup-box').fadeIn();
@@ -178,9 +181,10 @@ function show_selected_properties(selected_rect) {//{{{
 		y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
 		y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
 		lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
-		db.insert({"name": geom.name, "lines": lines, "x0": x0, "y0": y0, "width": x1-x0, "depth": y1-y0, "height": door_dimz });
+		db.insert({ "name": geom.name, "lines": lines, "x0": x0, "y0": y0, "width": x1-x0, "depth": y1-y0, "height": geom.dimz });
 		var x=db().select("name");
-		$("status").html(x.length + " | " + JSON.stringify(x));
+		$("show-setup-box").html("elems:"+x.length+' [setup]');
+		make_snap_lines();
 	}
 //}}}
 function axes() { //{{{
@@ -211,7 +215,7 @@ function axes() { //{{{
 		.call(ax.yAxis);
 }
 //}}}
-function rewrite_setup_box() {//{{{
+function help_into_setup_box() {//{{{
 	d3.select('setup-box').html(
 		"<table>"+
 		"<tr><td>letter + mouse1     <td> create"+
@@ -227,23 +231,43 @@ function rewrite_setup_box() {//{{{
 		);
 }
 //}}}
+function save_and_fadeout_properties() {//{{{
+	if ($("#door_dimz").val() != null) { 
+		door_dimz=$("#door_dimz").val();
+		door_width=$("#door_width").val();
+		floor_dimz=$("#floor_dimz").val();
+	} else if ($("#alter_dimz").val() != null) { 
+		var geom={
+			name: $("#alter_name").val(),
+			dimz: $("#alter_dimz").val(),
+			rr:{
+				x0: $("#alter_x0").val(),
+				y0: $("#alter_y0").val(),
+				x1: parseInt($("#alter_x0").val())+parseInt($("#alter_dimx").val()),
+				y1: parseInt($("#alter_y0").val())+parseInt($("#alter_dimy").val())
+			}
+		};
+		db({"name":$("#alter_name").val()}).remove();
+		updateSvgRect(geom);
+		db_insert(geom);
+
+	}
+
+	$('setup-box').fadeOut(0);
+	help_into_setup_box();
+}
+//}}}
 function make_setup_box() {//{{{
 	d3.select('body').append('setup-box');
 	$('show-setup-box').click(function() {
 		$('setup-box').toggle();
-		rewrite_setup_box();
+		help_into_setup_box();
+	});
+	$('setup-box').click(function() {
+		save_and_fadeout_properties();
 	});
 	$('setup-box').mouseleave(function() {
-		if ($("#door_dimz").val() != null) { 
-			door_dimz=$("#door_dimz").val();
-			door_width=$("#door_width").val();
-			floor_dimz=$("#floor_dimz").val();
-		} else if ($("#alter_dimz").val() != null) { 
-			db({"name":$("#alter_name").val() }) .update({ "height": $("#alter_dimz").val() });
-		}
-
-		$('setup-box').fadeOut(0);
-		rewrite_setup_box();
+		save_and_fadeout_properties();
 	});
 }
 //}}}
@@ -302,11 +326,16 @@ function snap_me(m,rect,after_click) {//{{{
 		counter++;
 		var mouse;
 		var after_click=0;
+		var mx, my;
 		var self = this;
 		self.rr={};
 		self.name=geom+"_"+counter;
 		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
-		var mx, my;
+		if (['d', 'q', 'e'].includes(geom)) { 
+			self.dimz=door_dimz;
+		} else { 
+			self.dimz=floor_dimz;
+		}
 		$('setup-box').fadeOut(0);
 
 		svg.on('mousedown', function() {
@@ -326,7 +355,7 @@ function snap_me(m,rect,after_click) {//{{{
 			self.rr.x1=mx;
 			self.rr.y1=my;
 			snap_me(mouse,self,after_click);
-			updateRect();
+			if(after_click==1) { updateSvgRect(self); }
 		});  
 
 		svg.on('mouseup', function() {
@@ -335,7 +364,6 @@ function snap_me(m,rect,after_click) {//{{{
 				counter--;
 			} else {
 				db_insert(self);
-				make_snap_lines();
 			}
 			after_click=0;
 			$('#snapper').attr('fill-opacity', 0);
@@ -344,18 +372,19 @@ function snap_me(m,rect,after_click) {//{{{
 			svg.on('mouseup', null);
 		});
 
-		function updateRect() {  
-			if(after_click==0) { return; }
-			$("#"+self.name).attr({
-				x: Math.min(self.rr.x0   , self.rr.x1) ,
-				y: Math.min(self.rr.y0   , self.rr.y1) ,
-				width: Math.abs(self.rr.x1 - self.rr.x0) ,
-				height: Math.abs(self.rr.y1 - self.rr.y0)
-			});   
-		}
 
 	}
+function updateSvgRect(geom) {  
+	$("#"+geom.name).attr({
+		x: Math.min(geom.rr.x0   , geom.rr.x1) ,
+		y: Math.min(geom.rr.y0   , geom.rr.y1) ,
+		width: Math.abs(geom.rr.x1 - geom.rr.x0) ,
+		height: Math.abs(geom.rr.y1 - geom.rr.y0)
+	});   
+}
+
 //}}}
+
 function site() { //{{{
 	d3.select('body').append('show-setup-box').html("[setup]");
 	d3.select('body').append('legend');
@@ -366,8 +395,6 @@ function site() { //{{{
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend();
 	make_setup_box();
-	d3.select('body').append('br');
-	d3.select('body').append('status');
 }
 //}}}
 
