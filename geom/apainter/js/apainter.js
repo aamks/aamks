@@ -32,16 +32,16 @@ function make_gg() {
 	// Scarlet Red #ef2929 #cc0000 #a40000
 
 	return {
-		ROOM : { l: "r" , c: "#729fcf" },
-		COR  : { l: "c" , c: "#3465a4" },
-		DOOR : { l: "d" , c: "#73d216" },
-		HOLE : { l: "z" , c: "#c4a000" },
-		WIN  : { l: "w" , c: "#cc0000" },
-		STAI : { l: "s" , c: "#5c3566" },
-		HALL : { l: "a" , c: "#ad7fa8" },
-		ClosD: { l: "q" , c: "#fce94f" },
-		ElktD: { l: "e" , c: "#ce5c00" },
-		VVNT : { l: "v" , c: "#ef2929" }
+		ROOM : { t: "room", l: "r" , c: "#729fcf" },
+		COR  : { t: "room", l: "c" , c: "#3465a4" },
+		DOOR : { t: "door", l: "d" , c: "#73d216" },
+		HOLE : { t: "room", l: "z" , c: "#c4a000" },
+		WIN  : { t: "room", l: "w" , c: "#cc0000" },
+		STAI : { t: "room", l: "s" , c: "#5c3566" },
+		HALL : { t: "room", l: "a" , c: "#ad7fa8" },
+		ClosD: { t: "door", l: "q" , c: "#fce94f" },
+		ElktD: { t: "door", l: "e" , c: "#ce5c00" },
+		VVNT : { t: "room", l: "v" , c: "#ef2929" }
 	}
 }
 //}}}
@@ -81,7 +81,7 @@ function make_gg() {
 // keyboard//{{{
 	$(this).keypress((e) => { 
 		for(var key in gg) {
-			if (e.key == gg[key].l) { create_rect(gg[key].c, gg[key].l); }
+			if (e.key == gg[key].l) { create_rect(gg[key].c, gg[key].l, gg[key].t); }
 		}
 	});
 
@@ -271,7 +271,7 @@ function make_setup_box() {//{{{
 	});
 }
 //}}}
-function snap_me(m,rect,after_click) {//{{{
+function snap_room(m,rect,after_click) {//{{{
 	d3.selectAll('.snap_v').attr('visibility', 'hidden');
 	d3.selectAll('.snap_h').attr('visibility', 'hidden');
 	$('#snapper').attr('fill-opacity', 0);
@@ -319,7 +319,7 @@ function snap_me(m,rect,after_click) {//{{{
 }
 
 //}}}
-	function create_rect(color, geom) {//{{{
+	function create_rect(color, geom, room_vs_door) {//{{{
 		// After a letter is clicked we react to mouse events
 		// The most tricky scenario is when first mouse click happens before mousemove.
 
@@ -331,7 +331,7 @@ function snap_me(m,rect,after_click) {//{{{
 		self.rr={};
 		self.name=geom+"_"+counter;
 		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
-		if (['d', 'q', 'e'].includes(geom)) { 
+		if (self.type=='door') {
 			self.dimz=door_dimz;
 		} else { 
 			self.dimz=floor_dimz;
@@ -354,7 +354,9 @@ function snap_me(m,rect,after_click) {//{{{
 			}
 			self.rr.x1=mx;
 			self.rr.y1=my;
-			snap_me(mouse,self,after_click);
+			if(room_vs_door=='room') { 
+				snap_room(mouse,self,after_click);
+			}
 			if(after_click==1) { updateSvgRect(self); }
 		});  
 
