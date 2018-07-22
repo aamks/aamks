@@ -14,7 +14,7 @@ $(function()  {
 	var snap_dist=15;
 	var snap_lines={};
 	var door_dimz=200;
-	var door_width=90;
+	var door_width=40;
 	var floor_dimz=350;
 	site();
 //}}}
@@ -35,7 +35,7 @@ function make_gg() {
 		ROOM : { t: "room", l: "r" , c: "#729fcf" },
 		COR  : { t: "room", l: "c" , c: "#3465a4" },
 		DOOR : { t: "door", l: "d" , c: "#73d216" },
-		HOLE : { t: "room", l: "z" , c: "#c4a000" },
+		HOLE : { t: "hole", l: "z" , c: "#c4a000" },
 		WIN  : { t: "room", l: "w" , c: "#cc0000" },
 		STAI : { t: "room", l: "s" , c: "#5c3566" },
 		HALL : { t: "room", l: "a" , c: "#ad7fa8" },
@@ -99,7 +99,7 @@ function make_gg() {
 
 //}}}
 // select //{{{
-	$('body').click(function(evt){
+	$('body').dblclick(function(evt){
 		if (evt.target.parentElement.id == 'g_aamks') { 
 			if ($("#"+evt.target.id).attr('fill-opacity') == "0.4") {
 				d3.selectAll('rect').attr('fill-opacity', 0.4);
@@ -128,6 +128,7 @@ function show_selected_properties(selected_rect) {//{{{
 	d3.select('setup-box').html(
 		"<table>"+
 		"<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_rect}).select("name")[0]+">"+db({'name':selected_rect}).select("name")[0]+
+		"<tr><td>type <td><input id=alter_type type=hidden value="+db({'name':selected_rect}).select("type")[0]+">"+db({'name':selected_rect}).select("type")[0]+
 
 		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_rect}).select("x0")[0]+">"+
 		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_rect}).select("y0")[0]+">"+
@@ -180,8 +181,12 @@ function show_selected_properties(selected_rect) {//{{{
 		x1 = Math.max(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
 		y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
 		y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
-		lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
-		db.insert({ "name": geom.name, "lines": lines, "x0": x0, "y0": y0, "width": x1-x0, "depth": y1-y0, "height": geom.dimz });
+		if(geom.type=='room') {
+			lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
+		} else {
+			lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
+		}
+		db.insert({ "name": geom.name, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "width": x1-x0, "depth": y1-y0, "height": geom.dimz });
 		var x=db().select("name");
 		$("show-setup-box").html("elems:"+x.length+' [setup]');
 		make_snap_lines();
@@ -220,25 +225,26 @@ function help_into_setup_box() {//{{{
 		"<table>"+
 		"<tr><td>letter + mouse1     <td> create"+
 		"<tr><td>shift + mouse2	    <td> zoom/drag"+
-		"<tr><td>mouse1 on element<td> properties"+
+		"<tr><td>double mouse1		<td> elem properties"+
 		"<tr><td>hold ctrl			<td> disable snapping"+ 
 		"<tr><td>x	<td> deletes selected"+
 		"<tr><td colspan=2 style='text-align: center'><br>Since now"+
-		"<tr><td>door's width		<td><input id=door_width type=text size=2   name=door_width  value="+door_width+">"+
-		"<tr><td>door's z-dim <td><input id=door_dimz type=text size=2	name=door_dimz value="+door_dimz+">"+
-		"<tr><td>room's z-dim <td><input id=floor_dimz type=text size=2 name=floor_dimz value="+floor_dimz+">"+
+		"<tr><td>door's width		<td><input id=door_width type=text size=4   name=door_width  value="+door_width+">"+
+		"<tr><td>door's z-dim <td><input id=door_dimz type=text size=4	name=door_dimz value="+door_dimz+">"+
+		"<tr><td>room's z-dim <td><input id=floor_dimz type=text size=4 name=floor_dimz value="+floor_dimz+">"+
 		"</table>"
 		);
 }
 //}}}
 function save_and_fadeout_properties() {//{{{
 	if ($("#door_dimz").val() != null) { 
-		door_dimz=$("#door_dimz").val();
-		door_width=$("#door_width").val();
-		floor_dimz=$("#floor_dimz").val();
+		door_dimz=parseInt($("#door_dimz").val());
+		door_width=parseInt($("#door_width").val());
+		floor_dimz=parseInt($("#floor_dimz").val());
 	} else if ($("#alter_dimz").val() != null) { 
 		var geom={
 			name: $("#alter_name").val(),
+			type: $("#alter_type").val(),
 			dimz: $("#alter_dimz").val(),
 			rr:{
 				x0: $("#alter_x0").val(),
@@ -263,9 +269,9 @@ function make_setup_box() {//{{{
 		$('setup-box').toggle();
 		help_into_setup_box();
 	});
-	$('setup-box').click(function() {
-		save_and_fadeout_properties();
-	});
+	//$('setup-box').click(function() { // todo: disappears on input click
+	//	save_and_fadeout_properties();
+	//});
 	$('setup-box').mouseleave(function() {
 		save_and_fadeout_properties();
 	});
@@ -285,10 +291,18 @@ function snap_room(m,rect,after_click) {//{{{
 		if (	
 			m[0] > p - snap_dist &&
 			m[0] < p + snap_dist ) { 
-				if(after_click==1) { 
-					rect.rr.x1=p;
+				if (rect.type=='room') { 
+					if(after_click==1) { 
+						rect.rr.x1=p;
+					} else {
+						rect.rr.x0=p;
+					}
 				} else {
-					rect.rr.x0=p;
+					if(after_click==1) { 
+						rect.rr.x1=p+4;
+					} else {
+						rect.rr.x0=p-4;
+					}
 				}
 				$("#sv_"+p).attr("visibility", "visible");
 				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: m[1], cx: p });
@@ -302,10 +316,18 @@ function snap_room(m,rect,after_click) {//{{{
 		if (	
 			m[1] > p - snap_dist &&
 			m[1] < p + snap_dist ) { 
-				if(after_click==1) { 
-					rect.rr.y1=p;
+				if (rect.type=='room') { 
+					if(after_click==1) { 
+						rect.rr.y1=p;
+					} else {
+						rect.rr.y0=p;
+					}
 				} else {
-					rect.rr.y0=p;
+					if(after_click==1) { 
+						rect.rr.y1=p-4;
+					} else {
+						rect.rr.y0=p+4;
+					}
 				}
 				$("#sh_"+p).attr("visibility", "visible");
 				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: m[0], cy: p });
@@ -319,6 +341,52 @@ function snap_room(m,rect,after_click) {//{{{
 }
 
 //}}}
+function snap_door(m,rect,after_click) {//{{{
+	d3.selectAll('.snap_v').attr('visibility', 'hidden');
+	d3.selectAll('.snap_h').attr('visibility', 'hidden');
+	$('#snapper').attr('fill-opacity', 0);
+	if (event.ctrlKey) {
+		return;
+	} 
+	var vh_snap=[];
+
+	for(var point in snap_lines['vert']) {
+		p=snap_lines['vert'][point];
+		if (	
+			m[0] > p - snap_dist &&
+			m[0] < p + snap_dist ) { 
+				rect.rr.x0=p-4;
+				rect.rr.x1=p+4;
+				rect.rr.y0=m[1];
+				rect.rr.y1=m[1]-door_width;
+				$("#sv_"+p).attr("visibility", "visible");
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: m[1], cx: p });
+				vh_snap.push(p);
+				return;
+		}
+	}
+
+	for(var point in snap_lines['horiz']) {
+		p=snap_lines['horiz'][point];
+		if (	
+			m[1] > p - snap_dist &&
+			m[1] < p + snap_dist ) { 
+				rect.rr.y0=p-4;
+				rect.rr.y1=p+4;
+				rect.rr.x0=m[0];
+				rect.rr.x1=m[0]+door_width;
+				$("#sh_"+p).attr("visibility", "visible");
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: m[0], cy: p });
+				vh_snap.push(p);
+				return;
+		}
+	}
+	//if(vh_snap.length==2) { 
+	//	$('#snapper').attr({ r: 5, cx: vh_snap[0], cy: vh_snap[1]});
+	//}
+}
+
+//}}}
 	function create_rect(color, geom, room_vs_door) {//{{{
 		// After a letter is clicked we react to mouse events
 		// The most tricky scenario is when first mouse click happens before mousemove.
@@ -329,6 +397,7 @@ function snap_room(m,rect,after_click) {//{{{
 		var mx, my;
 		var self = this;
 		self.rr={};
+		self.type=room_vs_door;
 		self.name=geom+"_"+counter;
 		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
 		if (self.type=='door') {
@@ -354,8 +423,10 @@ function snap_room(m,rect,after_click) {//{{{
 			}
 			self.rr.x1=mx;
 			self.rr.y1=my;
-			if(room_vs_door=='room') { 
+			if(room_vs_door=='room' || room_vs_door=='hole') { 
 				snap_room(mouse,self,after_click);
+			} else {
+				snap_door(mouse,self,after_click);
 			}
 			if(after_click==1) { updateSvgRect(self); }
 		});  
@@ -365,6 +436,7 @@ function snap_room(m,rect,after_click) {//{{{
 				$("#"+this.name).remove();
 				counter--;
 			} else {
+				updateSvgRect(self);
 				db_insert(self);
 			}
 			after_click=0;
