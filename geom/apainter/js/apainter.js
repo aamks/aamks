@@ -5,6 +5,7 @@ $(function()  {
 	var db=TAFFY(); // http://taffydb.com/working_with_data.html
 	var selected_rect='';
 	var zt={'x':0, 'y':0, 'k':1}; // zoom transform
+	var gg_opacity=0.4;
 	var gg=make_gg();
 	var svg;
 	var floor=0;
@@ -38,13 +39,13 @@ function make_gg() {
 		COR  : { t: "room"   , l: "c" , c: "#3465a4" } ,
 		DOOR : { t: "door"   , l: "d" , c: "#73d216" } ,
 		HOLE : { t: "hole"   , l: "z" , c: "#c4a000" } ,
-		WIN  : { t: "window" , l: "w" , c: "#cc0000" } ,
+		WIN  : { t: "window" , l: "w" , c: "#bbbbff" } ,
 		STAI : { t: "room"   , l: "s" , c: "#5c3566" } ,
-		HALL : { t: "room"   , l: "a" , c: "#ad7fa8" } ,
-		ClosD: { t: "door"   , l: "q" , c: "#fce94f" } ,
+		HALL : { t: "room"   , l: "a" , c: "#e9b96e" } ,
+		ClosD: { t: "door"   , l: "q" , c: "#ef2929" } ,
 		ElktD: { t: "door"   , l: "e" , c: "#ce5c00" } ,
-		VVNT : { t: "room"   , l: "v" , c: "#ef2929" } ,
-		OBST:  { t: "obst"   , l: "t" , c: "#e9b96e" }
+		VVNT : { t: "vvnt"   , l: "v" , c: "#fce94f" } ,
+		OBST:  { t: "obst"   , l: "t" , c: "#ad7fa8" }
 	}
 }
 //}}}
@@ -94,6 +95,12 @@ function make_gg() {
 		}
 	});
 
+	$(this).keydown((e) => { 
+		if (e.key == 'f') { 
+			alternative_view();
+		}
+	});
+
 	$(this).keyup((e) => { 
 		if (e.key == 'Shift') { 
 			$("#zoomer").attr("visibility", "hidden");
@@ -104,17 +111,15 @@ function make_gg() {
 // select //{{{
 	$('body').dblclick(function(evt){
 		if (evt.target.parentElement.id == 'g_aamks') { 
-			if ($("#"+evt.target.id).attr('fill-opacity') == "0.4") {
-				d3.selectAll('rect').attr('fill-opacity', 0.4);
-				$("#"+evt.target.id).attr('fill-opacity', 0.1);
+			if (['0.4', '0.7'].includes($("#"+evt.target.id).attr('fill-opacity'))) {
 				selected_rect=evt.target.id;
 				show_selected_properties(selected_rect);
 			} else {
-				d3.selectAll('rect').attr('fill-opacity', 0.4);
+				d3.selectAll('rect').attr('fill-opacity', gg_opacity);
 				$('setup-box').fadeOut(0);
 			}
 		} else {
-			d3.selectAll('rect').attr('fill-opacity', 0.4);
+			d3.selectAll('rect').attr('fill-opacity', gg_opacity);
 			selected_rect=''
 		}
 	});
@@ -125,6 +130,17 @@ function make_gg() {
 		}
 	});
 	//}}}
+function alternative_view() {//{{{
+	$("#img").toggle();
+	$(".axis").toggle();
+	if($("#img").css('display')=='none') {
+		gg_opacity=0.7;
+	} else {
+		gg_opacity=0.4;
+	}
+	d3.selectAll('rect').attr('fill-opacity', gg_opacity);
+}
+//}}}
 function remove_geom(geom) {//{{{
 	$("#"+geom).remove();
 	db({"name":geom}).remove();
@@ -132,80 +148,125 @@ function remove_geom(geom) {//{{{
 	$('setup-box').fadeOut(0);
 }
 //}}}
-function show_selected_properties(selected_rect) {//{{{
-	d3.select('setup-box').html(
-		"<table>"+
-		"<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_rect}).select("name")[0]+">"+db({'name':selected_rect}).select("name")[0]+
-		"<tr><td>letter<td><input id=alter_letter type=hidden value="+db({'name':selected_rect}).select("letter")[0]+">"+db({'name':selected_rect}).select("letter")[0]+
-		"<tr><td>type <td><input id=alter_type type=hidden value="+db({'name':selected_rect}).select("type")[0]+">"+db({'name':selected_rect}).select("type")[0]+
+function properties_names_droplist_alt(letter) {//{{{
+	var names='';
+	names+=letter+" elements:<br><select id=droplist_names name='droplist_name'>";
+	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "name", "x0", "y0");
+	for (var i in items) { 
+		names+="<option value="+items[i][3]+">"+ items[i][3]+
+			" | origin: ("+items[i][4]+","+items[i][5]+")"+
+			" | dimensions: "+items[i][0]+", "+items[i][1]+", "+items[i][2];
+	}
+	names+="</select>";
+	$('setup-box').html(names);
+	$('setup-box').css('display','block');
+}
+//}}}
+function properties_names_droplist(letter) {//{{{
+	names='<table>';
+	names+="<tr><td>name<td>x0<td>y0<td>dim-x<td>dim-y<td>dim-z";
+	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "name", "x0", "y0");
+	for (var i in items) { 
+		names+="<tr><td class=properties_names_droplist id="+ items[i][3]+ ">"+ items[i][3]+"</td>"+
+			"<td>"+items[i][4]+
+			"<td>"+items[i][5]+
+			"<td>"+items[i][0]+
+			"<td>"+items[i][1]+
+			"<td>"+items[i][2];
+	}
+	names+="</table>";
 
+
+	$('setup-box').html(names);
+	$('setup-box').css('display','block');
+
+	$('.properties_names_droplist').click(function() {
+		selected_rect=$(this).attr('id');
+		show_selected_properties(selected_rect);
+	});
+
+}
+//}}}
+function show_selected_properties(selected_rect) {//{{{
+	d3.selectAll('rect').attr('fill-opacity', gg_opacity);
+	$("#"+selected_rect).attr('fill-opacity', 0.9);
+	d3.select('setup-box').html(
+	    "<input id=alter_type type=hidden value="+db({'name':selected_rect}).select("type")[0]+">"+
+	    "<input id=alter_letter type=hidden value="+db({'name':selected_rect}).select("letter")[0]+">"+
+		"<table>"+
+	    "<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_rect}).select("name")[0]+">"+db({'name':selected_rect}).select("name")[0]+
 		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_rect}).select("x0")[0]+">"+
 		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_rect}).select("y0")[0]+">"+
-		"<tr><td>x-dim<td>	<input id=alter_dimx type=text size=3 value="+db({'name':selected_rect}).select("width")[0]+">"+
-		"<tr><td>y-dim<td>	<input id=alter_dimy type=text size=3 value="+db({'name':selected_rect}).select("depth")[0]+">"+
+		"<tr><td>x-dim<td>	<input id=alter_dimx type=text size=3 value="+db({'name':selected_rect}).select("dimx")[0]+">"+
+		"<tr><td>y-dim<td>	<input id=alter_dimy type=text size=3 value="+db({'name':selected_rect}).select("dimy")[0]+">"+
 		"<tr><td>z-dim<td>  <input id=alter_dimz type=text size=3 value="+db({'name':selected_rect}).select("dimz")[0]+">"+
 		"</table>"
 		);
 	$('setup-box').fadeIn();
 }
 //}}}
-	function geoms_changed() { //{{{
-		// elems count
-		// snap lines
-		legend();
-		d3.select("#g_snap_lines").selectAll("line").remove();
-		var lines=db().select("lines");
-		snap_lines['horiz']=[];
-		snap_lines['vert']=[];
-		var below, above, right, left;
+function geoms_changed() { //{{{
+	// elems count
+	// snap lines
+	legend();
+	d3.select("#g_snap_lines").selectAll("line").remove();
+	var lines=db().select("lines");
+	snap_lines['horiz']=[];
+	snap_lines['vert']=[];
+	var below, above, right, left;
 
-		for(var points in lines) { 
-			below = Math.round(lines[points][0][1]);
-			above = Math.round(lines[points][2][1]);
-			right = Math.round(lines[points][0][0]);
-			left  = Math.round(lines[points][1][0]);
+	for(var points in lines) { 
+		below = Math.round(lines[points][0][1]);
+		above = Math.round(lines[points][2][1]);
+		right = Math.round(lines[points][0][0]);
+		left  = Math.round(lines[points][1][0]);
 
-			snap_lines['horiz'].push(below);
-			snap_lines['horiz'].push(above);
-			snap_lines['vert'].push(right);
-			snap_lines['vert'].push(left);
+		snap_lines['horiz'].push(below);
+		snap_lines['horiz'].push(above);
+		snap_lines['vert'].push(right);
+		snap_lines['vert'].push(left);
 
-			g_snap_lines.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
-			g_snap_lines.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
-			g_snap_lines.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , 0).attr('y2' , 100000).attr("visibility", "hidden");
-			g_snap_lines.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
+		g_snap_lines.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
+		g_snap_lines.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
+		g_snap_lines.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , 0).attr('y2' , 100000).attr("visibility", "hidden");
+		g_snap_lines.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
 
-		}
-		snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
-		snap_lines['vert']=Array.from(new Set(snap_lines['vert']));
 	}
+	snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
+	snap_lines['vert']=Array.from(new Set(snap_lines['vert']));
+}
 //}}}
-	function legend() { //{{{
-		$('legend').html("f"+floor+" ");
-		for(var key in gg) {
-			var x=db({"letter": gg[key]['l']}).select("name");
-			$('legend').append("<div class=legend id=legend_"+gg[key].l+" style='background-color: "+gg[key].c+"'>"+gg[key].l+" "+key+" ("+x.length+")</div>");
-		}
+function legend() { //{{{
+	$('legend').html("f"+floor+" ");
+	for(var key in gg) {
+		var x=db({"letter": gg[key]['l']}).select("name");
+		$('legend').append("<div class=legend letter="+gg[key].l+" id=legend_"+gg[key].l+" style='background-color: "+gg[key].c+"'>"+gg[key].l+" "+key+" ("+x.length+")</div>");
 	}
 
+	$('.legend').click(function() {
+		properties_names_droplist($(this).attr('letter'));
+	});
+
+}
+
 //}}}
-	function db_insert(geom) { //{{{
-		var lines=[];
-		x0 = Math.min(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
-		x1 = Math.max(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
-		y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
-		y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
-		if(geom.type=='room') {
-			lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
-		} else {
-			lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
-		}
-		var cad_json=[[ x0, y0, floor_zorig ], [ x1, y1, dimz ]]; 
-		db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "width": x1-x0, "depth": y1-y0, "dimz": geom.dimz, "floor": floor });
-		selected_rect=geom.name;
-		show_selected_properties(geom.name);
-		geoms_changed();
+function db_insert(geom) { //{{{
+	var lines=[];
+	x0 = Math.min(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
+	x1 = Math.max(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
+	y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
+	y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
+	if(geom.type=='room') {
+		lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
+	} else {
+		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
+	var cad_json=[[ x0, y0, floor_zorig ], [ x1, y1, dimz ]]; 
+	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": floor });
+	selected_rect=geom.name;
+	show_selected_properties(geom.name);
+	geoms_changed();
+}
 //}}}
 function axes() { //{{{
 	ax.x = d3.scaleLinear()
@@ -242,6 +303,7 @@ function help_into_setup_box() {//{{{
 		"<tr><td>shift + mouse2	    <td> zoom/drag"+
 		"<tr><td>double mouse1		<td> elem properties"+
 		"<tr><td>hold ctrl			<td> disable snapping"+ 
+		"<tr><td>f	<td> alternative view"+ 
 		"<tr><td>x	<td> deletes selected"+
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor		  <td><input id=floor type=text size=4   name=floor value="+floor+">"+
@@ -253,11 +315,6 @@ function help_into_setup_box() {//{{{
 		);
 }
 //}}}
-function setup_floor() {//{{{
-	legend();
-	output_json();
-}
-//}}}
 function save_and_fadeout_properties() {//{{{
 	if ($("#door_dimz").val() != null) { 
 		floor=parseInt($("#floor").val());
@@ -265,7 +322,8 @@ function save_and_fadeout_properties() {//{{{
 		door_dimz=parseInt($("#door_dimz").val());
 		door_width=parseInt($("#door_width").val());
 		floor_dimz=parseInt($("#floor_dimz").val());
-		setup_floor();
+		legend();
+		output_json();
 	} else if ($("#alter_dimz").val() != null) { 
 		var geom={
 			name: $("#alter_name").val(),
@@ -427,70 +485,75 @@ function snap_door(m,rect,after_click) {//{{{
 }
 
 //}}}
-	function create_rect(color, letter, gg_type) {//{{{
-		// After a letter is clicked we react to mouse events
-		// The most tricky scenario is when first mouse click happens before mousemove.
-
-		d3.selectAll('rect').attr('fill-opacity', 0.4);
-		counter++;
-		var mouse;
-		var after_click=0;
-		var mx, my;
-		var self = this;
-		self.rr={};
-		self.type=gg_type;
-		self.letter=letter;
-		self.name=letter+"_"+counter;
-		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',0.4).attr('fill', color).attr('stroke-width', 1).attr('stroke', color).attr('class', 'rectangle');
-		if (self.type=='door') {
-			self.dimz=door_dimz;
-		} else { 
-			self.dimz=floor_dimz;
-		}
-		$('setup-box').fadeOut(0);
-
-		svg.on('mousedown', function() {
-			after_click=1;
-		});
-
-		svg.on('mousemove', function() {
-			mouse=d3.mouse(this);
-			mx=(mouse[0]-zt.x)/zt.k;
-			my=(mouse[1]-zt.y)/zt.k;
-			if (after_click==0) { 
-				self.rr = { 'x0': mx, 'y0': my, 'x1': mx, 'y1': my };
-			}
-			else if (after_click==1 && self.rr.x0 == null) { 
-				self.rr = { 'x0': mx, 'y0': my };
-			}
-			self.rr.x1=mx;
-			self.rr.y1=my;
-			if(['room', 'hole', 'window'].includes(gg_type)) { 
-				snap_basic(mouse,self,after_click);
-			} else if(['door'].includes(gg_type)) {
-				snap_door(mouse,self,after_click);
-			}
-			if(after_click==1) { updateSvgRect(self); } // todo: is not always respected
-		});  
-
-		svg.on('mouseup', function() {
-			svg.on('mousedown', null);
-			svg.on('mousemove', null);
-			svg.on('mouseup', null);
-			if(self.rr.x0 == self.rr.x1 && self.rr.y0 == self.rr.y1) { 
-				$("#"+this.name).remove();
-				counter--;
-			} else {
-				if (['hole', 'window'].includes(self.type)) { self=fix_hole_offset(self); }
-				updateSvgRect(self);
-				db_insert(self);
-			}
-			after_click=0;
-			$('#snapper').attr('fill-opacity', 0);
-		});
-
-
+function create_rect(color, letter, gg_type) {//{{{
+	// After a letter is clicked we react to mouse events
+	// The most tricky scenario is when first mouse click happens before mousemove.
+	d3.selectAll('rect').attr('fill-opacity', gg_opacity);
+	counter++;
+	var mouse;
+	var after_click=0;
+	var mx, my;
+	var self = this;
+	self.rr={};
+	self.type=gg_type;
+	self.letter=letter;
+	self.name=letter+counter;
+	if (self.type=='door') {
+		self.dimz=door_dimz;
+	} else { 
+		self.dimz=floor_dimz;
 	}
+
+	if (self.type=='room') { 
+		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).attr('stroke-width', 1).attr('stroke', '#fff').attr('class', 'g_rect');
+	} else { 
+		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).attr('stroke-width', 0).attr('stroke', '#fff').attr('class', 'g_rect');
+	}
+	
+	$('setup-box').fadeOut(0);
+
+	svg.on('mousedown', function() {
+		after_click=1;
+	});
+
+	svg.on('mousemove', function() {
+		mouse=d3.mouse(this);
+		mx=(mouse[0]-zt.x)/zt.k;
+		my=(mouse[1]-zt.y)/zt.k;
+		if (after_click==0) { 
+			self.rr = { 'x0': mx, 'y0': my, 'x1': mx, 'y1': my };
+		}
+		else if (after_click==1 && self.rr.x0 == null) { 
+			self.rr = { 'x0': mx, 'y0': my };
+		}
+		self.rr.x1=mx;
+		self.rr.y1=my;
+		if(['room', 'hole', 'window'].includes(gg_type)) { 
+			snap_basic(mouse,self,after_click);
+		} else if(['door'].includes(gg_type)) {
+			snap_door(mouse,self,after_click);
+		}
+		if(after_click==1) { updateSvgRect(self); } // todo: is not always respected
+	});  
+
+	svg.on('mouseup', function() {
+		svg.on('mousedown', null);
+		svg.on('mousemove', null);
+		svg.on('mouseup', null);
+		if(self.rr.x0 == self.rr.x1 && self.rr.y0 == self.rr.y1) { 
+			$("#"+this.name).remove();
+			counter--;
+		} else {
+			if (['hole', 'window'].includes(self.type)) { self=fix_hole_offset(self); }
+			updateSvgRect(self);
+			db_insert(self);
+		}
+		after_click=0;
+		$('#snapper').attr('fill-opacity', 0);
+	});
+
+
+}
 //}}}
 function updateSvgRect(geom) {  //{{{
 	$("#"+geom.name).attr({

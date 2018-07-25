@@ -30,6 +30,11 @@ text {
 	background-color: #f00; 
 	margin-right: 4px;
 	color: #fff;
+	cursor: pointer;
+}
+.properties_names_droplist {
+	background-color: #600;
+	cursor: pointer;
 }
 
 .axis path, .axis line {
@@ -54,15 +59,14 @@ setup-box {
     opacity: 0.9;
     background-color: #800;
     z-index:100;
-    display: none;
     padding: 10px;
     color: #fff;
     border: 1px solid #f00;
     position: absolute;
-	top:40px;
-	right:0px;
+    top:40px;
+    right:0px;
+	display: none; 
 }
-
 
 table {
 	border-collapse: collapse;
