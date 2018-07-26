@@ -1,4 +1,7 @@
 $(function()  { 
+// todo:
+// pretty format json and dump to file
+// key to call prev geoms lists or two letter calls: g+r = "list rooms"
 
 // globals//{{{
 	var canvas=[screen.width*0.99,screen.height-180];
@@ -148,22 +151,9 @@ function remove_geom(geom) {//{{{
 	$('setup-box').fadeOut(0);
 }
 //}}}
-function properties_names_droplist_alt(letter) {//{{{
-	var names='';
-	names+=letter+" elements:<br><select id=droplist_names name='droplist_name'>";
-	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "name", "x0", "y0");
-	for (var i in items) { 
-		names+="<option value="+items[i][3]+">"+ items[i][3]+
-			" | origin: ("+items[i][4]+","+items[i][5]+")"+
-			" | dimensions: "+items[i][0]+", "+items[i][1]+", "+items[i][2];
-	}
-	names+="</select>";
-	$('setup-box').html(names);
-	$('setup-box').css('display','block');
-}
-//}}}
 function properties_names_droplist(letter) {//{{{
-	names='<table>';
+	var names='';
+	names+='<table>';
 	names+="<tr><td>name<td>x0<td>y0<td>dim-x<td>dim-y<td>dim-z";
 	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "name", "x0", "y0");
 	for (var i in items) { 
@@ -188,21 +178,31 @@ function properties_names_droplist(letter) {//{{{
 }
 //}}}
 function show_selected_properties(selected_rect) {//{{{
-	d3.selectAll('rect').attr('fill-opacity', gg_opacity);
-	$("#"+selected_rect).attr('fill-opacity', 0.9);
+	var stroke=$("#"+selected_rect).css('stroke-width');
+	$("#"+selected_rect).css('stroke-width', '10px');
+	$("#"+selected_rect).animate({ 'stroke-width': stroke }, 300);
+
+	var letter=db({'name':selected_rect}).select("letter")[0];
 	d3.select('setup-box').html(
 	    "<input id=alter_type type=hidden value="+db({'name':selected_rect}).select("type")[0]+">"+
-	    "<input id=alter_letter type=hidden value="+db({'name':selected_rect}).select("letter")[0]+">"+
+	    "<input id=alter_letter type=hidden value="+letter+">"+
 		"<table>"+
+	    "<tr><td colspan=2 class=more_properties letter="+letter+">more..."+
 	    "<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_rect}).select("name")[0]+">"+db({'name':selected_rect}).select("name")[0]+
 		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_rect}).select("x0")[0]+">"+
 		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_rect}).select("y0")[0]+">"+
 		"<tr><td>x-dim<td>	<input id=alter_dimx type=text size=3 value="+db({'name':selected_rect}).select("dimx")[0]+">"+
 		"<tr><td>y-dim<td>	<input id=alter_dimy type=text size=3 value="+db({'name':selected_rect}).select("dimy")[0]+">"+
 		"<tr><td>z-dim<td>  <input id=alter_dimz type=text size=3 value="+db({'name':selected_rect}).select("dimz")[0]+">"+
+	    "<tr><td>x<td>remove"+
 		"</table>"
 		);
 	$('setup-box').fadeIn();
+
+	$('.more_properties').click(function() {
+		properties_names_droplist($(this).attr('letter'));
+	});
+
 }
 //}}}
 function geoms_changed() { //{{{
@@ -485,15 +485,7 @@ function snap_door(m,rect,after_click) {//{{{
 }
 
 //}}}
-function create_rect(color, letter, gg_type) {//{{{
-	// After a letter is clicked we react to mouse events
-	// The most tricky scenario is when first mouse click happens before mousemove.
-	d3.selectAll('rect').attr('fill-opacity', gg_opacity);
-	counter++;
-	var mouse;
-	var after_click=0;
-	var mx, my;
-	var self = this;
+function create_self_props(self, color, gg_type, letter) {//{{{
 	self.rr={};
 	self.type=gg_type;
 	self.letter=letter;
@@ -504,14 +496,25 @@ function create_rect(color, letter, gg_type) {//{{{
 		self.dimz=floor_dimz;
 	}
 
-	if (self.type=='room') { 
-		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).attr('stroke-width', 1).attr('stroke', '#fff').attr('class', 'g_rect');
+	if (['room', 'obst', 'window'].includes(self.type)) { 
+		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).style('stroke-width', 1).attr('stroke', '#fff').attr('class', 'g_rect');
 	} else { 
-		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).attr('stroke-width', 0).attr('stroke', '#fff').attr('class', 'g_rect');
+		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).style('stroke-width', 0).attr('stroke', '#fff').attr('class', 'g_rect');
 	}
+}
+//}}}
+function create_rect(color, letter, gg_type) {//{{{
+	// After a letter is clicked we react to mouse events
+	// The most tricky scenario is when first mouse click happens before mousemove.
+	d3.selectAll('rect').attr('fill-opacity', gg_opacity);
+	counter++;
+	var mouse;
+	var after_click=0;
+	var mx, my;
+	var self = this;
+	create_self_props(self, color, gg_type, letter);
 	
 	$('setup-box').fadeOut(0);
-
 	svg.on('mousedown', function() {
 		after_click=1;
 	});
@@ -540,7 +543,7 @@ function create_rect(color, letter, gg_type) {//{{{
 		svg.on('mousedown', null);
 		svg.on('mousemove', null);
 		svg.on('mouseup', null);
-		if(self.rr.x0 == self.rr.x1 && self.rr.y0 == self.rr.y1) { 
+		if(self.rr.x0 == self.rr.x1 || self.rr.y0 == self.rr.y1) { 
 			$("#"+this.name).remove();
 			counter--;
 		} else {
