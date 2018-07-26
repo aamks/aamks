@@ -32,7 +32,12 @@ text {
 	color: #fff;
 	cursor: pointer;
 }
-.properties_names_droplist {
+
+write {
+	cursor: pointer;
+}
+
+.properties_names_droplist, .more_properties {
 	background-color: #600;
 	cursor: pointer;
 }
@@ -56,7 +61,6 @@ show-setup-box:hover {
 }
 
 setup-box {
-    opacity: 0.9;
     background-color: #800;
     z-index:100;
     padding: 10px;
