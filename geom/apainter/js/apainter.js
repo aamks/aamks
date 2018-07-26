@@ -1,9 +1,10 @@
 $(function()  { 
 // todo:
-// pretty format json and dump to file
 // scrollable table
 // zoom / translate everywhere
 // clear gg_opacity calls
+// active floor
+// image load/properties
 
 // globals//{{{
 	var canvas=[screen.width*0.99,screen.height-180];
@@ -41,17 +42,17 @@ function make_gg() {
 	// Scarlet Red #ef2929 #cc0000 #a40000
 
 	return {
-		ROOM : { t: "room"   , l: "r" , c: "#729fcf" } ,
-		COR  : { t: "room"   , l: "c" , c: "#3465a4" } ,
-		DOOR : { t: "door"   , l: "d" , c: "#73d216" } ,
-		HOLE : { t: "hole"   , l: "z" , c: "#c4a000" } ,
-		WIN  : { t: "window" , l: "w" , c: "#bbbbff" } ,
-		STAI : { t: "room"   , l: "s" , c: "#5c3566" } ,
-		HALL : { t: "room"   , l: "a" , c: "#e9b96e" } ,
-		ClosD: { t: "door"   , l: "q" , c: "#ef2929" } ,
-		ElktD: { t: "door"   , l: "e" , c: "#ce5c00" } ,
-		VVNT : { t: "vvnt"   , l: "v" , c: "#fce94f" } ,
-		OBST:  { t: "obst"   , l: "t" , c: "#ad7fa8" }
+		ROOM : { x: "ROOM"  , t: "room"   , l: "r" , c: "#729fcf" } ,
+		COR  : { x: "COR"   , t: "room"   , l: "c" , c: "#3465a4" } ,
+		D	 : { x: "DOOR"  , t: "door"   , l: "d" , c: "#73d216" } ,
+		HOLE : { x: "HOLE"  , t: "hole"   , l: "z" , c: "#c4a000" } ,
+		W	 : { x: "WIN"   , t: "window" , l: "w" , c: "#bbbbff" } ,
+		STAI : { x: "STAI"  , t: "room"   , l: "s" , c: "#5c3566" } ,
+		HALL : { x: "HALL"  , t: "room"   , l: "a" , c: "#e9b96e" } ,
+		C	 : { x: "ClosD" , t: "door"   , l: "q" , c: "#ef2929" } ,
+		E	 : { x: "ElktD" , t: "door"   , l: "e" , c: "#ce5c00" } ,
+		VVNT : { x: "VVENT" , t: "vvnt"   , l: "v" , c: "#fce94f" } ,
+		OBST : { x: "OBST"  , t: "obst"   , l: "t" , c: "#ad7fa8" }
 	}
 }
 //}}}
@@ -251,8 +252,13 @@ function legend() { //{{{
 	$('legend').html("f"+floor+" ");
 	for(var key in gg) {
 		var x=db({"letter": gg[key]['l']}).select("name");
-		$('legend').append("<div class=legend letter="+gg[key].l+" id=legend_"+gg[key].l+" style='background-color: "+gg[key].c+"'>"+gg[key].l+" "+key+" ("+x.length+")</div>");
+		$('legend').append("<div class=legend letter="+gg[key].l+" id=legend_"+gg[key].l+" style='background-color: "+gg[key].c+"'>"+gg[key].l+" "+gg[key].x+" ("+x.length+")</div>");
 	}
+	$('legend').append("<write>[cad.json]</write>");
+
+	$('write').click(function() {
+		output_json();
+	});
 
 	$('.legend').click(function() {
 		properties_names_droplist($(this).attr('letter'));
@@ -272,7 +278,7 @@ function db_insert(geom) { //{{{
 	} else {
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
-	var cad_json=[[ x0, y0, floor_zorig ], [ x1, y1, dimz ]]; 
+	var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${dimz} ]]`; 
 	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": floor });
 	selected_rect=geom.name;
 	show_selected_properties(geom.name);
@@ -335,7 +341,6 @@ function save_and_fadeout_properties() {//{{{
 		door_width=parseInt($("#door_width").val());
 		floor_dimz=parseInt($("#floor_dimz").val());
 		legend();
-		output_json();
 	} else if ($("#alter_dimz").val() != null) { 
 		var geom={
 			name: $("#alter_name").val(),
@@ -592,25 +597,51 @@ function site() { //{{{
 }
 //}}}
 function output_json() {//{{{
-	var output={};
+	// Instead of JSON.stringify we prefer our own pretty formatting.
+	var json=[];
 	for(var f=0; f<=floor; f++) { 
-		output[f]={};
+		var geoms=[];
 		for(var key in gg) {
-			output[f][key]=[];
+			var x=db({"floor": f, "letter": gg[key]['l']}).select("cad_json");
+			var num_data=[];
+			for (var r in x) { 
+				num_data.push("\t\t\t"+x[r]);
+			}
+			var geom='';
+			geom+='\t\t"'+key+'": [';
+			if(num_data.length>0) { 
+				geom+="\n"+num_data.join(",\n");
+				geom+='\n\t\t]';
+			} else {
+				geom+=' ]';
+			}
+			geoms.push(geom);
 		}
+		var ff='';
+		ff+='\t"'+f+'": {\n';
+		ff+=geoms.join(",\n");
+		ff+='\n\t}';
+		json.push(ff);
 	}
-	var _floor;
-	var _json;
-	for(var key in gg) {
-		var x=db({"letter": gg[key]['l']}).select("cad_json", "floor");
-		for (var r in x) { 
-			_json=x[r][0];
-			_floor=x[r][1];
-			output[_floor][key].push(_json);
-		}
-	}
-	console.log(JSON.stringify(output));
+	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
+	console.log(pretty_json);
+	download("cad.json", pretty_json);
 }
+function download(filename, text) {//{{{
+    var pom = document.createElement('a');
+    pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    pom.setAttribute('download', filename);
+
+    if (document.createEvent) {
+        var event = document.createEvent('MouseEvents');
+        event.initEvent('click', true, true);
+        pom.dispatchEvent(event);
+    }
+    else {
+        pom.click();
+    }
+}
+//}}}
 //}}}
 
 });
