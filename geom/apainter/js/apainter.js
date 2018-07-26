@@ -1,7 +1,9 @@
 $(function()  { 
 // todo:
 // pretty format json and dump to file
-// key to call prev geoms lists or two letter calls: g+r = "list rooms"
+// scrollable table
+// zoom / translate everywhere
+// clear gg_opacity calls
 
 // globals//{{{
 	var canvas=[screen.width*0.99,screen.height-180];
@@ -10,6 +12,7 @@ $(function()  {
 	var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 	var gg_opacity=0.4;
 	var gg=make_gg();
+	var droplist_letter='r';
 	var svg;
 	var floor=0;
 	var floor_zorig=0;
@@ -110,6 +113,12 @@ function make_gg() {
 		}
 	});
 
+	$(this).keypress((e) => { 
+		if (e.key == 'g') { 
+			properties_names_droplist(droplist_letter);
+		}
+	});
+
 //}}}
 // select //{{{
 	$('body').dblclick(function(evt){
@@ -152,6 +161,7 @@ function remove_geom(geom) {//{{{
 }
 //}}}
 function properties_names_droplist(letter) {//{{{
+	droplist_letter=letter;
 	var names='';
 	names+='<table>';
 	names+="<tr><td>name<td>x0<td>y0<td>dim-x<td>dim-y<td>dim-z";
@@ -183,11 +193,11 @@ function show_selected_properties(selected_rect) {//{{{
 	$("#"+selected_rect).animate({ 'stroke-width': stroke }, 300);
 
 	var letter=db({'name':selected_rect}).select("letter")[0];
+	droplist_letter=letter;
 	d3.select('setup-box').html(
 	    "<input id=alter_type type=hidden value="+db({'name':selected_rect}).select("type")[0]+">"+
 	    "<input id=alter_letter type=hidden value="+letter+">"+
 		"<table>"+
-	    "<tr><td colspan=2 class=more_properties letter="+letter+">more..."+
 	    "<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_rect}).select("name")[0]+">"+db({'name':selected_rect}).select("name")[0]+
 		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_rect}).select("x0")[0]+">"+
 		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_rect}).select("y0")[0]+">"+
@@ -195,6 +205,7 @@ function show_selected_properties(selected_rect) {//{{{
 		"<tr><td>y-dim<td>	<input id=alter_dimy type=text size=3 value="+db({'name':selected_rect}).select("dimy")[0]+">"+
 		"<tr><td>z-dim<td>  <input id=alter_dimz type=text size=3 value="+db({'name':selected_rect}).select("dimz")[0]+">"+
 	    "<tr><td>x<td>remove"+
+	    "<tr><td>g<td class=more_properties letter="+letter+">more..."+
 		"</table>"
 		);
 	$('setup-box').fadeIn();
@@ -305,6 +316,7 @@ function help_into_setup_box() {//{{{
 		"<tr><td>hold ctrl			<td> disable snapping"+ 
 		"<tr><td>f	<td> alternative view"+ 
 		"<tr><td>x	<td> deletes selected"+
+		"<tr><td>g	<td> list all of active type"+
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor		  <td><input id=floor type=text size=4   name=floor value="+floor+">"+
 		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
