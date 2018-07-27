@@ -1,10 +1,9 @@
 $(function()  { 
 // todo:
-// scrollable table
 // zoom / translate everywhere
 // clear gg_opacity calls
-// active floor
 // image load/properties
+// create rects not always writing svg attribs
 
 // globals//{{{
 	var canvas=[screen.width*0.99,screen.height-180];
@@ -16,9 +15,11 @@ $(function()  {
 	var droplist_letter='r';
 	var svg;
 	var floor=0;
+	var floors_count=1;
 	var floor_zorig=0;
 	var counter=0;
 	var g_aamks;
+	var g_floor;
 	var g_snap_lines;
 	var ax={};
 	var snap_dist=15;
@@ -80,14 +81,6 @@ function make_gg() {
 		ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
 
 	}
-//}}}
-// image//{{{
-	g_aamks.append("svg:image")
-		.attr("id", 'img')
-		.attr("x", 0)
-		.attr("y", 0)
-		.attr("opacity", 0.3)
-		.attr("xlink:href", "gfx.jpg");
 //}}}
 // keyboard//{{{
 	$(this).keypress((e) => { 
@@ -164,7 +157,8 @@ function remove_geom(geom) {//{{{
 function properties_names_droplist(letter) {//{{{
 	droplist_letter=letter;
 	var names='';
-	names+='<table>';
+	names+='<div id=overflow-div style="height: '+(canvas[1]-100)+'px">';
+	names+='<table id=droplist_names_table>';
 	names+="<tr><td>name<td>x0<td>y0<td>dim-x<td>dim-y<td>dim-z";
 	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "name", "x0", "y0");
 	for (var i in items) { 
@@ -176,6 +170,7 @@ function properties_names_droplist(letter) {//{{{
 			"<td>"+items[i][2];
 	}
 	names+="</table>";
+	names+="</div>";
 
 
 	$('setup-box').html(names);
@@ -278,7 +273,7 @@ function db_insert(geom) { //{{{
 	} else {
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
-	var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${dimz} ]]`; 
+	var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + dimz} ]]`; 
 	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": floor });
 	selected_rect=geom.name;
 	show_selected_properties(geom.name);
@@ -324,7 +319,7 @@ function help_into_setup_box() {//{{{
 		"<tr><td>x	<td> deletes selected"+
 		"<tr><td>g	<td> list all of active type"+
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
-		"<tr><td>floor		  <td><input id=floor type=text size=4   name=floor value="+floor+">"+
+		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor value="+floor+">"+
 		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
 		"<tr><td>door's width <td><input id=door_width type=text size=4   name=door_width  value="+door_width+">"+
 		"<tr><td>door's z-dim <td><input id=door_dimz type=text size=4	name=door_dimz value="+door_dimz+">"+
@@ -333,9 +328,23 @@ function help_into_setup_box() {//{{{
 		);
 }
 //}}}
+function change_floor() {//{{{
+	floor=parseInt($("#floor").val());
+	if(floor > floors_count-1) { 
+		floors_count=floor+1;
+		g_floor = g_aamks.append("g").attr("id", "floor"+floor).attr("class", "g_floor");
+	}
+	d3.selectAll(".g_floor").attr("visibility", "hidden");
+	g_floor=d3.select("#floor"+floor);
+	g_floor.attr("visibility", "visible");
+}
+//}}}
 function save_and_fadeout_properties() {//{{{
+	// There's a single box for multiple forms
+	// so we need to find out which form is submitted
+
 	if ($("#door_dimz").val() != null) { 
-		floor=parseInt($("#floor").val());
+		change_floor();
 		floor_zorig=parseInt($("#floor_zorig").val());
 		door_dimz=parseInt($("#door_dimz").val());
 		door_width=parseInt($("#door_width").val());
@@ -514,9 +523,9 @@ function create_self_props(self, color, gg_type, letter) {//{{{
 	}
 
 	if (['room', 'obst', 'window'].includes(self.type)) { 
-		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).style('stroke-width', 1).attr('stroke', '#fff').attr('class', 'g_rect');
+		self.rect=g_floor.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).style('stroke-width', 1).attr('stroke', '#fff').attr('class', 'g_rect');
 	} else { 
-		self.rect=g_aamks.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).style('stroke-width', 0).attr('stroke', '#fff').attr('class', 'g_rect');
+		self.rect=g_floor.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).style('stroke-width', 0).attr('stroke', '#fff').attr('class', 'g_rect');
 	}
 }
 //}}}
@@ -584,22 +593,19 @@ function updateSvgRect(geom) {  //{{{
 	});   
 }
 //}}}
-function site() { //{{{
-	d3.select('body').append('show-setup-box').html("[setup]");
-	d3.select('body').append('legend');
-	svg = d3.select('body').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
-	axes();
-	g_aamks = svg.append("g").attr("id", "g_aamks");
-	g_snap_lines= svg.append("g").attr("id", "g_snap_lines");
-	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity', 0).attr('fill', "#ff8800");
-	legend();
-	make_setup_box();
+function floor_img(_floor,img) {//{{{
+	d3.select("#floor"+_floor).append("svg:image")
+		.attr("id", 'img')
+		.attr("x", 0)
+		.attr("y", 0)
+		.attr("opacity", 0.3)
+		.attr("xlink:href", img);
 }
 //}}}
 function output_json() {//{{{
 	// Instead of JSON.stringify we prefer our own pretty formatting.
 	var json=[];
-	for(var f=0; f<=floor; f++) { 
+	for(var f=0; f<floors_count; f++) { 
 		var geoms=[];
 		for(var key in gg) {
 			var x=db({"floor": f, "letter": gg[key]['l']}).select("cad_json");
@@ -624,7 +630,6 @@ function output_json() {//{{{
 		json.push(ff);
 	}
 	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
-	console.log(pretty_json);
 	download("cad.json", pretty_json);
 }
 function download(filename, text) {//{{{
@@ -642,6 +647,20 @@ function download(filename, text) {//{{{
     }
 }
 //}}}
+//}}}
+function site() { //{{{
+	d3.select('body').append('show-setup-box').html("[setup]");
+	d3.select('body').append('legend');
+	svg = d3.select('body').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
+	axes();
+	g_aamks = svg.append("g").attr("id", "g_aamks");
+	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor");
+	floor_img("0", "gfx.jpg");
+	g_snap_lines= svg.append("g").attr("id", "g_snap_lines");
+	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity', 0).attr('fill', "#ff8800");
+	legend();
+	make_setup_box();
+}
 //}}}
 
 });

@@ -5,6 +5,10 @@ body {
 	overflow: hidden;
 }
 
+input#floor, input {
+	width: 3em;
+}
+
 name { 
 	border: 1px solid #444;  
 }
@@ -74,6 +78,10 @@ setup-box {
 
 table {
 	border-collapse: collapse;
+}
+
+#overflow-div{
+	overflow-y: scroll;
 }
 
 table td {
