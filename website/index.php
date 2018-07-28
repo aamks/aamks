@@ -43,6 +43,15 @@ $nodes['tests']=array("Tests", /*{{{*/
 <br> Real building evacuation test<br><br>
 <iframe width="560" height="315" src="https://www.youtube.com/embed/X6JcT1bwU9Q?list=PLcR1x6fD9inVo59Gt3gHmy8QLRBonH-H1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
+<br><br><br><br>
+<br> A <a href=http://gamma.cs.unc.edu/Menge/>Menge</a> comparison of local movement models: RVO2 vs Helbing vs Karamouzas.<br>
+Aamks uses RVO2 (ORCA).<br>
+Karamouzas is Predictive Collision Pedestrian Model (2009). https://doi.org/10.1007/978-3-642-10347-6_4
+<br><br>
+
+<iframe width="800" height="500" src="https://www.youtube.com/embed/7dch-dgSuqU" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe><br><br><br>
+<iframe width="800" height="500" src="https://www.youtube.com/embed/rlJzKSKhhg8" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
 ');
 /*}}}*/
 $nodes['demos']=array("Demos", /*{{{*/
