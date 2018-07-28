@@ -238,7 +238,7 @@ function geoms_changed() { //{{{
 }
 //}}}
 function legend() { //{{{
-	$('legend').html("f"+floor+" ");
+	$('legend').html('');
 	for(var key in gg) {
 		var x=db({"letter": gg[key]['l']}).select("name");
 		$('legend').append("<div class=legend letter="+gg[key].l+" id=legend_"+gg[key].l+" style='background-color: "+gg[key].c+"'>"+gg[key].l+" "+gg[key].x+" ("+x.length+")</div>");
@@ -330,6 +330,7 @@ function change_floor() {//{{{
 	}
 	var active="#floor"+floor;
 	var inactive=".g_floor:not("+active+")";
+	d3.select("#floor_text").text("floor "+floor);
 	
 	g_floor=d3.select(active);
 	$(inactive).animate({opacity: 0}, 2000, function(){
@@ -601,6 +602,7 @@ function floor_img(_floor,img) {//{{{
 		.attr("y", 0)
 		.attr("opacity", 0.3)
 		.attr("xlink:href", img);
+	svg.append("text").attr("x",50).attr("y",80).attr("id", "floor_text").text("floor "+floor);
 }
 //}}}
 function output_json() {//{{{

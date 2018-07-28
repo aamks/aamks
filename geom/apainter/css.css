@@ -25,7 +25,15 @@ name:hover {
 text { 
 	fill: #888;
 	font-size: 11px;
-	font-family: 'Sans' 
+	font-family: 'Sans';
+	user-select: none;
+}
+
+#floor_text { 
+	fill: #fff;
+	opacity: 0.05;
+	font-size: 80px;
+	font-family: 'Sans';
 }
 
 .legend { 
