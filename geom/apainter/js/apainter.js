@@ -1,7 +1,6 @@
 $(function()  { 
 // todo:
 // zoom / translate everywhere
-// clear gg_opacity calls
 // image load/properties
 // create rects not always writing svg attribs
 
@@ -116,17 +115,12 @@ function make_gg() {
 //}}}
 // select //{{{
 	$('body').dblclick(function(evt){
-		if (evt.target.parentElement.id == 'g_aamks') { 
-			if (['0.4', '0.7'].includes($("#"+evt.target.id).attr('fill-opacity'))) {
-				selected_rect=evt.target.id;
-				show_selected_properties(selected_rect);
-			} else {
-				d3.selectAll('rect').attr('fill-opacity', gg_opacity);
-				$('setup-box').fadeOut(0);
-			}
+		if (evt.target.tagName == 'rect') { 
+			selected_rect=evt.target.id;
+			show_selected_properties(selected_rect);
 		} else {
-			d3.selectAll('rect').attr('fill-opacity', gg_opacity);
 			selected_rect=''
+			$('setup-box').fadeOut(0);
 		}
 	});
 
@@ -334,9 +328,17 @@ function change_floor() {//{{{
 		floors_count=floor+1;
 		g_floor = g_aamks.append("g").attr("id", "floor"+floor).attr("class", "g_floor");
 	}
-	d3.selectAll(".g_floor").attr("visibility", "hidden");
-	g_floor=d3.select("#floor"+floor);
-	g_floor.attr("visibility", "visible");
+	var active="#floor"+floor;
+	var inactive=".g_floor:not("+active+")";
+	
+	g_floor=d3.select(active);
+	$(inactive).animate({opacity: 0}, 2000, function(){
+		$(inactive).css("visibility","hidden");
+	});
+
+	$(active).css({ "visibility":"visible","opacity":0}).animate({opacity: 1}, 2000);
+
+
 }
 //}}}
 function save_and_fadeout_properties() {//{{{
@@ -532,7 +534,6 @@ function create_self_props(self, color, gg_type, letter) {//{{{
 function create_rect(color, letter, gg_type) {//{{{
 	// After a letter is clicked we react to mouse events
 	// The most tricky scenario is when first mouse click happens before mousemove.
-	d3.selectAll('rect').attr('fill-opacity', gg_opacity);
 	counter++;
 	var mouse;
 	var after_click=0;
