@@ -47,10 +47,10 @@ $nodes['tests']=array("Tests", /*{{{*/
 /*}}}*/
 $nodes['demos']=array("Demos", /*{{{*/
 '
-Aamks is a work in progress, but you can see some aspects of it here
+Aamks is a work in progress, but you can see some of development progress here
 <ul>
 <li> An example of Aamks aplication hosted in SGSP <a target=blank_ href="https://aamks.inf.sgsp.edu.pl">demo</a>
-<li> Aamks geometries are normally created with Autocad, but we are also working on a web-based <a target=blank_ href=/blob/aamks/geom/apainter/>solution</a> (tested in google chrome / chromium browsers only)
+<li> Geometry creation <a target=blank_ href=/blob/aamks/geom/apainter/>tool</a> (requires google chrome / chromium)
 </ul>
 ');
 /*}}}*/
