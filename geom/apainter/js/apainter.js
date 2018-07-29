@@ -310,7 +310,7 @@ function help_into_setup_box() {//{{{
 		"<tr><td>double mouse1		<td> elem properties"+
 		"<tr><td>hold ctrl			<td> disable snapping"+ 
 		"<tr><td>f	<td> alternative view"+ 
-		"<tr><td>x	<td> deletes selected"+
+		"<tr><td>x	<td> delete active"+
 		"<tr><td>g	<td> list all of active type"+
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor value="+floor+">"+
@@ -331,13 +331,14 @@ function change_floor() {//{{{
 	var active="#floor"+floor;
 	var inactive=".g_floor:not("+active+")";
 	d3.select("#floor_text").text("floor "+floor);
+	$("#floor_text").css({ "opacity":1 }).animate({"opacity": 0.05}, 2000);
 	
 	g_floor=d3.select(active);
-	$(inactive).animate({opacity: 0}, 2000, function(){
+	$(inactive).animate({"opacity": 0}, 2000, function(){
 		$(inactive).css("visibility","hidden");
 	});
 
-	$(active).css({ "visibility":"visible","opacity":0}).animate({opacity: 1}, 2000);
+	$(active).css({ "visibility":"visible","opacity":0}).animate({"opacity": 1}, 2000);
 
 
 }
