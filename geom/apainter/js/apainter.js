@@ -42,17 +42,18 @@ function make_gg() {
 	// Scarlet Red #ef2929 #cc0000 #a40000
 
 	return {
-		ROOM : { x: "ROOM"  , t: "room"   , l: "r" , c: "#729fcf" } ,
-		COR  : { x: "COR"   , t: "room"   , l: "c" , c: "#3465a4" } ,
-		D	 : { x: "DOOR"  , t: "door"   , l: "d" , c: "#73d216" } ,
-		HOLE : { x: "HOLE"  , t: "hole"   , l: "z" , c: "#c4a000" } ,
-		W	 : { x: "WIN"   , t: "window" , l: "w" , c: "#bbbbff" } ,
-		STAI : { x: "STAI"  , t: "room"   , l: "s" , c: "#5c3566" } ,
-		HALL : { x: "HALL"  , t: "room"   , l: "a" , c: "#e9b96e" } ,
-		C	 : { x: "ClosD" , t: "door"   , l: "q" , c: "#ef2929" } ,
-		E	 : { x: "ElktD" , t: "door"   , l: "e" , c: "#ce5c00" } ,
-		VVNT : { x: "VVENT" , t: "vvnt"   , l: "v" , c: "#fce94f" } ,
-		OBST : { x: "OBST"  , t: "obst"   , l: "t" , c: "#ad7fa8" }
+		ROOM : { x: "ROOM"  , t: "room"   , l: "r" , c: "#729fcf" , stroke: "#fff", strokewidth: 1 } ,
+		COR  : { x: "COR"   , t: "room"   , l: "c" , c: "#3465a4" , stroke: "#fff", strokewidth: 1 } ,
+		D	 : { x: "DOOR"  , t: "door"   , l: "d" , c: "#73d216" , stroke: "#fff", strokewidth: 0 } ,
+		HOLE : { x: "HOLE"  , t: "hole"   , l: "z" , c: "#c4a000" , stroke: "#fff", strokewidth: 0 } ,
+		W	 : { x: "WIN"   , t: "window" , l: "w" , c: "#448"	  , stroke: "#fff", strokewidth: 2 } ,
+		STAI : { x: "STAI"  , t: "room"   , l: "s" , c: "#5c3566" , stroke: "#fff", strokewidth: 1 } ,
+		HALL : { x: "HALL"  , t: "room"   , l: "a" , c: "#e9b96e" , stroke: "#fff", strokewidth: 1 } ,
+		C	 : { x: "ClosD" , t: "door"   , l: "q" , c: "#ef2929" , stroke: "#fff", strokewidth: 0 } ,
+		E	 : { x: "ElktD" , t: "door"   , l: "e" , c: "#ce5c00" , stroke: "#fff", strokewidth: 0 } ,
+		VVNT : { x: "VVENT" , t: "vvnt"   , l: "v" , c: "#ffaa00" , stroke: "#820", strokewidth: 0.5 } ,
+		MVNT : { x: "mvnt" , t: "mvnt"   , l: "b" , c: "#ff00ff" , stroke: "#808", strokewidth: 0.5 } ,
+		OBST : { x: "OBST"  , t: "obst"   , l: "t" , c: "#ad7fa8" , stroke: "#404", strokewidth: 0.5 }
 	}
 }
 //}}}
@@ -84,7 +85,7 @@ function make_gg() {
 // keyboard//{{{
 	$(this).keypress((e) => { 
 		for(var key in gg) {
-			if (e.key == gg[key].l) { create_rect(gg[key].c, gg[key].l, gg[key].t); }
+			if (e.key == gg[key].l) { create_rect(key); }
 		}
 	});
 
@@ -108,7 +109,7 @@ function make_gg() {
 
 	$(this).keypress((e) => { 
 		if (e.key == 'g') { 
-			properties_names_droplist(droplist_letter);
+			properties_type_listing(droplist_letter);
 		}
 	});
 
@@ -148,20 +149,48 @@ function remove_geom(geom) {//{{{
 	$('setup-box').fadeOut(0);
 }
 //}}}
-function properties_names_droplist(letter) {//{{{
-	droplist_letter=letter;
-	var names='';
-	names+='<div id=overflow-div style="height: '+(canvas[1]-100)+'px">';
-	names+='<table id=droplist_names_table>';
-	names+="<tr><td>name<td>x0<td>y0<td>dim-x<td>dim-y<td>dim-z";
+function properties_type_listing_plain(letter) {//{{{
+	var tbody='';
+	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim";
 	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "name", "x0", "y0");
 	for (var i in items) { 
-		names+="<tr><td class=properties_names_droplist id="+ items[i][3]+ ">"+ items[i][3]+"</td>"+
+		tbody+="<tr><td class=properties_type_listing id="+ items[i][3]+ ">"+ items[i][3]+"</td>"+
 			"<td>"+items[i][4]+
 			"<td>"+items[i][5]+
 			"<td>"+items[i][0]+
 			"<td>"+items[i][1]+
 			"<td>"+items[i][2];
+	}
+	return tbody;
+}
+//}}}
+function properties_type_listing_mvnt(letter) {//{{{
+	var tbody='';
+	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>z-offset<td>throughput";
+	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "mvnt_offsetz", "mvnt_throughput", "name", "x0", "y0");
+	for (var i in items) { 
+		console.log(items);
+		tbody+="<tr><td class=properties_type_listing id="+ items[i][5]+ ">"+ items[i][5]+"</td>"+
+			"<td>"+items[i][6]+
+			"<td>"+items[i][7]+
+			"<td>"+items[i][0]+
+			"<td>"+items[i][1]+
+			"<td>"+items[i][2]+
+			"<td>"+items[i][3]+
+			"<td>"+items[i][4];
+	}
+	return tbody;
+}
+//}}}
+function properties_type_listing(letter) {//{{{
+	droplist_letter=letter;
+	var names='';
+	names+='<div id=overflow-div style="height: '+(canvas[1]-100)+'px">';
+	names+='<table id=droplist_names_table>';
+	if (letter=='b') { 
+		names+=properties_type_listing_mvnt(letter);
+	} else {
+		names+=properties_type_listing_plain(letter);
 	}
 	names+="</table>";
 	names+="</div>";
@@ -170,11 +199,23 @@ function properties_names_droplist(letter) {//{{{
 	$('setup-box').html(names);
 	$('setup-box').css('display','block');
 
-	$('.properties_names_droplist').click(function() {
+	$('.properties_type_listing').click(function() {
 		selected_rect=$(this).attr('id');
 		show_selected_properties(selected_rect);
 	});
 
+}
+//}}}
+function make_mvnt_properties(letter) {//{{{
+	var mvnt='';
+	if(letter=='b') {
+		mvnt+="<tr><td>z-offset<td>  <input id=alter_mvnt_offsetz type=text size=3 value="+db({'name':selected_rect}).select("mvnt_offsetz")[0]+">";
+		mvnt+="<tr><td>throughput<td>  <input id=alter_mvnt_throughput type=text size=3 value="+db({'name':selected_rect}).select("mvnt_throughput")[0]+">";
+	} else {
+		mvnt+="<input id=alter_mvnt_offsetz type=hidden value=0>";
+		mvnt+="<input id=alter_mvnt_throughput type=hidden value=0>";
+	}
+	return mvnt;
 }
 //}}}
 function show_selected_properties(selected_rect) {//{{{
@@ -183,6 +224,7 @@ function show_selected_properties(selected_rect) {//{{{
 	$("#"+selected_rect).animate({ 'stroke-width': stroke }, 300);
 
 	var letter=db({'name':selected_rect}).select("letter")[0];
+	mvnt_properties=make_mvnt_properties(letter);
 	droplist_letter=letter;
 	d3.select('setup-box').html(
 	    "<input id=alter_type type=hidden value="+db({'name':selected_rect}).select("type")[0]+">"+
@@ -194,6 +236,7 @@ function show_selected_properties(selected_rect) {//{{{
 		"<tr><td>x-dim<td>	<input id=alter_dimx type=text size=3 value="+db({'name':selected_rect}).select("dimx")[0]+">"+
 		"<tr><td>y-dim<td>	<input id=alter_dimy type=text size=3 value="+db({'name':selected_rect}).select("dimy")[0]+">"+
 		"<tr><td>z-dim<td>  <input id=alter_dimz type=text size=3 value="+db({'name':selected_rect}).select("dimz")[0]+">"+
+		mvnt_properties+
 	    "<tr><td>x<td>remove"+
 	    "<tr><td>g<td class=more_properties letter="+letter+">more..."+
 		"</table>"
@@ -201,7 +244,7 @@ function show_selected_properties(selected_rect) {//{{{
 	$('setup-box').fadeIn();
 
 	$('.more_properties').click(function() {
-		properties_names_droplist($(this).attr('letter'));
+		properties_type_listing($(this).attr('letter'));
 	});
 
 }
@@ -211,7 +254,8 @@ function geoms_changed() { //{{{
 	// snap lines
 	legend();
 	d3.select("#g_snap_lines").selectAll("line").remove();
-	var lines=db().select("lines");
+	var lines=db({'floor': floor}).select("lines");
+	console.log(lines);
 	snap_lines['horiz']=[];
 	snap_lines['vert']=[];
 	var below, above, right, left;
@@ -250,7 +294,7 @@ function legend() { //{{{
 	});
 
 	$('.legend').click(function() {
-		properties_names_droplist($(this).attr('letter'));
+		properties_type_listing($(this).attr('letter'));
 	});
 
 }
@@ -268,7 +312,7 @@ function db_insert(geom) { //{{{
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
 	var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + dimz} ]]`; 
-	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": floor });
+	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput });
 	selected_rect=geom.name;
 	show_selected_properties(geom.name);
 	geoms_changed();
@@ -339,7 +383,7 @@ function change_floor() {//{{{
 	});
 
 	$(active).css({ "visibility":"visible","opacity":0}).animate({"opacity": 1}, 2000);
-
+	geoms_changed();
 
 }
 //}}}
@@ -360,9 +404,11 @@ function save_and_fadeout_properties() {//{{{
 			letter: $("#alter_letter").val(),
 			type: $("#alter_type").val(),
 			dimz: $("#alter_dimz").val(),
+			mvnt_offsetz: parseInt($("#alter_mvnt_offsetz").val()),
+			mvnt_throughput: parseInt($("#alter_mvnt_throughput").val()),
 			rr:{
-				x0: $("#alter_x0").val(),
-				y0: $("#alter_y0").val(),
+				x0: parseInt($("#alter_x0").val()),
+				y0: parseInt($("#alter_y0").val()),
 				x1: parseInt($("#alter_x0").val())+parseInt($("#alter_dimx").val()),
 				y1: parseInt($("#alter_y0").val())+parseInt($("#alter_dimy").val())
 			}
@@ -515,25 +561,26 @@ function snap_door(m,rect,after_click) {//{{{
 }
 
 //}}}
-function create_self_props(self, color, gg_type, letter) {//{{{
+function create_self_props(self, key) {//{{{
 	self.rr={};
-	self.type=gg_type;
-	self.letter=letter;
-	self.name=letter+counter;
+	self.type=gg[key].t;
+	self.letter=gg[key].l;
+	self.name=gg[key].l+counter;
+	self.mvnt_offsetz=0;
+	self.mvnt_throughput=0;
 	if (self.type=='door') {
 		self.dimz=door_dimz;
+	} else if (self.type=='mvnt') {
+		self.dimz=50
 	} else { 
 		self.dimz=floor_dimz;
 	}
 
-	if (['room', 'obst', 'window'].includes(self.type)) { 
-		self.rect=g_floor.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).style('stroke-width', 1).attr('stroke', '#fff').attr('class', 'g_rect');
-	} else { 
-		self.rect=g_floor.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', color).style('stroke-width', 0).attr('stroke', '#fff').attr('class', 'g_rect');
-	}
+	self.rect=g_floor.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', gg[key].c).style('stroke-width', gg[key].strokewidth).attr('stroke', gg[key].stroke).attr('class', 'g_rect');
+	
 }
 //}}}
-function create_rect(color, letter, gg_type) {//{{{
+function create_rect(key) {//{{{
 	// After a letter is clicked we react to mouse events
 	// The most tricky scenario is when first mouse click happens before mousemove.
 	counter++;
@@ -541,7 +588,7 @@ function create_rect(color, letter, gg_type) {//{{{
 	var after_click=0;
 	var mx, my;
 	var self = this;
-	create_self_props(self, color, gg_type, letter);
+	create_self_props(self, key);
 	
 	$('setup-box').fadeOut(0);
 	svg.on('mousedown', function() {
@@ -560,9 +607,9 @@ function create_rect(color, letter, gg_type) {//{{{
 		}
 		self.rr.x1=mx;
 		self.rr.y1=my;
-		if(['room', 'hole', 'window'].includes(gg_type)) { 
+		if(['room', 'hole', 'window'].includes(self.type)) { 
 			snap_basic(mouse,self,after_click);
-		} else if(['door'].includes(gg_type)) {
+		} else if(['door'].includes(self.type)) {
 			snap_door(mouse,self,after_click);
 		}
 		if(after_click==1) { updateSvgRect(self); } // todo: is not always respected
