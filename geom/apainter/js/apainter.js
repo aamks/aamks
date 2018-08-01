@@ -87,16 +87,17 @@ function zoomed_canvas() {//{{{
 
 }
 //}}}
-function floor_img(img) {//{{{
+function floor_img() {//{{{
 	g_img = g_aamks.append("g").attr("id", "g_img"+floor).attr("class", "g_img");
 	var _img=g_img.append("svg:image")
 		.attr("id", "img"+floor)
 		.attr("x", 0)
 		.attr("y", 0)
-		.attr("opacity", 0.3)
-		.attr("xlink:href", img)
-		.attr("width",underlay_imgs[floor]['width']);
-	
+		.attr("width",underlay_imgs[floor]['width'])
+		.attr("opacity",underlay_imgs[floor]['opacity'])
+		//.attr("xlink:href", img)
+		;
+
 	g_img.call(d3.zoom()
 		.scaleExtent([1 / 10, 40])
 		.filter(function(){
@@ -107,6 +108,14 @@ function floor_img(img) {//{{{
 			_img.attr("transform","translate("+d3.event.transform.x+","+d3.event.transform.y+")");
 		})
 	)
+}
+//}}}
+function renderImage(file) {//{{{
+  var reader = new FileReader();
+  reader.onload = function(event) {
+	$('#img'+floor).attr("href", event.target.result)
+  }
+  reader.readAsDataURL(file);
 }
 //}}}
 // keyboard//{{{
@@ -310,6 +319,7 @@ function legend() { //{{{
 	for(var key in gg) {
 		var x=db({"letter": gg[key]['l']}).select("name");
 		$('legend').append("<div class=legend letter="+gg[key].l+" id=legend_"+gg[key].l+" style='background-color: "+gg[key].c+"'>"+gg[key].l+" "+gg[key].x+" ("+x.length+")</div>");
+
 	}
 	$('legend').append("<write>[cad.json]</write>");
 
@@ -320,6 +330,7 @@ function legend() { //{{{
 	$('.legend').click(function() {
 		properties_type_listing($(this).attr('letter'));
 	});
+
 
 }
 
@@ -374,16 +385,28 @@ function setup_underlay_into_setup_box() {//{{{
 	if(underlay_imgs[floor]==null) { 
 		underlay_imgs[floor]={};
 		var width='value=11';
+		var opacity='value=0.3';
 	} else {
 		var width="value="+underlay_imgs[floor]['width'];
+		var opacity="value="+underlay_imgs[floor]['opacity'];
 	}
 	d3.select('setup-box').html(
-		"You can load the underlay img.<br>"+
-		"You can drag it with middlemouse.<br>"+
+		"You can load the underlay image.<br>"+
+		"png/jpeg/svg images are supported.<br>"+
+		"You can drag the img with middlemouse.<br>"+
 		"<br><br><table>"+
+		"<tr><td>image<td><input type=file label='choose' id=underlay_loader>"+
 		"<tr><td>width<td><input id=alter_underlay_width type=text size=15 "+width+">"+
+		"<tr><td>opacity<td><input id=alter_underlay_opacity type=text size=15 "+opacity+">"+
 		"</table>"
 	);
+
+
+	floor_img();
+	$("#underlay_loader").change(function() {
+		renderImage(this.files[0])
+	});
+
 }
 //}}}
 function help_into_setup_box() {//{{{
@@ -469,7 +492,8 @@ function save_and_fadeout_properties() {//{{{
 
 	if ($("#alter_underlay_width").val() != null) { 
 		underlay_imgs[floor]['width']=parseInt($("#alter_underlay_width").val());
-		floor_img("gfx.jpg");
+		underlay_imgs[floor]['opacity']=parseInt($("#alter_underlay_opacity").val());
+		floor_img();
 	}
 
 	$('setup-box').fadeOut(0);
@@ -754,7 +778,7 @@ function site() { //{{{
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend();
 	make_setup_box();
-	//canvas_zoomer();
+	canvas_zoomer();
 }
 //}}}
 
