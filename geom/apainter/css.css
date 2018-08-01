@@ -50,9 +50,14 @@ write {
 	cursor: pointer;
 }
 
-.properties_names_droplist, .more_properties {
+.properties_type_listing, .more_properties, #setup_underlay {
 	background-color: #600;
 	cursor: pointer;
+}
+
+#setup_underlay {
+	margin-left: 4px;
+	padding: 6px;
 }
 
 .axis path, .axis line {

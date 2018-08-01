@@ -8,7 +8,7 @@ $(function()  {
 	var canvas=[screen.width*0.99,screen.height-180];
 	var db=TAFFY(); // http://taffydb.com/working_with_data.html
 	var selected_rect='';
-	var zt={'x':0, 'y':0, 'k':1}; // zoom transform
+	var zt={'x':50, 'y':50, 'k':1}; // zoom transform
 	var gg_opacity=0.4;
 	var gg=make_gg();
 	var droplist_letter='r';
@@ -19,6 +19,7 @@ $(function()  {
 	var counter=0;
 	var g_aamks;
 	var g_floor;
+	var g_img;
 	var g_snap_lines;
 	var ax={};
 	var snap_dist=15;
@@ -26,6 +27,7 @@ $(function()  {
 	var door_dimz=200;
 	var door_width=40;
 	var floor_dimz=350;
+	var underlay_imgs={};
 	site();
 //}}}
 // gg geoms //{{{
@@ -52,17 +54,17 @@ function make_gg() {
 		C	 : { x: "ClosD" , t: "door"   , l: "q" , c: "#ef2929" , stroke: "#fff", strokewidth: 0 } ,
 		E	 : { x: "ElktD" , t: "door"   , l: "e" , c: "#ce5c00" , stroke: "#fff", strokewidth: 0 } ,
 		VVNT : { x: "VVENT" , t: "vvnt"   , l: "v" , c: "#ffaa00" , stroke: "#820", strokewidth: 0.5 } ,
-		MVNT : { x: "mvnt" , t: "mvnt"   , l: "b" , c: "#ff00ff" , stroke: "#808", strokewidth: 0.5 } ,
+		MVNT : { x: "MVNT"  , t: "mvnt"   , l: "b" , c: "#ff00ff" , stroke: "#808", strokewidth: 0.5 } ,
 		OBST : { x: "OBST"  , t: "obst"   , l: "t" , c: "#ad7fa8" , stroke: "#404", strokewidth: 0.5 }
 	}
 }
 //}}}
-// zoomer//{{{
+function canvas_zoomer() { //{{{
 	svg.append("rect")
 		.attr("id", 'zoomer')
 		.attr("width", canvas[0])
 		.attr("height", canvas[1])
-		.attr("fill", "#ax4400")
+		.attr("fill", "#a40")
 		.attr("opacity", 0)
 		.attr("pointer-events", "visible")
 		.attr("visibility", "hidden")
@@ -73,14 +75,39 @@ function make_gg() {
 					 event.button === 1);
 			})
 			.translateExtent([[-10000, -10000], [10000 , 10000]])
-			.on("zoom", zoomed));
-	function zoomed() {
-		g_aamks.attr("transform", d3.event.transform);
-		zt = d3.event.transform;
-		ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)));
-		ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
+			.on("zoom", zoomed_canvas)
+		);
+}
+//}}}
+function zoomed_canvas() {//{{{
+	g_aamks.attr("transform", d3.event.transform);
+	zt = d3.event.transform;
+	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)));
+	ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
 
-	}
+}
+//}}}
+function floor_img(img) {//{{{
+	g_img = g_aamks.append("g").attr("id", "g_img"+floor).attr("class", "g_img");
+	var _img=g_img.append("svg:image")
+		.attr("id", "img"+floor)
+		.attr("x", 0)
+		.attr("y", 0)
+		.attr("opacity", 0.3)
+		.attr("xlink:href", img)
+		.attr("width",underlay_imgs[floor]['width']);
+	
+	g_img.call(d3.zoom()
+		.scaleExtent([1 / 10, 40])
+		.filter(function(){
+			return (event.button === 1);
+		})
+		.translateExtent([[-10000, -10000], [10000 , 10000]])
+		.on("zoom", function() {
+			_img.attr("transform","translate("+d3.event.transform.x+","+d3.event.transform.y+")");
+		})
+	)
+}
 //}}}
 // keyboard//{{{
 	$(this).keypress((e) => { 
@@ -169,7 +196,6 @@ function properties_type_listing_mvnt(letter) {//{{{
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>z-offset<td>throughput";
 	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "mvnt_offsetz", "mvnt_throughput", "name", "x0", "y0");
 	for (var i in items) { 
-		console.log(items);
 		tbody+="<tr><td class=properties_type_listing id="+ items[i][5]+ ">"+ items[i][5]+"</td>"+
 			"<td>"+items[i][6]+
 			"<td>"+items[i][7]+
@@ -194,7 +220,6 @@ function properties_type_listing(letter) {//{{{
 	}
 	names+="</table>";
 	names+="</div>";
-
 
 	$('setup-box').html(names);
 	$('setup-box').css('display','block');
@@ -255,7 +280,6 @@ function geoms_changed() { //{{{
 	legend();
 	d3.select("#g_snap_lines").selectAll("line").remove();
 	var lines=db({'floor': floor}).select("lines");
-	console.log(lines);
 	snap_lines['horiz']=[];
 	snap_lines['vert']=[];
 	var below, above, right, left;
@@ -320,22 +344,22 @@ function db_insert(geom) { //{{{
 //}}}
 function axes() { //{{{
 	ax.x = d3.scaleLinear()
-		.domain([-1, canvas[0]+ 1])
+		.domain([-50, canvas[0]+ 1])
 		.range([-1, canvas[0]+ 1 ]);
 
 	ax.y = d3.scaleLinear()
-		.domain([-1, canvas[1] + 1])
+		.domain([-50, canvas[1] + 1])
 		.range([-1, canvas[1] + 1]);
 
 	ax.xAxis = d3.axisBottom(ax.x)
-		.ticks(10)
+		.ticks(5)
 		.tickSize(canvas[1])
-		.tickPadding(8 - canvas[1]);
+		.tickPadding(2 - canvas[1]);
 
 	ax.yAxis = d3.axisRight(ax.y)
 		.ticks(4)
 		.tickSize(canvas[0])
-		.tickPadding(8 - canvas[0]);
+		.tickPadding(2 - canvas[0]);
 
 	ax.gX = svg.append("g")
 		.attr("class", "axis axis--x")
@@ -344,6 +368,22 @@ function axes() { //{{{
 	ax.gY = svg.append("g")
 		.attr("class", "axis axis--y")
 		.call(ax.yAxis);
+}
+//}}}
+function setup_underlay_into_setup_box() {//{{{
+	if(underlay_imgs[floor]==null) { 
+		underlay_imgs[floor]={};
+		var width='value=11';
+	} else {
+		var width="value="+underlay_imgs[floor]['width'];
+	}
+	d3.select('setup-box').html(
+		"You can load the underlay img.<br>"+
+		"You can drag it with middlemouse.<br>"+
+		"<br><br><table>"+
+		"<tr><td>width<td><input id=alter_underlay_width type=text size=15 "+width+">"+
+		"</table>"
+	);
 }
 //}}}
 function help_into_setup_box() {//{{{
@@ -357,13 +397,19 @@ function help_into_setup_box() {//{{{
 		"<tr><td>x	<td> delete active"+
 		"<tr><td>g	<td> list all of active type"+
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
-		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor value="+floor+">"+
+		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor value="+floor+">"+ 
+		"<span id=setup_underlay>underlay...</span>"+
 		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
 		"<tr><td>door's width <td><input id=door_width type=text size=4   name=door_width  value="+door_width+">"+
 		"<tr><td>door's z-dim <td><input id=door_dimz type=text size=4	name=door_dimz value="+door_dimz+">"+
 		"<tr><td>room's z-dim <td><input id=floor_dimz type=text size=4 name=floor_dimz value="+floor_dimz+">"+
-		"</table>"
+		"</table><br><br>"
 		);
+
+	$('#setup_underlay').click(function() {
+		setup_underlay_into_setup_box();
+	});
+
 }
 //}}}
 function change_floor() {//{{{
@@ -398,7 +444,9 @@ function save_and_fadeout_properties() {//{{{
 		door_width=parseInt($("#door_width").val());
 		floor_dimz=parseInt($("#floor_dimz").val());
 		legend();
-	} else if ($("#alter_dimz").val() != null) { 
+	} 
+
+	if ($("#alter_dimz").val() != null) { 
 		var geom={
 			name: $("#alter_name").val(),
 			letter: $("#alter_letter").val(),
@@ -417,6 +465,11 @@ function save_and_fadeout_properties() {//{{{
 		updateSvgRect(geom);
 		db_insert(geom);
 
+	} 
+
+	if ($("#alter_underlay_width").val() != null) { 
+		underlay_imgs[floor]['width']=parseInt($("#alter_underlay_width").val());
+		floor_img("gfx.jpg");
 	}
 
 	$('setup-box').fadeOut(0);
@@ -428,6 +481,7 @@ function make_setup_box() {//{{{
 		help_into_setup_box();
 		$('setup-box').toggle();
 	});
+
 	$('setup-box').mouseleave(function() {
 		save_and_fadeout_properties();
 	});
@@ -643,16 +697,6 @@ function updateSvgRect(geom) {  //{{{
 	});   
 }
 //}}}
-function floor_img(_floor,img) {//{{{
-	d3.select("#floor"+_floor).append("svg:image")
-		.attr("id", 'img')
-		.attr("x", 0)
-		.attr("y", 0)
-		.attr("opacity", 0.3)
-		.attr("xlink:href", img);
-	svg.append("text").attr("x",50).attr("y",80).attr("id", "floor_text").text("floor "+floor);
-}
-//}}}
 function output_json() {//{{{
 	// Instead of JSON.stringify we prefer our own pretty formatting.
 	var json=[];
@@ -706,11 +750,11 @@ function site() { //{{{
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor");
-	floor_img("0", "gfx.jpg");
 	g_snap_lines= svg.append("g").attr("id", "g_snap_lines");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend();
 	make_setup_box();
+	//canvas_zoomer();
 }
 //}}}
 
