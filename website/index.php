@@ -42,6 +42,8 @@ $nodes['tests']=array("Tests", /*{{{*/
 <iframe width="560" height="315" src="https://www.youtube.com/embed/6m-3JYUX3oY?list=PLcR1x6fD9inVo59Gt3gHmy8QLRBonH-H1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 <br> Real building evacuation test<br><br>
 <iframe width="560" height="315" src="https://www.youtube.com/embed/X6JcT1bwU9Q?list=PLcR1x6fD9inVo59Gt3gHmy8QLRBonH-H1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+<br> Comparison of Aamks and Pathfinder evacuation modeling<br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/S3Cwwdwgomc" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
 <br><br><br><br>
 <br> A <a href=http://gamma.cs.unc.edu/Menge/>Menge</a> comparison of local movement models: RVO2 vs Helbing vs Karamouzas.<br>
