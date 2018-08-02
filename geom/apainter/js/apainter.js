@@ -1,7 +1,6 @@
 $(function()  { 
 // todo:
 // zoom / translate everywhere
-// image load/properties
 // create rects not always writing svg attribs
 
 // globals//{{{
@@ -31,8 +30,7 @@ $(function()  {
 	var underlay_draggable=0;
 	site();
 //}}}
-// gg geoms //{{{
-function make_gg() {
+function make_gg() {//{{{
 	// tango https://sobac.com/sobac/tangocolors.htm
 	// Aluminium   #eeeeec #d3d7cf #babdb6
 	// Butter      #fce94f #edd400 #c4a000
@@ -118,7 +116,12 @@ function renderImage(file) {//{{{
 	reader.readAsDataURL(file);
 }
 //}}}
-// keyboard//{{{
+function fadeout_setup_box() {//{{{
+	$('setup-box').fadeOut(0);
+	underlay_draggable=0;
+}
+//}}}
+function keyboard_events() {//{{{
 	$(this).keypress((e) => { 
 		for(var key in gg) {
 			if (e.key == gg[key].l) { create_rect(key); }
@@ -148,14 +151,9 @@ function renderImage(file) {//{{{
 			properties_type_listing(droplist_letter);
 		}
 	});
-
-//}}}
-function fadeout_setup_box() {//{{{
-	$('setup-box').fadeOut(0);
-	underlay_draggable=0;
 }
 //}}}
-// select //{{{
+function rect_select_deselect() { //{{{
 	$('svg').dblclick(function(evt){
 		if (evt.target.tagName == 'rect') { 
 			selected_rect=evt.target.id;
@@ -171,16 +169,17 @@ function fadeout_setup_box() {//{{{
 			remove_geom(selected_rect);
 		}
 	});
+}
 	//}}}
 function alternative_view() {//{{{
-	$("#img").toggle();
+	$(".g_img").toggle();
 	$(".axis").toggle();
-	if($("#img").css('display')=='none') {
-		gg_opacity=0.7;
+	if(d3.select('#floor'+floor).attr('fill-opacity')==0.7) { 
+		gg_opacity=0.4; 
 	} else {
-		gg_opacity=0.4;
+		gg_opacity=0.7; 
 	}
-	d3.selectAll('rect').attr('fill-opacity', gg_opacity);
+	d3.select('#floor'+floor).attr('fill-opacity', gg_opacity);
 }
 //}}}
 function remove_geom(geom) {//{{{
@@ -388,10 +387,9 @@ function axes() { //{{{
 //}}}
 function setup_underlay_into_setup_box() {//{{{
 	underlay_draggable=1;
-	console.log(underlay_imgs);
 	if(underlay_imgs[floor]==null) { 
 		underlay_imgs[floor]={};
-		var width='value=100';
+		var width='value=""';
 		var opacity='value=0.3';
 		var fname='';
 	} else {
@@ -402,7 +400,8 @@ function setup_underlay_into_setup_box() {//{{{
 	d3.select('setup-box').html(
 		"You can load the underlay image.<br>"+
 		"png/jpeg/svg images are supported.<br>"+
-		"You can drag the img with middlemouse.<br><br><br>"+
+		"You can drag the underlay img with <br>"+
+		"mouse2 only while this window is open.<br><br><br>"+
 		"<input type=file label='choose' id=underlay_loader>"+
 		"<br><br><table>"+
 		"<tr><td>image<td id=underlay_img_fname>"+
@@ -412,14 +411,16 @@ function setup_underlay_into_setup_box() {//{{{
 		"</table>"
 	);
 
+	$("#underlay_translate").html(underlay_imgs[floor]['transform']);
+	$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
+
 	$("#underlay_loader").change(function() {
 		renderImage(this.files[0])
 		underlay_imgs[floor]['fname']=this.files[0].name;
 		$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
+		$("#underlay_translate").html("translate(0,0)");
 	});
 
-	$("#underlay_translate").html(underlay_imgs[floor]['transform']);
-	$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
 
 }
 //}}}
@@ -453,20 +454,27 @@ function change_floor() {//{{{
 	floor=parseInt($("#floor").val());
 	if(floor > floors_count-1) { 
 		floors_count=floor+1;
-		g_floor = g_aamks.append("g").attr("id", "floor"+floor).attr("class", "g_floor");
+		g_floor = g_aamks.append("g").attr("id", "floor"+floor).attr("class", "g_floor").attr('fill-opacity',gg_opacity);
 	}
-	var active="#floor"+floor;
-	var inactive=".g_floor:not("+active+")";
+	var active_f="#floor"+floor;
+	var inactive_f=".g_floor:not("+active_f+")";
+	g_floor=d3.select(active_f);
+	$(inactive_f).animate({"opacity": 0}, 2000, function(){
+		$(inactive_f).css("visibility","hidden");
+	});
+	$(active_f).css({ "visibility":"visible","opacity":0}).animate({"opacity": 1}, 2000);
+
+	var active_img="#g_img"+floor;
+	var inactive_img=".g_img:not("+active_img+")";
+	g_img=d3.select(active_img);
+	$(inactive_img).animate({"opacity": 0}, 2000, function(){
+		$(inactive_img).css("visibility","hidden");
+	});
+	$(active_img).css({ "visibility":"visible","opacity":0}).animate({"opacity": 1}, 2000);
+
+	geoms_changed();
 	d3.select("#floor_text").text("floor "+floor);
 	$("#floor_text").css({ "opacity":1 }).animate({"opacity": 0.05}, 2000);
-	
-	g_floor=d3.select(active);
-	$(inactive).animate({"opacity": 0}, 2000, function(){
-		$(inactive).css("visibility","hidden");
-	});
-
-	$(active).css({ "visibility":"visible","opacity":0}).animate({"opacity": 1}, 2000);
-	geoms_changed();
 	$("#floor_text").html("floor "+floor);
 
 }
@@ -504,12 +512,16 @@ function save_setup_box() {//{{{
 		db_insert(geom);
 	} 
 
-	if ($("#alter_underlay_width").val() != null) { 
-		underlay_imgs[floor]['width']=parseInt($("#alter_underlay_width").val());
+	if ($("#alter_underlay_opacity").val() != null) { 
 		underlay_imgs[floor]['opacity']=parseFloat($("#alter_underlay_opacity").val());
-
-		$("#img"+floor).attr("width",underlay_imgs[floor]['width']);
 		$("#img"+floor).attr("opacity",underlay_imgs[floor]['opacity']);
+
+		if($("#alter_underlay_width").val() != "") {
+			underlay_imgs[floor]['width']=parseInt($("#alter_underlay_width").val());
+			$("#img"+floor).attr("width",underlay_imgs[floor]['width']);
+		}  else {
+			underlay_imgs[floor]['width']="";
+		}
 	}
 
 }
@@ -669,7 +681,7 @@ function create_self_props(self, key) {//{{{
 		self.dimz=floor_dimz;
 	}
 
-	self.rect=g_floor.append('rect').attr('id', self.name).attr('fill-opacity',gg_opacity).attr('fill', gg[key].c).style('stroke-width', gg[key].strokewidth).attr('stroke', gg[key].stroke).attr('class', 'g_rect');
+	self.rect=g_floor.append('rect').attr('id', self.name).attr('fill', gg[key].c).style('stroke-width', gg[key].strokewidth).attr('stroke', gg[key].stroke).attr('class', 'g_rect');
 	
 }
 //}}}
@@ -789,12 +801,14 @@ function site() { //{{{
 	svg.append("text").attr("x",50).attr("y",80).attr("id", "floor_text").text("floor "+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
-	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor");
+	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',gg_opacity);;
 	g_snap_lines= svg.append("g").attr("id", "g_snap_lines");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend();
 	make_setup_box();
 	canvas_zoomer();
+	keyboard_events();
+	rect_select_deselect();
 }
 //}}}
 
