@@ -1,7 +1,7 @@
 $(function()  { 
 // todo:
-// zoom / translate everywhere
-// create rects not always writing svg attribs
+// g_img should go below floor layer
+// create rects not always writing svg attribs?
 
 // globals//{{{
 	var canvas=[screen.width*0.99,screen.height-180];
@@ -79,8 +79,13 @@ function canvas_zoomer() { //{{{
 }
 //}}}
 function zoomed_canvas() {//{{{
-	g_aamks.attr("transform", d3.event.transform);
-	zt = d3.event.transform;
+	zt=d3.event.transform;
+	zt.k = Math.round(zt.k * 100) / 100;
+	zt.x = Math.round(zt.x * 100) / 100;
+	zt.y = Math.round(zt.y * 100) / 100;
+	g_aamks.attr("transform", zt);
+	g_snap_lines.attr("transform", zt);
+	$("#snapper").attr("transform", zt);
 	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)));
 	ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
 }
@@ -100,7 +105,7 @@ function underlay_changed() {//{{{
 		.translateExtent([[-10000, -10000], [10000 , 10000]])
 		.on("zoom", function() {
 			if (underlay_draggable==0) {  return; }
-			_img.attr("transform","translate("+d3.event.transform.x+","+d3.event.transform.y+")");
+			_img.attr("transform","translate("+Math.round(d3.event.transform.x)+","+Math.round(d3.event.transform.y)+")");
 			underlay_imgs[floor]['transform']=_img.attr("transform");
 			$("#underlay_translate").html(underlay_imgs[floor]['transform']);
 		})
@@ -398,9 +403,9 @@ function setup_underlay_into_setup_box() {//{{{
 		var fname=underlay_imgs[floor]['fname'];
 	}
 	d3.select('setup-box').html(
-		"You can load the underlay image.<br>"+
-		"png/jpeg/svg images are supported.<br>"+
-		"You can drag the underlay img with <br>"+
+		"You can load an underlay image.<br>"+
+		"png/jpeg/svg are supported.<br>"+
+		"You can drag the underlay image with <br>"+
 		"mouse2 only while this window is open.<br><br><br>"+
 		"<input type=file label='choose' id=underlay_loader>"+
 		"<br><br><table>"+
@@ -568,8 +573,9 @@ function snap_basic(m,rect,after_click) {//{{{
 	for(var point in snap_lines['vert']) {
 		p=snap_lines['vert'][point];
 		if (	
-			m[0] > p - snap_dist &&
-			m[0] < p + snap_dist ) { 
+
+			(m[0]-zt.x)/zt.k > p - snap_dist &&
+			(m[0]-zt.x)/zt.k < p + snap_dist ) { 
 				if (rect.type=='room') { 
 					if(after_click==1) { 
 						rect.rr.x1=p;
@@ -584,7 +590,7 @@ function snap_basic(m,rect,after_click) {//{{{
 					}
 				}
 				$("#sv_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: m[1], cx: p });
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: (m[1]-zt.y)/zt.k, cx: p });
 				vh_snap.push(p);
 				break;
 		}
@@ -593,8 +599,8 @@ function snap_basic(m,rect,after_click) {//{{{
 	for(var point in snap_lines['horiz']) {
 		p=snap_lines['horiz'][point];
 		if (	
-			m[1] > p - snap_dist &&
-			m[1] < p + snap_dist ) { 
+			(m[1]-zt.y)/zt.k > p - snap_dist &&
+			(m[1]-zt.y)/zt.k < p + snap_dist ) { 
 				if (rect.type=='room') { 
 					if(after_click==1) { 
 						rect.rr.y1=p;
@@ -609,7 +615,7 @@ function snap_basic(m,rect,after_click) {//{{{
 					}
 				}
 				$("#sh_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: m[0], cy: p });
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: (m[0]-zt.x)/zt.k, cy: p });
 				vh_snap.push(p);
 				break;
 		}
@@ -632,14 +638,14 @@ function snap_door(m,rect,after_click) {//{{{
 	for(var point in snap_lines['vert']) {
 		p=snap_lines['vert'][point];
 		if (	
-			m[0] > p - snap_dist &&
-			m[0] < p + snap_dist ) { 
+			(m[0]-zt.x)/zt.k > p - snap_dist &&
+			(m[0]-zt.x)/zt.k < p + snap_dist ) { 
 				rect.rr.x0=p-4;
 				rect.rr.x1=p+4;
-				rect.rr.y0=m[1];
-				rect.rr.y1=m[1]-door_width;
+				rect.rr.y0=(m[1]-zt.y)/zt.k;
+				rect.rr.y1=(m[1]-zt.y)/zt.k-door_width;
 				$("#sv_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: m[1], cx: p });
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: (m[1]-zt.y)/zt.k, cx: p });
 				vh_snap.push(p);
 				return;
 		}
@@ -648,14 +654,14 @@ function snap_door(m,rect,after_click) {//{{{
 	for(var point in snap_lines['horiz']) {
 		p=snap_lines['horiz'][point];
 		if (	
-			m[1] > p - snap_dist &&
-			m[1] < p + snap_dist ) { 
+			(m[1]-zt.y)/zt.k > p - snap_dist &&
+			(m[1]-zt.y)/zt.k < p + snap_dist ) { 
 				rect.rr.y0=p-4;
 				rect.rr.y1=p+4;
-				rect.rr.x0=m[0];
-				rect.rr.x1=m[0]+door_width;
+				rect.rr.x0=(m[0]-zt.x)/zt.k;
+				rect.rr.x1=(m[0]-zt.x)/zt.k+door_width;
 				$("#sh_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: m[0], cy: p });
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: (m[0]-zt.x)/zt.k, cy: p });
 				vh_snap.push(p);
 				return;
 		}
