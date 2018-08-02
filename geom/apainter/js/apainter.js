@@ -28,6 +28,7 @@ $(function()  {
 	var door_width=40;
 	var floor_dimz=350;
 	var underlay_imgs={};
+	var underlay_draggable=0;
 	site();
 //}}}
 // gg geoms //{{{
@@ -84,16 +85,13 @@ function zoomed_canvas() {//{{{
 	zt = d3.event.transform;
 	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)));
 	ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
-
 }
 //}}}
-function floor_img() {//{{{
+function underlay_changed() {//{{{
 	$("#g_img"+floor).remove();
 	g_img = g_aamks.append("g").attr("id", "g_img"+floor).attr("class", "g_img");
 	var _img=g_img.append("svg:image")
 		.attr("id", "img"+floor)
-		.attr("x", 0)
-		.attr("y", 0)
 		;
 
 	g_img.call(d3.zoom()
@@ -103,13 +101,16 @@ function floor_img() {//{{{
 		})
 		.translateExtent([[-10000, -10000], [10000 , 10000]])
 		.on("zoom", function() {
+			if (underlay_draggable==0) {  return; }
 			_img.attr("transform","translate("+d3.event.transform.x+","+d3.event.transform.y+")");
+			underlay_imgs[floor]['transform']=_img.attr("transform");
+			$("#underlay_translate").html(underlay_imgs[floor]['transform']);
 		})
 	)
 }
 //}}}
 function renderImage(file) {//{{{
-	floor_img();
+	underlay_changed();
 	var reader = new FileReader();
 	reader.onload = function(event) {
 		$('#img'+floor).attr("href", event.target.result)
@@ -149,14 +150,19 @@ function renderImage(file) {//{{{
 	});
 
 //}}}
+function fadeout_setup_box() {//{{{
+	$('setup-box').fadeOut(0);
+	underlay_draggable=0;
+}
+//}}}
 // select //{{{
-	$('body').dblclick(function(evt){
+	$('svg').dblclick(function(evt){
 		if (evt.target.tagName == 'rect') { 
 			selected_rect=evt.target.id;
 			show_selected_properties(selected_rect);
 		} else {
 			selected_rect=''
-			$('setup-box').fadeOut(0);
+			fadeout_setup_box();
 		}
 	});
 
@@ -181,7 +187,7 @@ function remove_geom(geom) {//{{{
 	$("#"+geom).remove();
 	db({"name":geom}).remove();
 	geoms_changed();
-	$('setup-box').fadeOut(0);
+	fadeout_setup_box();
 }
 //}}}
 function properties_type_listing_plain(letter) {//{{{
@@ -381,6 +387,8 @@ function axes() { //{{{
 }
 //}}}
 function setup_underlay_into_setup_box() {//{{{
+	underlay_draggable=1;
+	console.log(underlay_imgs);
 	if(underlay_imgs[floor]==null) { 
 		underlay_imgs[floor]={};
 		var width='value=100';
@@ -397,7 +405,8 @@ function setup_underlay_into_setup_box() {//{{{
 		"You can drag the img with middlemouse.<br><br><br>"+
 		"<input type=file label='choose' id=underlay_loader>"+
 		"<br><br><table>"+
-		"<tr><td>image<td>"+fname+
+		"<tr><td>image<td id=underlay_img_fname>"+
+		"<tr><td>origin<td id=underlay_translate>"+
 		"<tr><td>width<td><input id=alter_underlay_width type=text size=15 "+width+">"+
 		"<tr><td>opacity<td><input id=alter_underlay_opacity type=text size=15 "+opacity+">"+
 		"</table>"
@@ -406,7 +415,11 @@ function setup_underlay_into_setup_box() {//{{{
 	$("#underlay_loader").change(function() {
 		renderImage(this.files[0])
 		underlay_imgs[floor]['fname']=this.files[0].name;
+		$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
 	});
+
+	$("#underlay_translate").html(underlay_imgs[floor]['transform']);
+	$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
 
 }
 //}}}
@@ -458,7 +471,7 @@ function change_floor() {//{{{
 
 }
 //}}}
-function save_and_fadeout_properties() {//{{{
+function save_setup_box() {//{{{
 	// There's a single box for multiple forms
 	// so we need to find out which form is submitted
 
@@ -469,7 +482,6 @@ function save_and_fadeout_properties() {//{{{
 		door_width=parseInt($("#door_width").val());
 		floor_dimz=parseInt($("#floor_dimz").val());
 		legend();
-		$('setup-box').fadeOut(0);
 	} 
 
 	if ($("#alter_dimz").val() != null) { 
@@ -490,7 +502,6 @@ function save_and_fadeout_properties() {//{{{
 		db({"name":$("#alter_name").val()}).remove();
 		updateSvgRect(geom);
 		db_insert(geom);
-		$('setup-box').fadeOut(0);
 	} 
 
 	if ($("#alter_underlay_width").val() != null) { 
@@ -511,7 +522,7 @@ function make_setup_box() {//{{{
 	});
 
 	$('setup-box').mouseleave(function() {
-		save_and_fadeout_properties();
+		save_setup_box();
 	});
 }
 //}}}
@@ -672,7 +683,7 @@ function create_rect(key) {//{{{
 	var self = this;
 	create_self_props(self, key);
 	
-	$('setup-box').fadeOut(0);
+	fadeout_setup_box();
 	svg.on('mousedown', function() {
 		after_click=1;
 	});
