@@ -8,7 +8,7 @@ $(function()  {
 	var canvas=[screen.width*0.99,screen.height-180];
 	var db=TAFFY(); // http://taffydb.com/working_with_data.html
 	var selected_rect='';
-	var zt={'x':50, 'y':50, 'k':1}; // zoom transform
+	var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 	var gg_opacity=0.4;
 	var gg=make_gg();
 	var droplist_letter='r';
@@ -88,14 +88,12 @@ function zoomed_canvas() {//{{{
 }
 //}}}
 function floor_img() {//{{{
+	$("#g_img"+floor).remove();
 	g_img = g_aamks.append("g").attr("id", "g_img"+floor).attr("class", "g_img");
 	var _img=g_img.append("svg:image")
 		.attr("id", "img"+floor)
 		.attr("x", 0)
 		.attr("y", 0)
-		.attr("width",underlay_imgs[floor]['width'])
-		.attr("opacity",underlay_imgs[floor]['opacity'])
-		//.attr("xlink:href", img)
 		;
 
 	g_img.call(d3.zoom()
@@ -111,11 +109,12 @@ function floor_img() {//{{{
 }
 //}}}
 function renderImage(file) {//{{{
-  var reader = new FileReader();
-  reader.onload = function(event) {
-	$('#img'+floor).attr("href", event.target.result)
-  }
-  reader.readAsDataURL(file);
+	floor_img();
+	var reader = new FileReader();
+	reader.onload = function(event) {
+		$('#img'+floor).attr("href", event.target.result)
+	}
+	reader.readAsDataURL(file);
 }
 //}}}
 // keyboard//{{{
@@ -355,11 +354,11 @@ function db_insert(geom) { //{{{
 //}}}
 function axes() { //{{{
 	ax.x = d3.scaleLinear()
-		.domain([-50, canvas[0]+ 1])
+		.domain([-1, canvas[0]+ 1])
 		.range([-1, canvas[0]+ 1 ]);
 
 	ax.y = d3.scaleLinear()
-		.domain([-50, canvas[1] + 1])
+		.domain([-1, canvas[1] + 1])
 		.range([-1, canvas[1] + 1]);
 
 	ax.xAxis = d3.axisBottom(ax.x)
@@ -384,27 +383,29 @@ function axes() { //{{{
 function setup_underlay_into_setup_box() {//{{{
 	if(underlay_imgs[floor]==null) { 
 		underlay_imgs[floor]={};
-		var width='value=11';
+		var width='value=100';
 		var opacity='value=0.3';
+		var fname='';
 	} else {
 		var width="value="+underlay_imgs[floor]['width'];
 		var opacity="value="+underlay_imgs[floor]['opacity'];
+		var fname=underlay_imgs[floor]['fname'];
 	}
 	d3.select('setup-box').html(
 		"You can load the underlay image.<br>"+
 		"png/jpeg/svg images are supported.<br>"+
-		"You can drag the img with middlemouse.<br>"+
+		"You can drag the img with middlemouse.<br><br><br>"+
+		"<input type=file label='choose' id=underlay_loader>"+
 		"<br><br><table>"+
-		"<tr><td>image<td><input type=file label='choose' id=underlay_loader>"+
+		"<tr><td>image<td>"+fname+
 		"<tr><td>width<td><input id=alter_underlay_width type=text size=15 "+width+">"+
 		"<tr><td>opacity<td><input id=alter_underlay_opacity type=text size=15 "+opacity+">"+
 		"</table>"
 	);
 
-
-	floor_img();
 	$("#underlay_loader").change(function() {
 		renderImage(this.files[0])
+		underlay_imgs[floor]['fname']=this.files[0].name;
 	});
 
 }
@@ -421,7 +422,7 @@ function help_into_setup_box() {//{{{
 		"<tr><td>g	<td> list all of active type"+
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor value="+floor+">"+ 
-		"<span id=setup_underlay>underlay...</span>"+
+		"<span id=setup_underlay>image...</span>"+
 		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
 		"<tr><td>door's width <td><input id=door_width type=text size=4   name=door_width  value="+door_width+">"+
 		"<tr><td>door's z-dim <td><input id=door_dimz type=text size=4	name=door_dimz value="+door_dimz+">"+
@@ -453,6 +454,7 @@ function change_floor() {//{{{
 
 	$(active).css({ "visibility":"visible","opacity":0}).animate({"opacity": 1}, 2000);
 	geoms_changed();
+	$("#floor_text").html("floor "+floor);
 
 }
 //}}}
@@ -467,6 +469,7 @@ function save_and_fadeout_properties() {//{{{
 		door_width=parseInt($("#door_width").val());
 		floor_dimz=parseInt($("#floor_dimz").val());
 		legend();
+		$('setup-box').fadeOut(0);
 	} 
 
 	if ($("#alter_dimz").val() != null) { 
@@ -487,16 +490,17 @@ function save_and_fadeout_properties() {//{{{
 		db({"name":$("#alter_name").val()}).remove();
 		updateSvgRect(geom);
 		db_insert(geom);
-
+		$('setup-box').fadeOut(0);
 	} 
 
 	if ($("#alter_underlay_width").val() != null) { 
 		underlay_imgs[floor]['width']=parseInt($("#alter_underlay_width").val());
-		underlay_imgs[floor]['opacity']=parseInt($("#alter_underlay_opacity").val());
-		floor_img();
+		underlay_imgs[floor]['opacity']=parseFloat($("#alter_underlay_opacity").val());
+
+		$("#img"+floor).attr("width",underlay_imgs[floor]['width']);
+		$("#img"+floor).attr("opacity",underlay_imgs[floor]['opacity']);
 	}
 
-	$('setup-box').fadeOut(0);
 }
 //}}}
 function make_setup_box() {//{{{
@@ -771,6 +775,7 @@ function site() { //{{{
 	d3.select('body').append('show-setup-box').html("[setup]");
 	d3.select('body').append('legend');
 	svg = d3.select('body').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
+	svg.append("text").attr("x",50).attr("y",80).attr("id", "floor_text").text("floor "+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor");
