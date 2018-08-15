@@ -21,10 +21,10 @@ $(function()  {
 	var g_img;
 	var g_snap_lines;
 	var ax={};
-	var snap_dist=15;
+	var snap_dist=50;
 	var snap_lines={};
 	var door_dimz=200;
-	var door_width=40;
+	var door_width=90;
 	var floor_dimz=350;
 	var underlay_imgs={};
 	var underlay_draggable=0;
@@ -43,22 +43,25 @@ function make_gg() {//{{{
 	// Scarlet Red #ef2929 #cc0000 #a40000
 
 	return {
-		r: { x: "ROOM"  , xx: "ROOM" , t: "room"   , c: "#729fcf" , stroke: "#fff" , strokewidth: 1 }   ,
-		c: { x: "COR"   , xx: "COR"  , t: "room"   , c: "#3465a4" , stroke: "#fff" , strokewidth: 1 }   ,
-		d: { x: "DOOR"  , xx: "D"    , t: "door"   , c: "#73d216" , stroke: "#fff" , strokewidth: 0 }   ,
-		z: { x: "HOLE"  , xx: "HOLE" , t: "hole"   , c: "#c4a000" , stroke: "#fff" , strokewidth: 0 }   ,
-		w: { x: "WIN"   , xx: "W"    , t: "window" , c: "#448"    , stroke: "#fff" , strokewidth: 2 }   ,
-		s: { x: "STAI"  , xx: "STAI" , t: "room"   , c: "#5c3566" , stroke: "#fff" , strokewidth: 1 }   ,
-		a: { x: "HALL"  , xx: "HALL" , t: "room"   , c: "#e9b96e" , stroke: "#fff" , strokewidth: 1 }   ,
-		q: { x: "ClosD" , xx: "C"    , t: "door"   , c: "#ef2929" , stroke: "#fff" , strokewidth: 0 }   ,
-		e: { x: "ElktD" , xx: "E"    , t: "door"   , c: "#ce5c00" , stroke: "#fff" , strokewidth: 0 }   ,
-		v: { x: "VVENT" , xx: "VVNT" , t: "vvnt"   , c: "#ffaa00" , stroke: "#820" , strokewidth: 0.5 } ,
-		b: { x: "MVNT"  , xx: "MVNT" , t: "mvnt"   , c: "#ff00ff" , stroke: "#808" , strokewidth: 0.5 } ,
-		t: { x: "OBST"  , xx: "OBST" , t: "obst"   , c: "#ad7fa8" , stroke: "#404" , strokewidth: 0.5 }
+		r: { x: "ROOM"    , xx: "ROOM"    , t: "room"    , c: "#729fcf" , stroke: "#fff"    , strokewidth: 5 }   ,
+		c: { x: "COR"     , xx: "COR"     , t: "room"    , c: "#3465a4" , stroke: "#fff"    , strokewidth: 5 }   ,
+		d: { x: "DOOR"    , xx: "D"       , t: "door"    , c: "#73d216" , stroke: "#73d216" , strokewidth: 5 }   ,
+		z: { x: "HOLE"    , xx: "HOLE"    , t: "hole"    , c: "#c4a000" , stroke: "#c4a000" , strokewidth: 10 }   ,
+		w: { x: "WIN"     , xx: "W"       , t: "window"  , c: "#6ad"    , stroke: "#fff"    , strokewidth: 10 }   ,
+		s: { x: "STAI"    , xx: "STAI"    , t: "room"    , c: "#5c3566" , stroke: "#fff"    , strokewidth: 5 }   ,
+		a: { x: "HALL"    , xx: "HALL"    , t: "room"    , c: "#e9b96e" , stroke: "#fff"    , strokewidth: 5 }   ,
+		q: { x: "ClosD"   , xx: "C"       , t: "door"    , c: "#ef2929" , stroke: "#ef2929" , strokewidth: 5 }   ,
+		e: { x: "ElktD"   , xx: "E"       , t: "door"    , c: "#436"    , stroke: "#fff"    , strokewidth: 5 }   ,
+		v: { x: "VVENT"   , xx: "VVNT"    , t: "vvnt"    , c: "#ffaa00" , stroke: "#820"    , strokewidth: 2.5 } ,
+		b: { x: "MVNT"    , xx: "MVNT"    , t: "mvnt"    , c: "#ff00ff" , stroke: "#808"    , strokewidth: 2.5 } ,
+		t: { x: "OBST"    , xx: "OBST"    , t: "obst"    , c: "#ad7fa8" , stroke: "#404"    , strokewidth: 2.5 } ,
+		h: { x: "EVACUEE" , xx: "EVACUEE" , t: "evacuee" , c: "#888"    , stroke: "#fff"    , strokewidth: 20 }
 	}
 }
 //}}}
 function canvas_zoomer() { //{{{
+	var zoom = d3.zoom().on("zoom", zoomed_canvas);
+
 	svg.append("rect")
 		.attr("id", 'zoomer')
 		.attr("width", canvas[0])
@@ -67,6 +70,8 @@ function canvas_zoomer() { //{{{
 		.attr("opacity", 0)
 		.attr("pointer-events", "visible")
 		.attr("visibility", "hidden")
+		.call(zoom)
+		.call(zoom.transform, d3.zoomIdentity.scale(0.2))
 		.call(d3.zoom()
 			.scaleExtent([1 / 10, 40])
 			.filter(function(){
@@ -129,7 +134,7 @@ function fadeout_setup_box() {//{{{
 function keyboard_events() {//{{{
 	$(this).keypress((e) => { 
 		for(var letter in gg) {
-			if (e.key == letter) { create_rect(letter); }
+			if (e.key == letter) { new_geom(letter); }
 		}
 	});
 
@@ -298,7 +303,7 @@ function make_door_properties(letter) {//{{{
 //}}}
 function show_selected_properties(selected_rect) {//{{{
 	var stroke=$("#"+selected_rect).css('stroke-width');
-	$("#"+selected_rect).css('stroke-width', '10px');
+	$("#"+selected_rect).css('stroke-width', '50px');
 	$("#"+selected_rect).animate({ 'stroke-width': stroke }, 300);
 
 	var letter=db({'name':selected_rect}).select("letter")[0];
@@ -410,12 +415,12 @@ function axes() { //{{{
 		.range([-1, canvas[1] + 1]);
 
 	ax.xAxis = d3.axisBottom(ax.x)
-		.ticks(5)
+		.ticks(screen.width/200)
 		.tickSize(canvas[1])
 		.tickPadding(2 - canvas[1]);
 
 	ax.yAxis = d3.axisRight(ax.y)
-		.ticks(4)
+		.ticks(screen.height/200)
 		.tickSize(canvas[0])
 		.tickPadding(2 - canvas[0]);
 
@@ -496,6 +501,9 @@ function help_into_setup_box() {//{{{
 }
 //}}}
 function change_floor() {//{{{
+	if (floor == parseInt($("#floor").val())) { 
+		return;
+	}
 	floor=parseInt($("#floor").val());
 	if(floor > floors_count-1) { 
 		floors_count=floor+1;
@@ -554,7 +562,7 @@ function save_setup_box() {//{{{
 			}
 		};
 		db({"name":$("#alter_name").val()}).remove();
-		updateSvgRect(geom);
+		updateSvgElem(geom);
 		db_insert(geom);
 	} 
 
@@ -593,11 +601,11 @@ function fix_hole_offset(rect) { //{{{
 	}
 
 	if(Math.abs(rect.rr.x1-rect.rr.x0) < Math.abs(rect.rr.y1-rect.rr.y0)) {
-		rect.rr.y0-=4;
-		rect.rr.y1+=4;
+		rect.rr.y0-=16;
+		rect.rr.y1+=16;
 	} else {
-		rect.rr.x0+=4;
-		rect.rr.x1-=4;
+		rect.rr.x0+=16;
+		rect.rr.x1-=16;
 	}
 	return rect;
 }
@@ -625,13 +633,13 @@ function snap_basic(m,rect,after_click) {//{{{
 					}
 				} else {
 					if(after_click==1) { 
-						rect.rr.x1=p+4;
+						rect.rr.x1=p+16;
 					} else {
-						rect.rr.x0=p-4;
+						rect.rr.x0=p-16;
 					}
 				}
 				$("#sv_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: (m[1]-zt.y)/zt.k, cx: p });
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: (m[1]-zt.y)/zt.k, cx: p });
 				vh_snap.push(p);
 				break;
 		}
@@ -650,19 +658,19 @@ function snap_basic(m,rect,after_click) {//{{{
 					}
 				} else {
 					if(after_click==1) { 
-						rect.rr.y1=p-4;
+						rect.rr.y1=p-16;
 					} else {
-						rect.rr.y0=p+4;
+						rect.rr.y0=p+16;
 					}
 				}
 				$("#sh_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: (m[0]-zt.x)/zt.k, cy: p });
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: (m[0]-zt.x)/zt.k, cy: p });
 				vh_snap.push(p);
 				break;
 		}
 	}
 	if(vh_snap.length==2) { 
-		$('#snapper').attr({ r: 5, cx: vh_snap[0], cy: vh_snap[1]});
+		$('#snapper').attr({ r: 30, cx: vh_snap[0], cy: vh_snap[1]});
 	}
 }
 
@@ -681,12 +689,12 @@ function snap_door(m,rect,after_click) {//{{{
 		if (	
 			(m[0]-zt.x)/zt.k > p - snap_dist &&
 			(m[0]-zt.x)/zt.k < p + snap_dist ) { 
-				rect.rr.x0=p-4;
-				rect.rr.x1=p+4;
+				rect.rr.x0=p-16;
+				rect.rr.x1=p+16;
 				rect.rr.y0=(m[1]-zt.y)/zt.k;
 				rect.rr.y1=(m[1]-zt.y)/zt.k-door_width;
 				$("#sv_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cy: (m[1]-zt.y)/zt.k, cx: p });
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: (m[1]-zt.y)/zt.k, cx: p });
 				vh_snap.push(p);
 				return;
 		}
@@ -697,19 +705,16 @@ function snap_door(m,rect,after_click) {//{{{
 		if (	
 			(m[1]-zt.y)/zt.k > p - snap_dist &&
 			(m[1]-zt.y)/zt.k < p + snap_dist ) { 
-				rect.rr.y0=p-4;
-				rect.rr.y1=p+4;
+				rect.rr.y0=p-16;
+				rect.rr.y1=p+16;
 				rect.rr.x0=(m[0]-zt.x)/zt.k;
 				rect.rr.x1=(m[0]-zt.x)/zt.k+door_width;
 				$("#sh_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 2, cx: (m[0]-zt.x)/zt.k, cy: p });
+				$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: (m[0]-zt.x)/zt.k, cy: p });
 				vh_snap.push(p);
 				return;
 		}
 	}
-	//if(vh_snap.length==2) { 
-	//	$('#snapper').attr({ r: 5, cx: vh_snap[0], cy: vh_snap[1]});
-	//}
 }
 
 //}}}
@@ -730,11 +735,15 @@ function create_self_props(self, letter) {//{{{
 		self.dimz=floor_dimz;
 	}
 
-	self.rect=g_floor.append('rect').attr('id', self.name).attr('fill', gg[letter].c).style('stroke-width', gg[letter].strokewidth).attr('stroke', gg[letter].stroke).attr('class', 'g_rect');
+	if (gg[letter].t == 'evacuee') { 
+		self.rect=g_floor.append('circle').attr('id', self.name).attr('r', 25).attr('fill', gg[letter].c).style('stroke-width', gg[letter].strokewidth).attr('stroke', gg[letter].stroke).attr('class', 'g_rect');
+	} else {
+		self.rect=g_floor.append('rect').attr('id', self.name).attr('fill', gg[letter].c).style('stroke-width', gg[letter].strokewidth).attr('stroke', gg[letter].stroke).attr('class', 'g_rect');
+	}
 	
 }
 //}}}
-function create_rect(letter) {//{{{
+function new_geom(letter) {//{{{
 	// After a letter is clicked we react to mouse events
 	// The most tricky scenario is when first mouse click happens before mousemove.
 	counter++;
@@ -754,19 +763,21 @@ function create_rect(letter) {//{{{
 		mx=(mouse[0]-zt.x)/zt.k;
 		my=(mouse[1]-zt.y)/zt.k;
 		if (after_click==0) { 
-			self.rr = { 'x0': mx, 'y0': my, 'x1': mx, 'y1': my };
+			self.rr = { 'x0': mx, 'y0': my, 'x1': mx, 'y1': my, 'cx': mx, 'cy': my };
 		}
 		else if (after_click==1 && self.rr.x0 == null) { 
-			self.rr = { 'x0': mx, 'y0': my };
+			self.rr = { 'x0': mx, 'y0': my, 'cx': mx, 'cy': my };
 		}
 		self.rr.x1=mx;
 		self.rr.y1=my;
+		self.rr.cx=mx;
+		self.rr.cy=my;
 		if(['room', 'hole', 'window'].includes(self.type)) { 
 			snap_basic(mouse,self,after_click);
 		} else if(['door'].includes(self.type)) {
 			snap_door(mouse,self,after_click);
 		}
-		if(after_click==1) { updateSvgRect(self); } // todo: is not always respected
+		if(after_click==1) { updateSvgElem(self); } // todo: is not always respected
 	});  
 
 	svg.on('mouseup', function() {
@@ -778,7 +789,7 @@ function create_rect(letter) {//{{{
 			counter--;
 		} else {
 			if (['hole', 'window'].includes(self.type)) { self=fix_hole_offset(self); }
-			updateSvgRect(self);
+			updateSvgElem(self);
 			db_insert(self);
 		}
 		after_click=0;
@@ -788,10 +799,12 @@ function create_rect(letter) {//{{{
 
 }
 //}}}
-function updateSvgRect(geom) {  //{{{
+function updateSvgElem(geom) {  //{{{
 	$("#"+geom.name).attr({
 		x: Math.min(geom.rr.x0   , geom.rr.x1) ,
 		y: Math.min(geom.rr.y0   , geom.rr.y1) ,
+		cx: Math.min(geom.rr.x0   , geom.rr.x1) ,
+		cy: Math.min(geom.rr.y0   , geom.rr.y1) ,
 		width: Math.abs(geom.rr.x1 - geom.rr.x0) ,
 		height: Math.abs(geom.rr.y1 - geom.rr.y0)
 	});   
@@ -852,7 +865,7 @@ function site() { //{{{
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',gg_opacity);;
 	g_snap_lines= svg.append("g").attr("id", "g_snap_lines");
-	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',5).attr('fill-opacity', 0).attr('fill', "#ff8800");
+	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend();
 	make_setup_box();
 	canvas_zoomer();

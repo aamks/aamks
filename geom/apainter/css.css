@@ -105,8 +105,8 @@ table td {
 }
 
 .snap_v, .snap_h { 
-	stroke            : #f80;
-	stroke-width      : 0.5;
-	stroke-dasharray  : 3;
-	stroke-opacity    : 1;
+	stroke            : #fff;
+	stroke-width      : 5;
+	stroke-dasharray  : 10;
+	stroke-opacity    : 0.7;
 }
