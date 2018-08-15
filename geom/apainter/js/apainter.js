@@ -165,7 +165,7 @@ function keyboard_events() {//{{{
 //}}}
 function geom_select_deselect() { //{{{
 	$('svg').dblclick(function(evt){
-		if (evt.target.tagName == 'rect') { 
+		if (evt.target.tagName == 'rect' || evt.target.tagName == 'circle') { 
 			selected_geom=evt.target.id;
 			show_selected_properties(selected_geom);
 		} else {
@@ -247,6 +247,18 @@ function properties_type_listing_door(letter) {//{{{
 	return tbody;
 }
 //}}}
+function properties_type_listing_evacuee(letter) {//{{{
+	var tbody='';
+	tbody+="<tr><td>name<td>x0<td>y0";
+	var items=db({'letter': letter, 'floor': floor}).select("name", "x0", "y0");
+	for (var i in items) { 
+		tbody+="<tr><td class=properties_type_listing id="+ items[i][0]+ ">"+ items[i][0]+"</td>"+
+			"<td>"+items[i][1]+
+			"<td>"+items[i][2];
+	}
+	return tbody;
+}
+//}}}
 function properties_type_listing(letter) {//{{{
 	droplist_letter=letter;
 	var names='';
@@ -256,6 +268,8 @@ function properties_type_listing(letter) {//{{{
 		names+=properties_type_listing_mvnt(letter);
 	} else if (gg[letter].t=='door') { 
 		names+=properties_type_listing_door(letter);
+	} else if (gg[letter].t=='evacuee') { 
+		names+=properties_type_listing_evacuee(letter);
 	} else {
 		names+=properties_type_listing_plain(letter);
 	}
@@ -284,6 +298,21 @@ function make_mvnt_properties(letter) {//{{{
 	return mvnt;
 }
 //}}}
+function make_dim_properties(letter) {//{{{
+	var prop='';
+	if(gg[letter].t!='evacuee') {
+		var selected=db({'name':selected_geom}).select("is_exit")[0];
+		prop+="<tr><td>x-dim<td><input id=alter_dimx type=text size=3 value="+db({'name':selected_geom}).select("dimx")[0]+">";
+		prop+="<tr><td>y-dim<td><input id=alter_dimy type=text size=3 value="+db({'name':selected_geom}).select("dimy")[0]+">";
+		prop+="<tr><td>z-dim<td><input id=alter_dimz type=text size=3 value="+db({'name':selected_geom}).select("dimz")[0]+">";
+	} else {
+		prop+="<input id=alter_dimx type=hidden value=0>";
+		prop+="<input id=alter_dimy type=hidden value=0>";
+		prop+="<input id=alter_dimz type=hidden value=0>";
+	}
+	return prop;
+}
+//}}}
 function make_door_properties(letter) {//{{{
 	var prop='';
 	if(gg[letter].t=='door') {
@@ -309,6 +338,7 @@ function show_selected_properties(selected_geom) {//{{{
 	var letter=db({'name':selected_geom}).select("letter")[0];
 	mvnt_properties=make_mvnt_properties(letter);
 	door_properties=make_door_properties(letter);
+	dim_properties=make_dim_properties(letter);
 	droplist_letter=letter;
 	d3.select('setup-box').html(
 	    "<input id=alter_type type=hidden value="+db({'name':selected_geom}).select("type")[0]+">"+
@@ -317,9 +347,7 @@ function show_selected_properties(selected_geom) {//{{{
 	    "<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_geom}).select("name")[0]+">"+db({'name':selected_geom}).select("name")[0]+
 		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_geom}).select("x0")[0]+">"+
 		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_geom}).select("y0")[0]+">"+
-		"<tr><td>x-dim<td>	<input id=alter_dimx type=text size=3 value="+db({'name':selected_geom}).select("dimx")[0]+">"+
-		"<tr><td>y-dim<td>	<input id=alter_dimy type=text size=3 value="+db({'name':selected_geom}).select("dimy")[0]+">"+
-		"<tr><td>z-dim<td>  <input id=alter_dimz type=text size=3 value="+db({'name':selected_geom}).select("dimz")[0]+">"+
+		dim_properties+
 		mvnt_properties+
 		door_properties+
 	    "<tr><td>x<td>remove"+
@@ -398,7 +426,14 @@ function db_insert(geom) { //{{{
 	} else {
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
-	var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + dimz} ]]`; 
+	
+	if(geom.type=='evacuee') {
+		var cad_json=`[ ${x0}, ${y0}]`; 
+	} else if(geom.type=='door') {
+		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + dimz} ], "${geom.is_exit}" ]`; 
+	} else {
+		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + dimz} ]]`; 
+	}
 	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
 	selected_geom=geom.name;
 	show_selected_properties(geom.name);
@@ -734,13 +769,6 @@ function create_self_props(self, letter) {//{{{
 	} else { 
 		self.dimz=floor_dimz;
 	}
-
-	if (gg[letter].t == 'evacuee') { 
-		self.rect=g_floor.append('circle').attr('id', self.name).attr('r', 25).attr('fill', gg[letter].c).style('stroke-width', gg[letter].strokewidth).attr('stroke', gg[letter].stroke).attr('class', 'g_rect');
-	} else {
-		self.rect=g_floor.append('rect').attr('id', self.name).attr('fill', gg[letter].c).style('stroke-width', gg[letter].strokewidth).attr('stroke', gg[letter].stroke).attr('class', 'g_rect');
-	}
-	
 }
 //}}}
 function new_geom(letter) {//{{{
@@ -752,10 +780,15 @@ function new_geom(letter) {//{{{
 	var mx, my;
 	var self = this;
 	create_self_props(self, letter);
-	
+
 	fadeout_setup_box();
 	svg.on('mousedown', function() {
 		after_click=1;
+		if (gg[letter].t == 'evacuee') { 
+			g_floor.append('circle').attr('id', self.name).attr('r', 25).attr('fill', gg[letter].c).style('stroke-width', gg[letter].strokewidth).attr('stroke', gg[letter].stroke).attr('class', 'g_rect');
+		} else {
+			g_floor.append('rect').attr('id', self.name).attr('fill', gg[letter].c).style('stroke-width', gg[letter].strokewidth).attr('stroke', gg[letter].stroke).attr('class', 'g_rect');
+		}
 	});
 
 	svg.on('mousemove', function() {
@@ -781,11 +814,12 @@ function new_geom(letter) {//{{{
 	});  
 
 	svg.on('mouseup', function() {
+		console.log("x0", self.name);
 		svg.on('mousedown', null);
 		svg.on('mousemove', null);
 		svg.on('mouseup', null);
-		if(self.rr.x0 == self.rr.x1 || self.rr.y0 == self.rr.y1) { 
-			$("#"+this.name).remove();
+		if(self.rr.x0 == self.rr.x1 || self.rr.y0 == self.rr.y1 || self.rr.x0 == null) { 
+			$("#"+self.name).remove();
 			counter--;
 		} else {
 			if (['hole', 'window'].includes(self.type)) { self=fix_hole_offset(self); }
