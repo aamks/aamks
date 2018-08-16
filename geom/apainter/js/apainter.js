@@ -23,9 +23,9 @@ $(function()  {
 	var ax={};
 	var snap_dist=50;
 	var snap_lines={};
-	var door_dimz=200;
-	var door_width=90;
-	var floor_dimz=350;
+	var default_door_dimz=200;
+	var default_door_width=90;
+	var default_floor_dimz=350;
 	var underlay_imgs={};
 	var underlay_draggable=0;
 	site();
@@ -45,17 +45,17 @@ function make_gg() {//{{{
 	return {
 		r: { x: "ROOM"    , xx: "ROOM"    , t: "room"    , c: "#729fcf" , stroke: "#fff"    , font: "#fff",  strokewidth: 5 }   ,
 		c: { x: "COR"     , xx: "COR"     , t: "room"    , c: "#3465a4" , stroke: "#fff"    , font: "#fff",  strokewidth: 5 }   ,
-		d: { x: "DOOR"    , xx: "D"       , t: "door"    , c: "#73d216" , stroke: "#73d216" , font: "#424",  strokewidth: 5 }   ,
+		d: { x: "DOOR"    , xx: "D"       , t: "door"    , c: "#73d216" , stroke: "#73d216" , font: "#fff",  strokewidth: 5 }   ,
 		z: { x: "HOLE"    , xx: "HOLE"    , t: "hole"    , c: "#c4a000" , stroke: "#c4a000" , font: "#224",  strokewidth: 5 }   ,
 		w: { x: "WIN"     , xx: "W"       , t: "window"  , c: "#fff"    , stroke: "#fff"    , font: "#444",  strokewidth: 4 }   ,
 		s: { x: "STAI"    , xx: "STAI"    , t: "room"    , c: "#5c3566" , stroke: "#fff"    , font: "#fff",  strokewidth: 5 }   ,
 		a: { x: "HALL"    , xx: "HALL"    , t: "room"    , c: "#e9b96e" , stroke: "#fff"    , font: "#000",  strokewidth: 5 }   ,
-		q: { x: "ClosD"   , xx: "C"       , t: "door"    , c: "#ef2929" , stroke: "#ef2929" , font: "#fff",  strokewidth: 5 }   ,
+		q: { x: "ClosD"   , xx: "C"       , t: "door"    , c: "#cc0000" , stroke: "#cc0000" , font: "#fff",  strokewidth: 5 }   ,
 		e: { x: "ElktD"   , xx: "E"       , t: "door"    , c: "#436"    , stroke: "#fff"    , font: "#fff",  strokewidth: 5 }   ,
 		v: { x: "VVENT"   , xx: "VVNT"    , t: "vvnt"    , c: "#ffaa00" , stroke: "#820"    , font: "#224",  strokewidth: 2.5 } ,
-		b: { x: "MVNT"    , xx: "MVNT"    , t: "mvnt"    , c: "#ff00ff" , stroke: "#808"    , font: "#336",  strokewidth: 2.5 } ,
+		b: { x: "MVNT"    , xx: "MVNT"    , t: "mvnt"    , c: "#4e9a06" , stroke: "#080"    , font: "#fff",  strokewidth: 2.5 } ,
 		t: { x: "OBST"    , xx: "OBST"    , t: "obst"    , c: "#ad7fa8" , stroke: "#404"    , font: "#224",  strokewidth: 2.5 } ,
-		h: { x: "EVACUEE" , xx: "EVACUEE" , t: "evacuee" , c: "#fff"    , stroke: "#fff"    , font: "#444",  strokewidth: 0 }
+		f: { x: "EVACUEE" , xx: "EVACUEE" , t: "evacuee" , c: "#fff"    , stroke: "#fff"    , font: "#444",  strokewidth: 0 }
 	}
 }
 //}}}
@@ -145,7 +145,7 @@ function keyboard_events() {//{{{
 	});
 
 	$(this).keydown((e) => { 
-		if (e.key == 'f') { 
+		if (e.key == 'h') { 
 			alternative_view();
 		}
 	});
@@ -341,7 +341,7 @@ function show_selected_properties(selected_geom) {//{{{
 	dim_properties=make_dim_properties(letter);
 	droplist_letter=letter;
 	d3.select('setup-box').html(
-	    "<input id=alter_type type=hidden value="+db({'name':selected_geom}).select("type")[0]+">"+
+	    "<input id=geom_properties type=hidden value=1>"+
 	    "<input id=alter_letter type=hidden value="+letter+">"+
 		"<table>"+
 	    "<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_geom}).select("name")[0]+">"+db({'name':selected_geom}).select("name")[0]+
@@ -430,9 +430,11 @@ function db_insert(geom) { //{{{
 	if(geom.type=='evacuee') {
 		var cad_json=`[ ${x0}, ${y0}]`; 
 	} else if(geom.type=='door') {
-		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + dimz} ], "${geom.is_exit}" ]`; 
+		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz} ], "${geom.is_exit}" ]`; 
+	} else if(geom.type=='mvnt') {
+		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig + geom.mvnt_offsetz} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz + geom.mvnt_offsetz} ], ${geom.mvnt_throughput} ]`; 
 	} else {
-		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + dimz} ]]`; 
+		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz} ]]`; 
 	}
 	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
 	selected_geom=geom.name;
@@ -481,12 +483,12 @@ function setup_underlay_into_setup_box() {//{{{
 		var fname=underlay_imgs[floor]['fname'];
 	}
 	d3.select('setup-box').html(
-		"You can load an underlay image.<br>"+
-		"png/jpeg/svg are supported.<br>"+
-		"You can drag the underlay image with <br>"+
-		"mouse2 only while this window is open.<br>"+
-		"You can only alter the width of the underlay image.<br>"+
-		"Width/height ratio cannot be changed.<br><br><br>"+
+		"You can load an underlay png/jpg/svg.<br><br>"+
+		"You can drag the underlay img with <br>"+
+		"mouse2 only while this window is open.<br><br>"+
+		"You can only alter the width of the<br>"+ 
+		"underlay img, and the height will<br>"+
+		"change accordingly.<br><br><br>"+
 		"<input type=file label='choose' id=underlay_loader>"+
 		"<br><br><table>"+
 		"<tr><td>image<td id=underlay_img_fname>"+
@@ -511,21 +513,22 @@ function setup_underlay_into_setup_box() {//{{{
 //}}}
 function help_into_setup_box() {//{{{
 	d3.select('setup-box').html(
+		"<input id=general_setup type=hidden value=1>"+
 		"<table>"+
 		"<tr><td>letter + mouse1     <td> create"+
 		"<tr><td>shift + mouse2	    <td> zoom/drag"+
 		"<tr><td>double mouse1		<td> elem properties"+
 		"<tr><td>hold ctrl			<td> disable snapping"+ 
-		"<tr><td>f	<td> alternative view"+ 
+		"<tr><td>h	<td> alternative view"+ 
 		"<tr><td>x	<td> delete active"+
 		"<tr><td>g	<td> list all of active type"+
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor value="+floor+">"+ 
 		"<span id=setup_underlay>image...</span>"+
 		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
-		"<tr><td>door's width <td><input id=door_width type=text size=4   name=door_width  value="+door_width+">"+
-		"<tr><td>door's z-dim <td><input id=door_dimz type=text size=4	name=door_dimz value="+door_dimz+">"+
-		"<tr><td>room's z-dim <td><input id=floor_dimz type=text size=4 name=floor_dimz value="+floor_dimz+">"+
+		"<tr><td>door's width <td><input id=default_door_width type=text size=4   name=default_door_width  value="+default_door_width+">"+
+		"<tr><td>door's z-dim <td><input id=default_door_dimz type=text size=4	name=default_door_dimz value="+default_door_dimz+">"+
+		"<tr><td>room's z-dim <td><input id=default_floor_dimz type=text size=4 name=default_floor_dimz value="+default_floor_dimz+">"+
 		"</table><br><br>"
 		);
 
@@ -567,28 +570,40 @@ function change_floor() {//{{{
 
 }
 //}}}
+function updateExitDoor(geom) {//{{{
+	if(geom.type=='door') { 
+		if(geom.is_exit=='exit_no') { 
+			$("#"+geom.name).attr({ stroke: "#000" });   
+		} else if(geom.is_exit=='exit_yes') { 
+			$("#"+geom.name).attr({ stroke: "#f0f" });   
+		} else if(geom.is_exit=='exit_auto') { 
+			$("#"+geom.name).attr({ stroke: gg[geom.letter].stroke });   
+		}
+	}
+}
+//}}}
 function save_setup_box() {//{{{
 	// There's a single box for multiple forms
 	// so we need to find out which form is submitted
 
-	if ($("#door_dimz").val() != null) { 
+	if ($("#general_setup").val() != null) { 
 		change_floor();
 		floor_zorig=parseInt($("#floor_zorig").val());
-		door_dimz=parseInt($("#door_dimz").val());
-		door_width=parseInt($("#door_width").val());
-		floor_dimz=parseInt($("#floor_dimz").val());
+		default_door_dimz=parseInt($("#default_door_dimz").val());
+		default_door_width=parseInt($("#default_door_width").val());
+		default_floor_dimz=parseInt($("#default_floor_dimz").val());
 		legend();
 	} 
 
-	if ($("#alter_dimz").val() != null) { 
+	if ($("#geom_properties").val() != null) { 
 		var geom={
 			name: $("#alter_name").val(),
 			letter: $("#alter_letter").val(),
-			type: $("#alter_type").val(),
-			dimz: $("#alter_dimz").val(),
+			type: gg[letter].t,
+			is_exit: $("#alter_is_exit").val(),
+			dimz: parseInt($("#alter_dimz").val()),
 			mvnt_offsetz: parseInt($("#alter_mvnt_offsetz").val()),
 			mvnt_throughput: parseInt($("#alter_mvnt_throughput").val()),
-			is_exit: $("#alter_is_exit").val(),
 			rr:{
 				x0: parseInt($("#alter_x0").val()),
 				y0: parseInt($("#alter_y0").val()),
@@ -598,6 +613,7 @@ function save_setup_box() {//{{{
 		};
 		db({"name":$("#alter_name").val()}).remove();
 		updateSvgElem(geom);
+		updateExitDoor(geom);
 		db_insert(geom);
 	} 
 
@@ -727,7 +743,7 @@ function snap_door(m,rect,after_click) {//{{{
 				rect.rr.x0=p-16;
 				rect.rr.x1=p+16;
 				rect.rr.y0=(m[1]-zt.y)/zt.k;
-				rect.rr.y1=(m[1]-zt.y)/zt.k-door_width;
+				rect.rr.y1=(m[1]-zt.y)/zt.k-default_door_width;
 				$("#sv_"+p).attr("visibility", "visible");
 				$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: (m[1]-zt.y)/zt.k, cx: p });
 				vh_snap.push(p);
@@ -743,7 +759,7 @@ function snap_door(m,rect,after_click) {//{{{
 				rect.rr.y0=p-16;
 				rect.rr.y1=p+16;
 				rect.rr.x0=(m[0]-zt.x)/zt.k;
-				rect.rr.x1=(m[0]-zt.x)/zt.k+door_width;
+				rect.rr.x1=(m[0]-zt.x)/zt.k+default_door_width;
 				$("#sh_"+p).attr("visibility", "visible");
 				$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: (m[0]-zt.x)/zt.k, cy: p });
 				vh_snap.push(p);
@@ -762,12 +778,12 @@ function create_self_props(self, letter) {//{{{
 	self.mvnt_throughput=0;
 	self.is_exit='';
 	if (self.type=='door') {
-		self.dimz=door_dimz;
+		self.dimz=default_door_dimz;
 		self.is_exit='exit_auto';
 	} else if (self.type=='mvnt') {
 		self.dimz=50
 	} else { 
-		self.dimz=floor_dimz;
+		self.dimz=default_floor_dimz;
 	}
 }
 //}}}
@@ -814,7 +830,6 @@ function new_geom(letter) {//{{{
 	});  
 
 	svg.on('mouseup', function() {
-		console.log("x0", self.name);
 		svg.on('mousedown', null);
 		svg.on('mousemove', null);
 		svg.on('mouseup', null);
