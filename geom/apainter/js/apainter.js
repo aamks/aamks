@@ -1,35 +1,31 @@
-$(function()  { 
-// todo:
-// g_img should go below floor layer
-// create rects not always writing svg attribs?
+var canvas=[screen.width*0.99,screen.height-180];
+var db=TAFFY(); // http://taffydb.com/working_with_data.html
+var zt={'x':0, 'y':0, 'k':1}; // zoom transform
+var gg;
+var selected_geom='';
+var gg_opacity=0.4;
+var droplist_letter='r';
+var svg;
+var floor=0;
+var floors_count=1;
+var floor_zorig=0;
+var counter=0;
+var g_aamks;
+var g_floor;
+var g_img;
+var g_snap_lines;
+var ax={};
+var snap_dist=50;
+var snap_lines={};
+var default_door_dimz=200;
+var default_door_width=90;
+var default_floor_dimz=350;
+var underlay_imgs={};
+var underlay_draggable=0;
 
-// globals//{{{
-	var canvas=[screen.width*0.99,screen.height-180];
-	var db=TAFFY(); // http://taffydb.com/working_with_data.html
-	var selected_geom='';
-	var zt={'x':0, 'y':0, 'k':1}; // zoom transform
-	var gg_opacity=0.4;
-	var gg=make_gg();
-	var droplist_letter='r';
-	var svg;
-	var floor=0;
-	var floors_count=1;
-	var floor_zorig=0;
-	var counter=0;
-	var g_aamks;
-	var g_floor;
-	var g_img;
-	var g_snap_lines;
-	var ax={};
-	var snap_dist=50;
-	var snap_lines={};
-	var default_door_dimz=200;
-	var default_door_width=90;
-	var default_floor_dimz=350;
-	var underlay_imgs={};
-	var underlay_draggable=0;
-	site();
-//}}}
+$(function()  { 
+site();
+
 function make_gg() {//{{{
 	// tango https://sobac.com/sobac/tangocolors.htm
 	// Aluminium   #eeeeec #d3d7cf #babdb6
@@ -437,6 +433,7 @@ function db_insert(geom) { //{{{
 		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz} ]]`; 
 	}
 	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
+	console.log(db().select( "dimx" , "dimy" , "dimz" , "floor" , "is_exit" , "letter" , "mvnt_offsetz" , "mvnt_throughput" , "name" , "type" , "x0" , "y0" ));
 	selected_geom=geom.name;
 	show_selected_properties(geom.name);
 	geoms_changed();
@@ -511,10 +508,12 @@ function setup_underlay_into_setup_box() {//{{{
 
 }
 //}}}
+
 function help_into_setup_box() {//{{{
 	d3.select('setup-box').html(
 		"<input id=general_setup type=hidden value=1>"+
 		"<table>"+
+		"<tr><td>open existing<td><input type=file id=open_existing>"+
 		"<tr><td>letter + mouse1     <td> create"+
 		"<tr><td>shift + mouse2	    <td> zoom/drag"+
 		"<tr><td>double mouse1		<td> elem properties"+
@@ -535,6 +534,11 @@ function help_into_setup_box() {//{{{
 	$('#setup_underlay').click(function() {
 		setup_underlay_into_setup_box();
 	});
+
+	$("#open_existing").change(function() {
+		cad_json_reader(this.files[0])
+	});
+
 
 }
 //}}}
@@ -809,8 +813,9 @@ function new_geom(letter) {//{{{
 
 	svg.on('mousemove', function() {
 		mouse=d3.mouse(this);
-		mx=(mouse[0]-zt.x)/zt.k;
-		my=(mouse[1]-zt.y)/zt.k;
+
+		mx=Math.round((mouse[0]-zt.x)/zt.k);
+		my=Math.round((mouse[1]-zt.y)/zt.k);
 		if (after_click==0) { 
 			self.rr = { 'x0': mx, 'y0': my, 'x1': mx, 'y1': my, 'cx': mx, 'cy': my };
 		}
@@ -906,6 +911,7 @@ function download(filename, text) {//{{{
 //}}}
 //}}}
 function site() { //{{{
+	gg=make_gg();
 	d3.select('body').append('show-setup-box').html("[setup]");
 	d3.select('body').append('legend');
 	svg = d3.select('body').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
