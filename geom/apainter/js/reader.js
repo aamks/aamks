@@ -1,12 +1,8 @@
-// f//{{{
-// [425  , 400 , 350 , 0 , ""          , "r" , 0 , 0 , "ROOM1" , "room" , 2185 , 990]
-// [485  , 395 , 350 , 0 , ""          , "r" , 0 , 0 , "ROOM2" , "room" , 2610 , 1240]
-// [90   , 32  , 200 , 0 , "exit_auto" , "d" , 0 , 0 , "DOOR3" , "door" , 2840 , 1224]
-// [1035 , 840 , 350 , 2 , ""          , "r" , 0 , 0 , "ROOM4" , "room" , 3915 , 1025]
-// [32   , 90  , 200 , 2 , "exit_yes"  , "d" , 0 , 0 , "DOOR5" , "door" , 4934 , 1615]
-//}}}
+// todo: learn to separate globals and funcs
+var ApainterReader={};
 
 function cad_json_reader(file) {//{{{
+	ApainterReader.ggx=revert_gg();
 	var reader = new FileReader();
 	reader.onload = function(event) {
 		json=JSON.parse(event.target.result);
@@ -15,34 +11,81 @@ function cad_json_reader(file) {//{{{
 	reader.readAsText(file);
 }
 //}}}
+function cad_json_reader_alt() {//{{{
+	// temporary
+	return;
+	ApainterReader.ggx=revert_gg();
+	json={ "0": { "ROOM": [ [[ 2240, 955, 0 ], [ 2955, 1515, 350 ]], [[ 2240, 855, 0 ], [ 2955, 1515, 350 ]]  ], "D": [ [[ 2550, 839, 0 ], [ 2640, 871, 200 ], "exit_auto" ], [[ 2320, 839, 0 ], [ 2410, 871, 200 ], "exit_yes" ], [[ 2629, 1630, 0 ], [ 2661, 1720, 200 ], "exit_auto" ] ] } };
+	into_db(json);
+	geoms_changed();
+}
+//}}}
+function revert_gg() {//{{{
+	var z={};
+	for (var letter in gg) {
+		z[gg[letter].xx]=letter;
+	}
+	return z;
+}
+//}}}
 function into_db(json) { //{{{
-	db().remove();
-
-	console.log("pre", db().select( "dimx" , "dimy" , "dimz" , "floor" , "is_exit" , "letter" , "mvnt_offsetz" , "mvnt_throughput" , "name" , "type" , "x0" , "y0" ));
+	//db().remove();
 	var ii=1;
+	var arr;
+	var geom;
 	for (var floor in json) { 
 		for (var type in json[floor]) {
-			console.log(type, json[floor][type]);
-			db.insert({ 
-				"name": type+ii,
-				"name": type+ii
-				// "cad_json": cad_json,
-				// "letter": geom.letter,
-				// "type": geom.type,
-				// "lines": lines,
-				// "x0": x0,
-				// "y0": y0,
-				// "dimx": x1-x0,
-				// "dimy": y1-y0,
-				// "dimz": geom.dimz,
-				// "floor": floor,
-				// "mvnt_offsetz": geom.mvnt_offsetz,
-				// "mvnt_throughput": geom.mvnt_throughput,
-				// "is_exit": geom.is_exit 
-			});
-			ii++;
+			for (var geometry in json[floor][type]) {
+				letter=ApainterReader.ggx[type];
+				arr=json[floor][type][geometry];
+				geom=read_record(parseInt(floor),letter,arr,ii);
+				DbInsert(geom);
+				CreateSvg(geom);
+				ii++;
+			}
 		}
-	//console.log("after", db().select("name"));
 	}
+	//console.log("reader", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvnt_offsetz", "mvnt_throughput", "name", "type", "x0", "y0"));
+}
+//}}}
+function read_record(floor,letter,arr,ii) { //{{{
+	if(gg[letter].t == 'evacuee') { 
+		var x0=arr[0];
+		var y0=arr[1];
+		var z0=0;
+		var x1=arr[0];
+		var y1=arr[1];
+		var z1=0;
+	} else {
+		var x0=arr[0][0];
+		var y0=arr[0][1];
+		var z0=arr[0][2];
+		var x1=arr[1][0];
+		var y1=arr[1][1];
+		var z1=arr[1][2];
+	}
+
+	var record={
+		name: gg[letter].x+ii,
+		letter: letter,
+		type: gg[letter].t,
+		floor: floor,
+		is_exit: '',
+		dimz: z1-z0,
+		mvnt_offsetz: 0,
+		mvnt_throughput: 0,
+		rr:{ x0: x0, y0: y0, x1: x1, y1: y1 }
+	};
+
+	if(gg[letter].t == 'door') { 
+		record.is_exit=arr[2];
+	}
+
+	if(gg[letter].t == 'mvnt') { 
+		record.mvnt_offsetz=arr[2]['offset'];
+		record.mvnt_throughput=arr[2]['throughput'];
+	}
+
+	return record;
 }
 //}}}

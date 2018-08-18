@@ -1,7 +1,10 @@
+// globals//{{{
 var canvas=[screen.width*0.99,screen.height-180];
 var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var gg;
+var DbInsert;
+var CreateSvg;
 var selected_geom='';
 var gg_opacity=0.4;
 var droplist_letter='r';
@@ -22,9 +25,69 @@ var default_door_width=90;
 var default_floor_dimz=350;
 var underlay_imgs={};
 var underlay_draggable=0;
-
+//}}}
+//
 $(function()  { 
 site();
+
+CreateSvg=function create_svg(geom) { //{{{
+	// Initially elements are created without x0, y0 -- mousemove produces values
+	// But this function allows reading cad.json via reader.js, 
+	// hence:  if(geom.rr.x0 != null) { 
+
+	if (gg[letter].t == 'evacuee') { 
+		var elem='circle';
+	} else {
+		var elem='rect';
+	}
+	g_floor=d3.select("#floor"+geom.floor);
+	g_floor.append(elem)
+		.attr('id', geom.name)
+		.attr('r', 25)
+		.attr('fill', gg[letter].c)
+		.attr('stroke', gg[letter].stroke)
+		.style('stroke-width', gg[letter].strokewidth)
+
+	if(geom.rr.x0 != null) { 
+		$("#"+geom.name)
+		.attr('x', Math.min(geom.rr.x0, geom.rr.x1))
+		.attr('y', Math.min(geom.rr.y0, geom.rr.y1))
+		.attr('cx', Math.min(geom.rr.x0, geom.rr.x1))
+		.attr('cy', Math.min(geom.rr.y0, geom.rr.y1))
+		.attr('width', Math.abs(geom.rr.x1 - geom.rr.x0))
+		.attr('height', Math.abs(geom.rr.y1 - geom.rr.y0))
+	}
+}
+//}}}
+DbInsert=function db_insert(geom) { //{{{
+	// Function exported for reader.js also
+	var lines=[];
+	x0 = Math.min(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
+	x1 = Math.max(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
+	y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
+	y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
+	if(geom.type=='room') {
+		lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
+	} else {
+		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
+	}
+	
+	if(geom.type=='evacuee') {
+		var cad_json=`[ ${x0}, ${y0}]`; 
+	} else if(geom.type=='door') {
+		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz} ], "${geom.is_exit}" ]`; 
+	} else if(geom.type=='mvnt') {
+		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig + geom.mvnt_offsetz} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz + geom.mvnt_offsetz} ], { "throughput": ${geom.mvnt_throughput}, "offset": ${geom.mvnt_offsetz}} ]`; 
+	} else {
+		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz} ]]`; 
+	}
+	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": geom.floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
+	selected_geom=geom.name;
+	show_selected_properties(geom.name);
+	geoms_changed();
+	console.log("painter", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvnt_offsetz", "mvnt_throughput", "name", "type", "x0", "y0"));
+}
+//}}}
 
 function make_gg() {//{{{
 	// tango https://sobac.com/sobac/tangocolors.htm
@@ -411,34 +474,6 @@ function legend() { //{{{
 }
 
 //}}}
-function db_insert(geom) { //{{{
-	var lines=[];
-	x0 = Math.min(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
-	x1 = Math.max(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
-	y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
-	y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
-	if(geom.type=='room') {
-		lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
-	} else {
-		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
-	}
-	
-	if(geom.type=='evacuee') {
-		var cad_json=`[ ${x0}, ${y0}]`; 
-	} else if(geom.type=='door') {
-		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz} ], "${geom.is_exit}" ]`; 
-	} else if(geom.type=='mvnt') {
-		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig + geom.mvnt_offsetz} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz + geom.mvnt_offsetz} ], ${geom.mvnt_throughput} ]`; 
-	} else {
-		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz} ]]`; 
-	}
-	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
-	console.log(db().select( "dimx" , "dimy" , "dimz" , "floor" , "is_exit" , "letter" , "mvnt_offsetz" , "mvnt_throughput" , "name" , "type" , "x0" , "y0" ));
-	selected_geom=geom.name;
-	show_selected_properties(geom.name);
-	geoms_changed();
-}
-//}}}
 function axes() { //{{{
 	ax.x = d3.scaleLinear()
 		.domain([-1, canvas[0]+ 1])
@@ -508,7 +543,6 @@ function setup_underlay_into_setup_box() {//{{{
 
 }
 //}}}
-
 function help_into_setup_box() {//{{{
 	d3.select('setup-box').html(
 		"<input id=general_setup type=hidden value=1>"+
@@ -601,6 +635,7 @@ function save_setup_box() {//{{{
 
 	if ($("#geom_properties").val() != null) { 
 		var geom={
+			floor: floor,
 			name: $("#alter_name").val(),
 			letter: $("#alter_letter").val(),
 			type: gg[letter].t,
@@ -618,7 +653,7 @@ function save_setup_box() {//{{{
 		db({"name":$("#alter_name").val()}).remove();
 		updateSvgElem(geom);
 		updateExitDoor(geom);
-		db_insert(geom);
+		DbInsert(geom);
 	} 
 
 	if ($("#alter_underlay_opacity").val() != null) { 
@@ -775,6 +810,7 @@ function snap_door(m,rect,after_click) {//{{{
 //}}}
 function create_self_props(self, letter) {//{{{
 	self.rr={};
+	self.floor=floor;
 	self.letter=letter;
 	self.type=gg[letter].t;
 	self.name=gg[letter].x+counter;
@@ -804,11 +840,7 @@ function new_geom(letter) {//{{{
 	fadeout_setup_box();
 	svg.on('mousedown', function() {
 		after_click=1;
-		if (gg[letter].t == 'evacuee') { 
-			g_floor.append('circle').attr('id', self.name).attr('r', 25).attr('fill', gg[letter].c).style('stroke-width', gg[letter].strokewidth).attr('stroke', gg[letter].stroke).attr('class', 'g_rect');
-		} else {
-			g_floor.append('rect').attr('id', self.name).attr('fill', gg[letter].c).style('stroke-width', gg[letter].strokewidth).attr('stroke', gg[letter].stroke).attr('class', 'g_rect');
-		}
+		CreateSvg(self);
 	});
 
 	svg.on('mousemove', function() {
@@ -844,7 +876,7 @@ function new_geom(letter) {//{{{
 		} else {
 			if (['hole', 'window'].includes(self.type)) { self=fix_hole_offset(self); }
 			updateSvgElem(self);
-			db_insert(self);
+			DbInsert(self);
 		}
 		after_click=0;
 		$('#snapper').attr('fill-opacity', 0);
@@ -926,6 +958,7 @@ function site() { //{{{
 	canvas_zoomer();
 	keyboard_events();
 	geom_select_deselect();
+	cad_json_reader_alt(); // temporary
 }
 //}}}
 
