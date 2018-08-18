@@ -45,7 +45,7 @@ CreateSvg=function create_svg(geom) { //{{{
 		.attr('id', geom.name)
 		.attr('r', 25)
 		.attr('fill', gg[letter].c)
-		.attr('stroke', gg[letter].stroke)
+		.style('stroke', gg[letter].stroke)
 		.style('stroke-width', gg[letter].strokewidth)
 
 	if(geom.rr.x0 != null) { 
@@ -390,9 +390,9 @@ function make_door_properties(letter) {//{{{
 }
 //}}}
 function show_selected_properties(selected_geom) {//{{{
-	var stroke=$("#"+selected_geom).css('stroke-width');
+	var stroke_width=$("#"+selected_geom).css('stroke-width');
 	$("#"+selected_geom).css('stroke-width', '50px');
-	$("#"+selected_geom).animate({ 'stroke-width': stroke }, 300);
+	$("#"+selected_geom).animate({ 'stroke-width': stroke_width }, 300);
 
 	var letter=db({'name':selected_geom}).select("letter")[0];
 	mvnt_properties=make_mvnt_properties(letter);
@@ -460,7 +460,7 @@ function legend() { //{{{
 		$('legend').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+" ("+x.length+")</div>");
 
 	}
-	$('legend').append("<write>[cad.json]</write>");
+	$('legend').append("&nbsp;&nbsp; <write>[save]</write>");
 
 	$('write').click(function() {
 		output_json();
@@ -547,7 +547,6 @@ function help_into_setup_box() {//{{{
 	d3.select('setup-box').html(
 		"<input id=general_setup type=hidden value=1>"+
 		"<table>"+
-		"<tr><td>open existing<td><input type=file id=open_existing>"+
 		"<tr><td>letter + mouse1     <td> create"+
 		"<tr><td>shift + mouse2	    <td> zoom/drag"+
 		"<tr><td>double mouse1		<td> elem properties"+
@@ -555,6 +554,7 @@ function help_into_setup_box() {//{{{
 		"<tr><td>h	<td> alternative view"+ 
 		"<tr><td>x	<td> delete active"+
 		"<tr><td>g	<td> list all of active type"+
+		"<tr><td>load cad.json<td><input type=file id=open_existing>"+
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor value="+floor+">"+ 
 		"<span id=setup_underlay>image...</span>"+
@@ -611,11 +611,11 @@ function change_floor() {//{{{
 function updateExitDoor(geom) {//{{{
 	if(geom.type=='door') { 
 		if(geom.is_exit=='exit_no') { 
-			$("#"+geom.name).attr({ stroke: "#000" });   
+			$("#"+geom.name).css({ stroke: "#000" });   
 		} else if(geom.is_exit=='exit_yes') { 
-			$("#"+geom.name).attr({ stroke: "#f0f" });   
+			$("#"+geom.name).css({ stroke: "#f0f" });   
 		} else if(geom.is_exit=='exit_auto') { 
-			$("#"+geom.name).attr({ stroke: gg[geom.letter].stroke });   
+			$("#"+geom.name).css({ stroke: gg[geom.letter].stroke });   
 		}
 	}
 }
@@ -950,15 +950,14 @@ function site() { //{{{
 	svg.append("text").attr("x",50).attr("y",80).attr("id", "floor_text").text("floor "+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
-	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',gg_opacity);;
-	g_snap_lines= svg.append("g").attr("id", "g_snap_lines");
+	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',gg_opacity);
+	g_snap_lines = svg.append("g").attr("id", "g_snap_lines");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend();
 	make_setup_box();
 	canvas_zoomer();
 	keyboard_events();
 	geom_select_deselect();
-	cad_json_reader_alt(); // temporary
 }
 //}}}
 

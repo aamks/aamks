@@ -6,18 +6,10 @@ function cad_json_reader(file) {//{{{
 	var reader = new FileReader();
 	reader.onload = function(event) {
 		json=JSON.parse(event.target.result);
+		init_svg_groups(json);
 		into_db(json);
 	}
 	reader.readAsText(file);
-}
-//}}}
-function cad_json_reader_alt() {//{{{
-	// temporary
-	return;
-	ApainterReader.ggx=revert_gg();
-	json={ "0": { "ROOM": [ [[ 2240, 955, 0 ], [ 2955, 1515, 350 ]], [[ 2240, 855, 0 ], [ 2955, 1515, 350 ]]  ], "D": [ [[ 2550, 839, 0 ], [ 2640, 871, 200 ], "exit_auto" ], [[ 2320, 839, 0 ], [ 2410, 871, 200 ], "exit_yes" ], [[ 2629, 1630, 0 ], [ 2661, 1720, 200 ], "exit_auto" ] ] } };
-	into_db(json);
-	geoms_changed();
 }
 //}}}
 function revert_gg() {//{{{
@@ -28,8 +20,22 @@ function revert_gg() {//{{{
 	return z;
 }
 //}}}
+function init_svg_groups(json) {//{{{
+	$(".g_floor").remove();
+	$(".snap_v").remove();
+	$(".snap_h").remove();
+
+	floors_count=0;
+	for (var floor in json) { 
+		d3.select("#g_aamks").append("g").attr("id", "floor"+floor).attr("class", "g_floor").attr("fill-opacity", gg_opacity).attr('visibility',"hidden");
+		floors_count++;
+	}
+	$("#floor0").attr('visibility',"visible");
+	floor=0;
+}
+//}}}
 function into_db(json) { //{{{
-	//db().remove();
+	db().remove();
 	var ii=1;
 	var arr;
 	var geom;
@@ -45,6 +51,7 @@ function into_db(json) { //{{{
 			}
 		}
 	}
+	counter=ii;
 	//console.log("reader", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvnt_offsetz", "mvnt_throughput", "name", "type", "x0", "y0"));
 }
 //}}}
