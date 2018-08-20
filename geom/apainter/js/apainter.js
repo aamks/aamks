@@ -73,19 +73,27 @@ DbInsert=function db_insert(geom) { //{{{
 	}
 	
 	if(geom.type=='evacuee') {
+		var z0=floor_zorig;
+		var z1=floor_zorig + 50;
 		var cad_json=`[ ${x0}, ${y0}]`; 
 	} else if(geom.type=='door') {
-		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz} ], "${geom.is_exit}" ]`; 
+		var z0=floor_zorig;
+		var z1=floor_zorig + geom.dimz;
+		var cad_json=`[[ ${x0}, ${y0}, ${z0} ], [ ${x1}, ${y1}, ${z1} ], "${geom.is_exit}" ]`; 
 	} else if(geom.type=='mvnt') {
-		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig + geom.mvnt_offsetz} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz + geom.mvnt_offsetz} ], { "throughput": ${geom.mvnt_throughput}, "offset": ${geom.mvnt_offsetz}} ]`; 
+		var z0=floor_zorig + geom.mvnt_offsetz;
+		var z1=floor_zorig + geom.dimz + geom.mvnt_offsetz;
+		var cad_json=`[[ ${x0}, ${y0}, ${z0} ], [ ${x1}, ${y1}, ${z1} ], { "throughput": ${geom.mvnt_throughput}, "offset": ${geom.mvnt_offsetz}} ]`; 
 	} else {
-		var cad_json=`[[ ${x0}, ${y0}, ${floor_zorig} ], [ ${x1}, ${y1}, ${floor_zorig + geom.dimz} ]]`; 
+		var z0=floor_zorig;
+		var z1=floor_zorig + geom.dimz;
+		var cad_json=`[[ ${x0}, ${y0}, ${z0} ], [ ${x1}, ${y1}, ${z1} ]]`; 
 	}
-	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": geom.floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
+	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "z0": z0, "x1": x1, "y1": y1, "z1": z1, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": geom.floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
 	selected_geom=geom.name;
 	show_selected_properties(geom.name);
 	geoms_changed();
-	console.log("painter", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvnt_offsetz", "mvnt_throughput", "name", "type", "x0", "y0"));
+	console.log("painter", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvnt_offsetz", "mvnt_throughput", "name", "type", "x0", "y0", "z0", "x1", "y1", "z1"));
 }
 //}}}
 
@@ -460,11 +468,11 @@ function legend() { //{{{
 		$('legend').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+" ("+x.length+")</div>");
 
 	}
-	$('legend').append("&nbsp;&nbsp; <write>[save]</write>");
+	$('legend').append("&nbsp;&nbsp;<open3dview>[3dview]</open3dview>");
+	$('legend').append(" <write>[save]</write>");
 
-	$('write').click(function() {
-		output_json();
-	});
+	$('write').click(function() { output_json(); });
+	$('open3dview').click(function() { open3dview(); });
 
 	$('.legend').click(function() {
 		properties_type_listing($(this).attr('letter'));
@@ -671,7 +679,7 @@ function save_setup_box() {//{{{
 }
 //}}}
 function make_setup_box() {//{{{
-	d3.select('body').append('setup-box');
+	d3.select('view2d').append('setup-box');
 	$('show-setup-box').click(function() {
 		help_into_setup_box();
 		$('setup-box').fadeIn();
@@ -896,6 +904,14 @@ function updateSvgElem(geom) {  //{{{
 	});   
 }
 //}}}
+function open3dview() {//{{{
+	$.getScript("js/three.min.js", function(){
+		$.getScript("js/TrackballControls.js", function(){
+			view3d();
+		});
+	});
+}
+//}}}
 function output_json() {//{{{
 	// Instead of JSON.stringify we prefer our own pretty formatting.
 	var json=[];
@@ -944,9 +960,11 @@ function download(filename, text) {//{{{
 //}}}
 function site() { //{{{
 	gg=make_gg();
-	d3.select('body').append('show-setup-box').html("[setup]");
-	d3.select('body').append('legend');
-	svg = d3.select('body').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
+	d3.select('body').append('view3d');
+	d3.select('body').append('view2d');
+	d3.select('view2d').append('show-setup-box').html("[setup]");
+	d3.select('view2d').append('legend');
+	svg = d3.select('view2d').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("text").attr("x",50).attr("y",80).attr("id", "floor_text").text("floor "+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
