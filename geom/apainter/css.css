@@ -46,7 +46,7 @@ text {
 	cursor: pointer;
 }
 
-write {
+close3dview, write, open3dview {
 	cursor: pointer;
 }
 
