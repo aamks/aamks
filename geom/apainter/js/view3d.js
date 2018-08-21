@@ -2,7 +2,31 @@ var camera, scene, renderer, controls;
 var geometry, material, mesh;
 
 function init() {//{{{
-	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 10 );
+	//camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 10 );
+	//camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, near, far );
+	// camera = new THREE.OrthographicCamera(window.innerWidth / 2, window.innerHeight / 2, 300, -100, 100 );
+	//
+
+// CAMERAS
+var width = 1;
+var height= 2;
+    camera=new THREE.OrthographicCamera(
+        -width,
+        width,
+        height,
+        -height,
+        1,
+        30);
+ 
+	//camera = new THREE.OrthographicCamera(
+	//window.innerWidth / -2, // frustum left plane
+    //window.innerWidth / 2, // frustum right plane.
+    //window.innerHeight / 2, // frustum top plane.
+    //window.innerHeight / -2, // frustum bottom plane. 
+    //0.01, // frustum near plane.
+    //10 // frustum far plane.
+	//);
+
 	camera.position.z = 1;
 	controls = new THREE.TrackballControls( camera );
 
@@ -17,6 +41,7 @@ function init() {//{{{
 
 	scene = new THREE.Scene();
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer.setClearColor(0x383838);
 	renderer.setSize( window.innerWidth*0.98, window.innerHeight*0.95);
 	//MOVE mouse &amp; press LEFT/A: rotate, MIDDLE/S: zoom, RIGHT/D: pan
 	$("view2d").css("visibility", "hidden");
