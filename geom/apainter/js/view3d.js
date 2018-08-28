@@ -1,86 +1,19 @@
-var camera, scene, renderer, controls;
-var geometry, material, mesh;
+var scene, camera;
 
 function init() {//{{{
-	//camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 10 );
-	//camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, near, far );
-	// camera = new THREE.OrthographicCamera(window.innerWidth / 2, window.innerHeight / 2, 300, -100, 100 );
-	//
-
-// CAMERAS
-var width = 1;
-var height= 2;
-    camera=new THREE.OrthographicCamera(
-        -width,
-        width,
-        height,
-        -height,
-        1,
-        30);
- 
-	//camera = new THREE.OrthographicCamera(
-	//window.innerWidth / -2, // frustum left plane
-    //window.innerWidth / 2, // frustum right plane.
-    //window.innerHeight / 2, // frustum top plane.
-    //window.innerHeight / -2, // frustum bottom plane. 
-    //0.01, // frustum near plane.
-    //10 // frustum far plane.
-	//);
-
-	camera.position.z = 1;
-	controls = new THREE.TrackballControls( camera );
-
-	controls.rotateSpeed = 5.0;
-	controls.zoomSpeed = 5;
-	controls.panSpeed = 2;
-	controls.noZoom = false;
-	controls.noPan = false;
-	controls.staticMoving = false;
-	controls.dynamicDampingFactor = 0.3;
-	controls.keys = [ 65, 83, 68 ];
-
-	scene = new THREE.Scene();
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
-	renderer.setClearColor(0x383838);
-	renderer.setSize( window.innerWidth*0.98, window.innerHeight*0.95);
-	//MOVE mouse &amp; press LEFT/A: rotate, MIDDLE/S: zoom, RIGHT/D: pan
 	$("view2d").css("visibility", "hidden");
-	$("view3d").append("<close3dview>[close]</close3dview><br>");
-	$("view3d").append( renderer.domElement );
+	$("view3d").append("<close3dview>[x]</close3dview><br>");
+	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', canvas[0]).attr('height', canvas[1]).style('background-color', '#888');
 	$('close3dview').click(function() { close3dview(); });
-
 }
 //}}}
-function animate() {//{{{
-	requestAnimationFrame( animate );
-	controls.update();
-	renderer.render( scene, camera );
-}
-//}}}
-function add_cube(bb, letter) { //{{{
-	geometry = new THREE.BoxGeometry(bb[1]-bb[0], bb[5]-bb[4], bb[3]-bb[2]);
-	material = new THREE.MeshBasicMaterial( {color: gg[letter].c, opacity: 0.4} );
-	material.transparent=true;
-	mesh = new THREE.Mesh( geometry, material );
-	mesh.position.set(bb[0], bb[4], bb[2]);
-	scene.add(mesh);
-}
-//}}}
-function add_cubes() {//{{{
-	// random prevents z-fighting
-	var geoms=db().select("letter", "mvnt_offsetz", "x0", "x1", "y0", "y1", "z0", "z1");
-	for (var i in geoms) {
-		var bb=[];
-		var random=Math.random()/500;
-		bb.push(geoms[i][2]/5000+random);
-		bb.push(geoms[i][3]/5000+random);
-		bb.push(geoms[i][4]/5000+random);
-		bb.push(geoms[i][5]/5000+random);
-		bb.push(geoms[i][6]/5000+random);
-		bb.push(geoms[i][7]/5000+random);
-		add_cube(bb, geoms[i][0]);
+function colorHexDecode(hex) {//{{{
+	if(hex.length == 7) { 
+		var RGBA=[ parseInt(hex.substring(1,3),16)/255, parseInt(hex.substring(3,5),16)/255, parseInt(hex.substring(5,7),16)/255 ];
+	} else {
+		var RGBA=[ parseInt(hex.substring(1,2)+"0",16)/255, parseInt(hex.substring(2,3)+"0",16)/255, parseInt(hex.substring(3,4)+"0",16)/255 ];
 	}
-	//renderer.render( scene, camera );
+	return RGBA;
 }
 //}}}
 function close3dview() {//{{{
@@ -88,9 +21,75 @@ function close3dview() {//{{{
 	$("view2d").css("visibility", "visible");
 }
 //}}}
-function view3d() {//{{{
-	init();
-	add_cubes();
-	animate();
+function createMeshes() {//{{{
+	// random prevents z-fighting
+	var geoms=db().select("letter", "mvnt_offsetz", "x0", "x1", "y0", "y1", "z0", "z1");
+	for (var i in geoms) {
+		var bb=[];
+		var random=Math.random()/500;
+		bb.push(geoms[i][2]/100+random);
+		bb.push(geoms[i][3]/100+random);
+		bb.push(geoms[i][4]/100+random);
+		bb.push(geoms[i][5]/100+random);
+		bb.push(geoms[i][6]/100+random);
+		bb.push(geoms[i][7]/100+random);
+		var half_x=(bb[1]-bb[0])/2;
+		var half_y=(bb[3]-bb[2])/2;
+		var half_z=(bb[5]-bb[4])/2;
+
+		createMesh({
+			center: [ bb[0]+half_x, bb[4]+half_z, bb[2]+half_y ], 
+			size:   [ half_x, half_z, half_y], 
+			color:  gg[geoms[i][0]].c
+		});
+	}
 }
 //}}}
+function createMesh(d) {//{{{
+	console.log(d);
+	var mesh = new xeogl.Mesh({
+		geometry: new xeogl.BoxGeometry({
+			center: d.center,
+			xSize: d.size[0],
+			ySize: d.size[1],
+			zSize: d.size[2]
+		}),
+
+		material: new xeogl.LambertMaterial({
+		   ambient: [1, 0.3, 0.3],
+		   color: colorHexDecode(d.color),
+		   alpha: 0.2,
+		}),
+
+		edgeMaterial: new xeogl.EdgeMaterial({
+		   edgeColor: colorHexDecode(d.color),
+		   edgeAlpha: 1,
+		   edgeWidth: 10
+		}),
+		edges: true
+	});
+
+}
+//}}}
+function scene() { //{{{
+    xeogl.scene = new xeogl.Scene({
+        canvas: "canvas3d",
+        transparent: true,
+    });
+	scene=xeogl.scene;
+    camera=scene.camera;
+    scene.gammaInput = false;
+    scene.gammaOutput = false;
+    camera.eye =  [50, 50, 1];
+    camera.look = [50, 0, 0];
+	camera.projection = "perspective"; 
+    //camera.gimbalLock = true;
+    camera.up = [0, 0, -1]; 
+    new xeogl.CameraControl();
+}
+//}}}
+function view3d() {//{{{
+	init();
+	scene();
+	createMeshes(); 
+}

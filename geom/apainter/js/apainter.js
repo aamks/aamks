@@ -905,10 +905,11 @@ function updateSvgElem(geom) {  //{{{
 }
 //}}}
 function open3dview() {//{{{
-	$.getScript("js/three.min.js", function(){
-		$.getScript("js/TrackballControls.js", function(){
-			view3d();
-		});
+	$.getScript("js/xeogl.min.js", function(){
+		//svg.on('mousedown', null);
+		//svg.on('mousemove', null);
+		//svg.on('mouseup', null);
+		view3d();
 	});
 }
 //}}}
