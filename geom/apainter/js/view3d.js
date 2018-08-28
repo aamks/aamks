@@ -71,7 +71,7 @@ function createMesh(d) {//{{{
 
 }
 //}}}
-function scene() { //{{{
+function createScene() { //{{{
     xeogl.scene = new xeogl.Scene({
         canvas: "canvas3d",
         transparent: true,
@@ -90,6 +90,6 @@ function scene() { //{{{
 //}}}
 function view3d() {//{{{
 	init();
-	scene();
+	createScene();
 	createMeshes(); 
 }
