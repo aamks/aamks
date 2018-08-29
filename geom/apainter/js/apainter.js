@@ -93,7 +93,7 @@ DbInsert=function db_insert(geom) { //{{{
 	selected_geom=geom.name;
 	show_selected_properties(geom.name);
 	geoms_changed();
-	console.log("painter", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvnt_offsetz", "mvnt_throughput", "name", "type", "x0", "y0", "z0", "x1", "y1", "z1"));
+	//console.log("painter", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvnt_offsetz", "mvnt_throughput", "name", "type", "x0", "y0", "z0", "x1", "y1", "z1"));
 }
 //}}}
 
