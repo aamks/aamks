@@ -45,6 +45,7 @@ function into_db(json) { //{{{
 				letter=ApainterReader.ggx[type];
 				arr=json[floor][type][geometry];
 				geom=read_record(parseInt(floor),letter,arr,ii);
+				geom=Attr_cad_json(geom);
 				DbInsert(geom);
 				CreateSvg(geom);
 				ii++;
@@ -56,21 +57,12 @@ function into_db(json) { //{{{
 }
 //}}}
 function read_record(floor,letter,arr,ii) { //{{{
-	if(gg[letter].t == 'evacuee') { 
-		var x0=arr[0];
-		var y0=arr[1];
-		var z0=0;
-		var x1=arr[0];
-		var y1=arr[1];
-		var z1=0;
-	} else {
-		var x0=arr[0][0];
-		var y0=arr[0][1];
-		var z0=arr[0][2];
-		var x1=arr[1][0];
-		var y1=arr[1][1];
-		var z1=arr[1][2];
-	}
+	var x0=arr[0][0];
+	var y0=arr[0][1];
+	var z0=arr[0][2];
+	var x1=arr[1][0];
+	var y1=arr[1][1];
+	var z1=arr[1][2];
 
 	var record={
 		name: gg[letter].x+ii,
@@ -81,7 +73,12 @@ function read_record(floor,letter,arr,ii) { //{{{
 		dimz: z1-z0,
 		mvnt_offsetz: 0,
 		mvnt_throughput: 0,
-		rr:{ x0: x0, y0: y0, x1: x1, y1: y1 }
+		x0: x0,
+		y0: y0,
+		z0: z0,
+		x1: x1,
+		y1: y1,
+		z1: z1
 	};
 
 	if(gg[letter].t == 'door') { 

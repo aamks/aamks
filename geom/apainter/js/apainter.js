@@ -4,6 +4,7 @@ var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var gg;
 var DbInsert;
+var Attr_cad_json;
 var CreateSvg;
 var selected_geom='';
 var gg_opacity=0.4;
@@ -30,6 +31,32 @@ var underlay_draggable=0;
 $(function()  { 
 site();
 
+function pre_dbinsert(geom) {//{{{
+	// real x,y are calculated as minimum/maximum values from rr
+	// z needs separate calculations here.
+
+	geom.x0 = Math.min(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
+	geom.x1 = Math.max(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
+	geom.y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
+	geom.y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
+	if(geom.type=='evacuee') {
+		geom.z0=floor_zorig;
+		geom.z1=floor_zorig + 50;
+	} else if(geom.type=='door') {
+		geom.z0=floor_zorig;
+		geom.z1=floor_zorig + geom.dimz;
+	} else if(geom.type=='mvnt') {
+		geom.z0=floor_zorig + geom.mvnt_offsetz;
+		geom.z1=floor_zorig + geom.dimz + geom.mvnt_offsetz;
+	} else {
+		geom.z0=floor_zorig;
+		geom.z1=floor_zorig + geom.dimz;
+	}
+
+	geom=Attr_cad_json(geom);
+	return geom;
+}
+//}}}
 CreateSvg=function create_svg(geom) { //{{{
 	// Initially elements are created without x0, y0 -- mousemove produces values
 	// But this function allows reading cad.json via reader.js, 
@@ -48,48 +75,38 @@ CreateSvg=function create_svg(geom) { //{{{
 		.style('stroke', gg[letter].stroke)
 		.style('stroke-width', gg[letter].strokewidth)
 
-	if(geom.rr.x0 != null) { 
+	if(geom.x0 != null) { 
 		$("#"+geom.name)
-		.attr('x', Math.min(geom.rr.x0, geom.rr.x1))
-		.attr('y', Math.min(geom.rr.y0, geom.rr.y1))
-		.attr('cx', Math.min(geom.rr.x0, geom.rr.x1))
-		.attr('cy', Math.min(geom.rr.y0, geom.rr.y1))
-		.attr('width', Math.abs(geom.rr.x1 - geom.rr.x0))
-		.attr('height', Math.abs(geom.rr.y1 - geom.rr.y0))
+		.attr('x', geom.x0)
+		.attr('y', geom.y0)
+		.attr('cx', geom.x0)
+		.attr('cy', geom.y0)
+		.attr('width', geom.x1 - geom.x0)
+		.attr('height', geom.y1 - geom.y0)
 	}
+}
+//}}}
+Attr_cad_json=function cad_json_dbinsert(geom) { //{{{
+	// Create cad_json attribute for the DB. reader.js uses us too.
+	if(geom.type=='door') {
+		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], "${geom.is_exit}" ]`; 
+	} else if(geom.type=='mvnt') {
+		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "throughput": ${geom.mvnt_throughput}, "offset": ${geom.mvnt_offsetz}} ]`; 
+	} else {
+		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ]]`; 
+	}
+	return geom;
 }
 //}}}
 DbInsert=function db_insert(geom) { //{{{
 	// Function exported for reader.js also
 	var lines=[];
-	x0 = Math.min(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
-	x1 = Math.max(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
-	y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
-	y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
 	if(geom.type=='room') {
-		lines.push([x0, y0], [x1, y0], [x1, y1], [x0, y1]);
+		lines.push([geom.x0, geom.y0], [geom.x1, geom.y0], [geom.x1, geom.y1], [geom.x0, geom.y1]);
 	} else {
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
-	
-	if(geom.type=='evacuee') {
-		var z0=floor_zorig;
-		var z1=floor_zorig + 50;
-		var cad_json=`[ ${x0}, ${y0}]`; 
-	} else if(geom.type=='door') {
-		var z0=floor_zorig;
-		var z1=floor_zorig + geom.dimz;
-		var cad_json=`[[ ${x0}, ${y0}, ${z0} ], [ ${x1}, ${y1}, ${z1} ], "${geom.is_exit}" ]`; 
-	} else if(geom.type=='mvnt') {
-		var z0=floor_zorig + geom.mvnt_offsetz;
-		var z1=floor_zorig + geom.dimz + geom.mvnt_offsetz;
-		var cad_json=`[[ ${x0}, ${y0}, ${z0} ], [ ${x1}, ${y1}, ${z1} ], { "throughput": ${geom.mvnt_throughput}, "offset": ${geom.mvnt_offsetz}} ]`; 
-	} else {
-		var z0=floor_zorig;
-		var z1=floor_zorig + geom.dimz;
-		var cad_json=`[[ ${x0}, ${y0}, ${z0} ], [ ${x1}, ${y1}, ${z1} ]]`; 
-	}
-	db.insert({ "name": geom.name, "cad_json": cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": x0, "y0": y0, "z0": z0, "x1": x1, "y1": y1, "z1": z1, "dimx": x1-x0, "dimy": y1-y0, "dimz": geom.dimz, "floor": geom.floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
+	db.insert({ "name": geom.name, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
 	selected_geom=geom.name;
 	show_selected_properties(geom.name);
 	geoms_changed();
@@ -140,12 +157,12 @@ function canvas_zoomer() { //{{{
 		.call(zoom)
 		.call(zoom.transform, d3.zoomIdentity.scale(0.2))
 		.call(d3.zoom()
-			.scaleExtent([1 / 10, 40])
+			.scaleExtent([1 / 30, 4])
 			.filter(function(){
 			return ( event.button === 0 ||
 					 event.button === 1);
 			})
-			.translateExtent([[-10000, -10000], [10000 , 10000]])
+			.translateExtent([[-1000, -1000], [100000 , 100000]])
 			.on("zoom", zoomed_canvas)
 		);
 }
@@ -661,6 +678,7 @@ function save_setup_box() {//{{{
 		db({"name":$("#alter_name").val()}).remove();
 		updateSvgElem(geom);
 		updateExitDoor(geom);
+		geom=pre_dbinsert(geom);
 		DbInsert(geom);
 	} 
 
@@ -884,6 +902,7 @@ function new_geom(letter) {//{{{
 		} else {
 			if (['hole', 'window'].includes(self.type)) { self=fix_hole_offset(self); }
 			updateSvgElem(self);
+			self=pre_dbinsert(self);
 			DbInsert(self);
 		}
 		after_click=0;

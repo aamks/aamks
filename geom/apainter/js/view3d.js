@@ -38,7 +38,7 @@ function createMeshes() {//{{{
 		half_y=(bb[3]-bb[2])/2;
 		half_z=(bb[5]-bb[4])/2;
 		if(gg[geoms[i][0]].t == 'evacuee') { 
-			mesh='cylinder';
+			mesh='sphere';
 		}  else {
 			mesh='box';
 		}
@@ -53,16 +53,11 @@ function createMeshes() {//{{{
 }
 //}}}
 function createMesh(d) {//{{{
-	if (d.mesh=='cylinder') {
-		d.center[1]+=0.7;
-		var geometry= new xeogl.CylinderGeometry({
-		    radiusTop: 0.25,
-            radiusBottom: 0.25,
-            height: 1.8,
-            radialSegments: 20,
-            heightSegments: 1,
-            openEnded: false,
-			center: d.center,
+	if (d.mesh=='sphere') {
+		d.center[1]+=1.2;
+		var geometry= new xeogl.SphereGeometry({
+		    radius: 0.25,
+			center: d.center
 		});
 	} else {
 		var geometry= new xeogl.BoxGeometry({
@@ -101,8 +96,8 @@ function createScene() { //{{{
     camera=scene.camera;
     scene.gammaInput = false;
     scene.gammaOutput = false;
-    camera.eye =  [50, 50, 1];
-    camera.look = [50, 0, 0];
+    camera.eye =  [50, 50, 20];
+    camera.look = [50, 0, 20];
 	camera.projection = "perspective"; 
     //camera.gimbalLock = true;
     camera.up = [0, 0, -1]; 
