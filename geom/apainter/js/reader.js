@@ -1,7 +1,18 @@
 // todo: learn to separate globals and funcs
 var ApainterReader={};
 
+function renderUnderlayImage(file) {//{{{
+	//renderUnderlayImage(this.files[0])
+	pdf_handle();
+	var reader = new FileReader();
+	reader.onload = function(event) {
+		$('#img'+floor).attr("href", event.target.result)
+	}
+	reader.readAsDataURL(file);
+}
+//}}}
 function cad_json_reader(file) {//{{{
+	// renderUnderlayImage(this.files[0])
 	ApainterReader.ggx=revert_gg();
 	var reader = new FileReader();
 	reader.onload = function(event) {
@@ -91,5 +102,23 @@ function read_record(floor,letter,arr,ii) { //{{{
 	}
 
 	return record;
+}
+//}}}
+function pdf_handle() { //{{{
+	postFile('https://mimooh.szach.in/pdf2svg.php')
+	  .then(data => console.log(data))
+	  .catch(error => console.error(error))
+
+	function postFile(url) {
+	  const formData = new FormData()
+	  const fileField = document.querySelector('#underlay_loader')
+	  formData.append('file', fileField.files[0])
+
+	  return fetch(url, {
+		method: 'POST', 
+		body: formData  
+	  })
+	  .then(response => response.json())
+	}
 }
 //}}}

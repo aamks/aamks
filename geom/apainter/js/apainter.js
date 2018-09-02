@@ -201,15 +201,6 @@ function underlay_changed() {//{{{
 	)
 }
 //}}}
-function renderImage(file) {//{{{
-	underlay_changed();
-	var reader = new FileReader();
-	reader.onload = function(event) {
-		$('#img'+floor).attr("href", event.target.result)
-	}
-	reader.readAsDataURL(file);
-}
-//}}}
 function fadeout_setup_box() {//{{{
 	$('setup-box').fadeOut(0);
 	underlay_draggable=0;
@@ -559,7 +550,8 @@ function setup_underlay_into_setup_box() {//{{{
 	$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
 
 	$("#underlay_loader").change(function() {
-		renderImage(this.files[0])
+		underlay_changed();
+		renderUnderlayImage(this.files[0])
 		underlay_imgs[floor]['fname']=this.files[0].name;
 		$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
 		$("#underlay_translate").html("translate(0,0)");
