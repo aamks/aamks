@@ -2,13 +2,15 @@
 var ApainterReader={};
 
 function renderUnderlayImage(file) {//{{{
-	//renderUnderlayImage(this.files[0])
-	pdf_handle();
 	var reader = new FileReader();
-	reader.onload = function(event) {
-		$('#img'+floor).attr("href", event.target.result)
+	if(file.type=='application/pdf') {
+		pdf_handle();
+	} else {
+		reader.onload = function(event) {
+			$('#img'+floor).attr("href", event.target.result)
+		}
+		reader.readAsDataURL(file);
 	}
-	reader.readAsDataURL(file);
 }
 //}}}
 function cad_json_reader(file) {//{{{
@@ -104,9 +106,14 @@ function read_record(floor,letter,arr,ii) { //{{{
 	return record;
 }
 //}}}
+function pdf_svg_dom(data) { //{{{
+	$('#img'+floor).attr("href", 'data:image/svg+xml;utf8,'+data.svg);
+
+}
+//}}}
 function pdf_handle() { //{{{
 	postFile('https://mimooh.szach.in/pdf2svg.php')
-	  .then(data => console.log(data))
+	  .then(data => pdf_svg_dom(data))
 	  .catch(error => console.error(error))
 
 	function postFile(url) {
