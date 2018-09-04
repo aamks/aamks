@@ -182,9 +182,7 @@ function zoomed_canvas() {//{{{
 function underlay_changed() {//{{{
 	$("#g_img"+floor).remove();
 	g_img = g_aamks.append("g").attr("id", "g_img"+floor).attr("class", "g_img");
-	var _img=g_img.append("svg:image")
-		.attr("id", "img"+floor)
-		;
+	var _img=g_img.append("svg:image").attr("id", "img"+floor);
 
 	g_img.call(d3.zoom()
 		.scaleExtent([1 / 10, 40])

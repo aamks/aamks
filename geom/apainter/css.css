@@ -18,6 +18,9 @@ svg {
 	border: 1px solid #555; 
 	font: 10px sans;
 }
+image {
+	width: 10000px;
+}
 
 name:hover { 
 	background-color: #888; 
