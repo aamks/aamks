@@ -71,6 +71,7 @@ CreateSvg=function create_svg(geom) { //{{{
 	g_floor.append(elem)
 		.attr('id', geom.name)
 		.attr('r', 25)
+		.attr('filter', "url(#invert)")
 		.attr('fill', gg[letter].c)
 		.style('stroke', gg[letter].stroke)
 		.style('stroke-width', gg[letter].strokewidth)
@@ -182,8 +183,8 @@ function zoomed_canvas() {//{{{
 function underlay_changed() {//{{{
 	$("#g_img"+floor).remove();
 	g_img = g_aamks.append("g").attr("id", "g_img"+floor).attr("class", "g_img");
-	var _img=g_img.append("svg:image").attr("id", "img"+floor);
-
+	//var _img=g_img.append("svg:image").attr("id", "img"+floor).attr('filter', "url(#invert)");
+	var _img=g_img.append("svg:image").attr("id", "img"+floor).attr("href", "png.png").attr('filter', "url(#invert)");
 	g_img.call(d3.zoom()
 		.scaleExtent([1 / 10, 40])
 		.filter(function(){
@@ -968,6 +969,17 @@ function download(filename, text) {//{{{
 }
 //}}}
 //}}}
+function svg_filter_defs() {//{{{
+	//var filter_defs='<defs id="defs6"> <filter filterUnits="objectBoundingBox" id="invert" x="0" y="0" height="1" width="1"> <feComponentTransfer> <feFuncA type="table" tableValues="1 0"/> </feComponentTransfer> </filter> </defs>';
+	var filter_defs='<filter id="invert"> <feColorMatrix values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0      0      0      1 0"/> </filter>';
+	//var filter_defs='<defs id="defs6"> <filter filterUnits="objectBoundingBox" id="invert" x="0" y="0" height="1" width="1"> <feFlood flood-color="rgb(255,255,255)" result="background"></feFlood><feBlend mode="normal" in="SourceGraphic" in2="background"></feBlend><feComponentTransfer> <feFuncR type="table" tableValues="1 0"></feFuncR> <feFuncG type="table" tableValues="1 0"></feFuncG> <feFuncB type="table" tableValues="1 0" /> </feComponentTransfer> </filter> </defs>';
+	var filter_defs='<defs id="defs6"> <filter filterUnits="objectBoundingBox" id="invert" x="0" y="0" height="1" width="1"> <feFlood flood-color="rgb(255,255,255)" result="background" /> <feBlend mode="normal" in="SourceGraphic" in2="background" /> <feComponentTransfer> <feFuncR type="table" tableValues="1 0"/> <feFuncG type="table" tableValues="1 0"/> <feFuncB type="table" tableValues="1 0"/> </feComponentTransfer> </filter> </defs> <rect filter="url(#invert)" fill="#ff8800"  height="50" width="30" />';
+
+	var filter_defs="<defs id='defs6'> <filter filterUnits='objectBoundingBox' id='invert' x='0' y='0' height='1' width='1'> <feComponentTransfer> <feFuncA type='table' tableValues='1 0.5'/> </feComponentTransfer> </filter> </defs> <rect filter='url(#invert)' fill='#ff8800'  height='50' width='30' />";
+	var frag=document.createRange().createContextualFragment(filter_defs);
+	return frag.firstChild;
+}
+//}}}
 function site() { //{{{
 	gg=make_gg();
 	d3.select('body').append('view3d');
@@ -975,9 +987,9 @@ function site() { //{{{
 	d3.select('view2d').append('show-setup-box').html("[setup]");
 	d3.select('view2d').append('legend');
 	svg = d3.select('view2d').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
-	// <defs id="defs6"> <filter filterUnits="objectBoundingBox" id="invert" x="0" y="0" height="1" width="1"> <feFlood flood-color="rgb(255,255,255)" result="background" /> <feBlend mode="normal" in="SourceGraphic" in2="background" /> <feComponentTransfer> <feFuncR type="table" tableValues="1 0"/> <feFuncG type="table" tableValues="1 0"/> <feFuncB type="table" tableValues="1 0"/> </feComponentTransfer> </filter> </defs>
-	// <image filter="url(#invert)" xlink:href='data:image/svg+xml, ...
-
+	$('#svg').append(svg_filter_defs());
+	//var filter_defs='<image xlink:href="png.png">';
+	//svg.append("image").attr("xlink:href","png.png").attr("width", 50);
 	svg.append("text").attr("x",50).attr("y",80).attr("id", "floor_text").text("floor "+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
@@ -989,6 +1001,7 @@ function site() { //{{{
 	canvas_zoomer();
 	keyboard_events();
 	geom_select_deselect();
+
 }
 //}}}
 
