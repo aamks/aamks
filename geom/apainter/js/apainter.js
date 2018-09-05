@@ -975,6 +975,9 @@ function site() { //{{{
 	d3.select('view2d').append('show-setup-box').html("[setup]");
 	d3.select('view2d').append('legend');
 	svg = d3.select('view2d').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
+	// <defs id="defs6"> <filter filterUnits="objectBoundingBox" id="invert" x="0" y="0" height="1" width="1"> <feFlood flood-color="rgb(255,255,255)" result="background" /> <feBlend mode="normal" in="SourceGraphic" in2="background" /> <feComponentTransfer> <feFuncR type="table" tableValues="1 0"/> <feFuncG type="table" tableValues="1 0"/> <feFuncB type="table" tableValues="1 0"/> </feComponentTransfer> </filter> </defs>
+	// <image filter="url(#invert)" xlink:href='data:image/svg+xml, ...
+
 	svg.append("text").attr("x",50).attr("y",80).attr("id", "floor_text").text("floor "+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
