@@ -71,7 +71,6 @@ CreateSvg=function create_svg(geom) { //{{{
 	g_floor.append(elem)
 		.attr('id', geom.name)
 		.attr('r', 25)
-		.attr('filter', "url(#invert)")
 		.attr('fill', gg[letter].c)
 		.style('stroke', gg[letter].stroke)
 		.style('stroke-width', gg[letter].strokewidth)
@@ -183,8 +182,7 @@ function zoomed_canvas() {//{{{
 function underlay_changed() {//{{{
 	$("#g_img"+floor).remove();
 	g_img = g_aamks.append("g").attr("id", "g_img"+floor).attr("class", "g_img");
-	//var _img=g_img.append("svg:image").attr("id", "img"+floor).attr('filter', "url(#invert)");
-	var _img=g_img.append("svg:image").attr("id", "img"+floor).attr("href", "png.png").attr('filter', "url(#invert)");
+	var _img=g_img.append("svg:image").attr("id", "img"+floor);
 	g_img.call(d3.zoom()
 		.scaleExtent([1 / 10, 40])
 		.filter(function(){
@@ -523,10 +521,12 @@ function setup_underlay_into_setup_box() {//{{{
 		underlay_imgs[floor]={};
 		var width='value=""';
 		var opacity='value=0.3';
+		var invert_colors='';
 		var fname='';
 	} else {
 		var width="value="+underlay_imgs[floor]['width'];
 		var opacity="value="+underlay_imgs[floor]['opacity'];
+		var invert_colors=underlay_imgs[floor]['invert_colors'];
 		var fname=underlay_imgs[floor]['fname'];
 	}
 	d3.select('setup-box').html(
@@ -542,6 +542,7 @@ function setup_underlay_into_setup_box() {//{{{
 		"<tr><td>origin<td id=underlay_translate>"+
 		"<tr><td>width<td><input id=alter_underlay_width type=text size=15 "+width+">"+
 		"<tr><td>opacity<td><input id=alter_underlay_opacity type=text size=15 "+opacity+">"+
+		"<tr><td>invert colors<td><input type=checkbox id=alter_underlay_invert_colors "+invert_colors+">"+
 		"</table>"
 	);
 
@@ -676,6 +677,14 @@ function save_setup_box() {//{{{
 	if ($("#alter_underlay_opacity").val() != null) { 
 		underlay_imgs[floor]['opacity']=parseFloat($("#alter_underlay_opacity").val());
 		$("#img"+floor).attr("opacity",underlay_imgs[floor]['opacity']);
+
+		if(document.querySelector('#alter_underlay_invert_colors').checked) {
+			$("#img"+floor).attr('filter', "url(#invertColorsFilter)");
+			underlay_imgs[floor]['invert_colors']='checked';
+		} else {
+			$("#img"+floor).removeAttr("filter");
+			underlay_imgs[floor]['invert_colors']='';
+		}
 
 		if($("#alter_underlay_width").val() != "") {
 			underlay_imgs[floor]['width']=parseInt($("#alter_underlay_width").val());
@@ -916,9 +925,6 @@ function updateSvgElem(geom) {  //{{{
 //}}}
 function open3dview() {//{{{
 	$.getScript("js/xeogl.min.js", function(){
-		//svg.on('mousedown', null);
-		//svg.on('mousemove', null);
-		//svg.on('mouseup', null);
 		view3d();
 	});
 }
@@ -969,17 +975,6 @@ function download(filename, text) {//{{{
 }
 //}}}
 //}}}
-function svg_filter_defs() {//{{{
-	//var filter_defs='<defs id="defs6"> <filter filterUnits="objectBoundingBox" id="invert" x="0" y="0" height="1" width="1"> <feComponentTransfer> <feFuncA type="table" tableValues="1 0"/> </feComponentTransfer> </filter> </defs>';
-	var filter_defs='<filter id="invert"> <feColorMatrix values="0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0      0      0      1 0"/> </filter>';
-	//var filter_defs='<defs id="defs6"> <filter filterUnits="objectBoundingBox" id="invert" x="0" y="0" height="1" width="1"> <feFlood flood-color="rgb(255,255,255)" result="background"></feFlood><feBlend mode="normal" in="SourceGraphic" in2="background"></feBlend><feComponentTransfer> <feFuncR type="table" tableValues="1 0"></feFuncR> <feFuncG type="table" tableValues="1 0"></feFuncG> <feFuncB type="table" tableValues="1 0" /> </feComponentTransfer> </filter> </defs>';
-	var filter_defs='<defs id="defs6"> <filter filterUnits="objectBoundingBox" id="invert" x="0" y="0" height="1" width="1"> <feFlood flood-color="rgb(255,255,255)" result="background" /> <feBlend mode="normal" in="SourceGraphic" in2="background" /> <feComponentTransfer> <feFuncR type="table" tableValues="1 0"/> <feFuncG type="table" tableValues="1 0"/> <feFuncB type="table" tableValues="1 0"/> </feComponentTransfer> </filter> </defs> <rect filter="url(#invert)" fill="#ff8800"  height="50" width="30" />';
-
-	var filter_defs="<defs id='defs6'> <filter filterUnits='objectBoundingBox' id='invert' x='0' y='0' height='1' width='1'> <feComponentTransfer> <feFuncA type='table' tableValues='1 0.5'/> </feComponentTransfer> </filter> </defs> <rect filter='url(#invert)' fill='#ff8800'  height='50' width='30' />";
-	var frag=document.createRange().createContextualFragment(filter_defs);
-	return frag.firstChild;
-}
-//}}}
 function site() { //{{{
 	gg=make_gg();
 	d3.select('body').append('view3d');
@@ -987,9 +982,7 @@ function site() { //{{{
 	d3.select('view2d').append('show-setup-box').html("[setup]");
 	d3.select('view2d').append('legend');
 	svg = d3.select('view2d').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
-	$('#svg').append(svg_filter_defs());
-	//var filter_defs='<image xlink:href="png.png">';
-	//svg.append("image").attr("xlink:href","png.png").attr("width", 50);
+	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
 	svg.append("text").attr("x",50).attr("y",80).attr("id", "floor_text").text("floor "+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
@@ -1001,7 +994,6 @@ function site() { //{{{
 	canvas_zoomer();
 	keyboard_events();
 	geom_select_deselect();
-
 }
 //}}}
 
