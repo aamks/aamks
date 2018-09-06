@@ -9,9 +9,9 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.1"
    id="svg3538"
-   viewBox="0 0 1046.518 933.38088"
-   height="263.42081mm"
-   width="295.35065mm"
+   viewBox="0 0 646.9384 576.99908"
+   height="162.84195mm"
+   width="182.5804mm"
    inkscape:version="0.91 r13725"
    sodipodi:docname="underlay_example.svg">
   <sodipodi:namedview
@@ -32,8 +32,8 @@
      fit-margin-right="0"
      fit-margin-bottom="0"
      inkscape:zoom="0.35355339"
-     inkscape:cx="85.924577"
-     inkscape:cy="258.91378"
+     inkscape:cx="-579.14155"
+     inkscape:cy="75.066071"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -54,7 +54,7 @@
   </metadata>
   <g
      id="g3651"
-     transform="translate(11.313708,54.244881)">
+     transform="matrix(0.61818178,0,0,0.61818178,6.9938862,33.533197)">
     <rect
        y="-54.244881"
        x="-11.313739"
