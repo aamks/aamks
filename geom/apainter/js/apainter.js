@@ -59,7 +59,7 @@ function pre_dbinsert(geom) {//{{{
 //}}}
 CreateSvg=function create_svg(geom) { //{{{
 	// Initially elements are created without x0, y0 -- mousemove produces values
-	// But this function allows reading cad.json via reader.js, 
+	// But this function allows reading cad.json via underlay.js, 
 	// hence:  if(geom.rr.x0 != null) { 
 
 	if (gg[letter].t == 'evacuee') { 
@@ -87,7 +87,7 @@ CreateSvg=function create_svg(geom) { //{{{
 }
 //}}}
 Attr_cad_json=function cad_json_dbinsert(geom) { //{{{
-	// Create cad_json attribute for the DB. reader.js uses us too.
+	// Create cad_json attribute for the DB. underlay.js uses us too.
 	if(geom.type=='door') {
 		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], "${geom.is_exit}" ]`; 
 	} else if(geom.type=='mvnt') {
@@ -99,7 +99,7 @@ Attr_cad_json=function cad_json_dbinsert(geom) { //{{{
 }
 //}}}
 DbInsert=function db_insert(geom) { //{{{
-	// Function exported for reader.js also
+	// Function exported for underlay.js also
 	var lines=[];
 	if(geom.type=='room') {
 		lines.push([geom.x0, geom.y0], [geom.x1, geom.y0], [geom.x1, geom.y1], [geom.x0, geom.y1]);
@@ -138,7 +138,7 @@ function make_gg() {//{{{
 		e: { x: "ElktD"   , xx: "E"       , t: "door"    , c: "#436"    , stroke: "#fff"    , font: "#fff",  strokewidth: 5 }   ,
 		v: { x: "VVENT"   , xx: "VVNT"    , t: "vvnt"    , c: "#ffaa00" , stroke: "#820"    , font: "#224",  strokewidth: 2.5 } ,
 		b: { x: "MVNT"    , xx: "MVNT"    , t: "mvnt"    , c: "#4e9a06" , stroke: "#080"    , font: "#fff",  strokewidth: 2.5 } ,
-		t: { x: "OBST"    , xx: "OBST"    , t: "obst"    , c: "#ad7fa8" , stroke: "#404"    , font: "#224",  strokewidth: 2.5 } ,
+		t: { x: "OBST"    , xx: "OBST"    , t: "obst"    , c: "#ad7fa8" , stroke: "#404"    , font: "#224",  strokewidth: 0.5 } ,
 		f: { x: "EVACUEE" , xx: "EVACUEE" , t: "evacuee" , c: "#fff"    , stroke: "#fff"    , font: "#444",  strokewidth: 0 }
 	}
 }
@@ -177,25 +177,6 @@ function zoomed_canvas() {//{{{
 	$("#snapper").attr("transform", zt);
 	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)));
 	ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
-}
-//}}}
-function underlay_changed() {//{{{
-	$("#g_img"+floor).remove();
-	g_img = g_aamks.append("g").attr("id", "g_img"+floor).attr("class", "g_img");
-	var _img=g_img.append("svg:image").attr("id", "img"+floor);
-	g_img.call(d3.zoom()
-		.scaleExtent([1 / 10, 40])
-		.filter(function(){
-			return (event.button === 1);
-		})
-		.translateExtent([[-10000, -10000], [10000 , 10000]])
-		.on("zoom", function() {
-			if (underlay_draggable==0) {  return; }
-			_img.attr("transform","translate("+Math.round(d3.event.transform.x)+","+Math.round(d3.event.transform.y)+")");
-			underlay_imgs[floor]['transform']=_img.attr("transform");
-			$("#underlay_translate").html(underlay_imgs[floor]['transform']);
-		})
-	)
 }
 //}}}
 function fadeout_setup_box() {//{{{
@@ -515,84 +496,6 @@ function axes() { //{{{
 		.call(ax.yAxis);
 }
 //}}}
-function setup_underlay_into_setup_box() {//{{{
-	underlay_draggable=1;
-	if(underlay_imgs[floor]==null) { 
-		underlay_imgs[floor]={};
-		var width='value=""';
-		var opacity='value=0.3';
-		var invert_colors='';
-		var fname='';
-	} else {
-		var width="value="+underlay_imgs[floor]['width'];
-		var opacity="value="+underlay_imgs[floor]['opacity'];
-		var invert_colors=underlay_imgs[floor]['invert_colors'];
-		var fname=underlay_imgs[floor]['fname'];
-	}
-	d3.select('setup-box').html(
-		"You can load an underlay png/jpg/svg.<br><br>"+
-		"You can drag the underlay img with <br>"+
-		"mouse2 only while this window is open.<br><br>"+
-		"You can only alter the width of the<br>"+ 
-		"underlay img, and the height will<br>"+
-		"change accordingly.<br><br><br>"+
-		"<input type=file label='choose' id=underlay_loader>"+
-		"<br><br><table>"+
-		"<tr><td>image<td id=underlay_img_fname>"+
-		"<tr><td>origin<td id=underlay_translate>"+
-		"<tr><td>width<td><input id=alter_underlay_width type=text size=15 "+width+">"+
-		"<tr><td>opacity<td><input id=alter_underlay_opacity type=text size=15 "+opacity+">"+
-		"<tr><td>invert colors<td><input type=checkbox id=alter_underlay_invert_colors "+invert_colors+">"+
-		"</table>"
-	);
-
-	$("#underlay_translate").html(underlay_imgs[floor]['transform']);
-	$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
-
-	$("#underlay_loader").change(function() {
-		underlay_changed();
-		renderUnderlayImage(this.files[0])
-		underlay_imgs[floor]['fname']=this.files[0].name;
-		$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
-		$("#underlay_translate").html("translate(0,0)");
-	});
-
-
-}
-//}}}
-function help_into_setup_box() {//{{{
-	d3.select('setup-box').html(
-		"<input id=general_setup type=hidden value=1>"+
-		"<table>"+
-		"<tr><td>letter + mouse1     <td> create"+
-		"<tr><td>shift + mouse2	    <td> zoom/drag"+
-		"<tr><td>double mouse1		<td> elem properties"+
-		"<tr><td>hold ctrl			<td> disable snapping"+ 
-		"<tr><td>h	<td> alternative view"+ 
-		"<tr><td>x	<td> delete active"+
-		"<tr><td>g	<td> list all of active type"+
-		"<tr><td>load cad.json<td><input type=file id=open_existing>"+
-		"<tr><td colspan=2 style='text-align: center'><br>since now"+
-		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor value="+floor+">"+ 
-		"<span id=setup_underlay>image...</span>"+
-		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
-		"<tr><td>door's width <td><input id=default_door_width type=text size=4   name=default_door_width  value="+default_door_width+">"+
-		"<tr><td>door's z-dim <td><input id=default_door_dimz type=text size=4	name=default_door_dimz value="+default_door_dimz+">"+
-		"<tr><td>room's z-dim <td><input id=default_floor_dimz type=text size=4 name=default_floor_dimz value="+default_floor_dimz+">"+
-		"</table><br><br>"
-		);
-
-	$('#setup_underlay').click(function() {
-		setup_underlay_into_setup_box();
-	});
-
-	$("#open_existing").change(function() {
-		cad_json_reader(this.files[0])
-	});
-
-
-}
-//}}}
 function change_floor() {//{{{
 	if (floor == parseInt($("#floor").val())) { 
 		return;
@@ -673,26 +576,7 @@ function save_setup_box() {//{{{
 		geom=pre_dbinsert(geom);
 		DbInsert(geom);
 	} 
-
-	if ($("#alter_underlay_opacity").val() != null) { 
-		underlay_imgs[floor]['opacity']=parseFloat($("#alter_underlay_opacity").val());
-		$("#img"+floor).attr("opacity",underlay_imgs[floor]['opacity']);
-
-		if(document.querySelector('#alter_underlay_invert_colors').checked) {
-			$("#img"+floor).attr('filter', "url(#invertColorsFilter)");
-			underlay_imgs[floor]['invert_colors']='checked';
-		} else {
-			$("#img"+floor).removeAttr("filter");
-			underlay_imgs[floor]['invert_colors']='';
-		}
-
-		if($("#alter_underlay_width").val() != "") {
-			underlay_imgs[floor]['width']=parseInt($("#alter_underlay_width").val());
-			$("#img"+floor).attr("width",underlay_imgs[floor]['width']);
-		}  else {
-			underlay_imgs[floor]['width']="";
-		}
-	}
+	save_setup_box_underlay();
 
 }
 //}}}
