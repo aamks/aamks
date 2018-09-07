@@ -25,7 +25,7 @@ function save_setup_box_underlay() {//{{{
 			underlay_imgs[floor]['invert_colors']='';
 		}
 
-		if($("#alter_underlay_width").val() != "") {
+		if($("#alter_underlay_width").val() != "" && document.getElementById(selected_geom)) {
 			underlay_imgs[floor]['width']=parseInt($("#alter_underlay_width").val());
 			var myPicXE = document.getElementById("img"+floor);
 			var myPicXO = new Image();
@@ -34,6 +34,7 @@ function save_setup_box_underlay() {//{{{
 			var from=parseInt($("#"+selected_geom).attr('width'));
 			var to=underlay_imgs[floor]['width'];
 			$("#img"+floor).attr("width", orig_width * to/from);
+			$(".underlay_scaler").remove();
 		}  else {
 			underlay_imgs[floor]['width']="";
 		}
@@ -42,7 +43,7 @@ function save_setup_box_underlay() {//{{{
 //}}}
 function underlay_changed() {//{{{
 	$("#g_img"+floor).remove();
-	g_img = g_aamks.append("g").attr("id", "g_img"+floor).attr("class", "g_img");
+	g_img = g_aamks.insert("g", "g").attr("id", "g_img"+floor).attr("class", "g_img");
 	var _img=g_img.append("svg:image").attr("id", "img"+floor);
 	g_img.call(d3.zoom()
 		.scaleExtent([1 / 10, 40])

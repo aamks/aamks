@@ -72,6 +72,7 @@ CreateSvg=function create_svg(geom) { //{{{
 		.attr('id', geom.name)
 		.attr('r', 25)
 		.attr('fill', gg[letter].c)
+		.attr('class', gg[letter].t)
 		.style('stroke', gg[letter].stroke)
 		.style('stroke-width', gg[letter].strokewidth)
 
@@ -106,40 +107,32 @@ DbInsert=function db_insert(geom) { //{{{
 	} else {
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
-	db.insert({ "name": geom.name, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
 	selected_geom=geom.name;
-	show_selected_properties(geom.name);
-	geoms_changed();
+	if(geom.type!='underlay_scaler') {
+		db.insert({ "name": geom.name, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "mvnt_offsetz": geom.mvnt_offsetz, "mvnt_throughput": geom.mvnt_throughput, "is_exit": geom.is_exit });
+		show_selected_properties(geom.name);
+		geoms_changed();
+	}
 	//console.log("painter", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvnt_offsetz", "mvnt_throughput", "name", "type", "x0", "y0", "z0", "x1", "y1", "z1"));
 }
 //}}}
 
 function make_gg() {//{{{
-	// tango https://sobac.com/sobac/tangocolors.htm
-	// Aluminium   #eeeeec #d3d7cf #babdb6
-	// Butter      #fce94f #edd400 #c4a000
-	// Chameleon   #8ae234 #73d216 #4e9a06
-	// Orange      #fcaf3e #f57900 #ce5c00
-	// Chocolate   #e9b96e #c17d11 #8f5902
-	// Sky Blue    #729fcf #3465a4 #204a87
-	// Plum        #ad7fa8 #75507b #5c3566
-	// Slate       #888a85 #555753 #2e3436
-	// Scarlet Red #ef2929 #cc0000 #a40000
-
 	return {
-		r: { x: "ROOM"    , xx: "ROOM"    , t: "room"    , c: "#729fcf" , stroke: "#fff"    , font: "#fff",  strokewidth: 5 }   ,
-		c: { x: "COR"     , xx: "COR"     , t: "room"    , c: "#3465a4" , stroke: "#fff"    , font: "#fff",  strokewidth: 5 }   ,
-		d: { x: "DOOR"    , xx: "D"       , t: "door"    , c: "#73d216" , stroke: "#73d216" , font: "#fff",  strokewidth: 5 }   ,
-		z: { x: "HOLE"    , xx: "HOLE"    , t: "hole"    , c: "#c4a000" , stroke: "#c4a000" , font: "#224",  strokewidth: 5 }   ,
-		w: { x: "WIN"     , xx: "W"       , t: "window"  , c: "#fff"    , stroke: "#fff"    , font: "#444",  strokewidth: 4 }   ,
-		s: { x: "STAI"    , xx: "STAI"    , t: "room"    , c: "#5c3566" , stroke: "#fff"    , font: "#fff",  strokewidth: 5 }   ,
-		a: { x: "HALL"    , xx: "HALL"    , t: "room"    , c: "#e9b96e" , stroke: "#fff"    , font: "#000",  strokewidth: 5 }   ,
-		q: { x: "ClosD"   , xx: "C"       , t: "door"    , c: "#cc0000" , stroke: "#cc0000" , font: "#fff",  strokewidth: 5 }   ,
-		e: { x: "ElktD"   , xx: "E"       , t: "door"    , c: "#436"    , stroke: "#fff"    , font: "#fff",  strokewidth: 5 }   ,
-		v: { x: "VVENT"   , xx: "VVNT"    , t: "vvnt"    , c: "#ffaa00" , stroke: "#820"    , font: "#224",  strokewidth: 2.5 } ,
-		b: { x: "MVNT"    , xx: "MVNT"    , t: "mvnt"    , c: "#4e9a06" , stroke: "#080"    , font: "#fff",  strokewidth: 2.5 } ,
-		t: { x: "OBST"    , xx: "OBST"    , t: "obst"    , c: "#ad7fa8" , stroke: "#404"    , font: "#224",  strokewidth: 0.5 } ,
-		f: { x: "EVACUEE" , xx: "EVACUEE" , t: "evacuee" , c: "#fff"    , stroke: "#fff"    , font: "#444",  strokewidth: 0 }
+		r: { legendary: 1 , x: "ROOM"            , xx: "ROOM"            , t: "room"            , c: "#729fcf" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
+		c: { legendary: 1 , x: "COR"             , xx: "COR"             , t: "room"            , c: "#3465a4" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
+		d: { legendary: 1 , x: "DOOR"            , xx: "D"               , t: "door"            , c: "#73d216" , stroke: "#73d216" , font: "#fff" , strokewidth: 5 }   ,
+		z: { legendary: 1 , x: "HOLE"            , xx: "HOLE"            , t: "hole"            , c: "#c4a000" , stroke: "#c4a000" , font: "#224" , strokewidth: 5 }   ,
+		w: { legendary: 1 , x: "WIN"             , xx: "W"               , t: "window"          , c: "#fff"    , stroke: "#fff"    , font: "#444" , strokewidth: 4 }   ,
+		s: { legendary: 1 , x: "STAI"            , xx: "STAI"            , t: "room"            , c: "#5c3566" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
+		a: { legendary: 1 , x: "HALL"            , xx: "HALL"            , t: "room"            , c: "#e9b96e" , stroke: "#fff"    , font: "#000" , strokewidth: 5 }   ,
+		q: { legendary: 1 , x: "ClosD"           , xx: "C"               , t: "door"            , c: "#cc0000" , stroke: "#cc0000" , font: "#fff" , strokewidth: 5 }   ,
+		e: { legendary: 1 , x: "ElktD"           , xx: "E"               , t: "door"            , c: "#436"    , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
+		v: { legendary: 1 , x: "VVENT"           , xx: "VVNT"            , t: "vvnt"            , c: "#ffaa00" , stroke: "#820"    , font: "#224" , strokewidth: 2.5 } ,
+		b: { legendary: 1 , x: "MVNT"            , xx: "MVNT"            , t: "mvnt"            , c: "#4e9a06" , stroke: "#080"    , font: "#fff" , strokewidth: 2.5 } ,
+		t: { legendary: 1 , x: "OBST"            , xx: "OBST"            , t: "obst"            , c: "#ad7fa8" , stroke: "#404"    , font: "#224" , strokewidth: 0.5 } ,
+		f: { legendary: 1 , x: "EVACUEE"         , xx: "EVACUEE"         , t: "evacuee"         , c: "#fff"    , stroke: "#fff"    , font: "#444" , strokewidth: 0 }   ,
+		p: { legendary: 0 , x: "UNDERLAY_SCALER" , xx: "UNDERLAY_SCALER" , t: "underlay_scaler" , c: "#f0f"    , stroke: "#fff"    , font: "#444" , strokewidth: 0 }   ,
 	}
 }
 //}}}
@@ -180,6 +173,7 @@ function zoomed_canvas() {//{{{
 }
 //}}}
 function fadeout_setup_box() {//{{{
+	if(gg[letter].t == 'underlay_scaler') { return; }
 	$('setup-box').fadeOut(0);
 	underlay_draggable=0;
 }
@@ -191,29 +185,10 @@ function keyboard_events() {//{{{
 		}
 	});
 
-	$(this).keydown((e) => { 
-		if (e.key == 'Shift') { 
-			$("#zoomer").attr("visibility", "visible");
-		}
-	});
-
-	$(this).keydown((e) => { 
-		if (e.key == 'h') { 
-			alternative_view();
-		}
-	});
-
-	$(this).keyup((e) => { 
-		if (e.key == 'Shift') { 
-			$("#zoomer").attr("visibility", "hidden");
-		}
-	});
-
-	$(this).keypress((e) => { 
-		if (e.key == 'g') { 
-			properties_type_listing(droplist_letter);
-		}
-	});
+	$(this).keydown((e) =>  { if (e.key == 'h')     { alternative_view(); } });
+	$(this).keypress((e) => { if (e.key == 'g')     { properties_type_listing(droplist_letter); } });
+	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "hidden"); } });
+	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "visible"); } });
 }
 //}}}
 function geom_select_deselect() { //{{{
@@ -384,11 +359,11 @@ function make_door_properties(letter) {//{{{
 }
 //}}}
 function show_selected_properties(selected_geom) {//{{{
+	var letter=db({'name':selected_geom}).select("letter")[0];
 	var stroke_width=$("#"+selected_geom).css('stroke-width');
 	$("#"+selected_geom).css('stroke-width', '50px');
 	$("#"+selected_geom).animate({ 'stroke-width': stroke_width }, 300);
 
-	var letter=db({'name':selected_geom}).select("letter")[0];
 	mvnt_properties=make_mvnt_properties(letter);
 	door_properties=make_door_properties(letter);
 	dim_properties=make_dim_properties(letter);
@@ -450,9 +425,10 @@ function legend() { //{{{
 	$('legend').html('');
 
 	for(var letter in gg) {
-		var x=db({"letter": letter}).select("name");
-		$('legend').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+" ("+x.length+")</div>");
-
+		if(gg[letter].legendary==1) { 
+			var x=db({"letter": letter}).select("name");
+			$('legend').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+" ("+x.length+")</div>");
+		}
 	}
 	$('legend').append("&nbsp;&nbsp;<open3dview>[3dview]</open3dview>");
 	$('legend').append(" <write>[save]</write>");
@@ -747,7 +723,7 @@ function new_geom(letter) {//{{{
 	var self = this;
 	create_self_props(self, letter);
 
-	fadeout_setup_box();
+	fadeout_setup_box(); 
 	svg.on('mousedown', function() {
 		after_click=1;
 		CreateSvg(self);
