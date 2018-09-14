@@ -6,7 +6,8 @@ function renderUnderlayImage(file) {//{{{
 		pdf_handle();
 	} else {
 		reader.onload = function(event) {
-			$('#img'+floor).attr("href", event.target.result)
+			$('#img'+floor).attr("href", event.target.result);
+			$('#img'+floor).attr("width", 8000);
 		}
 		reader.readAsDataURL(file);
 	}
@@ -27,13 +28,10 @@ function save_setup_box_underlay() {//{{{
 
 		if($("#alter_underlay_width").val() != "" && document.getElementById(selected_geom)) {
 			underlay_imgs[floor]['width']=parseInt($("#alter_underlay_width").val());
-			var myPicXE = document.getElementById("img"+floor);
-			var myPicXO = new Image();
-			myPicXO.src = myPicXE.getAttribute('href');
-			var orig_width=myPicXO.width;
-			var from=parseInt($("#"+selected_geom).attr('width'));
-			var to=underlay_imgs[floor]['width'];
-			$("#img"+floor).attr("width", orig_width * to/from);
+			var uReq=parseInt($("#alter_underlay_width").val());
+			var uRect=parseInt($("#"+selected_geom).attr('width'));
+			var uImg=parseInt($("#img"+floor).attr('width'));
+			$("#img"+floor).attr("width", uImg * uReq/uRect);
 			$(".underlay_scaler").remove();
 		}  else {
 			underlay_imgs[floor]['width']="";
@@ -233,7 +231,7 @@ function read_record(floor,letter,arr,ii) { //{{{
 //}}}
 function pdf_svg_dom(data) { //{{{
 	$('#img'+floor).attr("href", 'data:image/svg+xml;utf8,'+data.svg);
-
+	$('#img'+floor).attr("width", 8000);
 }
 //}}}
 function pdf_handle() { //{{{
