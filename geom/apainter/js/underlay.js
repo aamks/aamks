@@ -86,8 +86,13 @@ function setup_underlay_into_setup_box() {//{{{
 		"<tr><td>scaler width<td><input id=alter_underlay_width type=text size=15 "+width+"> <a href=underlay_example.svg target=_blank> <help>&nbsp;[help]</help></a>"+
 		"<tr><td>opacity<td><input id=alter_underlay_opacity type=text size=15 "+opacity+">"+
 		"<tr><td>invert colors<td><input type=checkbox id=alter_underlay_invert_colors "+invert_colors+">"+
-		"</table>"
+		"</table>"+
+		"<br><button id=remove_img>remove image</button>"
 	);
+
+	$("#remove_img").click(function() {
+		$("#img"+floor).remove();
+	});
 
 	$("#underlay_translate").html(underlay_imgs[floor]['transform']);
 	$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
