@@ -26,6 +26,7 @@ var default_door_width=90;
 var default_floor_dimz=350;
 var underlay_imgs={};
 var underlay_draggable=0;
+var vh_snap=[];
 //}}}
 //
 $(function()  { 
@@ -586,110 +587,79 @@ function fix_hole_offset(rect) { //{{{
 	return rect;
 }
 //}}}
-function snap_basic(m,rect,after_click) {//{{{
-	d3.selectAll('.snap_v').attr('visibility', 'hidden');
-	d3.selectAll('.snap_h').attr('visibility', 'hidden');
-	$('#snapper').attr('fill-opacity', 0);
-	if (event.ctrlKey) {
-		return;
-	} 
-	var vh_snap=[];
-
+function snap_vertical(m,rect,after_click) {//{{{
 	for(var point in snap_lines['vert']) {
 		p=snap_lines['vert'][point];
-		if (	
-
-			(m[0]-zt.x)/zt.k > p - snap_dist &&
-			(m[0]-zt.x)/zt.k < p + snap_dist ) { 
-				if (rect.type=='room') { 
-					if(after_click==1) { 
-						rect.rr.x1=p;
-					} else {
-						rect.rr.x0=p;
-					}
-				} else {
-					if(after_click==1) { 
-						rect.rr.x1=p+16;
-					} else {
-						rect.rr.x0=p-16;
-					}
-				}
-				$("#sv_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: (m[1]-zt.y)/zt.k, cx: p });
-				vh_snap.push(p);
-				break;
-		}
-	}
-
-	for(var point in snap_lines['horiz']) {
-		p=snap_lines['horiz'][point];
-		if (	
-			(m[1]-zt.y)/zt.k > p - snap_dist &&
-			(m[1]-zt.y)/zt.k < p + snap_dist ) { 
-				if (rect.type=='room') { 
-					if(after_click==1) { 
-						rect.rr.y1=p;
-					} else {
-						rect.rr.y0=p;
-					}
-				} else {
-					if(after_click==1) { 
-						rect.rr.y1=p-16;
-					} else {
-						rect.rr.y0=p+16;
-					}
-				}
-				$("#sh_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: (m[0]-zt.x)/zt.k, cy: p });
-				vh_snap.push(p);
-				break;
-		}
-	}
-	if(vh_snap.length==2) { 
-		$('#snapper').attr({ r: 30, cx: vh_snap[0], cy: vh_snap[1]});
-	}
-}
-
-//}}}
-function snap_door(m,rect,after_click) {//{{{
-	d3.selectAll('.snap_v').attr('visibility', 'hidden');
-	d3.selectAll('.snap_h').attr('visibility', 'hidden');
-	$('#snapper').attr('fill-opacity', 0);
-	if (event.ctrlKey) {
-		return;
-	} 
-	var vh_snap=[];
-
-	for(var point in snap_lines['vert']) {
-		p=snap_lines['vert'][point];
-		if (	
-			(m[0]-zt.x)/zt.k > p - snap_dist &&
-			(m[0]-zt.x)/zt.k < p + snap_dist ) { 
+		if ((m[0]-zt.x)/zt.k > p - snap_dist && (m[0]-zt.x)/zt.k < p + snap_dist) { 
+			$("#sv_"+p).attr("visibility", "visible");
+			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: (m[1]-zt.y)/zt.k, cx: p });
+			vh_snap.push(p);
+			if (rect.type=='door') {
 				rect.rr.x0=p-16;
 				rect.rr.x1=p+16;
 				rect.rr.y0=(m[1]-zt.y)/zt.k;
 				rect.rr.y1=(m[1]-zt.y)/zt.k-default_door_width;
-				$("#sv_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: (m[1]-zt.y)/zt.k, cx: p });
-				vh_snap.push(p);
 				return;
+			} else if (rect.type=='room') { 
+				if(after_click==1) { 
+					rect.rr.x1=p;
+				} else {
+					rect.rr.x0=p;
+				}
+			} else {
+				if(after_click==1) { 
+					rect.rr.x1=p+16;
+				} else {
+					rect.rr.x0=p-16;
+				}
+			}
+			break;
 		}
 	}
-
+}
+//}}}
+function snap_horizontal(m,rect,after_click) {//{{{
 	for(var point in snap_lines['horiz']) {
 		p=snap_lines['horiz'][point];
-		if (	
-			(m[1]-zt.y)/zt.k > p - snap_dist &&
-			(m[1]-zt.y)/zt.k < p + snap_dist ) { 
+		if ((m[1]-zt.y)/zt.k > p - snap_dist && (m[1]-zt.y)/zt.k < p + snap_dist) { 
+			$("#sh_"+p).attr("visibility", "visible");
+			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: (m[0]-zt.x)/zt.k, cy: p });
+			vh_snap.push(p);
+			if(rect.type=='door') {
 				rect.rr.y0=p-16;
 				rect.rr.y1=p+16;
 				rect.rr.x0=(m[0]-zt.x)/zt.k;
 				rect.rr.x1=(m[0]-zt.x)/zt.k+default_door_width;
-				$("#sh_"+p).attr("visibility", "visible");
-				$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: (m[0]-zt.x)/zt.k, cy: p });
-				vh_snap.push(p);
 				return;
+			} else if (rect.type=='room') { 
+				if(after_click==1) { 
+					rect.rr.y1=p;
+				} else {
+					rect.rr.y0=p;
+				}
+			} else {
+				if(after_click==1) { 
+					rect.rr.y1=p-16;
+				} else {
+					rect.rr.y0=p+16;
+				}
+			}
+			break;
 		}
+	}
+}
+//}}}
+function snap(m,rect,after_click) {//{{{
+	d3.selectAll('.snap_v').attr('visibility', 'hidden');
+	d3.selectAll('.snap_h').attr('visibility', 'hidden');
+	$('#snapper').attr('fill-opacity', 0);
+	if (event.ctrlKey) { return; } 
+	vh_snap=[];
+	snap_vertical(m,rect,after_click);
+	snap_horizontal(m,rect,after_click);
+
+	if(rect.type!='door' && vh_snap.length==2) { 
+		$('#snapper').attr({ r: 30, cx: vh_snap[0], cy: vh_snap[1]});
 	}
 }
 
@@ -744,10 +714,8 @@ function new_geom(letter) {//{{{
 		self.rr.y1=my;
 		self.rr.cx=mx;
 		self.rr.cy=my;
-		if(['room', 'hole', 'window'].includes(self.type)) { 
-			snap_basic(mouse,self,after_click);
-		} else if(['door'].includes(self.type)) {
-			snap_door(mouse,self,after_click);
+		if(['room', 'hole', 'window', 'door'].includes(self.type)) { 
+			snap(mouse,self,after_click);
 		}
 		if(after_click==1) { updateSvgElem(self); } // todo: is not always respected
 	});  
