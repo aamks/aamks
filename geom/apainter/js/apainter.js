@@ -28,11 +28,11 @@ var underlay_imgs={};
 var underlay_draggable=0;
 var vh_snap=[];
 //}}}
-//
+
 $(function()  { 
 site();
 
-function pre_dbinsert(geom) {//{{{
+function rrRecalculate(geom) {//{{{
 	// real x,y are calculated as minimum/maximum values from rr
 	// z needs separate calculations here.
 
@@ -59,10 +59,6 @@ function pre_dbinsert(geom) {//{{{
 }
 //}}}
 CreateSvg=function create_svg(geom) { //{{{
-	// Initially elements are created without x0, y0 -- mousemove produces values
-	// But this function allows reading cad.json via underlay.js, 
-	// hence:  if(geom.rr.x0 != null) { 
-
 	if (gg[letter].t == 'evacuee') { 
 		var elem='circle';
 	} else {
@@ -77,15 +73,13 @@ CreateSvg=function create_svg(geom) { //{{{
 		.style('stroke', gg[letter].stroke)
 		.style('stroke-width', gg[letter].strokewidth)
 
-	if(geom.x0 != null) { 
-		$("#"+geom.name)
+	$("#"+geom.name)
 		.attr('x', geom.x0)
 		.attr('y', geom.y0)
 		.attr('cx', geom.x0)
 		.attr('cy', geom.y0)
 		.attr('width', geom.x1 - geom.x0)
 		.attr('height', geom.y1 - geom.y0)
-	}
 }
 //}}}
 Attr_cad_json=function cad_json_dbinsert(geom) { //{{{
@@ -550,7 +544,7 @@ function save_setup_box() {//{{{
 		db({"name":$("#alter_name").val()}).remove();
 		updateSvgElem(geom);
 		updateExitDoor(geom);
-		geom=pre_dbinsert(geom);
+		geom=rrRecalculate(geom);
 		DbInsert(geom);
 	} 
 	save_setup_box_underlay();
@@ -686,22 +680,28 @@ function create_self_props(self, letter) {//{{{
 function new_geom(letter) {//{{{
 	// After a letter is clicked we react to mouse events
 	// The most tricky scenario is when first mouse click happens before mousemove.
+	// geom.rr.x0 & friends are temporary -- we don't want to recalculate min, max, width, heigh on every mouse drag
+	// geom.x0 & friends are for db and some svg operations
 	counter++;
 	var mouse;
 	var after_click=0;
 	var mx, my;
 	var self = this;
 	create_self_props(self, letter);
-
 	fadeout_setup_box(); 
 	svg.on('mousedown', function() {
 		after_click=1;
+		mouse=d3.mouse(this);
+		mx=Math.round((mouse[0]-zt.x)/zt.k);
+		my=Math.round((mouse[1]-zt.y)/zt.k);
+		self.x0=mx;
+		self.x1=mx;
+		self.y0=my;
+		self.y1=my;
 		CreateSvg(self);
 	});
-
 	svg.on('mousemove', function() {
 		mouse=d3.mouse(this);
-
 		mx=Math.round((mouse[0]-zt.x)/zt.k);
 		my=Math.round((mouse[1]-zt.y)/zt.k);
 		if (after_click==0) { 
@@ -717,27 +717,27 @@ function new_geom(letter) {//{{{
 		if(['room', 'hole', 'window', 'door'].includes(self.type)) { 
 			snap(mouse,self,after_click);
 		}
-		if(after_click==1) { updateSvgElem(self); } // todo: is not always respected
+		if(after_click==1) { updateSvgElem(self); } 
 	});  
-
 	svg.on('mouseup', function() {
 		svg.on('mousedown', null);
 		svg.on('mousemove', null);
 		svg.on('mouseup', null);
+		if(self.type=='evacuee') { 
+			self.rr = { 'x0': self.x0, 'x1': self.x0+1, 'y0': self.y0, 'y1': self.y0+1 };
+		}
 		if(self.rr.x0 == self.rr.x1 || self.rr.y0 == self.rr.y1 || self.rr.x0 == null) { 
 			$("#"+self.name).remove();
 			counter--;
 		} else {
 			if (['hole', 'window'].includes(self.type)) { self=fix_hole_offset(self); }
 			updateSvgElem(self);
-			self=pre_dbinsert(self);
+			self=rrRecalculate(self);
 			DbInsert(self);
 		}
 		after_click=0;
 		$('#snapper').attr('fill-opacity', 0);
 	});
-
-
 }
 //}}}
 function updateSvgElem(geom) {  //{{{
