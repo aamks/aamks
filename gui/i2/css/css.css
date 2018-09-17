@@ -25,40 +25,6 @@ th {
 	border: 1px solid #555;
 }
 
-img {
-	display: block;
-	margin-left: auto;
-	margin-right: auto;
-	padding: 10px
-}
-
-
-page {
-	display: block;
-	text-align: center;
-	margin: 20px 0px 20px 0px;
-	padding: 10px;
-	background: #222;
-	font-size: 20px;
-}
-
-section {
-	display: block;
-	text-align: center;
-	margin: 30px 0px 10px 0px;
-	padding: 4px;
-	background: #222;
-	font-size: 14px;
-}
-
-
-answer {
-	padding: 4px;
-	margin:2px;
-	cursor: default;
-	user-select: none;
-}
-
 .visible {
 	display: block;
 }
@@ -104,7 +70,7 @@ a.blink {
     padding:4px 8px; 
     border-radius: 2px; 
 	color: #fff;
-    background:#06a;
+    background:#68a;
     border:0 none;
     cursor:pointer;
 	display: inline-block;

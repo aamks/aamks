@@ -67,13 +67,11 @@ class Aamks {/*{{{*/
 	}
 /*}}}*/
 	public function logoutButton() {/*{{{*/
-		if(isset($_REQUEST['wyloguj'])) { session_destroy(); header('Location: /login.php'); }
-		if(empty($_SESSION['user_id'])) { header('Location: /login.php'); }
+		if(isset($_REQUEST['logout'])) { session_destroy(); header('Location: /i2/i2.php'); }
+		//if(empty($_SESSION['user_id'])) { header('Location: /login.php'); }
 		echo "
 		<div style='float:right; text-align:right; font-size:12px'>
-		<a class=blink href=pracownicy.php?edit=$_SESSION[user_id]>$_SESSION[user]</a> 
-		<a class=blink href=/aamks>Start</a> 
-		<a href=?wyloguj=1 class=blink>Wyloguj</a>
+		<a href=?logout=1 class=blink>Logout</a>
 		</div>
 		";
 	}
