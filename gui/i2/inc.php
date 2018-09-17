@@ -71,6 +71,7 @@ class Aamks {/*{{{*/
 		//if(empty($_SESSION['user_id'])) { header('Location: /login.php'); }
 		echo "
 		<div style='float:right; text-align:right; font-size:12px'>
+		<a href=?projects class=blink>My projects</a>
 		<a href=?logout=1 class=blink>Logout</a>
 		</div>
 		";

@@ -4,10 +4,9 @@ require_once("inc.php") ;
 
 function menu() { /*{{{*/
 	echo "
-	<img width=160 src=logo.svg><br>
+	<img width=160 src=logo.svg><br><br><br>
 	<a href=/apainter class=blink>Create geometry</a><br>
 	<a href=/aamks/workers/vis/master.html class=blink>Visualization</a><br>
-	<a href=?projects class=blink>My projects</a><br>
 	";
 }
 /*}}}*/
