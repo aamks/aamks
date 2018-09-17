@@ -2,7 +2,7 @@
 session_name('aamks');
 require_once("inc.php") ; 
 
-function menu() {{{{
+function menu() { /*{{{*/
 	echo "
 	<img width=160 src=logo.svg><br>
 	<a href=/apainter class=blink>Create geometry</a><br>
