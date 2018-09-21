@@ -46,7 +46,6 @@ export class DecimalInputDirective {
       this.el.style.boxShadow = '0 -1px 0 #303030 inset'
     }
 
-
   }
 
 }
