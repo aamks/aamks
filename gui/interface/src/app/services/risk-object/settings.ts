@@ -131,7 +131,7 @@ export class Settings {
      * @param {number} value
      */
 	public set cConst(value: number) {
-		this._cConst = value;
+		this._cConst = +value;
 	}
 
     /**

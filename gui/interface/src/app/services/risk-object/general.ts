@@ -75,7 +75,7 @@ export class General {
      * @param {number} value
      */
 	public set simulationTime(value: number) {
-		this._simulationTime = value;
+		this._simulationTime = +value;
 	}
 
     /**
@@ -91,7 +91,7 @@ export class General {
      * @param {number} value
      */
 	public set numberOfSimulations(value: number) {
-		this._numberOfSimulations = value;
+		this._numberOfSimulations = +value;
 	}
 
     /**
@@ -107,7 +107,7 @@ export class General {
      * @param {number} value
      */
 	public set indoorTemperature(value: number) {
-		this._indoorTemperature = value;
+		this._indoorTemperature = +value;
 	}
 
     /**
@@ -123,7 +123,7 @@ export class General {
      * @param {number} value
      */
 	public set indoorTemperatureSd(value: number) {
-		this._indoorTemperatureSd = value;
+		this._indoorTemperatureSd = +value;
 	}
 
     /**
@@ -139,7 +139,7 @@ export class General {
      * @param {number} value
      */
 	public set elevation(value: number) {
-		this._elevation = value;
+		this._elevation = +value;
 	}
 
     /**
@@ -155,7 +155,7 @@ export class General {
      * @param {number} value
      */
 	public set indoorPressure(value: number) {
-		this._indoorPressure = value;
+		this._indoorPressure = +value;
 	}
 
     /**
@@ -171,7 +171,7 @@ export class General {
      * @param {number} value
      */
 	public set humidity(value: number) {
-		this._humidity = value;
+		this._humidity = +value;
 	}
 
     /**
@@ -187,7 +187,7 @@ export class General {
      * @param {number} value
      */
 	public set outdoorTemperature(value: number) {
-		this._outdoorTemperature = value;
+		this._outdoorTemperature = +value;
 	}
 
     /**
@@ -203,7 +203,7 @@ export class General {
      * @param {number} value
      */
 	public set outdoorTemperatureSd(value: number) {
-		this._outdoorTemperatureSd = value;
+		this._outdoorTemperatureSd = +value;
 	}
 
 	public toJSON(): object {
