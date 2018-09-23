@@ -14,7 +14,7 @@ $menu="
 
 $nodes['about']=array("About Aamks", /*{{{*/
 "
-Aamks is an open-source linux platform for assesing fire safety of humans in
+Aamks is an open-source linux platform for assessing fire safety of humans in
 buildings. It runs hundreds or thousands of fire simulations (CFAST) and
 evacuation simulations (a-evac) and then evaluates the results.
 
