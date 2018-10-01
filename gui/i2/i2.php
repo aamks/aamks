@@ -6,7 +6,7 @@ function login_form(){/*{{{*/
     <br><br>
     <form method=POST>
     <center>
-    <h1>AAMKS</h1>
+	<img src=logo.svg>
     <table>
     <tr><td>email<td><input name=login  placeholder='email' size=32 required autocomplete='off' >
     <tr><td>password<td><input type=password name='password' size=32 placeholder='password' >
