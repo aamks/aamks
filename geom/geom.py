@@ -419,24 +419,29 @@ class Geom():
             6: [49, 11]
             
         v=sorted(v) asserts that we go from lower_vent_id to higher_vent_id
+
+        Also, we need to make sure room A and room B do intersect if there is door from A to B.
         '''
 
-        all_hvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='HVENT' ORDER BY name") ]
-        vc_intersections={key:[] for key in all_hvents }
-
+        update=[]
         for floor,vents_dict in self.aamks_polies['HVENT'].items():
+            all_hvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='HVENT' AND floor=? ORDER BY name", floor) ]
+            vc_intersections={key:[] for key in all_hvents }
             for vent_id,vent_poly in vents_dict.items():
                 for compa_id,compa_poly in self.aamks_polies['COMPA'][floor].items():
                     if vent_poly.intersection(compa_poly).length > self._doors_width:
                         vc_intersections[vent_id].append(compa_id)
 
-        update=[]
-        for vent_id,v in vc_intersections.items():
-            v=sorted(v)
-            v.append(self.outside_compa)
-            if len(v) not in (2,3):
-                self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
-            update.append((v[0], v[1], vent_id))
+            for vent_id,v in vc_intersections.items():
+                v=sorted(v)
+                if len(v) >= 2: # TODO: How should we handle the third room in the spacing problem? Separate def() at least.
+                    if self.aamks_polies['COMPA']["0"][v[0]].intersection(self.aamks_polies['COMPA']["0"][v[1]]).length < 1:
+                        print("Floor {}: Space between compas".format(floor), v)
+
+                v.append(self.outside_compa)
+                if len(v) not in (2,3):
+                    self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
+                update.append((v[0], v[1], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", update)
 
 # }}}

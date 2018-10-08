@@ -11,6 +11,11 @@
 # your desktop, create your jabber account and make sure it works. Aamks may send
 # you some messages while it works. 
 
+# By convention users dirs are as follows:
+# /home/aamks_users/user1@gmail.com
+# /home/aamks_users/user2@hotmail.com
+# ...
+
 # CONFIGURATION, must copy to ~/.bashrc
 
 AAMKS_SERVER=127.0.0.1
@@ -19,6 +24,7 @@ AAMKS_TESTING=0
 AAMKS_PG_PASS='hulakula' 
 AAMKS_USE_GEARMAN=1
 AAMKS_PATH='/usr/local/aamks'
+AAMKS_PROJECT="/home/aamks_users/mimoohowy@gmail.com/1/risk/1" # TODO: need to invent some default project 
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 
 # END OF CONFIGURATION
@@ -47,16 +53,8 @@ echo "export AAMKS_PG_PASS='$AAMKS_DB_PASS'" >> $temp
 sudo cp $temp /etc/apache2/envvars
 rm $temp
 
-sudo rm -rf "$AAMKS_PATH/current"
-sudo mkdir -p "$AAMKS_PATH/current"
 sudo mkdir -p "$AAMKS_PROJECT"
-sudo rm -rf "$AAMKS_PROJECT" # only 'current' will be removed to make space for incoming link
-sudo ln -sf "$AAMKS_PATH/current" "$AAMKS_PROJECT"
-sudo cp $AAMKS_PATH/examples/three/*  $AAMKS_PATH/current/
-
-sudo mkdir -p /home/aamks/
 sudo chown -R $USER $AAMKS_PATH
-sudo chown -R $USER /home/aamks
 sudo chown -R $USER /home/aamks_users
 
 # www gui installer
