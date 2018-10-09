@@ -23,14 +23,18 @@ class SmokeQuery:
 
     def __init__(self, floor):
         '''
-        * On class init we read tessellation and such (happens once).
-        * We are getting read_cfast_record(T) calls in say 5s intervals:
+        * On class init we read cell2compa map and and query_vertices from sqlite.
+        * We are getting read_cfast_record(T) calls in say 10s intervals:
           We only store this single T'th record in a dict.
         * We are getting lots of get_conditions((x,y),param) calls after
           read_cfast_record(T) returns the needed CFAST record.
 
-        Map each cell to a compa:
-            (1000, 600): R_1,  (1100, 600): R_2,  ...
+        Sqlite sends: 
+            a) cell2compa:
+                (1000, 600): R_1
+
+            b) query_vertices:
+                (1000, 600): [1000, 1100, 1200], [ 10, 10, 12 ]
 
         After CFAST produces the conditions at time T, feed _compa_conditions.
         For any evacuee's (x,y) it will be easy to find the square he is in. If
@@ -42,13 +46,39 @@ class SmokeQuery:
         try:
             self.s=Sqlite("aamks.sqlite", 1)
         except:
-            print("mimooh finals CFAST fallback, not for production!")
+            print("mimooh CFAST fallback, not for production!")
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 1)
 
         self.config=self.json.read('{}/evac/config.json'.format(os.environ['AAMKS_PATH']))
-        #self._read_tessellation(floor)
+        self._sqlite_query_vertices(floor)
+        self._sqlite_cell2compa(floor)
         self._init_compa_conditions()
-        #self._cfast_headers()
+        print("smoke_query, enable me")
+        #self._cfast_headers() # TODO needs to enable!
+
+    def _sqlite_query_vertices(self, floor):# {{{
+        ''' 
+        Python has this nice dict[(1,2)], but json cannot handle it. We have
+        passed it as dict['1x2'] and now need to bring back from str to
+        tuple.
+        '''
+
+        son=json.loads(self.s.query("SELECT * FROM query_vertices")[0]['json'])
+        d=son[floor]
+        self._square_side=d['square_side']
+        self._query_vertices=OrderedDict()
+        for k,v in d['query_vertices'].items():
+            z=tuple( int(n) for n in k.split("x") )
+            self._query_vertices[z]=v
+# }}}
+    def _sqlite_cell2compa(self, floor):# {{{
+        son=json.loads(self.s.query("SELECT * FROM cell2compa")[0]['json'])
+        d=son[floor]
+        self._cell2compa=OrderedDict()
+        for k,v in d.items():
+            z=tuple( int(n) for n in k.split("x") )
+            self._cell2compa[z]=v
+# }}}
 
     def _results(self,query,cell):# {{{
         ''' Outside is for debugging - should never happen in aamks. '''

@@ -41,22 +41,24 @@ class CfastPartition():
         self._square_side=300
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         try:
-            self.s.query("DROP TABLE partition")
+            self.s.query("DROP TABLE cell2compa")
+            self.s.query("DROP TABLE query_vertices")
         except:
             pass
-        self.s.query("CREATE TABLE partition(json)")
+        self.s.query("CREATE TABLE cell2compa(json)")
+        self.s.query("CREATE TABLE query_vertices(json)")
 
         self.json=Json() 
+        self._cell2compa=OrderedDict()
         self._save=OrderedDict()
         floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
         for floor in floors.keys():
             self._init_space(floor) 
             self._intersect_space() 
             self._optimize(floor)
-            self._read_partition(floor)
-            self._make_cell2compa()
-            # self._plot_space(floor)  # debug
-        #Vis(None, 'image', 'partition') # debug
+            self._make_cell2compa(floor)
+            self._plot_space(floor)  # debug
+        Vis(None, 'image', 'partition') # debug
         self._dbsave()
 # }}}
     def _init_space(self,floor):# {{{
@@ -69,7 +71,7 @@ class CfastPartition():
         self.rectangles=OrderedDict()
         self.lines=[]
 
-        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY x0,y0"):
+        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY x0,y0", (floor,)):
             self.lines.append(LineString([ Point(i['x0'],i['y0']), Point(i['x0'], i['y1'])] ))
             self.lines.append(LineString([ Point(i['x0'],i['y0']), Point(i['x1'], i['y0'])] ))
             self.lines.append(LineString([ Point(i['x1'],i['y1']), Point(i['x0'], i['y1'])] ))
@@ -106,7 +108,7 @@ class CfastPartition():
         * self.rectangles must have duplicates removed and must be sorted by x
         * xy_vectors must be of the form: [ [x0,x1,x2,x3], [y0,y1,y2,y3] ]. 
 
-        query_vertices are of the form:
+        self._query_vertices are of the form:
 
         square        : optimized rectangles 
         (1000 , -1000): OrderedDict([('x' , (1000 , 1100)) , ('y' , (-1000 , -1000))])
@@ -121,22 +123,23 @@ class CfastPartition():
             rects.append(id_)
             self.rectangles[id_]=list(sorted(set(rects)))
 
-        query_vertices=OrderedDict()
+        self._query_vertices=OrderedDict()
         for id_,v in self.rectangles.items():
-            query_vertices[str(id_)]=OrderedDict()
+            self._query_vertices[id_]=OrderedDict()
             xy_vectors=list(zip(*self.rectangles[id_]))
             try:
-                query_vertices[str(id_)]['x']=xy_vectors[0]
-                query_vertices[str(id_)]['y']=xy_vectors[1]
+                self._query_vertices[id_]['x']=xy_vectors[0]
+                self._query_vertices[id_]['y']=xy_vectors[1]
             except:
-                query_vertices[str(id_)]['x']=()
-                query_vertices[str(id_)]['y']=()
+                self._query_vertices[id_]['x']=()
+                self._query_vertices[id_]['y']=()
 
         self._save[floor]=OrderedDict()
         self._save[floor]['square_side']=self._square_side
-        self._save[floor]['query_vertices']=query_vertices
-
-# }}}
+        self._save[floor]['query_vertices']=OrderedDict()
+        for k,v in self._query_vertices.items():
+            cell_str="{}x{}".format(k[0], k[1])
+            self._save[floor]['query_vertices'][cell_str]=v
 # }}}
     def _intersect_space(self):# {{{
         ''' 
@@ -161,7 +164,7 @@ class CfastPartition():
         radius=5
         a=self._square_side
         for k,v in self.rectangles.items():
-            z[floor]['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 20 , "opacity": 0.2 } )
+            z[floor]['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 2 , "opacity": 0.2 } )
             z[floor]['circles'].append(    { "xy": k, "radius": radius , "fillColor": "#fff", "opacity": 0.3 } )
             z[floor]['texts'].append(      { "xy": k, "content": k, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
             for mm in v:
@@ -170,22 +173,22 @@ class CfastPartition():
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
 
-    def _make_cell2compa_record(self,cell):# {{{
+    def _make_cell2compa_record(self,cell,floor):# {{{
+        cell_str="{}x{}".format(cell[0], cell[1])
         try:
-            self._cell2compa[cell]=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' " "AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['name']
+            self._cell2compa[floor][cell_str]=self.s.query("SELECT name from aamks_geom WHERE floor=? AND type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (floor, cell[0], cell[1], cell[0], cell[1]))[0]['name']
         except:
             pass
 # }}}
-    def _make_cell2compa(self):#{{{
-        self._cell2compa=OrderedDict()
+    def _make_cell2compa(self,floor):#{{{
+        self._cell2compa[floor]=OrderedDict()
         for k,v in self._query_vertices.items():
-            self._make_cell2compa_record(k)
+            self._make_cell2compa_record(k,floor)
             for pt in list(zip(v['x'], v['y'])):
-                self._make_cell2compa_record(pt)
-        dd(self._cell2compa)
+                self._make_cell2compa_record(pt,floor)
 #}}}
 
     def _dbsave(self):# {{{
-        #dd(self._save["0"]['query_vertices'])
-        self.s.query('INSERT INTO partition VALUES (?)', (json.dumps(self._save),))
+        self.s.query('INSERT INTO cell2compa VALUES (?)'     , (json.dumps(self._cell2compa),))
+        self.s.query('INSERT INTO query_vertices VALUES (?)' , (json.dumps(self._save),))
 # }}}
