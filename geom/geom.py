@@ -434,9 +434,9 @@ class Geom():
 
             for vent_id,v in vc_intersections.items():
                 v=sorted(v)
-                if len(v) >= 2: # TODO: How should we handle the third room in the spacing problem? Separate def() at least.
-                    if self.aamks_polies['COMPA']["0"][v[0]].intersection(self.aamks_polies['COMPA']["0"][v[1]]).length < 1:
-                        print("Floor {}: Space between compas".format(floor), v)
+                # if len(v) >= 2: # TODO: How should we handle the third room in the spacing problem? Separate def() at least.
+                #     if self.aamks_polies['COMPA']["0"][v[0]].intersection(self.aamks_polies['COMPA']["0"][v[1]]).length < 1:
+                #         print("Floor {}: Space between compas".format(floor), v)
 
                 v.append(self.outside_compa)
                 if len(v) not in (2,3):

@@ -8,7 +8,7 @@ import inspect
 import json
 import time
 import bisect
-from ast import literal_eval as make_tuple
+#from ast import literal_eval as make_tuple
 from numpy.random import randint
 from include import Sqlite
 from include import Json
@@ -46,43 +46,10 @@ class SmokeQuery:
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 1)
 
         self.config=self.json.read('{}/evac/config.json'.format(os.environ['AAMKS_PATH']))
-        self._read_tessellation(floor)
-        self._make_cell2compa()
+        #self._read_tessellation(floor)
         self._init_compa_conditions()
-        self._cfast_headers()
+        #self._cfast_headers()
 
-    def _read_tessellation(self, floor):# {{{
-        ''' 
-        Python has this nice dict[(1,2)], but json cannot handle it. We have
-        passed it as dict['(1,2)'] and now need to bring back from str to
-        tuple.
-        '''
-
-        floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
-        self.floor_dim = floors[floor]
-
-        json_tessellation=json.loads(self.s.query("SELECT * FROM tessellation")[0]['json'])
-        tessellation=json_tessellation[floor]
-        self._square_side=tessellation['square_side']
-        self._query_vertices=OrderedDict()
-        for k,v in tessellation['query_vertices'].items():
-            self._query_vertices[make_tuple(k)]=v
-# }}}
-    def _make_cell2compa_record(self,cell):# {{{
-        try:
-            self._cell2compa[cell]=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' "
-                                                "AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1",
-                                                (cell[0], cell[1], cell[0], cell[1]))[0]['name']
-        except:
-            pass
-# }}}
-    def _make_cell2compa(self):#{{{
-        self._cell2compa=OrderedDict()
-        for k,v in self._query_vertices.items():
-            self._make_cell2compa_record(k)
-            for pt in list(zip(v['x'], v['y'])):
-                self._make_cell2compa_record(pt)
-#}}}
     def _results(self,query,cell):# {{{
         ''' Outside is for debugging - should never happen in aamks. '''
         try:
@@ -192,6 +159,9 @@ class SmokeQuery:
         we need to loop through those rectangles. Finally we read the smoke
         conditions from the cell. 
         '''
+
+        floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
+        self.floor_dim = floors[floor]
 
         x=self.floor_dim['minx'] + self._square_side * int((q[0]-self.floor_dim['minx'])/self._square_side) 
         y=self.floor_dim['miny'] + self._square_side * int((q[1]-self.floor_dim['miny'])/self._square_side)

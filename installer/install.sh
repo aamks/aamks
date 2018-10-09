@@ -49,7 +49,7 @@ echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> $temp
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> $temp
 echo "export AAMKS_NOTIFY='$AAMKS_NOTIFY'" >> $temp
 echo "export AAMKS_TESTING='$AAMKS_TESTING'" >> $temp
-echo "export AAMKS_PG_PASS='$AAMKS_DB_PASS'" >> $temp
+echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
 sudo cp $temp /etc/apache2/envvars
 rm $temp
 

@@ -15,7 +15,7 @@ from gui.vis.vis import Vis
 
 # }}}
 
-class CfastTessellate():
+class CfastPartition():
     def __init__(self): # {{{
         ''' 
         Divide space into cells for smoke conditions queries asked by evacuees.
@@ -23,7 +23,7 @@ class CfastTessellate():
         of self._square_side. Iterate over squares and if any square is crossed by an
         obstacle divide this square further into rectangles. 
         
-        In the final structure of tessellation.json we encode each cell.
+        In the final structure of partition.json we encode each cell.
         Each cell is sorted by x, which allows quick bisections.
 
         * In each cell we always encode the first sub-cell - the square itself.
@@ -32,7 +32,7 @@ class CfastTessellate():
         * Then we can add more sub-cells (rectangles).
         (1600, 2449): OrderedDict([('x', (1600, 1600, 1842, 1842)), ('y', (2449, 2541, 2449, 2541))])
 
-        Tessellation will be later used for filling the cells with smoke
+        Partition will be later used for filling the cells with smoke
         conditions. Finally we get a tool for quick altering of the state of an
         evacuee at x,y.
 
@@ -41,10 +41,10 @@ class CfastTessellate():
         self._square_side=300
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         try:
-            self.s.query("DROP TABLE tessellation")
+            self.s.query("DROP TABLE partition")
         except:
             pass
-        self.s.query("CREATE TABLE tessellation(json)")
+        self.s.query("CREATE TABLE partition(json)")
 
         self.json=Json() 
         self._save=OrderedDict()
@@ -53,8 +53,10 @@ class CfastTessellate():
             self._init_space(floor) 
             self._intersect_space() 
             self._optimize(floor)
+            self._read_partition(floor)
+            self._make_cell2compa()
             # self._plot_space(floor)  # debug
-        #Vis(None, 'image', 'tessellation') # debug
+        #Vis(None, 'image', 'partition') # debug
         self._dbsave()
 # }}}
     def _init_space(self,floor):# {{{
@@ -138,7 +140,7 @@ class CfastTessellate():
 # }}}
     def _intersect_space(self):# {{{
         ''' 
-        We want to further tessellate the square into rectangles based on obstacles.
+        We want to further partition the square into rectangles based on obstacles.
         '''
 
         for line in self.lines: 
@@ -151,7 +153,7 @@ class CfastTessellate():
 # }}}
     def _plot_space(self,floor):# {{{
         ''' 
-        Plots the tessellation on top of the rooms. 
+        Plots the partition on top of the rooms. 
         '''
 
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
@@ -167,6 +169,23 @@ class CfastTessellate():
                 z[floor]['texts'].append(   { "xy": mm, "content": mm, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
+
+    def _make_cell2compa_record(self,cell):# {{{
+        try:
+            self._cell2compa[cell]=self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' " "AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (cell[0], cell[1], cell[0], cell[1]))[0]['name']
+        except:
+            pass
+# }}}
+    def _make_cell2compa(self):#{{{
+        self._cell2compa=OrderedDict()
+        for k,v in self._query_vertices.items():
+            self._make_cell2compa_record(k)
+            for pt in list(zip(v['x'], v['y'])):
+                self._make_cell2compa_record(pt)
+        dd(self._cell2compa)
+#}}}
+
     def _dbsave(self):# {{{
-        self.s.query('INSERT INTO tessellation VALUES (?)', (json.dumps(self._save),))
+        #dd(self._save["0"]['query_vertices'])
+        self.s.query('INSERT INTO partition VALUES (?)', (json.dumps(self._save),))
 # }}}
