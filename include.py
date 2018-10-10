@@ -126,7 +126,7 @@ class Sqlite: # {{{
     def dumpall(self):
         ''' Remember to add all needed sqlite tables here '''
         print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
-        for i in ('aamks_geom', 'floors', 'obstacles', 'tessellation', 'navmeshes'):
+        for i in ('aamks_geom', 'floors', 'obstacles', 'partition', 'cell2compa', 'navmeshes'):
             try:
                 print("\n=======================")
                 print("table:", i)

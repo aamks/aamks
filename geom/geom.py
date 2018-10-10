@@ -23,13 +23,13 @@ from gui.vis.vis import Vis
 
 class Geom():
     def __init__(self):# {{{
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        self._doors_width=16
+        self._doors_width=32
         self._wall_width=4
         self._make_elem_counter()
-        self._geometry_reader()
         self._geometry2sqlite()
         self._enhancements()
         self._init_dd_geoms()
@@ -81,20 +81,6 @@ class Geom():
         self.s.query("CREATE TABLE floors(json)")
         self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(values),))
 # }}}
-    def _geometry_reader(self):# {{{
-        ''' 
-        By convention: read cad.json first, otherwise make InkscapeReader()
-        read input.svg. 
-        '''
-
-        try:
-            self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
-        except:
-            print("TODO: apainter replaces inkscape") 
-            # InkscapeReader()
-            # self.raw_geometry=self.json.read("{}/svg.json".format(os.environ['AAMKS_PROJECT']))
-
-# }}}
     def _geometry2sqlite(self):# {{{
         ''' 
         Parse geometry and place geoms in sqlite. The lowest floor is always 0.
@@ -108,9 +94,8 @@ class Geom():
             ]
 
         Each geom entity will be classified as DOOR, WINDOW, ROOM etc, and will
-        get a unique name via elem_counter Some columns in db are left empty
-        for now. We multiply geometries * 100 and work on integer cm. This
-        prevents us from the issues with shapely floats and rounding.
+        get a unique name via elem_counter. Some columns in db are left empty
+        for now. 
 
         Sqlite's aamks_geom table must use two unique ids a) 'name' for
         visualisation and b) 'global_type_id' for cfast enumeration. 
@@ -120,8 +105,8 @@ class Geom():
         for floor,gg in self.raw_geometry.items():
             for k,arr in gg.items():
                 for v in arr:
-                    p0=[ int(i*100) for i in v[0] ]
-                    p1=[ int(i*100) for i in v[1] ]
+                    p0=[ int(i) for i in v[0] ]
+                    p1=[ int(i) for i in v[1] ]
                     width= p1[0]-p0[0]
                     depth= p1[1]-p0[1]
                     height=p1[2]-p0[2]
@@ -399,11 +384,19 @@ class Geom():
         self.s.executemany('UPDATE aamks_geom SET vvent_room_seq=? WHERE name=?', (update))
 # }}}
     def _find_horiz_intersections(self):# {{{
-        ''' Find horizontal intersections (hvents vs compas). This is how we know which doors belong to which compas. 
-        We expect that HVENT intersects either:
+        ''' 
+        Find horizontal intersections (hvents vs compas). This is how we know
+        which doors belong to which compas. We expect that HVENT intersects
+        either:
+
             a) room_from, room_to  (two rectangles)
             b) room_from, outside  (one rectangle)
-        If the door originates at the very beginning of the room, then it also has a tiny intersection with some third rectangle, hence we check: intersection.length > self._doors_width
+
+        If the door originates at the very beginning of the room, then it also
+        has a tiny intersection with some third rectangle which we filter out
+        with:
+
+            intersection.length > self._doors_width
 
         self.aamks_polies is a dict of floors:
             COMPA: OrderedDict([(1, OrderedDict([(42, <shapely.geometry.polygon.Polygon object at 0x2b2206282e48>), (43, <shapely.geometry.polygon.Polygon object at 0x2b2206282eb8>), (44, <shapely.geometry.polygon.Polygon object at 0x2b2206282f28>)))]) ...
@@ -413,10 +406,7 @@ class Geom():
         We aim at having vc_intersections (Vent_x_Compa intersections) dict of vents. Each vent collects two compas: 
             1: [48, 29]
             2: [49, 29]
-            3: [48, 49]
-            4: [47, 29]
-            5: [47, 11]
-            6: [49, 11]
+            3: [11 ]    -> [11, 99(Outside)] 
             
         v=sorted(v) asserts that we go from lower_vent_id to higher_vent_id
 
@@ -432,14 +422,17 @@ class Geom():
                     if vent_poly.intersection(compa_poly).length > self._doors_width:
                         vc_intersections[vent_id].append(compa_id)
 
+            dd(vc_intersections)
+            dd(self._doors_width)
+            self.s.dump()
             for vent_id,v in vc_intersections.items():
                 v=sorted(v)
                 # if len(v) >= 2: # TODO: How should we handle the third room in the spacing problem? Separate def() at least.
                 #     if self.aamks_polies['COMPA']["0"][v[0]].intersection(self.aamks_polies['COMPA']["0"][v[1]]).length < 1:
                 #         print("Floor {}: Space between compas".format(floor), v)
-
-                v.append(self.outside_compa)
-                if len(v) not in (2,3):
+                if len(v) == 1:
+                    v.append(self.outside_compa)
+                if len(v) > 2:
                     self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
                 update.append((v[0], v[1], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", update)
@@ -500,7 +493,7 @@ class Geom():
             # TODO: once cad.json uses 'OBST': [], there's no need to try.
             try:
                 for v in gg['OBST']:
-                    boxen.append(box(int(v[0][0]*100), int(v[0][1]*100), int(v[1][0]*100), int(v[1][1]*100)))
+                    boxen.append(box(int(v[0][0]), int(v[0][1]), int(v[1][0]), int(v[1][1])))
             except:
                 pass
                 
