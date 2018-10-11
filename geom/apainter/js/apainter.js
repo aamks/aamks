@@ -150,7 +150,7 @@ function canvas_zoomer() { //{{{
 			return ( event.button === 0 ||
 					 event.button === 1);
 			})
-			.translateExtent([[-1000, -1000], [100000 , 100000]])
+			.translateExtent([[-1000, -1000], [1000000 , 1000000]])
 			.on("zoom", zoomed_canvas)
 		);
 }

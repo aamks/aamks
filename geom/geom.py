@@ -171,9 +171,10 @@ class Geom():
 
         self.s.query("UPDATE aamks_geom SET room_area=round(width*depth/10000,2) WHERE type_pri='COMPA'")
         self.s.query("UPDATE aamks_geom SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
+        self.s.query("SELECT name,x0,y0,x1,y1 FROM aamks_geom")
 
-        self.s.query("UPDATE aamks_geom SET y0=y0+?, depth=depth-? WHERE type_tri='DOOR' AND is_vertical=1", (self._wall_width, self._wall_width))
-        self.s.query("UPDATE aamks_geom SET x0=x0+?, width=width-? WHERE type_tri='DOOR' AND is_vertical=0", (self._wall_width, self._wall_width))
+        self.s.query("UPDATE aamks_geom SET y0=y0+?, y1=y1-?, depth=depth-? WHERE type_tri='DOOR' AND is_vertical=1", (self._wall_width, self._wall_width, self._wall_width))
+        self.s.query("UPDATE aamks_geom SET x0=x0+?, x1=x1-?, width=width-? WHERE type_tri='DOOR' AND is_vertical=0", (self._wall_width, self._wall_width, self._wall_width))
 
 # }}}
     def _init_dd_geoms(self):# {{{
@@ -217,6 +218,8 @@ class Geom():
 # }}}
     def _make_fake_wells(self):# {{{
         ''' 
+        TODO: are we using this?
+
         This is for evacuation only and cannot interfere with fire models
         (fire_model_ignore=1). Most STAI(RCASES) or HALL(S) are drawn on floor
         0, but they are tall and need to cross other floors. We call them
@@ -413,18 +416,26 @@ class Geom():
         Also, we need to make sure room A and room B do intersect if there is door from A to B.
         '''
 
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
         update=[]
+        z["0"]['rectangles'].append( { "xy": (1104 , 1470) , "width": 86, "depth": 32, "strokeColor": "#fff" , "strokeWidth": 2 , "fillColor": "#f80" , "opacity": 0.7 } )
+
         for floor,vents_dict in self.aamks_polies['HVENT'].items():
             all_hvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='HVENT' AND floor=? ORDER BY name", floor) ]
             vc_intersections={key:[] for key in all_hvents }
             for vent_id,vent_poly in vents_dict.items():
+                print(vent_poly)
+                print()
                 for compa_id,compa_poly in self.aamks_polies['COMPA'][floor].items():
+                    print(compa_poly, vent_poly.intersection(compa_poly).length )
                     if vent_poly.intersection(compa_poly).length > self._doors_width:
                         vc_intersections[vent_id].append(compa_id)
 
-            dd(vc_intersections)
-            dd(self._doors_width)
-            self.s.dump()
+            #self.s.dump()
+
+            # z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            # z["0"]['rectangles'].append( { "xy": (1000 , 1000) , "width": 200             , "depth": 300        , "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#f80" , "opacity": 0.7 } )
             for vent_id,v in vc_intersections.items():
                 v=sorted(v)
                 # if len(v) >= 2: # TODO: How should we handle the third room in the spacing problem? Separate def() at least.
@@ -436,6 +447,12 @@ class Geom():
                     self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
                 update.append((v[0], v[1], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", update)
+
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        from gui.vis.vis import Vis
+        Vis(None, 'blelo', 'dd_geoms example')
+
+        exit()
 
 # }}}
     def _find_vertical_intersections(self):# {{{
