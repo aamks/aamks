@@ -58,7 +58,7 @@ class Geom():
         sqlite. Canvas size is 1600 x 800 in css.css. Calculate how to scale
         the whole floor to fit the canvas. Minima don't have to be at (0,0) in
         autocad, therefore we also need to translate the drawing for the
-        canvas. Y needs to be inverted for js, hence -int(maxy-0.5*height).
+        canvas. 
         '''
 
         values=OrderedDict()
@@ -75,7 +75,7 @@ class Geom():
             center=(minx + int(width/2), miny + int(height/2), z0)
 
             animation_scale=round(min(1600/width,800/height)*0.95, 2) # 0.95 is canvas padding
-            animation_translate=[ int(maxx-0.5*width), -int(maxy-0.5*height) ]
+            animation_translate=[ int(maxx-0.5*width), int(maxy-0.5*height) ]
 
             values[floor]=OrderedDict([('width', width) , ('height', height) , ('z', z0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy) , ('animation_scale', animation_scale), ('animation_translate',  animation_translate)])
         self.s.query("CREATE TABLE floors(json)")
@@ -158,23 +158,26 @@ class Geom():
 
         Doors and Holes will be later interescted with parallel walls
         (obstacles). We inspect is_vertical and make the doors just enough
-        smaller to avoid perpendicular intersections.
-
+        smaller to avoid perpendicular intersections. 
+        
+        Since obstacles are generated to right/top direction, we need to
+        address the overlapping coming from left/bottom. So we make doors
+        shorter at x0 and y0, but not at x1 and y1. At the end our door=90cm
+        are now 86cm. 
         '''
 
         self.outside_compa=self.s.query("SELECT count(*) FROM aamks_geom WHERE type_pri='COMPA'")[0]['count(*)']+1
         self.floors=        [z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self.all_doors=     [z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name") ]
 
-        self.s.query("UPDATE aamks_geom SET is_vertical=0, y0=y0-{}, cfast_width=width WHERE type_pri='HVENT' AND width > depth ".format(self._doors_width/2-2))
-        self.s.query("UPDATE aamks_geom SET is_vertical=1, x0=x0-{}, cfast_width=depth WHERE type_pri='HVENT' AND width < depth ".format(self._doors_width/2-2))
+        self.s.query("UPDATE aamks_geom SET is_vertical=0, cfast_width=width WHERE type_pri='HVENT' AND width > depth")
+        self.s.query("UPDATE aamks_geom SET is_vertical=1, cfast_width=depth WHERE type_pri='HVENT' AND width < depth")
 
         self.s.query("UPDATE aamks_geom SET room_area=round(width*depth/10000,2) WHERE type_pri='COMPA'")
         self.s.query("UPDATE aamks_geom SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
-        self.s.query("SELECT name,x0,y0,x1,y1 FROM aamks_geom")
 
-        self.s.query("UPDATE aamks_geom SET y0=y0+?, y1=y1-?, depth=depth-? WHERE type_tri='DOOR' AND is_vertical=1", (self._wall_width, self._wall_width, self._wall_width))
-        self.s.query("UPDATE aamks_geom SET x0=x0+?, x1=x1-?, width=width-? WHERE type_tri='DOOR' AND is_vertical=0", (self._wall_width, self._wall_width, self._wall_width))
+        self.s.query("UPDATE aamks_geom SET y0=y0+?, depth=depth-? WHERE type_tri='DOOR' AND is_vertical=1", (self._wall_width, self._wall_width))
+        self.s.query("UPDATE aamks_geom SET x0=x0+?, width=width-? WHERE type_tri='DOOR' AND is_vertical=0", (self._wall_width, self._wall_width))
 
 # }}}
     def _init_dd_geoms(self):# {{{
@@ -416,26 +419,17 @@ class Geom():
         Also, we need to make sure room A and room B do intersect if there is door from A to B.
         '''
 
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-
         update=[]
-        z["0"]['rectangles'].append( { "xy": (1104 , 1470) , "width": 86, "depth": 32, "strokeColor": "#fff" , "strokeWidth": 2 , "fillColor": "#f80" , "opacity": 0.7 } )
-
         for floor,vents_dict in self.aamks_polies['HVENT'].items():
             all_hvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='HVENT' AND floor=? ORDER BY name", floor) ]
             vc_intersections={key:[] for key in all_hvents }
             for vent_id,vent_poly in vents_dict.items():
-                print(vent_poly)
-                print()
                 for compa_id,compa_poly in self.aamks_polies['COMPA'][floor].items():
-                    print(compa_poly, vent_poly.intersection(compa_poly).length )
-                    if vent_poly.intersection(compa_poly).length > self._doors_width:
+                    ii=vent_poly.intersection(compa_poly)
+                    print("todo", ii)
+                    if ii.exterior.intersection(compa_poly.exterior).length > self._doors_width:
                         vc_intersections[vent_id].append(compa_id)
 
-            #self.s.dump()
-
-            # z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-            # z["0"]['rectangles'].append( { "xy": (1000 , 1000) , "width": 200             , "depth": 300        , "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#f80" , "opacity": 0.7 } )
             for vent_id,v in vc_intersections.items():
                 v=sorted(v)
                 # if len(v) >= 2: # TODO: How should we handle the third room in the spacing problem? Separate def() at least.
@@ -443,16 +437,11 @@ class Geom():
                 #         print("Floor {}: Space between compas".format(floor), v)
                 if len(v) == 1:
                     v.append(self.outside_compa)
+                print("horiz", v)
                 if len(v) > 2:
                     self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
                 update.append((v[0], v[1], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", update)
-
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        from gui.vis.vis import Vis
-        Vis(None, 'blelo', 'dd_geoms example')
-
-        exit()
 
 # }}}
     def _find_vertical_intersections(self):# {{{
@@ -468,25 +457,29 @@ class Geom():
             "UPDATE aamks_geom SET vent_to=?, vent_from=?"
         '''
         
-        all_vvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='VVENT' ORDER BY name") ]
-        vc_intersections={key:[] for key in all_vvents}
+        update=[]
         for floor,vents_dict in self.aamks_polies['VVENT'].items():
+            all_vvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='VVENT' AND floor=? ORDER BY name", floor) ]
+            vc_intersections={key:[] for key in all_vvents }
             for vent_id,vent_poly in vents_dict.items():
                 try:
                     two_floors=self.aamks_polies['COMPA'][floor]+self.aamks_polies['COMPA'][floor+1]
                 except:
                     two_floors=self.aamks_polies['COMPA'][floor]
                 for compa_id,compa_poly in two_floors.items():
-                    if vent_poly.intersection(compa_poly).length > self._doors_width:
+                    ii=vent_poly.intersection(compa_poly)
+                    if ii.exterior.intersection(compa_poly.exterior).length > self._doors_width:
+                        #print("vert", "vent_id", vent_id, compa_id, compa_poly, vent_poly.exterior.intersection(compa_poly.exterior).length )
                         vc_intersections[vent_id].append(compa_id)
 
-        update=[]
-        for vent_id,v in vc_intersections.items():
-            v=sorted(v)
-            v.append(self.outside_compa)
-            if len(v) not in (2,3):
-                self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
-            update.append((v[0], v[1], vent_id))
+            for vent_id,v in vc_intersections.items():
+                v=sorted(v)
+                if len(v) == 1:
+                    v.append(self.outside_compa)
+                if len(v) > 2:
+                    self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
+                update.append((v[0], v[1], vent_id))
+                print("vert", v)
         self.s.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
 
 # }}}
