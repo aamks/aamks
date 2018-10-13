@@ -136,7 +136,7 @@ class Vis():
             anim_record=OrderedDict()
             anim_record['sort_id']=lowest_id
             lowest_id-=1
-            anim_record['title']="{}-{}, f{}".format(self.title, datetime.now().strftime('%H:%M'), floor)
+            anim_record['title']="{} {}, f{}".format(self.title, datetime.now().strftime('%H:%M'), floor)
             anim_record['floor']=floor
             anim_record['fire_origin']=self.fire_origin
             anim_record['highlight_geom']=self.highlight_geom

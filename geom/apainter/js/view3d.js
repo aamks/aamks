@@ -23,7 +23,7 @@ function close3dview() {//{{{
 //}}}
 function createMeshes() {//{{{
 	// random prevents z-fighting
-	var geoms=db().select("letter", "mvnt_offsetz", "x0", "x1", "y0", "y1", "z0", "z1");
+	var geoms=db().select("letter", "mvent_offsetz", "x0", "x1", "y0", "y1", "z0", "z1");
 	var half_x, half_y, half_z, mesh_type;
 	for (var i in geoms) {
 		var bb=[];

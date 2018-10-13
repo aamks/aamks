@@ -37,10 +37,10 @@ class Geom():
         self._floors_details()
         self._aamks_geom_into_polygons()
         self._make_id2compa_name()
-        self._find_horiz_intersections()
+        self._find_intersections_within_floor()
         self._get_faces()
         self._hvents_per_room()
-        self._find_vertical_intersections()
+        self._find_intersections_between_floors()
         self._vvents_per_room()
         self._add_names_to_vents_from_to()
         self._calculate_sills()
@@ -115,23 +115,36 @@ class Geom():
                         data.append(record)
         self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,sprinkler,detector,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
+        #dd(self.s.dump())
 #}}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor):# {{{
         ''' Format a record for sqlite. Hvents get fixed width self._doors_width cm '''
         # OBST
-        if k in ('OBST'):
-            return False
+        if k in ('OBST',):
+            type_pri='OBST'
+            type_tri=''
+
+        # EVACUEE
+        elif k in ('EVACUEE',):                  
+            type_pri='EE'
+            type_tri=''
+
+        # MVENT      
+        elif k in ('MVENT',):                  
+            type_pri='MVENT'
+            type_tri=''
+
+        # VVENT      
+        elif k in ('VVENT',):                  
+            type_pri='VVENT'
+            height=10 
+            type_tri=''
 
         # COMPA
         elif k in ('ROOM', 'COR', 'HALL', 'STAI'):      
             type_pri='COMPA'
             type_tri=''
         
-        # VVENT      
-        elif k in ('VNT'):                  
-            type_pri='VVENT'
-            height=10 
-            type_tri=''
         
         # HVENT  
         elif k in ('D', 'C', 'E', 'HOLE', 'W'): 
@@ -271,7 +284,7 @@ class Geom():
         ''' 
         Vents from/to use indices, but names will be simpler for AAMKS and for
         debugging. Hvents/Vvents lower_id/higher_id are already taken care of
-        in _find_vertical_intersections() 
+        in _find_intersections_between_floors() 
         '''
 
         query=[]
@@ -310,21 +323,22 @@ class Geom():
         '''
 
         self._elem_counter={}
-        for i in ('COMPA', 'HVENT', 'VVENT'):
+        for i in ('COMPA', 'HVENT', 'VVENT', 'OBST', 'EE', 'MVENT'):
             self._elem_counter[i]=0
 # }}}
 
 # INTERSECTIONS
     def _aamks_geom_into_polygons(self):# {{{
-        ''' aamks_geom into shapely polygons '''
+        ''' aamks_geom into shapely polygons for intersections '''
         self.aamks_polies=OrderedDict()
         self.aamks_polies['COMPA']=OrderedDict()
         self.aamks_polies['HVENT']=OrderedDict()
         self.aamks_polies['VVENT']=OrderedDict()
+        self.aamks_polies['MVENT']=OrderedDict()
         for floor in self.floors:
             for elem in self.aamks_polies.keys():
                 self.aamks_polies[elem][floor]=OrderedDict()
-            for v in self.s.query("SELECT * FROM aamks_geom WHERE floor=?", (floor,)):
+            for v in self.s.query("SELECT * FROM aamks_geom WHERE type_pri NOT IN('OBST', 'EE') AND floor=?", (floor,)):
                 self.aamks_polies[v['type_pri']][floor][v['global_type_id']]=box(v['x0'], v['y0'], v['x0']+v['width'], v['y0']+v['depth'])
 # }}}
     def _get_faces(self):# {{{
@@ -389,11 +403,10 @@ class Geom():
             update.append((j,v['name']))
         self.s.executemany('UPDATE aamks_geom SET vvent_room_seq=? WHERE name=?', (update))
 # }}}
-    def _find_horiz_intersections(self):# {{{
+    def _find_intersections_within_floor(self):# {{{
         ''' 
-        Find horizontal intersections (hvents vs compas). This is how we know
-        which doors belong to which compas. We expect that HVENT intersects
-        either:
+        Find intersections (hvents vs compas). This is how we know which doors
+        belong to which compas. We expect that HVENT intersects either:
 
             a) room_from, room_to  (two rectangles)
             b) room_from, outside  (one rectangle)
@@ -402,7 +415,7 @@ class Geom():
         has a tiny intersection with some third rectangle which we filter out
         with:
 
-            intersection.length > self._doors_width
+            intersection.length > 100 (intersection perimeter, 100 is arbitrary)
 
         self.aamks_polies is a dict of floors:
             COMPA: OrderedDict([(1, OrderedDict([(42, <shapely.geometry.polygon.Polygon object at 0x2b2206282e48>), (43, <shapely.geometry.polygon.Polygon object at 0x2b2206282eb8>), (44, <shapely.geometry.polygon.Polygon object at 0x2b2206282f28>)))]) ...
@@ -425,36 +438,34 @@ class Geom():
             vc_intersections={key:[] for key in all_hvents }
             for vent_id,vent_poly in vents_dict.items():
                 for compa_id,compa_poly in self.aamks_polies['COMPA'][floor].items():
-                    ii=vent_poly.intersection(compa_poly)
-                    print("todo", ii)
-                    if ii.exterior.intersection(compa_poly.exterior).length > self._doors_width:
+                    if vent_poly.intersection(compa_poly).length > 100:
                         vc_intersections[vent_id].append(compa_id)
 
             for vent_id,v in vc_intersections.items():
                 v=sorted(v)
-                # if len(v) >= 2: # TODO: How should we handle the third room in the spacing problem? Separate def() at least.
-                #     if self.aamks_polies['COMPA']["0"][v[0]].intersection(self.aamks_polies['COMPA']["0"][v[1]]).length < 1:
-                #         print("Floor {}: Space between compas".format(floor), v)
+                if len(v) == 2 and self.aamks_polies['COMPA'][floor][v[0]].intersects(self.aamks_polies['COMPA'][floor][v[1]]) == False:
+                    self.make_vis("Space between compas".format(floor), vent_id)
                 if len(v) == 1:
                     v.append(self.outside_compa)
-                print("horiz", v)
                 if len(v) > 2:
                     self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
                 update.append((v[0], v[1], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", update)
 
 # }}}
-    def _find_vertical_intersections(self):# {{{
+    def _find_intersections_between_floors(self):# {{{
         '''
-        Similar to _find_horiz_intersections() This time we are looking for a
+        Similar to _find_intersections_within_floor() This time we are looking for a
         vvent (at floor n) which intersects a compa at it's floor (floor n)
         and a compa above (floor n+1) We will iterate over two_floors, which
         can contain: a) the set of compas from (floor n) and (floor n+1) b)
         the set of compas from (floor n) only if it is the top most floor --
         outside_compa will come into play
 
-        Opposed to _find_horiz_intersections() vents go from higher to lower:
+        As opposed to _find_intersections_between_floors() vents go from higher to lower:
             "UPDATE aamks_geom SET vent_to=?, vent_from=?"
+
+            intersection.length > 100 (intersection perimeter, 100 is arbitrary)
         '''
         
         update=[]
@@ -467,9 +478,7 @@ class Geom():
                 except:
                     two_floors=self.aamks_polies['COMPA'][floor]
                 for compa_id,compa_poly in two_floors.items():
-                    ii=vent_poly.intersection(compa_poly)
-                    if ii.exterior.intersection(compa_poly.exterior).length > self._doors_width:
-                        #print("vert", "vent_id", vent_id, compa_id, compa_poly, vent_poly.exterior.intersection(compa_poly.exterior).length )
+                    if vent_poly.intersection(compa_poly).length > 100:
                         vc_intersections[vent_id].append(compa_id)
 
             for vent_id,v in vc_intersections.items():
@@ -477,9 +486,8 @@ class Geom():
                 if len(v) == 1:
                     v.append(self.outside_compa)
                 if len(v) > 2:
-                    self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
+                    self.make_vis('Vent intersects no rooms or more than 2 rooms.', vent_id)
                 update.append((v[0], v[1], vent_id))
-                print("vert", v)
         self.s.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
 
 # }}}

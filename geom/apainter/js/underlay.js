@@ -194,7 +194,7 @@ function into_db(json) { //{{{
 		}
 	}
 	counter=ii;
-	//console.log("reader", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvnt_offsetz", "mvnt_throughput", "name", "type", "x0", "y0"));
+	//console.log("reader", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0"));
 }
 //}}}
 function read_record(floor,letter,arr,ii) { //{{{
@@ -212,8 +212,8 @@ function read_record(floor,letter,arr,ii) { //{{{
 		floor: floor,
 		is_exit: '',
 		dimz: z1-z0,
-		mvnt_offsetz: 0,
-		mvnt_throughput: 0,
+		mvent_offsetz: 0,
+		mvent_throughput: 0,
 		x0: x0,
 		y0: y0,
 		z0: z0,
@@ -226,9 +226,9 @@ function read_record(floor,letter,arr,ii) { //{{{
 		record.is_exit=arr[2];
 	}
 
-	if(gg[letter].t == 'mvnt') { 
-		record.mvnt_offsetz=arr[2]['offset'];
-		record.mvnt_throughput=arr[2]['throughput'];
+	if(gg[letter].t == 'mvent') { 
+		record.mvent_offsetz=arr[2]['offset'];
+		record.mvent_throughput=arr[2]['throughput'];
 	}
 
 	return record;
