@@ -242,14 +242,15 @@ function pdf_svg_dom(data) { //{{{
 }
 //}}}
 function pdf_handle() { //{{{
-	postFile('https://mimooh.szach.in/pdf2svg.php')
+	postFile('https://mimooh.szach.in/server.php')
 	  .then(data => pdf_svg_dom(data))
 	  .catch(error => console.error(error))
 
 	function postFile(url) {
 	  const formData = new FormData()
 	  const fileField = document.querySelector('#underlay_loader')
-	  formData.append('file', fileField.files[0])
+	  formData.append('file', fileField.files[0]);
+	  formData.append('make_pdf', 1);
 
 	  return fetch(url, {
 		method: 'POST', 
