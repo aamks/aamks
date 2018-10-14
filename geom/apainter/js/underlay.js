@@ -242,7 +242,7 @@ function pdf_svg_dom(data) { //{{{
 }
 //}}}
 function pdf_handle() { //{{{
-	postFile('https://mimooh.szach.in/server.php')
+	postFile('https://stanley.szach.in/i2/apainter/server.php')
 	  .then(data => pdf_svg_dom(data))
 	  .catch(error => console.error(error))
 
