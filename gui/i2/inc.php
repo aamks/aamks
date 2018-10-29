@@ -109,19 +109,6 @@ class Aamks {/*{{{*/
 		echo "<cannot>$msg</cannot>";
 	}
 /*}}}*/
-	public function query_log($connect, $logged_query, $params=[]) { /*{{{*/
-		# Loggin sql queries to a table
-		# psql cia -c "select * from query_log"
-
-		if (! preg_match("/delete|update/i", $logged_query)) { return; }
-		$logged_query.=" || ";
-		$logged_query.=implode(",", $params);
-
-		$qq="INSERT INTO query_log(author_id, query) VALUES($1,$2)";
-		$arr=array($_SESSION['user_id'], $logged_query);
-		($result=pg_query_params($connect, $qq, $arr)) || $this->reportBug(array("aamks log err\n\n:", "$qq", pg_last_error($connect)));
-	}
-/*}}}*/
 	public function query($qq,$arr=[],$success=0) { /*{{{*/
 		// During installation AAMKS_SERVER and AAMKS_PG_PASS should be chosen and written to
 		// /etc/apache2/envvars file
@@ -130,7 +117,6 @@ class Aamks {/*{{{*/
 		$connect=pg_connect("dbname=aamks host=".getenv("AAMKS_SERVER")." user=aamks password=".getenv("AAMKS_PG_PASS"));
 
 		($result=pg_query_params($connect, $qq, $arr)) || $this->reportBug(array("DB error\n\ncaller: $caller()\n\n", "$qq", pg_last_error($connect)));
-		$this->query_log($connect, $qq, $arr);
 
 		$k=pg_fetch_all($result);
 		if($success==1) { echo "<msg>Saved</msg>"; }
