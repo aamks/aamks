@@ -2,6 +2,9 @@
 session_name('aamks');
 require_once("inc.php"); 
 require_once("salt.php");
+function me(){/*{{{*/
+	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
+}/*}}}*/
 function login_form(){/*{{{*/
    $form = "
     <br><br>
@@ -105,8 +108,8 @@ function activate_user(){/*{{{*/
 #		$_SESSION['header_err'][]="Activation not complete";
 
 		set_user_variables($ret[0])                                                                                         ;
-# psql aamks -c "select * from nusers";
-# psql aamks -c "delete from nusers";
+# psql aamks -c "select reset_token from nusers";
+
 	}
 
 }/*}}}*/
@@ -117,14 +120,47 @@ function nice_mail($address,$subject,$body){/*{{{*/
         mail($address, $subject, $body, $headers);
 }/*}}}*/
 function set_user_variables($ret){/*{{{*/
-	$_SESSION['userid']=$ret['id'];
+	$_SESSION['user_id']=$ret['id'];
 	$_SESSION['username']=$ret['username'];
 	$_SESSION['email']=$ret['email'];
 	$_SESSION['picture']=$ret['picture'];
 	header("location:https://stanley.szach.in/i2/i2.php");
 }/*}}}*/
 function reset_password(){/*{{{*/
-	dd($_SESSION);
+	$token=md5(salt(time()));
+	if(empty($_GET['reset'])){//start of reseting proces
+		if($ret=$_SESSION['nn']->query("UPDATE nusers SET reset_token = $1 where email = $2 returning id", array($token, $_SESSION['reset_email']))){
+			nice_mail($_SESSION['reset_email'],"AAMKS reset password","Reset the AAMKS password <a href=".me()."?reset=$token>HERE</a>");
+			echo "Email sent to $_SESSION[reset_email]";
+		}else{
+			$_SESSION['nn']->fatal("ERR 0314");
+		}
+	}else{
+/*{{{FORM*/
+	   $form = "
+		<form method=POST> <center>
+		<br><br>
+		<div style='border: 1px solid #555; padding: 10px; width: 360px'>
+		<table>
+		<tr><td>login<td><input type=email name=email value='$_SESSION[reset_email]' readonly size=32 >
+		<tr><td>new password<td><input type=password name='password' size=32 placeholder='new password' >
+		</table><br>
+		<input type=submit name=reset value='RESET'>
+		</div>
+		</form>
+		</center> ";/*}}}*/
+		if(!isset($_POST['reset'])){//show reset form
+		echo $form;
+		}else{//do the reseting
+			if($ret=$_SESSION['nn']->query("UPDATE nusers SET password = $1, reset_token = NULL where email = $2 AND reset_token = $3 returning *", array(salt($_POST['password']), $_SESSION['reset_email'], $_GET['reset']))){
+				set_user_variables($ret[0]);
+				$_SESSION['nn']->msg("Password changed");
+			}else{
+				$_SESSION['nn']->fatal("NOT Good!!");
+			}
+# psql aamks -c "select password, reset_token from nusers";
+		}
+	}
 	exit();
 }/*}}}*/
 function main() { /*{{{*/
@@ -135,7 +171,7 @@ function main() { /*{{{*/
 	if(isset($_GET['reset'])) { reset_password();}
 	if(isset($_GET['activation_token'])) { activate_user();}
 
-	if(empty($_SESSION['userid'])){
+	if(empty($_SESSION['user_id'])){
 		login_form();
 	}else{
 		$_SESSION['nn']->logoutButton();

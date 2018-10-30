@@ -3,7 +3,10 @@ var ApainterReader={};
 function renderUnderlayImage(file) {//{{{
 	var reader = new FileReader();
 	if(file.type=='application/pdf') {
-		pdf_handle();
+		pdf2svg();
+		// TODO: apainter2server();
+		//console.log(JSON.stringify(3333));
+
 	} else {
 		reader.onload = function(event) {
 			$('#img'+floor).attr("href", event.target.result);
@@ -241,8 +244,8 @@ function pdf_svg_dom(data) { //{{{
 	$('#img'+floor).attr("width", 8000);
 }
 //}}}
-function pdf_handle() { //{{{
-	postFile('https://stanley.szach.in/i2/apainter/server.php')
+function pdf2svg() { //{{{
+	postFile('https://stanley.szach.in/i2/apainter/server.php?pdf2svg')
 	  .then(data => pdf_svg_dom(data))
 	  .catch(error => console.error(error))
 
@@ -250,13 +253,27 @@ function pdf_handle() { //{{{
 	  const formData = new FormData()
 	  const fileField = document.querySelector('#underlay_loader')
 	  formData.append('file', fileField.files[0]);
-	  formData.append('make_pdf', 1);
 
 	  return fetch(url, {
 		method: 'POST', 
 		body: formData  
 	  })
 	  .then(response => response.json())
+	}
+}
+//}}}
+function apainter2server() { //{{{
+	postData('https://stanley.szach.in/i2/apainter/server.php?apainter')
+	  .then(data => console.log(JSON.stringify(data))) 
+	  .catch(error => console.error(error));
+
+	function postData(url) {
+		return fetch(url, {
+			method: "POST", 
+			headers: { "Content-Type": "application/json; charset=utf-8" },
+			body: JSON.stringify(3333)
+		})
+		.then(response => response.json()); 
 	}
 }
 //}}}
