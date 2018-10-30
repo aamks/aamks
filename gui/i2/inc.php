@@ -28,6 +28,9 @@ function dd2($arr) {
 class Aamks {/*{{{*/
 	public function __construct($site){
 		if($site!="ajax") { $this->htmlHead($site); } 
+		$_SESSION['header_err']=[];
+		$_SESSION['header_ok']=[];
+
 	}
 
 /*}}}*/
@@ -59,7 +62,7 @@ class Aamks {/*{{{*/
 		</head>
 		<body class=$site>";
 		echo "$header";
-		return "$header";
+		$this->anyMessages();
     }
 /*}}}*/
 	public function jabber_send($msg="content", $to="mimooh@jabber.at") {/*{{{*/
@@ -71,6 +74,7 @@ class Aamks {/*{{{*/
 		//if(empty($_SESSION['user_id'])) { header('Location: /login.php'); }
 		echo "
 		<div style='float:right; text-align:right; font-size:12px'>
+		<a href=?edit_user class=blink>".$_SESSION['username']."</a>
 		<a href=?projects class=blink>My projects</a>
 		<a href=?logout=1 class=blink>Logout</a>
 		</div>
@@ -166,6 +170,17 @@ class Aamks {/*{{{*/
 			$this->reportbug(["Too many login failures. Wait 60s."]);
 		}
 	}/*}}}*/
+	public function anyMessages() {/*{{{*/
+		if(!empty($_SESSION['header_err'])) { 
+			echo "<cannot>Error: ".implode("<br><br>Error: ", $_SESSION['header_err'])."</cannot>";
+			$_SESSION['header_err']=[];
+		} else if(!empty($_SESSION['header_ok'])) { 
+			echo "<msg>".implode("<br><br>", $_SESSION['header_ok'])."</msg>";
+			$_SESSION['header_ok']=[];
+		}
+	}
+	/*}}}*/
+
 
 }
 
