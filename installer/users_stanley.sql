@@ -10,6 +10,7 @@ CREATE TABLE nusers (---{{{
 	access_time timestamp,
 	activation_token text,
 	reset_token text,
+	modified timestamp,
 	created timestamp default current_timestamp
 );
 ---}}}

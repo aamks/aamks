@@ -124,16 +124,17 @@ function set_user_variables($ret){/*{{{*/
 	$_SESSION['username']=$ret['username'];
 	$_SESSION['email']=$ret['email'];
 	$_SESSION['picture']=$ret['picture'];
-	header("location:https://stanley.szach.in/i2/i2.php");
+	header("location:".me());
 }/*}}}*/
 function reset_password(){/*{{{*/
 	$token=md5(salt(time()));
+	$k=rand(10,10000);
 	if(empty($_GET['reset'])){//start of reseting proces
 		if($ret=$_SESSION['nn']->query("UPDATE nusers SET reset_token = $1 where email = $2 returning id", array($token, $_SESSION['reset_email']))){
-			nice_mail($_SESSION['reset_email'],"AAMKS reset password","Reset the AAMKS password <a href=".me()."?reset=$token>HERE</a>");
-			echo "Email sent to $_SESSION[reset_email]";
-		}else{
-			$_SESSION['nn']->fatal("ERR 0314");
+			nice_mail($_SESSION['reset_email'],"AAMKS reset password $k","Reset the AAMKS password <a href=".me()."?reset=$token>HERE</a>") ;
+			echo "Email sent to $_SESSION[reset_email]"                                                                                  ;
+		}else{//did not enter email address
+			header("location:".me()); 
 		}
 	}else{
 /*{{{FORM*/
@@ -158,7 +159,6 @@ function reset_password(){/*{{{*/
 			}else{
 				$_SESSION['nn']->fatal("NOT Good!!");
 			}
-# psql aamks -c "select password, reset_token from nusers";
 		}
 	}
 	exit();
@@ -170,13 +170,13 @@ function main() { /*{{{*/
 	if(isset($_GET['register'])) { register_form();}
 	if(isset($_GET['reset'])) { reset_password();}
 	if(isset($_GET['activation_token'])) { activate_user();}
+	if(isset($_GET['edit_user'])) { edit_user();}
 
 	if(empty($_SESSION['user_id'])){
 		login_form();
 	}else{
 		$_SESSION['nn']->logoutButton();
 		menu();
-		dd($_SESSION);
 	}
 
 
