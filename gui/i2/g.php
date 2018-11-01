@@ -1,17 +1,24 @@
 <?PHP
 session_start();
 #session_destroy();
-echo "<pre>";
-require_once 'vendor/autoload.php';
-$client = new Google_Client();
-$client->setAuthConfig('g_api.json');
-$redirect_uri = 'https://stanley.szach.in/i2/g.php';
-$client->setRedirectUri($redirect_uri);
-$client->addScope("https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email");
-#$client-revokeToken(); //logout
-$loginURL=$client->createAuthUrl();
+function google_login_prep(){/*{{{*/
+	require_once 'vendor/autoload.php';
+	$client = new Google_Client();
+	$client->setAuthConfig('g_api.json');
+	$redirect_uri = 'https://stanley.szach.in/i2/g.php';
+	$client->setRedirectUri($redirect_uri);
+	$client->addScope("https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email");
+	#$client-revokeToken(); //logout
+	$loginURL=$client->createAuthUrl();
+	$ret[0]=$loginURL;
+	$ret[1]=$client;
+	return $ret;
+}/*}}}*/
+$ret=google_login_prep();
+function get_data_prep(){/*{{{*/
+		global $ret;
+		$client=$ret[1];
 
-if (isset($_GET['code']) and (isset($_GET['scope']))) {
 	$token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
 	print_r($token);
 	if(isset($token['error'])){
@@ -22,11 +29,16 @@ if (isset($_GET['code']) and (isset($_GET['scope']))) {
 	if(isset($token['id_token'])){ //got the token
 		get_data_from_google();
 	}
-}
+}/*}}}*/
 function get_data_from_google(){/*{{{*/
-		global $client;
+		global $ret;
+		$client=$ret[1];
+		echo "<hr> GDFG<br>";
+		#$ret=google_login_prep();
+		#$client=$ret[1];
 		$oAuth = new Google_Service_Oauth2($client);
 		$userData = $oAuth->userinfo_v2_me->get();
+		print_r($userData);
 		$_SESSION['userName']=$userData['name'];
 		$_SESSION['userFamilyName']=$userData['familyName'];
 		$_SESSION['userGivenName']=$userData['givenName'];
@@ -39,12 +51,18 @@ function get_data_from_google(){/*{{{*/
 		header("location:g.php");
 }/*}}}*/
 function login_form(){/*{{{*/
-	global $loginURL;
-	echo "<form>\	
+	global $ret;
+	$loginURL=$ret[0];
+	echo " $loginURL <form>\	
 		<input type=button onclick=\"window.location = '$loginURL' \" value='Login with Google'>
 		</form>
 		";
 }/*}}}*/
+if (isset($_GET['code']) and (isset($_GET['scope']))) {
+	echo "GETT";
+	get_data_prep();
+}
 if(!isset($_SESSION['userID'])){login_form();}
+echo "SESS <HR>";
 print_r($_SESSION);
 ?>

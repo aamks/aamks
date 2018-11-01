@@ -2,10 +2,13 @@
 session_name('aamks');
 require_once("inc.php"); 
 require_once("salt.php");
+if(empty($_SESSION['user_id'])){ $g_ret=google_login_prep();} //google login handler
 function me(){/*{{{*/
 	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
 }/*}}}*/
 function login_form(){/*{{{*/
+	global $g_ret;
+	$loginURL=$g_ret[0];
    $form = "
     <br><br>
     <form method=POST>
@@ -20,7 +23,7 @@ function login_form(){/*{{{*/
     <input type=submit name=logMeIn value='Sign in'>
 	</div>
 	<br>or<br><br>
-	<img src=g_signin.png>
+	<img src=g_signin.png onclick=\"window.location = '$loginURL' \" value='Login with Google'>
 	<br><br> <br><br> <br><br> <br><br>
 	New to Aamks?
 	<a href=?register>Register</a>
@@ -193,8 +196,55 @@ function edit_user(){/*{{{*/
 		}
 # psql aamks -c "select * from nusers";
 }/*}}}*/
+function google_login_prep(){/*{{{*/
+	global $g_ret;
+	require_once 'vendor/autoload.php';
+	$client = new Google_Client();
+	$client->setAuthConfig('g_api.json');
+	$redirect_uri = 'https://stanley.szach.in/i2/i2.php';
+	$client->setRedirectUri($redirect_uri);
+	$client->addScope("https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email");
+	#$client-revokeToken(); //logout
+	$loginURL=$client->createAuthUrl();
+	$g_ret[0]=$loginURL;
+	$g_ret[1]=$client;
+	return $g_ret;
+}/*}}}*/
+function get_data_prep(){/*{{{*/
+		global $g_ret;
+		$client=$g_ret[1];
 
+	$token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
+	print_r($token);
+	if(isset($token['error'])){
+		echo "There is something wrong";
+		login_form();
+		exit();
+	}
+	if(isset($token['id_token'])){ //got the token
+		get_data_from_google();
+	}
+}/*}}}*/
+function get_data_from_google(){/*{{{*/
+		global $g_ret;
+		$client=$g_ret[1];
+		$oAuth = new Google_Service_Oauth2($client);
+		$userData = $oAuth->userinfo_v2_me->get();
+		$_SESSION['userName']=$userData['name'];
+		$_SESSION['username']=$userData['name'];
+		$_SESSION['userFamilyName']=$userData['familyName'];
+		$_SESSION['userGivenName']=$userData['givenName'];
+		$_SESSION['userEmail']=$userData['email'];
+		$_SESSION['userID']=$userData['id'];
+		$_SESSION['userLink']=$userData['link'];
+		$_SESSION['userPicture']=$userData['picture'];
+		$_SESSION['userVerifiedEmail']=$userData['verifiedEmail'];
+		$_SESSION['user_id']=$userData['id'];
+		$_SESSION['access_token']=$token;
+		header("location:i2.php");
+}/*}}}*/
 function main() { /*{{{*/
+	global $g_ret; //google login handler
 	$_SESSION['home_url']="https://stanley.szach.in/i2/i2.php";
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	$_SESSION['nn']->htmlHead("i2");
@@ -202,8 +252,10 @@ function main() { /*{{{*/
 	if(isset($_GET['reset'])) { reset_password();}
 	if(isset($_GET['activation_token'])) { activate_user();}
 	if(isset($_GET['edit_user'])) { edit_user();}
+	if (isset($_GET['code']) and (isset($_GET['scope']))) {  get_data_prep(); } //google login
 
 	if(empty($_SESSION['user_id'])){
+		google_login_prep();
 		login_form();
 	}else{
 		$_SESSION['nn']->logoutButton();
@@ -214,5 +266,4 @@ function main() { /*{{{*/
 }
 /*}}}*/
 main();
-
 ?>
