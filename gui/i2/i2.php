@@ -39,7 +39,10 @@ function login_form(){/*{{{*/
 		}else{
 			$_SESSION['reset_email']=$_POST['email'];
 			$_SESSION['nn']->cannot("Wrong email or password");
-			echo "Generate new password for email ".$_POST['email']." click <a href=?reset>HERE</a>";
+			echo "<center><br><br><br><br><br>Generate new password for email ".$_POST['email']." click <a href=?reset>HERE</a> or try to login once more<br><br>
+				<br><br> <br><br> <br><br> <br><br> <br><br> <br>
+				";
+			echo $form ;
 		}
 	}
 	if(isset($_POST['register'])){
@@ -163,6 +166,34 @@ function reset_password(){/*{{{*/
 	}
 	exit();
 }/*}}}*/
+function edit_user_form(){/*{{{*/
+	echo "<div style='float:right;background:#555555;width:400px;margin-top:50px;margin-right:100px'>
+		<form method=POST>
+		<table>
+		<tr><td>name<td><input name=name placeholder='name' size=32 required autocomplete='off' value='$_SESSION[username]' >
+		<tr><td>password<td><input type=text name='password' size=32 placeholder='password' autocomplete='off' >
+		</table><br>
+		<input type=submit name=save value='Save'>
+		</form>
+		</div>
+		";
+}/*}}}*/
+function edit_user(){/*{{{*/
+	if(!isset($_POST['save'])){ //from not submited
+		edit_user_form(); //print form
+	}else{ //form submited
+		if(!empty($_POST['password'])){ //did not changed password
+			$_SESSION['nn']->query("UPDATE nusers SET password = $1, username = $2 where id= $3", array(salt($_POST['password']), $_POST['name'], $_SESSION['user_id']));
+		}else{
+			$_SESSION['nn']->query("UPDATE nusers SET username = $1 where id= $2", array($_POST['name'], $_SESSION['user_id']));
+		}
+		$_SESSION['nn']->msg("SAVED");
+		$_SESSION['username']=$_POST['name'];
+		edit_user_form();	
+		}
+# psql aamks -c "select * from nusers";
+}/*}}}*/
+
 function main() { /*{{{*/
 	$_SESSION['home_url']="https://stanley.szach.in/i2/i2.php";
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
