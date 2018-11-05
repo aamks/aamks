@@ -1,68 +1,75 @@
 <?PHP
 session_start();
-#session_destroy();
-function google_login_prep(){/*{{{*/
-	require_once 'vendor/autoload.php';
-	$client = new Google_Client();
-	$client->setAuthConfig('g_api.json');
-	$redirect_uri = 'https://stanley.szach.in/i2/g.php';
-	$client->setRedirectUri($redirect_uri);
-	$client->addScope("https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email");
-	#$client-revokeToken(); //logout
-	$loginURL=$client->createAuthUrl();
-	$ret[0]=$loginURL;
-	$ret[1]=$client;
-	return $ret;
-}/*}}}*/
-$ret=google_login_prep();
-function get_data_prep(){/*{{{*/
-		global $ret;
-		$client=$ret[1];
+echo"<pre>";
+print_r($_REQUEST);
+echo "</pre>";
 
-	$token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
-	print_r($token);
-	if(isset($token['error'])){
-		echo "There is something wrong";
-		login_form();
-		exit();
-	}
-	if(isset($token['id_token'])){ //got the token
-		get_data_from_google();
-	}
-}/*}}}*/
-function get_data_from_google(){/*{{{*/
-		global $ret;
-		$client=$ret[1];
-		echo "<hr> GDFG<br>";
-		#$ret=google_login_prep();
-		#$client=$ret[1];
-		$oAuth = new Google_Service_Oauth2($client);
-		$userData = $oAuth->userinfo_v2_me->get();
-		print_r($userData);
-		$_SESSION['userName']=$userData['name'];
-		$_SESSION['userFamilyName']=$userData['familyName'];
-		$_SESSION['userGivenName']=$userData['givenName'];
-		$_SESSION['userEmail']=$userData['email'];
-		$_SESSION['userID']=$userData['id'];
-		$_SESSION['userLink']=$userData['link'];
-		$_SESSION['userPicture']=$userData['picture'];
-		$_SESSION['userVerifiedEmail']=$userData['verifiedEmail'];
-		$_SESSION['access_token']=$token;
-		header("location:g.php");
-}/*}}}*/
-function login_form(){/*{{{*/
-	global $ret;
-	$loginURL=$ret[0];
-	echo " $loginURL <form>\	
-		<input type=button onclick=\"window.location = '$loginURL' \" value='Login with Google'>
-		</form>
-		";
-}/*}}}*/
-if (isset($_GET['code']) and (isset($_GET['scope']))) {
-	echo "GETT";
-	get_data_prep();
+echo"
+<html lang='en'>
+    <meta name='google-signin-scope' content='profile email'>
+	<meta name='google-signin-client_id' content='352726998172-lmrbrs6c2sgpug4nc861hfb04f3s0sr6.apps.googleusercontent.com'>
+    <script src='https://apis.google.com/js/platform.js' async defer></script>
+  <body>
+    <div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' ></div>
+	<div id='hidden_form_container' style='display:none;'></div>
+	";
+if (!isset($_POST['id'])){
+echo "
+    <script>
+      function onSignIn(googleUser) {
+        // Useful data for your client-side scripts:
+        var profile = googleUser.getBasicProfile();
+
+        // The ID token you need to pass to your backend:
+        var id_token = googleUser.getAuthResponse().id_token;
+
+		//Send data to PHP
+		var theForm, newInput1, newInput2, newInput3, newInput4, newInput5;
+		  // Start by creating a <form>
+		  theForm = document.createElement('form');
+		  theForm.action = 'g.php?s=1';
+		  theForm.method = 'post';
+		  // Next create the <input>s in the form and give them names and values
+			
+		  newInput1 = document.createElement('input');
+		  newInput1.type = 'hidden';
+		  newInput1.name = 'id';
+		  newInput1.value = profile.getId();
+
+		  newInput2 = document.createElement('input');
+		  newInput2.type = 'hidden';
+		  newInput2.name = 'fullname';
+		  newInput2.value = profile.getName();
+
+		  newInput3 = document.createElement('input');
+		  newInput3.type = 'hidden';
+		  newInput3.name = 'img_url';
+		  newInput3.value = profile.getImageUrl();
+
+		  newInput4 = document.createElement('input');
+		  newInput4.type = 'hidden';
+		  newInput4.name = 'email';
+		  newInput4.value = profile.getEmail();
+
+		  newInput5 = document.createElement('input');
+		  newInput5.type = 'hidden';
+		  newInput5.name = 'token_id';
+		  newInput5.value = id_token;
+
+		  // Now put everything together...
+		  theForm.appendChild(newInput1);
+		  theForm.appendChild(newInput2);
+		  theForm.appendChild(newInput3);
+		  theForm.appendChild(newInput4);
+		  theForm.appendChild(newInput5);
+		  // ...and it to the DOM...
+		  document.getElementById('hidden_form_container').appendChild(theForm);
+		  // ...and submit it
+		  theForm.submit();	
+      };
+    </script>";
 }
-if(!isset($_SESSION['userID'])){login_form();}
-echo "SESS <HR>";
-print_r($_SESSION);
 ?>
+
+  </body>
+</html>

@@ -72,12 +72,12 @@ class Aamks {/*{{{*/
 	public function logoutButton() {/*{{{*/
 		if(isset($_REQUEST['logout'])) { session_destroy(); header('Location: /i2/i2.php'); }
 		//if(empty($_SESSION['user_id'])) { header('Location: /login.php'); }
-		echo "
-		<div style='float:right; text-align:right; font-size:12px'>
-		<a href=?edit_user class=blink>".$_SESSION['username']."</a>
-		<a href=?projects class=blink>My projects</a>
-		<a href=?logout=1 class=blink>Logout</a>
-		</div>
+		echo "<div style='float:right; text-align:right; font-size:12px'>";
+		echo "<a href=?edit_user ><img src=$_SESSION[picture] width=50px height=50px></a>";
+		echo "<a href=?edit_user class=blink>".$_SESSION['username']."</a>";
+		echo "<a href=?projects class=blink>My projects</a>
+			<a href=?logout=1 class=blink>Logout</a>
+			</div>
 		";
 	}
 /*}}}*/

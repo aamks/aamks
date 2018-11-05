@@ -107,7 +107,7 @@ function activate_user(){/*{{{*/
 	if (empty($ret[0])){
 		$_SESSION['nn']->fatal("Activation token not valid");
 	}else{
-		#$_SESSION['nn']->query("UPDATE nusers SET activation_token ='alredy activated' WHERE id= $1", array($ret[0]['id'])) ;
+		$_SESSION['nn']->query("UPDATE nusers SET activation_token ='alredy activated' WHERE id= $1", array($ret[0]['id'])) ;
 	#	$_SESSION['nn']->msg("Activation completed")                                                                  ;
 #		$_SESSION['header_ok'][]="Activation complete";
 #		$_SESSION['header_err'][]="Activation not complete";
@@ -213,19 +213,18 @@ function google_login_prep(){/*{{{*/
 function get_data_prep(){/*{{{*/
 		global $g_ret;
 		$client=$g_ret[1];
-
 	$token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
-	print_r($token);
 	if(isset($token['error'])){
 		echo "There is something wrong";
 		login_form();
 		exit();
 	}
 	if(isset($token['id_token'])){ //got the token
-		get_data_from_google();
+		get_data_from_google($token);
+
 	}
 }/*}}}*/
-function get_data_from_google(){/*{{{*/
+function get_data_from_google($token){/*{{{*/
 		global $g_ret;
 		$client=$g_ret[1];
 		$oAuth = new Google_Service_Oauth2($client);
@@ -241,8 +240,21 @@ function get_data_from_google(){/*{{{*/
 		$_SESSION['userVerifiedEmail']=$userData['verifiedEmail'];
 		$_SESSION['user_id']=$userData['id'];
 		$_SESSION['access_token']=$token;
-		header("location:i2.php");
+#		dd($_SESSION);
+		do_google_login();
+		
 }/*}}}*/
+function do_google_login(){
+	$ret=$_SESSION['nn']->query("SELECT * FROM nusers WHERE email = $1 ", array($_SESSION['userEmail'] )); //
+	if (!empty($ret[0])){ //alredy there is a user with that email. -need to Join it
+		$_SESSION['nn']->query("UPDATE nusers SET google_id = $1, picture = $2 ,activation_token ='alredy activated' where email = $3 ", array($_SESSION['userID'], $_SESSION['userPicture'],$_SESSION['userEmail'] )); //
+		set_user_variables($ret[0])                                                                                         ;
+# psql aamks -c "select * from nusers";
+		$_SESSION['nn']->msg("Email address already used in AAMKS!  - merging accounts!");
+	}else { //there is no user with that email in AAMKS - we need to create it
+		$_SESSION['nn']->msg("Creating new google user!");
+	}
+}
 function main() { /*{{{*/
 	global $g_ret; //google login handler
 	$_SESSION['home_url']="https://stanley.szach.in/i2/i2.php";
