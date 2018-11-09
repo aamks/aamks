@@ -15,10 +15,13 @@ function pdf2svg() { /*{{{*/
 }
 /*}}}*/
 function apainter() { /*{{{*/
-	$z=file_put_contents($_SESSION['AAMKS_PROJECT']."/cad.json", 'cad data');
-	$m=json_decode($_POST);
-	#echo json_encode(array("err"=> json_decode($_POST)));
-	echo json_encode(array("msg"=>$m, "err"=>$z));
+	$dest="$_SESSION[AAMKS_PROJECT]/cad.json";
+	$z=file_put_contents($dest, $_POST['cadfile']);
+	if($z>0) { 
+		echo json_encode(array("msg"=>"OK $dest", "err"=>0));
+	} else { 
+		echo json_encode(array("msg"=>"Cannot write $dest", "err"=>1));
+	}
 }
 /*}}}*/
 
