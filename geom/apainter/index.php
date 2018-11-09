@@ -12,7 +12,7 @@ function head() { /*{{{*/
 		<script src='js/taffy-min.js'></script>
 		<script src='js/d3.v4.min.js'></script>
 		<script src='js/apainter.js'></script>
-		<script src='js/underlay.js'></script>
+		<script src='js/setup_actions.js'></script>
 		<script src='js/view3d.js'></script>
 	";
 }

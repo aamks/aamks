@@ -4,9 +4,6 @@ function renderUnderlayImage(file) {//{{{
 	var reader = new FileReader();
 	if(file.type=='application/pdf') {
 		pdf2svg();
-		// TODO: apainter2server();
-		//console.log(JSON.stringify(3333));
-
 	} else {
 		reader.onload = function(event) {
 			$('#img'+floor).attr("href", event.target.result);
@@ -262,18 +259,7 @@ function pdf2svg() { //{{{
 	}
 }
 //}}}
-function apainter2server() { //{{{
-	postData('https://stanley.szach.in/i2/apainter/server.php?apainter')
-	  .then(data => console.log(JSON.stringify(data))) 
-	  .catch(error => console.error(error));
-
-	function postData(url) {
-		return fetch(url, {
-			method: "POST", 
-			headers: { "Content-Type": "application/json; charset=utf-8" },
-			body: JSON.stringify(3333)
-		})
-		.then(response => response.json()); 
-	}
+function apainter2server(cadfile) { //{{{
+	$.post('https://stanley.szach.in/i2/apainter/server.php?apainter', { 'cadfile': cadfile } );
 }
 //}}}

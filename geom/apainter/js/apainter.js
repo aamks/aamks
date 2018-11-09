@@ -808,6 +808,7 @@ function open3dview() {//{{{
 //}}}
 function output_json() {//{{{
 	// Instead of JSON.stringify we prefer our own pretty formatting.
+
 	var json=[];
 	for(var f=0; f<floors_count; f++) { 
 		var geoms=[];
@@ -835,6 +836,7 @@ function output_json() {//{{{
 	}
 	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
 	download("cad.json", pretty_json);
+	apainter2server(pretty_json);
 }
 function download(filename, text) {//{{{
     var pom = document.createElement('a');
