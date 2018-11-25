@@ -61,7 +61,7 @@ $nodes['demos']=array("Demos", /*{{{*/
 Aamks is a work in progress, but you can see some of development progress here
 <ul>
 <li> An example of Aamks aplication hosted in SGSP <a target=blank_ href="https://aamks.inf.sgsp.edu.pl">demo</a>
-<li> Geometry creation <a target=blank_ href=/blob/aamks/geom/apainter/>tool</a> (requires google chrome / chromium)
+<li> Geometry creation <a target=blank_ href=/blob/aamks/gui/i2/apainter/>tool</a> (requires google chrome / chromium)
 </ul>
 ');
 /*}}}*/
