@@ -229,23 +229,18 @@ function get_data_from_google($token){/*{{{*/
 		$client=$g_ret[1];
 		$oAuth = new Google_Service_Oauth2($client);
 		$userData = $oAuth->userinfo_v2_me->get();
-		$_SESSION['userName']=$userData['name'];
-		$_SESSION['username']=$userData['name'];
-		$_SESSION['userFamilyName']=$userData['familyName'];
-		$_SESSION['userGivenName']=$userData['givenName'];
-		$_SESSION['userEmail']=$userData['email'];
-		$_SESSION['userID']=$userData['id'];
-		$_SESSION['userLink']=$userData['link'];
-		$_SESSION['userPicture']=$userData['picture'];
-		$_SESSION['userVerifiedEmail']=$userData['verifiedEmail'];
-		$_SESSION['user_id']=$userData['id'];
-		$_SESSION['access_token']=$token;
+		#dd($userData);
+		$_SESSION['g_name']=$userData['name'];
+		$_SESSION['g_email']=$userData['email'];
+		$_SESSION['g_user_id']=$userData['id'];
+		#$_SESSION['access_token']=$token;
 #		dd($_SESSION);
 		do_google_login();
 		
 }/*}}}*/
 function do_google_login(){
 	$ret=$_SESSION['nn']->query("SELECT * FROM nusers WHERE email = $1 ", array($_SESSION['userEmail'] )); //
+	//check if !empty google_id in DB TODO
 	if (!empty($ret[0])){ //alredy there is a user with that email. -need to Join it
 		$_SESSION['nn']->query("UPDATE nusers SET google_id = $1, picture = $2 ,activation_token ='alredy activated' where email = $3 ", array($_SESSION['userID'], $_SESSION['userPicture'],$_SESSION['userEmail'] )); //
 		set_user_variables($ret[0])                                                                                         ;
