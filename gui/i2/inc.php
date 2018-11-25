@@ -23,6 +23,10 @@ function dd2($arr) {
 	$out=print_r($arr,1);
 	echo $out;
 }
+function dd3($arr) {
+	$out="<pre>".htmlspecialchars(print_r($arr,1))."</pre>";
+	return $out;
+}
 
 /*}}}*/
 class Aamks {/*{{{*/

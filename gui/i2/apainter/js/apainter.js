@@ -839,6 +839,8 @@ function output_json() {//{{{
 	apainter2server(pretty_json);
 }
 function download(filename, text) {//{{{
+	// download writes it directly to the browser to save
+	return;
     var pom = document.createElement('a');
     pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
     pom.setAttribute('download', filename);

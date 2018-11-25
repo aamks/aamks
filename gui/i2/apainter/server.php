@@ -1,34 +1,45 @@
 <?php
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: *');
+session_name('aamks');
 session_start();
 
-function pdf2svg() { /*{{{*/
-	$in=$_FILES['file']['tmp_name'];
-	$z=shell_exec("pdf2svg $in out.svg 2>&1");
+function ajaxPdf2svg() { /*{{{*/
+	$src=$_FILES['file']['tmp_name'];
+	$dest="$_SESSION[working_home]/out.svg";
+	$z=shell_exec("pdf2svg $src $dest 2>&1");
 	$svg='';
 	if(empty($z)) { 
 		$svg=shell_exec("cat out.svg"); 
 		$svg=preg_replace("/#/", "%23", $svg);
+		echo json_encode(array("msg"=>"ajaxPdf2svg(): OK", "err"=>0,  "data"=>$svg));
+	} else {
+		echo json_encode(array("msg"=>"ajaxPdf2svg(): $z", "err"=>1, "data"=>0));
 	}
-	echo json_encode(array("err"=>$z, "svg"=>$svg));
 }
 /*}}}*/
-function apainter() { /*{{{*/
-	$dest="$_SESSION[AAMKS_PROJECT]/cad.json";
-	$z=file_put_contents($dest, $_POST['cadfile']);
+function ajaxApainter() { /*{{{*/
+	$src=$_POST['cadfile'];
+	$dest="$_SESSION[working_home]/cad.json";
+	$z=file_put_contents($dest, $src);
 	if($z>0) { 
-		echo json_encode(array("msg"=>"OK $dest", "err"=>0));
+		echo json_encode(array("msg"=>"ajaxApainter(): OK", "err"=>0, "data"=>""));
 	} else { 
-		echo json_encode(array("msg"=>"Cannot write $dest", "err"=>1));
+		echo json_encode(array("msg"=>"ajaxApainter(): Cannot write $dest", "err"=>1, "data"=>""));
 	}
 }
 /*}}}*/
-
-$_SESSION['user_id']=1;
-$_SESSION['AAMKS_PROJECT']="/home/aamks_users/mimoohowy@gmail.com/1/risk/1";
-#$_SESSION['AAMKS_PROJECT']="/home/aamks_users/mimoohowy@gmail.com/1/risk/1/cad.json";
-
-if(isset($_GET['pdf2svg']))  { pdf2svg(); }
-if(isset($_GET['apainter'])) { apainter(); }
+function main() { /*{{{*/
+	if(!empty($_SESSION['user_id'])) { 
+		header('Access-Control-Allow-Origin: *');
+		header('Access-Control-Allow-Headers: *');
+		header('Content-type: application/json');
+		if(!is_writable("$_SESSION[working_home]")) { 
+			echo json_encode(array("msg"=>"ajaxMain(): Cannot write $_SESSION[working_home]", "err"=>1, "data"=>0));
+			exit();
+		}
+		if(isset($_GET['pdf2svg']))  { ajaxPdf2svg(); }
+		if(isset($_GET['apainter'])) { ajaxApainter(); }
+	}
+}
+/*}}}*/
+main();
 ?>

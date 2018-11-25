@@ -24,7 +24,7 @@ AAMKS_TESTING=0
 AAMKS_PG_PASS='hulakula' 
 AAMKS_USE_GEARMAN=1
 AAMKS_PATH='/usr/local/aamks'
-AAMKS_PROJECT="/home/aamks_users/mimoohowy@gmail.com/1/risk/1" # TODO: need to invent some default project 
+AAMKS_PROJECT="/home/aamks_users/mimoohowy@gmail.com/three/1" # TODO: need to invent some default project 
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 
 # END OF CONFIGURATION
@@ -44,7 +44,8 @@ sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`
-sudo cat /etc/apache2/envvars | grep -v AAMKS_ > $temp
+sudo cat /etc/apache2/envvars | grep -v AAMKS_ | grep -v umask > $temp
+echo "umask 0002" >> $temp
 echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> $temp
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> $temp
 echo "export AAMKS_NOTIFY='$AAMKS_NOTIFY'" >> $temp
@@ -55,7 +56,13 @@ rm $temp
 
 sudo mkdir -p "$AAMKS_PROJECT"
 sudo chown -R $USER $AAMKS_PATH
-sudo chown -R $USER /home/aamks_users
+
+# From now on, each file written to /home/aamks_users will belong to www-data group.
+# Solves the problem of shell users vs www-data user permissions of new files.
+# But you need to take care of shell users yourself: add them to www-data in /etc/group.
+sudo chown -R $USER:www-data /home/aamks_users
+sudo chmod -R g+s /home/aamks_users
+sudo find /home/aamks_users -type f -exec chmod 664 {} \;
 
 # www gui installer
 

@@ -236,15 +236,16 @@ function read_record(floor,letter,arr,ii) { //{{{
 	return record;
 }
 //}}}
-function pdf_svg_dom(data) { //{{{
-	$('#img'+floor).attr("href", 'data:image/svg+xml;utf8,'+data.svg);
+function pdf_svg_dom(json) { //{{{
+	ajax_msg(json);
+	$('#img'+floor).attr("href", 'data:image/svg+xml;utf8,'+json.data);
 	$('#img'+floor).attr("width", 8000);
 }
 //}}}
 function pdf2svg() { //{{{
 	postFile('https://stanley.szach.in/i2/apainter/server.php?pdf2svg')
 	  .then(data => pdf_svg_dom(data))
-	  .catch(error => console.error(error))
+	  .catch(error => ajax_msg(error))
 
 	function postFile(url) {
 	  const formData = new FormData()
@@ -260,6 +261,10 @@ function pdf2svg() { //{{{
 }
 //}}}
 function apainter2server(cadfile) { //{{{
-	$.post('https://stanley.szach.in/i2/apainter/server.php?apainter', { 'cadfile': cadfile } );
+	$.post(
+		'https://stanley.szach.in/i2/apainter/server.php?apainter', { 'cadfile': cadfile },
+		function (json) { ajax_msg(json); }
+	);
+	
 }
 //}}}
