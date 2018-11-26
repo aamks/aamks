@@ -2,8 +2,8 @@
     "general": {
         "project_id": 1,
         "scenario_id": 1,
-        "number_of_simulations": 1,
-        "simulation_time": 100,
+        "number_of_simulations": 5,
+        "simulation_time": 1200,
         "indoor_temperature": [
             20,
             20
@@ -63,13 +63,13 @@
         "heat_release_rate": {
             "comment": "desc",
             "hrrpua_min_mode_max": [
-                300,
-                1000,
-                1300
+                150,
+                500,
+                650
             ],
             "alpha_min_mode_max": [
                 0.0029,
-                0.047,
+                0.012,
                 0.188
             ]
         },
@@ -121,20 +121,20 @@
         "pre_evacuation_time": {
             "comment": "desc",
             "mean_and_sd_room_of_fire_origin": [
-                2.74,
-                0.58
+                59.85,
+                1.48
             ],
             "mean_and_sd_ordinary_room": [
-                5.246,
-                0.101
+                29.13,
+                8.87
             ]
         },
         "evacuees_concentration": {
             "comment": "desc",
-            "COR": 50,
+            "COR": 20,
             "STAI": 50,
-            "ROOM": 7,
-            "HALL": 50
+            "ROOM": 8,
+            "HALL": 30
         },
         "evacuees_speed_params": {
             "comment": "desc",
@@ -161,4 +161,3 @@
         }
     }
 }
-

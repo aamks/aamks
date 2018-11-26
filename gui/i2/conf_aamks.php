@@ -2,6 +2,176 @@
 session_name('aamks');
 require_once("inc.php"); 
 
+# /usr/local/aamks/gui/interface/src/app/enums/risk/enums/risk-enums.ts
+
+# json_orig {{{
+/*
+{
+    "general": {
+        "project_id": 1,
+        "scenario_id": 1,
+        "number_of_simulations": 5,
+        "simulation_time": 1200,
+        "indoor_temperature": [
+            20,
+            20
+        ],
+        "outdoor_temperature": [
+            10.75,
+            10.75
+        ],
+        "indoor_pressure": 101325,
+        "auto_stircaser": false
+    },
+    "characteristic": {
+        "geometry_type": "office1",
+        "material_ceiling": "concrete",
+        "ceiling_thickness": "0.3",
+        "material_floor": "concrete",
+        "floor_thickness": "0.3",
+        "material_wall": "brick",
+        "wall_thickness": "0.2"
+    },
+    "infrastructure": {
+        "has_detectors": false,
+        "detectors": {
+            "comment": "desc",
+            "type": "heat",
+            "trigger_temperature_mean_and_sd": [
+                68,
+                5
+            ],
+            "trigger_obscuration_mean_and_sd": [
+                0,
+                5
+            ],
+            "not_broken_probability": 0.96
+        },
+        "has_sprinklers": false,
+        "sprinklers": {
+            "comment": "desc",
+            "trigger_temperature_mean_and_sd": [
+                68,
+                3
+            ],
+            "not_broken_probability": 0.96,
+            "spray_density_mean_and_sd": [
+                0.0005,
+                0.0001
+            ],
+            "rti": 50
+        },
+        "has_nshevs": false,
+        "nshevs": {
+            "activation_time": 0
+        },
+        "cfast_static_records": []
+    },
+    "settings": {
+        "heat_release_rate": {
+            "comment": "desc",
+            "hrrpua_min_mode_max": [
+                150,
+                500,
+                650
+            ],
+            "alpha_min_mode_max": [
+                0.0029,
+                0.012,
+                0.188
+            ]
+        },
+        "window_open": {
+            "comment": "desc",
+            "setup": [
+                {
+                    "outside_temperature_range": [
+                        -99999,
+                        -5
+                    ],
+                    "window_is_quarter_open_probability": 0,
+                    "window_is_full_open_probability": 0.11
+                },
+                {
+                    "outside_temperature_range": [
+                        -5,
+                        15
+                    ],
+                    "window_is_quarter_open_probability": 0,
+                    "window_is_full_open_probability": 0.5
+                },
+                {
+                    "outside_temperature_range": [
+                        15,
+                        27
+                    ],
+                    "window_is_quarter_open_probability": 0.45,
+                    "window_is_full_open_probability": 0.45
+                },
+                {
+                    "outside_temperature_range": [
+                        27,
+                        99999
+                    ],
+                    "window_is_quarter_open_probability": 0,
+                    "window_is_full_open_probability": 0.5
+                }
+            ]
+        },
+        "door_open": {
+            "comment": "desc",
+            "electro_magnet_door_is_open_probability": 0.04,
+            "door_closer_door_is_open_probability": 0.14,
+            "standard_door_is_open_probability": 0.5,
+            "vvents_no_failure_probability": 0.96
+        },
+        "c_const": 8,
+        "pre_evacuation_time": {
+            "comment": "desc",
+            "mean_and_sd_room_of_fire_origin": [
+                59.85,
+                1.48
+            ],
+            "mean_and_sd_ordinary_room": [
+                29.13,
+                8.87
+            ]
+        },
+        "evacuees_concentration": {
+            "comment": "desc",
+            "COR": 20,
+            "STAI": 50,
+            "ROOM": 8,
+            "HALL": 30
+        },
+        "evacuees_speed_params": {
+            "comment": "desc",
+            "max_h_speed_mean_and_sd": [
+                120,
+                20
+            ],
+            "max_v_speed_mean_and_sd": [
+                80,
+                20
+            ],
+            "beta_v_mean_and_sd": [
+                -0.057,
+                0.015
+            ],
+            "alpha_v_mean_and_sd": [
+                0.706,
+                0.069
+            ]
+        },
+        "origin_of_fire": {
+            "comment": "desc",
+            "fire_starts_in_room_probability": 0.8
+        }
+    }
+}
+*/
+/*}}}*/
+
 function read_json($json_path) { /*{{{*/
 	$conf=json_decode('
 	{
@@ -10,56 +180,65 @@ function read_json($json_path) { /*{{{*/
 			"scenario_id": 1,
 			"number_of_simulations": 1,
 			"simulation_time": 100,
-			"indoor_temperature_min": -5,
-			"indoor_temperature_max":  10,
-			"outdoor_temperature_min": -5,
-			"outoor_temperature_max":  10,
+			"indoor_temperature":  { "min": -5, "max": 10 },
+			"outdoor_temperature": { "min": -5, "max": 10 },
 			"indoor_pressure": 101325,
 			"geometry_type": "office1",
-			"material_ceiling": "concrete",
-			"ceiling_thickness": "0.3",
-			"material_floor": "concrete",
-			"floor_thickness": "0.3",
-			"material_wall": "brick",
-			"wall_thickness": "0.2"
-		}, 
+			"material": [ 
+				{ "ceiling": "concrete" , "thickness" : 0.3 } ,
+				{ "floor":   "concrete" , "thickness" : 0.3 } ,
+				{ "wall":     "brick"   , "thickness" : 0.3 } 
+			]
+		} ,
 
 		"advanced": {
 			"detectors": false,
 			"detectors_type": "heat",
-			"detectors_trigger_temperature_mean": 68,
-			"detectors_trigger_temperature_sd": 5,
-			"detectors_trigger_obscuration_mean": 0,
-			"detectors_trigger_obscuration_sd": 5,
-			"detectors_not_broken_probability": 0.96,
+			"detectors_temp":   { "mean": 68, "sd": 5 },
+			"detectors_obscur": { "mean": 0, "sd": 5 },
+			"detectors_not_broken": 0.96,
 
 			"sprinklers": false,
-			"sprinklers_trigger_temperature_mean": 68,
-			"sprinklers_trigger_temperature_sd": 3,
-			"sprinklers_not_broken_probability": 0.96,
-			"sprinklers_spray_density_mean": 0.0005,
-			"sprinklers_spray_density_sd": 0.0001,
+			"sprinklers_temp":    { "mean": 68, "sd": 3 },
+			"sprinklers_density": { "mean": 0.0005, "sd": 0.0001 },
+			"sprinklers_not_broken": 0.96,
 			"sprinklers_rti": 50,
 
 			"nshevs": false,
 			"nshevs_activation_time": 0,
 
-			"hrr_pua_min": 300,
-			"hrr_pua_mode": 1000,
-			"hrr_pua_max": 1300,
-			"hrr_alpha_min": 0.0029,
-			"hrr_alpha_mode": 0.047,
-			"hrr_alpha_max": 0.188,
+			"hrrpua":	 { "min": 300    , "mode": 1000  , "max": 1300 }  ,
+			"hrr_alpha": { "min": 0.0029 , "mode": 0.047 , "max": 0.188 } ,
 
-			"window_conf": [ 
-				{ "temp0": -99999 , "temp1": -5    , "quarter": -5 , "full": 0.11 } ,
-				{ "temp0": -5     , "temp1": 15    , "quarter": 0  , "full": 0.5 }  ,
-				{ "temp0": 15     , "temp1": 27    , "quarter": 0  , "full": 0.5 }  ,
-				{ "temp0": 27     , "temp1": 99999 , "quarter": 0  , "full": 0.5 }
-			]
+			"windows": [ 
+				{ "min": -99999 , "max": -5    , "quarter": -5 , "full": 0.11 } ,
+				{ "min": -5     , "max": 15    , "quarter": 0  , "full": 0.5 }  ,
+				{ "min": 15     , "max": 27    , "quarter": 0  , "full": 0.5 }  ,
+				{ "min": 27     , "max": 99999 , "quarter": 0  , "full": 0.5 }
+			], 
+
+			"doors": { "E": 0.04, "C": 0.14, "D": 0.5 },
+			"vvents_not_broken": 0.96,
+			"c_const": 8,
+			"pre_evac_fire_origin": { "mean": 59.85 , "sd": 1.48 } ,
+			"pre_evac_ordinary":    { "mean": 29.13 , "sd": 8.87 } ,
+
+			"evacuees_concentration": [
+				{ "room": "COR"  , "value": 20 } ,
+				{ "room": "STAI" , "value": 50 } ,
+				{ "room": "ROOM" , "value": 8  } ,
+				{ "room": "HALL" , "value": 30 }
+			],
+
+			"evacuees_max_h_speed" : { "mean" : 120    , "sd" : 20 }    ,
+			"evacuees_max_v_speed" : { "mean" : 80     , "sd" : 20 }    ,
+			"evacuees_alpha_v"     : { "mean" : 0.706  , "sd" : 0.069 } ,
+			"evacuees_beta_v"      : { "mean" : -0.057 , "sd" : 0.015 } ,
+			"fire_starts_in_foom"  : 0.8
 
 		}
 	}',1);
+
 	return $conf;
 }
 /*}}}*/
