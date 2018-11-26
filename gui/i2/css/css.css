@@ -141,15 +141,6 @@ total_logins {
 	border: 1px solid #383;
 }
 
-help:after{
-    content: "";
-	color: #222;
-    display: inline-block;
-    background: url("qmark.svg") no-repeat;
-    width: 20px;
-    height: 17px;
-    margin: 0 0px 0 6px;
-}
 
 fatal, cannot {
 	background-image: url("close.svg");
@@ -179,7 +170,7 @@ input[type="submit"] {
 	margin:1px;
     border-radius: 3px; 
 	color: #fff;
-    background:#06a;
+    background:#68a;
 	border: 1px none;
     cursor:pointer;
 }
@@ -198,3 +189,31 @@ select {
 option {
   border: solid 1px #DDDDDD; 
 }
+
+withHelp {
+    position: relative;
+    display: inline-block;
+    background-color: #286;
+	padding: 1px 4px 1px 4px;
+	border-radius: 5px;
+	cursor: help;
+	border: 1px solid #243;
+}
+
+withHelp help {
+    visibility: hidden;
+	width:600px;
+	display: block;
+    background-color: #273;
+	border: 1px solid #243;
+    color: #fff;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+}
+
+withHelp:hover help {
+    visibility: visible;
+}
+
+
