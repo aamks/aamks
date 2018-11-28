@@ -234,7 +234,7 @@ function read_json($json_path) { /*{{{*/
 			"evacuees_max_v_speed" : { "mean" : 80     , "sd" : 20 }    ,
 			"evacuees_alpha_v"     : { "mean" : 0.706  , "sd" : 0.069 } ,
 			"evacuees_beta_v"      : { "mean" : -0.057 , "sd" : 0.015 } ,
-			"fire_starts_in_foom"  : 0.8
+			"fire_starts_in_room"  : 0.8
 
 		}
 	}',1);

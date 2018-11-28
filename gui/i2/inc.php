@@ -38,11 +38,10 @@ class Aamks {/*{{{*/
 	}
 
 /*}}}*/
-	private function reportbug($arr) {/*{{{*/
-		$arr[]=""; $arr[]=""; 
-		$reportquery=join("\n" , array('--------' , date("G:i:s"), $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REQUEST_URI'], $arr[0] , $arr[1] , $arr[2] , "\n\n"));
+	private function reportbug($details) {/*{{{*/
+		$reportquery=join("\n\n" , array(date("G:i:s"), $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REQUEST_URI'], $details, "\n\n"));
 		mail('mimoohowy@gmail.com, stanislaw.lazowy@gmail.com', 'aamks bug!', "$reportquery", "from: mimooh@inf.sgsp.edu.pl"); 
-		echo "<fatal>".$arr[0]."</fatal>"; 
+		echo "<fatal>DB error. Reported to the administrator.</fatal>"; 
 		echo "<br><br><br><br><br><a href=".$_SESSION['home_url']."><img id=home src=css/home.svg></a>";
 		die();
 }
@@ -121,13 +120,17 @@ class Aamks {/*{{{*/
 		// During installation AAMKS_SERVER and AAMKS_PG_PASS should be chosen and written to
 		// /etc/apache2/envvars file
         extract($_SESSION);
-		$caller=debug_backtrace()[1]['function'];
+		if(!empty(debug_backtrace()[1])) { 
+			$caller=debug_backtrace()[1]['function'];
+		} else {
+			$caller="None";
+		}
 		$connect=pg_connect("dbname=aamks host=".getenv("AAMKS_SERVER")." user=aamks password=".getenv("AAMKS_PG_PASS"));
-
-		($result=pg_query_params($connect, $qq, $arr)) || $this->reportBug(array("DB error\n\ncaller: $caller()\n\n", "$qq", pg_last_error($connect)));
+		$arr_str=implode(",", $arr);
+		($result=pg_query_params($connect, $qq, $arr)) || $this->reportBug(implode("\n\n", array("caller: $caller()", "$qq", "params: [$arr_str]", pg_last_error($connect))));
 
 		$k=pg_fetch_all($result);
-		if($success==1) { echo "<msg>Saved</msg>"; }
+		if($success==1) { $_SESSION['header_ok'][]="Saved"; }
 		if(is_array($k)) { 
 			return $k;
 		} else {
@@ -135,6 +138,7 @@ class Aamks {/*{{{*/
 		}
     }
 /*}}}*/
+
 	public function querydd($qq,$arr=[]){ /*{{{*/
 		# query debugger
 		echo "<pre>";
@@ -171,7 +175,7 @@ class Aamks {/*{{{*/
 	public function check_brute_force(){/*{{{*/
 		$r=$this->query("SELECT count(*) from logins_log where inserted > now() - interval '1 minutes' and login_id=999 and ip=$1", array($_SERVER['REMOTE_ADDR']));
 		if(($r[0]['count']) >= 4) {
-			$this->reportbug(["Too many login failures. Wait 60s."]);
+			$this->reportbug("Too many login failures. Wait 60s.");
 		}
 	}/*}}}*/
 	public function anyMessages() {/*{{{*/
