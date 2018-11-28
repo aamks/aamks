@@ -131,7 +131,7 @@ function set_user_variables($ret){/*{{{*/
 	$_SESSION['email']=$ret['email'];
 	$_SESSION['picture']=$ret['picture'];
 	header("location:".me());
-}/*}}}*/
+}/*}}}*/zz
 function reset_password(){/*{{{*/
 	$token=md5(salt(time()));
 	$k=rand(10,10000);
@@ -139,6 +139,8 @@ function reset_password(){/*{{{*/
 		if($ret=$_SESSION['nn']->query("UPDATE nusers SET reset_token = $1 where email = $2 returning id", array($token, $_SESSION['reset_email']))){
 			nice_mail($_SESSION['reset_email'],"AAMKS reset password $k","Reset the AAMKS password <a href=".me()."?reset=$token>HERE</a>") ;
 			echo "Email sent to $_SESSION[reset_email]"                                                                                  ;
+			$_SESSION['nn']->msg("Check mail for reset instructions");
+
 		}else{//did not enter email address
 			header("location:".me()); 
 		}
@@ -163,7 +165,7 @@ function reset_password(){/*{{{*/
 				set_user_variables($ret[0]);
 				$_SESSION['nn']->msg("Password changed");
 			}else{
-				$_SESSION['nn']->fatal("NOT Good!!");
+				$_SESSION['nn']->fatal("Did not change the password!!");
 			}
 		}
 	}
@@ -233,21 +235,30 @@ function get_data_from_google($token){/*{{{*/
 		$_SESSION['g_name']=$userData['name'];
 		$_SESSION['g_email']=$userData['email'];
 		$_SESSION['g_user_id']=$userData['id'];
+		$_SESSION['g_picture']=$userData['picture'];
 		#$_SESSION['access_token']=$token;
-#		dd($_SESSION);
+		#dd($_SESSION);
 		do_google_login();
 		
 }/*}}}*/
 function do_google_login(){
-	$ret=$_SESSION['nn']->query("SELECT * FROM nusers WHERE email = $1 ", array($_SESSION['userEmail'] )); //
+	$ret=$_SESSION['nn']->query("SELECT * FROM nusers WHERE email = $1 ", array($_SESSION['g_email'] )); //
 	//check if !empty google_id in DB TODO
 	if (!empty($ret[0])){ //alredy there is a user with that email. -need to Join it
-		$_SESSION['nn']->query("UPDATE nusers SET google_id = $1, picture = $2 ,activation_token ='alredy activated' where email = $3 ", array($_SESSION['userID'], $_SESSION['userPicture'],$_SESSION['userEmail'] )); //
+		$_SESSION['nn']->query("UPDATE nusers SET 
+		google_id = $1, picture = $2 ,activation_token ='already activated' where email = $3 ", array($_SESSION['g_user_id'], $_SESSION['g_picture'],$_SESSION['g_email'] )); //
+		$_SESSION['nn']->msg("Email address already used in AAMKS!  - merging accounts!");
+
 		set_user_variables($ret[0])                                                                                         ;
 # psql aamks -c "select * from nusers";
-		$_SESSION['nn']->msg("Email address already used in AAMKS!  - merging accounts!");
+# psql aamks -c "delete  from nusers";
 	}else { //there is no user with that email in AAMKS - we need to create it
 		$_SESSION['nn']->msg("Creating new google user!");
+		$ret1=$_SESSION['nn']->query("insert into nusers (username, email, google_id,picture, password, activation_token) values ($1,$2,$3,$4,$5,$6) returning id", array( $_SESSION['g_name'], $_SESSION['g_email'], $_SESSION['g_user_id'], $_SESSION['g_picture'], "no password yet", "already activated"));
+		$variables_to_set=array("id"=>$ret1[0][id],"username"=>$_SESSION['g_name'],"email"=$_SESSION['g_email'],
+		"picture"=>$_SESSION['g_picture']);
+		dd($variables_to_set);
+		set_user_variables($variables_to_set);
 	}
 }
 function main() { /*{{{*/
