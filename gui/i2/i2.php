@@ -103,16 +103,15 @@ function do_register(){/*{{{*/
 
 }/*}}}*/
 function activate_user(){/*{{{*/
-	$ret=$_SESSION['nn']->query("SELECT * FROM nusers WHERE activation_token= $1 AND activation_token !='alredy activated'", array($_GET['activation_token'] ));
+	$ret=$_SESSION['nn']->query("SELECT * FROM nusers WHERE activation_token= $1 AND activation_token !='already activated'", array($_GET['activation_token'] ));
 	if (empty($ret[0])){
 		$_SESSION['nn']->fatal("Activation token not valid");
 	}else{
-		$_SESSION['nn']->query("UPDATE nusers SET activation_token ='alredy activated' WHERE id= $1", array($ret[0]['id'])) ;
+		$_SESSION['nn']->query("UPDATE nusers SET activation_token ='already activated' WHERE id= $1", array($ret[0]['id'])) ;
 	#	$_SESSION['nn']->msg("Activation completed")                                                                  ;
 #		$_SESSION['header_ok'][]="Activation complete";
 #		$_SESSION['header_err'][]="Activation not complete";
 #		$_SESSION['header_err'][]="Activation not complete";
-
 		set_user_variables($ret[0])                                                                                         ;
 # psql aamks -c "select reset_token from nusers";
 
@@ -131,7 +130,7 @@ function set_user_variables($ret){/*{{{*/
 	$_SESSION['email']=$ret['email'];
 	$_SESSION['picture']=$ret['picture'];
 	header("location:".me());
-}/*}}}*/zz
+}/*}}}*/
 function reset_password(){/*{{{*/
 	$token=md5(salt(time()));
 	$k=rand(10,10000);
@@ -247,17 +246,15 @@ function do_google_login(){
 	if (!empty($ret[0])){ //alredy there is a user with that email. -need to Join it
 		$_SESSION['nn']->query("UPDATE nusers SET 
 		google_id = $1, picture = $2 ,activation_token ='already activated' where email = $3 ", array($_SESSION['g_user_id'], $_SESSION['g_picture'],$_SESSION['g_email'] )); //
-		$_SESSION['nn']->msg("Email address already used in AAMKS!  - merging accounts!");
-
+		$_SESSION['header_ok'][]="Email already used in Aamks! - merging accounts";
 		set_user_variables($ret[0])                                                                                         ;
 # psql aamks -c "select * from nusers";
 # psql aamks -c "delete  from nusers";
 	}else { //there is no user with that email in AAMKS - we need to create it
-		$_SESSION['nn']->msg("Creating new google user!");
+		#$_SESSION['nn']->msg("Creating new google user!");
 		$ret1=$_SESSION['nn']->query("insert into nusers (username, email, google_id,picture, password, activation_token) values ($1,$2,$3,$4,$5,$6) returning id", array( $_SESSION['g_name'], $_SESSION['g_email'], $_SESSION['g_user_id'], $_SESSION['g_picture'], "no password yet", "already activated"));
-		$variables_to_set=array("id"=>$ret1[0][id],"username"=>$_SESSION['g_name'],"email"=$_SESSION['g_email'],
-		"picture"=>$_SESSION['g_picture']);
-		dd($variables_to_set);
+		$variables_to_set=array("id"=>$ret1[0]['id'],"username"=>$_SESSION['g_name'],"email"=>$_SESSION['g_email'], "picture"=>$_SESSION['g_picture']);
+		$_SESSION['header_ok'][]="Created google aamks account";
 		set_user_variables($variables_to_set);
 	}
 }
