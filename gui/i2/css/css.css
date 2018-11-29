@@ -216,4 +216,7 @@ withHelp:hover help {
     visibility: visible;
 }
 
+table.noborder td, table.noborder tr {
+	border-bottom: none;
+}
 
