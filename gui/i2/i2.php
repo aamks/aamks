@@ -54,11 +54,12 @@ function login_form(){/*{{{*/
 	
 }/*}}}*/
 function menu() { /*{{{*/
-	echo "
-	<img width=160 src=logo.svg><br><br><br>
-	<a href=/i2/apainter class=blink>Create geometry</a><br>
-	<a href=/i2/workers/vis/master.html class=blink>Visualization</a><br>
-	";
+	echo "<div style='position:fixed;top:10px'>
+		<img width=160 src=logo.svg><br><br><br>
+		<a href=/i2/apainter class=blink>Create geometry</a><br>
+		<a href=/i2/workers/vis/master.html class=blink>Visualization</a><br>
+		</div>
+		";
 }
 /*}}}*/
 function register_form(){/*{{{*/
@@ -171,7 +172,7 @@ function reset_password(){/*{{{*/
 	exit();
 }/*}}}*/
 function edit_user_form(){/*{{{*/
-	echo "<div style='float:right;background:#555555;width:400px;margin-top:50px;margin-right:100px'>
+	echo "<div style='position:absolute;float:right;background:#555;width:400px;top:80px;right:10px'>
 		<form method=POST>
 		<table>
 		<tr><td>name<td><input name=name placeholder='name' size=32 required autocomplete='off' value='$_SESSION[username]' >
@@ -183,18 +184,21 @@ function edit_user_form(){/*{{{*/
 		";
 }/*}}}*/
 function edit_user(){/*{{{*/
+	if(empty($_SESSION['user_id'])){
+	header("location:".me());
+	}
 	if(!isset($_POST['save'])){ //from not submited
-		edit_user_form(); //print form
 	}else{ //form submited
 		if(!empty($_POST['password'])){ //did not changed password
 			$_SESSION['nn']->query("UPDATE nusers SET password = $1, username = $2 where id= $3", array(salt($_POST['password']), $_POST['name'], $_SESSION['user_id']));
 		}else{
 			$_SESSION['nn']->query("UPDATE nusers SET username = $1 where id= $2", array($_POST['name'], $_SESSION['user_id']));
 		}
-		$_SESSION['nn']->msg("SAVED");
 		$_SESSION['username']=$_POST['name'];
-		edit_user_form();	
+		$_SESSION['header_ok'][]="SAVED";
+		header("location:".me());
 		}
+	edit_user_form();	
 # psql aamks -c "select * from nusers";
 }/*}}}*/
 function google_login_prep(){/*{{{*/
@@ -247,6 +251,7 @@ function do_google_login(){
 		$_SESSION['nn']->query("UPDATE nusers SET 
 		google_id = $1, picture = $2 ,activation_token ='already activated' where email = $3 ", array($_SESSION['g_user_id'], $_SESSION['g_picture'],$_SESSION['g_email'] )); //
 		$_SESSION['header_ok'][]="Email already used in Aamks! - merging accounts";
+		$ret[0]['picture']=$_SESSION['g_picture'];
 		set_user_variables($ret[0])                                                                                         ;
 # psql aamks -c "select * from nusers";
 # psql aamks -c "delete  from nusers";
@@ -260,24 +265,16 @@ function do_google_login(){
 }
 function main() { /*{{{*/
 	global $g_ret; //google login handler
+
+
 	$_SESSION['home_url']="https://stanley.szach.in/i2/i2.php";
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	$_SESSION['nn']->htmlHead("i2");
-	if(isset($_GET['register'])) { register_form();}
-	if(isset($_GET['reset'])) { reset_password();}
-	if(isset($_GET['activation_token'])) { activate_user();}
 	if(isset($_GET['edit_user'])) { edit_user();}
-	if (isset($_GET['code']) and (isset($_GET['scope']))) {  get_data_prep(); } //google login
-
-	if(empty($_SESSION['user_id'])){
-		google_login_prep();
-		login_form();
-	}else{
-		$_SESSION['nn']->logoutButton();
-		menu();
-	}
+	$_SESSION['nn']->logoutButton();
 
 
+	menu(); //last
 }
 /*}}}*/
 main();

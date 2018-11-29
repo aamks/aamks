@@ -74,14 +74,23 @@ class Aamks {/*{{{*/
 /*}}}*/
 	public function logoutButton() {/*{{{*/
 		if(isset($_REQUEST['logout'])) { session_destroy(); header('Location: /i2/i2.php'); }
-		//if(empty($_SESSION['user_id'])) { header('Location: /login.php'); }
+		if(empty($_SESSION['user_id'])) { 
+			if(isset($_GET['register'])) { register_form();}
+			if(isset($_GET['reset'])) { reset_password();}
+			if(isset($_GET['activation_token'])) { activate_user();}
+			if (isset($_GET['code']) and (isset($_GET['scope']))) {  get_data_prep(); } //google login
+			google_login_prep();
+			login_form();
+			exit();
+		}
 		echo "<div style='float:right; text-align:right; font-size:12px'>";
-		echo "<a href=?edit_user ><img src=$_SESSION[picture] width=50px height=50px></a>";
+		if(!empty($_SESSION['picture'])){
+			echo "<a href=?edit_user ><img src=$_SESSION[picture] width=50px height=50px></a>";
+		}
 		echo "<a href=?edit_user class=blink>".$_SESSION['username']."</a>";
 		echo "<a href=?projects class=blink>My projects</a>
 			<a href=?logout=1 class=blink>Logout</a>
-			</div>
-		";
+			</div>";
 	}
 /*}}}*/
 	public function fatal($msg) {/*{{{*/
