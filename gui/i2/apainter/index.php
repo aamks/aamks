@@ -39,7 +39,7 @@ function vars() {/*{{{*/
 /*}}}*/
 function main() { /*{{{*/
 	head();
-	vars();
+	if($_SERVER['SERVER_NAME']!='tygrys.inf.sgsp.edu.pl') { vars(); }
 }
 /*}}}*/
 main();
