@@ -1,6 +1,7 @@
 \c aamks
+drop table users;
 drop table nusers;
-CREATE TABLE nusers (---{{{
+CREATE TABLE users (---{{{
 	id serial PRIMARY KEY, 
 	google_id text,
     userName text,
@@ -14,7 +15,7 @@ CREATE TABLE nusers (---{{{
 	created timestamp default current_timestamp
 );
 ---}}}
-CREATE TRIGGER update_modified BEFORE UPDATE ON nusers FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
-ALTER TABLE nusers OWNER TO aamks;
-GRANT ALL ON TABLE nusers TO aamks;
-GRANT ALL ON SEQUENCE nusers_id_seq TO aamks;
+CREATE TRIGGER update_modified BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+ALTER TABLE users OWNER TO aamks;
+GRANT ALL ON TABLE users TO aamks;
+GRANT ALL ON SEQUENCE users_id_seq TO aamks;

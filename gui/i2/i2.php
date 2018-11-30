@@ -1,8 +1,5 @@
 <?php
-//TODO - do we need to change email address
-//TODO change nusers to users in DB
-//TODO - password strength
-	#	$_SESSION['nn']->msg("Activation completed")                                                                  ;
+#		$_SESSION['nn']->msg("Activation completed")                                                                  ;
 #		$_SESSION['header_ok'][]="Activation complete";
 #		$_SESSION['header_err'][]="Activation not complete";
 session_name('aamks');
@@ -40,7 +37,7 @@ function login_form(){/*{{{*/
 		echo $form;
 	}else{
 		$salted=salt($_POST['password']);
-		$ret=$_SESSION['nn']->query("SELECT * FROM nusers where email= $1 and password = $2", array($_POST['email'], $salted));
+		$ret=$_SESSION['nn']->query("SELECT * FROM users where email= $1 and password = $2", array($_POST['email'], $salted));
 		if(!empty($ret)){//password and email match
 			if($salted==$ret[0]['password']){
 				set_user_variables($ret[0]);
@@ -67,6 +64,12 @@ function menu() { /*{{{*/
 		</div> ";
 }
 /*}}}*/
+ function password_input($name,$required){/*{{{*/
+	if(!empty($required)){$req=" required ";}else{ $req="";}
+	 $password_input="<input type=password size=32 autocomplete=off $req name=$name placeholder='password' pattern='(?=^.{8,}$)(?=.*[!@#$%^&*])(?=.*\d)(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$' title='at least 8 chars - lowecase, uppercase, digit, character from (!@#$%^&*)'>";
+	 return $password_input;
+# psql aamks -c "select * from users";
+}/*}}}*/
 function register_form(){/*{{{*/
    $form = "<br><br>
 		<form method=POST>
@@ -75,8 +78,8 @@ function register_form(){/*{{{*/
 		<table>
 		<tr><td>name<td><input name=name placeholder='John Doe' size=32 required autocomplete='off' >
 		<tr><td>email<td><input type=email name=email placeholder='email' size=32 required autocomplete='off' >
-		<tr><td>password<td><input type=password name='password' size=32 placeholder='password' autocomplete='off' required >
-		<tr><td>repeat password<td><input type=password name='rpassword' size=32 placeholder='password' autocomplete='off' required >
+		<tr><td>password<td>".password_input("password",1)."
+		<tr><td>repeat password<td>".password_input("rpassword",1)."
 		</table><br>
 		<input type=submit name=register value='Register'>
 		<br><br>
@@ -92,23 +95,23 @@ function register_form(){/*{{{*/
 }/*}}}*/
 function do_register(){/*{{{*/
 	extract($_POST);
-	$ret=$_SESSION['nn']->query("SELECT * FROM nusers WHERE email = $1 ", array($_POST['email'] ));
+	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE email = $1 ", array($_POST['email'] ));
 	if (!empty($ret[0])){
 		$_SESSION['nn']->fatal("Email address already used in AAMKS!");
 	}
 	$salted=salt($password);
 	$token=md5(time());
-	$ret=$_SESSION['nn']->query("insert into nusers (username, email, password, activation_token) values ($1,$2,$3,$4) returning id", array($name, $email, $salted,$token));
+	$ret=$_SESSION['nn']->query("insert into users (username, email, password, activation_token) values ($1,$2,$3,$4) returning id", array($name, $email, $salted,$token));
 	nice_mail($email,"Welcome to AAMKS","Confirm your email address and activate your AAMKS account <br> 
 		<a href=https://stanley.szach.in/i2/i2.php?activation_token=$token>Click here</a>");
-	echo "Check your mail for confirmation email";
+	echo "Email sent to $email";
 }/*}}}*/
 function activate_user(){/*{{{*/
-	$ret=$_SESSION['nn']->query("SELECT * FROM nusers WHERE activation_token= $1 AND activation_token !='already activated'", array($_GET['activation_token'] ));
+	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE activation_token= $1 AND activation_token !='already activated'", array($_GET['activation_token'] ));
 	if (empty($ret[0])){
 		$_SESSION['nn']->fatal("Activation token not valid");
 	}else{
-		$_SESSION['nn']->query("UPDATE nusers SET activation_token ='already activated' WHERE id= $1", array($ret[0]['id'])) ;
+		$_SESSION['nn']->query("UPDATE users SET activation_token ='already activated' WHERE id= $1", array($ret[0]['id'])) ;
 		set_user_variables($ret[0])                                                                                         ;
 	}
 }/*}}}*/
@@ -129,7 +132,7 @@ function reset_password(){/*{{{*/
 	$token=md5(salt(time()));
 	$k=rand(10,10000);
 	if(empty($_GET['reset'])){//start of reseting proces
-		if($ret=$_SESSION['nn']->query("UPDATE nusers SET reset_token = $1 where email = $2 returning id", array($token, $_SESSION['reset_email']))){
+		if($ret=$_SESSION['nn']->query("UPDATE users SET reset_token = $1 where email = $2 returning id", array($token, $_SESSION['reset_email']))){
 			nice_mail($_SESSION['reset_email'],"AAMKS reset password $k","Reset the AAMKS password <a href=".me()."?reset=$token>HERE</a>") ;
 			echo "Email sent to $_SESSION[reset_email]"                                                                                  ;
 			$_SESSION['nn']->msg("Check mail for reset instructions");
@@ -154,7 +157,7 @@ function reset_password(){/*{{{*/
 		if(!isset($_POST['reset'])){//show reset form
 		echo $form;
 		}else{//do the reseting
-			if($ret=$_SESSION['nn']->query("UPDATE nusers SET password = $1, reset_token = NULL where email = $2 AND reset_token = $3 returning *", array(salt($_POST['password']), $_SESSION['reset_email'], $_GET['reset']))){
+			if($ret=$_SESSION['nn']->query("UPDATE users SET password = $1, reset_token = NULL where email = $2 AND reset_token = $3 returning *", array(salt($_POST['password']), $_SESSION['reset_email'], $_GET['reset']))){
 				$_SESSION['header_ok'][]="DONE!";
 				set_user_variables($ret[0]);
 			}else{
@@ -169,7 +172,8 @@ function edit_user_form(){/*{{{*/
 		<form method=POST>
 		<table>
 		<tr><td>name<td><input name=name placeholder='name' size=32 required autocomplete='off' value='$_SESSION[username]' >
-		<tr><td>password<td><input type=text name='password' size=32 placeholder='password' autocomplete='off' >
+		<tr style='display:none'><td>email-readonly<td><input id='username' readonly name='username'  size=32 value='$_SESSION[email]' >
+		<tr><td>password<td>".password_input("password",0)."
 		</table><br>
 		<input type=submit name=save value='Save'>
 		</form>
@@ -183,9 +187,9 @@ function edit_user(){/*{{{*/
 	if(!isset($_POST['save'])){ //from not submited
 	}else{ //form submited
 		if(!empty($_POST['password'])){ //did not changed password
-			$_SESSION['nn']->query("UPDATE nusers SET password = $1, username = $2 where id= $3", array(salt($_POST['password']), $_POST['name'], $_SESSION['user_id']));
+			$_SESSION['nn']->query("UPDATE users SET password = $1, username = $2 where id= $3", array(salt($_POST['password']), $_POST['name'], $_SESSION['user_id']));
 		}else{
-			$_SESSION['nn']->query("UPDATE nusers SET username = $1 where id= $2", array($_POST['name'], $_SESSION['user_id']));
+			$_SESSION['nn']->query("UPDATE users SET username = $1 where id= $2", array($_POST['name'], $_SESSION['user_id']));
 		}
 		$_SESSION['username']=$_POST['name'];
 		$_SESSION['header_ok'][]="SAVED";
@@ -232,14 +236,14 @@ function get_data_from_google($token){/*{{{*/
 		do_google_login();
 }/*}}}*/
 function do_google_login(){/*{{{*/
-	$ret=$_SESSION['nn']->query("SELECT * FROM nusers WHERE email = $1 ", array($_SESSION['g_email'] )); //
+	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE email = $1 ", array($_SESSION['g_email'] )); //
 	if (!empty($ret[0])){ //alredy there is a user with that email. -need to Join it
-		$_SESSION['nn']->query("UPDATE nusers SET 
+		$_SESSION['nn']->query("UPDATE users SET 
 		google_id = $1, picture = $2 ,activation_token ='already activated' where email = $3 ", array($_SESSION['g_user_id'], $_SESSION['g_picture'],$_SESSION['g_email'] )); //
 		$_SESSION['header_ok'][]="Email already used in Aamks! - merging accounts";
 		$ret[0]['picture']=$_SESSION['g_picture'];
 	}else { //there is no user with that email in AAMKS - we need to create it
-		$ret1=$_SESSION['nn']->query("insert into nusers (username, email, google_id,picture, password, activation_token) values ($1,$2,$3,$4,$5,$6) returning id", array( $_SESSION['g_name'], $_SESSION['g_email'], $_SESSION['g_user_id'], $_SESSION['g_picture'], "no password yet", "already activated"));
+		$ret1=$_SESSION['nn']->query("insert into users (username, email, google_id,picture, password, activation_token) values ($1,$2,$3,$4,$5,$6) returning id", array( $_SESSION['g_name'], $_SESSION['g_email'], $_SESSION['g_user_id'], $_SESSION['g_picture'], "no password yet", "already activated"));
 		$ret[0]=array("id"=>$ret1[0]['id'],"username"=>$_SESSION['g_name'],"email"=>$_SESSION['g_email'], "picture"=>$_SESSION['g_picture']);
 		$_SESSION['header_ok'][]="Created google aamks account";
 	}
