@@ -1,42 +1,10 @@
 <?php
 session_name('aamks');
 require_once("inc.php"); 
+require_once("inc.firedb.php"); 
 
 # /usr/local/aamks/gui/interface/src/app/enums/risk/enums/risk-enums.ts
 
-function make_buildings_db() { /*{{{*/
-	$bdb=array();
-	$bdb['Hotel']                     =array('type'=> 'c1' , 'hrr_alpha_mode'=> 0.047  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1    , 'COR'=> 1    , 'STAI'=> 1    , 'HALL'=> 1)  ) ;
-	$bdb['Office (closed plan)']      =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>8    , 'COR'=> 20   , 'STAI'=> 50   , 'HALL'=> 30) ) ;
-	$bdb['Office (open plan)']        =array('type'=> 'a'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>50   , 'COR'=> 10   , 'STAI'=> 50   , 'HALL'=> 10) ) ;
-	$bdb['Amusement arcade']          =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.5  , 'COR'=> 10   , 'STAI'=> 30   , 'HALL'=> 4)  ) ;
-	$bdb['Archive/library']           =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$bdb['Art gallery']               =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$bdb['Assembly hall']             =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>30   , 'COR'=> 30   , 'STAI'=> 30   , 'HALL'=> 30) ) ;
-	$bdb['Bank']                      =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.0029 , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>3    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$bdb['Bar']                       =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.3  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$bdb['Bazaar']                    =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$bdb['Business centre']           =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>7    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$bdb['Canteen']                   =array('type'=> 'a'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1    , 'COR'=> 10   , 'STAI'=> 20   , 'HALL'=> 10) ) ;
-	$bdb['School']                    =array('type'=> 'a'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 10   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$bdb['Schopping mall']            =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>4    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 4)  ) ;
-	$bdb['Dance area']                =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.5  , 'COR'=> 1    , 'STAI'=> 1    , 'HALL'=> 1)  ) ;
-	$bdb['Dromitory']                 =array('type'=> 'c2' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$bdb['Exhibition area']           =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1.5  , 'COR'=> 1.5  , 'STAI'=> 10   , 'HALL'=> 1.5)) ;
-	$bdb['Factory area']              =array('type'=> 'a'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 10   , 'STAI'=> 20   , 'HALL'=> 10) ) ;
-	$bdb['Gym or leisure centre']     =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1    , 'COR'=> 1    , 'STAI'=> 1    , 'HALL'=> 1)  ) ;
-	$bdb['Museum']                    =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.6  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$bdb['Restaurant']                =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$bdb['Shop sales']                =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 5    , 'STAI'=> 10   , 'HALL'=> 2)  ) ;
-	$bdb['Storage or warehousing']    =array('type'=> 'a'  , 'hrr_alpha_mode'=> 0.18   , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>30   , 'COR'=> 30   , 'STAI'=> 30   , 'HALL'=> 30) ) ;
-	$bdb['Theatre / concert hall']    =array('type'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.4  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$bdb['Medical day centre']        =array('type'=> 'd1' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>7    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$bdb['Hospital / nursing home']   =array('type'=> 'd2' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>10   , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$bdb['Railway station / airport'] =array('type'=> 'e'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$bdb['Custom']					  =array('type'=> NULL , 'hrr_alpha_mode'=> NULL   , 'hrrpua'=> NULL , 'evacuees_concentration'=> array('ROOM'=>NULL , 'COR'=> NULL , 'STAI'=> NULL , 'HALL'=> NULL) ) ;
-	$_SESSION['buildings_db']=$bdb ;
-}
-/*}}}*/
 function read_json($json_path) { /*{{{*/
 	$conf=json_decode('
 	{
@@ -52,10 +20,10 @@ function read_json($json_path) { /*{{{*/
 				{ "wall":     "brick"   , "thickness" : 0.3 } 
 			],
 
-			"heat_detectors":  [ { "temp_mean": 68, "temp_sd": 5, "RTI": 50, "not_broken": 0.96 } ],
-			"smoke_detectors": [ { "temp_mean": 68, "temp_sd": 5, "not_broken": 0.96 } ],
-			"sprinklers":	   [ { "temp_mean": 68, "temp_sd": 5, "density_mean": 0.0005, "density_sd": 0.0001, "RTI": 50, "not_broken": 0.96 } ],
-			"nshevs_activation_time": 0
+			"heat_detectors":  [ { "temp_mean": null, "temp_sd": null, "RTI": null, "not_broken": null } ],
+			"smoke_detectors": [ { "temp_mean": null, "temp_sd": null, "not_broken": null } ],
+			"sprinklers":	   [ { "temp_mean": null, "temp_sd": null, "density_mean": null, "density_sd": null, "RTI": null, "not_broken": null } ],
+			"NSHEVS":		   [ { "activation_time": null } ]
 
 
 		} ,
@@ -114,11 +82,10 @@ function droplist_material($i,$kk,$in) {/*{{{*/
 }
 /*}}}*/
 function droplist_building_profile($in) {/*{{{*/
-	if(empty($in)) { $in='pl'; }
 	$select="<select name=post[building_profile][type]>";
 	$select.="<option value='$in'>$in</option>";
-	foreach(array_keys($_SESSION['buildings_db']) as $k) { 
-		$select.="<option value=$k>$k</option>";
+	foreach(get_building(0,1) as $k) { 
+		$select.="<option value='$k'>$k</option>";
 	}
 	$select.="</select>";
 	return $select;
@@ -185,6 +152,26 @@ function form_material($arr) { #{{{
 	return $z;
 }
 /*}}}*/
+function form_plain_arr_switchable($key,$input_arr) { #{{{
+	$arr=$input_arr[0];
+	$z='';
+	if(strlen(implode("", $arr))>0) {
+		$z.="<div id=$key-switch class='grey no-display'>None</div>";
+		$z.="<table id='$key-table' class='noborder'>";
+	} else {
+		$z.="<div id=$key-switch class='grey'>None</div>";
+		$z.="<table id='$key-table' class='noborder no-display'>";
+	}
+	$i=0;
+	$z.="<tr>";
+	foreach($arr as $kk => $vv) { 
+		$z.="<td>".get_help($kk)."<br><input size=8 type=text name=post[$key][$i][$kk] value='$vv'>";
+	}
+	$i++;
+	$z.="</table>";
+	return $z;
+}
+/*}}}*/
 function form_plain_arr($key,$arr) { #{{{
 	$z="";
 	$z="<table class=noborder>";
@@ -198,12 +185,6 @@ function form_plain_arr($key,$arr) { #{{{
 	}
 	$z.="</table>";
 	return $z;
-}
-/*}}}*/
-function update() {/*{{{*/
-	if(empty($_POST['update_conf'])) { return; }
-	#dd(json_encode($_POST['post'], JSON_NUMERIC_CHECK));
-	dd($_POST['post']);
 }
 /*}}}*/
 function building_fields($v) {/*{{{*/
@@ -224,18 +205,17 @@ function form($json_path=NULL) { /*{{{*/
 	#dd($json);
 	echo "<form method=post>";
 	echo "<table>";
-	echo "<tr><th>params<th>values";
 	foreach($json['basic'] as $k=>$v) {
-
 		if($k=='project_id')                  { echo "<tr><td>".get_help($k)."<td>$v"; }
 		else if($k=='scenario_id')            { echo "/$v"; }
 		else if($k=='building_profile')       { echo "<tr><td>".get_help($k)."<td>".building_fields($v); }
 		else if($k=='pre_evac')               { echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); }
 		else if($k=='pre_evac_fire_origin')   { echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); }
 		else if($k=='material')               { echo "<tr><td>".get_help($k)."<td>".form_material($v); }
-		else if($k=='heat_detectors')         { echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); }
-		else if($k=='smoke_detectors')        { echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); }
-		else if($k=='sprinklers')             { echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); }
+		else if($k=='heat_detectors')         { echo "<tr><td><a class='rlink switch' id='$k'>heat detectors</a><td>".form_plain_arr_switchable($k,$v); }
+		else if($k=='smoke_detectors')        { echo "<tr><td><a class='rlink switch' id='$k'>smoke detectors</a><td>".form_plain_arr_switchable($k,$v); }
+		else if($k=='sprinklers')             { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
+		else if($k=='NSHEVS')                 { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
 		else if($k=='indoor_temperature')     { echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); }
 		else if($k=='outdoor_temperature')    { echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); }
 		else if($k=='detectors_temp')         { echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); }
@@ -261,10 +241,7 @@ function main() {/*{{{*/
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	$_SESSION['nn']->htmlHead("Aamks");
 	echo "<a class=blink href=apainter>apainter</a><br>";
-
 	make_help();
-	make_buildings_db();
-	#dd($_SESSION['buildings_db']);
 	update();
 	form();
 }
@@ -291,7 +268,7 @@ function make_help() { /*{{{*/
 	$help["pre_evac"]				 = ["pre-evacuation time"                               , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
 	$help["pre_evac_fire_origin"]	 = ["pre-evacuation time in<br>the room of fire origin" , "fire origin room" ]                                                        ;
 	$help["management"]			     = ["management"                                        , "help for management" ]                                                     ;
-	$help["temp_mean"]			     = ["temp mean"                                         , "help for temp mean" ]                                                     ;
+	$help["temp_mean"]			     = ["temp mean"                                         , "help for temp mean" ]                                                      ;
 
 	foreach($help as $k=>$v) { 
 		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
@@ -299,5 +276,21 @@ function make_help() { /*{{{*/
 	$_SESSION['help']=$help;
 }
 /*}}}*/
+function calculate_profile($arr) { #{{{
+	$arr['code']=get_building($arr['type'])['code'];
+	extract($arr);
 
+	$pre_evac=get_profile_code(implode(",", array($code,$management,$complexity,$alarming)));
+	$pre_evac_fire_origin=get_profile_code(implode(",", array($code,"fire_origin")));
+	return array('pre_evac'=>$pre_evac, 'pre_evac_fire_origin'=>$pre_evac_fire_origin);
+}
+/*}}}*/
+function update() {/*{{{*/
+	if(empty($_POST['update_conf'])) { return; }
+	#dd(json_encode($_POST['post'], JSON_NUMERIC_CHECK));
+
+	dd(calculate_profile($_POST['post']['building_profile']));
+	dd($_POST['post']);
+}
+/*}}}*/
 ?>

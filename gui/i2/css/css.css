@@ -77,6 +77,7 @@ a.blink {
     padding: 5px 8px;
 }
 a.rlink {
+	user-select: none;
 	text-decoration: none;
 	margin: 1px 3px;
     padding:4px 8px; 
@@ -149,7 +150,8 @@ fatal, cannot {
 }
 
 textarea, input, select {
-	padding: 3px;
+	padding: 2px;
+	margin: 4px;
 	color: #fff;
 	background: #333;
 	border: none;
@@ -193,23 +195,24 @@ option {
 withHelp {
     position: relative;
     display: inline-block;
-    background-color: #286;
 	padding: 1px 4px 1px 4px;
 	border-radius: 5px;
 	cursor: help;
-	border: 1px solid #243;
+    background-color: wheat;
+	color: #222;
 }
 
 withHelp help {
     visibility: hidden;
-	width:600px;
+	min-width:200px;
+	max-width:600px;
 	display: block;
-    background-color: #273;
 	border: 1px solid #243;
-    color: #fff;
     padding: 8px;
     position: absolute;
     z-index: 1;
+    background-color: wheat;
+    color: #444;
 }
 
 withHelp:hover help {
@@ -218,5 +221,11 @@ withHelp:hover help {
 
 table.noborder td, table.noborder tr {
 	border-bottom: none;
+}
+.grey {
+	opacity: 0.3;
+}
+.no-display{
+	display: none;
 }
 
