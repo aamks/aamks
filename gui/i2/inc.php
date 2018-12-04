@@ -34,6 +34,7 @@ class Aamks {/*{{{*/
 		if($site!="ajax") { $this->htmlHead($site); } 
 		$_SESSION['header_err']=[];
 		$_SESSION['header_ok']=[];
+		$_SESSION['header_ok_confirm']=[];
 
 	}
 
@@ -195,6 +196,9 @@ class Aamks {/*{{{*/
 		} else if(!empty($_SESSION['header_ok'])) { 
 			echo "<msg>".implode("<br><br>", $_SESSION['header_ok'])."</msg>";
 			$_SESSION['header_ok']=[];
+		} else if(!empty($_SESSION['header_ok_confirm'])) { 
+			echo "<msg_confirm>".implode("<br><br>", $_SESSION['header_ok_confirm'])."</msg_confirm>";
+			$_SESSION['header_ok_confirm']=[];
 		}
 	}
 	/*}}}*/

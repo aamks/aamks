@@ -33,7 +33,7 @@ th {
 	display: none;
 }
 
-msg, fatal, cannot {
+msg, fatal, cannot, msg_confirm{
 	z-index: 999;
 	position:fixed;
 	left:0px;
@@ -221,6 +221,7 @@ withHelp:hover help {
 
 table.noborder td, table.noborder tr {
 	border-bottom: none;
+	text-align: center;
 }
 .grey {
 	opacity: 0.3;
