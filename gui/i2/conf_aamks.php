@@ -324,7 +324,7 @@ function form4() { /*{{{*/
 
 function menu() {/*{{{*/
 	echo "
-	<a class=blink href=apainter>apainter</a>
+	<a class=blink href=i2.php>menu</a>
 	<a class=blink href=?form1>easy</a>
 	<a class=blink href=?form2>advanced</a>
 	<a class=blink href=?form3>direct</a>

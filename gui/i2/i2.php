@@ -26,7 +26,7 @@ function login_form(){/*{{{*/
     <input type=submit name=logMeIn value='Sign in'>
 	</div>
 	<br>or<br><br>
-	<img src=g_signin.png onclick=\"window.location = '$loginURL' \" value='Login with Google'>
+	<img id=g-signin-png src=g_signin.png onclick=\"window.location = '$loginURL' \" value='Login with Google'>
 	<br><br> <br><br> <br><br> <br><br>
 	New to Aamks?
 	<a href=?register>Register</a>
@@ -59,8 +59,9 @@ function login_form(){/*{{{*/
 function menu() { /*{{{*/
 	echo "<div style='position:fixed;top:10px'>
 		<img width=160 src=logo.svg><br><br><br>
-		<a href=/i2/apainter class=blink>Create geometry</a><br>
-		<a href=/i2/workers/vis/master.html class=blink>Visualization</a><br>
+		<a href=/i2/apainter class=blink>apainter</a><br>
+		<a href=/i2/conf_aamks.php?form1 class=blink>form1</a><br>
+		<a href=/i2/workers/vis/master.html class=blink>visualization</a><br>
 		</div> ";
 }
 /*}}}*/

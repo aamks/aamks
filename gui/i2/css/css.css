@@ -218,6 +218,11 @@ withHelp help {
 withHelp:hover help {
     visibility: visible;
 }
+#g-signin-png:hover {
+	cursor: pointer;
+	-webkit-filter: hue-rotate(150deg);
+	filter: hue-rotate(150deg);
+}
 
 table.noborder td, table.noborder tr {
 	border-bottom: none;
