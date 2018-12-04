@@ -38,7 +38,7 @@ msg, fatal, cannot, msg_confirm{
 	position:fixed;
 	left:0px;
 	min-height: 30px;
-	top:0px;
+	top:50px;
     text-align:center;
     width:500px;
 	opacity: 0.9;
