@@ -116,23 +116,6 @@ textarea {
 	border: 1px solid #555;
 }
 
-.div-yes, .div-no {
-	user-select: none;
-	display: block;
-	width: 20px;
-	height: 20px;
-	cursor: pointer;
-	display: inline-block;
-	background-color: #048;
-	border: 1px solid #aaa;
-	border-radius: 2px;
-	cursor: pointer;
-}
-.div-no {
-	border: 1px solid #666;
-	background-color: #444;
-}
-
 total_logins {
 	border-radius: 2px;
 	display: inline-block;
@@ -235,3 +218,8 @@ table.noborder td, table.noborder tr {
 	display: none;
 }
 
+.frame {
+	border: 1px solid #888;
+	margin: 4px;
+	padding: 4px;
+}

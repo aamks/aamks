@@ -252,16 +252,19 @@ function form1($json_path=NULL) { /*{{{*/
 	foreach($json as $k=>$v)        {
 		if($k=='project_id')                 { echo "<tr><td>".get_help($k)."<td>$v <input type=hidden name=post[$k] value='$v'>"; }
 		else if($k=='scenario_id')           { echo "/$v							<input type=hidden name=post[$k] value='$v'>"; }
-		else if($k=='number_of_simulations') { echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; }
-		else if($k=='simulation_time')       { echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; }
-		else if($k=='indoor_temperature')    { echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; }
 		else if($k=='building_profile')      { echo "<tr><td>".get_help($k)."<td>".building_fields($v); }
+		else if($k=='material')              { echo "<tr><td>".get_help($k)."<td>".form_material($v); }
 		else if($k=='heat_detectors')        { echo "<tr><td><a class='rlink switch' id='$k'>heat detectors</a><td>".form_plain_arr_switchable($k,$v); }
 		else if($k=='smoke_detectors')       { echo "<tr><td><a class='rlink switch' id='$k'>smoke detectors</a><td>".form_plain_arr_switchable($k,$v); }
 		else if($k=='sprinklers')            { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
 		else if($k=='NSHEVS')                { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='material')              { echo "<tr><td>".get_help($k)."<td>".form_material($v); }
-		else                                 { echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); }
+		else { 
+			if(is_array($v)) { 
+				echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); 
+			} else {
+				echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; 
+			}
+		}
 	}
 	echo "</table>";
 	echo "<input type=submit name=update_form1 value='submit'></form>";
@@ -275,20 +278,19 @@ function form2($json_path=NULL) { /*{{{*/
 	foreach($json as $k=>$v)                 {
 		if($k=='project_id')                 { echo "<tr><td>".get_help($k)."<td>$v <input type=hidden name=post[$k] value='$v'>"; }
 		else if($k=='scenario_id')           { echo "/$v							<input type=hidden name=post[$k] value='$v'>"; }
-		else if($k=='number_of_simulations') { echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; }
-		else if($k=='simulation_time')       { echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; }
-		else if($k=='indoor_temperature')    { echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; }
+		else if($k=='material')              { echo "<tr><td>".get_help($k)."<td>".form_material($v); }
 		else if($k=='building_profile')      { echo empty_building_fields(); }
 		else if($k=='heat_detectors')        { echo "<tr><td><a class='rlink switch' id='$k'>heat detectors</a><td>".form_plain_arr_switchable($k,$v); }
 		else if($k=='smoke_detectors')       { echo "<tr><td><a class='rlink switch' id='$k'>smoke detectors</a><td>".form_plain_arr_switchable($k,$v); }
 		else if($k=='sprinklers')            { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
 		else if($k=='NSHEVS')                { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='material')              { echo "<tr><td>".get_help($k)."<td>".form_material($v); }
-		else if($k=='indoor_pressure')       { echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; }
-		else if($k=='vvents_not_broken')     { echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; }
-		else if($k=='c_const')               { echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; }
-		else if($k=='fire_starts_in_a_room') { echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; }
-		else                                 { echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); }
+		else { 
+			if(is_array($v)) { 
+				echo "<tr><td>".get_help($k)."<td>".form_plain_arr($k,$v); 
+			} else {
+				echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; 
+			}
+		}
 	}
 	echo "</table>";
 	echo "<input type=submit name=update_form2 value='submit'></form>";
@@ -296,10 +298,10 @@ function form2($json_path=NULL) { /*{{{*/
 /*}}}*/
 function form3($json_path=NULL) { /*{{{*/
 	echo "
-	<wheat>
+	<br><wheat>
 	You can directly manipulate conf_aamks.json.<br>
 	Aamks will not forgive any errors here.<br>
-	</wheat>";
+	</wheat><br><br>";
 	
 	$help=$_SESSION['help'];
 	$json=json_encode(read_json($json_path), JSON_PRETTY_PRINT);

@@ -146,7 +146,7 @@ function reset_password(){/*{{{*/
 	   $form = "
 		<form method=POST> <center>
 		<br><br>
-		<div style='border: 1px solid #555; padding: 10px; width: 360px'>
+		<div class=frame>
 		<table>
 		<tr><td>login<td><input type=email name=email value='$_SESSION[reset_email]' readonly size=32 >
 		<tr><td>new password<td><input type=password name='password' size=32 placeholder='new password' >
