@@ -258,7 +258,7 @@ class Worker:
         report = OrderedDict()
         report['worker'] = self.host_name
         report['sim_id'] = self.sim_id
-        report['project_id'] = self.vars['conf']['general']['project_id']
+        report['project_id'] = self.vars['conf']['project_id']
         report['path_to_project'] = '/home/aamks_users/'+self.working_dir.split('workers')[0]
         report['fire_origin'] = self.vars['conf']['ROOM_OF_FIRE_ORIGIN']
         report['highlight_geom'] = None

@@ -4,7 +4,7 @@ function get_building($q,$get_keys=0) { /*{{{*/
 	$db['Office (closed plan)']      =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>8    , 'COR'=> 20   , 'STAI'=> 50   , 'HALL'=> 30) ) ;
 	$db['Office (open plan)']        =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>50   , 'COR'=> 10   , 'STAI'=> 50   , 'HALL'=> 10) ) ;
 	$db['Amusement arcade']          =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.5  , 'COR'=> 10   , 'STAI'=> 30   , 'HALL'=> 4)  ) ;
-	$db['Archive/library']           =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
+	$db['Archive, library']          =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
 	$db['Art gallery']               =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
 	$db['Assembly hall']             =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>30   , 'COR'=> 30   , 'STAI'=> 30   , 'HALL'=> 30) ) ;
 	$db['Bank']                      =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.0029 , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>3    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
@@ -23,10 +23,10 @@ function get_building($q,$get_keys=0) { /*{{{*/
 	$db['Restaurant']                =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
 	$db['Shop sales']                =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 5    , 'STAI'=> 10   , 'HALL'=> 2)  ) ;
 	$db['Storage or warehousing']    =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.18   , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>30   , 'COR'=> 30   , 'STAI'=> 30   , 'HALL'=> 30) ) ;
-	$db['Theatre / concert hall']    =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.4  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
+	$db['Theatre, concert hall']     =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.4  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
 	$db['Medical day centre']        =array('code'=> 'd1' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>7    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$db['Hospital / nursing home']   =array('code'=> 'd2' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>10   , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$db['Railway station / airport'] =array('code'=> 'e'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
+	$db['Hospital, nursing home']    =array('code'=> 'd2' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>10   , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
+	$db['Railway station, airport']  =array('code'=> 'e'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
 	if(empty($get_keys)) {  
 		if(isset($db[$q])) { 
 			return $db[$q];
@@ -276,7 +276,7 @@ function get_defaults($q) {/*{{{*/
 
 	$db['setup1']='
 	{
-		"outdoor_temperature": [ { "min": 100, "max": 1000 } ],
+		"outdoor_temperature": { "min": 100, "max": 1000 },
 		"indoor_pressure": 101325,
 		"windows": [ 
 			{ "min": -99999 , "max": -5    , "quarter": -5 , "full": 0.11 } ,
@@ -284,18 +284,18 @@ function get_defaults($q) {/*{{{*/
 			{ "min": 15     , "max": 27    , "quarter": 0  , "full": 0.5 }  ,
 			{ "min": 27     , "max": 99999 , "quarter": 0  , "full": 0.5 }
 		], 
-		"doors": [ { "E": 0.04, "C": 0.14, "D": 0.5 } ],
+		"doors": { "E": 0.04, "C": 0.14, "D": 0.5 },
 		"vvents_not_broken": 0.96,
 		"c_const": 8,
-		"evacuees_max_h_speed" : [ { "mean" : 120    , "sd" : 20 }    ],
-		"evacuees_max_v_speed" : [ { "mean" : 80     , "sd" : 20 }    ],
-		"evacuees_alpha_v"     : [ { "mean" : 0.706  , "sd" : 0.069 } ],
-		"evacuees_beta_v"      : [ { "mean" : -0.057 , "sd" : 0.015 } ],
+		"evacuees_max_h_speed" : { "mean" : 120    , "sd" : 20 },
+		"evacuees_max_v_speed" : { "mean" : 80     , "sd" : 20 },
+		"evacuees_alpha_v"     : { "mean" : 0.706  , "sd" : 0.069 },
+		"evacuees_beta_v"      : { "mean" : -0.057 , "sd" : 0.015 },
 		"fire_starts_in_a_room"  : 0.8,
 
-		"hrrpua":	 [ { "min": 300    , "mode": 1000  , "max": 1300 }  ],
-		"hrr_alpha": [ { "min": 0.0029 , "mode": 0.047 , "max": 0.188 } ],
-		"evacuees_concentration": [ { "COR": 20 , "STAI": 50 , "ROOM": 8  , "HALL": 30 } ]
+		"hrrpua":	 { "min": 300    , "mode": 1000  , "max": 1300 },
+		"hrr_alpha": { "min": 0.0029 , "mode": 0.047 , "max": 0.188 },
+		"evacuees_concentration": { "COR": 20 , "STAI": 50 , "ROOM": 8  , "HALL": 30 } 
 	}';
 
 	return json_decode($db[$q],1);

@@ -10,9 +10,9 @@ from include import SendMessage
 
 OnInit()
 Geom()
-#CfastPartition()
-#CfastMcarlo()
-#EvacMcarlo()
+CfastPartition()
+CfastMcarlo()
+EvacMcarlo()
 #z=SmokeQuery("0")
 #z.get_final_vars() 
 OnEnd()

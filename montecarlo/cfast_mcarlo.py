@@ -40,7 +40,7 @@ class CfastMcarlo():
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
         self._psql_collector=OrderedDict()
 
-        si=SimIterations(self.conf['general']['project_id'], self.conf['general']['number_of_simulations'])
+        si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._new_psql_log()
@@ -50,7 +50,7 @@ class CfastMcarlo():
 
 # DISTRIBUTIONS / DRAWS
     def _draw_outdoor_temp(self):# {{{
-        mean,std_dev=self.conf['general']['outdoor_temperature']
+        mean,std_dev=self.conf['outdoor_temperature']
         outdoor_temp=round(normal(mean,std_dev),2)
         self._psql_log_variable('outdoort',outdoor_temp)
         return outdoor_temp
@@ -236,7 +236,7 @@ class CfastMcarlo():
         '''
 
         txt=(
-        'VERSN,7,{}_{}'.format('SIM', self.conf['general']['project_id']),
+        'VERSN,7,{}_{}'.format('SIM', self.conf['project_id']),
         'TIMES,600,-120,10,10',
         'EAMB,{},101300,0'.format(273+outdoor_temp),
         'TAMB,293.15,101300,0,50',
@@ -270,9 +270,9 @@ class CfastMcarlo():
             collect.append(round(v['x0']/100.0,2))     # ABSOLUTE_X_POSITION
             collect.append(round(v['y0']/100.0,2))     # ABSOLUTE_Y_POSITION
             collect.append(round(v['z0']/100.0,2))     # ABSOLUTE_Z_POSITION
-            collect.append(v['material_ceiling'])      # CEILING_MATERIAL_NAME
-            collect.append(v['material_floor'])        # FLOOR_MATERIAL_NAME
-            collect.append(v['material_wall'])         # WALL_MATERIAL_NAME
+            collect.append(v['material']['ceiling'])      # CEILING_MATERIAL_NAME
+            collect.append(v['material']['floor'])        # FLOOR_MATERIAL_NAME
+            collect.append(v['material']['wall'])         # WALL_MATERIAL_NAME
             txt.append(','.join(str(i) for i in collect))
 
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
@@ -499,7 +499,7 @@ class CfastMcarlo():
         for k,v in self._psql_collector[self._sim_id].items():
             pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
         data=', '.join(pairs)
-        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self.conf['general']['project_id'], self._sim_id))
+        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self.conf['project_id'], self._sim_id))
 
 #}}}
 

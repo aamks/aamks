@@ -20,7 +20,7 @@ class OnInit():
             os.environ["AAMKS_PROJECT"]=sys.argv[1]
         self.json=Json()
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        self.project_id=self.conf['general']['project_id']
+        self.project_id=self.conf['project_id']
         self.p=Psql()
         self._clear_sqlite()
         self._setup_simulations()
@@ -45,7 +45,7 @@ class OnInit():
         max(iteration)+1 
         '''
 
-        how_many=self.conf['general']['number_of_simulations']
+        how_many=self.conf['number_of_simulations']
 
         r=[]
         try:
@@ -153,7 +153,7 @@ class OnEnd():
         if os.environ['AAMKS_USE_GEARMAN']=='0':
             return
 
-        si=SimIterations(self.project_id, self.conf['general']['number_of_simulations'])
+        si=SimIterations(self.project_id, self.conf['number_of_simulations'])
         try:
             for i in range(*si.get()):
                 worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)

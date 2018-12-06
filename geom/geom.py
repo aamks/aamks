@@ -27,6 +27,9 @@ class Geom():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
         self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
+        dd(self.conf);
+        dd(self.conf['material'][1]);
+        exit();
         self._doors_width=32
         self._wall_width=4
         self._make_elem_counter()
@@ -160,8 +163,8 @@ class Geom():
         global_type_id=self._elem_counter[type_pri]
         name='{}_{}'.format(k[0], global_type_id)
 
-        #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , 'material_ceiling'                              , 'material_floor'                              , 'material_wall'                              , 'sprinkler' , 'detector' , 'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z' , 'fire_model_ignore')
-        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['characteristic']['material_ceiling'] , self.conf['characteristic']['material_floor'] , self.conf['characteristic']['material_wall'] , 0           , 0          , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
+        #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' ,['material']['ceiling']                             ,['material']['floor']                             ,['material']['wall']                             , 'sprinkler' , 'detector' , 'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z' , 'fire_model_ignore')
+        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['material']['ceiling'] , self.conf['material']['floor'] , self.conf['material']['wall'] , 0           , 0          , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
 
 # }}}
     def _enhancements(self):# {{{
