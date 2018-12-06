@@ -5,7 +5,75 @@
 session_name('aamks');
 require_once("inc.php"); 
 require_once("salt.php");
-if(empty($_SESSION['user_id'])){ $g_ret=google_login_prep();} //google login handler
+function google_js_login(){/*{{{*/
+	 if(!isset($_POST['g_user_id'])){
+		from_JS_to_POST();
+	 }else{
+		$_SESSION['g_name']=$_POST['g_name'];
+		$_SESSION['g_email']=$_POST['g_email'];
+		$_SESSION['g_user_id']=$_POST['g_user_id'];
+		$_SESSION['g_picture']=$_POST['g_picture'];
+		do_google_login();
+ }
+}/*}}}*/
+	function from_JS_to_POST(){/*{{{*/
+echo "
+    <script>
+      function onSignIn(googleUser) {
+        // Useful data for your client-side scripts:
+        var profile = googleUser.getBasicProfile();
+
+        // The ID token you need to pass to your backend:
+        var id_token = googleUser.getAuthResponse().id_token;
+
+		//Send data to PHP
+		var theForm, newInput1, newInput2, newInput3, newInput4, newInput5;
+		  // Start by creating a <form>
+		  theForm = document.createElement('form');
+		  theForm.action = 'i2.php';
+		  theForm.method = 'post';
+		  // Next create the <input>s in the form and give them names and values
+			
+		  newInput1 = document.createElement('input');
+		  newInput1.type = 'hidden';
+		  newInput1.name = 'g_user_id';
+		  newInput1.value = profile.getId();
+
+		  newInput2 = document.createElement('input');
+		  newInput2.type = 'hidden';
+		  newInput2.name = 'g_name';
+		  newInput2.value = profile.getName();
+
+		  newInput3 = document.createElement('input');
+		  newInput3.type = 'hidden';
+		  newInput3.name = 'g_picture';
+		  newInput3.value = profile.getImageUrl();
+
+		  newInput4 = document.createElement('input');
+		  newInput4.type = 'hidden';
+		  newInput4.name = 'g_email';
+		  newInput4.value = profile.getEmail();
+
+		  newInput5 = document.createElement('input');
+		  newInput5.type = 'hidden';
+		  newInput5.name = 'g_token_id';
+		  newInput5.value = id_token;
+
+		  // Now put everything together...
+		  theForm.appendChild(newInput1);
+		  theForm.appendChild(newInput2);
+		  theForm.appendChild(newInput3);
+		  theForm.appendChild(newInput4);
+		  theForm.appendChild(newInput5);
+
+		  console.log('przed wyslaniem');
+		  // ...and it to the DOM...
+		  document.getElementById('hidden_form_container').appendChild(theForm);
+		  // ...and submit it
+		  theForm.submit();	
+      };
+    </script>";
+}/*}}}*/
 function me(){/*{{{*/
 	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
 }/*}}}*/
@@ -26,7 +94,7 @@ function login_form(){/*{{{*/
     <input type=submit name=logMeIn value='Sign in'>
 	</div>
 	<br>or<br><br>
-	<img id=g-signin-png src=g_signin.png onclick=\"window.location = '$loginURL' \" value='Login with Google'>
+	<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' ></div>
 	<br><br> <br><br> <br><br> <br><br>
 	New to Aamks?
 	<a href=?register>Register</a>
@@ -127,7 +195,7 @@ function set_user_variables($ret){/*{{{*/
 	$_SESSION['username']=$ret['username'];
 	$_SESSION['email']=$ret['email'];
 	$_SESSION['picture']=$ret['picture'];
-	header("location:".me());
+	header("location:".me()); //TO
 }/*}}}*/
 function reset_password(){/*{{{*/
 	$token=md5(salt(time()));
@@ -198,7 +266,7 @@ function edit_user(){/*{{{*/
 		}
 	edit_user_form();	
 }/*}}}*/
-function google_login_prep(){/*{{{*/
+function google_login_prep(){/*{{{*/ //TODO to be deleted
 	global $g_ret;
 	require_once 'vendor/autoload.php';
 	$client = new Google_Client();
@@ -210,6 +278,9 @@ function google_login_prep(){/*{{{*/
 	$loginURL=$client->createAuthUrl();
 	$g_ret[0]=$loginURL;
 	$g_ret[1]=$client;
+	#dd($g_ret);
+	$_SESSION['nn']->fatal("Just checking!");
+	exit();
 	return $g_ret;
 }/*}}}*/
 function get_data_prep(){/*{{{*/
@@ -254,19 +325,76 @@ function do_google_login(){/*{{{*/
 	unset($_SESSION['g_picture']);
 	set_user_variables($ret[0]);
 }/*}}}*/
+function my_projects(){/*{{{*/
+	if(!empty($_GET['delete'])){
+		delete_project($_GET['delete']);
+	}
+	//TODO regexp for project name
+	if(isset($_POST['submit'])){
+		$_SESSION['nn']->query("INSERT INTO projects (name,user_id) VALUES ($1,$2)", array($_POST['project_name'], $_SESSION['user_id']));
+	}
+	echo "
+		<div style='background:#555;position:fixed;margin-left:200px;margin-top:100px;width:900px'>
+		My projects <br>
+		<form method=POST>
+			<input type=text name=project_name pattern='[\w-]*'> 
+			<input type=submit name=submit value='ADD PROJECT'>
+			</form>
+		<table>
+	";
+	$ret=$_SESSION['nn']->query("SELECT * FROM projects WHERE user_id=$1 ORDER BY 1", array($_SESSION['user_id'] ));
+	foreach( $ret as $project){
+		echo "<tr>
+			<td><a href=?project=$project[id]>$project[name]</a>
+			<td><a href=?projects&delete=$project[id]>DELETE</a>";
+
+	}
+	echo "</table></div> ";
+}/*}}}*/
+function project_info(){/*{{{*/
+	echo "
+		<div style='background:#555;position:relativefixed;margin-left:200px;margin-top:100px;width:900px'>
+		Project INFO <br><br>
+		<form method=POST>
+
+	";
+	if(isset($_POST['submit'])){
+		$_SESSION['nn']->query("UPDATE projects SET name=$1 WHERE id=$2 and user_id=$3", array($_POST['project_name'], $_POST['project_id'], $_SESSION['user_id']  ));
+		#$_SESSION['header_ok'][]="SAVED";
+		$_SESSION['nn']->msg("SAVED!")                                                                  ;
+	}
+	$ret=$_SESSION['nn']->query("SELECT * FROM projects WHERE user_id=$1 AND id=$2 ORDER BY 1", array($_SESSION['user_id'], $_GET['project'] ));
+	foreach( $ret as $project){
+		//TODO regexp for name 
+		echo "
+			<input type=text name=project_name value='$project[name]' >
+			<input type=hidden name=project_id value='$project[id]'>
+			Created: ".substr($project['created'],0,19)." 
+			Modified: ".substr($project['modified'],0,19)."<br>
+			//TODO = add scenarios
+			<input type=submit name=submit value='Save'>
+			</form>
+			";
+			
+	}
+	echo "</div> ";
+	my_projects();
+}/*}}}*/
 function main() { /*{{{*/
 	global $g_ret; //google login handler
-
-
 	$_SESSION['home_url']="https://stanley.szach.in/i2/i2.php";
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	$_SESSION['nn']->htmlHead("i2");
 	if(isset($_GET['edit_user'])) { edit_user();}
 	$_SESSION['nn']->logoutButton();
-
-
+	if(isset($_GET['projects'])) { my_projects();}
+	if(isset($_GET['project'])) { project_info();}
 	menu(); //last
 }
 /*}}}*/
+function delete_project($project_id){/*{{{*/
+		$_SESSION['nn']->query("DELETE FROM projects WHERE id=$1 and user_id=$2", array( $project_id, $_SESSION['user_id']  ));
+		$_SESSION['nn']->msg("GONE!");
+}/*}}}*/
 main();
 ?>

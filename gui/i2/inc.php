@@ -64,8 +64,21 @@ class Aamks {/*{{{*/
 			<meta name='viewport' content='width=device-width, initial-scale=1, minimum-scale=1'>
 			<script src='js/jquery.js'></script>
 			<script src='js/aamks.js'></script>
+    <meta name='google-signin-scope' content='profile email'>
+	<meta name='google-signin-client_id' content='352726998172-lmrbrs6c2sgpug4nc861hfb04f3s0sr6.apps.googleusercontent.com'>
+    <script src='https://apis.google.com/js/platform.js' async defer></script>
+	<div id='hidden_form_container' style='display:none;'></div> 
 		</head>
-		<body class=$site>";
+		<body class=$site>
+		<script>
+			function signOut() {
+				var auth2 = gapi.auth2.getAuthInstance();
+				auth2.signOut().then(function () {
+				        console.log('User signed out.');
+						    });
+			    }
+				</script>
+		";
 		echo "$header";
 		$this->anyMessages();
     }
@@ -75,23 +88,27 @@ class Aamks {/*{{{*/
 	}
 /*}}}*/
 	public function logoutButton() {/*{{{*/
-		if(isset($_REQUEST['logout'])) { session_destroy(); header('Location: /i2/i2.php'); }
+		if(isset($_REQUEST['logout'])) { 
+			session_destroy(); 
+			header('Location: /i2/i2.php'); 
+			}
 		if(empty($_SESSION['user_id'])) { 
 			if(isset($_GET['register'])) { register_form();}
 			if(isset($_GET['reset'])) { reset_password();}
 			if(isset($_GET['activation_token'])) { activate_user();}
-			if (isset($_GET['code']) and (isset($_GET['scope']))) {  get_data_prep(); } //google login
-			google_login_prep();
 			login_form();
+			google_js_login();
 			exit();
 		}
 		echo "<div style='float:right; text-align:right; font-size:12px'>";
+		echo"<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none'></div>";
 		if(!empty($_SESSION['picture'])){
 			echo "<a href=?edit_user ><img src=$_SESSION[picture] width=50px height=50px></a>";
+		}else{
+			echo "<a href=?edit_user class=blink>".$_SESSION['username']."</a>";
 		}
-		echo "<a href=?edit_user class=blink>".$_SESSION['username']."</a>";
 		echo "<a href=?projects class=blink>My projects</a>
-			<a href=?logout=1 class=blink>Logout</a>
+			<a href=?logout=1 class=blink onclick='signOut();' >Logout</a>
 			</div>";
 	}
 /*}}}*/

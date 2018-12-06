@@ -155,7 +155,7 @@ function building_fields($v, $variant='easy') {/*{{{*/
 /*}}}*/
 function make_help() { /*{{{*/
 	$help=[]                                                                                                                                                              ;
-	$help["project_id"]              = ["scanario"                                          , "Some help" ]                                                               ;
+	$help["project_id"]              = ["scenario"                                          , "This is scenario"]                                                         ;
 	$help["number_of_simulations"]   = ["number of simulations"                             , "write me..."]                                                              ;
 	$help["simulation_time"]         = ["simulation time"                                   , "write me..."]                                                              ;
 	$help["indoor_temperature"]      = ["indoor_temperature"                                , "write me..."]                                                              ;
