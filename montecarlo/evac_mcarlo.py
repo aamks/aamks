@@ -36,7 +36,7 @@ class EvacMcarlo():
 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
-        self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
+        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
@@ -69,17 +69,17 @@ class EvacMcarlo():
         '''
 
         if room != self._evac_conf['FIRE_ORIGIN']:
-            pre_evacuation=self.conf['settings']['pre_evacuation_time']['mean_and_sd_ordinary_room']
+            pe=self.conf['pre_evac_fire_origin']
         else:
-            pre_evacuation=self.conf['settings']['pre_evacuation_time']['mean_and_sd_room_of_fire_origin']
-        return round(lognorm(s=1, loc=pre_evacuation[0], scale=pre_evacuation[1]).rvs(), 2)
+            pe=self.conf['pre_evac']
+        return round(lognorm(s=1, loc=pe['mean'], scale=pe['sd']).rvs(), 2)
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
         ''' Special selectors from distributions.json
         First we try to return ROOM_1_2, then ROOM_FLOOR_1, then ROOM
         '''
 
-        z=self.conf['settings']['evacuees_concentration']
+        z=self.conf['evacuees_concentration']
         for i in [name, "{}_FLOOR_{}".format(type_sec,floor), type_sec]:
             if i in z.keys():
                 return z[i]
@@ -118,14 +118,15 @@ class EvacMcarlo():
             z=self.s.query("SELECT z0 FROM aamks_geom WHERE floor=?", (floor,))[0]['z0']
             for i,pos in enumerate(self.dispatched_evacuees[floor]):
                 e_id='E{}'.format(i)
-                speeds=self.conf['settings']['evacuees_speed_params']
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]=OrderedDict()
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ORIGIN']         = (pos[0]/100, pos[1]/100, z/100)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION'] = self.pre_evacuation[floor][i]
-                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ALPHA_V']        = round(normal(*speeds['alpha_v_mean_and_sd'])     , 2)
-                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['BETA_V']         = round(normal(*speeds['beta_v_mean_and_sd'])      , 2)
-                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(*speeds['max_h_speed_mean_and_sd']) , 2)
-                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(*speeds['max_v_speed_mean_and_sd']) , 2)
+
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ALPHA_V']        = round(normal(self.conf['evacuees_alpha_v']['mean']     , self.conf['evacuees_alpha_v']['sd'])     , 2)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['BETA_V']         = round(normal(self.conf['evacuees_beta_v']['mean']      , self.conf['evacuees_beta_v']['sd'])      , 2)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(self.conf['evacuees_max_h_speed']['mean'] , self.conf['evacuees_max_h_speed']['sd']) , 2)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(self.conf['evacuees_max_v_speed']['mean'] , self.conf['evacuees_max_v_speed']['sd']) , 2)
+
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
 
 # }}}

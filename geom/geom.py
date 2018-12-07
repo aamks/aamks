@@ -26,10 +26,7 @@ class Geom():
         self.json=Json()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
-        self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
-        dd(self.conf);
-        dd(self.conf['material'][1]);
-        exit();
+        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self._doors_width=32
         self._wall_width=4
         self._make_elem_counter()
@@ -116,7 +113,7 @@ class Geom():
                     record=self._prepare_geom_record(k,[p0,p1],width,depth,height,floor)
                     if record != False:
                         data.append(record)
-        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,sprinkler,detector,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore)")
+        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
         #dd(self.s.dump())
 #}}}
@@ -163,8 +160,8 @@ class Geom():
         global_type_id=self._elem_counter[type_pri]
         name='{}_{}'.format(k[0], global_type_id)
 
-        #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' ,['material']['ceiling']                             ,['material']['floor']                             ,['material']['wall']                             , 'sprinkler' , 'detector' , 'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z' , 'fire_model_ignore')
-        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['material']['ceiling'] , self.conf['material']['floor'] , self.conf['material']['wall'] , 0           , 0          , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
+        #data.append('name' , 'floor' , 'global_type_id' , 'hvent_room_seq' , 'vvent_room_seq' , 'type_pri' , 'type_sec' , 'type_tri' , 'x0'    , 'y0'    , 'z0'    , 'width' , 'depth' , 'height' , 'cfast_width' , 'sill' , 'face' , 'face_offset' , 'vent_from' , 'vent_to' , material_ceiling                      , material_floor                      , material_wall                      , 'heat_detectors' , 'smoke_detectors' , 'sprinklers' , 'is_vertical' , 'vent_from_name' , 'vent_to_name' , 'how_much_open' , 'room_area' , 'x1' , 'y1' , 'z1' , 'center_x' , 'center_y' , 'center_z' , 'fire_model_ignore')
+        return (name        , floor   , global_type_id   , None             , None             , type_pri   , k          , type_tri   , v[0][0] , v[0][1] , v[0][2] , width   , depth   , height   , None          , None   , None   , None          , None        , None      , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0                , 0                 , 0            , None          , None             , None           , None            , None        , None , None , None , None       , None       , None       , 0)
 
 # }}}
     def _enhancements(self):# {{{
@@ -312,10 +309,12 @@ class Geom():
 
 # }}}
     def _auto_detectors_and_sprinklers(self):# {{{
-        if self.conf['infrastructure']['has_detectors']:
-            self.s.query("UPDATE aamks_geom set detector = 1 WHERE type_pri='COMPA'")
-        if self.conf['infrastructure']['has_sprinklers']:
-            self.s.query("UPDATE aamks_geom set sprinkler = 1 WHERE type_pri='COMPA'")
+        if len(''.join([ str(i) for i in self.conf['heat_detectors'].values() ])) > 0:
+            self.s.query("UPDATE aamks_geom set heat_detectors = 1 WHERE type_pri='COMPA'")
+        if len(''.join([ str(i) for i in self.conf['smoke_detectors'].values() ])) > 0:
+            self.s.query("UPDATE aamks_geom set smoke_detectors = 1 WHERE type_pri='COMPA'")
+        if len(''.join([ str(i) for i in self.conf['sprinklers'].values() ])) > 0:
+            self.s.query("UPDATE aamks_geom set sprinklers = 1 WHERE type_pri='COMPA'")
 # }}}
     def _make_elem_counter(self):# {{{
         ''' 

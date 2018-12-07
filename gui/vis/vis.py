@@ -28,7 +28,7 @@ class Vis():
 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
-        self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
+        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.title=title
         self.fire_origin=fire_origin
         self.highlight_geom=highlight_geom

@@ -19,7 +19,7 @@ class OnInit():
         if len(sys.argv) > 1:
             os.environ["AAMKS_PROJECT"]=sys.argv[1]
         self.json=Json()
-        self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
+        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']
         self.p=Psql()
         self._clear_sqlite()
@@ -140,7 +140,7 @@ class OnEnd():
     def __init__(self):# {{{
         ''' Stuff that happens at the end of the project '''
         self.json=Json()
-        self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
+        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.p=Psql()
         self._gearman_register_works()
 # }}}

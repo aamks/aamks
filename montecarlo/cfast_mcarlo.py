@@ -37,7 +37,7 @@ class CfastMcarlo():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.p=Psql()
         self.json=Json()
-        self.conf=self.json.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
+        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self._psql_collector=OrderedDict()
 
         si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
@@ -50,8 +50,7 @@ class CfastMcarlo():
 
 # DISTRIBUTIONS / DRAWS
     def _draw_outdoor_temp(self):# {{{
-        mean,std_dev=self.conf['outdoor_temperature']
-        outdoor_temp=round(normal(mean,std_dev),2)
+        outdoor_temp=round(normal(self.conf['outdoor_temperature']['mean'],self.conf['outdoor_temperature']['sd']),2)
         self._psql_log_variable('outdoort',outdoor_temp)
         return outdoor_temp
 # }}}
@@ -61,7 +60,7 @@ class CfastMcarlo():
         TODO: we should have a better way of passing FIRE_ORIGIN, psql perhaps?
         '''
 
-        origin_in_room=binomial(1,self.conf['settings']['origin_of_fire']['fire_starts_in_room_probability'])
+        origin_in_room=binomial(1,self.conf['fire_starts_in_a_room'])
         
         self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY name") ]
         self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY name") ]
@@ -113,10 +112,12 @@ class CfastMcarlo():
         middle, then fading on the right. At the end read hrrs at given times.
         '''
 
-        i=self.conf['settings']['heat_release_rate']
-        #'TODO:' HRR_PEAK is calculted as each room has 10 m2, by HRRPUA times 10. It should be better address, by choosing room area and vent characteristics
-        hrr_peak=int(triangular(i['hrrpua_min_mode_max'][0], i['hrrpua_min_mode_max'][1], i['hrrpua_min_mode_max'][2]) * 10000)
-        alpha=int(triangular(i['alpha_min_mode_max'][0], i['alpha_min_mode_max'][1], i['alpha_min_mode_max'][2])*1000)
+        hrrpua=self.conf['hrrpua']
+        hrr_alpha=self.conf['hrr_alpha']
+        #'TODO:' HRR_PEAK is calculated as if each room was 10 m2, by HRRPUA times 10. It should be better addressed, by choosing room area and vent characteristics
+
+        hrr_peak=int(triangular(hrrpua['min'] , hrrpua['mode']    , hrrpua['max']) * 10000)
+        alpha=int(triangular(hrr_alpha['min'] , hrr_alpha['mode'] , hrr_alpha['max'])*1000)
 
         self._psql_log_variable('hrrpeak',hrr_peak/1000)
         self._psql_log_variable('alpha',alpha/1000.0)
@@ -147,18 +148,18 @@ class CfastMcarlo():
 # }}}
     def _draw_window_opening(self,outdoor_temp): # {{{
         ''' 
-        Windows are opened / closed based on outside temperatures but even
+        Windows are open / close based on outside temperatures but even
         still, there's a distribution of users willing to open/close the
         windows. Windows can be full-open (1), quarter-open (0.25) or closed
         (0). 
         '''
 
         draw_value=uniform(0,1)
-        for i in self.conf['settings']['window_open']['setup']:
-            if outdoor_temp > i['outside_temperature_range'][0] and outdoor_temp <= i['outside_temperature_range'][1]:
-                if draw_value < i['window_is_full_open_probability']:
+        for i in self.conf['windows']:
+            if outdoor_temp > i['min'] and outdoor_temp <= i['max']:
+                if draw_value < i['full']:
                     how_much_open=1 
-                elif draw_value < i['window_is_full_open_probability'] + i['window_is_quarter_open_probability']:
+                elif draw_value < i['full'] + i['quarter']:
                     how_much_open=0.25 
                 else:
                     how_much_open=0 
@@ -171,36 +172,38 @@ class CfastMcarlo():
         Door may be open or closed, but Hole is always open and we don't need
         to log that.
         '''
+        vents=self.conf['vents_open']
 
-        if Type=='D':
-            how_much_open=binomial(1,self.conf['settings']['door_open']['standard_door_is_open_probability'])
-            self._psql_log_variable(Type.lower(),how_much_open)
-        elif Type=='C':
-            how_much_open=binomial(1,self.conf['settings']['door_open']['door_closer_door_is_open_probability'])
-            self._psql_log_variable(Type.lower(),how_much_open)
-        elif Type=='E':
-            how_much_open=binomial(1,self.conf['settings']['door_open']['electro_magnet_door_is_open_probability'])
-            self._psql_log_variable(Type.lower(),how_much_open)
-        elif Type=='VNT':
-            how_much_open=binomial(1,self.conf['settings']['door_open']['vvents_no_failure_probability'])
-            self._psql_log_variable(Type.lower(),how_much_open)
-        elif Type=='HOLE':
+        if Type=='HOLE':
             how_much_open=1
+        else:
+            how_much_open=binomial(1,vents[Type])
+            self._psql_log_variable(Type.lower(),how_much_open)
 
         return how_much_open
 # }}}
-    def _draw_fire_detector_triggers(self):# {{{
-        mean,std_dev=self.conf['infrastructure']['detectors']['trigger_temperature_mean_and_sd']
-        zero_or_one=binomial(1,self.conf['infrastructure']['detectors']['not_broken_probability'])
-        chosen=round(normal(mean, std_dev),2) * zero_or_one
-        self._psql_log_variable('detector',chosen)
+    def _draw_heat_detectors_triggers(self):# {{{
+        mean=self.conf['heat_detectors']['temp_mean']
+        sd=self.conf['heat_detectors']['temp_sd']
+        zero_or_one=binomial(1,self.conf['heat_detectors']['not_broken'])
+        chosen=round(normal(mean, sd),2) * zero_or_one
+        self._psql_log_variable('heat_detectors',chosen)
         return str(chosen)
 # }}}
-    def _draw_sprinkler_triggers(self):# {{{
-        mean,std_dev=self.conf['infrastructure']['sprinklers']['trigger_temperature_mean_and_sd']
-        zero_or_one=binomial(1,self.conf['infrastructure']['sprinklers']['not_broken_probability'])
-        chosen=round(normal(mean, std_dev),2) * zero_or_one
-        self._psql_log_variable('sprinkler',chosen)
+    def _draw_smoke_detectors_triggers(self):# {{{
+        mean=self.conf['smoke_detectors']['temp_mean']
+        sd=self.conf['smoke_detectors']['temp_sd']
+        zero_or_one=binomial(1,self.conf['smoke_detectors']['not_broken'])
+        chosen=round(normal(mean, sd),2) * zero_or_one
+        self._psql_log_variable('smoke_detectors',chosen)
+        return str(chosen)
+# }}}
+    def _draw_sprinklers_triggers(self):# {{{
+        mean=self.conf['sprinklers']['temp_mean']
+        sd=self.conf['sprinklers']['temp_sd']
+        zero_or_one=binomial(1,self.conf['sprinklers']['not_broken'])
+        chosen=round(normal(mean, sd),2) * zero_or_one
+        self._psql_log_variable('sprinklers',chosen)
         return str(chosen)
 # }}}
     def _psql_log_variable(self,attr,val): #{{{
@@ -222,9 +225,9 @@ class CfastMcarlo():
             self._section_vvent(),
             self._section_mvent(),
             self._section_fire(),
-            self._section_detector(),
-            self._section_sprinkler(),
-            self._section_static(),
+            self._section_heat_detectors(),
+            self._section_smoke_detectors(),
+            self._section_sprinklers(),
         )
 
         with open("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), "w") as output:
@@ -270,9 +273,9 @@ class CfastMcarlo():
             collect.append(round(v['x0']/100.0,2))     # ABSOLUTE_X_POSITION
             collect.append(round(v['y0']/100.0,2))     # ABSOLUTE_Y_POSITION
             collect.append(round(v['z0']/100.0,2))     # ABSOLUTE_Z_POSITION
-            collect.append(v['material']['ceiling'])      # CEILING_MATERIAL_NAME
-            collect.append(v['material']['floor'])        # FLOOR_MATERIAL_NAME
-            collect.append(v['material']['wall'])         # WALL_MATERIAL_NAME
+            collect.append(v['material_ceiling'])      # CEILING_MATERIAL_NAME
+            collect.append(v['material_floor'])        # FLOOR_MATERIAL_NAME
+            collect.append(v['material_wall'])         # WALL_MATERIAL_NAME
             txt.append(','.join(str(i) for i in collect))
 
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
@@ -305,7 +308,7 @@ class CfastMcarlo():
             collect.append(round(v['sill']/100.0,2))               # SILL
             collect.append(round(v['face_offset']/100.0,2))        # COMPARTMENT1_OFFSET
             collect.append(v['face'])                              # FACE
-            how_much_open=self._draw_window_opening(outdoor_temp)  # HOLE_CLOSE
+            how_much_open=self._draw_window_opening(outdoor_temp)  
             windows_setup.append((how_much_open, v['name']))
             collect.append(how_much_open)  
             txt.append(','.join(str(i) for i in collect))
@@ -383,10 +386,10 @@ class CfastMcarlo():
 
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
-    def _section_detector(self):# {{{
+    def _section_heat_detectors(self):# {{{
         txt=['!! DETECTORS,type,compa,temp,width,depth,height,rti,supress,density']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' and detector = 1"):
-            temp = self._draw_sprinkler_triggers()                # ACTIVATION_TEMPERATURE,
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND heat_detectors=1"):
+            temp = self._draw_heat_detectors_triggers()                # ACTIVATION_TEMPERATURE,
             if temp == '0.0':
                 collect = [] 
             else: 
@@ -398,7 +401,7 @@ class CfastMcarlo():
                 collect.append(round(v['width']/(2.0*100),2))      # WIDTH
                 collect.append(round(v['depth']/(2.0*100),2))      # DEPTH
                 collect.append(round(v['height']/100.0,2))         # HEIGHT
-                collect.append(80)                                # RTI,
+                collect.append(80)                                 # RTI,
                 collect.append(0)                                  # SUPPRESSION,
                 collect.append(7E-05)                              # SPRAY_DENSITY
                 txt.append(','.join(str(i) for i in collect))
@@ -406,10 +409,33 @@ class CfastMcarlo():
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 
 # }}}
-    def _section_sprinkler(self):# {{{
+    def _section_smoke_detectors(self):# {{{
+        txt=['!! DETECTORS,type,compa,temp,width,depth,height,rti,supress,density']
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND smoke_detectors=1"):
+            temp = self._draw_smoke_detectors_triggers()                # ACTIVATION_TEMPERATURE,
+            if temp == '0.0':
+                collect = [] 
+            else: 
+                collect=[]
+                collect.append('DETECT')                           # DETECT,
+                collect.append('SMOKE')                            # TYPE: HEAT,SMOKE,SPRINKLER 
+                collect.append(v['global_type_id'])                # COMPARTMENT,
+                collect.append(temp)                               # ACTIVATION_TEMPERATURE,
+                collect.append(round(v['width']/(2.0*100),2))      # WIDTH
+                collect.append(round(v['depth']/(2.0*100),2))      # DEPTH
+                collect.append(round(v['height']/100.0,2))         # HEIGHT
+                collect.append(80)                                 # RTI,
+                collect.append(0)                                  # SUPPRESSION,
+                collect.append(7E-05)                              # SPRAY_DENSITY
+                txt.append(','.join(str(i) for i in collect))
+
+        return "\n".join(txt)+"\n" if len(txt)>1 else ""
+
+# }}}
+    def _section_sprinklers(self):# {{{
         txt=['!! SPRINKLERS,type,compa,temp,width,depth,height,rti,supress,density']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' and sprinkler=1"):
-            temp = self._draw_sprinkler_triggers() # ACTIVATION_TEMPERATURE,
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' and sprinklers=1"):
+            temp = self._draw_sprinklers_triggers() # ACTIVATION_TEMPERATURE,
             if temp == '0.0':
                 collect = [] 
             else: 
@@ -451,41 +477,31 @@ class CfastMcarlo():
         return "\n".join(txt)+"\n"
 
 # }}}
-    def _section_static(self):# {{{
-        ''' 
-        This section is for any static data defined in
-        self.conf['CFAST_STATIC_RECORDS']. It will be added to all your
-        cfast.in files. Useful for stuff that aamks doesn't produce, but you
-        want in each of your 1.000 cfast.in files.
-        '''
-
-        txt=self.conf['infrastructure']['cfast_static_records']
-        return "\n".join(txt)+"\n" if len(txt)>1 else ""
-# }}}
 
     def _new_psql_log(self):#{{{
         ''' Init the collector for storing montecarlo cfast setup. Variables will be registered later one at a time. '''
         self._psql_collector[self._sim_id]=OrderedDict([
-            ('fireorig'     , [])     ,
-            ('fireorigname' , [])     ,
-            ('detector'     , [])     ,
-            ('hrrpeak'      , [])     ,
-            ('sootyield'    , [])     ,
-            ('coyield'      , [])     ,
-            ('alpha'        , [])     ,
-            ('trace'        , [])     ,
-            ('area'         , [])     ,
-            ('q_star'       , [])     ,
-            ('heigh'        , [])     ,
-            ('w'            , [])     ,
-            ('outdoort'     , [])     ,
-            ('c'            , [])     ,
-            ('d'            , [])     ,
-            ('sprinkler'    , [])     ,
-            ('heatcom'      , [])     ,
-            ('e'            , [])     ,
-            ('vnt'          , [])     ,
-            ('radfrac'      , [])     ,
+            ('fireorig'        , []) ,
+            ('fireorigname'    , []) ,
+            ('heat_detectors'  , []) ,
+            ('smoke_detectors' , []) ,
+            ('hrrpeak'         , []) ,
+            ('sootyield'       , []) ,
+            ('coyield'         , []) ,
+            ('alpha'           , []) ,
+            ('trace'           , []) ,
+            ('area'            , []) ,
+            ('q_star'          , []) ,
+            ('heigh'           , []) ,
+            ('w'               , []) ,
+            ('outdoort'        , []) ,
+            ('c'               , []) ,
+            ('d'               , []) ,
+            ('sprinklers'      , []) ,
+            ('heatcom'         , []) ,
+            ('e'               , []) ,
+            ('vnt'             , []) ,
+            ('radfrac'         , []) ,
         ])
 #}}}
     def _write(self):#{{{

@@ -4,14 +4,16 @@ require_once("inc.php");
 require_once("inc.firedb.php"); 
 
 function read_json($json_path) { /*{{{*/
-	// todo: remove else at some point
-	// /usr/local/aamks/gui/interface/src/app/enums/risk/enums/risk-enums.ts
-
 	if(is_readable($json_path)) { 
-		$conf=json_decode(file_get_contents($json_path),1);
+		$f=file_get_contents($json_path);
 	} else {
-		$conf=json_decode('{"project_id":1,"scenario_id":1,"number_of_simulations":1,"simulation_time":100,"indoor_temperature":20,"humidity":40,"building_profile":{"type":"Bank","management":"M1","complexity":"B1","alarming":"A1"},"material_ceiling":{"type":"concrete","thickness":0.3},"material_floor":{"type":"concrete","thickness":0.3},"material_wall":{"type":"concrete","thickness":0.3},"heat_detectors":{"temp_mean":"","temp_sd":"","RTI":"","not_broken":""},"smoke_detectors":{"temp_mean":"","temp_sd":"","not_broken":""},"sprinklers":{"temp_mean":"","temp_sd":"","density_mean":"","density_sd":"","RTI":"","not_broken":""},"NSHEVS":{"activation_time":""},"outdoor_temperature":{"min":100,"max":1000},"indoor_pressure":101325,"windows":[{"min":-99999,"max":-5,"quarter":-5,"full":0.11},{"min":-5,"max":15,"quarter":0,"full":0.5},{"min":15,"max":27,"quarter":0,"full":0.5},{"min":27,"max":99999,"quarter":0,"full":0.5}],"doors":{"E":0.04,"C":0.14,"D":0.5},"vvents_not_broken":0.96,"c_const":8,"evacuees_max_h_speed":{"mean":120,"sd":20},"evacuees_max_v_speed":{"mean":80,"sd":20},"evacuees_alpha_v":{"mean":0.706,"sd":0.069},"evacuees_beta_v":{"mean":-0.057,"sd":0.015},"fire_starts_in_a_room":0.8,"hrrpua":{"min":300,"mode":500,"max":1300},"hrr_alpha":{"min":0.0029,"mode":0.0029,"max":0.188},"evacuees_concentration":{"ROOM":3,"COR":20,"STAI":20,"HALL":20},"pre_evac":{"mean":29.13,"sd":8.87},"pre_evac_fire_origin":{"mean":59.85,"sd":1.48}}',1);
+		$_SESSION['nn']->fatal("Cannot open: $json_path");
 	}
+
+	$conf=json_decode($f,1);
+	if(empty($conf)) { 
+		$_SESSION['nn']->fatal("Broken json: $json_path");
+	} 
 	return $conf;
 }
 /*}}}*/
@@ -207,7 +209,7 @@ function write($data, $file) { #{{{
 	} else {
 		$_SESSION['header_err'][]="problem saving $file";
 	}
-	header("Location: conf_aamks.php");
+	header("Location: form.php");
 }
 /*}}}*/
 function update_form1($file) {/*{{{*/
@@ -275,7 +277,7 @@ function form($json_path, $variant) { /*{{{*/
 	$update_var='update_form2';
 	$json=read_json($json_path);
 	if($variant=='easy') { 
-		foreach(array("outdoor_temperature","indoor_pressure","windows","doors","vvents_not_broken","c_const","evacuees_max_h_speed","evacuees_max_v_speed","evacuees_alpha_v","evacuees_beta_v","fire_starts_in_a_room","hrrpua","hrr_alpha","evacuees_concentration","pre_evac","pre_evac_fire_origin") as $i) { 
+		foreach(array("outdoor_temperature","indoor_pressure","windows","vents_open","c_const","evacuees_max_h_speed","evacuees_max_v_speed","evacuees_alpha_v","evacuees_beta_v","fire_starts_in_a_room","hrrpua","hrr_alpha","evacuees_concentration","pre_evac","pre_evac_fire_origin") as $i) { 
 			unset ($json[$i]);
 		}
 		$update_var='update_form1';
@@ -291,7 +293,7 @@ function form($json_path, $variant) { /*{{{*/
 function form3($json_path) { /*{{{*/
 	echo "
 	<br><wheat>
-	You can directly manipulate conf_aamks.json.<br>
+	You can directly manipulate conf.json.<br>
 	Aamks will not forgive any errors here.<br>
 	</wheat><br><br>";
 	
@@ -334,7 +336,7 @@ function main() {/*{{{*/
 	menu();
 	make_help();
 
-	$f="conf.json";
+	$f="/home/aamks_users/mimoohowy@gmail.com/three/1/conf.json";
 	if(isset($_GET['form1'])) { update_form1($f); form($f , "easy"); }
 	if(isset($_GET['form2'])) { update_form2($f); form($f , "advanced"); }
 	if(isset($_GET['form3'])) { update_form3($f); form3($f); }

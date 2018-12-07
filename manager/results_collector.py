@@ -81,7 +81,7 @@ try:
     except:
         ''' Testing without gearman. Make sure workers/1/ exist and contains evac and cfast jsons. '''
         j=Json()
-        c=j.read("{}/conf_aamks.json".format(os.environ['AAMKS_PROJECT']))
+        c=j.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         host="localhost"
         meta_file="/home/aamks/{}/report_1.json".format(c['PROJECT_NAME'])
         sim_id="1"

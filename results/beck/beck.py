@@ -28,7 +28,7 @@ class processDists:
         self.total = 0
         self.dead = 0
         self.dir = sys.argv[1]
-        self.configs = self._get_json('{}/conf_aamks.json'.format(self.dir))
+        self.configs = self._get_json('{}/conf.json'.format(self.dir))
         try:
             self.psql_connection=psycopg2.connect("dbname='aamks' user='aamks' host=192.168.100.131 password='TopSecretOfSgsp'")
 
