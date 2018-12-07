@@ -4,75 +4,20 @@
 #		$_SESSION['header_err'][]="Activation not complete";
 session_name('aamks');
 require_once("inc.php"); 
-require_once("salt.php");
+#dd($_SESSION);
+
+function salt($password){/*{{{*/
+	$salted=substr(md5($password.md5(getenv("AAMKS_SALT"))),0,20);
+	return($salted);
+}/*}}}*/
 function google_js_login(){/*{{{*/
-	 if(!isset($_POST['g_user_id'])){
-		from_JS_to_POST();
-	 }else{
+	 if(isset($_POST['g_user_id'])){
 		$_SESSION['g_name']=$_POST['g_name'];
 		$_SESSION['g_email']=$_POST['g_email'];
 		$_SESSION['g_user_id']=$_POST['g_user_id'];
 		$_SESSION['g_picture']=$_POST['g_picture'];
 		do_google_login();
- }
-}/*}}}*/
-	function from_JS_to_POST(){/*{{{*/
-echo "
-    <script>
-      function onSignIn(googleUser) {
-        // Useful data for your client-side scripts:
-        var profile = googleUser.getBasicProfile();
-
-        // The ID token you need to pass to your backend:
-        var id_token = googleUser.getAuthResponse().id_token;
-
-		//Send data to PHP
-		var theForm, newInput1, newInput2, newInput3, newInput4, newInput5;
-		  // Start by creating a <form>
-		  theForm = document.createElement('form');
-		  theForm.action = 'i2.php';
-		  theForm.method = 'post';
-		  // Next create the <input>s in the form and give them names and values
-			
-		  newInput1 = document.createElement('input');
-		  newInput1.type = 'hidden';
-		  newInput1.name = 'g_user_id';
-		  newInput1.value = profile.getId();
-
-		  newInput2 = document.createElement('input');
-		  newInput2.type = 'hidden';
-		  newInput2.name = 'g_name';
-		  newInput2.value = profile.getName();
-
-		  newInput3 = document.createElement('input');
-		  newInput3.type = 'hidden';
-		  newInput3.name = 'g_picture';
-		  newInput3.value = profile.getImageUrl();
-
-		  newInput4 = document.createElement('input');
-		  newInput4.type = 'hidden';
-		  newInput4.name = 'g_email';
-		  newInput4.value = profile.getEmail();
-
-		  newInput5 = document.createElement('input');
-		  newInput5.type = 'hidden';
-		  newInput5.name = 'g_token_id';
-		  newInput5.value = id_token;
-
-		  // Now put everything together...
-		  theForm.appendChild(newInput1);
-		  theForm.appendChild(newInput2);
-		  theForm.appendChild(newInput3);
-		  theForm.appendChild(newInput4);
-		  theForm.appendChild(newInput5);
-
-		  console.log('przed wyslaniem');
-		  // ...and it to the DOM...
-		  document.getElementById('hidden_form_container').appendChild(theForm);
-		  // ...and submit it
-		  theForm.submit();	
-      };
-    </script>";
+	}
 }/*}}}*/
 function me(){/*{{{*/
 	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
@@ -384,6 +329,7 @@ function main() { /*{{{*/
 	global $g_ret; //google login handler
 	$_SESSION['home_url']="https://stanley.szach.in/i2/i2.php";
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
+	echo '<script src="js/google_sign.js"></script>';
 	$_SESSION['nn']->htmlHead("i2");
 	if(isset($_GET['edit_user'])) { edit_user();}
 	$_SESSION['nn']->logoutButton();

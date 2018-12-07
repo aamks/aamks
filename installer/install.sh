@@ -18,13 +18,22 @@
 
 # CONFIGURATION, must copy to ~/.bashrc
 
+sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && { 
+	echo "Aamks already exists in psql. You may wish to clear psql from aamks by invoking:";
+	echo
+	echo 'sudo -u postgres psql -c "DROP DATABASE aamks"; sudo -u postgres psql -c "DROP USER aamks"' 
+	echo
+	exit;
+}
+
 AAMKS_SERVER=127.0.0.1
 AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 AAMKS_TESTING=0
-AAMKS_PG_PASS='hulakula' 
 AAMKS_USE_GEARMAN=1
 AAMKS_PATH='/usr/local/aamks'
-AAMKS_PROJECT="/home/aamks_users/mimoohowy@gmail.com/three/1" # TODO: need to invent some default project 
+AAMKS_PROJECT="/home/aamks_users/demo@aamks/three/1" 
+AAMKS_PG_PASS='hulakula' 
+AAMKS_SALT='aamksisthebest'
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 
 # END OF CONFIGURATION
@@ -50,12 +59,17 @@ echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> $temp
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> $temp
 echo "export AAMKS_NOTIFY='$AAMKS_NOTIFY'" >> $temp
 echo "export AAMKS_TESTING='$AAMKS_TESTING'" >> $temp
+echo "export AAMKS_USE_GEARMAN=$AAMKS_USE_GEARMAN" >> $temp
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
+echo "export AAMKS_SALT='$AAMKS_SALT'" >> $temp
 sudo cp $temp /etc/apache2/envvars
+
+echo; echo; echo  "sudo service apache2 restart..."
+sudo service apache2 restart
 rm $temp
 
 sudo mkdir -p "$AAMKS_PROJECT"
-sudo chown -R $USER $AAMKS_PATH
+sudo cp $AAMKS_PATH/examples/three/* /home/aamks_users/demo@aamks/three/1/
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.
 # Solves the problem of shell users vs www-data user permissions of new files.
@@ -71,13 +85,6 @@ echo "Running psql commands with"
 echo "sudo -u postgres psql -c 'sql commands'"
 echo 
 
-sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && { 
-	echo "Aamks already exists in psql. You may wish to clear psql from aamks by invoking:";
-	echo
-	echo 'sudo -u postgres psql -c "DROP DATABASE aamks"; sudo -u postgres psql -c "DROP USER aamks"' 
-	echo
-	exit;
-}
 
 sudo -u postgres psql << EOF
 
