@@ -325,6 +325,7 @@ function menu() {/*{{{*/
 	<a class=blink href=?form2>advanced</a>
 	<a class=blink href=?form3>text</a>
 	<a class=blink href=?form4>building profiles</a>
+	<a class=blink href=anims/anims.php>anims</a>
 	<br>
 	";
 }

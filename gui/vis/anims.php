@@ -5,9 +5,9 @@
     <meta http-equiv=Content-Type content='text/html; charset=utf-8' />
     <link href='https://fonts.googleapis.com/css?family=Play' rel='stylesheet'>
     <link href='https://fonts.googleapis.com/icon?family=Material+Icons' rel='stylesheet'>
-    <title>Aamks</title>
+    <title>Aamks Vis</title>
     <link rel='stylesheet' type='text/css' href='css.css'>
-        <script type="text/javascript" src="js/jquery.js"></script>
+        <script type="text/javascript" src="../js/jquery.js"></script>
         <script type="text/javascript" src="js/paper-full.js"></script>
         <script type="text/javascript" src="js/jszip.min.js"></script>
         <script type="text/javascript" src="js/jszip-utils.js"></script>
