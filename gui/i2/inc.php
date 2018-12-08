@@ -97,7 +97,7 @@ class Aamks {/*{{{*/
 			if(isset($_GET['reset'])) { reset_password();}
 			if(isset($_GET['activation_token'])) { activate_user();}
 			login_form();
-			google_js_login();
+			#google_js_login();
 			exit();
 		}
 		echo "<div style='float:right; text-align:right; font-size:12px'>";

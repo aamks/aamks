@@ -4,7 +4,13 @@
 #		$_SESSION['header_err'][]="Activation not complete";
 session_name('aamks');
 require_once("inc.php"); 
-#dd($_SESSION);
+if(isset($_SESSION['g_login'])){
+		$_SESSION['g_name']=$_SESSION['g_login']['g_name'];
+		$_SESSION['g_email'] =$_SESSION['g_login']['g_email'];
+		$_SESSION['g_user_id']=$_SESSION['g_login']['g_user_id'];
+		$_SESSION['g_picture']=$_SESSION['g_login']['g_picture'];
+		do_google_login();
+}
 
 function salt($password){/*{{{*/
 	$salted=substr(md5($password.md5(getenv("AAMKS_SALT"))),0,20);
@@ -140,7 +146,7 @@ function set_user_variables($ret){/*{{{*/
 	$_SESSION['username']=$ret['username'];
 	$_SESSION['email']=$ret['email'];
 	$_SESSION['picture']=$ret['picture'];
-	header("location:".me()); //TO
+	#header("location:".me()); //TO
 }/*}}}*/
 function reset_password(){/*{{{*/
 	$token=md5(salt(time()));
@@ -264,10 +270,15 @@ function do_google_login(){/*{{{*/
 		$ret[0]=array("id"=>$ret1[0]['id'],"username"=>$_SESSION['g_name'],"email"=>$_SESSION['g_email'], "picture"=>$_SESSION['g_picture']);
 		$_SESSION['header_ok'][]="Created google aamks account";
 	}
+	dd($_SESSION);
 	unset($_SESSION['g_name']);
 	unset($_SESSION['g_email']);
 	unset($_SESSION['g_user_id']);
 	unset($_SESSION['g_picture']);
+	$_SESSION['g_login']=0;
+	unset($_SESSION['g_login']);
+	dd($_SESSION);
+	exit();
 	set_user_variables($ret[0]);
 }/*}}}*/
 function my_projects(){/*{{{*/

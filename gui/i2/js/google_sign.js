@@ -14,7 +14,7 @@ function onSignIn(googleUser) {
 	var theForm, newInput1, newInput2, newInput3, newInput4, newInput5;
 	  // Start by creating a <form>
 	  theForm = document.createElement('form');
-	  theForm.action = 'i2.php?ex=1';
+	  theForm.action = 'i2.php?ex=2';
 	  theForm.method = 'post';
 	  // Next create the <input>s in the form and give them names and values
 		
@@ -54,6 +54,6 @@ function onSignIn(googleUser) {
 	  // ...and it to the DOM...
 	  document.getElementById('hidden_form_container').appendChild(theForm);
 	  // ...and submit it
-	  theForm.submit();	
+	  //theForm.submit();	
 };
 
