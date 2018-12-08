@@ -53,7 +53,8 @@ console.log("go");
 $.getJSON("colors.json", function(cols) {
 	colorsDb=cols;
 	colors=colorsDb['darkColors'];
-	$.getJSON("anims.json", function(data) {
+	$.post('https://localhost/aamks/ajax.php?getAnimsList', function (response) { 
+		var data=response['data'];
 		// Runs automatically on the start. By default runs the first visualization from anims.json, which should be most fresh.
 		makeChooseVis(data);
 		showStaticImage(data[0]);
@@ -83,7 +84,8 @@ function showStaticImage(chosenAnim) {
 	// After we read a record from anims.json we reset the current visualization and setup a new one.
 	// We can only start animation after we are done with static rooms, doors etc.
 	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
-	$.getJSON("static.json", function(dstatic) {
+	$.post('https://localhost/aamks/ajax.php?getAnimsStatic', function(response) { 
+		var dstatic=response['data'];
 		var floor=chosenAnim["floor"];
 		var newScale=dstatic[floor]['meta']['scale'];
 		view.scale(newScale/scale);  
@@ -264,7 +266,7 @@ function paperjsDisplayImage() {
 
 	if (labelsSize != 0) { 
 		for (var key in rooms) {
-			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+10,rooms[key]["y0"]+30), fillColor:colors["fg"], content: rooms[key]["name"], fontFamily: 'Play', fontSize: labelsSize }));
+			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+10,rooms[key]["y0"]+30), fillColor:colors["fg"], content: rooms[key]["name"], fontFamily: 'Roboto', fontSize: labelsSize }));
 		}
 	}
 
@@ -273,7 +275,7 @@ function paperjsDisplayImage() {
 			staticGeoms.addChild(new Path.Rectangle({point: new Point(doors[key]["x0"],doors[key]["y0"]), size: new Size(doors[key]["width"],doors[key]["depth"]), strokeColor: colors['door'], strokeWidth:doorsSize  }));
 		}
 		if (labelsSize != 0) { 
-			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]+10,doors[key]["center_y"]+10), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Play', fontSize: labelsSize*0.75 }));
+			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]+10,doors[key]["center_y"]+10), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
 		}
 	}
 
@@ -299,7 +301,7 @@ function append_dd_geoms() {
 	}
 	for (var i=0; i<dd_geoms['texts'].length; i++) {
 		g=dd_geoms['texts'][i];
-		staticGeoms.addChild(new PointText({ point: new Point(g["xy"][0], g["xy"][1]), content: g["content"], fontFamily: 'Play', fontSize: g["fontSize"], fillColor:g['fillColor'], opacity:g['opacity'] }));
+		staticGeoms.addChild(new PointText({ point: new Point(g["xy"][0], g["xy"][1]), content: g["content"], fontFamily: 'Roboto', fontSize: g["fontSize"], fillColor:g['fillColor'], opacity:g['opacity'] }));
 	}
 }
 
@@ -390,8 +392,8 @@ function onMouseDown(event) {
 		x=evacBalls.children[i].position.x;
 		y=evacBalls.children[i].position.y;
 		evacLabels.addChild(new Path.Circle({ center: new Point(x,y), radius:ballsSize*1.4, fillColor:"#f80" }));
-		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y-ballsSize/3), fillColor:"#000", content: "e"+i, fontFamily: 'Play', fontSize: ballsSize*0.7 }));
-		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y+ballsSize/2), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Play', fontSize: ballsSize*0.7}));
+		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y-ballsSize/3), fillColor:"#000", content: "e"+i, fontFamily: 'Roboto', fontSize: ballsSize*0.7 }));
+		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y+ballsSize/2), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: ballsSize*0.7}));
 	}
 };
 

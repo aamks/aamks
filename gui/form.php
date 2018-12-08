@@ -330,9 +330,27 @@ function menu() {/*{{{*/
 	";
 }
 /*}}}*/
+
+function vars() {/*{{{*/
+	# project_name i email wyliczamy z bazy
+	$project_name="three";
+	$email="demo@aamks";
+
+	$_SESSION['main']['user_id']=25;
+	$_SESSION['main']['project_id']=1;
+	$_SESSION['main']['scenario_id']=1;
+	$_SESSION['main']['user_home']="/home/aamks_users/$email";
+	$_SESSION['main']['working_home']="/home/aamks_users/$email/$project_name/".$_SESSION['main']['scenario_id'];
+	$_SESSION['home_url']="/aamks/form.php";
+	#$vars=dd3($_SESSION['main']);
+
+}
+/*}}}*/
 function main() {/*{{{*/
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	$_SESSION['nn']->htmlHead("Aamks");
+	echo "<script src='js/form.js'></script>";
+	vars();
 	menu();
 	make_help();
 

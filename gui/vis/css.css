@@ -1,6 +1,5 @@
 html, body { 
     background-color: #000;
-    font-family: 'Play';
     margin: 0;
     color: #fff;
     overflow: hidden;
@@ -52,7 +51,7 @@ table {
 
 td {
     border-bottom: 1px solid #a00;
-    padding: 6px;
+    padding: 1px;
     color: #fff;
 }
 
@@ -87,11 +86,26 @@ animation-setup-box {
     opacity: 0.9;
     background-color: #800;
     z-index:100;
-    display: none;
+    display: block;
     padding: 4px;
     color: #fff;
     border: 1px solid #f00;
     position: absolute;
     right:0px;
     top:40px;
+	font-size: 13px;
 }
+
+textarea, input, select {
+	font-size: 13px;
+	padding: 2px;
+	margin: 4px;
+	color: #fff;
+	background: #222;
+	border: 1px solid #866;
+}
+
+input  {
+    padding:4px 8px; 
+}
+

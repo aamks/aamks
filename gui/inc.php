@@ -40,10 +40,10 @@ class Aamks {/*{{{*/
 
 /*}}}*/
 	private function reportbug($details) {/*{{{*/
+		$home="<a href=".$_SESSION['home_url']."><img id=home src=/aamks/css/home.svg></a>";
 		$reportquery=join("\n\n" , array(date("G:i:s"), $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REQUEST_URI'], $details, "\n\n"));
 		mail('mimoohowy@gmail.com, stanislaw.lazowy@gmail.com', 'aamks bug!', "$reportquery", "from: mimooh@inf.sgsp.edu.pl"); 
-		echo "<fatal>DB error. Reported to the administrator.</fatal>"; 
-		echo "<br><br><br><br><br><a href=".$_SESSION['home_url']."><img id=home src=css/home.svg></a>";
+		echo "<fatal>DB error. Reported to the administrator.<br>$home</fatal>"; 
 		die();
 }
 /*}}}*/
@@ -61,11 +61,10 @@ class Aamks {/*{{{*/
 			<meta charset='utf-8'>
 			<title>$site</title>
 			<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
-			<link rel='stylesheet' href='css/css.css'>
+			<link rel='stylesheet' href='/aamks/css/css.css'>
 			<link rel='shortcut icon' type='image/x-icon' href='/aamks/favicon.ico' />
 			<meta name='viewport' content='width=device-width, initial-scale=1, minimum-scale=1'>
-			<script src='js/jquery.js'></script>
-			<script src='js/form.js'></script>
+			<script src='/aamks/js/jquery.js'></script>
 			<meta name='google-signin-scope' content='profile email'>
 			<meta name='google-signin-client_id' content='352726998172-lmrbrs6c2sgpug4nc861hfb04f3s0sr6.apps.googleusercontent.com'>
 			<script src='https://apis.google.com/js/platform.js' async defer></script>
@@ -106,8 +105,8 @@ class Aamks {/*{{{*/
 	}
 /*}}}*/
 	public function fatal($msg) {/*{{{*/
-		echo "<fatal> $msg </fatal>";
-		echo "<br><br><br><br><br><br><a href=".$_SESSION['home_url']."><img id=home src=css/home.svg></a>";
+		$home="<a href=".$_SESSION['home_url']."><img id=home src=/aamks/css/home.svg></a>";
+		echo "<fatal> $msg <br>$home</fatal>";
 		die();
 	}
 /*}}}*/

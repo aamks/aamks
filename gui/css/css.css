@@ -125,7 +125,6 @@ total_logins {
 	border: 1px solid #383;
 }
 
-
 fatal, cannot {
 	background-image: url("close.svg");
 	background-position: 99% 1%;
@@ -223,4 +222,11 @@ table.noborder td, table.noborder tr {
 	border: 1px solid #888;
 	margin: 4px;
 	padding: 4px;
+}
+
+#home {
+	display: block;
+	text-align: left;
+	padding: 20px;
+
 }

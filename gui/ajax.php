@@ -16,6 +16,31 @@ function ajaxPdf2svg() { /*{{{*/
 	}
 }
 /*}}}*/
+function ajaxAnimsList() { /*{{{*/
+	$f=$_SESSION['main']['working_home']."/workers/anims.json";
+	if(is_file($f)) { 
+		$data=json_decode(file_get_contents($f));
+		echo json_encode(array("msg"=>"ajaxAnimsList(): OK", "err"=>0,  "data"=> $data));
+	} else {
+		echo json_encode(array("msg"=>"ajaxAnimsList(): $z", "err"=>1, "data"=>0));
+	}
+}
+/*}}}*/
+function ajaxAnimsStatic() { /*{{{*/
+	$f=$_SESSION['main']['working_home']."/workers/static.json";
+	if(is_file($f)) { 
+		$data=json_decode(file_get_contents($f));
+		echo json_encode(array("msg"=>"ajaxAnimsStatic(): OK", "err"=>0,  "data"=> $data));
+	} else {
+		echo json_encode(array("msg"=>"ajaxAnimsStatic(): $z", "err"=>1, "data"=>0));
+	}
+}
+/*}}}*/
+function ajaxSingleAnim() { /*{{{*/
+	$q=$_POST['q'];
+	echo json_encode(array("msg"=>"ajaxSingleAnim(): OK", "err"=>0,  "data"=>"q: $q"));
+}
+/*}}}*/
 function ajaxApainter() { /*{{{*/
 	$src=$_POST['cadfile'];
 	$dest=$_SESSION['main']['working_home']."/cad.json";
@@ -36,10 +61,14 @@ function main() { /*{{{*/
 			echo json_encode(array("msg"=>"ajaxMain(): Cannot write ".$_SESSION['main']['working_home'], "err"=>1, "data"=>0));
 			exit();
 		}
-		if(isset($_GET['pdf2svg']))  { ajaxPdf2svg(); }
-		if(isset($_GET['apainter'])) { ajaxApainter(); }
+		if(isset($_GET['pdf2svg']))        { ajaxPdf2svg(); }
+		if(isset($_GET['apainter']))       { ajaxApainter(); }
+		if(isset($_GET['getAnimsList']))   { ajaxAnimsList(); }
+		if(isset($_GET['getAnimsStatic'])) { ajaxAnimsStatic(); }
+		if(isset($_GET['getSingleAnim']))  { ajaxSingleAnim(); }
 	}
 }
 /*}}}*/
+
 main();
 ?>

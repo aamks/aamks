@@ -22,24 +22,9 @@ function head() { /*{{{*/
 	";
 }
 /*}}}*/
-function vars() {/*{{{*/
-	# project_name i email wyliczamy z bazy
-	$project_name="three";
-	$email="demo@aamks";
-
-	$_SESSION['main']['user_id']=25;
-	$_SESSION['main']['project_id']=1;
-	$_SESSION['main']['scenario_id']=1;
-	$_SESSION['main']['user_home']="/home/aamks_users/$email";
-	$_SESSION['main']['working_home']="/home/aamks_users/$email/$project_name/".$_SESSION['main']['scenario_id'];
-	#$vars=dd3($_SESSION['main']);
-	echo "<div id=var_dump>".$_SESSION['main']['working_home']."/cad.json</div>";
-
-}
-/*}}}*/
 function main() { /*{{{*/
 	head();
-	if($_SERVER['SERVER_NAME']!='tygrys.inf.sgsp.edu.pl') { vars(); }
+	echo "<div id=var_dump>".$_SESSION['main']['working_home']."/cad.json</div>";
 }
 /*}}}*/
 main();
