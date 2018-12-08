@@ -81,7 +81,7 @@ sudo service apache2 restart
 rm $temp
 
 sudo mkdir -p "$AAMKS_PROJECT"
-sudo cp $AAMKS_PATH/examples/three/* /home/aamks_users/demo@aamks/three/1/
+sudo cp -r $AAMKS_PATH/installer/examples/three /home/aamks_users/demo@aamks/
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.
 # Solves the problem of shell users vs www-data user permissions of new files.

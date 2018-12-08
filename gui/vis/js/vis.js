@@ -48,6 +48,8 @@ var frame=0;
 var	visContainsAnimation=0;
 var	animationIsRunning=0;
 
+console.log("go");
+
 $.getJSON("colors.json", function(cols) {
 	colorsDb=cols;
 	colors=colorsDb['darkColors'];
