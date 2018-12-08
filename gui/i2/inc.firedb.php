@@ -276,7 +276,7 @@ function get_defaults($q) {/*{{{*/
 
 	$db['setup1']='
 	{
-		"outdoor_temperature": { "min": 100, "max": 1000 },
+		"outdoor_temperature": { "mean": 20, "sd": 2 },
 		"indoor_pressure": 101325,
 		"windows": [ 
 			{ "min": -99999 , "max": -5    , "quarter": -5 , "full": 0.11 } ,

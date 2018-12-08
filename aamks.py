@@ -10,14 +10,9 @@ from include import SendMessage
 
 OnInit()
 Geom()
-CfastPartition()
+CfastPartition(0) # 1 enabled debugging
 CfastMcarlo()
 EvacMcarlo()
 #z=SmokeQuery("0")
 #z.get_final_vars() 
 OnEnd()
-
-# ssh mimooh@duch
-# aamks.<example>       # once is enough
-# AA                    # run aamks
-# aamks                 # cd /usr/local/aamks

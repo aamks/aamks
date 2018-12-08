@@ -157,26 +157,26 @@ function building_fields($v, $variant='easy') {/*{{{*/
 /*}}}*/
 function make_help() { /*{{{*/
 	$help=[]                                                                                                                                                              ;
-	$help["project_id"]              = ["scenario"                                          , "This is scenario"]                                                         ;
-	$help["number_of_simulations"]   = ["number of simulations"                             , "write me..."]                                                              ;
-	$help["simulation_time"]         = ["simulation time"                                   , "write me..."]                                                              ;
-	$help["indoor_temperature"]      = ["indoor_temperature"                                , "write me..."]                                                              ;
-	$help["outdoor_temperature"]     = ["outdoor_temperature"                               , "write me..."]                                                              ;
-	$help["indoor_pressure"]         = ["indoor_pressure"                                   , "write me..."]                                                              ;
-	$help["ceiling"]				 = ["ceiling"                                           , "write me..."]                                                              ;
-	$help["floor"]          		 = ["floor"                                             , "write me..."]                                                              ;
-	$help["wall"]           		 = ["wall"                                              , "write me..."]                                                              ;
-	$help["detectors"]           	 = ["detectors"                                         , "write me..."]                                                              ;
-	$help["detectors_temp"]			 = ["detectors_temp"                                    , "write me..."]                                                              ;
-	$help["detectors_obscur"]		 = ["detectors_obscur"                                  , "write me..."]                                                              ;
-	$help["detectors_not_broken"]	 = ["detectors_not_broken"                              , "write me..."]                                                              ;
-	$help["windows"]				 = ["windows"                                           , "help for the windows <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ]  ;
-	$help["building_profile"]		 = ["building profile"                                  , "help for the windows <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ]  ;
-	$help["material"]				 = ["material"                                          , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
-	$help["pre_evac"]				 = ["pre-evacuation time"                               , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
-	$help["pre_evac_fire_origin"]	 = ["pre-evacuation time in<br>the room of fire origin" , "fire origin room" ]                                                        ;
-	$help["management"]			     = ["management"                                        , "help for management" ]                                                     ;
-	$help["temp_mean"]			     = ["temp mean"                                         , "help for temp mean" ]                                                      ;
+	$help["project_id"]              = ["scenario"                         , "This is scenario"]                                                         ;
+	$help["number_of_simulations"]   = ["number of simulations"            , "write me..."]                                                              ;
+	$help["simulation_time"]         = ["simulation time"                  , "write me..."]                                                              ;
+	$help["indoor_temperature"]      = ["indoor_temperature"               , "write me..."]                                                              ;
+	$help["outdoor_temperature"]     = ["outdoor_temperature"              , "write me..."]                                                              ;
+	$help["indoor_pressure"]         = ["indoor_pressure"                  , "write me..."]                                                              ;
+	$help["ceiling"]				 = ["ceiling"                          , "write me..."]                                                              ;
+	$help["floor"]          		 = ["floor"                            , "write me..."]                                                              ;
+	$help["wall"]           		 = ["wall"                             , "write me..."]                                                              ;
+	$help["detectors"]           	 = ["detectors"                        , "write me..."]                                                              ;
+	$help["detectors_temp"]			 = ["detectors_temp"                   , "write me..."]                                                              ;
+	$help["detectors_obscur"]		 = ["detectors_obscur"                 , "write me..."]                                                              ;
+	$help["detectors_not_broken"]	 = ["detectors_not_broken"             , "write me..."]                                                              ;
+	$help["windows"]				 = ["windows"                          , "help for the windows <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ]  ;
+	$help["building_profile"]		 = ["building profile"                 , "help for the windows <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ]  ;
+	$help["material"]				 = ["material"                         , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
+	$help["pre_evac"]				 = ["pre-evacuation"                   , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
+	$help["pre_evac_fire_origin"]	 = ["pre-evacuation<br>in fire origin" , "fire origin room" ]                                                        ;
+	$help["management"]			     = ["management"                       , "help for management" ]                                                     ;
+	$help["temp_mean"]			     = ["temp mean"                        , "help for temp mean" ]                                                      ;
 
 	foreach($help as $k=>$v) { 
 		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
@@ -235,7 +235,6 @@ function update_form2($file) {/*{{{*/
 /*}}}*/
 function update_form3($file) {/*{{{*/
 	if(empty($_POST['update_form3'])) { return; }
-	dd($_POST);
 	write($_POST['json'], $file);
 }
 /*}}}*/
@@ -293,8 +292,7 @@ function form($json_path, $variant) { /*{{{*/
 function form3($json_path) { /*{{{*/
 	echo "
 	<br><wheat>
-	You can directly manipulate conf.json.<br>
-	Aamks will not forgive any errors here.<br>
+	You can directly manipulate conf.json. Aamks will not forgive any errors here.
 	</wheat><br><br>";
 	
 	$help=$_SESSION['help'];
@@ -324,7 +322,7 @@ function menu() {/*{{{*/
 	<a class=blink href=i2.php>menu</a>
 	<a class=blink href=?form1>easy</a>
 	<a class=blink href=?form2>advanced</a>
-	<a class=blink href=?form3>direct</a>
+	<a class=blink href=?form3>text</a>
 	<a class=blink href=?form4>building profiles</a>
 	<br>
 	";
@@ -336,7 +334,7 @@ function main() {/*{{{*/
 	menu();
 	make_help();
 
-	$f="/home/aamks_users/mimoohowy@gmail.com/three/1/conf.json";
+	$f="/home/aamks_users/demo@aamks/three/1/conf.json";
 	if(isset($_GET['form1'])) { update_form1($f); form($f , "easy"); }
 	if(isset($_GET['form2'])) { update_form2($f); form($f , "advanced"); }
 	if(isset($_GET['form3'])) { update_form3($f); form3($f); }

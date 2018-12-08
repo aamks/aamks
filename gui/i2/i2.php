@@ -72,9 +72,9 @@ function login_form(){/*{{{*/
 function menu() { /*{{{*/
 	echo "<div style='position:fixed;top:10px'>
 		<img width=160 src=logo.svg><br><br><br>
-		<a href=/i2/apainter class=blink>apainter</a><br>
-		<a href=/i2/form.php?form1 class=blink>form1</a><br>
-		<a href=/i2/workers/vis/master.html class=blink>visualization</a><br>
+		<a href=apainter class=blink>apainter</a><br>
+		<a href=form.php?form1 class=blink>form1</a><br>
+		<a href=workers/vis/master.html class=blink>visualization</a><br>
 		</div> ";
 }
 /*}}}*/

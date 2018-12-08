@@ -16,7 +16,7 @@ from gui.vis.vis import Vis
 # }}}
 
 class CfastPartition():
-    def __init__(self): # {{{
+    def __init__(self, verbose=0): # {{{
         ''' 
         Divide space into cells for smoke conditions queries asked by evacuees.
         A cell may be a square or a rectangle. First divide space into squares
@@ -57,8 +57,10 @@ class CfastPartition():
             self._intersect_space() 
             self._optimize(floor)
             self._make_cell2compa(floor)
-            self._plot_space(floor)  # debug
-        Vis(None, 'image', 'partition') # debug
+            if(verbose==1):
+                self._plot_space(floor)  # debug
+        if(verbose==1):
+            Vis(None, 'image', 'partition') # debug
         self._dbsave()
 # }}}
     def _init_space(self,floor):# {{{

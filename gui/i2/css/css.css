@@ -180,6 +180,7 @@ withHelp {
     display: inline-block;
 	padding: 1px 4px 1px 4px;
 	border-radius: 5px;
+	text-align: left;
 	cursor: help;
     background-color: wheat;
 	color: #222;
