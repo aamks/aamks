@@ -16,15 +16,10 @@
 # /home/aamks_users/user2@hotmail.com
 # ...
 
-# CONFIGURATION, must copy to ~/.bashrc
+# By convention aamks GUI must reside under /var/www/ssl/aamks
+# and will be accessed via https://your.host.abc/aamks
 
-sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && { 
-	echo "Aamks already exists in psql. You may wish to clear psql from aamks by invoking:";
-	echo
-	echo 'sudo -u postgres psql -c "DROP DATABASE aamks"; sudo -u postgres psql -c "DROP USER aamks"' 
-	echo
-	exit;
-}
+# CONFIGURATION, must be copied to ~/.bashrc
 
 AAMKS_SERVER=127.0.0.1
 AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
@@ -38,6 +33,25 @@ PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 
 # END OF CONFIGURATION
 
+sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && { 
+	echo "Aamks already exists in psql. You may wish to clear psql from aamks by invoking:";
+	echo
+	echo 'sudo -u postgres psql -c "DROP DATABASE aamks"; sudo -u postgres psql -c "DROP USER aamks"' 
+	echo
+	exit;
+	# [ $AAMKS_PG_PASS == 'secret' ] && { 
+	# 	echo "Password for aamks psql user needs to be changed from the default='secret'. It must match the AAMKS_PG_PASS in your ~/.bashrc."; 
+	# 	echo
+	# 	exit;
+	# } 
+}
+
+[ -d $AAMKS_PATH ] || { echo "$AAMKS_PATH does not exist. Exiting"; exit;  }
+
+sudo mkdir -p /var/www/ssl/
+sudo rm -rf /var/www/ssl/aamks 
+sudo ln -sf $AAMKS_PATH/gui /var/www/ssl/aamks
+
 USER=`id -ru`
 [ "X$USER" == "X0" ] && { echo "Don't run as root / sudo"; exit; }
 
@@ -45,11 +59,9 @@ sudo apt-get update
 sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils apache2 php-pgsql
 sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
 
-# [ $AAMKS_PG_PASS == 'secret' ] && { 
-# 	echo "Password for aamks psql user needs to be changed from the default='secret'. It must match the AAMKS_PG_PASS in your ~/.bashrc."; 
-# 	echo
-# 	exit;
-# } 
+# Some quick SSL for localhost. But you should really configure SSL for your site.
+# a2enmod ssl
+# a2ensite default-ssl.conf
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`
