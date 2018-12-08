@@ -1,0 +1,226 @@
+body {
+	font-size: 13px;
+	background: #444;
+	margin:10px;
+	font-family: "Roboto", "arial";
+	color: #ddd;
+	margin-bottom: 400px;
+}
+
+h2 {
+	text-align:center;
+}
+
+td {
+	border-bottom: 1px solid #555;
+	padding: 6px;
+	color: #fff;
+}
+
+th {
+	padding: 6px;
+	color: #fff;
+	font-weight: normal;
+	background: #222;
+	border: 1px solid #555;
+}
+
+.visible {
+	display: block;
+}
+
+.invisible {
+	display: none;
+}
+
+msg, fatal, cannot, msg_confirm{
+	z-index: 999;
+	position:fixed;
+	left:0px;
+	min-height: 30px;
+	top:50px;
+    text-align:center;
+    width:500px;
+	opacity: 0.9;
+    background-color: #063;
+    color: #fff;
+    padding: 10px;
+	background-position: 99% 1%;
+    background-repeat: no-repeat; 
+
+}
+fatal, cannot {
+    background-color: #a00;
+	padding: 20px;
+    border-radius: 2px; 
+	border: 1px solid #fff;
+	box-shadow: 0 1px 4px #000;
+}
+
+
+a:link, a:visited {
+	color: #6af;
+	text-decoration: underline;
+}
+
+a.blink {
+	user-select: none;
+	text-decoration: none;
+	margin: 3px;
+    padding:4px 8px; 
+    border-radius: 2px; 
+	color: #fff;
+    background:#68a;
+    border:0 none;
+    cursor:pointer;
+	display: inline-block;
+    padding: 5px 8px;
+}
+a.rlink {
+	user-select: none;
+	text-decoration: none;
+	margin: 1px 3px;
+    padding:4px 8px; 
+    border-radius: 2px; 
+	color: #fff;
+    border:0 none;
+    cursor:pointer;
+	display: inline-block;
+	background: #600;
+    padding: 5px 8px;
+}
+
+green, black, orange, red, nocolor, wheat,  .nocolor {
+    padding:4px 8px; 
+    border-radius: 2px; 
+	color: #fff;
+    background:#062;
+    border:0 none;
+	display: inline-block;
+    padding: 5px 8px;
+}
+black             { background:#000; }
+orange            { background:#a50; }
+red               { background:#600; }
+wheat			  { background:wheat; color: #333; }
+nocolor, .nocolor { background:none;  border: 1px solid #555; }
+
+input[type="submit"]:hover, .blink:hover, .rlink:hover, .nocolor:hover {
+	background: #c60;
+}
+
+textarea {
+    padding:5px;
+	color: #0aa;
+	background: #333;
+	border: 1px solid #555;
+}
+
+total_logins {
+	border-radius: 2px;
+	display: inline-block;
+	margin: 80px 0px 10px 0px;
+	padding: 5px 10px;
+	background-color: #062;
+	border: 1px solid #383;
+}
+
+
+fatal, cannot {
+	background-image: url("close.svg");
+	background-position: 99% 1%;
+    background-repeat: no-repeat; 
+}
+
+textarea, input, select {
+	padding: 2px;
+	margin: 4px;
+	color: #fff;
+	background: #333;
+	border: none;
+}
+
+input  {
+    padding:4px 8px; 
+	border-bottom: 1px solid #444;
+}
+
+
+::placeholder {
+	color: #666;
+}
+
+input[type="submit"] {
+    padding:8px;
+	margin:1px;
+    border-radius: 3px; 
+	color: #fff;
+    background:#68a;
+	border: 1px none;
+    cursor:pointer;
+}
+
+.nowrap {
+	white-space: nowrap;
+}
+select {
+    max-width:600px; 
+    overflow:hidden; 
+    white-space:pre; 
+    text-overflow:ellipsis;
+	border-bottom: 1px solid #444;
+}
+
+option {
+  border: solid 1px #DDDDDD; 
+}
+
+withHelp {
+    position: relative;
+    display: inline-block;
+	padding: 1px 4px 1px 4px;
+	border-radius: 5px;
+	text-align: left;
+	cursor: help;
+    background-color: wheat;
+	color: #222;
+}
+
+withHelp help {
+    visibility: hidden;
+	min-width:200px;
+	max-width:600px;
+	display: block;
+	border: 1px solid #243;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    background-color: wheat;
+    color: #444;
+}
+
+withHelp:hover help {
+    visibility: visible;
+}
+#g-signin-png:hover {
+	cursor: pointer;
+	-webkit-filter: hue-rotate(150deg);
+	filter: hue-rotate(150deg);
+}
+
+table.noborder td, table.noborder tr {
+	border-bottom: none;
+	text-align: center;
+}
+.grey {
+	opacity: 0.3;
+}
+.no-display{
+	display: none;
+}
+
+.frame {
+	border: 1px solid #888;
+	margin: 4px;
+	padding: 4px;
+}

@@ -1,0 +1,97 @@
+html, body { 
+    background-color: #000;
+    font-family: 'Play';
+    margin: 0;
+    color: #fff;
+    overflow: hidden;
+    height: 100%;
+	font-size:18px;
+}
+
+select {
+    background-color: #222;
+    margin: 0;
+    color: #fff;
+}
+
+canvas { 
+    border: 1px solid #444;
+    width: 1600px;
+    height: 800px;
+    background: #000;
+} 
+
+canvas-mouse-coords {
+    z-index:100;
+    display: none;
+    background-color: #444;
+    font-size: 12px;
+    padding: 4px;
+    color: #fff;
+    border: 1px solid #777;
+    position: absolute;
+}
+
+.scroll_rect {
+    fill: #111111;
+}
+
+a:link, a:visited {
+    color: #f80;
+    text-decoration:none;
+}
+a:active, a:hover {
+    text-decoration:none;
+    color: #fff;
+}
+
+
+table {
+    border-spacing: 2px 2px;
+}
+
+td {
+    border-bottom: 1px solid #a00;
+    padding: 6px;
+    color: #fff;
+}
+
+th {
+    padding: 6px;
+    color: #fff;
+    font-weight: normal;
+    background: #222;
+    border: 1px solid #555;
+}
+
+ered {
+    padding: 6px;
+    background: #800;
+    color: #fff;
+}
+input.buttonless-input {
+    color: #f80;
+    border: none;
+    background: none;
+}
+
+show-animation-setup-box {
+    cursor: default;
+    float: right;
+}
+show-animation-setup-box:hover {
+    opacity: 0.5;
+}
+
+animation-setup-box {
+    opacity: 0.9;
+    background-color: #800;
+    z-index:100;
+    display: none;
+    padding: 4px;
+    color: #fff;
+    border: 1px solid #f00;
+    position: absolute;
+    right:0px;
+    top:40px;
+}
