@@ -60,7 +60,7 @@ class Aamks {/*{{{*/
 			<title>$site</title>
 			<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
 			<link rel='stylesheet' href='css/css.css'>
-			<link rel='shortcut icon' type='image/x-icon' href='favicon.ico' />
+			<link rel='shortcut icon' type='image/x-icon' href='/aamks/favicon.ico' />
 			<meta name='viewport' content='width=device-width, initial-scale=1, minimum-scale=1'>
 			<script src='js/jquery.js'></script>
 			<script src='js/aamks.js'></script>
@@ -90,7 +90,7 @@ class Aamks {/*{{{*/
 	public function logoutButton() {/*{{{*/
 		if(isset($_REQUEST['logout'])) { 
 			session_destroy(); 
-			header('Location: /i2/i2.php'); 
+			header('Location: /aamks/index.php'); 
 			}
 		if(empty($_SESSION['user_id'])) { 
 			if(isset($_GET['register'])) { register_form();}

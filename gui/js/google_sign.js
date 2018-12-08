@@ -5,7 +5,7 @@ function onSignIn(googleUser) {
 	// The ID token you need to pass to your backend:
 	var id_token = googleUser.getAuthResponse().id_token;
 	var arr = { g_user_id: profile.getId(), g_name: profile.getName(), g_email: profile.getEmail(), g_picture: profile.getImageUrl() };
-	$.post('https://stanley.szach.in/i2/i3.php', { 'jsarr': arr });
+	$.post('https://localhost/aamks/i3.php', { 'jsarr': arr });
 
 	for (var key in arr) {
 		  console.log('key ' + key + ' has value ' + arr[key]);

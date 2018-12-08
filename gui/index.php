@@ -5,11 +5,11 @@
 session_name('aamks');
 require_once("inc.php"); 
 if(isset($_SESSION['g_login'])){
-		$_SESSION['g_name']=$_SESSION['g_login']['g_name'];
-		$_SESSION['g_email'] =$_SESSION['g_login']['g_email'];
-		$_SESSION['g_user_id']=$_SESSION['g_login']['g_user_id'];
-		$_SESSION['g_picture']=$_SESSION['g_login']['g_picture'];
-		do_google_login();
+	$_SESSION['g_name']=$_SESSION['g_login']['g_name'];
+	$_SESSION['g_email'] =$_SESSION['g_login']['g_email'];
+	$_SESSION['g_user_id']=$_SESSION['g_login']['g_user_id'];
+	$_SESSION['g_picture']=$_SESSION['g_login']['g_picture'];
+	do_google_login();
 }
 
 function salt($password){/*{{{*/
@@ -122,8 +122,9 @@ function do_register(){/*{{{*/
 	$salted=salt($password);
 	$token=md5(time());
 	$ret=$_SESSION['nn']->query("insert into users (username, email, password, activation_token) values ($1,$2,$3,$4) returning id", array($name, $email, $salted,$token));
+
 	nice_mail($email,"Welcome to AAMKS","Confirm your email address and activate your AAMKS account <br> 
-		<a href=https://stanley.szach.in/i2/i2.php?activation_token=$token>Click here</a>");
+		<a href=https://$_SERVER[SERVER_NAME]/index.php?activation_token=$token>Click here</a>");
 	echo "Email sent to $email";
 }/*}}}*/
 function activate_user(){/*{{{*/
@@ -222,7 +223,7 @@ function google_login_prep(){/*{{{*/ //TODO to be deleted
 	require_once 'vendor/autoload.php';
 	$client = new Google_Client();
 	$client->setAuthConfig('g_api.json');
-	$redirect_uri = 'https://stanley.szach.in/i2/i2.php';
+	$redirect_uri = 'https://$_SERVER[SERVER_NAME]/index.php';
 	$client->setRedirectUri($redirect_uri);
 	$client->addScope("https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email");
 	#$client-revokeToken(); //logout
@@ -338,10 +339,10 @@ function project_info(){/*{{{*/
 }/*}}}*/
 function main() { /*{{{*/
 	global $g_ret; //google login handler
-	$_SESSION['home_url']="https://stanley.szach.in/i2/i2.php";
+	$_SESSION['home_url']="/aamks/index.php";
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	echo '<script src="js/google_sign.js"></script>';
-	$_SESSION['nn']->htmlHead("i2");
+	$_SESSION['nn']->htmlHead("Aamks");
 	if(isset($_GET['edit_user'])) { edit_user();}
 	$_SESSION['nn']->logoutButton();
 	if(isset($_GET['projects'])) { my_projects();}

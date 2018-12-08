@@ -1,7 +1,7 @@
 <?php
 session_name('aamks');
 require_once("inc.php"); 
-require_once("inc.firedb.php"); 
+require_once("inc.form.php"); 
 
 function read_json($json_path) { /*{{{*/
 	if(is_readable($json_path)) { 
