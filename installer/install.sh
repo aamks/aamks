@@ -56,7 +56,7 @@ USER=`id -ru`
 [ "X$USER" == "X0" ] && { echo "Don't run as root / sudo"; exit; }
 
 sudo apt-get update 
-sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils apache2 php-pgsql
+sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils apache2 php-pgsql pdf2svg
 sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
 
 # Some quick SSL for localhost. But you should really configure SSL for your site.
@@ -87,6 +87,7 @@ sudo cp $AAMKS_PATH/examples/three/* /home/aamks_users/demo@aamks/three/1/
 # Solves the problem of shell users vs www-data user permissions of new files.
 # But you need to take care of shell users yourself: add them to www-data in /etc/group.
 sudo chown -R $USER:www-data /home/aamks_users
+sudo chmod -R g+w /home/aamks_users
 sudo chmod -R g+s /home/aamks_users
 sudo find /home/aamks_users -type f -exec chmod 664 {} \;
 

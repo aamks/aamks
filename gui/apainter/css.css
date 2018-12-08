@@ -119,7 +119,7 @@ table td {
 	position: fixed;
 	left: 10px; 
 	top: 20px;
-	padding: 10px;
+	margin: 30px;
 	color: #fff;
 	z-index: 300;
 }

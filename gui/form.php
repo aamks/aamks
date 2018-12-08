@@ -205,7 +205,7 @@ function calculate_profile($arr) { #{{{
 function write($data, $file) { #{{{
 	$saved=file_put_contents($file, $data);
 	if($saved>0) { 
-		$_SESSION['header_ok'][]="written to <a class=blink href='$file'>$file</a>";
+		$_SESSION['header_ok'][]="OK $file saved";
 	} else {
 		$_SESSION['header_err'][]="problem saving $file";
 	}
@@ -319,7 +319,8 @@ function form4() { /*{{{*/
 
 function menu() {/*{{{*/
 	echo "
-	<a class=blink href=i2.php>menu</a>
+	<a class=blink href=index.php>menu</a>
+	<a class=blink href=apainter>apainter</a>
 	<a class=blink href=?form1>easy</a>
 	<a class=blink href=?form2>advanced</a>
 	<a class=blink href=?form3>text</a>

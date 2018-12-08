@@ -11,7 +11,7 @@ from numpy.random import randint
 from include import Sqlite
 from include import Json
 from include import Dump as dd
-from gui.vis.vis import Vis
+from include import Vis
 
 # }}}
 

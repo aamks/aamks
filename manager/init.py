@@ -10,7 +10,7 @@ from include import Json
 from include import Psql
 from include import Dump as dd
 from include import SimIterations
-from gui.vis.vis import Vis 
+from include import Vis
 
 class OnInit():
     def __init__(self):# {{{
@@ -25,7 +25,6 @@ class OnInit():
         self._clear_sqlite()
         self._setup_simulations()
         self._setup_vis()
-        self._setup_anim_master()
         self._info()
 # }}}
     def _clear_sqlite(self):# {{{
@@ -62,13 +61,11 @@ class OnInit():
 
         workers_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
         os.makedirs(workers_dir, exist_ok=True)
-        os.chmod(workers_dir, 0o777)
 
         irange=self._create_iterations_sequence()
         for i in range(*irange):
             sim_dir="{}/{}".format(workers_dir,i)
             os.makedirs(sim_dir, exist_ok=True)
-            os.chmod(sim_dir, 0o777)
             self.p.query("INSERT INTO simulations(iteration,project) VALUES(%s,%s)", (i,self.project_id))
 
 # }}}
@@ -80,58 +77,6 @@ class OnInit():
         except:
             pass
         os.makedirs(vis_dir, exist_ok=True)
-        os.chmod(vis_dir, 0o777)
-        copy_tree("{}/gui/vis/js".format(os.environ['AAMKS_PATH']), "{}/js".format(vis_dir) )
-        os.remove("{}/js/aamks.js".format(vis_dir) )
-        os.symlink("{}/gui/vis/js/aamks.js".format(os.environ['AAMKS_PATH']), "{}/js/aamks.js".format(vis_dir) )
-        shutil.copyfile("{}/gui/vis/css.css".format(os.environ['AAMKS_PATH']), "{}/css.css".format(vis_dir))
-        shutil.copyfile("{}/geom/colors.json".format(os.environ['AAMKS_PATH']), "{}/colors.json".format(vis_dir))
-# }}}
-    def _setup_anim_master(self):# {{{
-        path="{}/workers/vis/master.html".format(os.environ['AAMKS_PROJECT'])
-
-        with open(path, "w") as f:
-            f.write('''<!DOCTYPE HTML>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv=Content-Type content='text/html; charset=utf-8' />
-    <link href='https://fonts.googleapis.com/css?family=Play' rel='stylesheet'>
-    <link href='https://fonts.googleapis.com/icon?family=Material+Icons' rel='stylesheet'>
-    <title>Aamks</title>
-    <link rel='stylesheet' type='text/css' href='css.css'>
-        <script type="text/javascript" src="js/jquery.js"></script>
-        <script type="text/javascript" src="js/paper-full.js"></script>
-        <script type="text/javascript" src="js/jszip.min.js"></script>
-        <script type="text/javascript" src="js/jszip-utils.js"></script>
-        <script type="text/paperscript" canvas="canvas" src="js/aamks.js" ></script>
-</head>
-<body>
-<div>
-    <vis-title></vis-title> &nbsp; &nbsp; Time: <sim-time></sim-time>
-    &nbsp; &nbsp;
-    <show-animation-setup-box>[setup]</show-animation-setup-box>
-    
-    <animation-setup-box>
-        <table>
-            <tr><td>Animation           <td><choose-vis></choose-vis> 
-            <tr><td>Highlight           <td><highlight-geoms></highlight-geoms> 
-            <tr><td>Style               <td><change-style></change-style> 
-            <tr><td>Labels size         <td><size-labels></size-labels> 
-            <tr><td>Walls size          <td><size-walls></size-walls> 
-            <tr><td>Doors size          <td><size-doors></size-doors> 
-            <tr><td>Balls size          <td><size-balls></size-balls> 
-            <tr><td>Vectors size        <td><size-velocities></size-velocities> 
-            <tr><td>Speed               <td><animation-speed></animation-speed>
-        </table>
-    </animation-setup-box>
-</div>
-<canvas-mouse-coords></canvas-mouse-coords>
-<svg-slider></svg-slider>
-
-<canvas id="canvas" resize hidpi="off" />
-
-''')
 # }}}
     def _info(self):# {{{
         print("Project id: {} run.\n".format(self.project_id))

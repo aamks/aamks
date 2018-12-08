@@ -53,6 +53,8 @@ class Aamks {/*{{{*/
 	}
 	/*}}}*/
 	public function htmlHead($site) { /*{{{*/
+		# TODO: w form.php ja tez wlaczam inc.php. Pytanie czy cale to google jest w inc.php potrzebne.
+		# moze powinno byc w index.php:main() wiecej tych rzeczy?
 		$header="<!DOCTYPE html>
 		<html> 
 		<head>
@@ -63,22 +65,13 @@ class Aamks {/*{{{*/
 			<link rel='shortcut icon' type='image/x-icon' href='/aamks/favicon.ico' />
 			<meta name='viewport' content='width=device-width, initial-scale=1, minimum-scale=1'>
 			<script src='js/jquery.js'></script>
-			<script src='js/aamks.js'></script>
-    <meta name='google-signin-scope' content='profile email'>
-	<meta name='google-signin-client_id' content='352726998172-lmrbrs6c2sgpug4nc861hfb04f3s0sr6.apps.googleusercontent.com'>
-    <script src='https://apis.google.com/js/platform.js' async defer></script>
-	<div id='hidden_form_container' style='display:none;'></div> 
+			<script src='js/form.js'></script>
+			<meta name='google-signin-scope' content='profile email'>
+			<meta name='google-signin-client_id' content='352726998172-lmrbrs6c2sgpug4nc861hfb04f3s0sr6.apps.googleusercontent.com'>
+			<script src='https://apis.google.com/js/platform.js' async defer></script>
+			<div id='hidden_form_container' style='display:none;'></div> 
 		</head>
-		<body class=$site>
-		<script>
-			function signOut() {
-				var auth2 = gapi.auth2.getAuthInstance();
-				auth2.signOut().then(function () {
-				        console.log('User signed out.');
-						    });
-			    }
-				</script>
-		";
+		<body>";
 		echo "$header";
 		$this->anyMessages();
     }
