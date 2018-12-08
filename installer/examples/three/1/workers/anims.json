@@ -1,8 +1,16 @@
 [
     {
-        "sort_id": -1,
-        "title": "built in demo@aamks, f0",
+        "sort_id": -2,
+        "title": "built-in demo@aamks, f0",
         "floor": "0",
+        "fire_origin": [],
+        "highlight_geom": null,
+        "anim": "1/f0.zip"
+    },
+    {
+        "sort_id": -1,
+        "title": "built-in demo@aamks, f1",
+        "floor": "1",
         "fire_origin": [],
         "highlight_geom": null,
         "anim": "1/f0.zip"
