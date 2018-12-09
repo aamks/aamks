@@ -56,7 +56,7 @@ USER=`id -ru`
 [ "X$USER" == "X0" ] && { echo "Don't run as root / sudo"; exit; }
 
 sudo apt-get update 
-sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils apache2 php-pgsql pdf2svg
+sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip
 sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
 
 # Some quick SSL for localhost. But you should really configure SSL for your site.
