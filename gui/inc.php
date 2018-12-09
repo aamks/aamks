@@ -64,9 +64,10 @@ class Aamks {/*{{{*/
 			<link rel='stylesheet' href='/aamks/css/css.css'>
 			<link rel='shortcut icon' type='image/x-icon' href='/aamks/favicon.ico' />
 			<meta name='viewport' content='width=device-width, initial-scale=1, minimum-scale=1'>
-			<script src='/aamks/js/jquery.js'></script>
 			<meta name='google-signin-scope' content='profile email'>
 			<meta name='google-signin-client_id' content='352726998172-lmrbrs6c2sgpug4nc861hfb04f3s0sr6.apps.googleusercontent.com'>
+			<script src='/aamks/js/jquery.js'></script>
+			<script src='/aamks/js/form.js'></script>
 			<script src='https://apis.google.com/js/platform.js' async defer></script>
 			<div id='hidden_form_container' style='display:none;'></div> 
 		</head>

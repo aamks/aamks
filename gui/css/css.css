@@ -90,7 +90,7 @@ a.rlink {
     padding: 5px 8px;
 }
 
-green, black, orange, red, nocolor, wheat,  .nocolor {
+green, black, orange, red, nocolor, wheat,  .nocolor, dark {
     padding:4px 8px; 
     border-radius: 2px; 
 	color: #fff;
@@ -100,6 +100,7 @@ green, black, orange, red, nocolor, wheat,  .nocolor {
     padding: 5px 8px;
 }
 black             { background:#000; }
+dark			  { background:#383838; color: #888; }
 orange            { background:#a50; }
 red               { background:#600; }
 wheat			  { background:wheat; color: #333; }

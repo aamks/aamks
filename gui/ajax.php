@@ -75,17 +75,13 @@ function ajaxSingleAnimFunUpDown() { /*{{{*/
 	$arr=[];
 	$colors=["H", "M", "L", "N"];
 	$y=[];
-	for($t=0; $t<20; $t+=1) { 
+	for($t=0; $t<10; $t+=1) { 
 		$record=[];
 		for($a=0; $a<370; $a++) { 
 			$y[$a]=rand(520,980);
-		}
-		for($a=0; $a<count($y); $a++) { 
-			$rand=rand(0,3);
-			$record[]=[ 1020 + 8*$a, $y[$a], 0, 0, $colors[$rand], 1 ];
-			if($rand!=3) { 
-				$y[$a]+=1500-2*$y[$a];
-			}
+			$color=floor($a/100);
+			$record[]=[ 1020 + 8*$a, $y[$a], 0, 0, $colors[$color], 1 ];
+			$y[$a]+=1500-2*$y[$a];
 		}
 		$arr[]=$record;
 		#dd2($arr);

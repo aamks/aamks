@@ -318,16 +318,18 @@ function form4() { /*{{{*/
 /*}}}*/
 
 function menu() {/*{{{*/
-	echo "
-	<a class=blink href=index.php>menu</a>
-	<a class=blink href=apainter>apainter</a>
-	<a class=blink href=?form1>easy</a>
-	<a class=blink href=?form2>advanced</a>
-	<a class=blink href=?form3>text</a>
-	<a class=blink href=?form4>building profiles</a>
-	<a class=blink href=vis/anims.php>anims</a>
+	$_SESSION['menu']="
+	<a class=blink href=/aamks/index.php>menu</a>
+	<a class=blink href=/aamks/apainter/index.php>apainter</a>
+	<a class=blink href=/aamks/form.php?form1>easy</a>
+	<a class=blink href=/aamks/form.php?form2>advanced</a>
+	<a class=blink href=/aamks/form.php?form3>text</a>
+	<a class=blink href=/aamks/form.php?form4>building profiles</a>
+	<a class=blink href=/aamks/simulations.php>simulations</a>
+	<a class=blink href=/aamks/vis/anims.php>anims</a>
 	<br>
 	";
+	echo $_SESSION['menu'];
 }
 /*}}}*/
 
@@ -349,7 +351,6 @@ function vars() {/*{{{*/
 function main() {/*{{{*/
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	$_SESSION['nn']->htmlHead("Aamks");
-	echo "<script src='js/form.js'></script>";
 	vars();
 	menu();
 	make_help();
