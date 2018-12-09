@@ -1,24 +1,24 @@
 [
     {
-        "sort_id": -2,
-        "title": "fun demo@aamks",
+        "sort_id": -3,
+        "title": "funCircle demo@aamks",
         "floor": "0",
         "fire_origin": [],
         "highlight_geom": null,
-        "anim": "fun"
+        "anim": "funCircle"
+    },
+    {
+        "sort_id": -2,
+        "title": "funUpDown 370 agents demo@aamks",
+        "floor": "0",
+        "fire_origin": [],
+        "highlight_geom": null,
+        "anim": "funUpDown"
     },
     {
         "sort_id": -1,
-        "title": "built-in demo@aamks, f0",
+        "title": "f0.zip demo demo@aamks, f0",
         "floor": "0",
-        "fire_origin": [],
-        "highlight_geom": null,
-        "anim": "1/f0.zip"
-    },
-    {
-        "sort_id": -0,
-        "title": "built-in demo@aamks, f1",
-        "floor": "1",
         "fire_origin": [],
         "highlight_geom": null,
         "anim": "1/f0.zip"

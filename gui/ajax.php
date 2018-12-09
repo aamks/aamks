@@ -1,6 +1,6 @@
 <?php
 session_name('aamks');
-session_start();
+require_once("inc.php"); 
 
 function ajaxPdf2svg() { /*{{{*/
 	$src=$_FILES['file']['tmp_name'];
@@ -37,8 +37,10 @@ function ajaxAnimsStatic() { /*{{{*/
 }
 /*}}}*/
 function ajaxSingleAnim() { /*{{{*/
-	if($_POST['unzip']=='fun') { 
-		ajaxSingleAnimFun();
+	if($_POST['unzip']=='funUpDown') { 
+		ajaxSingleAnimFunUpDown();
+	} else if($_POST['unzip']=='funCircle') { 
+		ajaxSingleAnimFunCircle();
 	} else { 
 		$f=$_SESSION['main']['working_home']."/workers/$_POST[unzip]";
 		if(is_file($f)) { 
@@ -52,7 +54,7 @@ function ajaxSingleAnim() { /*{{{*/
 	}
 }
 /*}}}*/
-function ajaxSingleAnimFun() { /*{{{*/
+function ajaxSingleAnimFunCircle() { /*{{{*/
 	$arr=[];
 	$colors=["H", "M", "L", "N"];
 	for($t=0; $t<15; $t+=2.5) { 
@@ -64,7 +66,31 @@ function ajaxSingleAnimFun() { /*{{{*/
 		}
 		$arr[]=$record;
 	}
-	$collect=[ "simulation_id" => 1, "project_name" => "three", "frame_rate" => 0.5, "simulation_time" => 200, "time_shift" => 0  ];
+	$collect=[ "simulation_id" => 1, "project_name" => "three", "simulation_time" => 200, "time_shift" => 0  ];
+	$collect['data']=$arr;
+	echo json_encode(array("msg"=>"ajaxSingleAnimFun(): OK", "err"=>0, "data"=>$collect));
+}
+/*}}}*/
+function ajaxSingleAnimFunUpDown() { /*{{{*/
+	$arr=[];
+	$colors=["H", "M", "L", "N"];
+	$y=[];
+	for($t=0; $t<20; $t+=1) { 
+		$record=[];
+		for($a=0; $a<370; $a++) { 
+			$y[$a]=rand(520,980);
+		}
+		for($a=0; $a<count($y); $a++) { 
+			$rand=rand(0,3);
+			$record[]=[ 1020 + 8*$a, $y[$a], 0, 0, $colors[$rand], 1 ];
+			if($rand!=3) { 
+				$y[$a]+=1500-2*$y[$a];
+			}
+		}
+		$arr[]=$record;
+		#dd2($arr);
+	}
+	$collect=[ "simulation_id" => 1, "project_name" => "three", "simulation_time" => 900, "time_shift" => 0  ];
 	$collect['data']=$arr;
 	echo json_encode(array("msg"=>"ajaxSingleAnimFun(): OK", "err"=>0, "data"=>$collect));
 }

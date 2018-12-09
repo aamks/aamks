@@ -230,7 +230,7 @@ class Vis():# {{{
         self._js_make_obstacles()
         self._js_make_dd_geoms()
 
-        self.vis_dir="{}/workers/vis".format(os.environ['AAMKS_PROJECT']) 
+        self.vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
         self._save()
 # }}}
     def _js_make_floors_and_meta(self):# {{{

@@ -24,7 +24,6 @@ class OnInit():
         self.p=Psql()
         self._clear_sqlite()
         self._setup_simulations()
-        self._setup_vis()
         self._info()
 # }}}
     def _clear_sqlite(self):# {{{
@@ -68,15 +67,6 @@ class OnInit():
             os.makedirs(sim_dir, exist_ok=True)
             self.p.query("INSERT INTO simulations(iteration,project) VALUES(%s,%s)", (i,self.project_id))
 
-# }}}
-    def _setup_vis(self):# {{{
-        vis_dir="{}/workers/vis".format(os.environ['AAMKS_PROJECT']) 
-        # TODO: may be useful at some occasion, who knows...
-        try:
-            os.remove("{}/workers/vis/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
-        except:
-            pass
-        os.makedirs(vis_dir, exist_ok=True)
 # }}}
     def _info(self):# {{{
         print("Project id: {} run.\n".format(self.project_id))
