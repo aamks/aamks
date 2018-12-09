@@ -243,7 +243,7 @@ function pdf_svg_dom(json) { //{{{
 }
 //}}}
 function pdf2svg() { //{{{
-	postFile('https://localhost/aamks/ajax.php?pdf2svg')
+	postFile('/aamks/ajax.php?pdf2svg')
 	  .then(data => pdf_svg_dom(data))
 	  .catch(error => ajax_msg(error))
 
@@ -261,8 +261,7 @@ function pdf2svg() { //{{{
 }
 //}}}
 function apainter2server(cadfile) { //{{{
-	$.post(
-		'https://localhost/aamks/ajax.php?apainter', { 'cadfile': cadfile },
+	$.post('/aamks/ajax.php?apainter', { 'cadfile': cadfile },
 		function (json) { ajax_msg(json); }
 	);
 	

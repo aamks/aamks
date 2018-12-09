@@ -52,7 +52,7 @@ var	animationIsRunning=0;
 $.getJSON("colors.json", function(cols) {
 	colorsDb=cols;
 	colors=colorsDb['darkColors'];
-	$.post('https://localhost/aamks/ajax.php?getAnimsList', function (response) { 
+	$.post('/aamks/ajax.php?getAnimsList', function (response) { 
 		var data=response['data'];
 		// Runs automatically on the start. By default runs the first visualization from anims.json, which should be most fresh.
 		makeChooseVis(data);
@@ -82,7 +82,7 @@ function showStaticImage(chosenAnim) {
 	// After we read a record from anims.json we reset the current visualization and setup a new one.
 	// We can only start animation after we are done with static rooms, doors etc.
 	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
-	$.post('https://localhost/aamks/ajax.php?getAnimsStatic', function(response) { 
+	$.post('/aamks/ajax.php?getAnimsStatic', function(response) { 
 		var dstatic=response['data'];
 		var floor=chosenAnim["floor"];
 		var newScale=dstatic[floor]['meta']['scale'];
@@ -124,7 +124,7 @@ function showAnimation(chosenAnim) {
 	// After static data is loaded to paperjs we can run animations.
 	// 0.000001 & friends prevent divisions by 0.
 	
-	$.post('https://localhost/aamks/ajax.php?getSingleAnim', { 'unzip': chosenAnim['anim'] }, function(response) { 
+	$.post('/aamks/ajax.php?getSingleAnim', { 'unzip': chosenAnim['anim'] }, function(response) { 
 		animJson=response['data'];
 		timeShift=animJson.time_shift;
 		deltaTime=animJson.simulation_time-timeShift;

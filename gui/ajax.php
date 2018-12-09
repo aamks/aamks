@@ -82,8 +82,6 @@ function ajaxApainter() { /*{{{*/
 /*}}}*/
 function main() { /*{{{*/
 	if(!empty($_SESSION['main']['user_id'])) { 
-		header('Access-Control-Allow-Origin: *');
-		header('Access-Control-Allow-Headers: *');
 		header('Content-type: application/json');
 		if(!is_writable($_SESSION['main']['working_home'])) { 
 			echo json_encode(array("msg"=>"ajaxMain(): Cannot write ".$_SESSION['main']['working_home'], "err"=>1, "data"=>0));
