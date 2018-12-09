@@ -48,7 +48,6 @@ var frame=0;
 var	visContainsAnimation=0;
 var	animationIsRunning=0;
 
-console.log("go");
 
 $.getJSON("colors.json", function(cols) {
 	colorsDb=cols;
@@ -65,7 +64,6 @@ function makeChooseVis(data) {
 	// Droplist of anims.json (all registered visualizations)
 	var items = [];
 	items.push("<select id=choose-vis>");
-	items.push("<option value=''></option>");
 	for (var i=0; i<data.length; i++) { 
 		items.push( "<option value='" + i + "'>" + data[i]["title"] + "</option>" );
 	}
@@ -125,23 +123,9 @@ function showStaticImage(chosenAnim) {
 function showAnimation(chosenAnim) {
 	// After static data is loaded to paperjs we can run animations.
 	// 0.000001 & friends prevent divisions by 0.
-	var promise = new JSZip.external.Promise(function (resolve, reject) {
-		JSZipUtils.getBinaryContent("../"+chosenAnim["anim"], function(err, data) {
-			if (err) {
-				reject(err);
-			} else {
-				resolve(data);
-			}
-		});
-	});
-
-	promise.then(JSZip.loadAsync)                     
-	.then(function(zip) {
-		return zip.file("anim.json").async("string"); 
-	})
-
-	.then(function success(chosenAnim) {                    
-		var animJson = JSON.parse(chosenAnim);
+	
+	$.post('https://localhost/aamks/ajax.php?getSingleAnim', { 'unzip': chosenAnim['anim'] }, function(response) { 
+		animJson=response['data'];
 		timeShift=animJson.time_shift;
 		deltaTime=animJson.simulation_time-timeShift;
 		$("sim-time").html(animTimeFormat());
@@ -161,9 +145,6 @@ function showAnimation(chosenAnim) {
 		visContainsAnimation=1;
 		animationIsRunning=1;
 		paperjsDisplayAnimation();
-
-	}, function error(e) {
-		console.log(e);
 	});
 }
 
@@ -418,9 +399,9 @@ function listenEvents() {
 
 	$('#canvas').on( 'DOMMouseScroll mousewheel', function ( event ) {
 	  if( event.originalEvent.detail > 0 || event.originalEvent.wheelDelta < 0 ) { //alternative options for wheelData: wheelDeltaX & wheelDeltaY
-		view.scale(0.6);
+		view.scale(0.95);
 	  } else {
-		view.scale(1.4);
+		view.scale(1.05);
 	  }
 	  //prevent page fom scrolling
 	  return false;

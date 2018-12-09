@@ -4,7 +4,7 @@ html, body {
     color: #fff;
     overflow: hidden;
     height: 100%;
-	font-size:18px;
+	font-size: 13px;
 }
 
 select {
@@ -55,13 +55,6 @@ td {
     color: #fff;
 }
 
-th {
-    padding: 6px;
-    color: #fff;
-    font-weight: normal;
-    background: #222;
-    border: 1px solid #555;
-}
 
 ered {
     padding: 6px;
@@ -86,18 +79,16 @@ animation-setup-box {
     opacity: 0.9;
     background-color: #800;
     z-index:100;
-    display: block;
+    display: none;
     padding: 4px;
     color: #fff;
     border: 1px solid #f00;
     position: absolute;
     right:0px;
     top:40px;
-	font-size: 13px;
 }
 
 textarea, input, select {
-	font-size: 13px;
 	padding: 2px;
 	margin: 4px;
 	color: #fff;

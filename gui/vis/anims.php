@@ -7,8 +7,6 @@ function site() {/*{{{*/
 	echo "
     <link rel='stylesheet' type='text/css' href='css.css'>
 	<script type='text/javascript' src='js/paper-full.js'></script>
-	<script type='text/javascript' src='js/jszip.min.js'></script>
-	<script type='text/javascript' src='js/jszip-utils.js'></script>
 	<script type='text/paperscript' canvas='canvas' src='js/vis.js'></script>
 	<body>
 	<div>

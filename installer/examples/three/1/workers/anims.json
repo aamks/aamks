@@ -1,6 +1,14 @@
 [
     {
         "sort_id": -2,
+        "title": "fun demo@aamks",
+        "floor": "0",
+        "fire_origin": [],
+        "highlight_geom": null,
+        "anim": "fun"
+    },
+    {
+        "sort_id": -1,
         "title": "built-in demo@aamks, f0",
         "floor": "0",
         "fire_origin": [],
@@ -8,7 +16,7 @@
         "anim": "1/f0.zip"
     },
     {
-        "sort_id": -1,
+        "sort_id": -0,
         "title": "built-in demo@aamks, f1",
         "floor": "1",
         "fire_origin": [],
