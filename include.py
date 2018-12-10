@@ -194,13 +194,11 @@ class Json: # {{{
         try:
             if pretty==1:
                 pretty=json.dumps(data, indent=4)
-                f=open(path, 'w')
-                f.write(pretty)
-                f.close()
+                with open(path, "w") as f: 
+                    json.dump(pretty, f)
             else:
-                f=open(path, 'w')
-                json.dump(data, f)
-                f.close()
+                with open(path, "w") as f: 
+                    json.dump(data, f)
         except:
             raise Exception("\n\nCannot write json: {}.".format(path)) 
 
@@ -230,7 +228,6 @@ class Vis():# {{{
         self._js_make_obstacles()
         self._js_make_dd_geoms()
 
-        self.vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
         self._save()
 # }}}
     def _js_make_floors_and_meta(self):# {{{
@@ -311,10 +308,12 @@ class Vis():# {{{
         workers via gearman. 
         '''
 
-        self.json.write(self._static, '{}/static.json'.format(self.vis_dir)) 
+        vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
+        self.json.write(self._static, '{}/static.json'.format(vis_dir)) 
+        return
 
         try:
-            z=self.json.read("{}/anims.json".format(self.vis_dir))
+            z=self.json.read("{}/anims.json".format(vis_dir))
             z,lowest_id=self._js_reorder_animations(z)
         except:
             z=[]
@@ -337,6 +336,6 @@ class Vis():# {{{
             records = [anim_record] + records
 
         z = records + z
-        self.json.write(z, "{}/anims.json".format(self.vis_dir))
+        self.json.write(z, "{}/anims.json".format(vis_dir))
 # }}}
 # }}}
