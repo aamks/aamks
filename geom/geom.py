@@ -47,6 +47,7 @@ class Geom():
         self._auto_detectors_and_sprinklers()
         self._create_obstacles()
         self.make_vis('Create obstacles')
+        self._make_navmesh_obj()
         self._assert_faces_ok()
         self._assert_room_has_door()
         #self.s.dumpall()
@@ -521,7 +522,6 @@ class Geom():
             data['named'][floor]=self._boxen_into_rectangles(boxen)
             for i in boxen:
                 data['points'][floor].append([(int(x),int(y), floors_meta[floor]['z']) for x,y in i.exterior.coords])
-        #dd(json.dumps(data['points']["1"]))
         self.s.query("CREATE TABLE obstacles(json)")
         self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
 #}}}
@@ -574,6 +574,43 @@ class Geom():
             rectangles.append(coords)
 
         return rectangles
+# }}}
+
+# NAVMESH OBJ
+    def _navmesh_platform(self,floor):# {{{
+        z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,))
+        platforms=[]
+        for i in z:
+            platforms.append([ (i['x1'], i['y1']), (i['x1'], i['y0']), (i['x0'], i['y0']), (i['x0'], i['y1']) ])
+        return platforms
+
+# }}}
+    def _navmesh_entry(self,face,z):# {{{
+        elem=''
+        elem+="o Face{}\n".format(self._obj_num)
+        for verts in face[:4]:
+            elem+="v {}\n".format(" ".join([ str(i/100) for i in [verts[0], z, verts[1]]]))
+        elem+="f {}\n\n".format(" ".join([ str(4*self._obj_num+i)+"//1" for i in [1,2,3,4]]))
+        self._obj_num+=1
+        return elem
+# }}}
+    def _make_navmesh_obj(self):# {{{
+        ''' 
+        OBJ for navmesh
+        '''
+
+        obj=OrderedDict();
+        z=self.s.query("SELECT json FROM obstacles")
+        for floor,faces in json.loads(z[0]['json'])['points'].items():
+            self._obj_num=0;
+            obj[floor]='';
+            for face in faces:
+                obj[floor]+=self._navmesh_entry(face,99)
+            for face in self._navmesh_platform(floor):
+                obj[floor]+=self._navmesh_entry(face,0)
+
+        with open("/tmp/aamks.obj", "w") as f: 
+            f.write(obj["0"])
 # }}}
 
 # ASSERTIONS

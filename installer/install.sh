@@ -85,7 +85,7 @@ sudo cp -r $AAMKS_PATH/installer/examples/three /home/aamks_users/demo@aamks/
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.
 # Solves the problem of shell users vs www-data user permissions of new files.
-# But you need to take care of shell users yourself: add them to www-data in /etc/group.
+# But you need to take care of shell users yourself: add them to www-data group in /etc/group.
 sudo chown -R $USER:www-data /home/aamks_users
 sudo chmod -R g+w /home/aamks_users
 sudo chmod -R g+s /home/aamks_users
