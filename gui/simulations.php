@@ -34,7 +34,7 @@ function status() {/*{{{*/
 	$r=$_SESSION['nn']->query("SELECT count(*) AS finished FROM simulations");
 	$finished=$r[0]['finished'];
 	$total=200;
-	echo "<br>Complete: $finished of $total &nbsp; &nbsp; <dark>ctrl+r to refresh</dark>";
+	echo "<br>Complete: $finished of $total &nbsp; &nbsp; <wheat>ctrl+r to refresh</wheat>";
 }
 /*}}}*/
 

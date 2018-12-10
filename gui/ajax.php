@@ -1,21 +1,6 @@
 <?php
 session_name('aamks');
 require_once("inc.php"); 
-
-function ajaxPdf2svg() { /*{{{*/
-	$src=$_FILES['file']['tmp_name'];
-	$dest=$_SESSION['main']['working_home']."/out.svg";
-	$z=shell_exec("pdf2svg $src $dest 2>&1");
-	$svg='';
-	if(empty($z)) { 
-		$svg=shell_exec("cat $dest"); 
-		$svg=preg_replace("/#/", "%23", $svg);
-		echo json_encode(array("msg"=>"ajaxPdf2svg(): OK", "err"=>0,  "data"=>$svg));
-	} else {
-		echo json_encode(array("msg"=>"ajaxPdf2svg(): $z", "err"=>1, "data"=>0));
-	}
-}
-/*}}}*/
 function ajaxAnimsList() { /*{{{*/
 	$f=$_SESSION['main']['working_home']."/workers/anims.json";
 	if(is_file($f)) { 
@@ -104,8 +89,8 @@ function ajaxApainter() { /*{{{*/
 /*}}}*/
 function ajaxGoogleLogin() { /*{{{*/
 	# TODO
-	$r=$_POST['google_data'];
-	$_SESSION['nn']->set_user_variables($r);
+	$_SESSION['google_data']=$_POST['google_data'];
+#	$_SESSION['nn']->set_user_variables($r);
 	echo json_encode(array("msg"=>"ajaxGoogleLogin(): OK", "err"=>0,  "data"=>$_SESSION['main']));
 
 	# $_SESSION['g_name']=$_SESSION['g_login']['g_name'];
@@ -127,8 +112,8 @@ function main() { /*{{{*/
 		if(isset($_GET['getAnimsList']))   { ajaxAnimsList(); }
 		if(isset($_GET['getAnimsStatic'])) { ajaxAnimsStatic(); }
 		if(isset($_GET['getSingleAnim']))  { ajaxSingleAnim(); }
-		if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 	}
+		if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }
 /*}}}*/
 main();

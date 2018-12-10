@@ -4,13 +4,13 @@
 #		$_SESSION['header_err'][]="Activation not complete";
 session_name('aamks');
 require_once("inc.php"); 
-if(isset($_SESSION['g_login'])){
-	$_SESSION['g_name']=$_SESSION['g_login']['g_name'];
-	$_SESSION['g_email'] =$_SESSION['g_login']['g_email'];
-	$_SESSION['g_user_id']=$_SESSION['g_login']['g_user_id'];
-	$_SESSION['g_picture']=$_SESSION['g_login']['g_picture'];
-	do_google_login();
-}
+#if(isset($_SESSION['g_login'])){
+#	$_SESSION['g_name']=$_SESSION['g_login']['g_name'];
+#	$_SESSION['g_email'] =$_SESSION['g_login']['g_email'];
+#	$_SESSION['g_user_id']=$_SESSION['g_login']['g_user_id'];
+#	$_SESSION['g_picture']=$_SESSION['g_login']['g_picture'];
+#	do_google_login();
+#}
 
 function salt($password){/*{{{*/
 	$salted=substr(md5($password.md5(getenv("AAMKS_SALT"))),0,20);
@@ -124,7 +124,7 @@ function do_register(){/*{{{*/
 	$ret=$_SESSION['nn']->query("insert into users (username, email, password, activation_token) values ($1,$2,$3,$4) returning id", array($name, $email, $salted,$token));
 
 	nice_mail($email,"Welcome to AAMKS","Confirm your email address and activate your AAMKS account <br> 
-		<a href=https://$_SERVER[SERVER_NAME]/index.php?activation_token=$token>Click here</a>");
+		<a href=https://$_SERVER[SERVER_NAME]/aamks/index.php?activation_token=$token>Click here</a>");
 	echo "Email sent to $email";
 }/*}}}*/
 function activate_user(){/*{{{*/
@@ -135,6 +135,7 @@ function activate_user(){/*{{{*/
 		$_SESSION['nn']->query("UPDATE users SET activation_token ='already activated' WHERE id= $1", array($ret[0]['id'])) ;
 		$_SESSION['nn']->set_user_variables($ret[0])                                                                                         ;
 	}
+	# psql aamks -c 'select * from users';
 }/*}}}*/
 function nice_mail($address,$subject,$body){/*{{{*/
         $headers  = 'MIME-Version: 1.0' . "\r\n";
@@ -185,8 +186,8 @@ function edit_user_form(){/*{{{*/
 	echo "<div style='position:absolute;float:right;background:#555;width:400px;top:80px;right:10px'>
 		<form method=POST>
 		<table>
-		<tr><td>name<td><input name=name placeholder='name' size=32 required autocomplete='off' value='$_SESSION[username]' >
-		<tr style='display:none'><td>email-readonly<td><input id='username' readonly name='username'  size=32 value='$_SESSION[email]' >
+		<tr><td>name<td><input name=name placeholder='name' size=32 required autocomplete='off' value='".$_SESSION['main']['user_name']."' >
+		<tr style='display:none'><td>email-readonly<td><input id='username' readonly name='username'  size=32 value='".$_SESSION['main']['user_email']."' >
 		<tr><td>password<td>".password_input("password",0)."
 		</table><br>
 		<input type=submit name=save value='Save'>
@@ -195,17 +196,17 @@ function edit_user_form(){/*{{{*/
 		";
 }/*}}}*/
 function edit_user(){/*{{{*/
-	if(empty($_SESSION['user_id'])){
+	if(empty($_SESSION['main']['user_id'])){
 	header("location:".me());
 	}
 	if(!isset($_POST['save'])){ //from not submited
 	}else{ //form submited
 		if(!empty($_POST['password'])){ //did not changed password
-			$_SESSION['nn']->query("UPDATE users SET password = $1, username = $2 where id= $3", array(salt($_POST['password']), $_POST['name'], $_SESSION['user_id']));
+			$_SESSION['nn']->query("UPDATE users SET password = $1, username = $2 where id= $3", array(salt($_POST['password']), $_POST['name'], $_SESSION['main']['user_id']));
 		}else{
-			$_SESSION['nn']->query("UPDATE users SET username = $1 where id= $2", array($_POST['name'], $_SESSION['user_id']));
+			$_SESSION['nn']->query("UPDATE users SET username = $1 where id= $2", array($_POST['name'], $_SESSION['main']['user_id']));
 		}
-		$_SESSION['username']=$_POST['name'];
+		$_SESSION['main']['user_name']=$_POST['name'];
 		$_SESSION['header_ok'][]="SAVED";
 		header("location:".me());
 		}
@@ -272,16 +273,16 @@ function do_google_login(){/*{{{*/
 	$_SESSION['g_login']=0;
 	unset($_SESSION['g_login']);
 	dd($_SESSION);
-	exit();
 	$_SESSION['nn']->set_user_variables($ret[0]);
 }/*}}}*/
 function my_projects(){/*{{{*/
 	if(!empty($_GET['delete'])){
 		delete_project($_GET['delete']);
 	}
+# psql aamks -c 'SELECT * from projects'
 	//TODO regexp for project name
 	if(isset($_POST['submit'])){
-		$_SESSION['nn']->query("INSERT INTO projects (name,user_id) VALUES ($1,$2)", array($_POST['project_name'], $_SESSION['user_id']));
+		$_SESSION['nn']->query("INSERT INTO projects (name,user_id) VALUES ($1,$2)", array($_POST['project_name'], $_SESSION['main']['user_id']));
 	}
 	echo "
 		<div style='background:#555;position:fixed;margin-left:200px;margin-top:100px;width:900px'>
@@ -292,7 +293,7 @@ function my_projects(){/*{{{*/
 			</form>
 		<table>
 	";
-	$ret=$_SESSION['nn']->query("SELECT * FROM projects WHERE user_id=$1 ORDER BY 1", array($_SESSION['user_id'] ));
+	$ret=$_SESSION['nn']->query("SELECT * FROM projects WHERE user_id=$1 ORDER BY 1", array($_SESSION['main']['user_id'] ));
 	foreach( $ret as $project){
 		echo "<tr>
 			<td><a href=?project=$project[id]>$project[name]</a>
@@ -309,11 +310,11 @@ function project_info(){/*{{{*/
 
 	";
 	if(isset($_POST['submit'])){
-		$_SESSION['nn']->query("UPDATE projects SET name=$1 WHERE id=$2 and user_id=$3", array($_POST['project_name'], $_POST['project_id'], $_SESSION['user_id']  ));
+		$_SESSION['nn']->query("UPDATE projects SET name=$1 WHERE id=$2 and user_id=$3", array($_POST['project_name'], $_POST['project_id'], $_SESSION['main']['user_id']  ));
 		#$_SESSION['header_ok'][]="SAVED";
 		$_SESSION['nn']->msg("SAVED!")                                                                  ;
 	}
-	$ret=$_SESSION['nn']->query("SELECT * FROM projects WHERE user_id=$1 AND id=$2 ORDER BY 1", array($_SESSION['user_id'], $_GET['project'] ));
+	$ret=$_SESSION['nn']->query("SELECT * FROM projects WHERE user_id=$1 AND id=$2 ORDER BY 1", array($_SESSION['main']['user_id'], $_GET['project'] ));
 	foreach( $ret as $project){
 		//TODO regexp for name 
 		echo "
@@ -337,6 +338,7 @@ function main() { /*{{{*/
 	echo '<script src="js/google_sign.js"></script>';
 	$_SESSION['nn']->htmlHead("Aamks");
 	if(isset($_GET['edit_user'])) { edit_user();}
+	dd($_SESSION);
 	$_SESSION['nn']->logoutButton();
 	if(isset($_GET['projects'])) { my_projects();}
 	if(isset($_GET['project'])) { project_info();}
@@ -344,7 +346,7 @@ function main() { /*{{{*/
 }
 /*}}}*/
 function delete_project($project_id){/*{{{*/
-		$_SESSION['nn']->query("DELETE FROM projects WHERE id=$1 and user_id=$2", array( $project_id, $_SESSION['user_id']  ));
+		$_SESSION['nn']->query("DELETE FROM projects WHERE id=$1 and user_id=$2", array( $project_id, $_SESSION['main']['user_id']  ));
 		$_SESSION['nn']->msg("GONE!");
 }/*}}}*/
 main();

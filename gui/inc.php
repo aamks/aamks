@@ -85,20 +85,21 @@ class Aamks {/*{{{*/
 			session_destroy(); 
 			header('Location: /aamks/index.php'); 
 			}
-		if(empty($_SESSION['user_id'])) { 
+		if(empty($_SESSION['main']['user_id'])) { 
 			if(isset($_GET['register'])) { register_form();}
 			if(isset($_GET['reset'])) { reset_password();}
 			if(isset($_GET['activation_token'])) { activate_user();}
 			login_form();
-			#google_js_login();
+
+
 			exit();
 		}
 		echo "<div style='float:right; text-align:right; font-size:12px'>";
 		echo"<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none'></div>";
-		if(!empty($_SESSION['picture'])){
-			echo "<a href=?edit_user ><img src=$_SESSION[picture] width=50px height=50px></a>";
+		if(!empty($_SESSION['main']['user_photo'])){
+			echo "<a href=?edit_user ><img src=$_SESSION[main][user_photo] width=50px height=50px></a>";
 		}else{
-			echo "<a href=?edit_user class=blink>".$_SESSION['username']."</a>";
+			echo "<a href=?edit_user class=blink>".$_SESSION['main']['user_name']."</a>";
 		}
 		echo "<a href=?projects class=blink>My projects</a>
 			<a href=?logout=1 class=blink onclick='signOut();' >Logout</a>
@@ -163,12 +164,12 @@ class Aamks {/*{{{*/
 
 		$_SESSION['main']['user_id']=$r['id'];
 		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
-		$_SESSION['main']['user_name']=$r['name']; # zmiany nazw
+		$_SESSION['main']['user_name']=$r['username']; # zmiany nazw
 		$_SESSION['main']['user_photo']=$r['picture']; # zmiany nazw 
-		$_SESSION['main']['email']=$r['email'];
+		$_SESSION['main']['user_email']=$r['email'];
+		$_SESSION['main']['email']=$r['email']; //TODO - usunać?
 		$_SESSION['home_url']="/aamks/index.php";
-
-		#header("location:".me()); //TO
+		header("location:".me()); //TO
 	}/*}}}*/
 
 	public function querydd($qq,$arr=[]){ /*{{{*/
