@@ -59,7 +59,7 @@ function login_form(){/*{{{*/
 		$ret=$_SESSION['nn']->query("SELECT * FROM users where email= $1 and password = $2", array($_POST['email'], $salted));
 		if(!empty($ret)){//password and email match
 			if($salted==$ret[0]['password']){
-				set_user_variables($ret[0]);
+				$_SESSION['nn']->set_user_variables($ret[0]);
 			}
 		}else{
 			$_SESSION['reset_email']=$_POST['email'];
@@ -133,7 +133,7 @@ function activate_user(){/*{{{*/
 		$_SESSION['nn']->fatal("Activation token not valid");
 	}else{
 		$_SESSION['nn']->query("UPDATE users SET activation_token ='already activated' WHERE id= $1", array($ret[0]['id'])) ;
-		set_user_variables($ret[0])                                                                                         ;
+		$_SESSION['nn']->set_user_variables($ret[0])                                                                                         ;
 	}
 }/*}}}*/
 function nice_mail($address,$subject,$body){/*{{{*/
@@ -141,13 +141,6 @@ function nice_mail($address,$subject,$body){/*{{{*/
         $headers .= 'Content-type: text/html; charset=UTF-8' . "\r\n";
         $headers .= 'From:Aamks<do_not_reply@szach.in>' . "\r\n";
         mail($address, $subject, $body, $headers);
-}/*}}}*/
-function set_user_variables($ret){/*{{{*/
-	$_SESSION['user_id']=$ret['id'];
-	$_SESSION['username']=$ret['username'];
-	$_SESSION['email']=$ret['email'];
-	$_SESSION['picture']=$ret['picture'];
-	#header("location:".me()); //TO
 }/*}}}*/
 function reset_password(){/*{{{*/
 	$token=md5(salt(time()));
@@ -180,7 +173,7 @@ function reset_password(){/*{{{*/
 		}else{//do the reseting
 			if($ret=$_SESSION['nn']->query("UPDATE users SET password = $1, reset_token = NULL where email = $2 AND reset_token = $3 returning *", array(salt($_POST['password']), $_SESSION['reset_email'], $_GET['reset']))){
 				$_SESSION['header_ok'][]="DONE!";
-				set_user_variables($ret[0]);
+				$_SESSION['nn']->set_user_variables($ret[0]);
 			}else{
 				$_SESSION['nn']->fatal("Did not change the password!!");
 			}
@@ -280,7 +273,7 @@ function do_google_login(){/*{{{*/
 	unset($_SESSION['g_login']);
 	dd($_SESSION);
 	exit();
-	set_user_variables($ret[0]);
+	$_SESSION['nn']->set_user_variables($ret[0]);
 }/*}}}*/
 function my_projects(){/*{{{*/
 	if(!empty($_GET['delete'])){

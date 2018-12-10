@@ -594,23 +594,47 @@ class Geom():
         self._obj_num+=1
         return elem
 # }}}
+    def _navmesh_recast(self,floor):# {{{
+        with open("{}/recast.yml".format(os.environ['HOME']), "w") as f: 
+            f.write('''\
+cellsize: 0.3
+cellheight: 0.2
+agentheight: 2
+agentradius: 0.6
+agentmaxclimb: 0.1
+agentmaxslope: 45
+regionminsize: 8
+regionmergesize: 20
+edgemaxlen: 12
+edgemaxerror: 1.3
+vertsperpoly: 6
+detailsampledist: 6
+detailsamplemaxerror: 1
+partitiontype: 1
+tilesize: 0''')
+
+        Popen("recast --input {}/{}.obj build {}/{}.nav".format(os.environ['HOME'], floor, os.environ['HOME'], floor), shell=True)
+
+
+# }}}
     def _make_navmesh_obj(self):# {{{
         ''' 
         OBJ for navmesh
         '''
 
-        obj=OrderedDict();
         z=self.s.query("SELECT json FROM obstacles")
         for floor,faces in json.loads(z[0]['json'])['points'].items():
             self._obj_num=0;
-            obj[floor]='';
+            obj='';
             for face in faces:
-                obj[floor]+=self._navmesh_entry(face,99)
+                obj+=self._navmesh_entry(face,99)
             for face in self._navmesh_platform(floor):
-                obj[floor]+=self._navmesh_entry(face,0)
+                obj+=self._navmesh_entry(face,0)
+        
+            with open("{}/{}.obj".format(os.environ['HOME'], floor), "w") as f: 
+                f.write(obj)
+                self._navmesh_recast(floor)
 
-        with open("/tmp/aamks.obj", "w") as f: 
-            f.write(obj["0"])
 # }}}
 
 # ASSERTIONS

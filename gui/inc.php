@@ -159,6 +159,17 @@ class Aamks {/*{{{*/
 		}
     }
 /*}}}*/
+	public function set_user_variables($r){/*{{{*/
+
+		$_SESSION['main']['user_id']=$r['id'];
+		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
+		$_SESSION['main']['user_name']=$r['name']; # zmiany nazw
+		$_SESSION['main']['user_photo']=$r['picture']; # zmiany nazw 
+		$_SESSION['main']['email']=$r['email'];
+		$_SESSION['home_url']="/aamks/index.php";
+
+		#header("location:".me()); //TO
+	}/*}}}*/
 
 	public function querydd($qq,$arr=[]){ /*{{{*/
 		# query debugger

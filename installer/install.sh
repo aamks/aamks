@@ -60,8 +60,8 @@ sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xd
 sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
 
 # Some quick SSL for localhost. But you should really configure SSL for your site.
-# a2enmod ssl
-# a2ensite default-ssl.conf
+# sudo a2enmod ssl
+# sudo a2ensite default-ssl.conf
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`

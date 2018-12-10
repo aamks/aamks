@@ -102,6 +102,19 @@ function ajaxApainter() { /*{{{*/
 	}
 }
 /*}}}*/
+function ajaxGoogleLogin() { /*{{{*/
+	# TODO
+	$r=$_POST['google_data'];
+	$_SESSION['nn']->set_user_variables($r);
+	echo json_encode(array("msg"=>"ajaxGoogleLogin(): OK", "err"=>0,  "data"=>$_SESSION['main']));
+
+	# $_SESSION['g_name']=$_SESSION['g_login']['g_name'];
+	# $_SESSION['g_email'] =$_SESSION['g_login']['g_email'];
+	# $_SESSION['g_user_id']=$_SESSION['g_login']['g_user_id'];
+	# $_SESSION['g_picture']=$_SESSION['g_login']['g_picture'];
+
+}
+/*}}}*/
 function main() { /*{{{*/
 	if(!empty($_SESSION['main']['user_id'])) { 
 		header('Content-type: application/json');
@@ -109,11 +122,12 @@ function main() { /*{{{*/
 			echo json_encode(array("msg"=>"ajaxMain(): Cannot write ".$_SESSION['main']['working_home'], "err"=>1, "data"=>0));
 			exit();
 		}
-		if(isset($_GET['pdf2svg']))          { ajaxPdf2svg(); }
-		if(isset($_GET['apainter']))         { ajaxApainter(); }
-		if(isset($_GET['getAnimsList']))     { ajaxAnimsList(); }
-		if(isset($_GET['getAnimsStatic']))   { ajaxAnimsStatic(); }
-		if(isset($_GET['getSingleAnim']))    { ajaxSingleAnim(); }
+		if(isset($_GET['pdf2svg']))        { ajaxPdf2svg(); }
+		if(isset($_GET['apainter']))       { ajaxApainter(); }
+		if(isset($_GET['getAnimsList']))   { ajaxAnimsList(); }
+		if(isset($_GET['getAnimsStatic'])) { ajaxAnimsStatic(); }
+		if(isset($_GET['getSingleAnim']))  { ajaxSingleAnim(); }
+		if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 	}
 }
 /*}}}*/
