@@ -1,12 +1,9 @@
 <?php
 session_start();
-
 ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
 ini_set('display_startup_errors',1);
 setlocale(LC_TIME, "pl_PL");
-
-
 # debug/*{{{*/
 // A better print_r();
 function dd() {
@@ -173,7 +170,6 @@ class Aamks {/*{{{*/
 		$_SESSION['home_url']="/aamks/index.php";
 		header("location:".me()); //TO
 	}/*}}}*/
-
 	public function querydd($qq,$arr=[]){ /*{{{*/
 		# query debugger
 		echo "<pre>";
@@ -226,7 +222,5 @@ class Aamks {/*{{{*/
 		}
 	}
 	/*}}}*/
-
-
 }
 

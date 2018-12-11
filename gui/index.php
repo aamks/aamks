@@ -4,26 +4,14 @@
 #		$_SESSION['header_err'][]="Activation not complete";
 session_name('aamks');
 require_once("inc.php"); 
-if(isset($_SESSION['google_data'])){
-	google_js_login();
-}
 function salt($password){/*{{{*/
 	$salted=substr(md5($password.md5(getenv("AAMKS_SALT"))),0,20);
 	return($salted);
-}/*}}}*/
-function google_js_login(){/*{{{*/
-	$_SESSION['g_name']=$_SESSION['google_data']['g_name'];
-	$_SESSION['g_email'] =$_SESSION['google_data']['g_email'];
-	$_SESSION['g_user_id']=$_SESSION['google_data']['g_user_id'];
-	$_SESSION['g_picture']=$_SESSION['google_data']['g_picture'];
-	do_google_login();
 }/*}}}*/
 function me(){/*{{{*/
 	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
 }/*}}}*/
 function login_form(){/*{{{*/
-	global $g_ret;
-	$loginURL=$g_ret[0];
    $form = "
     <br><br>
     <form method=POST>
@@ -205,46 +193,12 @@ function edit_user(){/*{{{*/
 		}
 	edit_user_form();	
 }/*}}}*/
-function google_login_prep(){/*{{{*/ //TODO to be deleted
-	global $g_ret;
-	require_once 'vendor/autoload.php';
-	$client = new Google_Client();
-	$client->setAuthConfig('g_api.json');
-	$redirect_uri = 'https://$_SERVER[SERVER_NAME]/index.php';
-	$client->setRedirectUri($redirect_uri);
-	$client->addScope("https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email");
-	#$client-revokeToken(); //logout
-	$loginURL=$client->createAuthUrl();
-	$g_ret[0]=$loginURL;
-	$g_ret[1]=$client;
-	#dd($g_ret);
-	$_SESSION['nn']->fatal("Just checking!");
-	exit();
-	return $g_ret;
-}/*}}}*/
-function get_data_prep(){/*{{{*/
-#		global $g_ret;
-#		$client=$g_ret[1];
-#	$token = $client->fetchAccessTokenWithAuthCode($_GET['code']);
-#	if(isset($token['error'])){
-#		echo "There is something wrong";
-#		login_form();
-#		exit();
-#	}
-#	if(isset($token['id_token'])){ //got the token
-#		get_data_from_google($token);
-#	}
-}/*}}}*/
-function get_data_from_google($token){/*{{{*/
-		#global $g_ret;
-		#$client=$g_ret[1];
-		#$oAuth = new Google_Service_Oauth2($client);
-		#$userData = $oAuth->userinfo_v2_me->get();
-		#$_SESSION['g_name']=$userData['name'];
-		#$_SESSION['g_email']=$userData['email'];
-		#$_SESSION['g_user_id']=$userData['id'];
-		#$_SESSION['g_picture']=$userData['picture'];
-		#do_google_login();
+function google_js_login(){/*{{{*/
+	$_SESSION['g_name']=$_SESSION['google_data']['g_name'];
+	$_SESSION['g_email'] =$_SESSION['google_data']['g_email'];
+	$_SESSION['g_user_id']=$_SESSION['google_data']['g_user_id'];
+	$_SESSION['g_picture']=$_SESSION['google_data']['g_picture'];
+	do_google_login();
 }/*}}}*/
 function do_google_login(){/*{{{*/
 	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE email = $1 ", array($_SESSION['g_email'] )); //
@@ -262,7 +216,6 @@ function do_google_login(){/*{{{*/
 	unset($_SESSION['g_email']);
 	unset($_SESSION['g_user_id']);
 	unset($_SESSION['g_picture']);
-	$_SESSION['google_data']=0;
 	unset($_SESSION['google_data']);
 	$_SESSION['nn']->set_user_variables($ret[0]);
 }/*}}}*/
@@ -322,12 +275,16 @@ function project_info(){/*{{{*/
 	echo "</div> ";
 	my_projects();
 }/*}}}*/
+function delete_project($project_id){/*{{{*/
+		$_SESSION['nn']->query("DELETE FROM projects WHERE id=$1 and user_id=$2", array( $project_id, $_SESSION['main']['user_id']  ));
+		$_SESSION['nn']->msg("GONE!");
+}/*}}}*/
 function main() { /*{{{*/
-	#global $g_ret; //google login handler
 	$_SESSION['home_url']="/aamks/index.php";
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	echo '<script src="js/google_sign.js"></script>';
 	$_SESSION['nn']->htmlHead("Aamks");
+	if(isset($_SESSION['google_data'])){ google_js_login(); }
 	if(isset($_GET['edit_user'])) { edit_user();}
 	$_SESSION['nn']->logoutButton();
 	if(isset($_GET['projects'])) { my_projects();}
@@ -335,9 +292,5 @@ function main() { /*{{{*/
 	menu(); //last
 }
 /*}}}*/
-function delete_project($project_id){/*{{{*/
-		$_SESSION['nn']->query("DELETE FROM projects WHERE id=$1 and user_id=$2", array( $project_id, $_SESSION['main']['user_id']  ));
-		$_SESSION['nn']->msg("GONE!");
-}/*}}}*/
 main();
 ?>
