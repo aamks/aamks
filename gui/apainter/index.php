@@ -24,7 +24,9 @@ function head() { /*{{{*/
 /*}}}*/
 function main() { /*{{{*/
 	head();
-	echo "<div id=var_dump>".$_SESSION['main']['working_home']."/cad.json</div>";
+	if(isset($_SESSION['main'])) {
+		echo "<div id=var_dump>".$_SESSION['main']['working_home']."/cad.json</div>";
+	}
 }
 /*}}}*/
 main();
