@@ -3,6 +3,7 @@ from datetime import datetime
 from math import sqrt
 from numpy.random import randint
 from subprocess import Popen,PIPE
+import _recast as dt
 import codecs
 import inspect
 import itertools
@@ -204,7 +205,7 @@ class Json: # {{{
 
 
 # }}}
-class Vis():# {{{
+class Vis:# {{{
     def __init__(self,highlight_geom,src='image',title='',fire_origin=[]):# {{{
         ''' 
         Html canvas module for src=image (read from sqlite geoms) or
@@ -310,7 +311,6 @@ class Vis():# {{{
 
         vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
         self.json.write(self._static, '{}/static.json'.format(vis_dir)) 
-        return
 
         try:
             z=self.json.read("{}/anims.json".format(vis_dir))
@@ -339,3 +339,58 @@ class Vis():# {{{
         self.json.write(z, "{}/anims.json".format(vis_dir))
 # }}}
 # }}}
+class Navmesh: # {{{
+    def __init__(self):
+        self.navmesh=OrderedDict()
+        
+    def read(self,floor,file_nav):
+        self.navmesh[floor] = dt.dtLoadSampleTileMesh(file_nav)
+
+    def query(self,floor,q):
+        filtr = dt.dtQueryFilter()
+        query = dt.dtNavMeshQuery()
+
+        status = query.init(self.navmesh[floor], 2048)
+        if dt.dtStatusFailed(status):
+            return "err", -1, status
+
+        polyPickExt = dt.dtVec3(2.0, 4.0, 2.0)
+        startPos = dt.dtVec3(q[0][0]/100, 1, q[0][1]/100)
+        endPos = dt.dtVec3(q[1][0]/100, 1, q[1][1]/100)
+
+        status, out = query.findNearestPoly(startPos, polyPickExt, filtr)
+        if dt.dtStatusFailed(status):
+            return "err", -2, status
+        startRef = out["nearestRef"]
+        _startPt = out["nearestPt"]
+
+        status, out = query.findNearestPoly(endPos, polyPickExt, filtr)
+        if dt.dtStatusFailed(status):
+            return "err", -3, status
+        endRef = out["nearestRef"]
+        _endPt = out["nearestPt"]
+
+        status, out = query.findPath(startRef, endRef, startPos, endPos, filtr, 32)
+        if dt.dtStatusFailed(status):
+            return "err", -4, status
+        pathRefs = out["path"]
+
+        status, fixEndPos = query.closestPointOnPoly(pathRefs[-1], endPos)
+        if dt.dtStatusFailed(status):
+            return "err", -5, status
+
+        status, out = query.findStraightPath(startPos, fixEndPos, pathRefs, 32, 0)
+        if dt.dtStatusFailed(status):
+            return "err", -6, status
+        straightPath = out["straightPath"]
+        straightPathFlags = out["straightPathFlags"]
+        straightPathRefs = out["straightPathRefs"]
+        
+        path=[]
+        for i in straightPath:
+            path.append((i[0]*100, i[2]*100))
+
+        return path
+
+
+

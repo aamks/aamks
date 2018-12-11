@@ -1,7 +1,6 @@
 # MODULES
 # {{{
 import json
-import _recast as dt
 import shutil
 import os
 import re
@@ -18,6 +17,7 @@ from math import sqrt
 from include import Sqlite
 from include import Json
 from include import Dump as dd
+from include import Navmesh
 from include import Vis
 
 # }}}
@@ -617,7 +617,9 @@ tilesize: 0''')
         file_nav="{}/{}.nav".format(os.environ['HOME'], floor)
         Popen("rm -rf {}; recast --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_obj, file_nav), shell=True)
 
-        path=self._navmesh_query(file_nav, [(1292,686), (2000,1200)])
+        nav=Navmesh()
+        nav.read(floor,file_nav)
+        path=nav.query(floor, [(200,500), (3200,2500)])
         if path[0]=="err":
             print("ERR", path[1], path[2])
         else :
@@ -625,65 +627,16 @@ tilesize: 0''')
 
 # }}}
     def _vis_navmesh(self,floor,path):# {{{
-        print("\n\nvis")
+        #print("\n\nvis")
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         for i,p in enumerate(path):
             try:
-                print("ok",i,p)
                 z[floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": "#fff" , "strokeWidth": 2  , "opacity": 0.7 } )
             except:
-                print("fail",i,p)
                 pass
 
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        Vis(None, 'image', 'nav')
-# }}}
-    def _navmesh_query(self,nav_file, q):# {{{
-        nav_mesh = dt.dtLoadSampleTileMesh(nav_file)
-        filtr = dt.dtQueryFilter()
-        query = dt.dtNavMeshQuery()
-
-        status = query.init(nav_mesh, 2048)
-        if dt.dtStatusFailed(status):
-            return "err", -1, status
-
-        polyPickExt = dt.dtVec3(2.0, 4.0, 2.0)
-        startPos = dt.dtVec3(q[0][0]/100, 1, q[0][1]/100)
-        endPos = dt.dtVec3(q[1][0]/100, 1, q[1][1]/100)
-
-        status, out = query.findNearestPoly(startPos, polyPickExt, filtr)
-        if dt.dtStatusFailed(status):
-            return "err", -2, status
-        startRef = out["nearestRef"]
-        _startPt = out["nearestPt"]
-
-        status, out = query.findNearestPoly(endPos, polyPickExt, filtr)
-        if dt.dtStatusFailed(status):
-            return "err", -3, status
-        endRef = out["nearestRef"]
-        _endPt = out["nearestPt"]
-
-        status, out = query.findPath(startRef, endRef, startPos, endPos, filtr, 32)
-        if dt.dtStatusFailed(status):
-            return "err", -4, status
-        pathRefs = out["path"]
-
-        status, fixEndPos = query.closestPointOnPoly(pathRefs[-1], endPos)
-        if dt.dtStatusFailed(status):
-            return "err", -5, status
-
-        status, out = query.findStraightPath(startPos, fixEndPos, pathRefs, 32, 0)
-        if dt.dtStatusFailed(status):
-            return "err", -6, status
-        straightPath = out["straightPath"]
-        straightPathFlags = out["straightPathFlags"]
-        straightPathRefs = out["straightPathRefs"]
-        
-        path=[]
-        for i in straightPath:
-            path.append((i[0]*100, i[2]*100))
-
-        return path
+        #Vis(None, 'image', 'nav')
 # }}}
     def _make_navmesh_obj(self):# {{{
         ''' 
@@ -692,7 +645,6 @@ tilesize: 0''')
 
         z=self.s.query("SELECT json FROM obstacles")
         for floor,faces in json.loads(z[0]['json'])['points'].items():
-            print(floor)
             self._obj_num=0;
             obj='';
             for face in faces:
@@ -702,6 +654,7 @@ tilesize: 0''')
         
             with open("{}/{}.obj".format(os.environ['HOME'], floor), "w") as f: 
                 f.write(obj)
+                self.navmesh=[]
                 self._navmesh_recast(floor)
 
 # }}}
