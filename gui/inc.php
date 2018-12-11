@@ -6,6 +6,7 @@ ini_set('display_errors',1);
 ini_set('display_startup_errors',1);
 setlocale(LC_TIME, "pl_PL");
 
+
 # debug/*{{{*/
 // A better print_r();
 function dd() {
@@ -82,7 +83,7 @@ class Aamks {/*{{{*/
 /*}}}*/
 	public function logoutButton() {/*{{{*/
 		if(isset($_REQUEST['logout'])) { 
-			session_destroy(); 
+			session_destroy();
 			header('Location: /aamks/index.php'); 
 			}
 		if(empty($_SESSION['main']['user_id'])) { 
@@ -90,14 +91,15 @@ class Aamks {/*{{{*/
 			if(isset($_GET['reset'])) { reset_password();}
 			if(isset($_GET['activation_token'])) { activate_user();}
 			login_form();
-
-
 			exit();
 		}
-		echo "<div style='float:right; text-align:right; font-size:12px'>";
+
+		echo "<div id='mimooh' data-mimooh='zalogowany' style='display:none'></div>";
+		echo "
+		<div style='float:right; text-align:right; font-size:12px'>";
 		echo"<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none'></div>";
 		if(!empty($_SESSION['main']['user_photo'])){
-			echo "<a href=?edit_user ><img src=$_SESSION[main][user_photo] width=50px height=50px></a>";
+			echo "<a href=?edit_user ><img src=".$_SESSION['main']['user_photo']." width=50px height=50px></a>";
 		}else{
 			echo "<a href=?edit_user class=blink>".$_SESSION['main']['user_name']."</a>";
 		}
