@@ -3,6 +3,7 @@
 $menu=" 
 <ul>
 <li class='lnav'><a href=?node=about>About</a>
+<li class='lnav'><a href=?node=tutorial>Aamks Tutorials</a>
 <li class='lnav'><a href=?node=tests>Tests</a>
 <li class='lnav'><a href=?node=demos>Demos</a>
 <li class='lnav'><a href=?node=papers>Papers</a>
@@ -22,6 +23,22 @@ evacuation simulations (a-evac) and then evaluates the results.
 
 ");
 /*}}}*/
+
+$nodes['tutorial']=array("Aamks Tutorials", 
+'
+<br> Wstęp <br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/1vT_RyP6OOU" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<br> Instalacja Aamks <br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/XVrUkdMDsmE" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<br> Nakładka AutoCAD <br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/imsGClT18kE" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<br> Tworzenie modelu budynku <br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/IU6PaVFxba8" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<br> Uruchamianie multisymulacji <br><br>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/0V2bcl1-MN4" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+');
+
 $nodes['tests']=array("Tests", /*{{{*/
 '
 <br> Verif 1_1 <br><br>
