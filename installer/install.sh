@@ -62,6 +62,7 @@ sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
 # Some quick SSL for localhost. But you should really configure SSL for your site.
 # sudo a2enmod ssl
 # sudo a2ensite default-ssl.conf
+# sudo service apache2 reload
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`

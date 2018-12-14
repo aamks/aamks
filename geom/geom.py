@@ -7,7 +7,8 @@ import re
 import sys
 import codecs
 import itertools
-from subprocess import Popen,PIPE
+import subprocess
+
 from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
@@ -595,7 +596,10 @@ class Geom():
         return elem
 # }}}
     def _navmesh_recast(self,floor):# {{{
-        with open("{}/recast.yml".format(os.environ['HOME']), "w") as f: 
+        file_obj="{}/{}.obj".format(os.environ['HOME'], floor)
+        file_nav="{}/{}.nav".format(os.environ['HOME'], floor)
+        file_conf="{}/recast.yml".format(os.environ['HOME'])
+        with open(file_conf, "w") as f: 
             f.write('''\
 cellsize: 0.3
 cellheight: 0.2
@@ -613,13 +617,13 @@ detailsamplemaxerror: 1
 partitiontype: 1
 tilesize: 0''')
 
-        file_obj="{}/{}.obj".format(os.environ['HOME'], floor)
-        file_nav="{}/{}.nav".format(os.environ['HOME'], floor)
-        Popen("rm -rf {}; recast --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_obj, file_nav), shell=True)
+        #subprocess.call("rm -rf {}; recast --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_obj, file_nav), shell=True)
+        print("rm -rf {}; recast --config {} --input {} build {}".format(file_nav, file_conf, file_obj, file_nav))
+        #subprocess.call("rm -rf {}; recast --config {} --input {} build {}".format(file_nav, file_conf, file_obj, file_nav), shell=True)
 
         nav=Navmesh()
         nav.read(floor,file_nav)
-        path=nav.query(floor, [(200,500), (3200,2500)])
+        path=nav.query(floor, [(506,836), (0,1000)])
         if path[0]=="err":
             print("ERR", path[1], path[2])
         else :
@@ -636,7 +640,7 @@ tilesize: 0''')
                 pass
 
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        #Vis(None, 'image', 'nav')
+        Vis(None, 'image', 'nav')
 # }}}
     def _make_navmesh_obj(self):# {{{
         ''' 
@@ -647,8 +651,8 @@ tilesize: 0''')
         for floor,faces in json.loads(z[0]['json'])['points'].items():
             self._obj_num=0;
             obj='';
-            for face in faces:
-                obj+=self._navmesh_entry(face,99)
+            #for face in faces:
+            #    obj+=self._navmesh_entry(face,99)
             for face in self._navmesh_platform(floor):
                 obj+=self._navmesh_entry(face,0)
         
