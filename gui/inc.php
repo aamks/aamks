@@ -45,6 +45,9 @@ class Aamks {/*{{{*/
 		die();
 }
 /*}}}*/
+public function me(){/*{{{*/
+	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
+}/*}}}*/
 	public function isChecked($val) {/*{{{*/
 		if($val==1) { return 'div-yes'; }
 			return 'div-no'; 
@@ -80,9 +83,16 @@ class Aamks {/*{{{*/
 /*}}}*/
 	public function logoutButton() {/*{{{*/
 		if(isset($_REQUEST['logout'])) { 
+			echo"<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google 
+			$_SESSION['nn']->msg("Signing out!!");
+			unset($_SESSION['main']['user_id']);
 			session_destroy();
-			header('Location: /aamks/index.php'); 
-			}
+			ob_flush();
+			flush();
+			sleep(2);
+			echo "<script type='text/javascript'> signOut(); </script> 
+				 <meta http-equiv='Refresh' content='0; url=index.php' />	";
+		}
 		if(empty($_SESSION['main']['user_id'])) { 
 			if(isset($_GET['register'])) { register_form();}
 			if(isset($_GET['reset'])) { reset_password();}
@@ -91,18 +101,16 @@ class Aamks {/*{{{*/
 			exit();
 		}
 
-		echo "<div id='mimooh' data-mimooh='zalogowany' style='display:none'></div>";
-		echo "
-		<div style='float:right; text-align:right; font-size:12px'>";
-		echo"<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none'></div>";
+		echo " <div style='float:right; text-align:right; font-size:12px'>";
 		if(!empty($_SESSION['main']['user_photo'])){
 			echo "<a href=?edit_user ><img src=".$_SESSION['main']['user_photo']." width=50px height=50px></a>";
 		}else{
 			echo "<a href=?edit_user class=blink>".$_SESSION['main']['user_name']."</a>";
 		}
 		echo "<a href=?projects class=blink>My projects</a>
-			<a href=?logout=1 class=blink onclick='signOut();' >Logout</a>
-			</div>";
+			  <a href=?logout=1 class=blink >Logout</a>
+			  </div>
+			  ";
 	}
 /*}}}*/
 	public function fatal($msg) {/*{{{*/
@@ -159,8 +167,31 @@ class Aamks {/*{{{*/
 		}
     }
 /*}}}*/
+public function do_google_login(){/*{{{*/
+	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE email = $1 ", array($_SESSION['g_email'] )); //
+#psql aamks -c 'delete from users';
+#psql aamks -c 'select * from users';
+#psql aamks -c 'update users set google_id = NULL';
+	if (!empty($ret[0])){ //alredy there is a user with that email. -need to Join it
+		if(empty($ret[0]['google_id'])){ //if user already has a google_id
+			$_SESSION['nn']->query("UPDATE users SET 
+			google_id = $1, picture = $2 ,activation_token ='already activated' where email = $3 ", array($_SESSION['g_user_id'], $_SESSION['g_picture'],$_SESSION['g_email'] )); //
+			$_SESSION['header_ok'][]="Email already used in Aamks! - merging accounts";
+			$ret[0]['picture']=$_SESSION['g_picture'];
+		}
+	}else { //there is no user with that email in AAMKS - we need to create it
+		$ret1=$_SESSION['nn']->query("insert into users (username, email, google_id,picture, password, activation_token) values ($1,$2,$3,$4,$5,$6) returning id", array( $_SESSION['g_name'], $_SESSION['g_email'], $_SESSION['g_user_id'], $_SESSION['g_picture'], "no password yet", "already activated"));
+		$ret[0]=array("id"=>$ret1[0]['id'],"username"=>$_SESSION['g_name'],"email"=>$_SESSION['g_email'], "picture"=>$_SESSION['g_picture']);
+		$_SESSION['header_ok'][]="Created google aamks account";
+	}
+	unset($_SESSION['g_name']);
+	unset($_SESSION['g_email']);
+	unset($_SESSION['g_user_id']);
+	unset($_SESSION['g_picture']);
+	unset($_SESSION['google_data']);
+	return $ret[0];
+}/*}}}*/
 	public function set_user_variables($r){/*{{{*/
-
 		$_SESSION['main']['user_id']=$r['id'];
 		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
 		$_SESSION['main']['user_name']=$r['username']; # zmiany nazw
@@ -168,7 +199,7 @@ class Aamks {/*{{{*/
 		$_SESSION['main']['user_email']=$r['email'];
 		$_SESSION['main']['email']=$r['email']; //TODO - usunać?
 		$_SESSION['home_url']="/aamks/index.php";
-		#header("location:".me()); //TO
+		//can not put header location in here
 	}/*}}}*/
 	public function querydd($qq,$arr=[]){ /*{{{*/
 		# query debugger

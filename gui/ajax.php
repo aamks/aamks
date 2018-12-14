@@ -89,16 +89,18 @@ function ajaxApainter() { /*{{{*/
 /*}}}*/
 function ajaxGoogleLogin() { /*{{{*/
 	$_SESSION['google_data']=$_POST['google_data'];
-	$_SESSION['do_not_refresh']=1;
-#	$_SESSION['nn']->set_user_variables($r);
-	$_POST['google_data']['dnr']=1;
+	$_POST['google_data']['dnr']=0; //Do Not Reload page in JS/google_login.js
+	if(isset($_SESSION['g_dnr'])){
+		$_POST['google_data']['dnr']=1; //Do Not Reload page in JS/google_login.js
+	}
+	$_SESSION['g_dnr']=1;
 	echo json_encode(array("msg"=>"ajaxGoogleLogin(): OK", "err"=>0,  "data"=>$_POST['google_data']));
-
-	# $_SESSION['g_name']=$_SESSION['g_login']['g_name'];
-	# $_SESSION['g_email'] =$_SESSION['g_login']['g_email'];
-	# $_SESSION['g_user_id']=$_SESSION['g_login']['g_user_id'];
-	# $_SESSION['g_picture']=$_SESSION['g_login']['g_picture'];
-
+	$_SESSION['g_name']=$_SESSION['google_data']['g_name'];
+	$_SESSION['g_email'] =$_SESSION['google_data']['g_email'];
+	$_SESSION['g_user_id']=$_SESSION['google_data']['g_user_id'];
+	$_SESSION['g_picture']=$_SESSION['google_data']['g_picture'];
+	$ret[0]=$_SESSION['nn']->do_google_login();
+	$_SESSION['nn']->set_user_variables($ret[0]);
 }
 /*}}}*/
 function main() { /*{{{*/

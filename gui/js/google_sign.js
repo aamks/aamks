@@ -6,22 +6,20 @@ function onSignIn(googleUser) {
 	var id_token = googleUser.getAuthResponse().id_token;
 	var arr = { g_user_id: profile.getId(), g_name: profile.getName(), g_email: profile.getEmail(), g_picture: profile.getImageUrl() };
 	$.post('/aamks/ajax.php?googleLogin', { 'google_data': arr }, function(response) { 
-		console.log(response.data.dnr);
-		
+		var refresh=response.data.dnr;
+		console.log('Refresh?='+refresh);
+		if (refresh==1){
+			//location.reload(); //force php to reload and read SESSION variables
+		}
+			location.reload(); //force php to reload and read SESSION variables
 	});
 
-	var logged=$("#mimooh").attr("data-mimooh");
-	if(logged==null){ //div after logged in not displayed => not logged - need to refresh page to read session varibles. If logged then do not reload
-		console.log('UNCL - '+logged);
-		location.reload(); //force php to reload and read SESSION variables
-	}else{
-		console.log('logged');
-	}
 };
 
 function signOut() {
 	var auth2 = gapi.auth2.getAuthInstance();
 	auth2.signOut().then(function () {
 		console.log('User signed out.');
+//		window.location.replace('https://stanley.szach.in/aamks/')
 	});
 }

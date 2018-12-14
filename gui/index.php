@@ -4,12 +4,12 @@
 #		$_SESSION['header_err'][]="Activation not complete";
 session_name('aamks');
 require_once("inc.php"); 
+function me(){/*{{{*/
+	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
+}/*}}}*/
 function salt($password){/*{{{*/
 	$salted=substr(md5($password.md5(getenv("AAMKS_SALT"))),0,20);
 	return($salted);
-}/*}}}*/
-function me(){/*{{{*/
-	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
 }/*}}}*/
 function login_form(){/*{{{*/
    $form = "
@@ -41,6 +41,7 @@ function login_form(){/*{{{*/
 		if(!empty($ret)){//password and email match
 			if($salted==$ret[0]['password']){
 				$_SESSION['nn']->set_user_variables($ret[0]);
+				header("location:".me()); 
 			}
 		}else{
 			$_SESSION['reset_email']=$_POST['email'];
@@ -193,37 +194,13 @@ function edit_user(){/*{{{*/
 		}
 	edit_user_form();	
 }/*}}}*/
-function google_js_login(){/*{{{*/
-	$_SESSION['g_name']=$_SESSION['google_data']['g_name'];
-	$_SESSION['g_email'] =$_SESSION['google_data']['g_email'];
-	$_SESSION['g_user_id']=$_SESSION['google_data']['g_user_id'];
-	$_SESSION['g_picture']=$_SESSION['google_data']['g_picture'];
-	do_google_login();
-}/*}}}*/
-function do_google_login(){/*{{{*/
-	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE email = $1 ", array($_SESSION['g_email'] )); //
-#psql aamks -c 'delete from users';
-#psql aamks -c 'select * from users';
-#psql aamks -c 'update users set google_id = NULL';
-	if (!empty($ret[0])){ //alredy there is a user with that email. -need to Join it
-		if(empty($ret[0]['google_id'])){ //if user already has a google_id
-			$_SESSION['nn']->query("UPDATE users SET 
-			google_id = $1, picture = $2 ,activation_token ='already activated' where email = $3 ", array($_SESSION['g_user_id'], $_SESSION['g_picture'],$_SESSION['g_email'] )); //
-			$_SESSION['header_ok'][]="Email already used in Aamks! - merging accounts";
-			$ret[0]['picture']=$_SESSION['g_picture'];
-		}
-	}else { //there is no user with that email in AAMKS - we need to create it
-		$ret1=$_SESSION['nn']->query("insert into users (username, email, google_id,picture, password, activation_token) values ($1,$2,$3,$4,$5,$6) returning id", array( $_SESSION['g_name'], $_SESSION['g_email'], $_SESSION['g_user_id'], $_SESSION['g_picture'], "no password yet", "already activated"));
-		$ret[0]=array("id"=>$ret1[0]['id'],"username"=>$_SESSION['g_name'],"email"=>$_SESSION['g_email'], "picture"=>$_SESSION['g_picture']);
-		$_SESSION['header_ok'][]="Created google aamks account";
-	}
-	unset($_SESSION['g_name']);
-	unset($_SESSION['g_email']);
-	unset($_SESSION['g_user_id']);
-	unset($_SESSION['g_picture']);
-	unset($_SESSION['google_data']);
-	$_SESSION['nn']->set_user_variables($ret[0]);
-}/*}}}*/
+#function google_js_login(){/*{{{*/
+#	$_SESSION['g_name']=$_SESSION['google_data']['g_name'];
+#	$_SESSION['g_email'] =$_SESSION['google_data']['g_email'];
+#	$_SESSION['g_user_id']=$_SESSION['google_data']['g_user_id'];
+#	$_SESSION['g_picture']=$_SESSION['google_data']['g_picture'];
+#	do_google_login();
+#}/*}}}*/
 function my_projects(){/*{{{*/
 	if(!empty($_GET['delete'])){
 		delete_project($_GET['delete']);
@@ -256,7 +233,6 @@ function project_info(){/*{{{*/
 		<div style='background:#555;position:relativefixed;margin-left:200px;margin-top:100px;width:900px'>
 		Project INFO <br><br>
 		<form method=POST>
-
 	";
 	if(isset($_POST['submit'])){
 		$_SESSION['nn']->query("UPDATE projects SET name=$1 WHERE id=$2 and user_id=$3", array($_POST['project_name'], $_POST['project_id'], $_SESSION['main']['user_id']  ));
@@ -289,7 +265,7 @@ function main() { /*{{{*/
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	echo '<script src="js/google_sign.js"></script>';
 	$_SESSION['nn']->htmlHead("Aamks");
-	if(isset($_SESSION['google_data'])){ google_js_login(); }
+	#if(isset($_SESSION['google_data'])){ google_js_login(); }
 	if(isset($_GET['edit_user'])) { edit_user();}
 	$_SESSION['nn']->logoutButton();
 	if(isset($_GET['projects'])) { my_projects();}
