@@ -261,9 +261,7 @@ function pdf2svg() { //{{{
 }
 //}}}
 function apainter2server(cadfile) { //{{{
-	$.post('/aamks/ajax.php?apainter', { 'cadfile': cadfile },
-		function (json) { ajax_msg(json); }
-	);
+	$.post('/aamks/ajax.php?apainter', { 'cadfile': cadfile }, function (json) { ajax_msg(json); });
 	
 }
 //}}}

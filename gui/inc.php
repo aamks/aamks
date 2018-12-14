@@ -168,7 +168,7 @@ class Aamks {/*{{{*/
 		$_SESSION['main']['user_email']=$r['email'];
 		$_SESSION['main']['email']=$r['email']; //TODO - usunać?
 		$_SESSION['home_url']="/aamks/index.php";
-		header("location:".me()); //TO
+		#header("location:".me()); //TO
 	}/*}}}*/
 	public function querydd($qq,$arr=[]){ /*{{{*/
 		# query debugger
