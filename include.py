@@ -343,10 +343,23 @@ class Navmesh: # {{{
     def __init__(self):
         self.navmesh=OrderedDict()
         
-    def read(self,floor,file_nav):
+    def load(self,floor,file_nav):
         self.navmesh[floor] = dt.dtLoadSampleTileMesh(file_nav)
 
-    def query(self,floor,q):
+    def _vis_navmesh(self,floor,path):
+        j=Json()
+        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        for i,p in enumerate(path):
+            try:
+                z[floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": "#fff" , "strokeWidth": 2  , "opacity": 0.7 } )
+            except:
+                pass
+
+        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        Vis(None, 'image', 'nav')
+
+
+    def query(self,floor,q,vis=0):
         filtr = dt.dtQueryFilter()
         query = dt.dtNavMeshQuery()
 
@@ -390,7 +403,10 @@ class Navmesh: # {{{
         for i in straightPath:
             path.append((i[0]*100, i[2]*100))
 
-        return path
-
-
+        if path[0]=="err":
+            return None
+        else :
+            if vis==1:
+                self._vis_navmesh(floor,path)
+            return path
 
