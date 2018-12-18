@@ -4,6 +4,7 @@ from math import sqrt
 from numpy.random import randint
 from subprocess import Popen,PIPE
 import _recast as dt
+import subprocess
 import codecs
 import inspect
 import itertools
@@ -340,26 +341,50 @@ class Vis:# {{{
 # }}}
 # }}}
 class Navmesh: # {{{
+    ''' 
+    installer/navmesh_installer.sh installs all the dependencies.
+
+    * navmesh build from the obj geometry file
+    thanks to https://github.com/arl/go-detour !
+
+    * navmesh query
+    thanks to https://github.com/layzerar/recastlib/ !
+    '''
+
     def __init__(self):
         self.navmesh=OrderedDict()
-        
-    def load(self,floor,file_nav):
-        self.navmesh[floor] = dt.dtLoadSampleTileMesh(file_nav)
 
-    def _vis_navmesh(self,floor,path):
-        j=Json()
-        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for i,p in enumerate(path):
-            try:
-                z[floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": "#fff" , "strokeWidth": 2  , "opacity": 0.7 } )
-            except:
-                pass
+    def build(self,obj,folder=".",floor="0"):# {{{
+        file_obj="{}/{}.obj".format(folder, floor)
+        file_nav="{}/{}.nav".format(folder, floor)
+        file_conf="{}/recast.yml".format(folder)
+        with open(file_conf, "w") as f: 
+            f.write('''\
+            cellsize: 0.10
+            cellheight: 0.2
+            agentheight: 2
+            agentradius: 0.30
+            agentmaxclimb: 0.1
+            agentmaxslope: 45
+            regionminsize: 8
+            regionmergesize: 20
+            edgemaxlen: 12
+            edgemaxerror: 1.3
+            vertsperpoly: 6
+            detailsampledist: 6
+            detailsamplemaxerror: 1
+            partitiontype: 1
+            tilesize: 0
+            ''')
+        subprocess.call("rm -rf {}; recast --config {} --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_conf, file_obj, file_nav), shell=True)
 
-        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        Vis(None, 'image', 'nav')
+        try:
+            self.navmesh[floor] = dt.dtLoadSampleTileMesh(file_nav)
+        except:
+            raise Exception("Navmesh: cannot create {}".format(file_nav))
 
-
-    def query(self,floor,q,vis=0):
+# }}}
+    def query(self,q,floor="0"):# {{{
         filtr = dt.dtQueryFilter()
         query = dt.dtNavMeshQuery()
 
@@ -406,7 +431,6 @@ class Navmesh: # {{{
         if path[0]=="err":
             return None
         else :
-            if vis==1:
-                self._vis_navmesh(floor,path)
             return path
+# }}}
 

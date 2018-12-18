@@ -7,7 +7,6 @@ import re
 import sys
 import codecs
 import itertools
-import subprocess
 
 from pprint import pprint
 from collections import OrderedDict
@@ -49,7 +48,7 @@ class Geom():
         self._auto_detectors_and_sprinklers()
         self._create_obstacles()
         self.make_vis('Create obstacles')
-        self._navmeshing()
+        self._navmesh()
         self._assert_faces_ok()
         self._assert_room_has_door()
         #self.s.dumpall()
@@ -578,11 +577,14 @@ class Geom():
 # }}}
 
 # NAVMESH 
-    def _navmeshing(self):# {{{
+    def _navmesh(self):# {{{
         ''' 
-        OBJ for navmesh
+        1. Create obj file from aamks geometries.
+        2. Build navmesh with golang, obj is input
+        3. Query navmesh with python
         '''
 
+        self.nav=OrderedDict()
         z=self.s.query("SELECT json FROM obstacles")
         for floor,faces in json.loads(z[0]['json'])['points'].items():
             self._obj_num=0;
@@ -594,8 +596,9 @@ class Geom():
         
             with open("{}/{}.obj".format(os.environ['AAMKS_PROJECT'], floor), "w") as f: 
                 f.write(obj)
-            self.navmesh=[]
-            self._navmesh_build(floor)
+            self.nav[floor]=Navmesh()
+            self.nav[floor].build(obj, os.environ['AAMKS_PROJECT'], floor)
+            #self.nav[floor].query([(0,0), (100,100)], floor)
         self._navmesh_test("0")
 
 # }}}
@@ -616,51 +619,32 @@ class Geom():
         self._obj_num+=1
         return elem
 # }}}
-    def _navmesh_build(self,floor):# {{{
-        file_obj="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], floor)
-        file_nav="{}/{}.nav".format(os.environ['AAMKS_PROJECT'], floor)
-        file_conf="{}/recast.yml".format(os.environ['AAMKS_PROJECT'])
-        with open(file_conf, "w") as f: 
-            f.write('''\
-
-cellsize: 0.10
-cellheight: 0.2
-agentheight: 2
-agentradius: 0.30
-agentmaxclimb: 0.1
-agentmaxslope: 45
-regionminsize: 8
-regionmergesize: 20
-edgemaxlen: 12
-edgemaxerror: 1.3
-vertsperpoly: 6
-detailsampledist: 6
-detailsamplemaxerror: 1
-partitiontype: 1
-tilesize: 0
-
-''')
-        subprocess.call("rm -rf {}; recast --config {} --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_conf, file_obj, file_nav), shell=True)
-        assert os.path.isfile(file_nav), "Cannot create navmesh"
-
-# }}}
     def _navmesh_test(self,floor):# {{{
-        file_nav="{}/{}.nav".format(os.environ['AAMKS_PROJECT'], floor)
-        nav=Navmesh()
-        nav.load(floor,file_nav)
         colors=["#fff", "#f80", "#f00", "#8f0", "#0ff", "#400", "#00f", "#004", "#808", "#040" ]
 
         for x in range(8):
-            path=[]
+            src_dest=[]
             for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY RANDOM() LIMIT 2"):
-                path.append([round(uniform(i['x0'], i['x1'])), round(uniform(i['y0'], i['y1']))])
+                src_dest.append([round(uniform(i['x0'], i['x1'])), round(uniform(i['y0'], i['y1']))])
 
             z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-            z[floor]['circles'].append({ "xy": (path[0]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
-            z[floor]['circles'].append({ "xy": (path[1]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
+            z[floor]['circles'].append({ "xy": (src_dest[0]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
+            z[floor]['circles'].append({ "xy": (src_dest[1]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
             self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            path=self.nav[floor].query(src_dest, floor)
+            self._navmesh_vis(floor,path)
+# }}}
+    def _navmesh_vis(self,floor,path):# {{{
+        j=Json()
+        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        for i,p in enumerate(path):
+            try:
+                z[floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": "#fff" , "strokeWidth": 2  , "opacity": 0.7 } )
+            except:
+                pass
 
-            nav.query(floor, path, 1)
+        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        Vis(None, 'image', 'nav')
 # }}}
 
 # ASSERTIONS
