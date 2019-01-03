@@ -137,7 +137,7 @@ class EvacEnv:
     def process_obstacle(self, obstacles):
         for i in range(len(obstacles)):
             self.sim.addObstacle(obstacles[i])
-            self.sim.processObstacles()
+        self.sim.processObstacles()
         return self.sim.getNumObstacleVertices(), 2
 
     def do_step(self):
@@ -188,8 +188,8 @@ class EvacEnv:
             self.update_agents_position()
             self.update_state()
             self.update_time()
-            self.update_agents_velocity()
             self.update_speed()
+            self.update_agents_velocity()
             self.update_fed()
             self.save_data_for_visualization()
             self.get_rset_time()

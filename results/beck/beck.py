@@ -16,6 +16,7 @@ from event_tree_en import EventTreeFED
 from event_tree_en import EventTreeSteel
 import scipy.stats as stat
 import collections
+from include import Sqlite
 
 
 class processDists:
@@ -170,6 +171,8 @@ class processDists:
         for key in self.losses.keys():
             if key == 'neglegible':
                 continue
+            if len(self.losses[key]) == 0:
+                continue 
             dane = ecdf(self.losses[key])
             axs[wykres].plot(sorted(self.losses[key]), 1-dane(sorted(self.losses[key])))
             axs[wykres].set_xlabel('Number of people')
@@ -225,6 +228,8 @@ class processDists:
 
         wykres = 0
         for key in self.losses.keys():
+            if len(self.losses[key]) == 0:
+                continue
             fig = plt.figure()
             plt.hist(self.losses[key], bins=20)
             plt.title(key)
@@ -236,8 +241,8 @@ class processDists:
     def plot_pie_fault(self):
         fig = plt.figure()
         sizes = [len(self.losses['dead']), self.total-len(self.losses['dead'])]
-        labels = 'Failure', 'Success'
-        colors = ['lightcoral', 'lightskyblue']
+        labels = 'Success', 'Failure'
+        colors = ['lightskyblue', 'lightcoral']
         explode = (0.1, 0)
         plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True)
         plt.axis('equal')
@@ -250,6 +255,7 @@ class processDists:
         warehouse = [3.82, 2e-6, -2.08, -0.05]
         commercial = [7e-5, 6e-6, -0.65, -0.05]
         nursing = [2e-4, 5e-6, -0.61, -0.05]
+        educational = [0.003, 3e-6, -1.26, -0.05]
         building = {'other_building': other_building, 'office': office, 'warehouse': warehouse, 'commercial': commercial,
                     'nursing': nursing}
         b_type = 'commercial'
@@ -276,24 +282,24 @@ class processDists:
         return results[0][0]
 
     def min_height_values(self):
-        query = "SELECT count(*) FROM simulations where project = {} AND min_hgt_compa < 1.0" \
+        query = "SELECT count(*) FROM simulations where project = {} AND min_hgt_cor < 0.5" \
             .format(self.configs['project_id'])
         results = self.query(query)
         lower = results[0][0] / self.total
 
-        query = "SELECT avg(min_hgt_compa) FROM simulations where project = {} AND min_hgt_compa < 1.8" \
+        query = "SELECT avg(min_hgt_compa) FROM simulations where project = {} AND min_hgt_cor < 1.8" \
             .format(self.configs['project_id'])
         results = self.query(query)
         mean = results[0][0]
         return [lower, mean]
 
     def vis_values(self):
-        query = "SELECT count(*) FROM simulations where project = {} AND min_vis_compa < 30".format(
+        query = "SELECT count(*) FROM simulations where project = {} AND min_vis_cor < 30".format(
             self.configs['project_id'])
         results = self.query(query)
         lower = results[0][0] / self.total
 
-        query = "SELECT avg(min_vis_compa) FROM simulations where project = {} AND min_vis_compa < 60".format(
+        query = "SELECT avg(min_vis_compa) FROM simulations where project = {} AND min_vis_cor < 60".format(
             self.configs['project_id'])
         results = self.query(query)
         mean = results[0][0]
@@ -311,6 +317,10 @@ class processDists:
         mean = results[0][0]
         return [lower, mean]
 
+    def calculate_building_area(self):
+        s=Sqlite("{}/aamks.sqlite".format(self.dir))
+        result = s.query("SELECT sum(room_area) as total FROM aamks_geom");
+        return result[0]['total']
 
 p = processDists()
 p.plot_dcbe_dist()
@@ -327,8 +337,9 @@ p.plot_ccdf()
 p.plot_losses_hist()
 p.plot_pie_fault()
 #print(p.total)
-bar = p.calculate_barrois(20000)*966
-#bar = 10e-6 * 142
+
+bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
+#bar = 10e-6 * 1530
 #print(bar)
 #if p.losses_num[4] == 0:
 #    p.losses_num[4] = 1e-12
@@ -337,7 +348,7 @@ fed_f = float('%.3f' % (len(p.losses['dead'])/p.total))
 fed_m = float('%.3f' % (len(p.losses['heavy'])/p.total))
 fed_l = float('%.3f' % (len(p.losses['light'])/p.total))
 fed_n = float('%.3f' % (len(p.losses['neglegible'])/p.total))
-t_kryt = float('%.3f' % (len(p.losses['neglegible'])/p.total))
+t_kryt = float('%.3f' % (len(p.losses['light'])/p.total))
 p_ext = float('%.3f' % 0.17)
 p_tk = float('%.3f' % (p.t_k/p.total))
 

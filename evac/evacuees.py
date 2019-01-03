@@ -100,7 +100,7 @@ class Evacuees:
 
     def update_state(self, ped_no: int, visible: bool) -> object:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
-        return self.pedestrians[ped_no].update_state(visible)
+        return self.pedestrians[ped_no].update_state(visible, ped_no)
 
     def get_first_evacuees_time(self):
         pre_evacuation_times = [self.pedestrians[i].pre_evacuation_time for i in range(len(self.pedestrians))]

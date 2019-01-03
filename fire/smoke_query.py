@@ -8,7 +8,6 @@ import inspect
 import json
 import time
 import bisect
-#from ast import literal_eval as make_tuple
 from numpy.random import randint
 from include import Sqlite
 from include import Json
@@ -231,9 +230,9 @@ class SmokeQuery:
         else:
             layer = 'U'
 
-        fed_co = 2.764e-5 * ((conditions[layer+'LCO'] * 10000) ** 1.036) * (self.config['TIME_STEP'] / 60)
+        fed_co = 2.764e-5 * ((conditions[layer+'LCO'] * 1000000) ** 1.036) * (self.config['TIME_STEP'] / 60)
         fed_hcn = (exp((conditions[layer+'LHCN'] * 10000) / 43) / 220 - 0.0045) * (self.config['TIME_STEP'] / 60)
-        fed_hcl = ((conditions['LLHCL'] * 10000) / 1900) * self.config['TIME_STEP']
+        fed_hcl = ((conditions['LLHCL'] * 1000000) / 1900) * self.config['TIME_STEP']
         fed_o2 = (self.config['TIME_STEP'] / 60) / (60 * exp(8.13 - 0.54 * (20.9 - conditions[layer+'LO2'])))
         hv_co2 = exp(0.1903 * conditions[layer+'LCO2'] + 2.0004) / 7.1
         fed_total = (fed_co + fed_hcn + fed_hcl) * hv_co2 + fed_o2

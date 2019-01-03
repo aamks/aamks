@@ -29,7 +29,7 @@ class Evacuee:
 
         self.alpha_v = alpha_v
         self.beta_v = beta_v
-        self.max_speed = v_speed
+        self.max_speed = h_speed
 
         logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
                             format='%(asctime)s %(levelname)s: %(message)s')
@@ -47,7 +47,7 @@ class Evacuee:
             self.goal_s = 0
         return tuple(self.roadmap[self.goal_s])
 
-    def update_state(self, goal_s_visible):
+    def update_state(self, goal_s_visible, ped_no):
         assert isinstance(goal_s_visible, bool), 'goal visible must be type bool'
 
         self.unnorm_vector = tuple(map(sub, self.roadmap[self.goal_g], self.position))
@@ -72,6 +72,9 @@ class Evacuee:
         elif state == 's1111':
             self.unnorm_vector = (0, 0)
             self.finished = 0
+        elif state == 's0011':
+            self.goal_g -= 1
+            self.goal_s -= 1
 
     def update_fed(self, fed):
         assert isinstance(fed, float), '%fed is not required type float'
@@ -86,7 +89,8 @@ class Evacuee:
             norm_vector = tuple((self.unnorm_vector[0] / self.distance, self.unnorm_vector[1] / self.distance))
             self.velocity = (norm_vector[0] * self.speed, norm_vector[1] * self.speed)
 
-    def update_speed(self, extinction_coefficient):
+    def update_speed(self, optical_density):
+        extinction_coefficient = optical_density * 2.303
         if self.beta_v == 0:
             self.beta_v = 0.00000001
-        self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.alpha_v/self.beta_v * extinction_coefficient))
+        self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.beta_v/self.alpha_v * extinction_coefficient))

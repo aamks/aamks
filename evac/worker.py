@@ -142,16 +142,11 @@ class Worker:
 
         floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
 
-        for i in range(floor['NUM_OF_EVACUEES']):
-            evacuees.append(Evacuee(origin=tuple(floor['EVACUEES']['E' + str(i)]['ORIGIN']),
-                                    v_speed=floor['EVACUEES']['E' + str(i)]['V_SPEED'],
-                                    h_speed=floor['EVACUEES']['E' + str(i)]['H_SPEED'],
-                                    roadmap=floor['EVACUEES']['E' + str(i)]['ROADMAP'],
-                                    pre_evacuation=floor['EVACUEES']['E' + str(i)][
-                                        'PRE_EVACUATION'],
-                                    alpha_v=floor['EVACUEES']['E' + str(i)]['ALPHA_V'],
-                                    beta_v=floor['EVACUEES']['E' + str(i)]['BETA_V'],
-                                    node_radius=self.config['NODE_RADIUS']))
+        for i in floor['EVACUEES'].keys():
+            evacuees.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
+                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], roadmap=floor['EVACUEES'][i]['ROADMAP'],
+                                    pre_evacuation=floor['EVACUEES'][i]['PRE_EVACUATION'], alpha_v=floor['EVACUEES'][i]['ALPHA_V'],
+                                    beta_v=floor['EVACUEES'][i]['BETA_V'], node_radius=self.config['NODE_RADIUS']))
 
         e = Evacuees()
         [e.add_pedestrian(i) for i in evacuees]
@@ -213,7 +208,7 @@ class Worker:
                 time_frame += 10
             else:
                 time.sleep(1)
-            if time_frame > 320:
+            if time_frame > (self.vars['conf']['general']['simulation_time'] - 10):
                 break
             if prod(array(l)) > 0:
                 break
@@ -280,6 +275,7 @@ class Worker:
 
     def main(self):
         self.get_config()
+        SendMessage('Worker: {} start_sim: {}'.format(self.host_name, self.sim_id))
         self._create_workspace()
         self.get_geom_and_cfast()
         self.create_geom_database()
@@ -287,6 +283,7 @@ class Worker:
         self.prepare_simulations()
         self.do_simulation()
         self.send_report()
+        SendMessage('Worker: {} end sim: {}'.format(self.host_name, self.sim_id))
 
     def test(self):
         self.get_config()
