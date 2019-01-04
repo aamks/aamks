@@ -22,6 +22,7 @@ from collections import OrderedDict
 from subprocess import Popen
 import zipfile
 from include import SendMessage
+from include import Navmesh
 
 
 #SIMULATION_TYPE = 'NO_CFAST'
@@ -45,7 +46,7 @@ class Worker:
         self.floors = list()
         self.host_name = os.uname()[1]
         os.chdir('/home/aamks_users')
-        self.working_dir = self.url.split('aamks_users/')[1]
+        self.working_dir = self.url.split('aamks/')[1]
         self.cross_building_results = None
 
     def _report_error(self, exception: Exception) -> logging:
@@ -160,8 +161,8 @@ class Worker:
 
         for i in range(len(self.obstacles['points'])):
             try:
-                env = EvacEnv(self.vars['conf'])
-                env.floor = i
+                eenv = EvacEnv(self.vars['conf'])
+                eenv.floor = i
             except Exception as e:
                 self._report_error(e)
             else:
@@ -169,13 +170,13 @@ class Worker:
 
             for obst in self.obstacles['points'][str(i)]:
                 obstacles.append([tuple(x) for x in obst])
-            env.obstacle = obstacles
-            num_of_vertices = env.process_obstacle(obstacles)
+            eenv.obstacle = obstacles
+            num_of_vertices = eenv.process_obstacle(obstacles)
             logging.info('Added obstacles on floor: {}, number of vercites: {}'.format(str(i+1), num_of_vertices))
 
             e = self._create_evacuees(i)
-            env.place_evacuees(e)
-            self.floors.append(env)
+            eenv.place_evacuees(e)
+            self.floors.append(eenv)
 
     def do_simulation(self):
         logging.info('Starting simulaitons')

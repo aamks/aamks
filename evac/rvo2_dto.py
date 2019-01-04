@@ -136,6 +136,7 @@ class EvacEnv:
 
     def process_obstacle(self, obstacles):
         for i in range(len(obstacles)):
+            print(obstacles[i])
             self.sim.addObstacle(obstacles[i])
         self.sim.processObstacles()
         return self.sim.getNumObstacleVertices(), 2
