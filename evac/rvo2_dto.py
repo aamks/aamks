@@ -6,8 +6,7 @@ from math import ceil
 import logging
 import os
 import json
-
-
+from include import Navmesh
 
 
 class EvacEnv:
@@ -30,6 +29,7 @@ class EvacEnv:
         self.rset = 0
         self.per_9 = 0
         self.floor = 0
+        self.nav = None
 
         f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
         self.config = json.load(f)
@@ -87,18 +87,19 @@ class EvacEnv:
         self.velocities = [tuple((int(self.sim.getAgentPrefVelocity(i)[0]), int(self.sim.getAgentPrefVelocity(i)[1]))) for (i)
                            in range(self.sim.getNumAgents())]
 
-    def update_state(self):
+    def set_goal(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
-                logging.debug('Agent {} moved'.format(i))
                 continue
             else:
-                focus_visible = self.sim.queryVisibility(self.evacuees.get_position_of_pedestrian(i),
-                                                     self.evacuees.get_focus_of_pedestrian(i))
-                self.evacuees.update_state(i, focus_visible)
+                position = self.evacuees.get_position_of_pedestrian(i)
+
+
+                goal = self.nav.query([(position[0]*100,position[1]*100), (5915, 2898)])
+                self.evacuees.set_goal(ped_no=i, goal=goal[0])
         self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
         for i in range(self.sim.getNumAgents()):
-            self.focus.append(self.evacuees.get_focus_of_pedestrian(i))
+            self.focus.append(self.evacuees.get_goal_of_pedestrian(i))
 
     def update_speed(self):
         logging.debug('Flooor {} udated speed'.format(self.floor))
@@ -136,10 +137,16 @@ class EvacEnv:
 
     def process_obstacle(self, obstacles):
         for i in range(len(obstacles)):
-            print(obstacles[i])
-            self.sim.addObstacle(obstacles[i])
+            obst = list()
+            for n in obstacles[i]:
+                obst.append(n[0:2])
+            self.sim.addObstacle(obst)
         self.sim.processObstacles()
         return self.sim.getNumObstacleVertices(), 2
+
+    def generate_nav_mesh(self):
+        self.nav = Navmesh()
+        self.nav.build(obj=str(self.floor)+'.obj')
 
     def do_step(self):
         self.sim.doStep()
@@ -184,6 +191,7 @@ class EvacEnv:
     def do_simulation(self, time):
         time_range = int(time/self.config['TIME_STEP'])
         for step in range(time_range - 100, time_range):
+            self.set_goal()
             self.sim.doStep()
             logging.debug('Simulation step: {}'.format(step))
             self.update_agents_position()

@@ -5,7 +5,7 @@ import logging
 
 class Evacuee:
 
-    def __init__(self, origin: tuple, roadmap, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius) -> None:
+    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius) -> None:
         """
 
         :type origin: tuple
@@ -13,18 +13,15 @@ class Evacuee:
         """
 
         self.origin = origin
-        self.goal_s = 0
-        self.goal_g = 0
+        self.goal = None
         self.fed = 0
         self.distance = 1
-        self.roadmap = roadmap
         self.velocity = (0, 0)
         self.speed = 0
         self.thermal_injury = 0
         self.position = origin
         self.finished = 1
         self.node_radius = node_radius
-
         self.pre_evacuation_time = pre_evacuation
 
         self.alpha_v = alpha_v
@@ -47,7 +44,7 @@ class Evacuee:
             self.goal_s = 0
         return tuple(self.roadmap[self.goal_s])
 
-    def update_state(self, goal_s_visible, ped_no):
+    def update_goal(self, goal):
         assert isinstance(goal_s_visible, bool), 'goal visible must be type bool'
 
         self.unnorm_vector = tuple(map(sub, self.roadmap[self.goal_g], self.position))

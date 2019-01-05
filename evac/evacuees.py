@@ -40,9 +40,9 @@ class Evacuees:
         assert isinstance(origin, tuple), "% origin is not a tuple type"
         self.pedestrians[ped_no].origin = origin
 
-    def get_roadmap_of_pedestrian(self, ped_no):
+    def get_goal_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
-        return self.pedestrians[ped_no].roadmap
+        return self.pedestrians[ped_no].goal
 
     def set_roadmap_to_pedestrian(self, ped_no, roadmap):
         assert isinstance(ped_no, int), "%ped_no is not an integer"
@@ -98,9 +98,9 @@ class Evacuees:
         #logging.info('Evacuee {} at position'.format(ped_no))
         return self.pedestrians[ped_no].focus
 
-    def update_state(self, ped_no: int, visible: bool) -> object:
+    def set_goal(self, ped_no: int, goal: float) -> object:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
-        return self.pedestrians[ped_no].update_state(visible, ped_no)
+        self.pedestrians[ped_no].goal = goal
 
     def get_first_evacuees_time(self):
         pre_evacuation_times = [self.pedestrians[i].pre_evacuation_time for i in range(len(self.pedestrians))]

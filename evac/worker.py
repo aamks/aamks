@@ -22,8 +22,6 @@ from collections import OrderedDict
 from subprocess import Popen
 import zipfile
 from include import SendMessage
-from include import Navmesh
-
 
 #SIMULATION_TYPE = 'NO_CFAST'
 SIMULATION_TYPE = 1
@@ -86,6 +84,7 @@ class Worker:
 
         try:
             urlretrieve('{}/../../aamks.sqlite'.format(self.url), 'aamks.sqlite')
+            urlretrieve('{}/../../0.obj'.format(self.url), '0.obj')
 
         except Exception as e:
             self._report_error(e)
@@ -145,9 +144,9 @@ class Worker:
 
         for i in floor['EVACUEES'].keys():
             evacuees.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
-                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], roadmap=floor['EVACUEES'][i]['ROADMAP'],
-                                    pre_evacuation=floor['EVACUEES'][i]['PRE_EVACUATION'], alpha_v=floor['EVACUEES'][i]['ALPHA_V'],
-                                    beta_v=floor['EVACUEES'][i]['BETA_V'], node_radius=self.config['NODE_RADIUS']))
+                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=floor['EVACUEES'][i]['PRE_EVACUATION'],
+                                    alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
+                                    node_radius=self.config['NODE_RADIUS']))
 
         e = Evacuees()
         [e.add_pedestrian(i) for i in evacuees]
@@ -172,6 +171,7 @@ class Worker:
                 obstacles.append([tuple(x) for x in obst])
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
+            eenv.generate_nav_mesh()
             logging.info('Added obstacles on floor: {}, number of vercites: {}'.format(str(i+1), num_of_vertices))
 
             e = self._create_evacuees(i)
@@ -179,7 +179,7 @@ class Worker:
             self.floors.append(eenv)
 
     def do_simulation(self):
-        logging.info('Starting simulaitons')
+        logging.info('Starting simulations')
         master_query = None
 
         time_frame = 10
@@ -191,7 +191,6 @@ class Worker:
 
         for i in self.floors:
             try:
-                #i.smoke_query = SmokeQuery(floor=str(floor))
                 i.smoke_query = master_query
             except Exception as e:
                 self._report_error(e)
@@ -199,6 +198,7 @@ class Worker:
                 logging.info('Smoke query connected to floor: {}'.format(floor))
             floor += 1
         while 1:
+            x = master_query.cfast_has_time(time_frame)
             if master_query.cfast_has_time(time_frame) == 1:
                 logging.info('Simulation time: {}'.format(time_frame))
                 l = []

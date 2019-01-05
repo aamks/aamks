@@ -23,7 +23,7 @@ class SendMessage:# {{{
 
     def __init__(self,msg):
         with open("/tmp/aamks.log", "a") as f: 
-            f.write(msg+"\n")
+            f.write(str(msg)+"\n")
         # for to in [ i.strip() for i in os.environ['AAMKS_NOTIFY'].split(",") ]:
         #     try:
         #         Popen("printf '{}' | sendxmpp -r aamks -d -t -u aamks -p aamkstatanka -j jabb.im {}> /dev/null 2>/dev/null &".format(msg, to), shell=True)

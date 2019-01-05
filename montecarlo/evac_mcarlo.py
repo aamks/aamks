@@ -119,7 +119,7 @@ class EvacMcarlo():
             for i,pos in enumerate(self.dispatched_evacuees[floor]):
                 e_id='E{}'.format(i)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]=OrderedDict()
-                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ORIGIN']         = (pos[0]/100, pos[1]/100, z/100)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ORIGIN']         = (pos[0], pos[1])
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION'] = self.pre_evacuation[floor][i]
 
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ALPHA_V']        = round(normal(self.conf['evacuees_alpha_v']['mean']     , self.conf['evacuees_alpha_v']['sd'])     , 2)
