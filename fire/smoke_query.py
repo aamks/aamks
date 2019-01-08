@@ -52,7 +52,7 @@ class SmokeQuery:
         self._sqlite_query_vertices(floor)
         self._sqlite_cell2compa(floor)
         self._init_compa_conditions()
-        print("smoke_query, enable me")
+        #print("smoke_query, enable me")
         self._cfast_headers() # TODO needs to enable!
 
     def _sqlite_query_vertices(self, floor):# {{{
