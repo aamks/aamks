@@ -52,7 +52,6 @@ msg, fatal, cannot, msg_confirm{
 fatal, cannot {
     background-color: #a00;
 	padding: 20px;
-    border-radius: 2px; 
 	border: 1px solid #fff;
 	box-shadow: 0 1px 4px #000;
 }
@@ -68,7 +67,6 @@ a.blink {
 	text-decoration: none;
 	margin: 3px;
     padding:4px 8px; 
-    border-radius: 2px; 
 	color: #fff;
     background:#68a;
     border:0 none;
@@ -81,7 +79,6 @@ a.rlink {
 	text-decoration: none;
 	margin: 1px 3px;
     padding:4px 8px; 
-    border-radius: 2px; 
 	color: #fff;
     border:0 none;
     cursor:pointer;
@@ -92,7 +89,6 @@ a.rlink {
 
 green, black, orange, red, nocolor, wheat,  .nocolor, dark {
     padding:4px 8px; 
-    border-radius: 2px; 
 	color: #fff;
     background:#062;
     border:0 none;
@@ -100,7 +96,7 @@ green, black, orange, red, nocolor, wheat,  .nocolor, dark {
     padding: 5px 8px;
 }
 black             { background:#000; }
-dark			  { background:#383838; color: #888; }
+dark			  { background:#383838; color: #bbb; }
 orange            { background:#a50; }
 red               { background:#600; }
 wheat			  { background:wheat; color: #333; }
@@ -118,7 +114,6 @@ textarea {
 }
 
 total_logins {
-	border-radius: 2px;
 	display: inline-block;
 	margin: 80px 0px 10px 0px;
 	padding: 5px 10px;
@@ -151,9 +146,8 @@ input  {
 }
 
 input[type="submit"] {
-    padding:8px;
+    padding: 4px 6px 4px 6px;
 	margin:1px;
-    border-radius: 3px; 
 	color: #fff;
     background:#68a;
 	border: 1px none;
@@ -179,7 +173,6 @@ withHelp {
     position: relative;
     display: inline-block;
 	padding: 1px 4px 1px 4px;
-	border-radius: 5px;
 	text-align: left;
 	cursor: help;
     background-color: wheat;
@@ -230,4 +223,8 @@ table.noborder td, table.noborder tr {
 	text-align: left;
 	padding: 20px;
 
+}
+dd {
+	float:right;
+	z-index: 1001;
 }

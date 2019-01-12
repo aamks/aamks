@@ -1,7 +1,4 @@
 <?php
-#		$_SESSION['nn']->msg("Activation completed")                                                                  ;
-#		$_SESSION['header_ok'][]="Activation complete";
-#		$_SESSION['header_err'][]="Activation not complete";
 session_name('aamks');
 require_once("inc.php"); 
 function me(){/*{{{*/
@@ -57,15 +54,6 @@ function login_form(){/*{{{*/
 	}
 	
 }/*}}}*/
-function menu() { /*{{{*/
-	echo "<div style='position:fixed;top:10px'>
-		<img width=160 src=logo.svg><br><br><br>
-		<a href=apainter class=blink>apainter</a><br>
-		<a href=form.php?form1 class=blink>form1</a><br>
-		<a href=workers/vis/master.html class=blink>visualization</a><br>
-		</div> ";
-}
-/*}}}*/
  function password_input($name,$required){/*{{{*/
 	if(!empty($required)){$req=" required ";}else{ $req="";}
 	 $password_input="<input type=password size=32 autocomplete=off $req name=$name placeholder='password' pattern='(?=^.{8,}$)(?=.*[!@#$%^&*])(?=.*\d)(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$' title='at least 8 chars - lowecase, uppercase, digit, character from (!@#$%^&*)'>";
@@ -194,123 +182,16 @@ function edit_user(){/*{{{*/
 		}
 	edit_user_form();	
 }/*}}}*/
-#function google_js_login(){/*{{{*/
-#	$_SESSION['g_name']=$_SESSION['google_data']['g_name'];
-#	$_SESSION['g_email'] =$_SESSION['google_data']['g_email'];
-#	$_SESSION['g_user_id']=$_SESSION['google_data']['g_user_id'];
-#	$_SESSION['g_picture']=$_SESSION['google_data']['g_picture'];
-#	do_google_login();
-#}/*}}}*/
-function my_projects(){/*{{{*/
-	get_active_project();
-	if(!empty($_GET['delete'])){
-		delete_project($_GET['delete']);
-	}
-# psql aamks -c 'SELECT * from projects'
-	//TODO regexp for project name
-	if(isset($_POST['submit'])){
-		$_SESSION['nn']->query("INSERT INTO projects (name,user_id) VALUES ($1,$2)", array($_POST['project_name'], $_SESSION['main']['user_id']));
-		//TODO system to make folders
-	}
-	echo "
-		<div style='background:#555;position:fixed;margin-left:200px;margin-top:100px;width:900px'>
-		My projects <br>
-		<form method=POST>
-			<input type=text name=project_name pattern='[\w-]*'> 
-			<input type=submit name=submit value='ADD PROJECT'>
-			</form>
-		<table>
-	";
-	$ret=$_SESSION['nn']->query("SELECT * FROM projects WHERE user_id=$1 ORDER BY 1", array($_SESSION['main']['user_id'] ));
-	foreach( $ret as $project){
-		echo "<tr>
-			<td><a href=?project=$project[id]>$project[name]</a>
-			<td><a href=?projects&delete=$project[id]>DELETE</a>";
 
-	}
-	echo "</table></div> ";
-	dd($_SESSION);
-}/*}}}*/
-function project_info(){/*{{{*/
-	echo "
-		<div style='background:#555;position:relativefixed;margin-left:200px;margin-top:100px;width:900px'>
-		Project INFO <br><br>
-		<form method=POST>
-	";
-	if(isset($_POST['submit'])){
-		$_SESSION['nn']->query("UPDATE projects SET name=$1 WHERE id=$2 and user_id=$3", array($_POST['project_name'], $_POST['project_id'], $_SESSION['main']['user_id']  ));
-		#$_SESSION['header_ok'][]="SAVED";
-		$_SESSION['nn']->msg("SAVED!")                                                                  ;
-	}
-	$ret=$_SESSION['nn']->query("SELECT * FROM projects WHERE user_id=$1 AND id=$2 ORDER BY 1", array($_SESSION['main']['user_id'], $_GET['project'] ));
-	foreach( $ret as $project){
-		//TODO regexp for name 
-		set_active_project($_GET['project']);
-		echo "
-			<input type=text name=project_name value='$project[name]' >
-			<input type=hidden name=project_id value='$project[id]'>
-			Created: ".substr($project['created'],0,19)." 
-			Modified: ".substr($project['modified'],0,19)."<br>
-			//TODO = add scenarios
-			<input type=submit name=submit value='Save'>
-			</form>
-			";
-	}
-	echo "</div> ";
-}/*}}}*/
-function delete_project($project_id){/*{{{*/
-		//TODO - unset or =''
-		$_SESSION['nn']->query("DELETE FROM projects WHERE id=$1 and user_id=$2", array( $project_id, $_SESSION['main']['user_id']  ));
-		if($project_id==$_SESSION['main']['active_project']){
-			$_SESSION['nn']->query("UPDATE users SET active_project = NULL where id = $1  returning active_project",array($_SESSION['main']['user_id']));
-			unset($_SESSION['main']['active_project']);
-		}
-		$_SESSION['nn']->msg("GONE!");
-		dd($_SESSION['main']);
-
-}/*}}}*/
-function get_active_project(){/*{{{*/
-#psql aamks -c 'update users set active_project =666'
-#psql aamks -c 'select  active_project,*  from users'
-	if(empty($_SESSION['main']['active_project'])){
-		$response=$_SESSION['nn']->query("SELECT active_project from users where id=$1",array($_SESSION['main']['user_id']));
-		if(empty($response[0]['active_project'])){
-			$_SESSION['nn']->msg("NO Active Project")                                                                  ;
-			return FALSE;
-		}else{
-			echo "<br><br><br><br><br>";
-			$_SESSION['nn']->msg("active project =". $response[0]['active_project']);
-			$_SESSION['main']['active_project']=$response[0]['active_project'];
-		}
-	}
-	return ($_SESSION['main']['active_project']);
-}/*}}}*/
-function set_active_project($project_id){/*{{{*/
-#psql aamks -c 'update users set active_project =666'
-#psql aamks -c 'select * from users'
-	unset($_SESSION['active_project']);
-
-	$response=$_SESSION['nn']->query("UPDATE users SET active_project=$1 where id=$2 returning active_project",array($project_id, $_SESSION['main']['user_id']));
-	if(!isset($response[0])){
-		$_SESSION['nn']->cannot("DNO Active Project")                                                                  ;
-		return FALSE;
-	}else{
-		$_SESSION['nn']->msg("active project =". $response[0]['active_project']);
-		$_SESSION['main']['active_project']=$project_id;
-	}
-}/*}}}*/
 function main() { /*{{{*/
 	$_SESSION['home_url']="/aamks/index.php";
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	echo '<script src="js/google_sign.js"></script>';
 	$_SESSION['nn']->htmlHead("Aamks");
 	$_SESSION['nn']->logoutButton();
-	get_active_project();
 	if(isset($_GET['edit_user'])) { edit_user();}
-	if(isset($_GET['projects'])) { my_projects();}
-	if(isset($_GET['project'])) { project_info();}
-	menu(); //last
 }
 /*}}}*/
+
 main();
 ?>

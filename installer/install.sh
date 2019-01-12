@@ -117,31 +117,6 @@ END;
 \$\$ language 'plpgsql';
 
 ---}}}
----CREATE TABLE users (---{{{
----	id serial PRIMARY KEY, 
----    email character varying(50),
----    password character varying(70),
----    userName character varying(80),
----	editor varchar(10),
----	current_project_id varchar(100),
----	current_scenario_id varchar(100),
----	websocket_host varchar(100),
----	websocket_port varchar(20),
----	session_id varchar(100),
----	access_time timestamp,
----	access_ip varchar(100),
----	created timestamp default current_timestamp
----);
-------}}}
----CREATE TABLE projects (---{{{
----	id serial PRIMARY KEY, 
----    user_id smallint,
----    name varchar(200),
----    description text,
----    category_id varchar(40),
----	modified timestamp default current_timestamp
----);
-------}}}
 CREATE TABLE categories (---{{{
 	id serial PRIMARY KEY, 
     user_id smallint,
@@ -149,36 +124,14 @@ CREATE TABLE categories (---{{{
   	uuid varchar(100), 
 	active boolean,
 	visible boolean,
-	modified timestamp default current_timestamp
-);
----}}}
----CREATE TABLE scenarios (---{{{
----	id serial PRIMARY KEY, 
----    project_id smallint,
----	name varchar(200),
----    fds_file text,
----	fds_object text,
----	ui_state text,
----    ac_file text,
----    ac_hash varchar(50),
----	modified timestamp default current_timestamp
----);
----}}}
-CREATE TABLE risk_scenarios (---{{{
-	id serial PRIMARY KEY, 
-    project_id smallint,
-	name varchar(200),
-	risk_object text,
-	ui_state text,
-    ac_file text,
-    ac_hash varchar(50),
-	modified timestamp default current_timestamp
+	modified timestamp without time zone not null default now()
 );
 ---}}}
 CREATE TABLE library(---{{{
 	id serial PRIMARY KEY, 
 	json text,
-	user_id smallint
+	user_id smallint,
+	modified timestamp without time zone not null default now()
 );
 
 ---}}}
@@ -220,43 +173,46 @@ CREATE TABLE simulations ( ---{{{
     max_temp decimal,
 	status text,
 	animation text,
-	inserted timestamp without time zone not null default now()
+	modified timestamp without time zone not null default now()
 );
 ---}}}
 CREATE TABLE users (---{{{
+	active_project int,
+	active_scenario int,
 	id serial PRIMARY KEY, 
 	google_id text,
-    userName text,
+    username text,
     email text UNIQUE,
     password text,
 	picture text,
-	active_project integer,
 	access_time timestamp,
 	activation_token text,
 	reset_token text,
-	modified timestamp,
-	created timestamp default current_timestamp
+	modified timestamp without time zone not null default now()
 );
 ---}}}
 CREATE TABLE projects (---{{{
 	id serial PRIMARY KEY, 
 	user_id integer,
-	name text,
-	modified timestamp,
-	created timestamp default current_timestamp
+	project_name text,
+	modified timestamp without time zone not null default now()
 );
 ---}}}
 CREATE TABLE scenarios (---{{{
 	id serial PRIMARY KEY, 
 	project_id integer,
-	name text,
-	modified timestamp,
-	created timestamp default current_timestamp
+	scenario_name text,
+	modified timestamp without time zone not null default now()
 );
 ---}}}
+-- TRIGGERS UPDATE {{{
+CREATE TRIGGER update_modified BEFORE UPDATE ON categories FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+CREATE TRIGGER update_modified BEFORE UPDATE ON library FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+CREATE TRIGGER update_modified BEFORE UPDATE ON simulations FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_modified BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_modified BEFORE UPDATE ON projects FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_modified BEFORE UPDATE ON scenarios FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+--- }}}
 ---{{{ ALTERS
 ALTER TABLE users OWNER TO aamks;
 GRANT ALL ON TABLE users TO aamks;
@@ -270,10 +226,6 @@ ALTER TABLE scenarios OWNER TO aamks;
 GRANT ALL ON TABLE scenarios TO aamks;
 GRANT ALL ON SEQUENCE scenarios_id_seq TO aamks;
 
-ALTER TABLE risk_scenarios OWNER TO aamks;
-GRANT ALL ON TABLE risk_scenarios TO aamks;
-GRANT ALL ON SEQUENCE risk_scenarios_id_seq TO aamks;
-
 ALTER TABLE categories OWNER TO aamks;
 GRANT ALL ON TABLE categories TO aamks;
 GRANT ALL ON SEQUENCE categories_id_seq TO aamks;
@@ -285,7 +237,6 @@ GRANT ALL ON SEQUENCE library_id_seq TO aamks;
 ALTER TABLE simulations OWNER TO aamks;
 GRANT ALL ON TABLE simulations TO aamks;
 GRANT ALL ON SEQUENCE simulations_id_seq TO aamks;
-
 
 ALTER TABLE users OWNER TO aamks;
 GRANT ALL ON TABLE users TO aamks;
