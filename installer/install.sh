@@ -44,7 +44,7 @@ sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && {
 	# 	echo
 	# 	exit;
 	# } 
-}
+} 
 
 [ -d $AAMKS_PATH ] || { echo "$AAMKS_PATH does not exist. Exiting"; exit;  }
 
@@ -56,7 +56,7 @@ USER=`id -ru`
 [ "X$USER" == "X0" ] && { echo "Don't run as root / sudo"; exit; }
 
 sudo apt-get update 
-sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip
+sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php
 sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
 
 # Some quick SSL for localhost. But you should really configure SSL for your site.
@@ -305,3 +305,8 @@ GRANT ALL ON SEQUENCE scenarios_id_seq TO aamks;
 
 EOF
 echo;
+
+echo "Some quick SSL for localhost. But you should really configure SSL for your site."
+echo "sudo a2enmod ssl"
+echo "sudo a2ensite default-ssl.conf"
+echo "sudo service apache2 reload"
