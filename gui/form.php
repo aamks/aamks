@@ -318,13 +318,26 @@ function form4() { /*{{{*/
 /*}}}*/
 
 function menu() {/*{{{*/
+	$td="style='color: #111'";
+	$editors_help="
+	<table >
+		<tr><td $td>easy <td $td>reasonable defaults, asking for the very basics 
+		<tr><td $td>advanced<td $td> access to distributions and other details
+		<tr><td $td>text<td $td> direct access to even more, possibly not documented params 
+	</table>
+	";
+	$xx='';
+	foreach(array('easy','advanced','text') as $k=>$v) { 
+		$sty='';
+		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #600'"; }
+		$xx.="<input $sty type=submit name=e".($k+1)." value='$v'>";
+	}
 	echo "<div style=float:right>
-	You can change the editor:<br>
-	<form method=post>
+	Editor: 
+	<form style='display: inline' method=post>
 		<input type=hidden name=change_editor>
-		<input type=submit name=e1 value='easy'>
-		<input type=submit name=e2 value='advanced'>
-		<input type=submit name=e3 value='text'>
+		$xx
+		<withHelp>?<help>$editors_help</help></withHelp>
 	</form>
 	<br><br> <br><br> <br><br>
 	<br><br> <br><br> <br><br>
@@ -337,9 +350,9 @@ function menu() {/*{{{*/
 /*}}}*/
 function change_editor() {/*{{{*/
 	if(!isset($_POST['change_editor'])) { return; }
-	if(isset($_POST['e1'])) { $_SESSION['main']['activate_editor']=1; }
-	if(isset($_POST['e2'])) { $_SESSION['main']['activate_editor']=2; }
-	if(isset($_POST['e3'])) { $_SESSION['main']['activate_editor']=3; }
+	if(isset($_POST['e1'])) { $_SESSION['main']['active_editor']=1; }
+	if(isset($_POST['e2'])) { $_SESSION['main']['active_editor']=2; }
+	if(isset($_POST['e3'])) { $_SESSION['main']['active_editor']=3; }
 	$_SESSION['nn']->query("UPDATE users SET active_editor=$1 WHERE id=$2", array($_SESSION['main']['active_editor'], $_SESSION['main']['user_id']));
 	header("Location: ?edit");
 	exit();
@@ -355,7 +368,7 @@ function main() {/*{{{*/
 
 	$f="/home/aamks_users/demo@aamks/three/1/conf.json";
 	if(isset($_GET['edit'])) { 
-		$e=$_SESSION['main']['activate_editor'];
+		$e=$_SESSION['main']['active_editor'];
 		if($e==1) { update_form1($f); form($f , "easy"); }
 		if($e==2) { update_form2($f); form($f , "advanced"); }
 		if($e==3) { update_form3($f); form3($f); }
