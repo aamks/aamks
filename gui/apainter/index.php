@@ -19,13 +19,13 @@ function head() { /*{{{*/
 		<script src='js/setup_actions.js'></script>
 		<script src='js/view3d.js'></script>
 		<div id=ajax_msg></div>
-	";
+		";
 }
 /*}}}*/
 function main() { /*{{{*/
 	head();
 	if(isset($_SESSION['main'])) {
-		echo "<div id=var_dump>".$_SESSION['main']['working_home']."/cad.json</div>";
+		echo "<div id=var_dump>".$_SESSION['main']['scenario_name']."</div>";
 	}
 }
 /*}}}*/

@@ -40,7 +40,7 @@ function status() {/*{{{*/
 
 function main() {/*{{{*/
 	$_SESSION['nn']->htmlHead("Aamks Simulations");
-	echo $_SESSION['menu'];
+	$_SESSION['nn']->menu();
 	listing();
 	run();
 	status();

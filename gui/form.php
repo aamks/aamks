@@ -298,7 +298,7 @@ function form3($json_path) { /*{{{*/
 	$help=$_SESSION['help'];
 	$json=json_encode(read_json($json_path), JSON_PRETTY_PRINT);
 	echo "<form method=post>";
-	echo "<textarea name=json cols=80 rows=40>\n\n$json\n\n\n</textarea><br>";
+	echo "<textarea name=json cols=80 rows=25>\n\n$json\n\n\n</textarea><br>";
 	echo "<input type=submit name=update_form3 value='submit'></form>";
 }
 /*}}}*/
@@ -318,40 +318,20 @@ function form4() { /*{{{*/
 /*}}}*/
 
 function menu() {/*{{{*/
-	$_SESSION['menu']="
-	<a class=blink href=/aamks/index.php>menu</a>
-	<a class=blink href=/aamks/apainter/index.php>apainter</a>
+	echo "
 	<a class=blink href=/aamks/form.php?form1>easy</a>
 	<a class=blink href=/aamks/form.php?form2>advanced</a>
 	<a class=blink href=/aamks/form.php?form3>text</a>
 	<a class=blink href=/aamks/form.php?form4>building profiles</a>
-	<a class=blink href=/aamks/simulations.php>simulations</a>
-	<a class=blink href=/aamks/vis/anims.php>anims</a>
 	<br>
 	";
-	echo $_SESSION['menu'];
 }
 /*}}}*/
 
-function vars() {/*{{{*/
-	# project_name i email wyliczamy z bazy
-	$project_name="three";
-	$email="demo@aamks";
-
-	$_SESSION['main']['user_id']=25;
-	$_SESSION['main']['project_id']=1;
-	$_SESSION['main']['scenario_id']=1;
-	$_SESSION['main']['user_home']="/home/aamks_users/$email";
-	$_SESSION['main']['working_home']="/home/aamks_users/$email/$project_name/".$_SESSION['main']['scenario_id'];
-	$_SESSION['home_url']="/aamks/form.php";
-	#$vars=dd3($_SESSION['main']);
-
-}
-/*}}}*/
 function main() {/*{{{*/
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	$_SESSION['nn']->htmlHead("Aamks");
-	vars();
+	$_SESSION['nn']->menu();
 	menu();
 	make_help();
 

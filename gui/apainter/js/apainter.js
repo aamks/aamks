@@ -468,8 +468,9 @@ function legend() { //{{{
 			$('legend').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+" ("+x.length+")</div>");
 		}
 	}
-	$('legend').append("&nbsp;&nbsp;<open3dview>[3dview]</open3dview>");
+	$('legend').append("&nbsp;&nbsp;<open3dview>[3D]</open3dview>");
 	$('legend').append(" <write>[save]</write>");
+	$('legend').prepend("<a class=rlink href=../projects.php>&lt;</a>");
 
 	$('write').click(function() { output_json(); });
 	$('open3dview').click(function() { open3dview(); });

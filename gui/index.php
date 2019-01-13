@@ -190,6 +190,12 @@ function main() { /*{{{*/
 	$_SESSION['nn']->htmlHead("Aamks");
 	$_SESSION['nn']->logoutButton();
 	if(isset($_GET['edit_user'])) { edit_user();}
+
+	# TODO: moved from inc.php:logoutbutton();
+	# if(isset($_GET['register'])) { register_form();}
+	# if(isset($_GET['reset'])) { reset_password();}
+	# if(isset($_GET['activation_token'])) { activate_user();}
+	# login_form();
 }
 /*}}}*/
 

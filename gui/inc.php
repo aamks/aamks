@@ -33,7 +33,6 @@ class Aamks {/*{{{*/
 		$_SESSION['header_err']=[];
 		$_SESSION['header_ok']=[];
 		$_SESSION['header_ok_confirm']=[];
-
 	}
 
 /*}}}*/
@@ -45,6 +44,20 @@ class Aamks {/*{{{*/
 		die();
 }
 /*}}}*/
+	public function menu() { /*{{{*/
+		$this->logoutButton();
+		echo "<div>
+			<div style='position:fixed; top: 20px; left: 5px'>
+			<img width=160 src=logo.svg><br><br><br>
+			<a href=projects.php?projects_list class=blink>projects</a><br>
+			<a href=form.php?form1 class=bblink>".$_SESSION['main']['scenario_name']."</a><br>
+			<a href=apainter class=blink>apainter</a><br>
+			<a href=/aamks/simulations.php class=blink >simulations</a><br>
+			<a href=/aamks/vis/anims.php class=blink>anims</a><br>
+			</div>
+			<div style='margin-bottom:400px; position:absolute; top: 18px; left: 200px'>";
+	}
+	/*}}}*/
 public function me(){/*{{{*/
 	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
 }/*}}}*/
@@ -56,6 +69,13 @@ public function me(){/*{{{*/
 	public function htmlHead($site) { /*{{{*/
 		# TODO: w form.php ja tez wlaczam inc.php. Pytanie czy cale to google jest w inc.php potrzebne.
 		# moze powinno byc w index.php:main() wiecej tych rzeczy?
+
+		# TODO: looks like a good place to control whether the user is logged in
+		# if(empty($_SESSION['main']['user_id'])) { 
+		# 	header("Location: /aamks/index.php");
+		# 	exit();
+		# }
+
 		$header="<!DOCTYPE html>
 		<html> 
 		<head>
@@ -83,34 +103,21 @@ public function me(){/*{{{*/
 /*}}}*/
 	public function logoutButton() {/*{{{*/
 		if(isset($_REQUEST['logout'])) { 
-			echo"<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google 
-			$_SESSION['nn']->msg("Signing out!!");
+			echo "<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google 
 			unset($_SESSION['main']['user_id']);
 			session_destroy();
 			ob_flush();
 			flush();
 			sleep(2);
-			echo "<script type='text/javascript'> signOut(); </script> 
-				 <meta http-equiv='Refresh' content='0; url=index.php' />	";
-		}
-		if(empty($_SESSION['main']['user_id'])) { 
-			if(isset($_GET['register'])) { register_form();}
-			if(isset($_GET['reset'])) { reset_password();}
-			if(isset($_GET['activation_token'])) { activate_user();}
-			login_form();
-			exit();
+			echo "<script type='text/javascript'> signOut(); </script> <meta http-equiv='Refresh' content='0; url=index.php' />	";
 		}
 
-		echo " <div style='float:right; text-align:right; font-size:12px'>";
-		if(!empty($_SESSION['main']['user_photo'])){
-			echo "<a href=?edit_user ><img src=".$_SESSION['main']['user_photo']." width=50px height=50px></a>";
-		}else{
-			echo "<a href=?edit_user class=blink>".$_SESSION['main']['user_name']."</a>";
-		}
-		echo "<a href=?projects class=blink>My projects</a>
-			  <a href=?logout=1 class=blink >Logout</a>
-			  </div>
-			  ";
+		echo "
+		<div style='position:fixed; top: 20px; right: 10px'>
+		<a href=/aamks/index.php?edit_user class=blink>".$_SESSION['main']['user_name']."</a>
+		<a href=?logout=1 class=blink >Logout</a>
+		</div>
+		";
 	}
 /*}}}*/
 	public function fatal($msg) {/*{{{*/
@@ -194,7 +201,7 @@ public function do_google_login(){/*{{{*/
 	public function set_user_variables($r){/*{{{*/
 		$_SESSION['main']['user_id']=$r['id'];
 		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
-		$_SESSION['main']['user_name']=$r['username']; # zmiany nazw
+		$_SESSION['main']['user_name']=$r['user_name']; # zmiany nazw
 		$_SESSION['main']['user_photo']=$r['picture']; # zmiany nazw 
 		$_SESSION['main']['user_email']=$r['email'];
 		$_SESSION['main']['email']=$r['email']; //TODO - usunać?

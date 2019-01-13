@@ -1,7 +1,7 @@
 # init users {{{
 psql aamks -c "DELETE FROM users"
-psql aamks -c "INSERT INTO users(active_project, active_scenario, username, id, email) values(1,1,'Karol Kreński', 25, 'mimoohowy@gmail.com')"
-psql aamks -c "INSERT INTO users(active_project, active_scenario, username, id, email) values(2,1,'Stanisław Łazowy', 30, 'stanislaw.lazowy@gmail.com')"
+psql aamks -c "INSERT INTO users(active_scenario , user_name , id , email) values(1 , 'Karol Kreński'    , 25 , 'mimoohowy@gmail.com')"
+psql aamks -c "INSERT INTO users(active_scenario , user_name , id , email) values(2 , 'Stanisław Łazowy' , 30 , 'stanislaw.lazowy@gmail.com')"
 #psql aamks -c "SELECT * FROM users"
 
 psql aamks -c "DELETE FROM projects"
