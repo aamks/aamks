@@ -4,6 +4,7 @@ ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
 ini_set('display_startup_errors',1);
 setlocale(LC_TIME, "pl_PL");
+
 # debug/*{{{*/
 // A better print_r();
 function dd() {
@@ -44,18 +45,21 @@ class Aamks {/*{{{*/
 		die();
 }
 /*}}}*/
-	public function menu() { /*{{{*/
+	public function menu($title) { /*{{{*/
 		$this->logoutButton();
 		echo "<div>
-			<div style='position:fixed; top: 20px; left: 5px'>
-			<img width=160 src=logo.svg><br><br><br>
-			<a href=projects.php?projects_list class=blink>projects</a><br>
-			<a href=form.php?form1 class=bblink>".$_SESSION['main']['scenario_name']."</a><br>
-			<a href=apainter class=blink>apainter</a><br>
-			<a href=/aamks/simulations.php class=blink >simulations</a><br>
-			<a href=/aamks/vis/anims.php class=blink>anims</a><br>
+			<div style='position:fixed; top: 0px; left: 0px'>
+			<img width=160 src=logo.svg><br><br>
+			<div style='padding-left:15px'>
+				<a href=form.php?edit class=bblink>".$_SESSION['main']['scenario_name']."</a><br>
+				<a href=projects.php?projects_list class=blink>projects</a><br>
+				<a href=apainter class=blink>apainter</a><br>
+				<a href=/aamks/simulations.php class=blink >simulations</a><br>
+				<a href=/aamks/vis/anims.php class=blink>animator</a><br>
 			</div>
-			<div style='margin-bottom:400px; position:absolute; top: 18px; left: 200px'>";
+			</div>
+			<div style='margin-bottom:400px; position:absolute; top: 10px; left: 200px; min-width:700px'>";
+		echo "<tt>$title</tt>";
 	}
 	/*}}}*/
 public function me(){/*{{{*/
@@ -112,10 +116,16 @@ public function me(){/*{{{*/
 			echo "<script type='text/javascript'> signOut(); </script> <meta http-equiv='Refresh' content='0; url=index.php' />	";
 		}
 
+		if(!empty($_SESSION['main']['user_photo'])){
+			$setup_user="<a href=/aamks/users.php?edit_user><img src=".$_SESSION['main']['user_photo']." style='width:50px; height:50px; padding-right:4px;'></a>";
+		}else{
+			$name=explode(" ", $_SESSION['main']['user_name'])[0];
+			$setup_user="<a href=/aamks/users.php?edit_user class=blink>$name</a>";
+		}
 		echo "
-		<div style='position:fixed; top: 20px; right: 10px'>
-		<a href=/aamks/index.php?edit_user class=blink>".$_SESSION['main']['user_name']."</a>
-		<a href=?logout=1 class=blink >Logout</a>
+		<div style='position:fixed; top: 20px; right: 10px; text-align:right'>
+		<a href=?logout=1 class=blink >logout</a><br>
+		$setup_user
 		</div>
 		";
 	}

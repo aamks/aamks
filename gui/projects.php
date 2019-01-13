@@ -53,20 +53,23 @@ function ch_scenario(){/*{{{*/
 	#psql aamks -c 'select * from scenarios'
 	#psql aamks -c 'select * from users'
 	if(!isset($_GET['ch_scenario'])) { return; }
-	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2 LIMIT 1",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2 LIMIT 1",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
 	if(empty($r[0])) { die("scenario_id=$_GET[ch_scenario]?"); }
 	ch_main_vars($r[0]);
 }/*}}}*/
 function ch_main_vars($r) { #{{{
 	$_SESSION['main']['project_id']=$r['project_id'];
 	$_SESSION['main']['user_name']=$r['user_name'];
+	$_SESSION['main']['user_photo']=$r['user_photo'];
+	$_SESSION['main']['active_editor']=$r['active_editor'];
 	$_SESSION['main']['project_name']=$r['project_name'];
 	$_SESSION['main']['scenario_id']=$r['scenario_id'];
 	$_SESSION['main']['scenario_name']=$r['scenario_name'];
 	$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
 	$_SESSION['main']['working_home']="/home/aamks_users/$r[email]/$r[project_name]/$r[scenario_name]";
 	$_SESSION['nn']->query("UPDATE users SET active_scenario=$1 WHERE id=$2", array($r['scenario_id'], $_SESSION['main']['user_id']));
-	header("Location: projects.php?projects_list");
+	$_SESSION['nn']->query("UPDATE users SET active_editor=$1 WHERE id=$2", array($r['active_editor'], $_SESSION['main']['user_id']));
+	header("Location: form.php?edit");
 }
 /*}}}*/
 function init_main_vars() { #{{{
@@ -74,7 +77,7 @@ function init_main_vars() { #{{{
 	#psql aamks -c 'select * from projects'
 	if(isset($_SESSION['main']['project_id'])) { return; }
 	$_SESSION['main']['user_id']=25;
-	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
 	ch_main_vars($r[0]);
 }
 /*}}}*/
@@ -82,7 +85,7 @@ function main() { #{{{
 	$_SESSION['nn']->htmlHead("Projects");
 	init_main_vars();
 	ch_scenario();
-	$_SESSION['nn']->menu();
+	$_SESSION['nn']->menu('manage projects');
 	delete_project();
 	if(isset($_GET['projects_list'])) { projects_list(); }
 }

@@ -1,0 +1,11 @@
+# prepare {{{
+	$z=$_SESSION['nn']->prepare_pg_insert($input);
+	$_SESSION['nn']->query("INSERT INTO xxx ($z[keys]) values($z[dolars])", fix_nulls($input));
+	$_SESSION['header_ok'][]="Zapisano zmiany";
+	header("Location: xxx.php");
+
+	$uu=$_SESSION['nn']->prepare_pg_update($update);
+	$_SESSION['nn']->query("UPDATE xxx SET $uu WHERE id=$1", fix_nulls(array_values($update)));
+	$_SESSION['header_ok'][]="Zapisano zmiany";
+	header("Location: xxx.php");
+# }}}

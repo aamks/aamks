@@ -73,13 +73,14 @@ CREATE TABLE simulations ( ---{{{
 );
 ---}}}
 CREATE TABLE users (---{{{
-	active_scenario int,
 	id serial PRIMARY KEY, 
+	active_scenario int,
+	active_editor int,
+    email text UNIQUE,
 	google_id text,
     user_name text,
-    email text UNIQUE,
+	user_photo text,
     password text,
-	picture text,
 	access_time timestamp,
 	activation_token text,
 	reset_token text,
@@ -147,4 +148,24 @@ ALTER TABLE scenarios ADD CONSTRAINT scenarios_project_id FOREIGN KEY (project_i
 GRANT ALL ON TABLE scenarios TO aamks;
 GRANT ALL ON SEQUENCE scenarios_id_seq TO aamks;
 
+---}}}
+---{{{ PLAYGROUND (remove for production)
+DELETE FROM users;
+INSERT INTO users(active_scenario, active_editor, user_photo, user_name , id , email) values(1 , 1, '/aamks/logo.svg', 'Karol Kreński'    , 25 , 'mimoohowy@gmail.com');
+INSERT INTO users(active_scenario, active_editor, user_name , id , email) values(2 , 1, 'Stanisław Łazowy' , 30 , 'stanislaw.lazowy@gmail.com');
+DELETE FROM projects;
+INSERT INTO projects(id,user_id,project_name) values(1,25,'three');
+INSERT INTO projects(id,user_id,project_name) values(2,30,'three');
+INSERT INTO projects(id,user_id,project_name) values(3,25,'four');
+INSERT INTO projects(id,user_id,project_name) values(4,25,'five');
+DELETE FROM scenarios;
+INSERT INTO scenarios(id,project_id,scenario_name) values(1,1,'three_1');
+INSERT INTO scenarios(id,project_id,scenario_name) values(2,1,'three_2');
+INSERT INTO scenarios(id,project_id,scenario_name) values(3,2,'three_1');
+INSERT INTO scenarios(id,project_id,scenario_name) values(4,2,'three_2');
+INSERT INTO scenarios(id,project_id,scenario_name) values(5,3,'four_1');
+INSERT INTO scenarios(id,project_id,scenario_name) values(6,3,'four_2');
+INSERT INTO scenarios(id,project_id,scenario_name) values(7,3,'four_3');
+INSERT INTO scenarios(id,project_id,scenario_name) values(8,3,'four_4');
+INSERT INTO scenarios(id,project_id,scenario_name) values(9,4,'five_1');
 ---}}}

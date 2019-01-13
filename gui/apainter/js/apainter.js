@@ -470,7 +470,7 @@ function legend() { //{{{
 	}
 	$('legend').append("&nbsp;&nbsp;<open3dview>[3D]</open3dview>");
 	$('legend').append(" <write>[save]</write>");
-	$('legend').prepend("<a class=rlink href=../projects.php>&lt;</a>");
+	$('legend').prepend("<a href=../projects.php><img style='vertical-align:text-bottom; margin-right:10px;' src=/aamks/favicon.ico></a>");
 
 	$('write').click(function() { output_json(); });
 	$('open3dview').click(function() { open3dview(); });

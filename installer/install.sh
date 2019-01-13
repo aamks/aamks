@@ -95,7 +95,7 @@ sudo find /home/aamks_users -type f -exec chmod 664 {} \;
 sudo -u postgres psql -c 'DROP USER aamks' 2>/dev/null
 sudo -u postgres psql -c 'CREATE DATABASE aamks' 2>/dev/null
 sudo -u postgres psql -c "CREATE USER aamks WITH PASSWORD '$AAMKS_PG_PASS'";
-sudo -u postgres psql -f init.sql
+sudo -u postgres psql -f sql.sql
 
 echo
 echo "Some quick SSL for localhost. But you should really configure SSL for your site."

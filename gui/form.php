@@ -209,7 +209,7 @@ function write($data, $file) { #{{{
 	} else {
 		$_SESSION['header_err'][]="problem saving $file";
 	}
-	header("Location: form.php");
+	header("Location: form.php?edit");
 }
 /*}}}*/
 function update_form1($file) {/*{{{*/
@@ -286,7 +286,7 @@ function form($json_path, $variant) { /*{{{*/
 	echo "<table>";
 	form_fields_iterator($json,$variant);
 	echo "</table>";
-	echo "<input type=submit name=$update_var value='submit'></form>";
+	echo "<center><br><br><input type=submit name=$update_var value='submit'></center></form>";
 }
 /*}}}*/
 function form3($json_path) { /*{{{*/
@@ -299,7 +299,7 @@ function form3($json_path) { /*{{{*/
 	$json=json_encode(read_json($json_path), JSON_PRETTY_PRINT);
 	echo "<form method=post>";
 	echo "<textarea name=json cols=80 rows=25>\n\n$json\n\n\n</textarea><br>";
-	echo "<input type=submit name=update_form3 value='submit'></form>";
+	echo "<br><br><center><input type=submit name=update_form3 value='submit'></center></form>";
 }
 /*}}}*/
 function form4() { /*{{{*/
@@ -318,28 +318,52 @@ function form4() { /*{{{*/
 /*}}}*/
 
 function menu() {/*{{{*/
-	echo "
-	<a class=blink href=/aamks/form.php?form1>easy</a>
-	<a class=blink href=/aamks/form.php?form2>advanced</a>
-	<a class=blink href=/aamks/form.php?form3>text</a>
-	<a class=blink href=/aamks/form.php?form4>building profiles</a>
+	echo "<div style=float:right>
+	You can change the editor:<br>
+	<form method=post>
+		<input type=hidden name=change_editor>
+		<input type=submit name=e1 value='easy'>
+		<input type=submit name=e2 value='advanced'>
+		<input type=submit name=e3 value='text'>
+	</form>
+	<br><br> <br><br> <br><br>
+	<br><br> <br><br> <br><br>
+	<br><br> <br><br> <br><br>
+	<br><br> <br><br> <br><br>
+	<a style='opacity:0.1' class=blink href=/aamks/form.php?bprofiles>building profiles</a>
 	<br>
 	";
 }
 /*}}}*/
-
+function change_editor() {/*{{{*/
+	if(!isset($_POST['change_editor'])) { return; }
+	if(isset($_POST['e1'])) { $_SESSION['main']['activate_editor']=1; }
+	if(isset($_POST['e2'])) { $_SESSION['main']['activate_editor']=2; }
+	if(isset($_POST['e3'])) { $_SESSION['main']['activate_editor']=3; }
+	$_SESSION['nn']->query("UPDATE users SET active_editor=$1 WHERE id=$2", array($_SESSION['main']['active_editor'], $_SESSION['main']['user_id']));
+	header("Location: ?edit");
+	exit();
+}
+/*}}}*/
 function main() {/*{{{*/
+	// 1: easy, 2: advanced, 3: text
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	$_SESSION['nn']->htmlHead("Aamks");
-	$_SESSION['nn']->menu();
-	menu();
+	$_SESSION['nn']->menu($_SESSION['main']['scenario_name']." properties");
+	change_editor();
 	make_help();
 
 	$f="/home/aamks_users/demo@aamks/three/1/conf.json";
-	if(isset($_GET['form1'])) { update_form1($f); form($f , "easy"); }
-	if(isset($_GET['form2'])) { update_form2($f); form($f , "advanced"); }
-	if(isset($_GET['form3'])) { update_form3($f); form3($f); }
-	if(isset($_GET['form4'])) { form4(); update_form4(); }
+	if(isset($_GET['edit'])) { 
+		$e=$_SESSION['main']['activate_editor'];
+		if($e==1) { update_form1($f); form($f , "easy"); }
+		if($e==2) { update_form2($f); form($f , "advanced"); }
+		if($e==3) { update_form3($f); form3($f); }
+	}
+
+	if(isset($_GET['bprofiles'])) { form4(); update_form4(); }
+
+	menu();
 	
 
 }
