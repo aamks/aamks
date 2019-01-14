@@ -52,10 +52,10 @@ class Aamks {/*{{{*/
 			<img width=160 src=logo.svg><br><br>
 			<div style='padding-left:15px'>
 				<a href=form.php?edit class=bblink>".$_SESSION['main']['scenario_name']."</a><br>
-				<a href=projects.php?projects_list class=blink>projects</a><br>
-				<a href=apainter class=blink>apainter</a><br>
-				<a href=/aamks/simulations.php class=blink >simulations</a><br>
-				<a href=/aamks/vis/anims.php class=blink>animator</a><br>
+				<a href=projects.php?projects_list class=blink>Projects</a><br>
+				<a href=apainter class=blink>Apainter</a><br>
+				<a href=/aamks/simulations.php class=blink >Simulations</a><br>
+				<a href=/aamks/vis/anims.php class=blink>Animator</a><br>
 			</div>
 			</div>
 			<div style='margin-bottom:400px; position:absolute; top: 10px; left: 200px; min-width:700px'>";
@@ -124,7 +124,7 @@ public function me(){/*{{{*/
 		}
 		echo "
 		<div style='position:fixed; top: 20px; right: 10px; text-align:right'>
-		<a href=?logout=1 class=blink >logout</a><br>
+		<a href=?logout=1 class=blink >Logout</a><br>
 		$setup_user
 		</div>
 		";

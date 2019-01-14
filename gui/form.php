@@ -3,7 +3,16 @@ session_name('aamks');
 require_once("inc.php"); 
 require_once("inc.form.php"); 
 
-function read_json($json_path) { /*{{{*/
+function read_aamks_conf_json() { /*{{{*/
+	if(!is_file($_SESSION['main']['working_home']."/conf.json")) { 
+		$template=file_get_contents(getenv("AAMKS_PATH")."/installer/examples/three/1/conf.json");
+		$template_json=json_decode($template,1);
+		$template_json['project_id']=$_SESSION['main']['project_id'];
+		$template_json['scenario_id']=$_SESSION['main']['scenario_id'];
+		$s=json_encode($template_json, JSON_NUMERIC_CHECK);
+		write($s);
+	}
+	$json_path=$_SESSION['main']['working_home']."/conf.json";
 	if(is_readable($json_path)) { 
 		$f=file_get_contents($json_path);
 	} else {
@@ -88,7 +97,7 @@ function form_material($json) { #{{{
 	foreach($m_array as $k=>$v) { 
 		$z.="<tr>";
 		$z.="<td>$v<td>".droplist_material($k,$json[$k]['type']); 
-		$z.="<td>thickness<td><input size=2 type=text name=post[$k][thickness] value='".$json[$k]['thickness']."'>";
+		$z.="<td>thickness<td><input autocomplete=off size=2 type=text name=post[$k][thickness] value='".$json[$k]['thickness']."'>";
 	}
 	$z.="</table>";
 	return $z;
@@ -105,7 +114,7 @@ function form_plain_arr_switchable($key,$arr) { #{{{
 	}
 	$z.="<tr>";
 	foreach($arr as $k => $v) { 
-		$z.="<td>".get_help($k)."<br><input size=8 type=text name=post[$key][$k] value='$v'>";
+		$z.="<td>".get_help($k)."<br><input autocomplete=off size=8 type=text name=post[$key][$k] value='$v'>";
 	}
 	$z.="</table>";
 	return $z;
@@ -116,7 +125,7 @@ function form_assoc($key,$arr) { #{{{
 	$z.="<table class=noborder>";
 	$z.="<tr>";
 	foreach($arr as $k=>$v) { 
-		$z.="<td>".get_help($k)."<br><input size=8 type=text name=post[$key][$k] value='$v'>";
+		$z.="<td>".get_help($k)."<br><input autocomplete=off size=8 type=text name=post[$key][$k] value='$v'>";
 	}
 	$z.="</table>";
 	return $z;
@@ -129,7 +138,7 @@ function form_arr($key,$arr) { #{{{
 	foreach($arr as $k => $v) { 
 		$z.="<tr>";
 		foreach($v as $kk => $vv) { 
-			$z.="<td>".get_help($kk)."<br><input size=8 type=text name=post[$key][$i][$kk] value='$vv'>";
+			$z.="<td>".get_help($kk)."<br><input autocomplete=off size=8 type=text name=post[$key][$i][$kk] value='$vv'>";
 		}
 		$i++;
 	}
@@ -149,7 +158,7 @@ function building_fields($v, $variant='easy') {/*{{{*/
 	} else {
 		$out="";
 		foreach($v as $k=>$v) {
-			$out.="<input type=hidden name=post[building_profile][$k] value=''>";
+			$out.="<input autocomplete=off type=hidden name=post[building_profile][$k] value=''>";
 		}
 	}
 	return $out;
@@ -202,7 +211,8 @@ function calculate_profile($arr) { #{{{
 }
 /*}}}*/
 
-function write($data, $file) { #{{{
+function write($data) { #{{{
+	$file=$_SESSION['main']['working_home']."/conf.json";
 	$saved=file_put_contents($file, $data);
 	if($saved>0) { 
 		$_SESSION['header_ok'][]="OK $file saved";
@@ -212,7 +222,7 @@ function write($data, $file) { #{{{
 	header("Location: form.php?edit");
 }
 /*}}}*/
-function update_form1($file) {/*{{{*/
+function update_form1() {/*{{{*/
 	if(empty($_POST['update_form1'])) { return; }
 	$out=$_POST['post'];
 	$out+=get_defaults('setup1');
@@ -223,19 +233,19 @@ function update_form1($file) {/*{{{*/
 	$out['pre_evac']=$z['pre_evac'];
 	$out['pre_evac_fire_origin']=$z['pre_evac_fire_origin'];
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
-	write($s, $file);
+	write($s);
 }
 /*}}}*/
-function update_form2($file) {/*{{{*/
+function update_form2() {/*{{{*/
 	if(empty($_POST['update_form2'])) { return; }
 	$out=$_POST['post'];
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
-	write($s, $file);
+	write($s);
 }
 /*}}}*/
-function update_form3($file) {/*{{{*/
+function update_form3() {/*{{{*/
 	if(empty($_POST['update_form3'])) { return; }
-	write($_POST['json'], $file);
+	write($_POST['json']);
 }
 /*}}}*/
 function update_form4() {/*{{{*/
@@ -249,8 +259,8 @@ function form_fields_iterator($json,$variant) { #{{{
 	// In conf.json there are 3 types of values for each key: value, array, assoc 
 
 	foreach($json as $k=>$v)            {
-		if($k=='project_id')            { echo "<tr><td>".get_help($k)."<td>$v <input type=hidden name=post[$k] value='$v'>"; }
-		else if($k=='scenario_id')      { echo "/$v							<input type=hidden name=post[$k] value='$v'>"; }
+		if($k=='project_id')            { echo "<tr><td>".get_help($k)."<td>$v <input autocomplete=off type=hidden name=post[$k] value='$v'>"; }
+		else if($k=='scenario_id')      { echo "/$v							<input autocomplete=off type=hidden name=post[$k] value='$v'>"; }
 		else if($k=='building_profile') { echo building_fields($v, $variant); }
 		else if($k=='heat_detectors')   { echo "<tr><td><a class='rlink switch' id='$k'>heat detectors</a><td>".form_plain_arr_switchable($k,$v); }
 		else if($k=='smoke_detectors')  { echo "<tr><td><a class='rlink switch' id='$k'>smoke detectors</a><td>".form_plain_arr_switchable($k,$v); }
@@ -265,16 +275,16 @@ function form_fields_iterator($json,$variant) { #{{{
 			} else if(is_array($v) and !isset($v[0])) {
 				echo "<tr><td>".get_help($k)."<td>".form_assoc($k,$v); 
 			} else {
-				echo "<tr><td>".get_help($k)."<td><input type=text automplete=off size=10 name=post[$k] value='$v'>"; 
+				echo "<tr><td>".get_help($k)."<td><input autocomplete=off type=text automplete=off size=10 name=post[$k] value='$v'>"; 
 			}
 		}
 	}
 }
 /*}}}*/
-function form($json_path, $variant) { /*{{{*/
+function form($variant) { /*{{{*/
 	// variant is easy or advanced
 	$update_var='update_form2';
-	$json=read_json($json_path);
+	$json=read_aamks_conf_json();
 	if($variant=='easy') { 
 		foreach(array("outdoor_temperature","indoor_pressure","windows","vents_open","c_const","evacuees_max_h_speed","evacuees_max_v_speed","evacuees_alpha_v","evacuees_beta_v","fire_starts_in_a_room","hrrpua","hrr_alpha","evacuees_concentration","pre_evac","pre_evac_fire_origin") as $i) { 
 			unset ($json[$i]);
@@ -286,20 +296,20 @@ function form($json_path, $variant) { /*{{{*/
 	echo "<table>";
 	form_fields_iterator($json,$variant);
 	echo "</table>";
-	echo "<center><br><br><input type=submit name=$update_var value='submit'></center></form>";
+	echo "<center><br><input autocomplete=off type=submit name=$update_var value='submit'></center></form>";
 }
 /*}}}*/
-function form3($json_path) { /*{{{*/
+function form3() { /*{{{*/
 	echo "
 	<br><wheat>
 	You can directly manipulate conf.json. Aamks will not forgive any errors here.
 	</wheat><br><br>";
 	
 	$help=$_SESSION['help'];
-	$json=json_encode(read_json($json_path), JSON_PRETTY_PRINT);
+	$json=json_encode(read_aamks_conf_json(), JSON_PRETTY_PRINT);
 	echo "<form method=post>";
 	echo "<textarea name=json cols=80 rows=25>\n\n$json\n\n\n</textarea><br>";
-	echo "<br><br><center><input type=submit name=update_form3 value='submit'></center></form>";
+	echo "<br><center><input autocomplete=off type=submit name=update_form3 value='submit'></center></form>";
 }
 /*}}}*/
 function form4() { /*{{{*/
@@ -313,11 +323,11 @@ function form4() { /*{{{*/
 	echo "<table>";
 	echo building_fields($v);
 	echo "</table>";
-	echo "<input type=submit name=update_form4 value='submit'></form>";
+	echo "<input autocomplete=off type=submit name=update_form4 value='submit'></form>";
 }
 /*}}}*/
 
-function menu() {/*{{{*/
+function editors() {/*{{{*/
 	$td="style='color: #111'";
 	$editors_help="
 	<table >
@@ -329,13 +339,13 @@ function menu() {/*{{{*/
 	$xx='';
 	foreach(array('easy','advanced','text') as $k=>$v) { 
 		$sty='';
-		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #600'"; }
-		$xx.="<input $sty type=submit name=e".($k+1)." value='$v'>";
+		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #616;  border-bottom: 1px solid #888;'"; }
+		$xx.="<input autocomplete=off $sty type=submit name=e".($k+1)." value='$v'>";
 	}
 	echo "<div style=float:right>
 	Editor: 
 	<form style='display: inline' method=post>
-		<input type=hidden name=change_editor>
+		<input autocomplete=off type=hidden name=change_editor>
 		$xx
 		<withHelp>?<help>$editors_help</help></withHelp>
 	</form>
@@ -358,27 +368,40 @@ function change_editor() {/*{{{*/
 	exit();
 }
 /*}}}*/
+function form_delete() { #{{{
+	echo "<form method=post>";
+	echo "<input autocomplete=off style='background: #600; float:right' type=submit name=delete_scenario value='delete this scenario'></form>";
+}
+/*}}}*/
+function delete_scenario() {/*{{{*/
+	#psql aamks -c 'select * from scenarios'
+	if(!isset($_POST['delete_scenario'])) { return; }
+	$_SESSION['nn']->query("DELETE FROM scenarios WHERE id=$1", array($_SESSION['main']['scenario_id']));
+	header("Location: projects.php?projects_list");
+	# TODO: remove from disk, remove from session, remove from db?
+	exit();
+}
+/*}}}*/
+
 function main() {/*{{{*/
 	// 1: easy, 2: advanced, 3: text
-	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
-	$_SESSION['nn']->htmlHead("Aamks");
-	$_SESSION['nn']->menu($_SESSION['main']['scenario_name']." properties");
+	$_SESSION['nn']->htmlHead("Scenario properties");
+	$_SESSION['nn']->menu("Scenario: ".$_SESSION['main']['scenario_name']);
 	change_editor();
+	delete_scenario();
 	make_help();
 
-	$f="/home/aamks_users/demo@aamks/three/1/conf.json";
+	#$f="/home/aamks_users/demo@aamks/three/1/conf.json";
 	if(isset($_GET['edit'])) { 
+		form_delete();
 		$e=$_SESSION['main']['active_editor'];
-		if($e==1) { update_form1($f); form($f , "easy"); }
-		if($e==2) { update_form2($f); form($f , "advanced"); }
-		if($e==3) { update_form3($f); form3($f); }
+		if($e==1) { update_form1(); form("easy"); }
+		if($e==2) { update_form2(); form("advanced"); }
+		if($e==3) { update_form3(); form3(); }
 	}
 
 	if(isset($_GET['bprofiles'])) { form4(); update_form4(); }
-
-	menu();
-	
-
+	editors();
 }
 /*}}}*/
 

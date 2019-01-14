@@ -82,7 +82,8 @@ a.blink, a.bblink {
 	display: inline-block;
     padding: 5px 8px;
 }
-a.bblink { background: #074; } 
+a.bblink { background: #616;  border-bottom: 1px solid #888;} 
+	
 a.rlink {
 	user-select: none;
 	text-decoration: none;

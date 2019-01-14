@@ -39,8 +39,8 @@ function status() {/*{{{*/
 /*}}}*/
 
 function main() {/*{{{*/
-	$_SESSION['nn']->htmlHead("Aamks Simulations");
-	$_SESSION['nn']->menu('simulations');
+	$_SESSION['nn']->htmlHead("Simulations");
+	$_SESSION['nn']->menu('Simulations');
 	listing();
 	run();
 	status();
