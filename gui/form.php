@@ -1,7 +1,7 @@
 <?php
 session_name('aamks');
 require_once("inc.php"); 
-require_once("inc.form.php"); 
+require_once("lib.form.php"); 
 
 function read_aamks_conf_json() { /*{{{*/
 	if(!is_file($_SESSION['main']['working_home']."/conf.json")) { 
@@ -214,9 +214,7 @@ function calculate_profile($arr) { #{{{
 function write($data) { #{{{
 	$file=$_SESSION['main']['working_home']."/conf.json";
 	$saved=file_put_contents($file, $data);
-	if($saved>0) { 
-		$_SESSION['header_ok'][]="OK $file saved";
-	} else {
+	if($saved<=0) { 
 		$_SESSION['header_err'][]="problem saving $file";
 	}
 	header("Location: form.php?edit");
@@ -339,7 +337,7 @@ function editors() {/*{{{*/
 	$xx='';
 	foreach(array('easy','advanced','text') as $k=>$v) { 
 		$sty='';
-		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #616;  border-bottom: 1px solid #888;'"; }
+		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #616;'"; }
 		$xx.="<input autocomplete=off $sty type=submit name=e".($k+1)." value='$v'>";
 	}
 	echo "<div style=float:right>
@@ -369,16 +367,30 @@ function change_editor() {/*{{{*/
 }
 /*}}}*/
 function form_delete() { #{{{
+	// demo/demo_1 is the built-in scenario which must never be deleted
+	// This way we make sure there will always be a fallback in $_SESSION['main']
+
+	if($_SESSION['main']['scenario_name']=='demo_1' && $_SESSION['main']['project_name']=='demo') { return; }
 	echo "<form method=post>";
-	echo "<input autocomplete=off style='background: #600; float:right' type=submit name=delete_scenario value='delete this scenario'></form>";
+	echo "<input autocomplete=off style='float:right' class=srlink type=submit name=delete_scenario value='delete this scenario'>";
+	echo "</form>";
 }
 /*}}}*/
 function delete_scenario() {/*{{{*/
-	#psql aamks -c 'select * from scenarios'
+	// After we have delete a scenario, the current scenario will be the newest one in the database.
+	// TODO: assert there is at least one scenario always 
+
+	# psql aamks -c 'select * from scenarios'
+	# psql aamks -c "SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=1 AND s.id IS NOT NULL  ORDER BY s.modified DESC "
 	if(!isset($_POST['delete_scenario'])) { return; }
 	$_SESSION['nn']->query("DELETE FROM scenarios WHERE id=$1", array($_SESSION['main']['scenario_id']));
+	$disk_delete=implode("/", array($_SESSION['main']['user_home'], $_SESSION['main']['project_name'], $_SESSION['main']['scenario_name']));
+	system("rm -rf $disk_delete");
+	unset($_SESSION['main']['scenario_id']);
+	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=$1 AND s.id IS NOT NULL ORDER BY s.modified DESC LIMIT 1",array($_SESSION['main']['user_id']));
+	$_SESSION['nn']->ch_main_vars($r[0]);
 	header("Location: projects.php?projects_list");
-	# TODO: remove from disk, remove from session, remove from db?
+	# TODO: remove from db?
 	exit();
 }
 /*}}}*/
@@ -391,7 +403,6 @@ function main() {/*{{{*/
 	delete_scenario();
 	make_help();
 
-	#$f="/home/aamks_users/demo@aamks/three/1/conf.json";
 	if(isset($_GET['edit'])) { 
 		form_delete();
 		$e=$_SESSION['main']['active_editor'];

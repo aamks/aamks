@@ -6,7 +6,10 @@ require_once("inc.php");
 function listing() {/*{{{*/
 	extract($_SESSION['main']);
 	$sim="$project_id/$scenario_id";
-	echo "<br><br>Simulation: $sim 
+	echo "<table>
+	<tr><td>project<td>$project_name ($project_id)
+	<tr><td>scenario<td>$scenario_name ($scenario_id)
+	</table>
 	<form method=post style='display:inline'>
 		<input type=hidden name=sim value=$sim>
 		<input type=submit name=run value=run>
@@ -40,7 +43,7 @@ function status() {/*{{{*/
 
 function main() {/*{{{*/
 	$_SESSION['nn']->htmlHead("Simulations");
-	$_SESSION['nn']->menu('Simulations');
+	$_SESSION['nn']->menu('Manage simulations');
 	listing();
 	run();
 	status();

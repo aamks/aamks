@@ -56,6 +56,7 @@ class Aamks {/*{{{*/
 				<a href=apainter class=blink>Apainter</a><br>
 				<a href=/aamks/simulations.php class=blink >Simulations</a><br>
 				<a href=/aamks/vis/anims.php class=blink>Animator</a><br>
+				<a href=projects.php?session_dump class=blink>Session</a><br>
 			</div>
 			</div>
 			<div style='margin-bottom:400px; position:absolute; top: 10px; left: 200px; min-width:700px'>";
@@ -65,6 +66,20 @@ class Aamks {/*{{{*/
 public function me(){/*{{{*/
 	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
 }/*}}}*/
+	public function ch_main_vars($r) { #{{{
+		$_SESSION['main']['project_id']=$r['project_id'];
+		$_SESSION['main']['user_name']=$r['user_name'];
+		$_SESSION['main']['user_photo']=$r['user_photo'];
+		$_SESSION['main']['active_editor']=$r['active_editor'];
+		$_SESSION['main']['project_name']=$r['project_name'];
+		$_SESSION['main']['scenario_id']=$r['scenario_id'];
+		$_SESSION['main']['scenario_name']=$r['scenario_name'];
+		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
+		$_SESSION['main']['working_home']="/home/aamks_users/$r[email]/$r[project_name]/$r[scenario_name]";
+		$this->query("UPDATE users SET active_scenario=$1 WHERE id=$2", array($r['scenario_id'], $_SESSION['main']['user_id']));
+		$this->query("UPDATE users SET active_editor=$1 WHERE id=$2", array($r['active_editor'], $_SESSION['main']['user_id']));
+	}
+	/*}}}*/
 	public function isChecked($val) {/*{{{*/
 		if($val==1) { return 'div-yes'; }
 			return 'div-no'; 
