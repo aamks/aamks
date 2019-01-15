@@ -51,7 +51,7 @@ function ajaxSingleAnimFunCircle() { /*{{{*/
 		}
 		$arr[]=$record;
 	}
-	$collect=[ "simulation_id" => 1, "project_name" => "three", "simulation_time" => 200, "time_shift" => 0  ];
+	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 200, "time_shift" => 0  ];
 	$collect['data']=$arr;
 	echo json_encode(array("msg"=>"ajaxSingleAnimFun(): OK", "err"=>0, "data"=>$collect));
 }
@@ -71,19 +71,28 @@ function ajaxSingleAnimFunUpDown() { /*{{{*/
 		$arr[]=$record;
 		#dd2($arr);
 	}
-	$collect=[ "simulation_id" => 1, "project_name" => "three", "simulation_time" => 900, "time_shift" => 0  ];
+	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0  ];
 	$collect['data']=$arr;
 	echo json_encode(array("msg"=>"ajaxSingleAnimFun(): OK", "err"=>0, "data"=>$collect));
 }
 /*}}}*/
-function ajaxApainter() { /*{{{*/
+function ajaxApainterExport() { /*{{{*/
 	$src=$_POST['cadfile'];
 	$dest=$_SESSION['main']['working_home']."/cad.json";
 	$z=file_put_contents($dest, $src);
 	if($z>0) { 
-		echo json_encode(array("msg"=>"ajaxApainter(): OK", "err"=>0, "data"=>""));
+		echo json_encode(array("msg"=>"ajaxApainterExport(): OK", "err"=>0, "data"=>""));
 	} else { 
-		echo json_encode(array("msg"=>"ajaxApainter(): Cannot write $dest", "err"=>1, "data"=>""));
+		echo json_encode(array("msg"=>"ajaxApainterExport(): Cannot export $dest", "err"=>1, "data"=>""));
+	}
+}
+/*}}}*/
+function ajaxApainterImport() { /*{{{*/
+	$cadfile=file_get_contents($_SESSION['main']['working_home']."/cad.json");
+	if(json_decode($cadfile)) { 
+		echo json_encode(array("msg"=>"ajaxApainterImport(): OK" , "err"=>0 , "data"=>$cadfile));
+	} else { 
+		echo json_encode(array("msg"=>"ajaxApainterImport(): Cannot import cad.json", "err"=>1, "data"=>""));
 	}
 }
 /*}}}*/
@@ -103,14 +112,29 @@ function ajaxGoogleLogin() { /*{{{*/
 	$_SESSION['nn']->set_user_variables($ret[0]);
 }
 /*}}}*/
+function ajaxPdf2svg() { /*{{{*/
+	$src=$_FILES['file']['tmp_name'];
+	$dest=$_SESSION['main']['working_home']."/out.svg";
+	$z=shell_exec("pdf2svg $src $dest 2>&1");
+	$svg='';
+	if(empty($z)) { 
+		$svg=shell_exec("cat $dest"); 
+		$svg=preg_replace("/#/", "%23", $svg);
+		echo json_encode(array("msg"=>"ajaxPdf2svg(): OK", "err"=>0,  "data"=>$svg));
+	} else {
+		echo json_encode(array("msg"=>"ajaxPdf2svg(): $z", "err"=>1, "data"=>0));
+	}
+}
+/*}}}*/
 function main() { /*{{{*/
 	header('Content-type: application/json');
-	if(!empty($_SESSION['main']['user_id'])) { 
-		if(isset($_GET['pdf2svg']))        { ajaxPdf2svg(); }
-		if(isset($_GET['apainter']))       { ajaxApainter(); }
-		if(isset($_GET['getAnimsList']))   { ajaxAnimsList(); }
-		if(isset($_GET['getAnimsStatic'])) { ajaxAnimsStatic(); }
-		if(isset($_GET['getSingleAnim']))  { ajaxSingleAnim(); }
+	if(!empty($_SESSION['main']['user_id'])) {
+		if(isset($_GET['pdf2svg']))          { ajaxPdf2svg(); }
+		if(isset($_GET['exportApainter']))   { ajaxApainterExport(); }
+		if(isset($_GET['importApainter']))   { ajaxApainterImport(); }
+		if(isset($_GET['getAnimsList']))     { ajaxAnimsList(); }
+		if(isset($_GET['getAnimsStatic']))   { ajaxAnimsStatic(); }
+		if(isset($_GET['getSingleAnim']))    { ajaxSingleAnim(); }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

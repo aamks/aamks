@@ -260,8 +260,13 @@ function pdf2svg() { //{{{
 	}
 }
 //}}}
-function apainter2server(cadfile) { //{{{
-	$.post('/aamks/ajax.php?apainter', { 'cadfile': cadfile }, function (json) { ajax_msg(json); });
+function export_cadjson(cadfile) { //{{{
+	$.post('/aamks/ajax.php?exportApainter', { 'cadfile': cadfile }, function (json) { ajax_msg(json); });
 	
+}
+//}}}
+function import_cadjson() { //{{{
+	// TODO: 1. trigger this func, 2. handle the download
+	$.post('/aamks/ajax.php?importApainter', { 'cadfile': cadfile }, function (json) { ajax_msg(json); });
 }
 //}}}

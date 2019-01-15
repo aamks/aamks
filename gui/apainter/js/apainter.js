@@ -837,7 +837,7 @@ function output_json() {//{{{
 	}
 	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
 	download("cad.json", pretty_json);
-	apainter2server(pretty_json);
+	export_cadjson(pretty_json);
 }
 function download(filename, text) {//{{{
 	// download writes it directly to the browser to save

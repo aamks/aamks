@@ -5,7 +5,7 @@ require_once("lib.form.php");
 
 function read_aamks_conf_json() { /*{{{*/
 	if(!is_file($_SESSION['main']['working_home']."/conf.json")) { 
-		$template=file_get_contents(getenv("AAMKS_PATH")."/installer/examples/three/1/conf.json");
+		$template=file_get_contents(getenv("AAMKS_PATH")."/installer/examples/demo/demo_1/conf.json");
 		$template_json=json_decode($template,1);
 		$template_json['project_id']=$_SESSION['main']['project_id'];
 		$template_json['scenario_id']=$_SESSION['main']['scenario_id'];
@@ -164,35 +164,6 @@ function building_fields($v, $variant='easy') {/*{{{*/
 	return $out;
 }
 /*}}}*/
-function make_help() { /*{{{*/
-	$help=[]                                                                                                                                                              ;
-	$help["project_id"]              = ["scenario"                         , "This is scenario"]                                                         ;
-	$help["number_of_simulations"]   = ["number of simulations"            , "write me..."]                                                              ;
-	$help["simulation_time"]         = ["simulation time"                  , "write me..."]                                                              ;
-	$help["indoor_temperature"]      = ["indoor_temperature"               , "write me..."]                                                              ;
-	$help["outdoor_temperature"]     = ["outdoor_temperature"              , "write me..."]                                                              ;
-	$help["indoor_pressure"]         = ["indoor_pressure"                  , "write me..."]                                                              ;
-	$help["ceiling"]				 = ["ceiling"                          , "write me..."]                                                              ;
-	$help["floor"]          		 = ["floor"                            , "write me..."]                                                              ;
-	$help["wall"]           		 = ["wall"                             , "write me..."]                                                              ;
-	$help["detectors"]           	 = ["detectors"                        , "write me..."]                                                              ;
-	$help["detectors_temp"]			 = ["detectors_temp"                   , "write me..."]                                                              ;
-	$help["detectors_obscur"]		 = ["detectors_obscur"                 , "write me..."]                                                              ;
-	$help["detectors_not_broken"]	 = ["detectors_not_broken"             , "write me..."]                                                              ;
-	$help["windows"]				 = ["windows"                          , "help for the windows <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ]  ;
-	$help["building_profile"]		 = ["building profile"                 , "help for the windows <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ]  ;
-	$help["material"]				 = ["material"                         , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
-	$help["pre_evac"]				 = ["pre-evacuation"                   , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
-	$help["pre_evac_fire_origin"]	 = ["pre-evacuation<br>in fire origin" , "fire origin room" ]                                                        ;
-	$help["management"]			     = ["management"                       , "help for management" ]                                                     ;
-	$help["temp_mean"]			     = ["temp mean"                        , "help for temp mean" ]                                                      ;
-
-	foreach($help as $k=>$v) { 
-		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
-	}
-	$_SESSION['help']=$help;
-}
-/*}}}*/
 function calculate_profile($arr) { #{{{
 	$arr['code']=get_building($arr['type'])['code'];
 	extract($arr);
@@ -210,8 +181,18 @@ function calculate_profile($arr) { #{{{
 	);
 }
 /*}}}*/
+function assert_json_ids($data) { #{{{
+	// User is not allowed to alter their project/scenario ids
+	// At least textarea editor would allow for this
 
+	$conf=json_decode($data,1);
+	$conf['project_id']=$_SESSION['main']['project_id'];
+	$conf['scenario_id']=$_SESSION['main']['scenario_id'];
+	return json_encode($conf, JSON_NUMERIC_CHECK);
+}
+/*}}}*/
 function write($data) { #{{{
+	$data=assert_json_ids($data);
 	$file=$_SESSION['main']['working_home']."/conf.json";
 	$saved=file_put_contents($file, $data);
 	if($saved<=0) { 

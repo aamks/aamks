@@ -1,4 +1,33 @@
 <?php
+function make_help() { /*{{{*/
+	$help=[]                                                                                                                                                              ;
+	$help["project_id"]              = ["scenario"                         , "This is scenario"]                                                         ;
+	$help["number_of_simulations"]   = ["number of simulations"            , "write me..."]                                                              ;
+	$help["simulation_time"]         = ["simulation time"                  , "write me..."]                                                              ;
+	$help["indoor_temperature"]      = ["indoor_temperature"               , "write me..."]                                                              ;
+	$help["outdoor_temperature"]     = ["outdoor_temperature"              , "write me..."]                                                              ;
+	$help["indoor_pressure"]         = ["indoor_pressure"                  , "write me..."]                                                              ;
+	$help["ceiling"]				 = ["ceiling"                          , "write me..."]                                                              ;
+	$help["floor"]          		 = ["floor"                            , "write me..."]                                                              ;
+	$help["wall"]           		 = ["wall"                             , "write me..."]                                                              ;
+	$help["detectors"]           	 = ["detectors"                        , "write me..."]                                                              ;
+	$help["detectors_temp"]			 = ["detectors_temp"                   , "write me..."]                                                              ;
+	$help["detectors_obscur"]		 = ["detectors_obscur"                 , "write me..."]                                                              ;
+	$help["detectors_not_broken"]	 = ["detectors_not_broken"             , "write me..."]                                                              ;
+	$help["windows"]				 = ["windows"                          , "help for the windows <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ]  ;
+	$help["building_profile"]		 = ["building profile"                 , "help for the windows <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ]  ;
+	$help["material"]				 = ["material"                         , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
+	$help["pre_evac"]				 = ["pre-evacuation"                   , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
+	$help["pre_evac_fire_origin"]	 = ["pre-evacuation<br>in fire origin" , "fire origin room" ]                                                        ;
+	$help["management"]			     = ["management"                       , "help for management" ]                                                     ;
+	$help["temp_mean"]			     = ["temp mean"                        , "help for temp mean" ]                                                      ;
+
+	foreach($help as $k=>$v) { 
+		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
+	}
+	$_SESSION['help']=$help;
+}
+/*}}}*/
 function get_building($q,$get_keys=0) { /*{{{*/
 	$db['Hotel']                     =array('code'=> 'c1' , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1    , 'COR'=> 1    , 'STAI'=> 1    , 'HALL'=> 1)  ) ;
 	$db['Office (closed plan)']      =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>8    , 'COR'=> 20   , 'STAI'=> 50   , 'HALL'=> 30) ) ;
