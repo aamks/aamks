@@ -96,6 +96,7 @@ function assert_session_complete() { #{{{
 }
 /*}}}*/
 function main() { #{{{
+	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; } # TODO: index.php should handle this
 	$_SESSION['nn']->htmlHead("Manage projects");
 	init_main_vars();
 	new_scenario();

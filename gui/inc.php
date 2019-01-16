@@ -45,6 +45,14 @@ class Aamks {/*{{{*/
 		die();
 }
 /*}}}*/
+	public function assert_working_home_exists() { # {{{
+		// Things must exist. Otherwise we risk the redirection loops.
+		if(!is_dir($_SESSION['main']['working_home'])) { 
+			$this->fatal($_SESSION['main']['working_home']." doesn't exist.<br><br>
+			This shouldn't happen. You need to remove the project or scenario or contact the admins.");
+		}
+	}
+/*}}}*/
 	public function menu($title) { /*{{{*/
 		$this->logoutButton();
 		echo "<div>

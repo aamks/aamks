@@ -88,11 +88,16 @@ function ajaxApainterExport() { /*{{{*/
 }
 /*}}}*/
 function ajaxApainterImport() { /*{{{*/
-	$cadfile=file_get_contents($_SESSION['main']['working_home']."/cad.json");
-	if(json_decode($cadfile)) { 
-		echo json_encode(array("msg"=>"ajaxApainterImport(): OK" , "err"=>0 , "data"=>$cadfile));
-	} else { 
-		echo json_encode(array("msg"=>"ajaxApainterImport(): Cannot import cad.json", "err"=>1, "data"=>""));
+	// Apainter always checks if there's a file to import.
+	// It's not an error if the file is missing -- it has been not yet created.
+
+	if(is_file($_SESSION['main']['working_home']."/cad.json")) {
+		$cadfile=file_get_contents($_SESSION['main']['working_home']."/cad.json");
+		if(json_decode($cadfile)) { 
+			echo json_encode(array("msg"=>"" , "err"=>0 , "data"=>json_decode($cadfile)));
+		} else { 
+			echo json_encode(array("msg"=>"ajaxApainterImport(): Broken cad.json", "err"=>1, "data"=>""));
+		}
 	}
 }
 /*}}}*/

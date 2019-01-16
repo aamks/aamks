@@ -266,7 +266,11 @@ function export_cadjson(cadfile) { //{{{
 }
 //}}}
 function import_cadjson() { //{{{
-	// TODO: 1. trigger this func, 2. handle the download
-	$.post('/aamks/ajax.php?importApainter', { 'cadfile': cadfile }, function (json) { ajax_msg(json); });
+	$.post('/aamks/ajax.php?importApainter', { }, function (json) { 
+		ajax_msg(json); 
+		ApainterReader.ggx=revert_gg();
+		init_svg_groups(json.data);
+		into_db(json.data);
+	});
 }
 //}}}

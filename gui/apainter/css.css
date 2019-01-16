@@ -45,9 +45,17 @@ text {
 	color: #fff;
 	cursor: pointer;
 }
+show-setup-box { float:right }
 
-close3dview, write, open3dview {
+close3dview, write, open3dview, show-setup-box {
+	text-decoration: none;
+    color:#6af;
+	padding: 1px;
 	cursor: pointer;
+}
+
+close3dview:hover, write:hover, open3dview:hover, show-setup-box:hover {
+	color: #c60 !important;
 }
 
 .properties_type_listing, .more_properties, #setup_underlay {
@@ -70,13 +78,13 @@ status {
     float: right;
 }
 
-show-setup-box, help {
+help {
 	color: #fff;
     cursor: default;
     float: right;
 }
 
-show-setup-box:hover, help:hover {
+help:hover {
     opacity: 0.5;
 }
 

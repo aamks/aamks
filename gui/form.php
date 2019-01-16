@@ -4,6 +4,7 @@ require_once("inc.php");
 require_once("lib.form.php"); 
 
 function read_aamks_conf_json() { /*{{{*/
+	$_SESSION['nn']->assert_working_home_exists();
 	if(!is_file($_SESSION['main']['working_home']."/conf.json")) { 
 		$template=file_get_contents(getenv("AAMKS_PATH")."/installer/examples/demo/demo_1/conf.json");
 		$template_json=json_decode($template,1);

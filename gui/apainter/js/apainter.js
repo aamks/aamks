@@ -33,6 +33,7 @@ var vh_snap=[];
 
 $(function()  { 
 site();
+import_cadjson(); 
 
 function rrRecalculate(geom) {//{{{
 	// real x,y are calculated as minimum/maximum values from rr
@@ -468,9 +469,9 @@ function legend() { //{{{
 			$('legend').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+" ("+x.length+")</div>");
 		}
 	}
-	$('legend').append("&nbsp;&nbsp;<open3dview>[3D]</open3dview>");
-	$('legend').append(" <write>[save]</write>");
-	$('legend').prepend("<a href=../projects.php><img style='vertical-align:text-bottom; margin-right:10px;' src=/aamks/favicon.ico></a>");
+	$('legend').prepend("<open3dview>3D</open3dview> &nbsp;");
+	$('legend').prepend("<write>Save</write> &nbsp;");
+	$('legend').prepend("<a href=../projects.php><img style='vertical-align:text-bottom;' src=/aamks/favicon.ico></a> &nbsp; ");
 
 	$('write').click(function() { output_json(); });
 	$('open3dview').click(function() { open3dview(); });
@@ -861,7 +862,7 @@ function site() { //{{{
 	gg=make_gg();
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
-	d3.select('view2d').append('show-setup-box').html("[setup]");
+	d3.select('view2d').append('show-setup-box').html("Setup");
 	d3.select('view2d').append('legend');
 	svg = d3.select('view2d').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
