@@ -6,7 +6,7 @@ function head() { /*{{{*/
 	echo "<!DOCTYPE html>
 		<HTML>
 		<HEAD>
-		<TITLE>apainter</TITLE>
+		<TITLE>Apainter</TITLE>
 		<META http-equiv=Content-Type content='text/html; charset=utf-8' />
 		<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
 		<lINK rel='stylesheet' type='text/css' href='css.css'>
@@ -24,9 +24,7 @@ function head() { /*{{{*/
 /*}}}*/
 function main() { /*{{{*/
 	head();
-	if(isset($_SESSION['main'])) {
-		echo "<div id=var_dump>".$_SESSION['main']['scenario_name']."</div>";
-	}
+	if(isset($_SESSION['main'])) { echo " <script>var session_scenario='".$_SESSION['main']['scenario_name']."';</script>"; }
 }
 /*}}}*/
 main();

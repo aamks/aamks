@@ -33,7 +33,7 @@ text {
 #floor_text { 
 	fill: #fff;
 	opacity: 0.05;
-	font-size: 80px;
+	font-size: 50px;
 	font-family: 'Sans';
 }
 
@@ -47,14 +47,14 @@ text {
 }
 show-setup-box { float:right }
 
-close3dview, write, open3dview, show-setup-box {
+close3dview, write, open3dview, show-setup-box, left-menu-button {
 	text-decoration: none;
     color:#6af;
 	padding: 1px;
 	cursor: pointer;
 }
 
-close3dview:hover, write:hover, open3dview:hover, show-setup-box:hover {
+close3dview:hover, write:hover, open3dview:hover, show-setup-box:hover, left-menu-button:hover {
 	color: #c60 !important;
 }
 
@@ -88,7 +88,7 @@ help:hover {
     opacity: 0.5;
 }
 
-setup-box {
+setup-box, left-menu-box {
     background-color: #800;
     z-index:100;
     padding: 10px;
@@ -96,9 +96,11 @@ setup-box {
     border: 1px solid #f00;
     position: absolute;
     top:40px;
-    right:0px;
-	display: none; 
+	display: none;
 }
+setup-box         { right: 0px ; }
+left-menu-box     { left: 0px; background-color: #333; border: 1px solid #666; }
+left-menu-button  { color: #6af; font-size: 15px; font-weight: bold; margin-right:10px; }
 
 table {
 	border-collapse: collapse;
@@ -121,14 +123,9 @@ table td {
 	stroke-opacity    : 0.7;
 }
 
-#var_dump {
-	display: block;
-	opacity: 0.8;
-	position: fixed;
-	left: 20px; 
-	top: 40px;
-	color: #f80;
-	z-index: 300;
+#scenario {
+	visibility: hidden;
+	position: absolute;
 }
 
 #ajax_msg {

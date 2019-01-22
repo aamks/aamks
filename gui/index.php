@@ -184,7 +184,6 @@ function edit_user(){/*{{{*/
 }/*}}}*/
 
 function main() { /*{{{*/
-	$_SESSION['home_url']="/aamks/index.php";
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	echo '<script src="js/google_sign.js"></script>';
 	$_SESSION['nn']->htmlHead("Aamks");

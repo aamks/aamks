@@ -1,6 +1,40 @@
 <?php
 session_name('aamks');
 require_once("inc.php"); 
+
+function ajaxLaunchSimulation() { #{{{
+	$aamks=getenv("AAMKS_PATH");
+	$scenario=$_SESSION['main']['working_home'];
+	$cmd="cd $aamks; python3 aamks.py $scenario"; 
+
+	$z=shell_exec("$cmd");
+	// TODO: python should return errors on fatal
+
+	if(!empty($z)) { 
+		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): OK", "err"=>0, "data"=>$z));
+	} else {
+		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): $z", "err"=>1, "data"=>0));
+	}
+}
+/*}}}*/
+function ajaxMenuContent() { /*{{{*/
+	# psql aamks -c "select p.*,s.* from scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=1"
+	# psql aamks -c "select * from scenarios"
+	# psql aamks -c "select * from projects"
+
+	$r=$_SESSION['nn']->query("SELECT s.* FROM scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id']));
+	$form='';
+	$form.="<a class=blink href=/aamks/projects.php>Home</a><br>";
+	$form.="<a id=launch_simulation class=blink>Launch</a><br><br>";
+	$form.="Scenario<br><select name='choose_scenario'>\n";
+	$form.="<option value=".$_SESSION['main']['scenario_id'].">".$_SESSION['main']['scenario_name']."</option>\n";
+	foreach($r as $k=>$v) {
+		$form.="<option value='$v[id]'>$v[scenario_name]</option>\n";
+	}
+	$form.="</select>\n";
+	echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $form));
+}
+/*}}}*/
 function ajaxAnimsList() { /*{{{*/
 	$f=$_SESSION['main']['working_home']."/workers/anims.json";
 	if(is_file($f)) { 
@@ -133,13 +167,16 @@ function ajaxPdf2svg() { /*{{{*/
 /*}}}*/
 function main() { /*{{{*/
 	header('Content-type: application/json');
-	if(!empty($_SESSION['main']['user_id'])) {
-		if(isset($_GET['pdf2svg']))          { ajaxPdf2svg(); }
-		if(isset($_GET['exportApainter']))   { ajaxApainterExport(); }
-		if(isset($_GET['importApainter']))   { ajaxApainterImport(); }
-		if(isset($_GET['getAnimsList']))     { ajaxAnimsList(); }
-		if(isset($_GET['getAnimsStatic']))   { ajaxAnimsStatic(); }
-		if(isset($_GET['getSingleAnim']))    { ajaxSingleAnim(); }
+
+	if(!empty($_SESSION['main']['user_id']))     {
+		if(isset($_GET['pdf2svg']))              { ajaxPdf2svg(); }
+		if(isset($_GET['exportApainter']))       { ajaxApainterExport(); }
+		if(isset($_GET['importApainter']))       { ajaxApainterImport(); }
+		if(isset($_GET['getAnimsList']))         { ajaxAnimsList(); }
+		if(isset($_GET['getAnimsStatic']))       { ajaxAnimsStatic(); }
+		if(isset($_GET['getSingleAnim']))        { ajaxSingleAnim(); }
+		if(isset($_GET['ajaxMenuContent']))      { ajaxMenuContent(); }
+		if(isset($_GET['ajaxLaunchSimulation'])) { ajaxLaunchSimulation(); }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

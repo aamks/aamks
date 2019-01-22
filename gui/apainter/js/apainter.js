@@ -33,6 +33,7 @@ var vh_snap=[];
 
 $(function()  { 
 site();
+left_menu_box();
 import_cadjson(); 
 
 function rrRecalculate(geom) {//{{{
@@ -471,7 +472,15 @@ function legend() { //{{{
 	}
 	$('legend').prepend("<open3dview>3D</open3dview> &nbsp;");
 	$('legend').prepend("<write>Save</write> &nbsp;");
-	$('legend').prepend("<a href=../projects.php><img style='vertical-align:text-bottom;' src=/aamks/favicon.ico></a> &nbsp; ");
+	$('legend').prepend("<left-menu-button>A</left-menu-button>");
+
+	$('left-menu-button').click(function() {
+		$('left-menu-box').fadeIn();
+	});
+
+	$('left-menu-box').mouseleave(function() {
+		$('left-menu-box').fadeOut();
+	});
 
 	$('write').click(function() { output_json(); });
 	$('open3dview').click(function() { open3dview(); });
@@ -609,6 +618,7 @@ function make_setup_box() {//{{{
 	$('setup-box').mouseleave(function() {
 		save_setup_box();
 	});
+
 }
 //}}}
 function fix_hole_offset(rect) { //{{{
@@ -864,9 +874,11 @@ function site() { //{{{
 	d3.select('body').append('view2d');
 	d3.select('view2d').append('show-setup-box').html("Setup");
 	d3.select('view2d').append('legend');
+	d3.select('view2d').append('left-menu-box');
 	svg = d3.select('view2d').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
-	svg.append("text").attr("x",50).attr("y",80).attr("id", "floor_text").text("floor "+floor);
+	svg.append("text").attr("x",30).attr("y",60).attr("id", "floor_text").text(session_scenario);
+	svg.append("text").attr("x",30).attr("y",120).attr("id", "floor_text").text("floor"+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',gg_opacity);
@@ -877,6 +889,8 @@ function site() { //{{{
 	canvas_zoomer();
 	keyboard_events();
 	geom_select_deselect();
+
+
 }
 //}}}
 

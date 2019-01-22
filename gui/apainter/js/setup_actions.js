@@ -1,5 +1,20 @@
 var ApainterReader={};
 
+$(function()  { 
+	$("body").on("click", "#launch_simulation", function() {//{{{
+		ajax_msg({"msg": "Trying to launch...", "err":0 }); 
+		$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function (json) { 
+			ajax_msg(json); 
+		});
+	});
+});
+//}}}
+function left_menu_box() {//{{{
+	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
+		$("left-menu-box").html(json.data);
+	});
+}
+//}}}
 function renderUnderlayImage(file) {//{{{
 	var reader = new FileReader();
 	if(file.type=='application/pdf') {

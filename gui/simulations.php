@@ -12,13 +12,13 @@ function listing() {/*{{{*/
 	</table>
 	<form method=post style='display:inline'>
 		<input type=hidden name=sim value=$sim>
-		<input type=submit name=run value=run>
+		<input type=submit name=launch value=launch>
 	</form>
 	";
 }
 /*}}}*/
-function run() {/*{{{*/
-	if(empty($_POST['run'])) { return; }
+function launch() {/*{{{*/
+	if(empty($_POST['launch'])) { return; }
 	$aamks=getenv("AAMKS_PATH");
 	$scenario=$_SESSION['main']['working_home'];
 	$cmd="cd $aamks; python3 aamks.py $scenario"; 
@@ -45,7 +45,7 @@ function main() {/*{{{*/
 	$_SESSION['nn']->htmlHead("Simulations");
 	$_SESSION['nn']->menu('Manage simulations');
 	listing();
-	run();
+	launch();
 	status();
 }
 /*}}}*/

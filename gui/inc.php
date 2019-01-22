@@ -34,6 +34,7 @@ class Aamks {/*{{{*/
 		$_SESSION['header_err']=[];
 		$_SESSION['header_ok']=[];
 		$_SESSION['header_ok_confirm']=[];
+		$_SESSION['home_url']="/aamks/index.php";
 	}
 
 /*}}}*/
@@ -57,15 +58,15 @@ class Aamks {/*{{{*/
 		$this->logoutButton();
 		echo "<div>
 			<div style='position:fixed; top: 0px; left: 0px'>
-			<img width=160 src=logo.svg><br><br>
-			<div style='padding-left:15px'>
-				<a href=form.php?edit class=bblink>".$_SESSION['main']['scenario_name']."</a><br>
-				<a href=projects.php?projects_list class=blink>Projects</a><br>
-				<a href=apainter class=blink>Apainter</a><br>
-				<a href=/aamks/simulations.php class=blink >Simulations</a><br>
-				<a href=/aamks/vis/anims.php class=blink>Animator</a><br>
-				<a href=projects.php?session_dump class=blink>Session</a><br>
-			</div>
+				<img width=160 src=logo.svg><br><br>
+				<div style='padding-left:15px'>
+					<a href=/aamks/form.php?edit class=bblink>".$_SESSION['main']['scenario_name']."</a><br>
+					<a href=/aamks/projects.php?projects_list class=blink>Projects</a><br>
+					<a href=/aamks/apainter class=blink>Apainter</a><br>
+					<a href=/aamks/simulations.php class=blink >Simulations</a><br>
+					<a href=/aamks/vis/anims.php class=blink>Animator</a><br>
+					<a href=/aamks/projects.php?session_dump class=blink>Session</a><br>
+				</div>
 			</div>
 			<div style='margin-bottom:400px; position:absolute; top: 10px; left: 200px; min-width:700px'>";
 		echo "<tt>$title</tt>";
@@ -238,7 +239,6 @@ public function do_google_login(){/*{{{*/
 		$_SESSION['main']['user_photo']=$r['picture']; # zmiany nazw 
 		$_SESSION['main']['user_email']=$r['email'];
 		$_SESSION['main']['email']=$r['email']; //TODO - usunać?
-		$_SESSION['home_url']="/aamks/index.php";
 		//can not put header location in here
 	}/*}}}*/
 	public function querydd($qq,$arr=[]){ /*{{{*/
