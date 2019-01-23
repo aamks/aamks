@@ -1,17 +1,34 @@
 var ApainterReader={};
 
-$(function()  { 
-	$("body").on("click", "#launch_simulation", function() {//{{{
+$(function() { 
+	left_menu_box();
+	import_cadjson();
+	simulation_launcher();
+	scenario_changer();
+});
+
+function left_menu_box() {//{{{
+	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
+		$("left-menu-box").html(json.data);
+	});
+}
+//}}}
+function simulation_launcher() {//{{{
+	$("body").on("click", "#launch_simulation", function() {
 		ajax_msg({"msg": "Trying to launch...", "err":0 }); 
 		$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function (json) { 
 			ajax_msg(json); 
 		});
 	});
-});
+
+}
 //}}}
-function left_menu_box() {//{{{
-	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
-		$("left-menu-box").html(json.data);
+function scenario_changer() {//{{{
+	$("body").on("change", "#choose_scenario", function() {
+		$.post('/aamks/ajax.php?ajaxChangeActiveScenario', {'ch_scenario':$(this).val() }, function (json) { 
+			ajax_msg(json); 
+			location.reload(true);
+		});
 	});
 }
 //}}}

@@ -2,6 +2,12 @@
 session_name('aamks');
 require_once("inc.php"); 
 
+function ajaxChangeActiveScenario() { #{{{
+	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
+	$_SESSION['nn']->ch_main_vars($r[0]);
+	echo json_encode(array("msg"=>"", "err"=>0, "data"=>''));
+}
+/*}}}*/
 function ajaxLaunchSimulation() { #{{{
 	$aamks=getenv("AAMKS_PATH");
 	$scenario=$_SESSION['main']['working_home'];
@@ -13,7 +19,7 @@ function ajaxLaunchSimulation() { #{{{
 	if(!empty($z)) { 
 		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): OK", "err"=>0, "data"=>$z));
 	} else {
-		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): $z", "err"=>1, "data"=>0));
+		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): $z", "err"=>1, "data"=>''));
 	}
 }
 /*}}}*/
@@ -24,9 +30,9 @@ function ajaxMenuContent() { /*{{{*/
 
 	$r=$_SESSION['nn']->query("SELECT s.* FROM scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id']));
 	$form='';
-	$form.="<a class=blink href=/aamks/projects.php>Home</a><br>";
+	$form.="<a class=blink href=/aamks/projects.php?projects_list>Home</a><br>";
 	$form.="<a id=launch_simulation class=blink>Launch</a><br><br>";
-	$form.="Scenario<br><select name='choose_scenario'>\n";
+	$form.="Scenario<br><select id='choose_scenario'>\n";
 	$form.="<option value=".$_SESSION['main']['scenario_id'].">".$_SESSION['main']['scenario_name']."</option>\n";
 	foreach($r as $k=>$v) {
 		$form.="<option value='$v[id]'>$v[scenario_name]</option>\n";
@@ -41,7 +47,7 @@ function ajaxAnimsList() { /*{{{*/
 		$data=json_decode(file_get_contents($f));
 		echo json_encode(array("msg"=>"ajaxAnimsList(): OK", "err"=>0,  "data"=> $data));
 	} else {
-		echo json_encode(array("msg"=>"ajaxAnimsList(): $z", "err"=>1, "data"=>0));
+		echo json_encode(array("msg"=>"ajaxAnimsList(): $z", "err"=>1, "data"=>''));
 	}
 }
 /*}}}*/
@@ -51,7 +57,7 @@ function ajaxAnimsStatic() { /*{{{*/
 		$data=json_decode(file_get_contents($f));
 		echo json_encode(array("msg"=>"ajaxAnimsStatic(): OK", "err"=>0,  "data"=> $data));
 	} else {
-		echo json_encode(array("msg"=>"ajaxAnimsStatic(): $z", "err"=>1, "data"=>0));
+		echo json_encode(array("msg"=>"ajaxAnimsStatic(): $z", "err"=>1, "data"=>''));
 	}
 }
 /*}}}*/
@@ -68,7 +74,7 @@ function ajaxSingleAnim() { /*{{{*/
 		if(!empty($z)) { 
 			echo json_encode(array("msg"=>"ajaxSingleAnim(): OK", "err"=>0, "data"=>$z));
 		} else {
-			echo json_encode(array("msg"=>"ajaxSingleAnim(): $z", "err"=>1, "data"=>0));
+			echo json_encode(array("msg"=>"ajaxSingleAnim(): $z", "err"=>1, "data"=>''));
 		}
 	}
 }
@@ -161,22 +167,23 @@ function ajaxPdf2svg() { /*{{{*/
 		$svg=preg_replace("/#/", "%23", $svg);
 		echo json_encode(array("msg"=>"ajaxPdf2svg(): OK", "err"=>0,  "data"=>$svg));
 	} else {
-		echo json_encode(array("msg"=>"ajaxPdf2svg(): $z", "err"=>1, "data"=>0));
+		echo json_encode(array("msg"=>"ajaxPdf2svg(): $z", "err"=>1, "data"=>""));
 	}
 }
 /*}}}*/
 function main() { /*{{{*/
 	header('Content-type: application/json');
 
-	if(!empty($_SESSION['main']['user_id']))     {
-		if(isset($_GET['pdf2svg']))              { ajaxPdf2svg(); }
-		if(isset($_GET['exportApainter']))       { ajaxApainterExport(); }
-		if(isset($_GET['importApainter']))       { ajaxApainterImport(); }
-		if(isset($_GET['getAnimsList']))         { ajaxAnimsList(); }
-		if(isset($_GET['getAnimsStatic']))       { ajaxAnimsStatic(); }
-		if(isset($_GET['getSingleAnim']))        { ajaxSingleAnim(); }
-		if(isset($_GET['ajaxMenuContent']))      { ajaxMenuContent(); }
-		if(isset($_GET['ajaxLaunchSimulation'])) { ajaxLaunchSimulation(); }
+	if(!empty($_SESSION['main']['user_id']))         {
+		if(isset($_GET['pdf2svg']))                  { ajaxPdf2svg(); }
+		if(isset($_GET['exportApainter']))           { ajaxApainterExport(); }
+		if(isset($_GET['importApainter']))           { ajaxApainterImport(); }
+		if(isset($_GET['getAnimsList']))             { ajaxAnimsList(); }
+		if(isset($_GET['getAnimsStatic']))           { ajaxAnimsStatic(); }
+		if(isset($_GET['getSingleAnim']))            { ajaxSingleAnim(); }
+		if(isset($_GET['ajaxMenuContent']))          { ajaxMenuContent(); }
+		if(isset($_GET['ajaxLaunchSimulation']))     { ajaxLaunchSimulation(); }
+		if(isset($_GET['ajaxChangeActiveScenario'])) { ajaxChangeActiveScenario(); }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

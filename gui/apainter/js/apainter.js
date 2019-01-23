@@ -33,8 +33,6 @@ var vh_snap=[];
 
 $(function()  { 
 site();
-left_menu_box();
-import_cadjson(); 
 
 function rrRecalculate(geom) {//{{{
 	// real x,y are calculated as minimum/maximum values from rr
@@ -158,7 +156,7 @@ function canvas_zoomer() { //{{{
 		.attr("pointer-events", "visible")
 		.attr("visibility", "hidden")
 		.call(zoom)
-		.call(zoom.transform, d3.zoomIdentity.scale(0.2))
+		.call(zoom.transform, d3.zoomIdentity.translate(100,100).scale(0.2))
 		.call(d3.zoom()
 			.scaleExtent([1 / 30, 4])
 			.filter(function(){
