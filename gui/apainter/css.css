@@ -30,31 +30,32 @@ text {
 	user-select: none;
 }
 
-#floor_text { 
+#floor_text, #scenario_text { 
 	fill: #fff;
 	opacity: 0.05;
 	font-size: 50px;
 	font-family: 'Sans';
 }
 
-.legend { 
+.legend, legend-static { 
 	display: inline-block;
 	padding: 4px;  
-	background-color: #f00; 
-	margin-right: 4px;
-	color: #fff;
 	cursor: pointer;
 }
+legend-static { float:left; }
 show-setup-box { float:right }
+close-left-menu-box { float: right; margin: -5px; }
 
-close3dview, write, open3dview, show-setup-box, left-menu-button {
+close3dview, write, open3dview, show-setup-box, left-menu-button, close-left-menu-box {
+	user-select: none;
 	text-decoration: none;
     color:#6af;
 	padding: 1px;
 	cursor: pointer;
+	font-size: 11px;
 }
 
-close3dview:hover, write:hover, open3dview:hover, show-setup-box:hover, left-menu-button:hover {
+close3dview:hover, write:hover, open3dview:hover, show-setup-box:hover, left-menu-button:hover, close-left-menu-box:hover {
 	color: #c60 !important;
 }
 

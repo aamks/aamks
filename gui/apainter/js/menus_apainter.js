@@ -10,6 +10,15 @@ $(function() {
 function left_menu_box() {//{{{
 	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
 		$("left-menu-box").html(json.data);
+
+		$('left-menu-button').click(function() {
+			$('left-menu-box').fadeIn();
+		});
+
+		$('close-left-menu-box').click(function() {
+			$('left-menu-box').fadeOut();
+		});
+
 	});
 }
 //}}}
@@ -27,7 +36,9 @@ function scenario_changer() {//{{{
 	$("body").on("change", "#choose_scenario", function() {
 		$.post('/aamks/ajax.php?ajaxChangeActiveScenario', {'ch_scenario':$(this).val() }, function (json) { 
 			ajax_msg(json); 
-			location.reload(true);
+			import_cadjson();
+			d3.select("#scenario_text").text(json.data);
+			d3.select("#floor_text").text("floor "+floor);
 		});
 	});
 }
@@ -305,4 +316,84 @@ function import_cadjson() { //{{{
 		into_db(json.data);
 	});
 }
+//}}}
+function legend_static() {//{{{
+	$('legend-static').prepend("<open3dview>3D</open3dview> &nbsp;");
+	$('legend-static').prepend("<write>SAVE</write> &nbsp;");
+	$('legend-static').prepend("<left-menu-button>A</left-menu-button>");
+
+	$('write').click(function() { output_json(); });
+	$('open3dview').click(function() { open3dview(); });
+}
+//}}}
+function legend() { //{{{
+	$('legend').html('');
+
+	for(var letter in gg) {
+		if(gg[letter].legendary==1) { 
+			var x=db({"letter": letter}).select("name");
+			$('legend').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+" ("+x.length+")</div>");
+		}
+	}
+
+	$('.legend').click(function() {
+		properties_type_listing($(this).attr('letter'));
+	});
+}
+//}}}
+function open3dview() {//{{{
+	$.getScript("js/xeogl.min.js", function(){
+		view3d();
+	});
+}
+//}}}
+function output_json() {//{{{
+	// Instead of JSON.stringify we prefer our own pretty formatting.
+
+	var json=[];
+	for(var f=0; f<floors_count; f++) { 
+		var geoms=[];
+		for(var letter in gg) {
+			var x=db({"floor": f, "letter": letter}).select("cad_json");
+			var num_data=[];
+			for (var r in x) { 
+				num_data.push("\t\t\t"+x[r]);
+			}
+			var geom='';
+			geom+='\t\t"'+gg[letter].xx+'": [';
+			if(num_data.length>0) { 
+				geom+="\n"+num_data.join(",\n");
+				geom+='\n\t\t]';
+			} else {
+				geom+=' ]';
+			}
+			geoms.push(geom);
+		}
+		var ff='';
+		ff+='\t"'+f+'": {\n';
+		ff+=geoms.join(",\n");
+		ff+='\n\t}';
+		json.push(ff);
+	}
+	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
+	download("cad.json", pretty_json);
+	export_cadjson(pretty_json);
+}
+function download(filename, text) {//{{{
+	// download writes it directly to the browser to save
+	return;
+    var pom = document.createElement('a');
+    pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    pom.setAttribute('download', filename);
+
+    if (document.createEvent) {
+        var event = document.createEvent('MouseEvents');
+        event.initEvent('click', true, true);
+        pom.dispatchEvent(event);
+    }
+    else {
+        pom.click();
+    }
+}
+//}}}
 //}}}

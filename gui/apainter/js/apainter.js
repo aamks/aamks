@@ -163,7 +163,7 @@ function canvas_zoomer() { //{{{
 			return ( event.button === 0 ||
 					 event.button === 1);
 			})
-			.translateExtent([[-1000, -1000], [1000000 , 1000000]])
+			.translateExtent([[-1200, -1200], [1000000 , 1000000]])
 			.on("zoom", zoomed_canvas)
 		);
 }
@@ -459,38 +459,6 @@ function geoms_changed() { //{{{
 	snap_lines['vert']=Array.from(new Set(snap_lines['vert']));
 }
 //}}}
-function legend() { //{{{
-	$('legend').html('');
-
-	for(var letter in gg) {
-		if(gg[letter].legendary==1) { 
-			var x=db({"letter": letter}).select("name");
-			$('legend').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+" ("+x.length+")</div>");
-		}
-	}
-	$('legend').prepend("<open3dview>3D</open3dview> &nbsp;");
-	$('legend').prepend("<write>Save</write> &nbsp;");
-	$('legend').prepend("<left-menu-button>A</left-menu-button>");
-
-	$('left-menu-button').click(function() {
-		$('left-menu-box').fadeIn();
-	});
-
-	$('left-menu-box').mouseleave(function() {
-		$('left-menu-box').fadeOut();
-	});
-
-	$('write').click(function() { output_json(); });
-	$('open3dview').click(function() { open3dview(); });
-
-	$('.legend').click(function() {
-		properties_type_listing($(this).attr('letter'));
-	});
-
-
-}
-
-//}}}
 function axes() { //{{{
 	ax.x = d3.scaleLinear()
 		.domain([-1, canvas[0]+ 1])
@@ -547,7 +515,6 @@ function change_floor() {//{{{
 	geoms_changed();
 	d3.select("#floor_text").text("floor "+floor);
 	$("#floor_text").css({ "opacity":1 }).animate({"opacity": 0.05}, 2000);
-	$("#floor_text").html("floor "+floor);
 
 }
 //}}}
@@ -810,78 +777,24 @@ function updateSvgElem(geom) {  //{{{
 	});   
 }
 //}}}
-function open3dview() {//{{{
-	$.getScript("js/xeogl.min.js", function(){
-		view3d();
-	});
-}
-//}}}
-function output_json() {//{{{
-	// Instead of JSON.stringify we prefer our own pretty formatting.
-
-	var json=[];
-	for(var f=0; f<floors_count; f++) { 
-		var geoms=[];
-		for(var letter in gg) {
-			var x=db({"floor": f, "letter": letter}).select("cad_json");
-			var num_data=[];
-			for (var r in x) { 
-				num_data.push("\t\t\t"+x[r]);
-			}
-			var geom='';
-			geom+='\t\t"'+gg[letter].xx+'": [';
-			if(num_data.length>0) { 
-				geom+="\n"+num_data.join(",\n");
-				geom+='\n\t\t]';
-			} else {
-				geom+=' ]';
-			}
-			geoms.push(geom);
-		}
-		var ff='';
-		ff+='\t"'+f+'": {\n';
-		ff+=geoms.join(",\n");
-		ff+='\n\t}';
-		json.push(ff);
-	}
-	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
-	download("cad.json", pretty_json);
-	export_cadjson(pretty_json);
-}
-function download(filename, text) {//{{{
-	// download writes it directly to the browser to save
-	return;
-    var pom = document.createElement('a');
-    pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-    pom.setAttribute('download', filename);
-
-    if (document.createEvent) {
-        var event = document.createEvent('MouseEvents');
-        event.initEvent('click', true, true);
-        pom.dispatchEvent(event);
-    }
-    else {
-        pom.click();
-    }
-}
-//}}}
-//}}}
 function site() { //{{{
 	gg=make_gg();
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
-	d3.select('view2d').append('show-setup-box').html("Setup");
+	d3.select('view2d').append('show-setup-box').html("SETUP");
+	d3.select('view2d').append('legend-static');
 	d3.select('view2d').append('legend');
 	d3.select('view2d').append('left-menu-box');
 	svg = d3.select('view2d').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
-	svg.append("text").attr("x",30).attr("y",60).attr("id", "floor_text").text(session_scenario);
-	svg.append("text").attr("x",30).attr("y",120).attr("id", "floor_text").text("floor"+floor);
+	svg.append("text").attr("x",110).attr("y",60).attr("id", "scenario_text").text(session_scenario);
+	svg.append("text").attr("x",110).attr("y",120).attr("id", "floor_text").text("floor"+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',gg_opacity);
 	g_snap_lines = svg.append("g").attr("id", "g_snap_lines");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
+	legend_static();
 	legend();
 	make_setup_box();
 	canvas_zoomer();

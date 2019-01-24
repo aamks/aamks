@@ -5,7 +5,7 @@ require_once("inc.php");
 function ajaxChangeActiveScenario() { #{{{
 	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
-	echo json_encode(array("msg"=>"", "err"=>0, "data"=>''));
+	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$_SESSION['main']['scenario_name']));
 }
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{
@@ -30,6 +30,7 @@ function ajaxMenuContent() { /*{{{*/
 
 	$r=$_SESSION['nn']->query("SELECT s.* FROM scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id']));
 	$form='';
+	$form.="<close-left-menu-box>x</close-left-menu-box><br>";
 	$form.="<a class=blink href=/aamks/projects.php?projects_list>Home</a><br>";
 	$form.="<a id=launch_simulation class=blink>Launch</a><br><br>";
 	$form.="Scenario<br><select id='choose_scenario'>\n";

@@ -16,7 +16,7 @@ function head() { /*{{{*/
 		<script src='js/d3.v4.min.js'></script>
 		<script src='js/utils.js'></script>
 		<script src='js/apainter.js'></script>
-		<script src='js/setup_actions.js'></script>
+		<script src='js/menus_apainter.js'></script>
 		<script src='js/view3d.js'></script>
 		<div id=ajax_msg></div>
 		";
