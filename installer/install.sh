@@ -26,7 +26,7 @@ AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 AAMKS_TESTING=0
 AAMKS_USE_GEARMAN=1
 AAMKS_PATH='/usr/local/aamks'
-AAMKS_PROJECT="/home/aamks_users/demo@aamks/three/1" 
+AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/demo_1" 
 AAMKS_PG_PASS='hulakula' 
 AAMKS_SALT='aamksisthebest'
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
@@ -82,7 +82,7 @@ sudo service apache2 restart
 rm $temp
 
 sudo mkdir -p "$AAMKS_PROJECT"
-sudo cp -r $AAMKS_PATH/installer/examples/three /home/aamks_users/demo@aamks/
+sudo cp -r $AAMKS_PATH/installer/examples/demo /home/aamks_users/demo@aamks/
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.
 # Solves the problem of shell users vs www-data user permissions of new files.
@@ -102,4 +102,5 @@ echo "Some quick SSL for localhost. But you should really configure SSL for your
 echo "sudo a2enmod ssl"
 echo "sudo a2ensite default-ssl.conf"
 echo "sudo service apache2 reload"
+echo "We normally serve https://localhost/aamks from /var/www/ssl/aamks"
 echo

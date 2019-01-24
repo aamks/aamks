@@ -8,13 +8,13 @@
 
 # recast
 export GOPATH="$HOME/go"
-sudo apt-get install golang
+sudo apt-get --yes install golang git
 echo; echo "Running go get -u github.com/arl/go-detour/cmd/recast..."
 go get -u github.com/arl/go-detour/cmd/recast
 sudo mv ~/go/bin/recast /usr/local/bin
 
 # detour
-sudo apt-get install libboost-python-dev
+sudo apt-get --yes install libboost-python-dev
 
 [ -f /usr/lib/x86_64-linux-gnu/libboost_python3.so ] || { 
 	candidate=`ls /usr/lib/x86_64-linux-gnu/libboost_python-py3*so | head -n 1`
