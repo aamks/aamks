@@ -55,8 +55,9 @@ sudo ln -sf $AAMKS_PATH/gui /var/www/ssl/aamks
 USER=`id -ru`
 [ "X$USER" == "X0" ] && { echo "Don't run as root / sudo"; exit; }
 
+sudo locale-gen en_US.UTF-8
 sudo apt-get update 
-sudo apt-get install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php
+sudo apt-get --yes install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php
 sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
 
 # Some quick SSL for localhost. But you should really configure SSL for your site.
