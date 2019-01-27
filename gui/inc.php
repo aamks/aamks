@@ -64,7 +64,7 @@ class Aamks {/*{{{*/
 					<a href=/aamks/projects.php?projects_list class=blink>Projects</a><br>
 					<a href=/aamks/apainter class=blink>Apainter</a><br>
 					<a href=/aamks/simulations.php class=blink >Simulations</a><br>
-					<a href=/aamks/vis/anims.php class=blink>Animator</a><br>
+					<a href=/aamks/animator/index.php class=blink>Animator</a><br>
 					<a href=/aamks/projects.php?session_dump class=blink>Session</a><br>
 				</div>
 			</div>
@@ -110,7 +110,7 @@ public function me(){/*{{{*/
 			<meta charset='utf-8'>
 			<title>$site</title>
 			<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
-			<link rel='stylesheet' href='/aamks/css/css.css'>
+			<link rel='stylesheet' href='/aamks/css/aamks.css'>
 			<link rel='shortcut icon' type='image/x-icon' href='/aamks/favicon.ico' />
 			<meta name='viewport' content='width=device-width, initial-scale=1, minimum-scale=1'>
 			<meta name='google-signin-scope' content='profile email'>

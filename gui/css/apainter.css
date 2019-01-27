@@ -1,0 +1,34 @@
+body { font-size: 12px; background-color: #444; font-family: 'Roboto'; color: #eee; overflow: hidden; }
+
+#ajax_msg { display: none; position: fixed; left: 100px; top: 100px; max-width: 500px; padding: 10px; color: #fff; z-index: 1000; }
+#floor_text, #scenario_text { fill: #fff; opacity: 0.05; font-size: 50px; font-family: 'Sans'; }
+#overflow-div{ overflow-y: scroll; }
+#scenario { visibility: hidden; position: absolute; }
+#setup_underlay { margin-left: 4px; padding: 6px; }
+.axis path, .axis line { fill: none; stroke: #383838; font-family: 'Sans' }
+.legend, legend-static { display: inline-block; padding: 4px;  cursor: pointer; }
+.properties_type_listing, .more_properties, #setup_underlay { background-color: #600; cursor: pointer; }
+.snap_v, .snap_h { stroke            : #fff; stroke-width      : 5; stroke-dasharray  : 10; stroke-opacity    : 0.7; }
+a.bblink { background: #074; } 
+a.blink, a.bblink { user-select: none; text-decoration: none; margin: 3px; padding:4px 8px; color: #fff; background:#579; border:0 none; cursor:pointer; display: inline-block; padding: 5px 8px; }
+a.rlink { user-select: none; text-decoration: none; margin: 1px 3px; padding:4px 8px; color: #fff; border:0 none; cursor:pointer; display: inline-block; background: #600; padding: 5px 8px; }
+close-left-menu-box { float: right; margin: -5px; }
+close3dview, write, open3dview, show-setup-box, left-menu-button, close-left-menu-box { user-select: none; text-decoration: none; color:#6af; padding: 1px; cursor: pointer; font-size: 11px; }
+close3dview:hover, write:hover, open3dview:hover, show-setup-box:hover, left-menu-button:hover, close-left-menu-box:hover { color: #c60 !important; }
+help { color: #fff; cursor: default; float: right; }
+help:hover { opacity: 0.5; }
+input#floor, input { width: 3em; }
+input[type="submit"]:hover, .blink:hover, .bblink:hover, .rlink:hover, .nocolor:hover { background: #c60; }
+left-menu-box     { left: 0px; background-color: #333; border: 1px solid #666; }
+left-menu-button  { color: #6af; font-size: 15px; font-weight: bold; margin-right:10px; }
+legend-static { float:left; }
+name { border: 1px solid #444;  }
+name:hover { background-color: #888; }
+setup-box         { right: 0px ; }
+setup-box, left-menu-box { background-color: #800; z-index:100; padding: 10px; color: #fff; border: 1px solid #f00; position: absolute; top:40px; display: none; }
+show-setup-box { float:right }
+status { cursor: default; float: right; }
+svg { border: 1px solid #555; font: 10px sans; }
+table td { white-space:nowrap; padding: 6px; border: 1px solid #a00; }
+table { border-collapse: collapse; }
+text { fill: #888; font-size: 11px; font-family: 'Sans'; user-select: none; }

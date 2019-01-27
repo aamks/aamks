@@ -1,22 +1,25 @@
 <?php
-
 session_name('aamks');
 require_once("../inc.php"); 
 
 function site() {/*{{{*/
-	$home="<left-menu-button>A</left-menu-button><left-menu-box></left-menu-box>";
-	echo "
-    <link rel='stylesheet' type='text/css' href='css.css'>
+	echo "<!DOCTYPE html>
+	<HTML>
+	<HEAD>
+	<META http-equiv=Content-Type content='text/html; charset=utf-8' />
+	<LINK href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+	<LINK rel='stylesheet' type='text/css' href='../css/animator.css'>
+	</HEAD>
+	<script src='../js/jquery.js'></script>
+	<script src='../js/utils.js'></script>
 	<script type='text/javascript' src='js/paper-full.js'></script>
 	<script type='text/paperscript' canvas='canvas' src='js/animator.js'></script>
-	<body>
+	<BODY>
 	<div>
-
-	
-
-		$home <vis-title></vis-title> &nbsp; Time: <sim-time></sim-time>
+		<left-menu-button>A</left-menu-button><left-menu-box></left-menu-box>
+		<vis-title></vis-title> &nbsp; Time: <sim-time></sim-time>
 		&nbsp; &nbsp;
-		<show-animation-setup-box>[setup]</show-animation-setup-box>
+		<show-animation-setup-box>SETUP</show-animation-setup-box>
 		
 		<animation-setup-box>
 			<table>
@@ -34,13 +37,12 @@ function site() {/*{{{*/
 	</div>
 	<canvas-mouse-coords></canvas-mouse-coords>
 	<svg-slider></svg-slider>
-
 	<canvas id='canvas' resize hidpi='off' />
 	";
 }
 /*}}}*/
 function main() {/*{{{*/
-	$_SESSION['nn']->htmlHead("Aamks Animations");
+	$_SESSION['nn']->htmlHead("Animator");
 	site();
 }
 /*}}}*/
