@@ -1,0 +1,36 @@
+body { font-size: 12px; overflow: hidden; }
+
+right-menu-box, left-menu-box { cursor: default; user-select: none; background-color: #555; z-index:100; padding: 10px; border: 1px solid #888; position: absolute; top:40px; display: none; }
+left-menu-box                 { left: 0px; }
+right-menu-box                { right: 0px; }
+
+button-right-menu-box, button-left-menu-box                   { user-select: none; text-decoration: none; color:#6af; padding: 1px; cursor: pointer; position: absolute; top:4px;  }
+close-left-menu-box { color: #6af; float: right; margin: -5px; }
+button-left-menu-box                                                               { left:4px; font-size: 16px; font-weight: bold; }
+button-right-menu-box                                                              { right:4px; }
+button-right-menu-box:hover, button-left-menu-box:hover, close-left-menu-box:hover, close3dview:hover, write:hover, open3dview:hover { color: #c60 !important; }
+
+.properties_type_listing       , .more_properties       , #setup_underlay { user-select: none !important; background: none !important; padding:2px !important; color: #6af !important; text-decoration: none !important; }
+.properties_type_listing:hover , .more_properties:hover , #setup_underlay:hover {  color: #c60 !important; cursor: pointer;  }
+
+
+#ajax_msg { display: none; position: fixed; left: 100px; top: 100px; max-width: 500px; padding: 10px; color: #fff; z-index: 1000; }
+#floor_text, #scenario_text { fill: #fff; opacity: 0.05; font-size: 50px; font-family: 'Sans'; }
+#scenario { visibility: hidden; position: absolute; }
+.axis path, .axis line { fill: none; stroke: #383838; font-family: 'Sans' }
+.snap_v, .snap_h { stroke : #fff; stroke-width : 5; stroke-dasharray : 10; stroke-opacity : 0.7; }
+
+close3dview, write, open3dview { user-select: none; text-decoration: none; color:#6af; padding: 1px; cursor: pointer; font-size: 11px; }
+legend-static { position: absolute; left: 20px; top: 8px; }
+legend { position: fixed; left: 80px; top: 4px; }
+.legend { display: inline-block; padding: 4px;  cursor: pointer; }
+
+status { cursor: default; float: right; }
+
+svg    { position: fixed; left: 10px; top: 30px; border: 1px solid #555; font: 10px; }
+canvas { position: fixed; left: 10px; top: 55px; border: 1px solid #555; background-color: #333; width: 1600px; height: 800px; }
+#svg-animator-scroller { position: fixed; left: 10px; top: 31px; fill: #333; }
+
+text { fill: #888; font-size: 11px; user-select: none; }
+
+canvas-mouse-coords { z-index:100; display: none; background-color: #600; font-size: 12px; padding: 4px; color: #fff; border: 1px solid #a77; position: absolute; }

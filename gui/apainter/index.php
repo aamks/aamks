@@ -8,7 +8,7 @@ function site() { /*{{{*/
 	<HEAD>
 	<META http-equiv=Content-Type content='text/html; charset=utf-8' />
 	<LINK href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
-	<LINK rel='stylesheet' type='text/css' href='../css/apainter.css'>
+	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
 	</HEAD>
 	<script src='../js/jquery.js'></script>
 	<script src='../js/utils.js'></script>

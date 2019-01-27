@@ -11,7 +11,7 @@ function left_menu_box() {//{{{
 	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
 		$("left-menu-box").html(json.data);
 
-		$('left-menu-button').click(function() {
+		$('button-left-menu-box').click(function() {
 			$('left-menu-box').fadeIn();
 		});
 
@@ -119,7 +119,7 @@ function setup_underlay_into_setup_box() {//{{{
 		var invert_colors=underlay_imgs[floor]['invert_colors'];
 		var fname=underlay_imgs[floor]['fname'];
 	}
-	d3.select('setup-box').html(
+	d3.select('right-menu-box').html(
 		"You can load an underlay png/jpg/svg.<br><br>"+
 		"You can drag the underlay img with <br>"+
 		"mouse2 only while this window is open.<br><br>"+
@@ -156,7 +156,7 @@ function setup_underlay_into_setup_box() {//{{{
 }
 //}}}
 function help_into_setup_box() {//{{{
-	d3.select('setup-box').html(
+	d3.select('right-menu-box').html(
 		"<input id=general_setup type=hidden value=1>"+
 		"<table>"+
 		"<tr><td>letter + mouse1     <td> create"+
@@ -168,7 +168,7 @@ function help_into_setup_box() {//{{{
 		"<tr><td>g	<td> list all of active type"+
 		"<tr><td>load cad.json<td><input type=file id=open_existing>"+
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
-		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor value="+floor+">"+ 
+		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor style='width:3em'; value="+floor+">"+ 
 		"<span id=setup_underlay>image...</span>"+
 		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
 		"<tr><td>door's width <td><input id=default_door_width type=text size=4   name=default_door_width  value="+default_door_width+">"+
@@ -322,9 +322,9 @@ function import_cadjson() { //{{{
 }
 //}}}
 function legend_static() {//{{{
+	$('body').prepend("<button-left-menu-box>A</button-left-menu-box>");
 	$('legend-static').prepend("<open3dview>3D</open3dview> &nbsp;");
 	$('legend-static').prepend("<write>SAVE</write> &nbsp;");
-	$('legend-static').prepend("<left-menu-button>A</left-menu-button>");
 
 	$('write').click(function() { output_json(); });
 	$('open3dview').click(function() { open3dview(); });

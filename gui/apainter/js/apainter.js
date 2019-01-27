@@ -184,7 +184,7 @@ function zoomed_canvas() {//{{{
 //}}}
 function fadeout_setup_box() {//{{{
 	if(gg[letter].t == 'underlay_scaler') { return; }
-	$('setup-box').fadeOut(0);
+	$('right-menu-box').fadeOut(0);
 	underlay_draggable=0;
 }
 //}}}
@@ -316,7 +316,7 @@ function properties_type_listing_evacuee(letter) {//{{{
 function properties_type_listing(letter) {//{{{
 	droplist_letter=letter;
 	var names='';
-	names+='<div id=overflow-div style="height: '+(canvas[1]-100)+'px">';
+	names+='<div style="overflow-y: scroll; height: '+(canvas[1]-100)+'px">';
 	names+='<table id=droplist_names_table>';
 	if (gg[letter].t=='mvent') { 
 		names+=properties_type_listing_mvent(letter);
@@ -332,8 +332,8 @@ function properties_type_listing(letter) {//{{{
 	names+="</table>";
 	names+="</div>";
 
-	$('setup-box').html(names);
-	$('setup-box').css('display','block');
+	$('right-menu-box').html(names);
+	$('right-menu-box').css('display','block');
 
 	$('.properties_type_listing').click(function() {
 		selected_geom=$(this).attr('id');
@@ -407,7 +407,7 @@ function show_selected_properties(selected_geom) {//{{{
 	door_properties=make_door_properties(letter);
 	dim_properties=make_dim_properties(letter);
 	droplist_letter=letter;
-	d3.select('setup-box').html(
+	d3.select('right-menu-box').html(
 	    "<input id=geom_properties type=hidden value=1>"+
 	    "<input id=alter_letter type=hidden value="+letter+">"+
 		"<table>"+
@@ -422,7 +422,7 @@ function show_selected_properties(selected_geom) {//{{{
 	    "<tr><td>g<td class=more_properties letter="+letter+">more..."+
 		"</table>"
 		);
-	$('setup-box').fadeIn();
+	$('right-menu-box').fadeIn();
 
 	$('.more_properties').click(function() {
 		properties_type_listing($(this).attr('letter'));
@@ -576,13 +576,13 @@ function save_setup_box() {//{{{
 }
 //}}}
 function make_setup_box() {//{{{
-	d3.select('view2d').append('setup-box');
-	$('show-setup-box').click(function() {
+	d3.select('view2d').append('right-menu-box');
+	$('button-right-menu-box').click(function() {
 		help_into_setup_box();
-		$('setup-box').fadeIn();
+		$('right-menu-box').fadeIn();
 	});
 
-	$('setup-box').mouseleave(function() {
+	$('right-menu-box').mouseleave(function() {
 		save_setup_box();
 	});
 
@@ -783,7 +783,7 @@ CanvasBuilder=function canvas_builder() { //{{{
 	gg=make_gg();
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
-	d3.select('view2d').append('show-setup-box').html("SETUP");
+	d3.select('view2d').append('button-right-menu-box').html("SETUP");
 	d3.select('view2d').append('legend-static');
 	d3.select('view2d').append('legend');
 	d3.select('view2d').append('left-menu-box');

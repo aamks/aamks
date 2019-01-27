@@ -91,7 +91,7 @@ function showStaticImage(chosenAnim) {
 		scale=newScale;
 		view.center = new Point(dstatic[floor]['meta']['translate']); 
 
-		$("vis-title").html(chosenAnim['title']);
+		$("legend-static").html(chosenAnim['title']);
 		$("sim-time").html(animTimeFormat());
 		burningFireLocation=chosenAnim['fire_origin']
 		wallsSize=Math.round(2/scale);
@@ -159,8 +159,8 @@ function resetCanvas() {
 
 function makeAnimationControls() {
 	var items = [];
-	items.push("<svg width='1602px' height='20px'>");
-	items.push("<rect x='0px' y='0px' width='1602px' height='20px' style='stroke:#444444; stroke-width:2px'></rect>");
+	items.push("<svg width='1600px' height='20px' id=svg-animator-scroller>");
+	items.push("<rect x='0px' y='0px' width='1600px' height='20px''></rect>");
 	for (var i=0; i<100; i++) {
 		items.push("<rect class=canvas_slider_rect data-id='"+i+"' id='slider_"+i+"' x='"+(i*16+1)+"' y='1' width='16px' height='18px'></rect>");
 	}
@@ -172,7 +172,7 @@ function left_menu_box() {//{{{
 	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
 		$("left-menu-box").html(json.data);
 
-		$('left-menu-button').click(function() {
+		$('button-left-menu-box').click(function() {
 			$('left-menu-box').fadeIn();
 		});
 
@@ -395,8 +395,8 @@ function onMouseDown(event) {
 	}
 };
 
-$('show-animation-setup-box').click(function() {
-	$('animation-setup-box').toggle(400);
+$('button-right-menu-box').click(function() {
+	$('right-menu-box').toggle(400);
 });
 
 function listenEvents() {

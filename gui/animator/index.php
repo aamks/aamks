@@ -8,7 +8,7 @@ function site() {/*{{{*/
 	<HEAD>
 	<META http-equiv=Content-Type content='text/html; charset=utf-8' />
 	<LINK href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
-	<LINK rel='stylesheet' type='text/css' href='../css/animator.css'>
+	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
 	</HEAD>
 	<script src='../js/jquery.js'></script>
 	<script src='../js/utils.js'></script>
@@ -16,12 +16,12 @@ function site() {/*{{{*/
 	<script type='text/paperscript' canvas='canvas' src='js/animator.js'></script>
 	<BODY>
 	<div>
-		<left-menu-button>A</left-menu-button><left-menu-box></left-menu-box>
-		<vis-title></vis-title> &nbsp; Time: <sim-time></sim-time>
+		<button-left-menu-box>A</button-left-menu-box><left-menu-box></left-menu-box>
+		<legend-static></legend-static> &nbsp; Time: <sim-time></sim-time>
 		&nbsp; &nbsp;
-		<show-animation-setup-box>SETUP</show-animation-setup-box>
+		<button-right-menu-box>SETUP</button-right-menu-box>
 		
-		<animation-setup-box>
+		<right-menu-box>
 			<table>
 				<tr><td>Animation           <td><choose-vis></choose-vis> 
 				<tr><td>Highlight           <td><highlight-geoms></highlight-geoms> 
@@ -33,7 +33,7 @@ function site() {/*{{{*/
 				<tr><td>Vectors size        <td><size-velocities></size-velocities> 
 				<tr><td>Speed               <td><animation-speed></animation-speed>
 			</table>
-		</animation-setup-box>
+		</right-menu-box>
 	</div>
 	<canvas-mouse-coords></canvas-mouse-coords>
 	<svg-slider></svg-slider>

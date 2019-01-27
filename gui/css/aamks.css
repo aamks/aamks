@@ -18,10 +18,12 @@ tt {
 h2 {
 	text-align:center;
 }
+td { line-height: 20px; }
 
 td {
 	border-bottom: 1px solid #555;
-	padding: 6px;
+	min-height:10px;
+	padding: 2px;
 	color: #fff;
 }
 
@@ -224,6 +226,7 @@ withHelp:hover help {
 	-webkit-filter: hue-rotate(150deg);
 	filter: hue-rotate(150deg);
 }
+table { border-collapse: collapse; }
 
 table.noborder td, table.noborder tr {
 	border-bottom: none;
