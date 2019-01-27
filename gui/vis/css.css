@@ -100,3 +100,33 @@ input  {
     padding:4px 8px; 
 }
 
+
+close-left-menu-box { float: right; margin: -5px; }
+
+left-menu-button, close-left-menu-box {
+	user-select: none;
+	text-decoration: none;
+    color:#6af;
+	padding: 1px;
+	cursor: pointer;
+	font-size: 11px;
+}
+
+left-menu-button:hover, close-left-menu-box:hover {
+	color: #c60 !important;
+}
+
+
+setup-box, left-menu-box {
+    background-color: #800;
+    z-index:100;
+    padding: 10px;
+    color: #fff;
+    border: 1px solid #f00;
+    position: absolute;
+    top:40px;
+	display: none;
+}
+
+left-menu-box     { left: 0px; background-color: #333; border: 1px solid #666; }
+left-menu-button  { color: #6af; font-size: 15px; font-weight: bold; margin-right:10px; }

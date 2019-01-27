@@ -31,4 +31,4 @@ mkdir -p /home/aamks_users/mimoohowy@gmail.com/four/four_2
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/four/four_3
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/four/four_4
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/five/five_1
-cp examples/demo/demo_1/cad.json /home/aamks_users/mimoohowy@gmail.com/demo/demo_1
+cp examples/demo/demo_1/{cad.json,conf.json} /home/aamks_users/mimoohowy@gmail.com/demo/demo_1/

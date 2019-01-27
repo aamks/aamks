@@ -8,7 +8,7 @@
 
 # recast
 export GOPATH="$HOME/go"
-sudo apt-get --yes install golang git
+which go || sudo apt-get --yes install golang git
 echo; echo;
 go version
 echo "If the above go version < 1.10 then you need to upgrade it yourself"

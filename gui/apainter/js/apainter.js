@@ -6,6 +6,7 @@ var gg;
 var DbInsert;
 var Attr_cad_json;
 var CreateSvg;
+var CanvasBuilder;
 var selected_geom='';
 var gg_opacity=0.4;
 var droplist_letter='r';
@@ -32,7 +33,8 @@ var vh_snap=[];
 //}}}
 
 $(function()  { 
-site();
+	CanvasBuilder();
+});
 
 function rrRecalculate(geom) {//{{{
 	// real x,y are calculated as minimum/maximum values from rr
@@ -777,7 +779,7 @@ function updateSvgElem(geom) {  //{{{
 	});   
 }
 //}}}
-function site() { //{{{
+CanvasBuilder=function canvas_builder() { //{{{
 	gg=make_gg();
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
@@ -805,4 +807,3 @@ function site() { //{{{
 }
 //}}}
 
-});

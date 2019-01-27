@@ -32,7 +32,9 @@ function ajaxMenuContent() { /*{{{*/
 	$form='';
 	$form.="<close-left-menu-box>x</close-left-menu-box><br>";
 	$form.="<a class=blink href=/aamks/projects.php?projects_list>Home</a><br>";
-	$form.="<a id=launch_simulation class=blink>Launch</a><br><br>";
+	$form.="<a id=launch_simulation class=blink>Launch</a><br>";
+	$form.="<a class=blink target=_blank href=/aamks/vis/anims.php>Animator</a><br>";
+	$form.="<br>";
 	$form.="Scenario<br><select id='choose_scenario'>\n";
 	$form.="<option value=".$_SESSION['main']['scenario_id'].">".$_SESSION['main']['scenario_name']."</option>\n";
 	foreach($r as $k=>$v) {

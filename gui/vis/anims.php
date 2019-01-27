@@ -4,7 +4,7 @@ session_name('aamks');
 require_once("../inc.php"); 
 
 function site() {/*{{{*/
-	$home="<a href=../projects.php><img style='vertical-align:text-bottom; margin-right:1px;' src=/aamks/favicon.ico></a>";
+	$home="<left-menu-button>A</left-menu-button><left-menu-box></left-menu-box>";
 	echo "
     <link rel='stylesheet' type='text/css' href='css.css'>
 	<script type='text/javascript' src='js/paper-full.js'></script>
@@ -14,7 +14,7 @@ function site() {/*{{{*/
 
 	
 
-		<vis-title></vis-title>$home Time: <sim-time></sim-time>
+		$home <vis-title></vis-title> &nbsp; Time: <sim-time></sim-time>
 		&nbsp; &nbsp;
 		<show-animation-setup-box>[setup]</show-animation-setup-box>
 		

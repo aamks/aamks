@@ -36,6 +36,10 @@ function scenario_changer() {//{{{
 	$("body").on("change", "#choose_scenario", function() {
 		$.post('/aamks/ajax.php?ajaxChangeActiveScenario', {'ch_scenario':$(this).val() }, function (json) { 
 			ajax_msg(json); 
+			$("view2d").remove();
+			CanvasBuilder();
+			left_menu_box();
+			$('left-menu-box').fadeIn();
 			import_cadjson();
 			d3.select("#scenario_text").text(json.data);
 			d3.select("#floor_text").text("floor "+floor);

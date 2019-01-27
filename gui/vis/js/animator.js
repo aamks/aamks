@@ -57,6 +57,7 @@ $.getJSON("colors.json", function(cols) {
 		// Runs automatically on the start. By default runs the first visualization from anims.json, which should be most fresh.
 		makeChooseVis(data);
 		showStaticImage(data[0]);
+		left_menu_box();
 	});
 });
 
@@ -166,6 +167,22 @@ function makeAnimationControls() {
 	items.push("</svg>");
 	$("svg-slider").html(items.join( "" ));
 }
+
+function left_menu_box() {//{{{
+	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
+		$("left-menu-box").html(json.data);
+
+		$('left-menu-button').click(function() {
+			$('left-menu-box').fadeIn();
+		});
+
+		$('close-left-menu-box').click(function() {
+			$('left-menu-box').fadeOut();
+		});
+
+	});
+}
+//}}}
 
 function makeSetupBoxInputs() {
 	$("size-labels").html("<input type=text size=2 name=labels-size id=labels-size value=20>");
