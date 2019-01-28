@@ -23,7 +23,7 @@ INSERT INTO scenarios(project_id,scenario_name) values(4,'four_4');
 INSERT INTO scenarios(project_id,scenario_name) values(5,'five_1');
 ";
 
-mkdir -p /home/aamks_users/mimoohowy@gmail.com/demo/demo_1
+rm -rf /home/aamks_users/mimoohowy@gmail.com
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/three/three_1
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/three/three_2
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/four/four_1
@@ -31,4 +31,4 @@ mkdir -p /home/aamks_users/mimoohowy@gmail.com/four/four_2
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/four/four_3
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/four/four_4
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/five/five_1
-cp examples/demo/demo_1/{cad.json,conf.json} /home/aamks_users/mimoohowy@gmail.com/demo/demo_1/
+cp -r examples/demo/ /home/aamks_users/mimoohowy@gmail.com/

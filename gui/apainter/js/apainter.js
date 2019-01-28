@@ -419,7 +419,7 @@ function show_selected_properties(selected_geom) {//{{{
 		window_properties+
 		door_properties+
 	    "<tr><td>x<td>remove"+
-	    "<tr><td>g<td class=more_properties letter="+letter+">more..."+
+	    "<tr><td>g<td class=more_properties letter="+letter+"><div class=blink>more</div>"+
 		"</table>"
 		);
 	$('right-menu-box').fadeIn();
@@ -789,8 +789,8 @@ CanvasBuilder=function canvas_builder() { //{{{
 	d3.select('view2d').append('left-menu-box');
 	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
-	svg.append("text").attr("x",110).attr("y",60).attr("id", "scenario_text").text(session_scenario);
-	svg.append("text").attr("x",110).attr("y",120).attr("id", "floor_text").text("floor"+floor);
+	svg.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
+	svg.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor"+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',gg_opacity);

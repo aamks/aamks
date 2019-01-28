@@ -5,7 +5,7 @@ require_once("inc.php");
 function ajaxChangeActiveScenario() { #{{{
 	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
-	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$_SESSION['main']['scenario_name']));
+	echo json_encode(array("msg"=>$_SESSION['main']['scenario_name']." is the active scenario", "err"=>0, "data"=>$_SESSION['main']['scenario_name']));
 }
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{
@@ -27,22 +27,9 @@ function ajaxMenuContent() { /*{{{*/
 	# psql aamks -c "select p.*,s.* from scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=1"
 	# psql aamks -c "select * from scenarios"
 	# psql aamks -c "select * from projects"
-
-	$r=$_SESSION['nn']->query("SELECT s.* FROM scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id']));
-	$form='';
-	$form.="<close-left-menu-box><img src=/aamks/css/close.svg></close-left-menu-box><br>";
-	$form.="<a class=blink href=/aamks/projects.php?projects_list>Home</a><br>";
-	$form.="<a id=launch_simulation class=blink>Launch</a><br>";
-	$form.="<a class=blink target=_blank href=/aamks/apainter/index.php>Apainter</a><br>";
-	$form.="<a class=blink target=_blank href=/aamks/animator/index.php>Animator</a><br>";
-	$form.="<br>";
-	$form.="Scenario<br><select id='choose_scenario'>\n";
-	$form.="<option value=".$_SESSION['main']['scenario_id'].">".$_SESSION['main']['scenario_name']."</option>\n";
-	foreach($r as $k=>$v) {
-		$form.="<option value='$v[id]'>$v[scenario_name]</option>\n";
-	}
-	$form.="</select>\n";
-	echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $form));
+	$menu=$_SESSION['nn']->rawMenu();
+	$close_button="<close-left-menu-box><img src=/aamks/css/close.svg></close-left-menu-box><br>";
+	echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $close_button.$menu));
 }
 /*}}}*/
 function ajaxAnimsList() { /*{{{*/
@@ -51,7 +38,7 @@ function ajaxAnimsList() { /*{{{*/
 		$data=json_decode(file_get_contents($f));
 		echo json_encode(array("msg"=>"ajaxAnimsList(): OK", "err"=>0,  "data"=> $data));
 	} else {
-		echo json_encode(array("msg"=>"ajaxAnimsList(): $z", "err"=>1, "data"=>''));
+		echo json_encode(array("msg"=>"ajaxAnimsList(): No output for ".$_SESSION['main']['scenario_name']." yet", "err"=>1, "data"=>''));
 	}
 }
 /*}}}*/
@@ -61,7 +48,7 @@ function ajaxAnimsStatic() { /*{{{*/
 		$data=json_decode(file_get_contents($f));
 		echo json_encode(array("msg"=>"ajaxAnimsStatic(): OK", "err"=>0,  "data"=> $data));
 	} else {
-		echo json_encode(array("msg"=>"ajaxAnimsStatic(): $z", "err"=>1, "data"=>''));
+		echo json_encode(array("msg"=>"ajaxAnimsList(): No output for ".$_SESSION['main']['scenario_name']." yet", "err"=>1, "data"=>''));
 	}
 }
 /*}}}*/
@@ -178,16 +165,17 @@ function ajaxPdf2svg() { /*{{{*/
 function main() { /*{{{*/
 	header('Content-type: application/json');
 
-	if(!empty($_SESSION['main']['user_id']))         {
-		if(isset($_GET['pdf2svg']))                  { ajaxPdf2svg(); }
-		if(isset($_GET['exportApainter']))           { ajaxApainterExport(); }
-		if(isset($_GET['importApainter']))           { ajaxApainterImport(); }
-		if(isset($_GET['getAnimsList']))             { ajaxAnimsList(); }
-		if(isset($_GET['getAnimsStatic']))           { ajaxAnimsStatic(); }
-		if(isset($_GET['getSingleAnim']))            { ajaxSingleAnim(); }
-		if(isset($_GET['ajaxMenuContent']))          { ajaxMenuContent(); }
-		if(isset($_GET['ajaxLaunchSimulation']))     { ajaxLaunchSimulation(); }
-		if(isset($_GET['ajaxChangeActiveScenario'])) { ajaxChangeActiveScenario(); }
+	if(!empty($_SESSION['main']['user_id']))                 {
+		if(isset($_GET['ajaxPdf2svg']))                      { ajaxPdf2svg(); }
+		if(isset($_GET['ajaxApainterExport']))               { ajaxApainterExport(); }
+		if(isset($_GET['ajaxApainterImport']))               { ajaxApainterImport(); }
+		if(isset($_GET['ajaxAnimsList']))                    { ajaxAnimsList(); }
+		if(isset($_GET['ajaxAnimsStatic']))                  { ajaxAnimsStatic(); }
+		if(isset($_GET['ajaxSingleAnim']))                   { ajaxSingleAnim(); }
+		if(isset($_GET['ajaxMenuContent']))                  { ajaxMenuContent(); }
+		if(isset($_GET['ajaxLaunchSimulation']))             { ajaxLaunchSimulation(); }
+		if(isset($_GET['ajaxChangeActiveScenario']))         { ajaxChangeActiveScenario(); }
+		if(isset($_GET['ajaxChangeActiveScenarioApainter'])) { ajaxChangeActiveScenario(); }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

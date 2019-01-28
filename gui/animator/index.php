@@ -11,7 +11,6 @@ function site() {/*{{{*/
 	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
 	</HEAD>
 	<script src='../js/jquery.js'></script>
-	<script src='../js/utils.js'></script>
 	<script type='text/javascript' src='js/paper-full.js'></script>
 	<script type='text/paperscript' canvas='animator-canvas' src='js/animator.js'></script>
 	<BODY>

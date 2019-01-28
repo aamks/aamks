@@ -1,23 +1,9 @@
-body { font-size: 12px; overflow: hidden; }
-
-right-menu-box, left-menu-box { cursor: default; user-select: none; background-color: #555; z-index:100; padding: 10px; border: 1px solid #888; position: absolute; top:40px; display: none; }
-left-menu-box                 { left: 0px; }
-right-menu-box                { right: 0px; }
-
-button-right-menu-box, button-left-menu-box { user-select: none; text-decoration: none; color:#6af; padding: 1px; cursor: pointer; position: absolute; top:4px;  }
-write, open3dview                           { user-select: none; text-decoration: none; color:#6af; padding: 1px; cursor: pointer; font-size: 11px; }
-close-left-menu-box, close-right-menu-box   { font-size: 18px; color: #6af; float: right; }
-button-left-menu-box                        { left:4px; font-size: 16px; font-weight: bold; }
-button-right-menu-box                       { right:4px; }
-
-button-right-menu-box:hover, button-left-menu-box:hover, write:hover, open3dview:hover { color: #c60 !important; }
-close-left-menu-box:hover, close-right-menu-box:hover  { opacity: 0.3; }
+body { overflow: hidden; }
 
 .properties_type_listing       , .more_properties       { user-select: none !important; background: none !important; padding:2px !important; color: #6af !important; text-decoration: none !important; }
 .properties_type_listing:hover , .more_properties:hover {  color: #c60 !important; cursor: pointer;  }
 
 
-#ajax_msg { display: none; position: fixed; left: 100px; top: 100px; max-width: 500px; padding: 10px; color: #fff; z-index: 1000; }
 #floor_text, #scenario_text { fill: #fff; opacity: 0.05; font-size: 50px; font-family: 'Sans'; }
 #scenario { visibility: hidden; position: absolute; }
 .axis path, .axis line { fill: none; stroke: #383838; font-family: 'Sans' }

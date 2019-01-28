@@ -54,20 +54,33 @@ class Aamks {/*{{{*/
 		}
 	}
 /*}}}*/
+	public function rawMenu() { #{{{
+		$r=$_SESSION['nn']->query("SELECT s.* FROM scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id']));
+		$menu='';
+		$menu.="<img width=100 src=/aamks/logo.svg><br><br>";
+		$menu.="<a id=menu-active-scenario-label href=/aamks/form.php?edit class=bblink>".$_SESSION['main']['scenario_name']."</a><br>";
+		$menu.="<a class=blink href=/aamks/projects.php?projects_list>Projects</a><br>";
+		$menu.="<a class=blink href=/aamks/apainter/index.php>Apainter</a><br>";
+		$menu.="<a class=blink href=/aamks/animator/index.php>Animator</a><br>";
+		$menu.="<a class=blink href=/aamks/simulations.php>Simulations</a><br>";
+		$menu.="<a class=blink id=launch_simulation>Launch</a><br>";
+		$menu.="<a class=blink href=/aamks/projects.php?session_dump>Vars</a><br>";
+		$menu.="<br>";
+		$menu.="Scenario<br><select id='choose_scenario'>\n";
+		$menu.="<option value=".$_SESSION['main']['scenario_id'].">".$_SESSION['main']['scenario_name']."</option>\n";
+		foreach($r as $k=>$v) {
+			$menu.="<option value='$v[id]'>$v[scenario_name]</option>\n";
+		}
+		$menu.="</select>\n";
+		$menu.='</left-menu-box>';
+		return $menu;
+	}
+/*}}}*/
 	public function menu($title) { /*{{{*/
 		$this->logoutButton();
+		$menu=$this->rawMenu();
 		echo "<div>
-			<div style='position:fixed; top: 0px; left: 0px'>
-				<img width=160 src=logo.svg><br><br>
-				<div style='padding-left:15px'>
-					<a href=/aamks/form.php?edit class=bblink>".$_SESSION['main']['scenario_name']."</a><br>
-					<a href=/aamks/projects.php?projects_list class=blink>Projects</a><br>
-					<a href=/aamks/apainter class=blink>Apainter</a><br>
-					<a href=/aamks/simulations.php class=blink >Simulations</a><br>
-					<a href=/aamks/animator/index.php class=blink>Animator</a><br>
-					<a href=/aamks/projects.php?session_dump class=blink>Session</a><br>
-				</div>
-			</div>
+			<left-menu-box><br>$menu</left-menu-box>
 			<div style='margin-bottom:400px; position:absolute; top: 10px; left: 200px; min-width:700px'>";
 		echo "<tt>$title</tt>";
 	}
@@ -117,10 +130,13 @@ public function me(){/*{{{*/
 			<meta name='google-signin-client_id' content='352726998172-lmrbrs6c2sgpug4nc861hfb04f3s0sr6.apps.googleusercontent.com'>
 			<script src='/aamks/js/jquery.js'></script>
 			<script src='/aamks/js/form.js'></script>
+			<script src='/aamks/js/utils.js'></script>
 			<script src='https://apis.google.com/js/platform.js' async defer></script>
 			<div id='hidden_form_container' style='display:none;'></div> 
 		</head>
-		<body>";
+		<body>
+		<div id=ajax_msg></div>
+		";
 		echo "$header";
 		$this->anyMessages();
     }

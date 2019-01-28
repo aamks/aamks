@@ -34,7 +34,7 @@ function simulation_launcher() {//{{{
 //}}}
 function scenario_changer() {//{{{
 	$("body").on("change", "#choose_scenario", function() {
-		$.post('/aamks/ajax.php?ajaxChangeActiveScenario', {'ch_scenario':$(this).val() }, function (json) { 
+		$.post('/aamks/ajax.php?ajaxChangeActiveScenarioApainter', {'ch_scenario':$(this).val() }, function (json) { 
 			ajax_msg(json); 
 			$("view2d").remove();
 			CanvasBuilder();
@@ -50,7 +50,7 @@ function scenario_changer() {//{{{
 function renderUnderlayImage(file) {//{{{
 	var reader = new FileReader();
 	if(file.type=='application/pdf') {
-		pdf2svg();
+		ajaxPdf2svg();
 	} else {
 		reader.onload = function(event) {
 			$('#img'+floor).attr("href", event.target.result);
@@ -290,8 +290,8 @@ function pdf_svg_dom(json) { //{{{
 	$('#img'+floor).attr("width", 8000);
 }
 //}}}
-function pdf2svg() { //{{{
-	postFile('/aamks/ajax.php?pdf2svg')
+function ajaxPdf2svg() { //{{{
+	postFile('/aamks/ajax.php?ajaxPdf2svg')
 	  .then(data => pdf_svg_dom(data))
 	  .catch(error => ajax_msg(error))
 
@@ -309,12 +309,12 @@ function pdf2svg() { //{{{
 }
 //}}}
 function export_cadjson(cadfile) { //{{{
-	$.post('/aamks/ajax.php?exportApainter', { 'cadfile': cadfile }, function (json) { ajax_msg(json); });
+	$.post('/aamks/ajax.php?ajaxApainterExport', { 'cadfile': cadfile }, function (json) { ajax_msg(json); });
 	
 }
 //}}}
 function import_cadjson() { //{{{
-	$.post('/aamks/ajax.php?importApainter', { }, function (json) { 
+	$.post('/aamks/ajax.php?ajaxApainterImport', { }, function (json) { 
 		ajax_msg(json); 
 		ApainterReader.ggx=revert_gg();
 		init_svg_groups(json.data);

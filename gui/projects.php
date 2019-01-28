@@ -14,11 +14,7 @@ function projects_list(){/*{{{*/
 		echo "<tr><td>$projects[project_name]<td style='opacity:0.2'>$date<td>";
 		echo "<form method=post><input autocomplete=off type=hidden name=project_name value='$projects[project_name]'><input autocomplete=off type=hidden name=project_id value='$projects[id]'><input autocomplete=off size=12 type=text placeholder='new scenario' name=new_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'><input autocomplete=off type=submit class=sblink value='add'></form><td>";
 		foreach($rr as $scenarios) { 
-			if(isset($_SESSION['main']['scenario_id']) && $scenarios['id']==$_SESSION['main']['scenario_id']) { 
-				echo "<a class=bblink href=?ch_scenario=$scenarios[id]>$scenarios[scenario_name]</a>";
-			} else {
-				echo "<a class=blink href=?ch_scenario=$scenarios[id]>$scenarios[scenario_name]</a>"; 
-			}
+			echo "<a class=blink href=?ch_scenario=$scenarios[id]>$scenarios[scenario_name]</a>"; 
 		}
 		if($projects['project_name']!='demo') { 
 			echo "<td><a class=srlink href=?delete_project=$projects[id]>delete</a>";
