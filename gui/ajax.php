@@ -30,9 +30,10 @@ function ajaxMenuContent() { /*{{{*/
 
 	$r=$_SESSION['nn']->query("SELECT s.* FROM scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id']));
 	$form='';
-	$form.="<close-left-menu-box>x</close-left-menu-box><br>";
+	$form.="<close-left-menu-box><img src=/aamks/css/close.svg></close-left-menu-box><br>";
 	$form.="<a class=blink href=/aamks/projects.php?projects_list>Home</a><br>";
 	$form.="<a id=launch_simulation class=blink>Launch</a><br>";
+	$form.="<a class=blink target=_blank href=/aamks/apainter/index.php>Apainter</a><br>";
 	$form.="<a class=blink target=_blank href=/aamks/animator/index.php>Animator</a><br>";
 	$form.="<br>";
 	$form.="Scenario<br><select id='choose_scenario'>\n";

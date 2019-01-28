@@ -69,10 +69,10 @@ fatal, cannot {
 
 a:link, a:visited {
 	color: #6af;
-	text-decoration: underline;
+	text-decoration: none;
 }
 
-a.blink, a.bblink {
+a.blink, a.bblink, .blink, .bblink {
 	user-select: none;
 	text-decoration: none;
 	margin: 3px;
@@ -84,7 +84,7 @@ a.blink, a.bblink {
 	display: inline-block;
     padding: 5px 8px;
 }
-a.bblink { background: #616; } 
+a.bblink, .bblink { background: #616; } 
 .sblink, .srlink { 
 	user-select: none !important;
 	background: none !important;
@@ -129,7 +129,7 @@ wheat			  { background:wheat; color: #333; }
 nocolor, .nocolor { background:none;  border: 1px solid #555; }
 
 input[type="submit"]:hover, .blink:hover, .bblink:hover, .rlink:hover, .nocolor:hover {
-	background: #c60;
+	background: #c60 !important;
 }
 
 textarea {
@@ -163,7 +163,6 @@ textarea, input, select {
 
 input  {
     padding:4px 8px; 
-	border-bottom: 1px solid #444;
 }
 
 
@@ -176,7 +175,7 @@ input[type="submit"] {
 	margin:1px;
 	color: #fff;
     background:#579;
-	border: 1px none;
+	border: none;
     cursor:pointer;
 }
 

@@ -126,18 +126,18 @@ function setup_underlay_into_setup_box() {//{{{
 		"You can only alter the width of the<br>"+ 
 		"underlay img, and the height will<br>"+
 		"change accordingly.<br><br><br>"+
-		"<input type=file label='choose' id=underlay_loader>"+
+		"<input type=file id=underlay_loader style='display:none'><label class=blink for='underlay_loader'>attach underlay image</label>"+
 		"<br><br><table>"+
 		"<tr><td>image<td id=underlay_img_fname>"+
 		"<tr><td>origin<td id=underlay_translate>"+
-		"<tr><td>scaler width<td><input id=alter_underlay_width type=text size=15 "+width+"> <a href=underlay_example.svg target=_blank> <help>&nbsp;[help]</help></a>"+
-		"<tr><td>opacity<td><input id=alter_underlay_opacity type=text size=15 "+opacity+">"+
+		"<tr><td>scaler width<td><input id=alter_underlay_width type=text size=4 "+width+"> <a href=underlay_example.svg target=_blank class=blink>help</a>"+
+		"<tr><td>opacity<td><input id=alter_underlay_opacity type=text size=4 "+opacity+">"+
 		"<tr><td>invert colors<td><input type=checkbox id=alter_underlay_invert_colors "+invert_colors+">"+
 		"</table>"+
-		"<br><button id=remove_img>remove image</button>"
+		"<br><div class=blink id=detach_underlay>detach underlay image</div>"
 	);
 
-	$("#remove_img").click(function() {
+	$("#detach_underlay").click(function() {
 		$("#img"+floor).remove();
 	});
 
@@ -166,10 +166,11 @@ function help_into_setup_box() {//{{{
 		"<tr><td>h	<td> alternative view"+ 
 		"<tr><td>x	<td> delete active"+
 		"<tr><td>g	<td> list all of active type"+
-		"<tr><td>load cad.json<td><input type=file id=open_existing>"+
+		"<tr><td colspan=2><input type=file id=open_existing style='display:none'><label class=blink for='open_existing'>import cad.json from disk</label>"+
+
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor style='width:3em'; value="+floor+">"+ 
-		"<span id=setup_underlay>image...</span>"+
+		"<div id=setup_underlay class=blink>underlay</div>"+
 		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
 		"<tr><td>door's width <td><input id=default_door_width type=text size=4   name=default_door_width  value="+default_door_width+">"+
 		"<tr><td>door's z-dim <td><input id=default_door_dimz type=text size=4	name=default_door_dimz value="+default_door_dimz+">"+
@@ -323,8 +324,8 @@ function import_cadjson() { //{{{
 //}}}
 function legend_static() {//{{{
 	$('body').prepend("<button-left-menu-box>A</button-left-menu-box>");
-	$('legend-static').prepend("<open3dview>3D</open3dview> &nbsp;");
-	$('legend-static').prepend("<write>SAVE</write> &nbsp;");
+	$('apainter-legend-static').prepend("<open3dview>3D</open3dview> &nbsp;");
+	$('apainter-legend-static').prepend("<write>SAVE</write> &nbsp;");
 
 	$('write').click(function() { output_json(); });
 	$('open3dview').click(function() { open3dview(); });

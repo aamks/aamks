@@ -16,6 +16,8 @@
 //}}}
 
 var scale=1;
+var canvasWidth=$(window).width()-20;
+var canvasHeight=$(window).height()-20;
 var fireScale;
 var intervalId;
 var fireScaleCounter;
@@ -47,6 +49,18 @@ var lerpFrame=0;
 var frame=0;
 var	visContainsAnimation=0;
 var	animationIsRunning=0;
+
+$(function()  { 
+	resizeAndRedrawCanvas();
+	$('close-right-menu-box').click(function() {
+		$('right-menu-box').fadeOut();
+	});
+
+	$('button-right-menu-box').click(function() {
+		$('right-menu-box').fadeIn();
+	});
+
+});
 
 
 $.getJSON("colors.json", function(cols) {
@@ -91,8 +105,8 @@ function showStaticImage(chosenAnim) {
 		scale=newScale;
 		view.center = new Point(dstatic[floor]['meta']['translate']); 
 
-		$("legend-static").html(chosenAnim['title']);
-		$("sim-time").html(animTimeFormat());
+		$("animator-title").html(chosenAnim['title']);
+		$("animator-time").html(animTimeFormat());
 		burningFireLocation=chosenAnim['fire_origin']
 		wallsSize=Math.round(2/scale);
 		ballsSize=Math.round(5/scale);
@@ -129,7 +143,7 @@ function showAnimation(chosenAnim) {
 		animJson=response['data'];
 		timeShift=animJson.time_shift;
 		deltaTime=animJson.simulation_time-timeShift;
-		$("sim-time").html(animTimeFormat());
+		$("animator-time").html(animTimeFormat());
 		evacueesData=animJson.data;
 		lastFrame=animJson.data.length-1;
 		numberOfEvacuees=animJson.data[0].length;
@@ -151,6 +165,7 @@ function showAnimation(chosenAnim) {
 
 function resetCanvas() {
 	// Reset on new visualization, on scaling walls, etc.
+	
 	paperjsDisplayImage();
     append_dd_geoms();
 	paperjsLetItBurn();
@@ -159,8 +174,8 @@ function resetCanvas() {
 
 function makeAnimationControls() {
 	var items = [];
-	items.push("<svg width='1600px' height='20px' id=svg-animator-scroller>");
-	items.push("<rect x='0px' y='0px' width='1600px' height='20px''></rect>");
+	items.push("<svg id=animator-time-svg width='"+canvasWidth+"px' height='20px'>");
+	items.push("<rect id=animator-time-scroller x='0px' y='0px' width='"+canvasWidth+"px' height='20px'></rect>");
 	for (var i=0; i<100; i++) {
 		items.push("<rect class=canvas_slider_rect data-id='"+i+"' id='slider_"+i+"' x='"+(i*16+1)+"' y='1' width='16px' height='18px'></rect>");
 	}
@@ -355,7 +370,7 @@ function updateAnimatedElement(i) {
 function afterLerpFrame() {
 	// The slider moves after each frame. The slider is a collection of 100 svg rectangles. We need to clear the previous rectangle and mark the current rectangle
 	$('#slider_'+(sliderPos)).css("fill", "#000");
-	$("sim-time").html(animTimeFormat());
+	$("animator-time").html(animTimeFormat());
 	sliderPos=Math.round(lerpFrame/(lerps*lastFrame)*100);
 	lerpFrame++;
 	$('#slider_'+(sliderPos-0)).css("fill", "#555");
@@ -395,10 +410,6 @@ function onMouseDown(event) {
 	}
 };
 
-$('button-right-menu-box').click(function() {
-	$('right-menu-box').toggle(400);
-});
-
 function listenEvents() {
 	$('#labels-size').on('keyup'     , function() { labelsSize=this.value     ; resetCanvas() ; })
 	$('#walls-size').on('keyup'      , function() { wallsSize=this.value      ; resetCanvas() ; })
@@ -414,7 +425,7 @@ function listenEvents() {
 	});
 
 
-	$('#canvas').on( 'DOMMouseScroll mousewheel', function ( event ) {
+	$('#animator-canvas').on( 'DOMMouseScroll mousewheel', function ( event ) {
 	  if( event.originalEvent.detail > 0 || event.originalEvent.wheelDelta < 0 ) { //alternative options for wheelData: wheelDeltaX & wheelDeltaY
 		view.scale(0.95);
 	  } else {
@@ -435,7 +446,7 @@ function listenEvents() {
 			colors=colorsDb['darkColors']
 		}
 		resetCanvas();
-		$("canvas").css("background", colors['bg']);
+		$("#animator-canvas").css("background", colors['bg']);
 	});
 
 	$('#highlight-geoms').on('change', function() {
@@ -477,5 +488,17 @@ function onFrame(event) {
 	}
 }
 
+$(window).resize(resizeAndRedrawCanvas);
+
+function resizeAndRedrawCanvas() {
+	var desiredWidth = $(window).width()-20;
+	var desiredHeight = $(window).height()-70;
+	$("#animator-canvas").width(desiredWidth);
+	$("#animator-canvas").height(desiredHeight);
+	$("#animator-time-svg").width(desiredWidth);
+	$("#animator-time-scroller").width(desiredWidth);
+	view.viewSize = new Size(desiredWidth, desiredHeight);
+	view.draw();
+}
 
 

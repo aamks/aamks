@@ -1,5 +1,5 @@
 // globals//{{{
-var canvas=[screen.width*0.99,screen.height-180];
+var canvas=[screen.width-30,screen.height-190];
 var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var gg;
@@ -784,10 +784,10 @@ CanvasBuilder=function canvas_builder() { //{{{
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
 	d3.select('view2d').append('button-right-menu-box').html("SETUP");
-	d3.select('view2d').append('legend-static');
+	d3.select('view2d').append('apainter-legend-static');
 	d3.select('view2d').append('legend');
 	d3.select('view2d').append('left-menu-box');
-	svg = d3.select('view2d').append('svg').attr("id", "svg").attr("width", canvas[0]).attr("height", canvas[1]);
+	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
 	svg.append("text").attr("x",110).attr("y",60).attr("id", "scenario_text").text(session_scenario);
 	svg.append("text").attr("x",110).attr("y",120).attr("id", "floor_text").text("floor"+floor);

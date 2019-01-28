@@ -13,15 +13,16 @@ function site() {/*{{{*/
 	<script src='../js/jquery.js'></script>
 	<script src='../js/utils.js'></script>
 	<script type='text/javascript' src='js/paper-full.js'></script>
-	<script type='text/paperscript' canvas='canvas' src='js/animator.js'></script>
+	<script type='text/paperscript' canvas='animator-canvas' src='js/animator.js'></script>
 	<BODY>
 	<div>
 		<button-left-menu-box>A</button-left-menu-box><left-menu-box></left-menu-box>
-		<legend-static></legend-static> &nbsp; Time: <sim-time></sim-time>
-		&nbsp; &nbsp;
+		<animator-title></animator-title> 
+		<animator-time></animator-time>
 		<button-right-menu-box>SETUP</button-right-menu-box>
 		
 		<right-menu-box>
+			<close-right-menu-box><img src=/aamks/css/close.svg></close-right-menu-box><br>
 			<table>
 				<tr><td>Animation           <td><choose-vis></choose-vis> 
 				<tr><td>Highlight           <td><highlight-geoms></highlight-geoms> 
@@ -37,7 +38,7 @@ function site() {/*{{{*/
 	</div>
 	<canvas-mouse-coords></canvas-mouse-coords>
 	<svg-slider></svg-slider>
-	<canvas id='canvas' resize hidpi='off' />
+	<canvas id='animator-canvas' resize hidpi='off' />
 	";
 }
 /*}}}*/

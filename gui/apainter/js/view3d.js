@@ -1,10 +1,11 @@
 var scene, camera;
 
 function init() {//{{{
-	$("view2d").css("visibility", "hidden");
-	$("view3d").append("<close3dview>[x]</close3dview><br>");
-	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', canvas[0]).attr('height', canvas[1]).style('background-color', '#333');
-	$('close3dview').click(function() { close3dview(); });
+	$("view2d").css("display", "none");
+	$("button-left-menu-box").css("display", "none");
+	$("view3d").append("<close-left-menu-box style='position: fixed; left: 10px; top:10px'><img src=/aamks/css/close.svg></close-left-menu-box>");
+	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', canvas[0]).attr('height', canvas[1]);
+	$('close-left-menu-box').click(function() { close3dview(); });
 }
 //}}}
 function colorHexDecode(hex) {//{{{
@@ -18,7 +19,8 @@ function colorHexDecode(hex) {//{{{
 //}}}
 function close3dview() {//{{{
 	$("view3d").html("");
-	$("view2d").css("visibility", "visible");
+	$("view2d").css("display", "block");
+	$("button-left-menu-box").css("display", "block");
 }
 //}}}
 function createMeshes() {//{{{
@@ -90,17 +92,19 @@ function createMesh(d) {//{{{
 function createScene() { //{{{
     xeogl.scene = new xeogl.Scene({
         canvas: "canvas3d",
-        transparent: true,
+        transparent: false,
     });
 	scene=xeogl.scene;
     camera=scene.camera;
     scene.gammaInput = false;
     scene.gammaOutput = false;
+	scene.backgroundColor=[1,0,0];
     camera.eye =  [50, 50, 20];
     camera.look = [50, 0, 20];
 	camera.projection = "perspective"; 
     //camera.gimbalLock = true;
     camera.up = [0, 0, -1]; 
+	new xeogl.AmbientLight({ color: [0.2, 0.2, 0.2], intensity: 1 });
     new xeogl.CameraControl();
 }
 //}}}
