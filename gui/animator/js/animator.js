@@ -98,7 +98,7 @@ function showStaticImage(chosenAnim) {
 	// We can only start animation after we are done with static rooms, doors etc.
 	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
-		ajax_msg(response);
+		//ajax_msg(response);
 		var dstatic=response['data'];
 		var floor=chosenAnim["floor"];
 		var newScale=dstatic[floor]['meta']['scale'];

@@ -666,7 +666,6 @@ class Geom():
                 self.make_vis('Room without door', i['global_type_id'], 'COMPA')
 # }}}
 
-
     def make_vis(self, title, faulty_id='', type_pri='HVENT'):# {{{
         ''' 
         This method is for visualizing both errors and just how things look. 
@@ -676,7 +675,7 @@ class Geom():
         if faulty_id != '':
             r=self.s.query("SELECT name,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
             fatal="Fatal: {}: {}".format(r['name'], title)
-            Vis(r['name'], 'image', "<ered>{}</ered>".format(fatal))
+            Vis(r['name'], 'image', "<div id=python_msg>{}</div>".format(fatal))
             print("\n\n{}. See the webbrowser: todo add url.".format(fatal))
             sys.exit()
         else:

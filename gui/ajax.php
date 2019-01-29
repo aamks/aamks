@@ -10,8 +10,8 @@ function ajaxChangeActiveScenario() { #{{{
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{
 	$aamks=getenv("AAMKS_PATH");
-	$scenario=$_SESSION['main']['working_home'];
-	$cmd="cd $aamks; python3 aamks.py $scenario"; 
+	$working_home=$_SESSION['main']['working_home'];
+	$cmd="cd $aamks; python3 aamks.py $working_home"; 
 
 	$z=shell_exec("$cmd");
 	// TODO: python should return errors on fatal

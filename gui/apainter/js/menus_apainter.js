@@ -3,7 +3,6 @@ var ApainterReader={};
 $(function() { 
 	left_menu_box();
 	import_cadjson();
-	simulation_launcher();
 	scenario_changer();
 });
 
@@ -20,16 +19,6 @@ function left_menu_box() {//{{{
 		});
 
 	});
-}
-//}}}
-function simulation_launcher() {//{{{
-	$("body").on("click", "#launch_simulation", function() {
-		ajax_msg({"msg": "Trying to launch...", "err":0 }); 
-		$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function (json) { 
-			ajax_msg(json); 
-		});
-	});
-
 }
 //}}}
 function scenario_changer() {//{{{

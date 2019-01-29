@@ -268,6 +268,7 @@ button-right-menu-box                       { right:4px; cursor: pointer; }
 button-right-menu-box:hover, button-left-menu-box:hover, write:hover, open3dview:hover { color: #c60 !important; }
 close-left-menu-box:hover, close-right-menu-box:hover  { opacity: 0.3; }
 
-.left-menu  { padding-left: 15px; }
+.left-menu                    { padding-left: 15px; }
 .left-menu a, left-menu-box a { width: 80px !important; text-align: center !important; }
-#ajax_msg { display: none; position: fixed; left: 150px; top: 60px; max-width: 500px; padding: 10px; color: #fff; z-index: 1000; }
+#ajax_msg                     { display: none; position: fixed; left: 150px; top: 60px; max-width: 500px; padding: 10px; color: #fff; z-index: 1000; }
+#python_msg                   { display: block; position: fixed; left: 150px; top: 60px; max-width: 500px; padding: 10px; color: #fff; z-index: 100; background-color: #800; }
