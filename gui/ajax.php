@@ -11,15 +11,13 @@ function ajaxChangeActiveScenario() { #{{{
 function ajaxLaunchSimulation() { #{{{
 	$aamks=getenv("AAMKS_PATH");
 	$working_home=$_SESSION['main']['working_home'];
-	$cmd="cd $aamks; python3 aamks.py $working_home"; 
+	$cmd="cd $aamks; python3 aamks.py $working_home 2>&1"; 
 
 	$z=shell_exec("$cmd");
-	// TODO: python should return errors on fatal
-
-	if(!empty($z)) { 
-		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): OK", "err"=>0, "data"=>$z));
+	if(empty($z)) { 
+		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): OK", "err"=>0, "data"=>''));
 	} else {
-		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): $z", "err"=>1, "data"=>''));
+		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): $z", "err"=>1, "data"=>$z));
 	}
 }
 /*}}}*/
@@ -165,17 +163,17 @@ function ajaxPdf2svg() { /*{{{*/
 function main() { /*{{{*/
 	header('Content-type: application/json');
 
-	if(!empty($_SESSION['main']['user_id']))                 {
-		if(isset($_GET['ajaxPdf2svg']))                      { ajaxPdf2svg(); }
-		if(isset($_GET['ajaxApainterExport']))               { ajaxApainterExport(); }
-		if(isset($_GET['ajaxApainterImport']))               { ajaxApainterImport(); }
-		if(isset($_GET['ajaxAnimsList']))                    { ajaxAnimsList(); }
-		if(isset($_GET['ajaxAnimsStatic']))                  { ajaxAnimsStatic(); }
-		if(isset($_GET['ajaxSingleAnim']))                   { ajaxSingleAnim(); }
-		if(isset($_GET['ajaxMenuContent']))                  { ajaxMenuContent(); }
-		if(isset($_GET['ajaxLaunchSimulation']))             { ajaxLaunchSimulation(); }
-		if(isset($_GET['ajaxChangeActiveScenario']))         { ajaxChangeActiveScenario(); }
-		if(isset($_GET['ajaxChangeActiveScenarioApainter'])) { ajaxChangeActiveScenario(); }
+	if(!empty($_SESSION['main']['user_id']))            {
+		if(isset($_GET['ajaxPdf2svg']))                 { ajaxPdf2svg(); }
+		if(isset($_GET['ajaxApainterExport']))          { ajaxApainterExport(); }
+		if(isset($_GET['ajaxApainterImport']))          { ajaxApainterImport(); }
+		if(isset($_GET['ajaxAnimsList']))               { ajaxAnimsList(); }
+		if(isset($_GET['ajaxAnimsStatic']))             { ajaxAnimsStatic(); }
+		if(isset($_GET['ajaxSingleAnim']))              { ajaxSingleAnim(); }
+		if(isset($_GET['ajaxMenuContent']))             { ajaxMenuContent(); }
+		if(isset($_GET['ajaxLaunchSimulation']))        { ajaxLaunchSimulation(); }
+		if(isset($_GET['ajaxChangeActiveScenario']))    { ajaxChangeActiveScenario(); }
+		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ajaxChangeActiveScenario(); }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

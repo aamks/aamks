@@ -52,6 +52,28 @@ var	animationIsRunning=0;
 
 $(function()  { 
 	resizeAndRedrawCanvas();
+	left_menu_box();
+	right_menu_box();
+	scenario_changer();
+});
+
+function scenario_changer() {//{{{
+	return;
+	$("body").on("change", "#choose_scenario", function() {
+		$.post('/aamks/ajax.php?ajaxChangeActiveScenarioApainter', {'ch_scenario':$(this).val() }, function (json) { 
+			ajax_msg(json); 
+			$("view2d").remove();
+			CanvasBuilder();
+			left_menu_box();
+			$('left-menu-box').fadeIn();
+			import_cadjson();
+			d3.select("#scenario_text").text(json.data);
+			d3.select("#floor_text").text("floor "+floor);
+		});
+	});
+}
+//}}}
+function right_menu_box() {//{{{
 	$('close-right-menu-box').click(function() {
 		$('right-menu-box').fadeOut();
 	});
@@ -59,9 +81,23 @@ $(function()  {
 	$('button-right-menu-box').click(function() {
 		$('right-menu-box').fadeIn();
 	});
-
-});
-
+}
+//}}}
+function scenario_changer() {//{{{
+	$("body").on("change", "#choose_scenario", function() {
+		$.post('/aamks/ajax.php?ajaxChangeActiveScenarioApainter', {'ch_scenario':$(this).val() }, function (json) { 
+			ajax_msg(json); 
+			$("view2d").remove();
+			CanvasBuilder();
+			left_menu_box();
+			$('left-menu-box').fadeIn();
+			import_cadjson();
+			d3.select("#scenario_text").text(json.data);
+			d3.select("#floor_text").text("floor "+floor);
+		});
+	});
+}
+//}}}
 
 $.getJSON("colors.json", function(cols) {
 	colorsDb=cols;
@@ -71,7 +107,6 @@ $.getJSON("colors.json", function(cols) {
 		// Runs automatically on the start. By default runs the first visualization from anims.json, which should be most fresh.
 		makeChooseVis(data);
 		showStaticImage(data[0]);
-		left_menu_box();
 	});
 });
 
@@ -183,22 +218,6 @@ function makeAnimationControls() {
 	items.push("</svg>");
 	$("svg-slider").html(items.join( "" ));
 }
-
-function left_menu_box() {//{{{
-	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
-		$("left-menu-box").html(json.data);
-
-		$('button-left-menu-box').click(function() {
-			$('left-menu-box').fadeIn();
-		});
-
-		$('close-left-menu-box').click(function() {
-			$('left-menu-box').fadeOut();
-		});
-
-	});
-}
-//}}}
 
 function makeSetupBoxInputs() {
 	$("size-labels").html("<input type=text size=2 name=labels-size id=labels-size value=20>");

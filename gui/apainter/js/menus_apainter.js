@@ -6,24 +6,9 @@ $(function() {
 	scenario_changer();
 });
 
-function left_menu_box() {//{{{
-	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
-		$("left-menu-box").html(json.data);
-
-		$('button-left-menu-box').click(function() {
-			$('left-menu-box').fadeIn();
-		});
-
-		$('close-left-menu-box').click(function() {
-			$('left-menu-box').fadeOut();
-		});
-
-	});
-}
-//}}}
 function scenario_changer() {//{{{
 	$("body").on("change", "#choose_scenario", function() {
-		$.post('/aamks/ajax.php?ajaxChangeActiveScenarioApainter', {'ch_scenario':$(this).val() }, function (json) { 
+		$.post('/aamks/ajax.php?ajaxChangeActiveScenarioAlt', {'ch_scenario':$(this).val() }, function (json) { 
 			ajax_msg(json); 
 			$("view2d").remove();
 			CanvasBuilder();

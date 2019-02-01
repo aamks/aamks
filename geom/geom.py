@@ -598,8 +598,8 @@ class Geom():
                 f.write(obj)
             self.nav[floor]=Navmesh()
             self.nav[floor].build(obj, os.environ['AAMKS_PROJECT'], floor)
-            #self.nav[floor].query([(0,0), (100,100)], floor)
-        self._navmesh_test("0")
+            self._navmesh_test(floor)
+        Vis(None, 'image', 'navmesh test')
 
 # }}}
     def _obj_platform(self,floor):# {{{
@@ -621,6 +621,7 @@ class Geom():
 # }}}
     def _navmesh_test(self,floor):# {{{
         colors=["#fff", "#f80", "#f00", "#8f0", "#0ff", "#400", "#00f", "#004", "#808", "#040" ]
+        navmesh_paths=[]
 
         for x in range(8):
             src_dest=[]
@@ -631,20 +632,20 @@ class Geom():
             z[floor]['circles'].append({ "xy": (src_dest[0]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
             z[floor]['circles'].append({ "xy": (src_dest[1]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
             self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-            path=self.nav[floor].query(src_dest, floor)
-            self._navmesh_vis(floor,path)
+            navmesh_paths.append(self.nav[floor].query(src_dest, floor))
+        self._navmesh_vis(floor,navmesh_paths)
 # }}}
-    def _navmesh_vis(self,floor,path):# {{{
+    def _navmesh_vis(self,floor,navmesh_paths):# {{{
         j=Json()
         z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for i,p in enumerate(path):
-            try:
-                z[floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": "#fff" , "strokeWidth": 2  , "opacity": 0.7 } )
-            except:
-                pass
+        for path in navmesh_paths:
+            for i,p in enumerate(path):
+                try:
+                    z[floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": "#fff" , "strokeWidth": 2  , "opacity": 0.7 } )
+                except:
+                    pass
 
         j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        Vis(None, 'image', 'nav')
 # }}}
 
 # ASSERTIONS
@@ -676,7 +677,7 @@ class Geom():
             r=self.s.query("SELECT name,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
             fatal="Fatal: {}: {}".format(r['name'], title)
             Vis(r['name'], 'image', "<div id=python_msg>{}</div>".format(fatal))
-            print("\n\n{}. See the webbrowser: todo add url.".format(fatal))
+            print(fatal)
             sys.exit()
         else:
             Vis(None, 'image', title)

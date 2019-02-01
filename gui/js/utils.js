@@ -40,6 +40,21 @@ function simulation_launcher() {//{{{
 
 }
 //}}}
+function left_menu_box() {//{{{
+	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
+		$("left-menu-box").html(json.data);
+
+		$('button-left-menu-box').click(function() {
+			$('left-menu-box').fadeIn();
+		});
+
+		$('close-left-menu-box').click(function() {
+			$('left-menu-box').fadeOut();
+		});
+
+	});
+}
+//}}}
 
 $(function() { 
 	choose_scenario_listener();

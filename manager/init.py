@@ -24,7 +24,6 @@ class OnInit():
         self.p=Psql()
         self._clear_sqlite()
         self._setup_simulations()
-        self._info()
 # }}}
     def _clear_sqlite(self):# {{{
         try:
@@ -68,14 +67,12 @@ class OnInit():
             self.p.query("INSERT INTO simulations(iteration,project) VALUES(%s,%s)", (i,self.project_id))
 
 # }}}
-    def _info(self):# {{{
-        print("Project id: {} run.\n".format(self.project_id))
-# }}}
 class OnEnd():
     def __init__(self):# {{{
         ''' Stuff that happens at the end of the project '''
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.project_id=self.conf['project_id']
         self.p=Psql()
         self._gearman_register_works()
 # }}}
@@ -96,8 +93,6 @@ class OnEnd():
                 gearman="gearman -b -f aRun 'http://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
                 os.system(gearman)
         except Exception as e:
-            print('An error code occured: {}'.format(e))
-        else: 
-            print('{} simulations run successfully'.format(i))
+            print('OnEnd: {}'.format(e))
             
 # }}}

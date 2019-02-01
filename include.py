@@ -160,7 +160,7 @@ class Psql: # {{{
             self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host={} password='{}'".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_PG_PASS']))
             self.psqldb=self.PSQL.cursor(cursor_factory=psycopg2.extras.DictCursor)
         except:
-            raise Exception("Fatal: Cannot connect to postresql.")
+            raise SystemExit("Fatal: Cannot connect to postresql.")
 
     def query(self,query,data=tuple()):
         ''' Query. Return results as dict. '''
@@ -190,7 +190,7 @@ class Json: # {{{
             f.close()
             return dump
         except:
-            raise Exception("\n\nMissing or invalid json: {}.".format(path)) 
+            raise SystemExit("include.py: Missing or invalid json: {}.".format(path)) 
 
     def write(self, data, path, pretty=0): 
         try:
@@ -202,7 +202,7 @@ class Json: # {{{
                 with open(path, "w") as f: 
                     json.dump(data, f)
         except:
-            raise Exception("\n\nCannot write json: {}.".format(path)) 
+            raise SystemExit("include.py: Cannot write json: {}.".format(path)) 
 
 
 # }}}
@@ -306,7 +306,7 @@ class Vis:# {{{
         ''' 
         Static.json is written each time, because obstacles may be available /
         non-available, so it is not constans. Except from static.json we update
-        animations listing here (anims.json) Animations are also updated from
+        the listing of the animations (anims.json). Animations are also updated from
         workers via gearman. 
         '''
 
@@ -335,7 +335,6 @@ class Vis:# {{{
                 anim_record['anim']="{}".format(self.src)
 
             records = [anim_record] + records
-
         z = records + z
         self.json.write(z, "{}/anims.json".format(vis_dir))
 # }}}
@@ -381,7 +380,7 @@ class Navmesh: # {{{
         try:
             self.navmesh[floor] = dt.dtLoadSampleTileMesh(file_nav)
         except:
-            raise Exception("Navmesh: cannot create {}".format(file_nav))
+            raise SystemExit("Navmesh: cannot create {}".format(file_nav))
 
 # }}}
     def query(self,q,floor="0"):# {{{
