@@ -5,19 +5,32 @@ require_once("inc.php");
 function ajaxChangeActiveScenario() { #{{{
 	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
-	echo json_encode(array("msg"=>$_SESSION['main']['scenario_name']." is the active scenario", "err"=>0, "data"=>$_SESSION['main']['scenario_name']));
+	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$_SESSION['main']['scenario_name']));
 }
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{
 	$aamks=getenv("AAMKS_PATH");
 	$working_home=$_SESSION['main']['working_home'];
+	if(!is_file("$working_home/cad.json")) { 
+		echo json_encode(array("msg"=>"You need to run <a class=blink href=/aamks/apainter>Apainter</a> first", "err"=>1, "data"=>''));
+		return;
+	}
+	if(!is_file("$working_home/conf.json")) { 
+		echo json_encode(array("msg"=>"You need to <a class=blink href=/aamks/form.php?edit>Setup scenario</a> first", "err"=>1, "data"=>''));
+		return;
+	}
+	$nos=json_decode(file_get_contents("$working_home/conf.json"), 1)['number_of_simulations'];
+	if(!isset($nos)) { 
+		echo json_encode(array("msg"=>"Problem with the number of simulations. <a class=blink href=/aamks/form.php?edit>Setup scenario</a>", "err"=>1, "data"=>''));
+		return;
+	}
 	$cmd="cd $aamks; python3 aamks.py $working_home 2>&1"; 
 
 	$z=shell_exec("$cmd");
 	if(empty($z)) { 
-		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): OK", "err"=>0, "data"=>''));
+		echo json_encode(array("msg"=>"$nos simulations launched", "err"=>0, "data"=>''));
 	} else {
-		echo json_encode(array("msg"=>"ajaxLaunchSimulation(): $z", "err"=>1, "data"=>$z));
+		echo json_encode(array("msg"=>"$z", "err"=>1, "data"=>$z));
 	}
 }
 /*}}}*/
@@ -34,9 +47,9 @@ function ajaxAnimsList() { /*{{{*/
 	$f=$_SESSION['main']['working_home']."/workers/anims.json";
 	if(is_file($f)) { 
 		$data=json_decode(file_get_contents($f));
-		echo json_encode(array("msg"=>"ajaxAnimsList(): OK", "err"=>0,  "data"=> $data));
+		echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $data));
 	} else {
-		echo json_encode(array("msg"=>"ajaxAnimsList(): No output for ".$_SESSION['main']['scenario_name']." yet", "err"=>1, "data"=>''));
+		echo json_encode(array("msg"=>"No output for ".$_SESSION['main']['scenario_name']." yet", "err"=>1, "data"=>''));
 	}
 }
 /*}}}*/
@@ -44,9 +57,9 @@ function ajaxAnimsStatic() { /*{{{*/
 	$f=$_SESSION['main']['working_home']."/workers/static.json";
 	if(is_file($f)) { 
 		$data=json_decode(file_get_contents($f));
-		echo json_encode(array("msg"=>"ajaxAnimsStatic(): OK", "err"=>0,  "data"=> $data));
+		echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $data));
 	} else {
-		echo json_encode(array("msg"=>"ajaxAnimsList(): No output for ".$_SESSION['main']['scenario_name']." yet", "err"=>1, "data"=>''));
+		echo json_encode(array("msg"=>"No output for ".$_SESSION['main']['scenario_name']." yet", "err"=>1, "data"=>''));
 	}
 }
 /*}}}*/
@@ -61,7 +74,7 @@ function ajaxSingleAnim() { /*{{{*/
 			$z=json_decode(shell_exec("unzip -qq -c $f anim.json"));
 		}
 		if(!empty($z)) { 
-			echo json_encode(array("msg"=>"ajaxSingleAnim(): OK", "err"=>0, "data"=>$z));
+			echo json_encode(array("msg"=>"", "err"=>0, "data"=>$z));
 		} else {
 			echo json_encode(array("msg"=>"ajaxSingleAnim(): $z", "err"=>1, "data"=>''));
 		}
@@ -82,7 +95,7 @@ function ajaxSingleAnimFunCircle() { /*{{{*/
 	}
 	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 200, "time_shift" => 0  ];
 	$collect['data']=$arr;
-	echo json_encode(array("msg"=>"ajaxSingleAnimFun(): OK", "err"=>0, "data"=>$collect));
+	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$collect));
 }
 /*}}}*/
 function ajaxSingleAnimFunUpDown() { /*{{{*/
@@ -102,7 +115,7 @@ function ajaxSingleAnimFunUpDown() { /*{{{*/
 	}
 	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0  ];
 	$collect['data']=$arr;
-	echo json_encode(array("msg"=>"ajaxSingleAnimFun(): OK", "err"=>0, "data"=>$collect));
+	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$collect));
 }
 /*}}}*/
 function ajaxApainterExport() { /*{{{*/
@@ -154,7 +167,7 @@ function ajaxPdf2svg() { /*{{{*/
 	if(empty($z)) { 
 		$svg=shell_exec("cat $dest"); 
 		$svg=preg_replace("/#/", "%23", $svg);
-		echo json_encode(array("msg"=>"ajaxPdf2svg(): OK", "err"=>0,  "data"=>$svg));
+		echo json_encode(array("msg"=>"", "err"=>0,  "data"=>$svg));
 	} else {
 		echo json_encode(array("msg"=>"ajaxPdf2svg(): $z", "err"=>1, "data"=>""));
 	}

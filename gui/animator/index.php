@@ -3,17 +3,10 @@ session_name('aamks');
 require_once("../inc.php"); 
 
 function site() {/*{{{*/
-	echo "<!DOCTYPE html>
-	<HTML>
-	<HEAD>
-	<META http-equiv=Content-Type content='text/html; charset=utf-8' />
-	<LINK href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+	echo "
 	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
-	</HEAD>
-	<script src='../js/jquery.js'></script>
 	<script type='text/javascript' src='js/paper-full.js'></script>
 	<script type='text/paperscript' canvas='animator-canvas' src='js/animator.js'></script>
-	<BODY>
 	<div>
 		<button-left-menu-box>A</button-left-menu-box><left-menu-box></left-menu-box>
 		<animator-title></animator-title> 

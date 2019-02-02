@@ -2,15 +2,9 @@
 session_name('aamks');
 require_once("../inc.php"); 
 
-function site() { /*{{{*/
-	echo "<!DOCTYPE html>
-	<HTML>
-	<HEAD>
-	<META http-equiv=Content-Type content='text/html; charset=utf-8' />
-	<LINK href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+function site() {/*{{{*/
+	echo "
 	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
-	</HEAD>
-	<script src='../js/jquery.js'></script>
 	<script src='js/taffy-min.js'></script>
 	<script src='js/d3.v4.min.js'></script>
 	<script src='js/apainter.js'></script>

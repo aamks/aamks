@@ -2,14 +2,14 @@ function ajax_msg(r) {//{{{
 	$('#ajax_msg').clearQueue();
 	if(r['err']==1) { 
 		$('#ajax_msg').css('display', 'none');
-		$('#ajax_msg').text(r['msg']);
+		$('#ajax_msg').html(r['msg']);
 		$('#ajax_msg').css('display', 'block');
 		$('#ajax_msg').css('background-color', "#800");
 		throw new Error("Aamks is halting on error");
 	} 
 	else if(r['err']==0 && r['msg'].length>0) { 
 		$('#ajax_msg').css('display', 'none');
-		$('#ajax_msg').text(r['msg']);
+		$('#ajax_msg').html(r['msg']);
 		$('#ajax_msg').css('display', 'block');
 		$('#ajax_msg').css('background-color', "#285");
 		if ("duration" in r) {
@@ -21,11 +21,10 @@ function ajax_msg(r) {//{{{
 	}
 }
 //}}}
-function choose_scenario_listener() { //{{{
+function scenario_changer() {//{{{
 	$("body").on("change", "#choose_scenario", function() {
 		$.post('/aamks/ajax.php?ajaxChangeActiveScenario', {'ch_scenario':$(this).val() }, function (json) { 
-			$("#menu-active-scenario-label").html(json.data);
-			ajax_msg(json);
+			location.reload();
 		});
 	});
 }
@@ -57,7 +56,7 @@ function left_menu_box() {//{{{
 //}}}
 
 $(function() { 
-	choose_scenario_listener();
+	scenario_changer();
 	simulation_launcher();
 });
 

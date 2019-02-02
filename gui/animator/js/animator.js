@@ -54,25 +54,8 @@ $(function()  {
 	resizeAndRedrawCanvas();
 	left_menu_box();
 	right_menu_box();
-	scenario_changer();
 });
 
-function scenario_changer() {//{{{
-	return;
-	$("body").on("change", "#choose_scenario", function() {
-		$.post('/aamks/ajax.php?ajaxChangeActiveScenarioApainter', {'ch_scenario':$(this).val() }, function (json) { 
-			ajax_msg(json); 
-			$("view2d").remove();
-			CanvasBuilder();
-			left_menu_box();
-			$('left-menu-box').fadeIn();
-			import_cadjson();
-			d3.select("#scenario_text").text(json.data);
-			d3.select("#floor_text").text("floor "+floor);
-		});
-	});
-}
-//}}}
 function right_menu_box() {//{{{
 	$('close-right-menu-box').click(function() {
 		$('right-menu-box').fadeOut();
@@ -83,28 +66,13 @@ function right_menu_box() {//{{{
 	});
 }
 //}}}
-function scenario_changer() {//{{{
-	$("body").on("change", "#choose_scenario", function() {
-		$.post('/aamks/ajax.php?ajaxChangeActiveScenarioApainter', {'ch_scenario':$(this).val() }, function (json) { 
-			ajax_msg(json); 
-			$("view2d").remove();
-			CanvasBuilder();
-			left_menu_box();
-			$('left-menu-box').fadeIn();
-			import_cadjson();
-			d3.select("#scenario_text").text(json.data);
-			d3.select("#floor_text").text("floor "+floor);
-		});
-	});
-}
-//}}}
 
 $.getJSON("colors.json", function(cols) {
 	colorsDb=cols;
 	colors=colorsDb['darkColors'];
 	$.post('/aamks/ajax.php?ajaxAnimsList', function (response) { 
+		ajax_msg(response);
 		var data=response['data'];
-		// Runs automatically on the start. By default runs the first visualization from anims.json, which should be most fresh.
 		makeChooseVis(data);
 		showStaticImage(data[0]);
 	});
