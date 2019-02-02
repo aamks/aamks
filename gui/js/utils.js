@@ -29,11 +29,16 @@ function scenario_changer() {//{{{
 	});
 }
 //}}}
-function simulation_launcher() {//{{{
+function launch_simulation() {//{{{
 	$("body").on("click", "#launch_simulation", function() {
 		ajax_msg({"msg": "Trying to launch...", "err":0, "duration": 20000 }); 
 		$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function (json) { 
 			ajax_msg(json); 
+			if(json.err==0) {
+				setTimeout(function(){
+					location.reload();
+				}, 1500);
+			}
 		});
 	});
 
@@ -57,7 +62,7 @@ function left_menu_box() {//{{{
 
 $(function() { 
 	scenario_changer();
-	simulation_launcher();
+	launch_simulation();
 });
 
 

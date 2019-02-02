@@ -12,7 +12,7 @@ function ajaxLaunchSimulation() { #{{{
 	$aamks=getenv("AAMKS_PATH");
 	$working_home=$_SESSION['main']['working_home'];
 	if(!is_file("$working_home/cad.json")) { 
-		echo json_encode(array("msg"=>"You need to run <a class=blink href=/aamks/apainter>Apainter</a> first", "err"=>1, "data"=>''));
+		echo json_encode(array("msg"=>"You need to draw and save the project in <a class=blink href=/aamks/apainter>Apainter</a> first", "err"=>1, "data"=>''));
 		return;
 	}
 	if(!is_file("$working_home/conf.json")) { 
