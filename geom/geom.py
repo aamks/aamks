@@ -620,12 +620,12 @@ class Geom():
         return elem
 # }}}
     def _navmesh_test(self,floor):# {{{
-        colors=["#fff", "#f80", "#f00", "#8f0", "#0ff", "#400", "#00f", "#004", "#808", "#040" ]
+        colors=["#fff", "#f80", "#f00", "#8f0", "#08f", "#f0f" ]
         navmesh_paths=[]
 
-        for x in range(8):
+        for x in range(6):
             src_dest=[]
-            for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' ORDER BY RANDOM() LIMIT 2"):
+            for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY RANDOM() LIMIT 2", (floor,)):
                 src_dest.append([round(uniform(i['x0'], i['x1'])), round(uniform(i['y0'], i['y1']))])
 
             z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
@@ -633,15 +633,15 @@ class Geom():
             z[floor]['circles'].append({ "xy": (src_dest[1]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
             self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
             navmesh_paths.append(self.nav[floor].query(src_dest, floor))
-        self._navmesh_vis(floor,navmesh_paths)
+        self._navmesh_vis(floor,navmesh_paths,colors)
 # }}}
-    def _navmesh_vis(self,floor,navmesh_paths):# {{{
+    def _navmesh_vis(self,floor,navmesh_paths,colors):# {{{
         j=Json()
         z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for path in navmesh_paths:
+        for cc,path in enumerate(navmesh_paths):
             for i,p in enumerate(path):
                 try:
-                    z[floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": "#fff" , "strokeWidth": 2  , "opacity": 0.7 } )
+                    z[floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": colors[cc], "strokeWidth": 2  , "opacity": 0.7 } )
                 except:
                     pass
 

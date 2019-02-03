@@ -262,7 +262,7 @@ function paperjsDisplayImage() {
 	}
 
 	for (var i=0; i<obstacles.length; i++) {
-		staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],obstacles[i]["depth"]), strokeColor: colors['obsts'], strokeWidth:wallsSize }));
+		staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],obstacles[i]["depth"]), fillColor: colors['obsts'], strokeColor: colors['obsts'], strokeWidth:wallsSize }));
 	}
 
 	if (labelsSize != 0) { 

@@ -49,7 +49,7 @@ function left_menu_box() {//{{{
 		$("left-menu-box").html(json.data);
 
 		$('button-left-menu-box').click(function() {
-			$('left-menu-box').fadeIn();
+			$('left-menu-box').toggle();
 		});
 
 		$('close-left-menu-box').click(function() {
