@@ -599,7 +599,8 @@ class Geom():
             self.nav[floor]=Navmesh()
             self.nav[floor].build(obj, os.environ['AAMKS_PROJECT'], floor)
             self._navmesh_test(floor)
-        Vis(None, 'image', 'navmesh test')
+
+        Vis({'highlight_geom': None, 'anim': None, 'title': 'Navmesh test', 'srv': 1})
 
 # }}}
     def _obj_platform(self,floor):# {{{
@@ -676,9 +677,9 @@ class Geom():
         if faulty_id != '':
             r=self.s.query("SELECT name,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
             fatal="Fatal: {}: {}".format(r['name'], title)
-            Vis(r['name'], 'image', "<div id=python_msg>{}</div>".format(fatal))
+            Vis({'highlight_geom': r['name'], 'anim': None, 'title': "<div id=python_msg>{}</div>".format(fatal), 'srv': 1})
             print(fatal)
             sys.exit()
         else:
-            Vis(None, 'image', title)
+            Vis({'highlight_geom': None, 'anim': None, 'title': title, 'srv': 1})
 # }}}

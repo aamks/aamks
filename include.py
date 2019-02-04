@@ -207,21 +207,22 @@ class Json: # {{{
 
 # }}}
 class Vis:# {{{
-    def __init__(self,highlight_geom,src='image',title='',fire_origin=[]):# {{{
+    def __init__(self,params):# {{{
         ''' 
-        Html canvas module for src=image (read from sqlite geoms) or
-        src=animation_directory in workers/ directory. We will then search for
-        e.g. workers/85/anim.zip file. src=image is how we ignore all aspects
-        of animation. 
+        Animator renderer for static img | animation
+
+        params
+        ======
+        highlight_geom: geom to highlight in Animator
+        anim: animation file | empty
+        title: title
+        srv: 0 | 1 (previous server visuals are obsolete and need to be removed)
+        fire_origin: fire_origin
         '''
 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        self.title=title
-        self.fire_origin=fire_origin
-        self.highlight_geom=highlight_geom
-        self.src=src
 
         self._static=OrderedDict()
         self._js_make_floors_and_meta()
@@ -230,7 +231,10 @@ class Vis:# {{{
         self._js_make_obstacles()
         self._js_make_dd_geoms()
 
-        self._save()
+        if 'fire_origin' not in params:
+            params['fire_origin']=[]
+
+        self._save(params)
 # }}}
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''
@@ -283,7 +287,7 @@ class Vis:# {{{
         for floor in self._static.keys():
             self._static[floor]['dd_geoms']=f[floor]
 # }}}
-    def _js_reorder_animations(self, z):# {{{
+    def _reorder_anims(self, z):# {{{
         '''
         sort_id -1, -2, -3 come from the server.
         sort_id > 1 come from workers -- sort_id is sim_id.
@@ -302,7 +306,7 @@ class Vis:# {{{
         return (sorted_anims, lowest_id - 1)
 
 # }}}
-    def _save(self):# {{{
+    def _save(self,params):# {{{
         ''' 
         Static.json is written each time, because obstacles may be available /
         non-available, so it is not constans. Except from static.json we update
@@ -315,7 +319,7 @@ class Vis:# {{{
 
         try:
             z=self.json.read("{}/anims.json".format(vis_dir))
-            z,lowest_id=self._js_reorder_animations(z)
+            z,lowest_id=self._reorder_anims(z)
         except:
             z=[]
             lowest_id=-1
@@ -325,14 +329,12 @@ class Vis:# {{{
             anim_record=OrderedDict()
             anim_record['sort_id']=lowest_id
             lowest_id-=1
-            anim_record['title']="{} {}, f{}".format(self.title, datetime.now().strftime('%H:%M'), floor)
+            anim_record['title']="{} {}, f{}".format(params['title'], datetime.now().strftime('%H:%M'), floor)
             anim_record['floor']=floor
-            anim_record['fire_origin']=self.fire_origin
-            anim_record['highlight_geom']=self.highlight_geom
-            if self.src=='image':
-                anim_record['anim']=''
-            else:
-                anim_record['anim']="{}".format(self.src)
+            anim_record['fire_origin']=params['fire_origin']
+            anim_record['highlight_geom']=params['highlight_geom']
+            anim_record['srv']=params['srv']
+            anim_record['anim']=params['anim']
 
             records = [anim_record] + records
         z = records + z
