@@ -1,7 +1,6 @@
 from collections import OrderedDict
 from subprocess import Popen,PIPE
-import http.server
-import socketserver
+import time
 import sys
 import os
 import shutil
@@ -22,8 +21,26 @@ class OnInit():
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']
         self.p=Psql()
+        self._clear_srv_anims()
         self._clear_sqlite()
         self._setup_simulations()
+# }}}
+    def _clear_srv_anims(self):# {{{
+        ''' 
+        Need to detect and remove obsolete srv animations. Server always
+        overwrites anims.json and we need to prevent the dumplicates in
+        Animator right menu entries.
+
+        TODO: it is possible we could just remove this file and remove all
+        server animations. But would it hurt workers animations?
+        ''' 
+
+        anims=self.json.read("{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
+        new_anims=[]
+        for a in anims:
+            if a['srv'] != 1:
+                new_anims.append(a)
+        self.json.write(new_anims, "{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
 # }}}
     def _clear_sqlite(self):# {{{
         try:
