@@ -113,6 +113,16 @@ function setup_underlay_into_setup_box() {//{{{
 
 }
 //}}}
+function utils_into_setup_box() {//{{{
+	d3.select('right-menu-box').html(
+		"<input id=utils_setup type=hidden value=1>"+
+		"<table>"+
+		"<tr><td colspan=2><input type=file id=open_existing style='display:none'><label class=blink for='open_existing'>import cad.json from disk<br>TODO: textarea rather</label>"+
+		"<tr><td>copy floor"+floor+" to floor<input id=copy_to_floor type=number min=0 name=copy_to_floor style='width:3em' value=''>"+ 
+		"</table>"
+	);
+}
+//}}}
 function help_into_setup_box() {//{{{
 	d3.select('right-menu-box').html(
 		"<input id=general_setup type=hidden value=1>"+
@@ -124,10 +134,10 @@ function help_into_setup_box() {//{{{
 		"<tr><td>h	<td> alternative view"+ 
 		"<tr><td>x	<td> delete active"+
 		"<tr><td>g	<td> list all of active type"+
-		"<tr><td colspan=2><input type=file id=open_existing style='display:none'><label class=blink for='open_existing'>import cad.json from disk</label>"+
+		"<tr><td colspan=2><div style='float:right' class=blink id=utils_setup_button>utils</div>"+
 
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
-		"<tr><td>floor		  <td><input id=floor type=number min=0 name=floor style='width:3em'; value="+floor+">"+ 
+		"<tr><td>floor<td><input id=floor type=number min=0 name=floor style='width:3em' value="+floor+">"+ 
 		"<div id=setup_underlay class=blink>underlay</div>"+
 		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
 		"<tr><td>door's width <td><input id=default_door_width type=text size=4   name=default_door_width  value="+default_door_width+">"+
@@ -135,18 +145,12 @@ function help_into_setup_box() {//{{{
 		"<tr><td>room's z-dim <td><input id=default_floor_dimz type=text size=4 name=default_floor_dimz value="+default_floor_dimz+">"+
 		"<tr><td>window's z-dim <td><input id=default_window_dimz type=text size=4 name=default_window_dimz value="+default_window_dimz+">"+
 		"<tr><td>window's z-offset <td><input id=default_window_offsetz type=text size=4 name=default_window_offsetz value="+default_window_offsetz+">"+
-		"</table><br><br>"
+		"</table>"
 		);
 
-	$('#setup_underlay').click(function() {
-		setup_underlay_into_setup_box();
-	});
-
-	$("#open_existing").change(function() {
-		cad_json_reader(this.files[0])
-	});
-
-
+	$('#setup_underlay').click(function()     { setup_underlay_into_setup_box(); });
+	$('#utils_setup_button').click(function() { utils_into_setup_box(); });
+	$("#open_existing").change(function()     { cad_json_reader(this.files[0]) });
 }
 //}}}
 function cad_json_reader(file) {//{{{
@@ -360,3 +364,11 @@ function download(filename, text) {//{{{
 }
 //}}}
 //}}}
+function copy_to_floor() {	//{{{
+	c2f=parseInt($("#copy_to_floor").val());
+	//var items=db({'floor': floor}).select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0");
+	// console.log('f', floor,items);
+	//var items=db({'floor': floor}).select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0");
+	//console.log(items);
+	//console.log("reader", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0"));
+}//}}}

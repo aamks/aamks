@@ -489,11 +489,32 @@ function axes() { //{{{
 		.call(ax.yAxis);
 }
 //}}}
+function guess_floors_z_origin() {//{{{
+	// Guess 1: Perhaps user has set the z-origin for this floor -- we will then find it in db()
+	// Guess 2: If we are the first time on floor 5, then multiply floor0's dimz * 5
+	// Guess 3: If there's no floor0 even or any other occassion z-origin=0
+	var guess=db({"floor": floor, 'letter': 'r'}).select("z0");
+	if(guess[0] != undefined) {
+		$("#floor_zorig").val(guess[0]);
+		return;
+	}
+
+	var guess=db({"floor": 0, 'letter': 'r'}).select("dimz");
+	if(guess[0] != undefined) {
+		$("#floor_zorig").val(guess[0]*floor);
+		return;
+	}
+
+	$("#floor_zorig").val(0);
+}
+//}}}
 function change_floor() {//{{{
 	if (floor == parseInt($("#floor").val())) { 
 		return;
 	}
+
 	floor=parseInt($("#floor").val());
+	guess_floors_z_origin();
 	if(floor > floors_count-1) { 
 		floors_count=floor+1;
 		g_floor = g_aamks.append("g").attr("id", "floor"+floor).attr("class", "g_floor").attr('fill-opacity',gg_opacity);
@@ -535,6 +556,9 @@ function updateExitDoor(geom) {//{{{
 function save_setup_box() {//{{{
 	// There's a single box for multiple forms
 	// so we need to find out which form is submitted
+	if ($("#utils_setup").val() != null) { 
+		console.log($("#copy_to_floor").val());
+	}
 
 	if ($("#general_setup").val() != null) { 
 		change_floor();
@@ -544,6 +568,7 @@ function save_setup_box() {//{{{
 		default_floor_dimz=parseInt($("#default_floor_dimz").val());
 		default_window_dimz=parseInt($("#default_window_dimz").val());
 		default_window_offsetz=parseInt($("#default_window_offsetz").val());
+		copy_to_floor();
 		legend();
 	} 
 
