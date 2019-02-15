@@ -5,7 +5,7 @@ $menu="
 <li class='lnav'><a href=?node=about>About</a>
 <li class='lnav'><a href=?node=tutorial>Aamks Tutorials</a>
 <li class='lnav'><a href=?node=tests>Tests</a>
-<li class='lnav'><a href=?node=demos>Demos</a>
+<li class='lnav'><a href=?node=demo>Demo</a>
 <li class='lnav'><a href=?node=papers>Papers</a>
 <li class='lnav'><a target=_blank href=https://github.com/aamks/aamks>Github</a>
 
@@ -23,8 +23,7 @@ evacuation simulations (a-evac) and then evaluates the results.
 
 ");
 /*}}}*/
-
-$nodes['tutorial']=array("Aamks Tutorials", 
+$nodes['tutorial']=array("Aamks Tutorials", /*{{{*/
 '
 <br> Wstęp <br><br>
 <iframe width="560" height="315" src="https://www.youtube.com/embed/1vT_RyP6OOU" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -38,7 +37,7 @@ $nodes['tutorial']=array("Aamks Tutorials",
 <iframe width="560" height="315" src="https://www.youtube.com/embed/0V2bcl1-MN4" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ');
-
+/*}}}*/
 $nodes['tests']=array("Tests", /*{{{*/
 '
 <br> Verif 1_1 <br><br>
@@ -73,13 +72,9 @@ Karamouzas is Predictive Collision Pedestrian Model (2009). https://doi.org/10.1
 
 ');
 /*}}}*/
-$nodes['demos']=array("Demos", /*{{{*/
+$nodes['demo']=array("Demo", /*{{{*/
 '
-Aamks is a work in progress, but you can see some of development progress here
-<ul>
-<li> An example of Aamks aplication hosted in SGSP <a target=blank_ href="https://aamks.inf.sgsp.edu.pl">demo</a>
-<li> Geometry creation <a target=blank_ href=/blob/aamks/gui/apainter/>tool</a> (requires google chrome / chromium)
-</ul>
+Aamks is a work in progress, but you can see some of the development progress <a href=https://student.szach.in/aamks/>here</a>
 ');
 /*}}}*/
 
