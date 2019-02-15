@@ -665,7 +665,7 @@ class Geom():
         all_interected_room=set(doors_intersect_room_ids)
         for i in self.s.query("SELECT name,floor,global_type_id FROM aamks_geom WHERE type_pri='COMPA'"):
             if i['global_type_id'] not in all_interected_room:
-                self.make_vis('Room without door', i['global_type_id'], 'COMPA')
+                self.make_vis('Room without door (see Animator)', i['global_type_id'], 'COMPA')
 # }}}
 
     def make_vis(self, title, faulty_id='', type_pri='HVENT'):# {{{
