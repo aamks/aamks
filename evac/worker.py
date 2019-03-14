@@ -44,7 +44,7 @@ class Worker:
         self.floors = list()
         self.host_name = os.uname()[1]
         os.chdir('/home/aamks_users')
-        self.working_dir = self.url.split('aamks/')[1]
+        self.working_dir = self.url.split('aamks_users/')[1]
         self.cross_building_results = None
 
     def _report_error(self, exception: Exception) -> logging:
@@ -296,18 +296,19 @@ class Worker:
 
 
 w = Worker()
+w.main()
 
-if SIMULATION_TYPE == 'NO_CFAST':
-    try:
-        w.test()
-    except Exception as e:
-        SendMessage(e)
-    else:
-        SendMessage("Worker: Alles in grunem bereisch")
-else:
-    try:
-        w.main()
-    except Exception as e:
-        SendMessage(e)
-    else:
-        SendMessage("Worker: Alles in grunem bereisch")
+#if SIMULATION_TYPE == 'NO_CFAST':
+#    try:
+#        w.test()
+#    except Exception as e:
+#        SendMessage(e)
+#    else:
+#        SendMessage("Worker: Alles in grunem bereisch")
+#else:
+#    try:
+#        w.main()
+#    except Exception as e:
+#        SendMessage(e)
+#    else:
+#        SendMessage("Worker: Alles in grunem bereisch")

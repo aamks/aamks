@@ -95,7 +95,7 @@ class EvacEnv:
                 position = self.evacuees.get_position_of_pedestrian(i)
 
 
-                goal = self.nav.query([(position[0]*100,position[1]*100), (5915, 2898)])
+                goal = self.nav.query([position, (4652, 493)])
                 self.evacuees.set_goal(ped_no=i, goal=goal[0])
         self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
         for i in range(self.sim.getNumAgents()):
@@ -108,7 +108,7 @@ class EvacEnv:
                 continue
             else:
                 optical_density = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(i),
-                                                                               self.current_time)
+                                                                               self.current_time, self.floor)
 
                 self.evacuees.update_speed_of_pedestrian(i, optical_density)
                 self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_of_pedestrian(i))

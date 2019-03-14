@@ -181,7 +181,7 @@ class SmokeQuery:
                     self._compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
         return 1
 # }}}
-    def get_conditions(self,q):# {{{
+    def get_conditions(self,q, floor):# {{{
         ''' 
         First we find to which square our q belongs. If this square has 0 rectangles
         then we return conditions from the square. If the square has rectangles
@@ -190,7 +190,7 @@ class SmokeQuery:
         '''
 
         floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
-        self.floor_dim = floors[floor]
+        self.floor_dim = floors[str(floor)]
 
         x=self.floor_dim['minx'] + self._square_side * int((q[0]-self.floor_dim['minx'])/self._square_side) 
         y=self.floor_dim['miny'] + self._square_side * int((q[1]-self.floor_dim['miny'])/self._square_side)
@@ -205,8 +205,8 @@ class SmokeQuery:
                     return self._results(q, (rx,ry))
         return self._results(q, (x,y)) # outside!
 # }}}
-    def get_visibility(self, position, time):# {{{
-        conditions = self.get_conditions(position)
+    def get_visibility(self, position, time, floor):# {{{
+        conditions = self.get_conditions(position, floor)
         logging.debug('Query visibility at time: {} on position: {}'.format(time, position))
 
         hgt = conditions['HGT']
