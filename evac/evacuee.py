@@ -44,35 +44,6 @@ class Evacuee:
             self.goal_s = 0
         return tuple(self.roadmap[self.goal_s])
 
-    def update_goal(self, goal):
-        assert isinstance(goal_s_visible, bool), 'goal visible must be type bool'
-
-        self.unnorm_vector = tuple(map(sub, self.roadmap[self.goal_g], self.position))
-        self.distance = (sqrt(self.unnorm_vector[0] ** 2 + self.unnorm_vector[1] ** 2))
-        #circle = self.distance < self.evac_conf['node_radius']
-        last_node = self.goal_s == len(self.roadmap)-1
-        circle = self.distance < self.node_radius
-        s_equal_g = self.roadmap[self.goal_s] == self.roadmap[self.goal_g]
-        state = 's'+str(int(circle)) + str(int(goal_s_visible)) + str(int(s_equal_g)) + str(int(last_node))
-        #print("State: {}, goes: {}, Looks: {}".format(state, self.roadmap[self.goal_g], self.roadmap[self.goal_s]))
-        if state == 's1110':
-            self.goal_s += 1
-        elif state == 's1100':
-            self.goal_g += 1
-        elif state == 's1101':
-            self.goal_g += 1
-        elif state == 's0000':
-            self.goal_s -= 1
-        elif state == 's0010':
-            self.goal_g -= 1
-            self.goal_s -= 1
-        elif state == 's1111':
-            self.unnorm_vector = (0, 0)
-            self.finished = 0
-        elif state == 's0011':
-            self.goal_g -= 1
-            self.goal_s -= 1
-
     def update_fed(self, fed):
         assert isinstance(fed, float), '%fed is not required type float'
         self.fed += fed
@@ -82,6 +53,11 @@ class Evacuee:
         self.thermal_injury = thermal_injury
 
     def calculate_velocity(self, current_time):
+        self.unnorm_vector = tuple(map(sub, self.goal, self.position))
+        self.distance = (sqrt(self.unnorm_vector[0] ** 2 + self.unnorm_vector[1] ** 2))
+        if self.distance < 0.1:
+            self.finished = 0
+
         if current_time > self.pre_evacuation_time:
             norm_vector = tuple((self.unnorm_vector[0] / self.distance, self.unnorm_vector[1] / self.distance))
             self.velocity = (norm_vector[0] * self.speed, norm_vector[1] * self.speed)

@@ -118,7 +118,7 @@ class EvacEnv:
             if(self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
-                fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i), self.current_time)
+                fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i), self.current_time, self.floor)
                 self.evacuees.update_fed_of_pedestrian(i, fed)
         fed = [self.evacuees.get_fed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
         c = None
@@ -197,7 +197,7 @@ class EvacEnv:
             self.sim.doStep()
             logging.debug('Simulation step: {}'.format(step))
             self.update_agents_position()
-            self.update_state()
+            #self.update_state()
             self.update_time()
             self.update_fed()
             self.save_data_for_visualization()

@@ -209,7 +209,7 @@ class Worker:
                 time_frame += 10
             else:
                 time.sleep(1)
-            if time_frame > (self.vars['conf']['general']['simulation_time'] - 10):
+            if time_frame > (self.vars['conf']['simulation_time'] - 10):
                 break
             if prod(array(l)) > 0:
                 break
@@ -256,7 +256,7 @@ class Worker:
         report['sim_id'] = self.sim_id
         report['project_id'] = self.vars['conf']['project_id']
         report['path_to_project'] = '/home/aamks_users/'+self.working_dir.split('workers')[0]
-        report['fire_origin'] = self.vars['conf']['ROOM_OF_FIRE_ORIGIN']
+        report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
         report['highlight_geom'] = None
         report['psql'] = dict()
         report['psql']['fed'] = dict()

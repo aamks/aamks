@@ -218,9 +218,9 @@ class SmokeQuery:
         else:
             return conditions['ULOD']
 # }}}
-    def get_fed(self, position, time):# {{{
+    def get_fed(self, position, time, floor):# {{{
         logging.debug('Query FED at time: {} on position: {}'.format(time, position))
-        conditions = self.get_conditions(position)
+        conditions = self.get_conditions(position, floor)
         hgt = conditions['HGT']
         if hgt == None:
             return 0.
