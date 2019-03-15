@@ -21,7 +21,8 @@
 
 # CONFIGURATION, must be copied to ~/.bashrc
 
-AAMKS_SERVER=127.0.0.1
+#AAMKS_SERVER=127.0.0.1
+AAMKS_SERVER=192.168.0.10
 AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 AAMKS_TESTING=0
 AAMKS_USE_GEARMAN=1
@@ -31,20 +32,87 @@ AAMKS_PG_PASS='hulakula'
 AAMKS_SALT='aamksisthebest'
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 
+echo "This is the default Aamks configuration. You can change it in install.sh. "
+echo; echo;
+echo "AAMKS_SERVER: $AAMKS_SERVER"
+echo "AAMKS_NOTIFY: $AAMKS_NOTIFY"
+echo "AAMKS_TESTING: $AAMKS_TESTING"
+echo "AAMKS_USE_GEARMAN: $AAMKS_USE_GEARMAN"
+echo "AAMKS_PATH: $AAMKS_PATH"
+echo "AAMKS_PROJECT: $AAMKS_PROJECT"
+echo "AAMKS_PG_PASS: $AAMKS_PG_PASS"
+echo "AAMKS_SALT: $AAMKS_SALT"
+echo; echo;
+echo "<Enter> accepts, <ctrl+c> cancels"
+read
+
 # END OF CONFIGURATION
 
 sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && { 
-	echo "Aamks already exists in psql. You may wish to clear psql from aamks by invoking:";
-	echo
-	echo 'sudo -u postgres psql -c "DROP DATABASE aamks"; sudo -u postgres psql -c "DROP USER aamks"' 
-	echo
-	exit;
+	echo "Aamks already exists in psql. Do you wish to remove Aamks database?";
+	echo; echo;
+	echo 'sudo -u postgres psql -c "DROP DATABASE aamks"'
+	echo 'sudo -u postgres psql -c "DROP USER aamks"' 
+	echo; echo;
+	echo "<Enter> accepts, <ctrl+c> cancels"
+	read
+	sudo -u postgres psql -c "DROP DATABASE aamks"
+	sudo -u postgres psql -c "DROP USER aamks" 
+
 	# [ $AAMKS_PG_PASS == 'secret' ] && { 
 	# 	echo "Password for aamks psql user needs to be changed from the default='secret'. It must match the AAMKS_PG_PASS in your ~/.bashrc."; 
 	# 	echo
 	# 	exit;
 	# } 
 } 
+
+[ "X$AAMKS_USE_GEARMAN" == "X1" ] && { 
+	# Buggy gearman hasn't been respecting /etc/ for ages now. Therefore we act directly on the /lib
+	# Normally we would go with:
+	# echo "PARAMS=\"--listen=$AAMKS_SERVER\"" | sudo tee /etc/default/gearman-job-server
+	sudo apt-get update 
+	sudo apt-get --yes install gearman
+	echo; echo;
+	echo "Gearmand (job server) will be configured to --listen on all interfaces (0.0.0.0) or whatever else you wish"
+	echo "Gearmand has no authorization mechanisms and its the responsibility of the users to secure the environment"
+	echo "One idea is a firewall rule, that only workers are allowed to connect to 0.0.0.0:4730"
+	echo "Another idea is to have the whole Aamks environment (srv + workers) inside a secured LAN"
+	echo "Configuring via /lib/systemd/system/gearman-job-server.service" 
+	echo; echo;
+	cat /lib/systemd/system/gearman-job-server.service
+	echo; echo;
+	echo "<Enter> accepts to change to --listen=0.0.0.0, <ctrl+c> cancels"
+	read
+	echo; echo;
+	
+	cat << EOF | sudo tee /lib/systemd/system/gearman-job-server.service
+	[Unit]
+	Description=gearman job control server
+
+	[Service]
+	ExecStartPre=/usr/bin/install -d -o gearman /run/gearman
+	PermissionsStartOnly=true
+	User=gearman
+	Restart=always
+	PIDFile=/run/gearman/server.pid
+	ExecStart=/usr/sbin/gearmand --listen=0.0.0.0 --pid-file=/run/gearman/server.pid --log-file=/var/log/gearman-job-server/gearman.log
+
+	[Install]
+	WantedBy=multi-user.target
+EOF
+	echo; echo;
+	sudo systemctl daemon-reload
+	sudo systemctl restart gearman-job-server.service
+	echo; echo;
+	echo "The line below should be showing gearmand --listen=0.0.0.0"
+	echo; echo;
+	sudo ps auxw | grep gearman | grep listen
+	echo; echo;
+	echo "<Enter>"
+	read
+
+}
+
 
 [ -d $AAMKS_PATH ] || { echo "$AAMKS_PATH does not exist. Exiting"; exit;  }
 
@@ -57,13 +125,8 @@ USER=`id -ru`
 
 sudo locale-gen en_US.UTF-8
 sudo apt-get update 
-sudo apt-get --yes install postgresql python3-pip python3-psycopg2 gearman sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php
+sudo apt-get --yes install postgresql python3-pip python3-psycopg2 sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php
 sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
-
-# Some quick SSL for localhost. But you should really configure SSL for your site.
-# sudo a2enmod ssl
-# sudo a2ensite default-ssl.conf
-# sudo service apache2 reload
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`
@@ -77,6 +140,9 @@ echo "export AAMKS_USE_GEARMAN=$AAMKS_USE_GEARMAN" >> $temp
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> $temp
 sudo cp $temp /etc/apache2/envvars
+
+echo "umask 0002" >> $temp
+
 
 echo; echo; echo  "sudo service apache2 restart..."
 sudo service apache2 restart
@@ -99,7 +165,7 @@ sudo -u postgres psql -c "CREATE USER aamks WITH PASSWORD '$AAMKS_PG_PASS'";
 sudo -u postgres psql -f sql.sql
 
 echo
-echo "Some quick SSL for localhost. But you should really configure SSL for your site."
+echo "You may use these commands for some quick setup of SSL on the localhost. But you should really configure SSL for your site."
 echo "sudo a2enmod ssl"
 echo "sudo a2ensite default-ssl.conf"
 echo "sudo service apache2 reload"

@@ -2,10 +2,11 @@
     "comment": "Enable networks and specify number of cores, e.g. network_208: 4. Cores 0 disables network. ",
 
     "enabled_networks": {
-        "localhost": 1,
+        "localhost": 0,
         "network_208": 0,
         "network_003": 0,
         "network_tsz": 0,
+        "network_cr": 1,
         "network_zil": 0
     },
 
@@ -19,6 +20,11 @@
         "network_zil": [ 
 
             [ "c8:60:00:60:43:c5" , "192.168.100.51"  , "192.168.100.255" ] 
+        ],
+
+        "network_cr": [ 
+
+            [ "F8-B1-56-CB-2D-7C" , "192.168.0.200"  , "192.168.0.255" ] 
         ],
 
         "network_208": [ 

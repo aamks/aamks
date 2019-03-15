@@ -13,10 +13,9 @@ from include import Dump as dd
 class Manager():
     def __init__(self): # {{{
         ''' This is the manager of aamks jobs via gearman. '''
-        try:
+
+        if os.path.isfile("/tmp/manage_aamks.sqlite"):
             os.remove("/tmp/manage_aamks.sqlite")
-        except OSError:
-            pass
             
         self.json=Json()
         self.conf=self.json.read("{}/manager/conf.json".format(os.environ['AAMKS_PATH']))
@@ -89,11 +88,7 @@ class Manager():
         ''' 
         * update git
         * install packages
-
-        * SGSP specific -- you need to replace it on your own:
-            * In SGSP we tag hosts as workers via this check in ~/.bashrc:
-              [ -f "/etc/aamks_worker" ] && { export AAMKS_SERVER=192.168.100.131 }
-            * In SGSP we use /home/svn/svn_mimooh/config/ for storing .bashrc
+        * workers use /etc/aamks_server.conf to define AAMKS_SERVER
         '''
 
         self._access_hosts()
@@ -103,13 +98,15 @@ class Manager():
             cmds.append("\"")
             cmds.append("echo ; echo ;")
             cmds.append("echo \`cat /etc/hostname\` ; ")
-            cmds.append("svn co https://github.com/aamks/aamks.git/branches/0.2 $AAMKS_PATH; ")
+            #cmds.append("sudo rm -rf {} ; ".format(os.environ['AAMKS_PATH']))
+            cmds.append("svn co https://github.com/aamks/aamks/trunk {}.master; ".format(os.environ['AAMKS_PATH']))
+            cmds.append("ln -sf {}.master {}; ".format(os.environ['AAMKS_PATH'], os.environ['AAMKS_PATH']))
             cmds.append("svn up /home/svn/svn_mimooh/configs; ")
             cmds.append("sudo apt-get install --yes python3-pip ipython3 python3-urllib3 gearman sendxmpp; ")
-            cmds.append("sudo -H pip3 install --upgrade pip ; ")
-            cmds.append("sudo -H pip3 install networkX numpy ; ")
+            cmds.append("sudo -H pip3 install --upgrade pip; ")
+            cmds.append("sudo -H pip3 install networkX numpy; ")
             cmds.append("rm -rf ~/.cache/; ")
-            cmds.append("sudo touch /etc/aamks_worker; ")
+            cmds.append("echo \"AAMKS_SERVER={}\" | sudo tee /etc/aamks_server.conf ; ".format(os.environ['AAMKS_SERVER']))
             cmds.append("\"")
             Popen("".join(cmds), shell=True)
             time.sleep(5)
@@ -171,17 +168,17 @@ class Manager():
                 pass
 # }}}
     def _argparse(self):# {{{
-        parser = argparse.ArgumentParser(description='options on localhost')
+        parser = argparse.ArgumentParser(description='aamks manager')
 
-        parser.add_argument('-a' , help='add workers from conf.json'                                , required=False   , action='store_true')
-        parser.add_argument('-c' , help='exec shell commands on each registered worker'             , required=False )
-        parser.add_argument('-k' , help='kill all workers'                                          , required=False   , action='store_true')
-        parser.add_argument('-K' , help='kill processes matching pattern e.g. "gearman.*127.0.0.1"' , required=False )
-        parser.add_argument('-l' , help='list tasks'                                                , required=False   , action='store_true')
-        parser.add_argument('-p' , help='ping all workers'                                          , required=False   , action='store_true')
-        parser.add_argument('-r' , help='reset all gearmand '                                       , required=False   , action='store_true')
-        parser.add_argument('-U' , help='update workers'                                            , required=False   , action='store_true')
-        parser.add_argument('-w' , help='wakeOnLan'                                                 , required=False   , action='store_true')
+        parser.add_argument('-a' , help='add workers from conf.json'                               , required=False   , action='store_true')
+        parser.add_argument('-c' , help='workers: exec shell commands'                             , required=False )
+        parser.add_argument('-k' , help='workers: kill gearman/cfast/python'                       , required=False   , action='store_true')
+        parser.add_argument('-K' , help='workers: kill procs by pattern e.g. "gearman.*127.0.0.1"' , required=False )
+        parser.add_argument('-l' , help='list tasks'                                               , required=False   , action='store_true')
+        parser.add_argument('-p' , help='ping all workers'                                         , required=False   , action='store_true')
+        parser.add_argument('-r' , help='srv: clear/kill/restart gearmand'                         , required=False   , action='store_true')
+        parser.add_argument('-U' , help='update workers'                                           , required=False   , action='store_true')
+        parser.add_argument('-w' , help='wakeOnLan'                                                , required=False   , action='store_true')
         args = parser.parse_args()
 
         if args.a:
