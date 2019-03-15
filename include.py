@@ -13,6 +13,7 @@ import numpy as np
 import os
 import sqlite3
 import sys
+# test
 
 class SendMessage:# {{{
     ''' 
