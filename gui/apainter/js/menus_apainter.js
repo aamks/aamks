@@ -118,12 +118,12 @@ function utils_into_setup_box() {//{{{
 		"<input id=utils_setup type=hidden value=1>"+
 		"<table>"+
 		"<tr><td colspan=2><input type=file id=open_existing style='display:none'><label class=blink for='open_existing'>import cad.json from disk<br>TODO: textarea rather</label>"+
-		"<tr><td>copy floor"+floor+" to floor<input id=copy_to_floor type=number min=0 name=copy_to_floor style='width:3em' value=''>"+ 
+		"<tr><td>floor"+floor+" to floor<input id=copy_to_floor type=number min=0 name=copy_to_floor style='width:3em' value=''><button id=btn_copy_to_floor class=blink>copy</button>"+ 
 		"</table>"
 	);
 }
 //}}}
-function help_into_setup_box() {//{{{
+function help_utils_into_setup_box() {//{{{
 	d3.select('right-menu-box').html(
 		"<input id=general_setup type=hidden value=1>"+
 		"<table>"+
@@ -148,9 +148,11 @@ function help_into_setup_box() {//{{{
 		"</table>"
 		);
 
-	$('#setup_underlay').click(function()     { setup_underlay_into_setup_box(); });
-	$('#utils_setup_button').click(function() { utils_into_setup_box(); });
-	$("#open_existing").change(function()     { cad_json_reader(this.files[0]) });
+	$('#setup_underlay').click(function()                            { setup_underlay_into_setup_box(); });
+	$('#utils_setup_button').click(function()                        { utils_into_setup_box(); });
+	$("#open_existing").change(function()                            { cad_json_reader(this.files[0]) });
+	$("right-menu-box").on("click", "#btn_copy_to_floor", function() { copy_to_floor() });
+	
 }
 //}}}
 function cad_json_reader(file) {//{{{
@@ -281,6 +283,7 @@ function import_cadjson() { //{{{
 		ApainterReader.ggx=revert_gg();
 		init_svg_groups(json.data);
 		into_db(json.data);
+		copy_to_floor();
 	});
 }
 //}}}
@@ -365,10 +368,32 @@ function download(filename, text) {//{{{
 //}}}
 //}}}
 function copy_to_floor() {	//{{{
-	c2f=parseInt($("#copy_to_floor").val());
-	//var items=db({'floor': floor}).select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0");
-	// console.log('f', floor,items);
-	//var items=db({'floor': floor}).select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0");
-	//console.log(items);
-	//console.log("reader", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0"));
+	//c2f=parseInt($("#copy_to_floor").val());
+	c2f=3;
+	var guess=db({"floor": floor, 'letter': 'r'}).select("dimz");
+	if(guess[0] != undefined) {
+		var z0=guess[0] * c2f;
+	} else {
+		var z0=default_floor_dimz * c2f;
+	}
+	floors_count++;
+	g_floor=g_aamks.append("g").attr("id", "floor"+c2f).attr({"class": "g_floor", "opacity": 0, "visibility": "hidden"});
+	var src=db({'floor': floor}).get();
+	for (var i in src) {
+		if (src[i]['letter'] == 's') { continue; }
+		var geom = $.extend({}, src[i]);
+		//console.log(src[i]);
+		geom['floor']=c2f;
+		geom['name']=gg[geom['letter']].x+counter;
+		geom['z0']=z0;
+		geom['z1']=z0 + geom['z1'];
+		geom=Attr_cad_json(geom);
+		DbInsert(geom);
+		CreateSvg(geom);
+		counter++;
+	}
+	$("#floor"+c2f).attr({"class": "g_floor", "fill-opacity": 0.4, "visibility": "hidden"});
+
+	var selected_geom='';
+	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}

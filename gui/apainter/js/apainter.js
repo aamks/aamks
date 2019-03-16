@@ -72,6 +72,7 @@ function rrRecalculate(geom) {//{{{
 }
 //}}}
 CreateSvg=function create_svg(geom) { //{{{
+	console.log(geom);
 	if (gg[letter].t == 'evacuee') { 
 		var elem='circle';
 	} else {
@@ -516,7 +517,7 @@ function change_floor() {//{{{
 	floor=parseInt($("#floor").val());
 	guess_floors_z_origin();
 	if(floor > floors_count-1) { 
-		floors_count=floor+1;
+		floors_count++;
 		g_floor = g_aamks.append("g").attr("id", "floor"+floor).attr("class", "g_floor").attr('fill-opacity',gg_opacity);
 	}
 	var active_f="#floor"+floor;
@@ -556,9 +557,6 @@ function updateExitDoor(geom) {//{{{
 function save_setup_box() {//{{{
 	// There's a single box for multiple forms
 	// so we need to find out which form is submitted
-	if ($("#utils_setup").val() != null) { 
-		console.log($("#copy_to_floor").val());
-	}
 
 	if ($("#general_setup").val() != null) { 
 		change_floor();
@@ -568,7 +566,6 @@ function save_setup_box() {//{{{
 		default_floor_dimz=parseInt($("#default_floor_dimz").val());
 		default_window_dimz=parseInt($("#default_window_dimz").val());
 		default_window_offsetz=parseInt($("#default_window_offsetz").val());
-		copy_to_floor();
 		legend();
 	} 
 
@@ -603,7 +600,7 @@ function save_setup_box() {//{{{
 function make_setup_box() {//{{{
 	d3.select('view2d').append('right-menu-box');
 	$('button-right-menu-box').click(function() {
-		help_into_setup_box();
+		help_utils_into_setup_box();
 		$('right-menu-box').fadeIn();
 	});
 
