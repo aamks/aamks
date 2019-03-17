@@ -3,8 +3,13 @@ var ApainterReader={};
 $(function() { 
 	left_menu_box();
 	import_cadjson();
+	register_listeners();
 });
 
+function register_listeners() {//{{{
+	$("right-menu-box").on("click", "#btn_copy_to_floor", function() { copy_to_floor() });
+}
+//}}}
 function renderUnderlayImage(file) {//{{{
 	var reader = new FileReader();
 	if(file.type=='application/pdf') {
@@ -118,7 +123,7 @@ function utils_into_setup_box() {//{{{
 		"<input id=utils_setup type=hidden value=1>"+
 		"<table>"+
 		"<tr><td colspan=2><input type=file id=open_existing style='display:none'><label class=blink for='open_existing'>import cad.json from disk<br>TODO: textarea rather</label>"+
-		"<tr><td>floor"+floor+" to floor<input id=copy_to_floor type=number min=0 name=copy_to_floor style='width:3em' value=''><button id=btn_copy_to_floor class=blink>copy</button>"+ 
+		"<tr><td>floor"+floor+" to floor<input id=copy_to_floor type=number min=0 style='width:3em' value=''><button id=btn_copy_to_floor class=blink>copy</button>"+ 
 		"</table>"
 	);
 }
@@ -151,7 +156,6 @@ function help_utils_into_setup_box() {//{{{
 	$('#setup_underlay').click(function()                            { setup_underlay_into_setup_box(); });
 	$('#utils_setup_button').click(function()                        { utils_into_setup_box(); });
 	$("#open_existing").change(function()                            { cad_json_reader(this.files[0]) });
-	$("right-menu-box").on("click", "#btn_copy_to_floor", function() { copy_to_floor() });
 	
 }
 //}}}
@@ -283,7 +287,6 @@ function import_cadjson() { //{{{
 		ApainterReader.ggx=revert_gg();
 		init_svg_groups(json.data);
 		into_db(json.data);
-		//copy_to_floor();
 	});
 }
 //}}}
@@ -375,11 +378,10 @@ function copy_to_floor() {	//{{{
 	for (var i in src) {
 		if (src[i]['letter'] == 's') { continue; }
 		var geom = $.extend({}, src[i]);
-		//console.log(src[i]);
 		geom['floor']=c2f;
 		geom['name']=gg[geom['letter']].x+counter;
+		geom['z1']=z0 + geom['z1']-geom['z0'];
 		geom['z0']=z0;
-		geom['z1']=z0 + geom['z1'];
 		geom=Attr_cad_json(geom);
 		letter=geom['letter'];
 		DbInsert(geom);
@@ -389,5 +391,6 @@ function copy_to_floor() {	//{{{
 	$("#floor"+c2f).attr({"class": "g_floor", "fill-opacity": 0.4, "visibility": "hidden"});
 
 	var selected_geom='';
+	utils_into_setup_box();
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}

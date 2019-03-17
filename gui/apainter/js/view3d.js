@@ -11,7 +11,6 @@ function visible3D() {//{{{
 	$("button-left-menu-box").css("visibility", "hidden");
 	$("#apainter-svg").css("display", "none");
 	$("view3d").css("visibility", "visible");
-	console.log(scene.objects);
 }
 //}}}
 function colorHexDecode(hex) {//{{{
@@ -24,19 +23,23 @@ function colorHexDecode(hex) {//{{{
 }
 //}}}
 function close3dview() {//{{{
-	//delete(scene);
-	//delete(camera);
-	//$("view3d").html("");
 	$("view3d").css("visibility", "hidden");
 	$("view2d").css("visibility", "visible");
 	$("button-left-menu-box").css("visibility", "visible");
 	$("#apainter-svg").css("display", "block");
 }
 //}}}
+function removeMeshes() { //{{{
+	// Database could have been updated so it is best to just clear the scene and reread meshes
+	for (var i in scene.meshes) { 
+		scene.meshes[i].destroy();
+	}
+}
+//}}}
 function createMeshes() {//{{{
 	// random prevents z-fighting
 	var geoms=db().select("letter", "mvent_offsetz", "x0", "x1", "y0", "y1", "z0", "z1");
-	var half_x, half_y, half_z, mesh_type;
+	var half_x, half_y, half_z;
 	for (var i in geoms) {
 		var bb=[];
 		var random=Math.random()/40;
@@ -124,7 +127,11 @@ function view3d() {//{{{
 			init();
 			createScene();
 			createMeshes(); 
+			visible3D();
 		});
+	} else {
+		removeMeshes();
+		createMeshes(); 
+		visible3D();
 	}
-	visible3D();
 }
