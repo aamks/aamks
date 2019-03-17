@@ -131,7 +131,7 @@ function help_utils_into_setup_box() {//{{{
 		"<tr><td>shift + mouse2	    <td> zoom/drag"+
 		"<tr><td>double mouse1		<td> elem properties"+
 		"<tr><td>hold ctrl			<td> disable snapping"+ 
-		"<tr><td>h	<td> alternative view"+ 
+		"<tr><td>h	<td> alternative views"+ 
 		"<tr><td>x	<td> delete active"+
 		"<tr><td>g	<td> list all of active type"+
 		"<tr><td colspan=2><div style='float:right' class=blink id=utils_setup_button>utils</div>"+
@@ -283,7 +283,7 @@ function import_cadjson() { //{{{
 		ApainterReader.ggx=revert_gg();
 		init_svg_groups(json.data);
 		into_db(json.data);
-		copy_to_floor();
+		//copy_to_floor();
 	});
 }
 //}}}
@@ -293,7 +293,7 @@ function legend_static() {//{{{
 	$('apainter-legend-static').prepend("<write>SAVE</write> &nbsp;");
 
 	$('write').click(function() { output_json(); });
-	$('open3dview').click(function() { open3dview(); });
+	$('open3dview').click(function() { view3d(); });
 }
 //}}}
 function legend() { //{{{
@@ -308,12 +308,6 @@ function legend() { //{{{
 
 	$('.legend').click(function() {
 		properties_type_listing($(this).attr('letter'));
-	});
-}
-//}}}
-function open3dview() {//{{{
-	$.getScript("js/xeogl.min.js", function(){
-		view3d();
 	});
 }
 //}}}
@@ -368,8 +362,7 @@ function download(filename, text) {//{{{
 //}}}
 //}}}
 function copy_to_floor() {	//{{{
-	//c2f=parseInt($("#copy_to_floor").val());
-	c2f=3;
+	c2f=parseInt($("#copy_to_floor").val());
 	var guess=db({"floor": floor, 'letter': 'r'}).select("dimz");
 	if(guess[0] != undefined) {
 		var z0=guess[0] * c2f;
@@ -388,6 +381,7 @@ function copy_to_floor() {	//{{{
 		geom['z0']=z0;
 		geom['z1']=z0 + geom['z1'];
 		geom=Attr_cad_json(geom);
+		letter=geom['letter'];
 		DbInsert(geom);
 		CreateSvg(geom);
 		counter++;

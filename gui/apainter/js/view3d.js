@@ -1,11 +1,17 @@
 var scene, camera;
 
 function init() {//{{{
-	$("view2d").css("display", "none");
-	$("button-left-menu-box").css("display", "none");
-	$("view3d").append("<close-left-menu-box style='position: fixed; left: 10px; top:10px'><img src=/aamks/css/close.svg></close-left-menu-box>");
-	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', canvas[0]).attr('height', canvas[1]);
+	$("view3d").append("<close-left-menu-box style='position: fixed; left: 10px; top:10px;'><img src=/aamks/css/close.svg> </close-left-menu-box><span style='margin-left:30px'>or h key</span>");
 	$('close-left-menu-box').click(function() { close3dview(); });
+	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', canvas[0]).attr('height', canvas[1]);
+}
+//}}}
+function visible3D() {//{{{
+	$("view2d").css("visibility", "hidden");
+	$("button-left-menu-box").css("visibility", "hidden");
+	$("#apainter-svg").css("display", "none");
+	$("view3d").css("visibility", "visible");
+	console.log(scene.objects);
 }
 //}}}
 function colorHexDecode(hex) {//{{{
@@ -18,9 +24,13 @@ function colorHexDecode(hex) {//{{{
 }
 //}}}
 function close3dview() {//{{{
-	$("view3d").html("");
-	$("view2d").css("display", "block");
-	$("button-left-menu-box").css("display", "block");
+	//delete(scene);
+	//delete(camera);
+	//$("view3d").html("");
+	$("view3d").css("visibility", "hidden");
+	$("view2d").css("visibility", "visible");
+	$("button-left-menu-box").css("visibility", "visible");
+	$("#apainter-svg").css("display", "block");
 }
 //}}}
 function createMeshes() {//{{{
@@ -109,7 +119,12 @@ function createScene() { //{{{
 }
 //}}}
 function view3d() {//{{{
-	init();
-	createScene();
-	createMeshes(); 
+	if(scene === undefined) {
+		$.getScript("js/xeogl.min.js", function(){
+			init();
+			createScene();
+			createMeshes(); 
+		});
+	}
+	visible3D();
 }

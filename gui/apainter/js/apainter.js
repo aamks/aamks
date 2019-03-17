@@ -4,6 +4,7 @@ var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var gg;
 var DbInsert;
+var currentView=0;
 var Attr_cad_json;
 var CreateSvg;
 var CanvasBuilder;
@@ -72,7 +73,6 @@ function rrRecalculate(geom) {//{{{
 }
 //}}}
 CreateSvg=function create_svg(geom) { //{{{
-	console.log(geom);
 	if (gg[letter].t == 'evacuee') { 
 		var elem='circle';
 	} else {
@@ -196,7 +196,7 @@ function keyboard_events() {//{{{
 		}
 	});
 
-	$(this).keydown((e) =>  { if (e.key == 'h')     { alternative_view(); } });
+	$(this).keydown((e) => { if (e.key == 'h')     { alternative_view(); } });
 	$(this).keypress((e) => { if (e.key == 'g')     { properties_type_listing(droplist_letter); } });
 	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "hidden"); } });
 	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "visible"); } });
@@ -221,14 +221,11 @@ function geom_select_deselect() { //{{{
 }
 	//}}}
 function alternative_view() {//{{{
-	$(".g_img").toggle();
-	$(".axis").toggle();
-	if(d3.select('#floor'+floor).attr('fill-opacity')==0.7) { 
-		gg_opacity=0.4; 
-	} else {
-		gg_opacity=0.7; 
-	}
-	d3.select('#floor'+floor).attr('fill-opacity', gg_opacity);
+	//console.log(currentView);
+	if(currentView==0) { currentView=1; view3d(); }
+	else if(currentView==1) { currentView=0; close3dview(); }
+	//console.log(currentView);
+	//console.log("===========");
 }
 //}}}
 function remove_geom(geom) {//{{{
