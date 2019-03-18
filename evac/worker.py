@@ -133,6 +133,8 @@ class Worker:
 
         self.s = Sqlite("aamks.sqlite")
         #self.s.dumpall()
+        doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom where type_pri="HVENT" AND vent_to_name="outside"')
+        self.vars['conf']['doors']=doors
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
 
     def _create_evacuees(self, floor):

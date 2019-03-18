@@ -7,6 +7,7 @@ import logging
 import os
 import json
 from include import Navmesh
+from shapely.geometry import Polygon
 
 
 class EvacEnv:
@@ -96,7 +97,9 @@ class EvacEnv:
             else:
                 position = self.evacuees.get_position_of_pedestrian(i)
 
-                goal = self.nav.query([position, (4665, 545)])
+                exit = (self.general['doors'][0]['center_x'], self.general['doors'][0]['center_y'])
+                goal = self.nav.query([position, exit])
+                #print(Polygon(goal).length)
                 self.evacuees.set_goal(ped_no=i, goal=goal)
 
         self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
