@@ -98,9 +98,9 @@ class Evacuees:
         #logging.info('Evacuee {} at position'.format(ped_no))
         return self.pedestrians[ped_no].focus
 
-    def set_goal(self, ped_no: int, goal: float) -> object:
+    def set_goal(self, ped_no: int, goal: list) -> object:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
-        self.pedestrians[ped_no].goal = goal
+        self.pedestrians[ped_no].set_goal(goal)
 
     def get_first_evacuees_time(self):
         pre_evacuation_times = [self.pedestrians[i].pre_evacuation_time for i in range(len(self.pedestrians))]

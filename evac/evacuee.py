@@ -1,6 +1,7 @@
 from operator import sub
 from math import sqrt
 import logging
+from scipy.spatial.distance import cdist
 
 
 class Evacuee:
@@ -52,11 +53,18 @@ class Evacuee:
         assert isinstance(thermal_injury, float), '%thermal_injury is not a float'
         self.thermal_injury = thermal_injury
 
+    def set_goal(self, goal):
+        assert isinstance(goal, list), '%goal is not a list'
+        dist = cdist([self.position], [goal[-1]], 'euclidean')
+        if dist < 30:
+            self.finished = 0
+        else:
+            self.goal = goal[1]
+
+
     def calculate_velocity(self, current_time):
         self.unnorm_vector = tuple(map(sub, self.goal, self.position))
         self.distance = (sqrt(self.unnorm_vector[0] ** 2 + self.unnorm_vector[1] ** 2))
-        if self.distance < 0.1:
-            self.finished = 0
 
         if current_time > self.pre_evacuation_time:
             norm_vector = tuple((self.unnorm_vector[0] / self.distance, self.unnorm_vector[1] / self.distance))

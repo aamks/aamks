@@ -78,6 +78,8 @@ class EvacEnv:
                 self.evacuees.set_position_to_pedestrian(i, self.sim.getAgentPosition(i))
         self.positions = [tuple((int(self.sim.getAgentPosition(i)[0]), int(self.sim.getAgentPosition(i)[1]))) for (i)
                           in range(self.sim.getNumAgents())]
+        for i in range(self.evacuees.get_number_of_pedestrians()):
+            logging.debug('AGENT: {}, POSITION: {}'.format(i, self.evacuees.get_position_of_pedestrian(i)))
 
     def update_agents_velocity(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
@@ -94,9 +96,9 @@ class EvacEnv:
             else:
                 position = self.evacuees.get_position_of_pedestrian(i)
 
+                goal = self.nav.query([position, (4665, 545)])
+                self.evacuees.set_goal(ped_no=i, goal=goal)
 
-                goal = self.nav.query([position, (4652, 493)])
-                self.evacuees.set_goal(ped_no=i, goal=goal[0])
         self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
         for i in range(self.sim.getNumAgents()):
             self.focus.append(self.evacuees.get_goal_of_pedestrian(i))
