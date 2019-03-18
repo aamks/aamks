@@ -7,7 +7,14 @@ $(function() {
 });
 
 function register_listeners() {//{{{
-	$("right-menu-box").on("click", "#btn_copy_to_floor", function() { copy_to_floor() });
+
+	$("right-menu-box").on("click" , "#btn_copy_to_floor"   , function() { copy_to_floor() });
+	$("right-menu-box").on("click" , "#btn_edit_cad_json"   , function() { textarea_edit_cad_json() });
+	$("right-menu-box").on("click" , "#btn_submit_cad_json" , function() { textarea_edit_cad_json() });
+	$("right-menu-box").on("click" , '#setup_underlay'      , function() { setup_underlay_into_setup_box(); });
+	$("right-menu-box").on("click" , '#utils_setup_button'  , function() { utils_into_setup_box(); });
+	$("body").on("click"           , '#btn-cad-json-save'   , function() { cad_json_textarea_save(); });
+	$("body").on("click"           , '#btn-cad-json-cancel' , function() { cad_json_textarea_close(); });
 }
 //}}}
 function renderUnderlayImage(file) {//{{{
@@ -68,6 +75,37 @@ function underlay_changed() {//{{{
 	)
 }
 //}}}
+function cad_json_textarea_close() {//{{{
+	$("view2d").css("visibility", "visible");
+	$("button-left-menu-box").css("visibility", "visible");
+	$("#apainter-svg").css("display", "block");
+	$("#floating-div").remove();
+}
+//}}}
+function cad_json_textarea_save() {//{{{
+	var json_data=$("#cad-json-textarea").val();
+	ajax_save_cadjson(json_data); 
+	cad_json_textarea_close();
+	import_cadjson();
+}
+//}}}
+function textarea_edit_cad_json() {//{{{
+	$("view2d").css("visibility", "hidden");
+	$("button-left-menu-box").css("visibility", "hidden");
+	$("#apainter-svg").css("display", "none");
+
+	var pretty_json=db2cadjson(); 
+	$("body").append(
+		"<div id=floating-div>"+
+		"<div style='float:right; margin-right:20px'>"+
+		"<button class=blink id=btn-cad-json-save>Save</button>"+
+		"<button class=blink id=btn-cad-json-cancel>Cancel</button><br>"+
+		"</div>"+
+		"<textarea id=cad-json-textarea>"+pretty_json+"</textarea>"+
+		"</div>"
+	);
+}
+//}}}
 function setup_underlay_into_setup_box() {//{{{
 	underlay_draggable=1;
 	if(underlay_imgs[floor]==null) { 
@@ -85,14 +123,15 @@ function setup_underlay_into_setup_box() {//{{{
 	d3.select('right-menu-box').html(
 		"You can load an underlay png/jpg/svg.<br><br>"+
 		"You can drag the underlay img with <br>"+
-		"mouse2 only while this window is open.<br><br>"+
+		"middle mouse button only while<br>"+ 
+		"this window is open.<br><br>"+
 		"You can only alter the width of the<br>"+ 
 		"underlay img, and the height will<br>"+
 		"change accordingly.<br><br><br>"+
 		"<input type=file id=underlay_loader style='display:none'><label class=blink for='underlay_loader'>attach underlay image</label>"+
 		"<br><br><table>"+
-		"<tr><td>image<td id=underlay_img_fname>"+
-		"<tr><td>origin<td id=underlay_translate>"+
+		"<tr><td>image<td id=underlay_img_fname><span class=grey>auto</span>"+
+		"<tr><td>origin<td id=underlay_translate><span class=grey>auto</span>"+
 		"<tr><td>scaler width<td><input id=alter_underlay_width type=text size=4 "+width+"> <a href=underlay_example.svg target=_blank class=blink>help</a>"+
 		"<tr><td>opacity<td><input id=alter_underlay_opacity type=text size=4 "+opacity+">"+
 		"<tr><td>invert colors<td><input type=checkbox id=alter_underlay_invert_colors "+invert_colors+">"+
@@ -119,11 +158,13 @@ function setup_underlay_into_setup_box() {//{{{
 }
 //}}}
 function utils_into_setup_box() {//{{{
+	//"<tr><td colspan=2><input type=file id=open_existing style='display:none'><label class=blink for='open_existing'>import cad.json from disk<br>TODO: textarea rather</label>"+
 	d3.select('right-menu-box').html(
 		"<input id=utils_setup type=hidden value=1>"+
 		"<table>"+
-		"<tr><td colspan=2><input type=file id=open_existing style='display:none'><label class=blink for='open_existing'>import cad.json from disk<br>TODO: textarea rather</label>"+
-		"<tr><td>floor"+floor+" to floor<input id=copy_to_floor type=number min=0 style='width:3em' value=''><button id=btn_copy_to_floor class=blink>copy</button>"+ 
+		"<tr><td><button id=setup_underlay class=blink>underlay</button><td> for floor"+floor+
+		"<tr><td><button id=btn_edit_cad_json class=blink>edit</button><td>geometry as text"+
+		"<tr><td><button id=btn_copy_to_floor class=blink>copy</button><td>floor"+floor+" to floor <input id=copy_to_floor type=number min=0 style='width:3em' value=''>"+ 
 		"</table>"
 	);
 }
@@ -131,19 +172,18 @@ function utils_into_setup_box() {//{{{
 function help_utils_into_setup_box() {//{{{
 	d3.select('right-menu-box').html(
 		"<input id=general_setup type=hidden value=1>"+
+		"<span style='float: right' class=blink id=utils_setup_button>utils</span><br><br>"+
 		"<table>"+
 		"<tr><td>letter + mouse1     <td> create"+
 		"<tr><td>shift + mouse2	    <td> zoom/drag"+
 		"<tr><td>double mouse1		<td> elem properties"+
 		"<tr><td>hold ctrl			<td> disable snapping"+ 
-		"<tr><td>h	<td> alternative views"+ 
+		"<tr><td>h	<td> 2D/3D views"+ 
 		"<tr><td>x	<td> delete active"+
 		"<tr><td>g	<td> list all of active type"+
-		"<tr><td colspan=2><div style='float:right' class=blink id=utils_setup_button>utils</div>"+
 
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor<td><input id=floor type=number min=0 name=floor style='width:3em' value="+floor+">"+ 
-		"<div id=setup_underlay class=blink>underlay</div>"+
 		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
 		"<tr><td>door's width <td><input id=default_door_width type=text size=4   name=default_door_width  value="+default_door_width+">"+
 		"<tr><td>door's z-dim <td><input id=default_door_dimz type=text size=4	name=default_door_dimz value="+default_door_dimz+">"+
@@ -153,10 +193,6 @@ function help_utils_into_setup_box() {//{{{
 		"</table>"
 		);
 
-	$('#setup_underlay').click(function()                            { setup_underlay_into_setup_box(); });
-	$('#utils_setup_button').click(function()                        { utils_into_setup_box(); });
-	$("#open_existing").change(function()                            { cad_json_reader(this.files[0]) });
-	
 }
 //}}}
 function cad_json_reader(file) {//{{{
@@ -276,9 +312,8 @@ function ajaxPdf2svg() { //{{{
 	}
 }
 //}}}
-function export_cadjson(cadfile) { //{{{
-	$.post('/aamks/ajax.php?ajaxApainterExport', { 'cadfile': cadfile }, function (json) { ajax_msg(json); });
-	
+function ajax_save_cadjson(json_data) { //{{{
+	$.post('/aamks/ajax.php?ajaxApainterExport', { 'cadfile': json_data }, function (json) { ajax_msg(json); });
 }
 //}}}
 function import_cadjson() { //{{{
@@ -295,7 +330,7 @@ function legend_static() {//{{{
 	$('apainter-legend-static').prepend("<open3dview>3D</open3dview> &nbsp;");
 	$('apainter-legend-static').prepend("<write>SAVE</write> &nbsp;");
 
-	$('write').click(function() { output_json(); });
+	$('write').click(function() { var pretty_json=db2cadjson(); ajax_save_cadjson(pretty_json); });
 	$('open3dview').click(function() { view3d(); });
 }
 //}}}
@@ -314,7 +349,7 @@ function legend() { //{{{
 	});
 }
 //}}}
-function output_json() {//{{{
+function db2cadjson() {//{{{
 	// Instead of JSON.stringify we prefer our own pretty formatting.
 
 	var json=[];
@@ -342,27 +377,8 @@ function output_json() {//{{{
 		ff+='\n\t}';
 		json.push(ff);
 	}
-	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
-	download("cad.json", pretty_json);
-	export_cadjson(pretty_json);
+	return "{\n"+json.join(",\n")+"\n}\n";
 }
-function download(filename, text) {//{{{
-	// download writes it directly to the browser to save
-	return;
-    var pom = document.createElement('a');
-    pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-    pom.setAttribute('download', filename);
-
-    if (document.createEvent) {
-        var event = document.createEvent('MouseEvents');
-        event.initEvent('click', true, true);
-        pom.dispatchEvent(event);
-    }
-    else {
-        pom.click();
-    }
-}
-//}}}
 //}}}
 function copy_to_floor() {	//{{{
 	c2f=parseInt($("#copy_to_floor").val());
