@@ -1,8 +1,8 @@
 function ajax_msg(r) {//{{{
-	$('#ajax_msg').clearQueue();
 	if(r['err']==1) { 
+		$('#ajax_msg').clearQueue();
 		$('#ajax_msg').css('display', 'none');
-		$('#ajax_msg').html(r['msg']);
+		$('#ajax_msg').html("Aamks is halting on error:<br>"+r['msg']);
 		$('#ajax_msg').css('display', 'block');
 		$('#ajax_msg').css('background-color', "#800");
 		throw new Error("Aamks is halting on error");
