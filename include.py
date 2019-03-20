@@ -386,7 +386,14 @@ class Navmesh: # {{{
             raise SystemExit("Navmesh: cannot create {}".format(file_nav))
 
 # }}}
-    def query(self,q,floor="0"):# {{{
+    def query(self,q,floor="0",maxStraightPath=8):# {{{
+        '''
+        ./Detour/Include/DetourNavMeshQuery.h: maxStraightPath: The maximum number of points the straight path arrays can hold.  [Limit: > 0]
+        We set maxStraightPath to a default low value which stops calculations early
+        If one needs to get the full path to the destination one must call us with any high value, e.g. 999999999
+        '''
+         
+
         filtr = dt.dtQueryFilter()
         query = dt.dtNavMeshQuery()
 
@@ -410,7 +417,7 @@ class Navmesh: # {{{
         endRef = out["nearestRef"]
         _endPt = out["nearestPt"]
 
-        status, out = query.findPath(startRef, endRef, startPos, endPos, filtr, 32)
+        status, out = query.findPath(startRef, endRef, startPos, endPos, filtr, maxStraightPath)
         if dt.dtStatusFailed(status):
             return "err", -4, status
         pathRefs = out["path"]
@@ -419,7 +426,7 @@ class Navmesh: # {{{
         if dt.dtStatusFailed(status):
             return "err", -5, status
 
-        status, out = query.findStraightPath(startPos, fixEndPos, pathRefs, 32, 0)
+        status, out = query.findStraightPath(startPos, fixEndPos, pathRefs, maxStraightPath, 0)
         if dt.dtStatusFailed(status):
             return "err", -6, status
         straightPath = out["straightPath"]
