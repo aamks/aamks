@@ -15,6 +15,7 @@ class Evacuee:
 
         self.origin = origin
         self.goal = None
+        self.exit_door = None
         self.fed = 0
         self.distance = 1
         self.velocity = (0, 0)

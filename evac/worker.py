@@ -178,6 +178,7 @@ class Worker:
 
             e = self._create_evacuees(i)
             eenv.place_evacuees(e)
+            eenv.set_exit_door()
             self.floors.append(eenv)
 
     def do_simulation(self):

@@ -8,6 +8,7 @@ import os
 import json
 from include import Navmesh
 from shapely.geometry import Polygon
+from scipy.spatial.distance import cdist
 
 
 class EvacEnv:
@@ -90,16 +91,27 @@ class EvacEnv:
         self.velocities = [tuple((int(self.sim.getAgentPrefVelocity(i)[0]), int(self.sim.getAgentPrefVelocity(i)[1]))) for (i)
                            in range(self.sim.getNumAgents())]
 
+    def set_exit_door(self):
+        for evacuee in range(self.evacuees.get_number_of_pedestrians()):
+            paths = list()
+            for door in self.general['doors']:
+                    path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (door['center_x'], door['center_y'])],
+                                                  maxStraightPath=100, floor=str(self.floor))
+                    if len(path) < 3:
+                        paths.append(cdist([path[0]], [path[-1]], 'euclidean'))
+                    else:
+                        paths.append(Polygon(path).length)
+
+            closest_exit = paths.index(min(paths))
+            self.evacuees.set_exit_door(ped_no=evacuee, exit_door=(self.general['doors'][closest_exit]['center_x'], self.general['doors'][closest_exit]['center_y']))
+
+
     def set_goal(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
-                position = self.evacuees.get_position_of_pedestrian(i)
-
-                exit = (self.general['doors'][0]['center_x'], self.general['doors'][0]['center_y'])
-                goal = self.nav.query([position, exit])
-                #print(Polygon(goal).length)
+                goal = self.nav.query([self.evacuees.get_position_of_pedestrian(i), self.evacuees.get_exit_door(i)])
                 self.evacuees.set_goal(ped_no=i, goal=goal)
 
         self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
