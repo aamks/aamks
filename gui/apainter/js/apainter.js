@@ -123,7 +123,7 @@ DbInsert=function db_insert(geom) { //{{{
 	selected_geom=geom.name;
 	if(geom.type!='underlay_scaler') {
 		db.insert({ "name": geom.name, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "window_offsetz": geom.window_offsetz, "mvent_offsetz": geom.mvent_offsetz, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type, "room_enter": geom.room_enter });
-		show_selected_properties(geom.name);
+		show_selected_properties();
 		geoms_changed();
 	}
 	//console.log("painter", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "exit_type", "letter", "window_offsetz", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0", "z0", "x1", "y1", "z1", "room_enter"));
@@ -186,20 +186,18 @@ function zoomed_canvas() {//{{{
 }
 //}}}
 function fadeout_setup_box() {//{{{
-	if(gg[letter].t == 'underlay_scaler') { return; }
+	if(gg[active_letter].t == 'underlay_scaler') { return; }
 	$('right-menu-box').fadeOut(0);
 	underlay_draggable=0;
 }
 //}}}
 function keyboard_events() {//{{{
 	$(this).keypress((e) => { 
-		for(var letter in gg) {
-			if (e.key == letter) { new_geom(letter); }
-		}
-	});
 
-	$(this).keydown((e) => { if (e.key == 'h')      { alternative_view(); } });
-	$(this).keypress((e) => { if (e.key == 'g')     { properties_type_listing(); } });
+		if (e.key == 'h')      { alternative_view(); }
+		else if (e.key == 'g') { properties_type_listing(); }
+		else if (e.key in gg)  { active_letter=e.key; new_geom(); } 
+	});
 	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "hidden"); } });
 	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "visible"); } });
 }
@@ -217,7 +215,7 @@ function geom_select_deselect() { //{{{
 	$('svg').dblclick(function(evt){
 		if (evt.target.tagName == 'rect' || evt.target.tagName == 'circle') { 
 			selected_geom=evt.target.id;
-			show_selected_properties(selected_geom);
+			show_selected_properties();
 			blink_selected();
 		} else {
 			selected_geom=''
@@ -246,10 +244,10 @@ function remove_geom(geom) {//{{{
 	geoms_changed();
 }
 //}}}
-function properties_type_listing_plain(letter) {//{{{
+function properties_type_listing_plain() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim";
-	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "name", "x0", "y0");
+	var items=db({'letter': active_letter, 'floor': floor}).select("dimx", "dimy", "dimz", "name", "x0", "y0");
 	for (var i in items) { 
 		tbody+="<tr><td class=properties_type_listing id="+ items[i][3]+ ">"+ items[i][3]+"</td>"+
 			"<td>"+items[i][4]+
@@ -261,10 +259,10 @@ function properties_type_listing_plain(letter) {//{{{
 	return tbody;
 }
 //}}}
-function properties_type_listing_mvent(letter) {//{{{
+function properties_type_listing_mvent() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>z-offset<td>throughput";
-	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "mvent_offsetz", "mvent_throughput", "name", "x0", "y0");
+	var items=db({'letter': active_letter, 'floor': floor}).select("dimx", "dimy", "dimz", "mvent_offsetz", "mvent_throughput", "name", "x0", "y0");
 	for (var i in items) { 
 		tbody+="<tr><td class=properties_type_listing id="+ items[i][5]+ ">"+ items[i][5]+"</td>"+
 			"<td>"+items[i][6]+
@@ -278,10 +276,10 @@ function properties_type_listing_mvent(letter) {//{{{
 	return tbody;
 }
 //}}}
-function properties_type_listing_window(letter) {//{{{
+function properties_type_listing_window() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>z-offset";
-	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "window_offsetz", "name", "x0", "y0");
+	var items=db({'letter': active_letter, 'floor': floor}).select("dimx", "dimy", "dimz", "window_offsetz", "name", "x0", "y0");
 	for (var i in items) { 
 		tbody+="<tr><td class=properties_type_listing id="+ items[i][4]+ ">"+ items[i][4]+"</td>"+
 			"<td>"+items[i][5]+
@@ -294,10 +292,10 @@ function properties_type_listing_window(letter) {//{{{
 	return tbody;
 }
 //}}}
-function properties_type_listing_door(letter) {//{{{
+function properties_type_listing_door() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>exit_type";
-	var items=db({'letter': letter, 'floor': floor}).select("dimx", "dimy", "dimz", "exit_type", "name", "x0", "y0");
+	var items=db({'letter': active_letter, 'floor': floor}).select("dimx", "dimy", "dimz", "exit_type", "name", "x0", "y0");
 	for (var i in items) { 
 		tbody+="<tr><td class=properties_type_listing id="+ items[i][4]+ ">"+ items[i][4]+"</td>"+
 			"<td>"+items[i][5]+
@@ -310,10 +308,10 @@ function properties_type_listing_door(letter) {//{{{
 	return tbody;
 }
 //}}}
-function properties_type_listing_evacuee(letter) {//{{{
+function properties_type_listing_evacuee() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0";
-	var items=db({'letter': letter, 'floor': floor}).select("name", "x0", "y0");
+	var items=db({'letter': active_letter, 'floor': floor}).select("name", "x0", "y0");
 	for (var i in items) { 
 		tbody+="<tr><td class=properties_type_listing id="+ items[i][0]+ ">"+ items[i][0]+"</td>"+
 			"<td>"+items[i][1]+
@@ -328,15 +326,15 @@ function properties_type_listing() {//{{{
 	names+='<wheat>Hover name, then <letter>x</letter> to delete</wheat>';
 	names+='<table id=droplist_names_table style="margin-right:20px">';
 	if (gg[active_letter].t=='mvent') { 
-		names+=properties_type_listing_mvent(active_letter);
+		names+=properties_type_listing_mvent();
 	} else if (gg[active_letter].t=='window') { 
-		names+=properties_type_listing_window(active_letter);
+		names+=properties_type_listing_window();
 	} else if (gg[active_letter].t=='door') { 
-		names+=properties_type_listing_door(active_letter);
+		names+=properties_type_listing_door();
 	} else if (gg[active_letter].t=='evacuee') { 
-		names+=properties_type_listing_evacuee(active_letter);
+		names+=properties_type_listing_evacuee();
 	} else {
-		names+=properties_type_listing_plain(active_letter);
+		names+=properties_type_listing_plain();
 	}
 	names+="</table>";
 	names+="</div>";
@@ -346,53 +344,15 @@ function properties_type_listing() {//{{{
 
 	$('.properties_type_listing').click(function() {
 		selected_geom=$(this).attr('id');
-		show_selected_properties(selected_geom);
+		show_selected_properties();
 		blink_selected();
 	});
 
 }
 //}}}
-function make_room_properties(letter) {//{{{
+function make_dim_properties() {//{{{
 	var prop='';
-	if(gg[letter].t=='room') {
-		var selected=db({'name':selected_geom}).select("room_enter")[0];
-		prop+="<tr><td>prop";
-		prop+="<td><select id=alter_room_enter>";
-		prop+="<option value="+selected+">"+selected+"</option>";
-		prop+="<option value='can_enter'>can_enter</option>";
-		prop+="<option value='cannot_enter'>cannot_enter</option>";
-		prop+="</select>";
-	} else {
-		prop+="<input id=alter_room_enter type=hidden value=0>";
-	}
-	return prop;
-}
-//}}}
-function make_mvent_properties(letter) {//{{{
-	var mvent='';
-	if(gg[letter].t=='mvent') {
-		mvent+="<tr><td>z-offset<td>  <input id=alter_mvent_offsetz type=text size=3 value="+db({'name':selected_geom}).select("mvent_offsetz")[0]+">";
-		mvent+="<tr><td>throughput<td>  <input id=alter_mvent_throughput type=text size=3 value="+db({'name':selected_geom}).select("mvent_throughput")[0]+">";
-	} else {
-		mvent+="<input id=alter_mvent_offsetz type=hidden value=0>";
-		mvent+="<input id=alter_mvent_throughput type=hidden value=0>";
-	}
-	return mvent;
-}
-//}}}
-function make_window_properties(letter) {//{{{
-	var win='';
-	if(gg[letter].t=='window') {
-		win+="<tr><td>z-offset<td>  <input id=alter_window_offsetz type=text size=3 value="+db({'name':selected_geom}).select("window_offsetz")[0]+">";
-	} else {
-		win+="<input id=alter_window_offsetz type=hidden value=0>";
-	}
-	return win;
-}
-//}}}
-function make_dim_properties(letter) {//{{{
-	var prop='';
-	if(gg[letter].t!='evacuee') {
+	if(gg[active_letter].t!='evacuee') {
 		//var selected=db({'name':selected_geom}).select("exit_type")[0]; // TODO: some garbage line?
 		prop+="<tr><td>x-dim<td><input id=alter_dimx type=text size=3 value="+db({'name':selected_geom}).select("dimx")[0]+">";
 		prop+="<tr><td>y-dim<td><input id=alter_dimy type=text size=3 value="+db({'name':selected_geom}).select("dimy")[0]+">";
@@ -405,9 +365,47 @@ function make_dim_properties(letter) {//{{{
 	return prop;
 }
 //}}}
-function make_door_properties(letter) {//{{{
+function make_room_properties() {//{{{
 	var prop='';
-	if(gg[letter].t=='door') {
+	if(gg[active_letter].t=='room') {
+		var selected=db({'name':selected_geom}).select("room_enter")[0];
+		prop+="<tr><td>enter";
+		prop+="<td><select id=alter_room_enter>";
+		prop+="<option value="+selected+">"+selected+"</option>";
+		prop+="<option value='can_enter'>can_enter</option>";
+		prop+="<option value='cannot_enter'>cannot_enter</option>";
+		prop+="</select>";
+	} else {
+		prop+="<input id=alter_room_enter type=hidden value=0>";
+	}
+	return prop;
+}
+//}}}
+function make_mvent_properties() {//{{{
+	var mvent='';
+	if(gg[active_letter].t=='mvent') {
+		mvent+="<tr><td>z-offset<td>  <input id=alter_mvent_offsetz type=text size=3 value="+db({'name':selected_geom}).select("mvent_offsetz")[0]+">";
+		mvent+="<tr><td>throughput<td>  <input id=alter_mvent_throughput type=text size=3 value="+db({'name':selected_geom}).select("mvent_throughput")[0]+">";
+	} else {
+		mvent+="<input id=alter_mvent_offsetz type=hidden value=0>";
+		mvent+="<input id=alter_mvent_throughput type=hidden value=0>";
+	}
+	return mvent;
+}
+//}}}
+function make_window_properties() {//{{{
+	var win='';
+	if(gg[active_letter].t=='window') {
+		win+="<tr><td>z-offset<td>  <input id=alter_window_offsetz type=text size=3 value="+db({'name':selected_geom}).select("window_offsetz")[0]+">";
+	} else {
+		win+="<input id=alter_window_offsetz type=hidden value=0>";
+	}
+	return win;
+}
+//}}}
+function make_door_properties() {//{{{
+	var prop='';
+	if(gg[active_letter].t=='door') {
 		var selected=db({'name':selected_geom}).select("exit_type")[0];
 		prop+="<tr><td>exit";
 		prop+="<td><select id=alter_exit_type>";
@@ -422,14 +420,13 @@ function make_door_properties(letter) {//{{{
 	return prop;
 }
 //}}}
-function show_selected_properties(selected_geom) {//{{{
-	var letter=db({'name':selected_geom}).select("letter")[0];
-	active_letter=letter;
-	var room_properties=make_room_properties(letter);
-	var mvent_properties=make_mvent_properties(letter);
-	var window_properties=make_window_properties(letter);
-	var door_properties=make_door_properties(letter);
-	var dim_properties=make_dim_properties(letter);
+function show_selected_properties() {//{{{
+	active_letter=db({'name':selected_geom}).select("letter")[0];
+	var room_properties=make_room_properties();
+	var mvent_properties=make_mvent_properties();
+	var window_properties=make_window_properties();
+	var door_properties=make_door_properties();
+	var dim_properties=make_dim_properties();
 	d3.select('right-menu-box').html(
 	    "<input id=geom_properties type=hidden value=1>"+
 		"<wheat><letter>x</letter> to delete, <letter>g</letter> for listing</wheat>"+
@@ -560,7 +557,6 @@ function change_floor() {//{{{
 }
 //}}}
 function updateVisPropsElem(geom) {//{{{
-	console.log("aa", geom.letter);
 	if(geom.type=='door') { 
 		if(geom.exit_type=='exit_sec') { 
 			$("#"+geom.name).css({ stroke: "#000" });   
@@ -730,12 +726,12 @@ function snap(m,rect,after_click) {//{{{
 }
 
 //}}}
-function create_self_props(self, letter) {//{{{
+function create_self_props(self) {//{{{
 	self.rr={};
 	self.floor=floor;
-	self.letter=letter;
-	self.type=gg[letter].t;
-	self.name=gg[letter].x+counter;
+	self.letter=active_letter;
+	self.type=gg[active_letter].t;
+	self.name=gg[active_letter].x+counter;
 	self.mvent_offsetz=0;
 	self.mvent_throughput=0;
 	self.exit_type='';
@@ -743,6 +739,7 @@ function create_self_props(self, letter) {//{{{
 		self.dimz=default_door_dimz;
 		self.exit_type='exit_auto';
 	} else if (self.type=='room') {
+		self.dimz=default_floor_dimz;
 		self.room_enter='can_enter';
 	} else if (self.type=='mvent') {
 		self.dimz=50;
@@ -754,7 +751,7 @@ function create_self_props(self, letter) {//{{{
 	}
 }
 //}}}
-function new_geom(letter) {//{{{
+function new_geom() {//{{{
 	// After a letter is clicked we react to mouse events
 	// The most tricky scenario is when first mouse click happens before mousemove.
 	// geom.rr.x0 & friends are temporary -- we don't want to recalculate min, max, width, heigh on every mouse drag
@@ -764,7 +761,7 @@ function new_geom(letter) {//{{{
 	var after_click=0;
 	var mx, my;
 	var self = this;
-	create_self_props(self, letter);
+	create_self_props(self);
 	fadeout_setup_box(); 
 	svg.on('mousedown', function() {
 		after_click=1;
