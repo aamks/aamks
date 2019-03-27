@@ -173,7 +173,7 @@ function help_utils_into_setup_box() {//{{{
 	d3.select('right-menu-box').html(
 		"<input id=general_setup type=hidden value=1>"+
 		"<span style='float: right' class=blink id=utils_setup_button>utils</span><br><br>"+
-		"<table>"+
+		"<table class=nobreak>"+
 		"<tr><td><letter>letter</letter> + mouse1     <td> create"+
 		"<tr><td><letter>shift</letter> + mouse2	    <td> zoom/drag"+
 		"<tr><td>double mouse1		<td> elem properties"+
@@ -233,6 +233,7 @@ function into_db(json) { //{{{
 	// Geoms must come in order, otherwise we could see DOOR under ROOM if geoms were created in that order.
 	db().remove();
 	var ii=1;
+	var letter;
 	var arr;
 	var geom;
 	var elems=["ROOM","COR","W","STAI","HALL","VVENT","MVENT","OBST","EVACUEE","HOLE","D","C","E","UNDERLAY_SCALER"];
@@ -267,6 +268,7 @@ function read_record(floor,letter,arr,ii) { //{{{
 		type: gg[letter].t,
 		floor: floor,
 		exit_type: '',
+		room_enter: '',
 		dimz: z1-z0,
 		mvent_offsetz: 0,
 		mvent_throughput: 0,
@@ -280,6 +282,9 @@ function read_record(floor,letter,arr,ii) { //{{{
 
 	if(gg[letter].t == 'door') { 
 		record.exit_type=arr[2];
+	}
+	if(gg[letter].t == 'room') { 
+		record.room_enter=arr[2];
 	}
 
 	if(gg[letter].t == 'mvent') { 
@@ -347,7 +352,8 @@ function legend() { //{{{
 	}
 
 	$('.legend').click(function() {
-		properties_type_listing($(this).attr('letter'));
+		active_letter=$(this).attr('letter');
+		properties_type_listing();
 	});
 }
 //}}}
@@ -401,7 +407,7 @@ function copy_to_floor() {	//{{{
 		geom['z1']=z0 + geom['z1']-geom['z0'];
 		geom['z0']=z0;
 		geom=Attr_cad_json(geom);
-		letter=geom['letter'];
+		var letter=geom['letter'];
 		DbInsert(geom);
 		CreateSvg(geom);
 		counter++;

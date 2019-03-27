@@ -47,7 +47,11 @@ function ajaxAnimsList() { /*{{{*/
 	$f=$_SESSION['main']['working_home']."/workers/anims.json";
 	if(is_file($f)) { 
 		$data=json_decode(file_get_contents($f));
-		echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $data));
+		if(empty($data)) { 
+			echo json_encode(array("msg"=>"Empty or broken json $f", "err"=>1, "data"=>''));
+		} else {
+			echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $data));
+		}
 	} else {
 		echo json_encode(array("msg"=>"No output for ".$_SESSION['main']['scenario_name']." yet", "err"=>1, "data"=>''));
 	}
@@ -57,7 +61,11 @@ function ajaxAnimsStatic() { /*{{{*/
 	$f=$_SESSION['main']['working_home']."/workers/static.json";
 	if(is_file($f)) { 
 		$data=json_decode(file_get_contents($f));
-		echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $data));
+		if(empty($data)) { 
+			echo json_encode(array("msg"=>"Empty or broken json $f", "err"=>1, "data"=>''));
+		} else {
+			echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $data));
+		}
 	} else {
 		echo json_encode(array("msg"=>"No output for ".$_SESSION['main']['scenario_name']." yet", "err"=>1, "data"=>''));
 	}
@@ -71,12 +79,13 @@ function ajaxSingleAnim() { /*{{{*/
 	} else { 
 		$f=$_SESSION['main']['working_home']."/workers/$_POST[unzip]";
 		if(is_file($f)) { 
-			$z=json_decode(shell_exec("unzip -qq -c $f anim.json"));
+			$sh=shell_exec("unzip -qq -c $f anim.json");
+			$z=json_decode($s);
 		}
 		if(!empty($z)) { 
 			echo json_encode(array("msg"=>"", "err"=>0, "data"=>$z));
 		} else {
-			echo json_encode(array("msg"=>"ajaxSingleAnim(): $z", "err"=>1, "data"=>''));
+			echo json_encode(array("msg"=>"ajaxSingleAnim(): Empty or broken json $f $sh", "err"=>1, "data"=>''));
 		}
 	}
 }
@@ -122,10 +131,11 @@ function ajaxApainterExport() { /*{{{*/
 	$src=$_POST['cadfile'];
 	$dest=$_SESSION['main']['working_home']."/cad.json";
 	$z=file_put_contents($dest, $src);
+
 	if($z>0) { 
 		echo json_encode(array("msg"=>"ajaxApainterExport(): OK", "err"=>0, "data"=>""));
 	} else { 
-		echo json_encode(array("msg"=>"ajaxApainterExport(): Cannot export $dest", "err"=>1, "data"=>""));
+		echo json_encode(array("msg"=>"ajaxApainterExport(): ".error_get_last()['message'] , "err"=>1, "data"=>""));
 	}
 }
 /*}}}*/
@@ -176,17 +186,20 @@ function ajaxPdf2svg() { /*{{{*/
 function main() { /*{{{*/
 	header('Content-type: application/json');
 
+	ini_set('display_errors', 1);
+
 	if(!empty($_SESSION['main']['user_id']))            {
-		if(isset($_GET['ajaxPdf2svg']))                 { ajaxPdf2svg(); }
-		if(isset($_GET['ajaxApainterExport']))          { ajaxApainterExport(); }
-		if(isset($_GET['ajaxApainterImport']))          { ajaxApainterImport(); }
-		if(isset($_GET['ajaxAnimsList']))               { ajaxAnimsList(); }
-		if(isset($_GET['ajaxAnimsStatic']))             { ajaxAnimsStatic(); }
-		if(isset($_GET['ajaxSingleAnim']))              { ajaxSingleAnim(); }
-		if(isset($_GET['ajaxMenuContent']))             { ajaxMenuContent(); }
-		if(isset($_GET['ajaxLaunchSimulation']))        { ajaxLaunchSimulation(); }
-		if(isset($_GET['ajaxChangeActiveScenario']))    { ajaxChangeActiveScenario(); }
-		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ajaxChangeActiveScenario(); }
+
+		if(isset($_GET['ajaxPdf2svg']))                 { ini_set('display_errors', 0) ; ajaxPdf2svg()              ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxApainterExport']))          { ini_set('display_errors', 0) ; ajaxApainterExport()       ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxApainterImport']))          { ini_set('display_errors', 0) ; ajaxApainterImport()       ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxAnimsList']))               { ini_set('display_errors', 0) ; ajaxAnimsList()            ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxAnimsStatic']))             { ini_set('display_errors', 0) ; ajaxAnimsStatic()          ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxSingleAnim']))              { ini_set('display_errors', 0) ; ajaxSingleAnim()           ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxMenuContent']))             { ini_set('display_errors', 0) ; ajaxMenuContent()          ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1); }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

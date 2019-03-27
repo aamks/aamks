@@ -231,6 +231,9 @@ table.noborder td, table.noborder tr {
 	border-bottom: none;
 	text-align: center;
 }
+table.nobreak td, table.nobreak tr {
+	white-space: nowrap;
+}
 .grey {
 	opacity: 0.3;
 }

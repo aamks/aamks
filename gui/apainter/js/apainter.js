@@ -10,7 +10,7 @@ var CreateSvg;
 var CanvasBuilder;
 var selected_geom='';
 var gg_opacity=0.4;
-var droplist_letter='r';
+var active_letter='r';
 var svg;
 var floor=0;
 var floors_count=1;
@@ -73,7 +73,7 @@ function rrRecalculate(geom) {//{{{
 }
 //}}}
 CreateSvg=function create_svg(geom) { //{{{
-	if (gg[letter].t == 'evacuee') { 
+	if (gg[geom.letter].t == 'evacuee') { 
 		var elem='circle';
 	} else {
 		var elem='rect';
@@ -82,10 +82,10 @@ CreateSvg=function create_svg(geom) { //{{{
 	g_floor.append(elem)
 		.attr('id', geom.name)
 		.attr('r', 25)
-		.attr('fill', gg[letter].c)
-		.attr('class', gg[letter].t)
-		.style('stroke', gg[letter].stroke)
-		.style('stroke-width', gg[letter].strokewidth)
+		.attr('fill', gg[geom.letter].c)
+		.attr('class', gg[geom.letter].t)
+		.style('stroke', gg[geom.letter].stroke)
+		.style('stroke-width', gg[geom.letter].strokewidth)
 
 	$("#"+geom.name)
 		.attr('x', geom.x0)
@@ -100,6 +100,8 @@ Attr_cad_json=function cad_json_dbinsert(geom) { //{{{
 	// Create cad_json attribute for the DB. underlay.js uses us too.
 	if(geom.type=='door') {
 		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], "${geom.exit_type}" ]`; 
+	} else if(geom.type=='room') {
+		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ],  "${geom.room_enter}" ]`; 
 	} else if(geom.type=='mvent') {
 		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "throughput": ${geom.mvent_throughput}, "offset": ${geom.mvent_offsetz}} ]`; 
 	} else if(geom.type=='window') {
@@ -111,7 +113,7 @@ Attr_cad_json=function cad_json_dbinsert(geom) { //{{{
 }
 //}}}
 DbInsert=function db_insert(geom) { //{{{
-	// Function exported for underlay.js also
+	// Function exported for menus_apainter.js also
 	var lines=[];
 	if(geom.type=='room') {
 		lines.push([geom.x0, geom.y0], [geom.x1, geom.y0], [geom.x1, geom.y1], [geom.x0, geom.y1]);
@@ -120,11 +122,11 @@ DbInsert=function db_insert(geom) { //{{{
 	}
 	selected_geom=geom.name;
 	if(geom.type!='underlay_scaler') {
-		db.insert({ "name": geom.name, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "window_offsetz": geom.window_offsetz, "mvent_offsetz": geom.mvent_offsetz, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type });
+		db.insert({ "name": geom.name, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "window_offsetz": geom.window_offsetz, "mvent_offsetz": geom.mvent_offsetz, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type, "room_enter": geom.room_enter });
 		show_selected_properties(geom.name);
 		geoms_changed();
 	}
-	//console.log("painter", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "exit_type", "letter", "window_offsetz", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0", "z0", "x1", "y1", "z1"));
+	//console.log("painter", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "exit_type", "letter", "window_offsetz", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0", "z0", "x1", "y1", "z1", "room_enter"));
 }
 //}}}
 
@@ -196,15 +198,15 @@ function keyboard_events() {//{{{
 		}
 	});
 
-	$(this).keydown((e) => { if (e.key == 'h')     { alternative_view(); } });
-	$(this).keypress((e) => { if (e.key == 'g')     { properties_type_listing(droplist_letter); } });
+	$(this).keydown((e) => { if (e.key == 'h')      { alternative_view(); } });
+	$(this).keypress((e) => { if (e.key == 'g')     { properties_type_listing(); } });
 	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "hidden"); } });
 	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "visible"); } });
 }
 //}}}
 function blink_selected() {//{{{
 	$("#"+selected_geom).css('stroke-width', '100px');
-	$("#"+selected_geom).animate({ 'stroke-width': gg[droplist_letter].strokewidth}, 400);
+	$("#"+selected_geom).animate({ 'stroke-width': gg[active_letter].strokewidth}, 400);
 }
 //}}}
 function geom_select_deselect() { //{{{
@@ -216,6 +218,7 @@ function geom_select_deselect() { //{{{
 		if (evt.target.tagName == 'rect' || evt.target.tagName == 'circle') { 
 			selected_geom=evt.target.id;
 			show_selected_properties(selected_geom);
+			blink_selected();
 		} else {
 			selected_geom=''
 		}
@@ -224,7 +227,7 @@ function geom_select_deselect() { //{{{
 	$(this).keypress((e) => { 
 		if (e.key == 'x' && selected_geom != "") { 
 			remove_geom(selected_geom);
-			properties_type_listing(droplist_letter);
+			properties_type_listing();
 		}
 	});
 }
@@ -319,22 +322,21 @@ function properties_type_listing_evacuee(letter) {//{{{
 	return tbody;
 }
 //}}}
-function properties_type_listing(letter) {//{{{
-	droplist_letter=letter;
+function properties_type_listing() {//{{{
 	var names='';
 	names+='<div style="overflow-y: scroll; height: '+(canvas[1]-100)+'px">';
 	names+='<wheat>Hover name, then <letter>x</letter> to delete</wheat>';
 	names+='<table id=droplist_names_table style="margin-right:20px">';
-	if (gg[letter].t=='mvent') { 
-		names+=properties_type_listing_mvent(letter);
-	} else if (gg[letter].t=='window') { 
-		names+=properties_type_listing_window(letter);
-	} else if (gg[letter].t=='door') { 
-		names+=properties_type_listing_door(letter);
-	} else if (gg[letter].t=='evacuee') { 
-		names+=properties_type_listing_evacuee(letter);
+	if (gg[active_letter].t=='mvent') { 
+		names+=properties_type_listing_mvent(active_letter);
+	} else if (gg[active_letter].t=='window') { 
+		names+=properties_type_listing_window(active_letter);
+	} else if (gg[active_letter].t=='door') { 
+		names+=properties_type_listing_door(active_letter);
+	} else if (gg[active_letter].t=='evacuee') { 
+		names+=properties_type_listing_evacuee(active_letter);
 	} else {
-		names+=properties_type_listing_plain(letter);
+		names+=properties_type_listing_plain(active_letter);
 	}
 	names+="</table>";
 	names+="</div>";
@@ -345,8 +347,25 @@ function properties_type_listing(letter) {//{{{
 	$('.properties_type_listing').click(function() {
 		selected_geom=$(this).attr('id');
 		show_selected_properties(selected_geom);
+		blink_selected();
 	});
 
+}
+//}}}
+function make_room_properties(letter) {//{{{
+	var prop='';
+	if(gg[letter].t=='room') {
+		var selected=db({'name':selected_geom}).select("room_enter")[0];
+		prop+="<tr><td>prop";
+		prop+="<td><select id=alter_room_enter>";
+		prop+="<option value="+selected+">"+selected+"</option>";
+		prop+="<option value='can_enter'>can_enter</option>";
+		prop+="<option value='cannot_enter'>cannot_enter</option>";
+		prop+="</select>";
+	} else {
+		prop+="<input id=alter_room_enter type=hidden value=0>";
+	}
+	return prop;
 }
 //}}}
 function make_mvent_properties(letter) {//{{{
@@ -374,7 +393,7 @@ function make_window_properties(letter) {//{{{
 function make_dim_properties(letter) {//{{{
 	var prop='';
 	if(gg[letter].t!='evacuee') {
-		var selected=db({'name':selected_geom}).select("exit_type")[0];
+		//var selected=db({'name':selected_geom}).select("exit_type")[0]; // TODO: some garbage line?
 		prop+="<tr><td>x-dim<td><input id=alter_dimx type=text size=3 value="+db({'name':selected_geom}).select("dimx")[0]+">";
 		prop+="<tr><td>y-dim<td><input id=alter_dimy type=text size=3 value="+db({'name':selected_geom}).select("dimy")[0]+">";
 		prop+="<tr><td>z-dim<td><input id=alter_dimz type=text size=3 value="+db({'name':selected_geom}).select("dimz")[0]+">";
@@ -390,7 +409,7 @@ function make_door_properties(letter) {//{{{
 	var prop='';
 	if(gg[letter].t=='door') {
 		var selected=db({'name':selected_geom}).select("exit_type")[0];
-		prop+="<tr><td>exit_type";
+		prop+="<tr><td>exit";
 		prop+="<td><select id=alter_exit_type>";
 		prop+="<option value="+selected+">"+selected+"</option>";
 		prop+="<option value='exit_auto'>exit_auto</option>";
@@ -404,22 +423,22 @@ function make_door_properties(letter) {//{{{
 }
 //}}}
 function show_selected_properties(selected_geom) {//{{{
-	blink_selected();
 	var letter=db({'name':selected_geom}).select("letter")[0];
-	mvent_properties=make_mvent_properties(letter);
-	window_properties=make_window_properties(letter);
-	door_properties=make_door_properties(letter);
-	dim_properties=make_dim_properties(letter);
-	droplist_letter=letter;
+	active_letter=letter;
+	var room_properties=make_room_properties(letter);
+	var mvent_properties=make_mvent_properties(letter);
+	var window_properties=make_window_properties(letter);
+	var door_properties=make_door_properties(letter);
+	var dim_properties=make_dim_properties(letter);
 	d3.select('right-menu-box').html(
 	    "<input id=geom_properties type=hidden value=1>"+
-	    "<input id=alter_letter type=hidden value="+letter+">"+
 		"<wheat><letter>x</letter> to delete, <letter>g</letter> for listing</wheat>"+
 		"<table>"+
 	    "<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_geom}).select("name")[0]+">"+db({'name':selected_geom}).select("name")[0]+
 		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_geom}).select("x0")[0]+">"+
 		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_geom}).select("y0")[0]+">"+
 		dim_properties+
+		room_properties+
 		mvent_properties+
 		window_properties+
 		door_properties+
@@ -540,7 +559,8 @@ function change_floor() {//{{{
 
 }
 //}}}
-function updateExitDoor(geom) {//{{{
+function updateVisPropsElem(geom) {//{{{
+	console.log("aa", geom.letter);
 	if(geom.type=='door') { 
 		if(geom.exit_type=='exit_sec') { 
 			$("#"+geom.name).css({ stroke: "#000" });   
@@ -548,6 +568,12 @@ function updateExitDoor(geom) {//{{{
 			$("#"+geom.name).css({ stroke: "#f0f" });   
 		} else if(geom.exit_type=='exit_auto') { 
 			$("#"+geom.name).css({ stroke: gg[geom.letter].stroke });   
+		}
+	} else if (geom.type=='room') { 
+		if(geom.room_enter=='cannot_enter') { 
+			$("#"+geom.name).attr('fill', "#000");
+		} else if(geom.room_enter=='can_enter') { 
+			$("#"+geom.name).attr('fill', gg[geom.letter].c);
 		}
 	}
 }
@@ -571,8 +597,9 @@ function save_setup_box() {//{{{
 		var geom={
 			floor: floor,
 			name: $("#alter_name").val(),
-			letter: $("#alter_letter").val(),
-			type: gg[letter].t,
+			letter: active_letter,
+			type: gg[active_letter].t,
+			room_enter: $("#alter_room_enter").val(),
 			exit_type: $("#alter_exit_type").val(),
 			dimz: parseInt($("#alter_dimz").val()),
 			window_offsetz: parseInt($("#alter_window_offsetz").val()),
@@ -587,7 +614,7 @@ function save_setup_box() {//{{{
 		};
 		db({"name":$("#alter_name").val()}).remove();
 		updateSvgElem(geom);
-		updateExitDoor(geom);
+		updateVisPropsElem(geom);
 		geom=rrRecalculate(geom);
 		DbInsert(geom);
 	} 
@@ -715,6 +742,8 @@ function create_self_props(self, letter) {//{{{
 	if (self.type=='door') {
 		self.dimz=default_door_dimz;
 		self.exit_type='exit_auto';
+	} else if (self.type=='room') {
+		self.room_enter='can_enter';
 	} else if (self.type=='mvent') {
 		self.dimz=50;
 	} else if (self.type=='window') {

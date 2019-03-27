@@ -32,3 +32,6 @@ mkdir -p /home/aamks_users/mimoohowy@gmail.com/four/four_3
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/four/four_4
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/five/five_1
 cp -r examples/demo/ /home/aamks_users/mimoohowy@gmail.com/
+sudo chmod -R g+w /home/aamks_users/
+sudo chmod -R g+s /home/aamks_users/
+sudo chown -R $USER:www-data /home/aamks_users
