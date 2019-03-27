@@ -275,3 +275,4 @@ close-left-menu-box:hover, close-right-menu-box:hover  { opacity: 0.3; }
 
 #cad-json-textarea { position:absolute; width:70%; max-width:1000px; height:95%; padding:5px; }
 #floating-div { position:absolute; left:10px; top: 10px; width:100%; height:100%; z-index: 300; }
+letter { display: inline; padding: 0px 4px 1px 4px; background-color: #960; color: #fff;  }

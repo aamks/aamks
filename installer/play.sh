@@ -23,7 +23,7 @@ INSERT INTO scenarios(project_id,scenario_name) values(4,'four_4');
 INSERT INTO scenarios(project_id,scenario_name) values(5,'five_1');
 ";
 
-rm -rf /home/aamks_users/mimoohowy@gmail.com
+sudo rm -rf /home/aamks_users/mimoohowy@gmail.com
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/three/three_1
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/three/three_2
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/four/four_1

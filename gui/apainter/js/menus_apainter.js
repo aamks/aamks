@@ -174,13 +174,13 @@ function help_utils_into_setup_box() {//{{{
 		"<input id=general_setup type=hidden value=1>"+
 		"<span style='float: right' class=blink id=utils_setup_button>utils</span><br><br>"+
 		"<table>"+
-		"<tr><td>letter + mouse1     <td> create"+
-		"<tr><td>shift + mouse2	    <td> zoom/drag"+
+		"<tr><td><letter>letter</letter> + mouse1     <td> create"+
+		"<tr><td><letter>shift</letter> + mouse2	    <td> zoom/drag"+
 		"<tr><td>double mouse1		<td> elem properties"+
-		"<tr><td>hold ctrl			<td> disable snapping"+ 
-		"<tr><td>h	<td> 2D/3D views"+ 
-		"<tr><td>x	<td> delete active"+
-		"<tr><td>g	<td> list all of active type"+
+		"<tr><td>hold <letter>ctrl</letter>		<td> disable snapping"+ 
+		"<tr><td><letter>h</letter>	<td> 2D/3D views"+ 
+		"<tr><td><letter>x</letter>	<td> delete active"+
+		"<tr><td><letter>g</letter>	<td> list all of active type"+
 
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor<td><input id=floor type=number min=0 name=floor style='width:3em' value="+floor+">"+ 
@@ -230,15 +230,17 @@ function init_svg_groups(json) {//{{{
 }
 //}}}
 function into_db(json) { //{{{
+	// Geoms must come in order, otherwise we could see DOOR under ROOM if geoms were created in that order.
 	db().remove();
 	var ii=1;
 	var arr;
 	var geom;
+	var elems=["ROOM","COR","W","STAI","HALL","VVENT","MVENT","OBST","EVACUEE","HOLE","D","C","E","UNDERLAY_SCALER"];
 	for (var floor in json) { 
-		for (var type in json[floor]) {
-			for (var geometry in json[floor][type]) {
-				letter=ApainterReader.ggx[type];
-				arr=json[floor][type][geometry];
+		for (var i in elems) {
+			for (var geometry in json[floor][elems[i]]) {
+				letter=ApainterReader.ggx[elems[i]];
+				arr=json[floor][elems[i]][geometry];
 				geom=read_record(parseInt(floor),letter,arr,ii);
 				geom=Attr_cad_json(geom);
 				DbInsert(geom);
@@ -248,7 +250,7 @@ function into_db(json) { //{{{
 		}
 	}
 	counter=ii;
-	//console.log("reader", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "is_exit", "letter", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0"));
+	//console.log("reader", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "exit_type", "letter", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0"));
 }
 //}}}
 function read_record(floor,letter,arr,ii) { //{{{
@@ -264,7 +266,7 @@ function read_record(floor,letter,arr,ii) { //{{{
 		letter: letter,
 		type: gg[letter].t,
 		floor: floor,
-		is_exit: '',
+		exit_type: '',
 		dimz: z1-z0,
 		mvent_offsetz: 0,
 		mvent_throughput: 0,
@@ -277,7 +279,7 @@ function read_record(floor,letter,arr,ii) { //{{{
 	};
 
 	if(gg[letter].t == 'door') { 
-		record.is_exit=arr[2];
+		record.exit_type=arr[2];
 	}
 
 	if(gg[letter].t == 'mvent') { 
