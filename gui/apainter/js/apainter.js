@@ -4,6 +4,7 @@ var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var gg;
 var DbInsert;
+var UpdateVis;
 var currentView=0;
 var Attr_cad_json;
 var CreateSvg;
@@ -112,6 +113,24 @@ Attr_cad_json=function cad_json_dbinsert(geom) { //{{{
 	return geom;
 }
 //}}}
+UpdateVis=function updateVisPropsElem(geom) {//{{{
+	if(geom.type=='door') { 
+		if(geom.exit_type=='exit_sec') { 
+			$("#"+geom.name).css({ stroke: "#000" });   
+		} else if(geom.exit_type=='exit_pri') { 
+			$("#"+geom.name).css({ stroke: "#f0f" });   
+		} else if(geom.exit_type=='exit_auto') { 
+			$("#"+geom.name).css({ stroke: gg[geom.letter].stroke });   
+		}
+	} else if (geom.type=='room') { 
+		if(geom.room_enter=='cannot_enter') { 
+			$("#"+geom.name).attr('fill', "#000");
+		} else if(geom.room_enter=='can_enter') { 
+			$("#"+geom.name).attr('fill', gg[geom.letter].c);
+		}
+	}
+}
+//}}}
 DbInsert=function db_insert(geom) { //{{{
 	// Function exported for menus_apainter.js also
 	var lines=[];
@@ -126,7 +145,7 @@ DbInsert=function db_insert(geom) { //{{{
 		show_selected_properties();
 		geoms_changed();
 	}
-	//console.log("painter", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "exit_type", "letter", "window_offsetz", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0", "z0", "x1", "y1", "z1", "room_enter"));
+	//console.log("painter", db().get());
 }
 //}}}
 
@@ -142,8 +161,8 @@ function make_gg() {//{{{
 		q: { legendary: 1 , x: "ClosD"           , xx: "C"               , t: "door"            , c: "#cc0000" , stroke: "#cc0000" , font: "#fff" , strokewidth: 5 }   ,
 		e: { legendary: 1 , x: "ElktD"           , xx: "E"               , t: "door"            , c: "#436"    , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
 		v: { legendary: 1 , x: "VVENT"           , xx: "VVENT"           , t: "vvent"           , c: "#ffaa00" , stroke: "#820"    , font: "#224" , strokewidth: 2.5 } ,
-		b: { legendary: 1 , x: "MVENT"           , xx: "MVENT"           , t: "mvent"           , c: "#084"	   , stroke: "#062"    , font: "#fff" , strokewidth: 2.5 } ,
-		t: { legendary: 1 , x: "OBST"            , xx: "OBST"            , t: "obst"            , c: "#ad7fa8" , stroke: "#404"    , font: "#224" , strokewidth: 0.5 } ,
+		b: { legendary: 1 , x: "MVENT"           , xx: "MVENT"           , t: "mvent"           , c: "#084"    , stroke: "#062"    , font: "#fff" , strokewidth: 2.5 } ,
+		t: { legendary: 1 , x: "OBST"            , xx: "OBST"            , t: "obst"            , c: "#000"    , stroke: "#222"    , font: "#fff" , strokewidth: 0.5 } ,
 		f: { legendary: 1 , x: "EVACUEE"         , xx: "EVACUEE"         , t: "evacuee"         , c: "#fff"    , stroke: "#fff"    , font: "#444" , strokewidth: 0 }   ,
 		p: { legendary: 0 , x: "UNDERLAY_SCALER" , xx: "UNDERLAY_SCALER" , t: "underlay_scaler" , c: "#f0f"    , stroke: "#fff"    , font: "#444" , strokewidth: 0 }   ,
 	}
@@ -193,11 +212,10 @@ function fadeout_setup_box() {//{{{
 //}}}
 function keyboard_events() {//{{{
 	$(this).keypress((e) => { 
-
-		if (e.key == 'h')      { alternative_view(); }
-		else if (e.key == 'g') { properties_type_listing(); }
-		else if (e.key in gg)  { active_letter=e.key; new_geom(); } 
+		if (e.key == 'g')     { properties_type_listing(); }
+		else if (e.key in gg) { active_letter=e.key; new_geom(); }
 	});
+	$(this).keydown((e) =>  { if (e.key == 'h')     { alternative_view(); } });
 	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "hidden"); } });
 	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "visible"); } });
 }
@@ -308,6 +326,22 @@ function properties_type_listing_door() {//{{{
 	return tbody;
 }
 //}}}
+function properties_type_listing_room() {//{{{
+	var tbody='';
+	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>enter";
+	var items=db({'letter': active_letter, 'floor': floor}).get();
+	for (var i in items) { 
+		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+			"<td>"+items[i]['x0']+
+			"<td>"+items[i]['y0']+
+			"<td>"+items[i]['dimx']+
+			"<td>"+items[i]['dimy']+
+			"<td>"+items[i]['dimz']+
+			"<td>"+items[i]['room_enter'];
+	}
+	return tbody;
+}
+//}}}
 function properties_type_listing_evacuee() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0";
@@ -333,6 +367,8 @@ function properties_type_listing() {//{{{
 		names+=properties_type_listing_door();
 	} else if (gg[active_letter].t=='evacuee') { 
 		names+=properties_type_listing_evacuee();
+	} else if (gg[active_letter].t=='room') { 
+		names+=properties_type_listing_room();
 	} else {
 		names+=properties_type_listing_plain();
 	}
@@ -369,7 +405,7 @@ function make_room_properties() {//{{{
 	var prop='';
 	if(gg[active_letter].t=='room') {
 		var selected=db({'name':selected_geom}).select("room_enter")[0];
-		prop+="<tr><td>enter";
+		prop+="<tr><td>enter <withHelp>?<help><orange>can_enter</orange> agents can evacuate via this room<br><hr><orange>cannot_enter</orange> agents can not evacuate via this room</help></withHelp>";
 		prop+="<td><select id=alter_room_enter>";
 		prop+="<option value="+selected+">"+selected+"</option>";
 		prop+="<option value='can_enter'>can_enter</option>";
@@ -407,7 +443,7 @@ function make_door_properties() {//{{{
 	var prop='';
 	if(gg[active_letter].t=='door') {
 		var selected=db({'name':selected_geom}).select("exit_type")[0];
-		prop+="<tr><td>exit";
+		prop+="<tr><td>exit <withHelp>?<help><orange>exit_auto</orange> any evacuee can use them<br><hr><orange>exit_pri</orange> (primary) many evacuees have had used them to get in and will use them to get out<br><hr><orange>exit_sec</orange> (secondary) extra doors known to the personel</help></withHelp>";
 		prop+="<td><select id=alter_exit_type>";
 		prop+="<option value="+selected+">"+selected+"</option>";
 		prop+="<option value='exit_auto'>exit_auto</option>";
@@ -556,24 +592,6 @@ function change_floor() {//{{{
 
 }
 //}}}
-function updateVisPropsElem(geom) {//{{{
-	if(geom.type=='door') { 
-		if(geom.exit_type=='exit_sec') { 
-			$("#"+geom.name).css({ stroke: "#000" });   
-		} else if(geom.exit_type=='exit_pri') { 
-			$("#"+geom.name).css({ stroke: "#f0f" });   
-		} else if(geom.exit_type=='exit_auto') { 
-			$("#"+geom.name).css({ stroke: gg[geom.letter].stroke });   
-		}
-	} else if (geom.type=='room') { 
-		if(geom.room_enter=='cannot_enter') { 
-			$("#"+geom.name).attr('fill', "#000");
-		} else if(geom.room_enter=='can_enter') { 
-			$("#"+geom.name).attr('fill', gg[geom.letter].c);
-		}
-	}
-}
-//}}}
 function save_setup_box() {//{{{
 	// There's a single box for multiple forms
 	// so we need to find out which form is submitted
@@ -610,7 +628,7 @@ function save_setup_box() {//{{{
 		};
 		db({"name":$("#alter_name").val()}).remove();
 		updateSvgElem(geom);
-		updateVisPropsElem(geom);
+		UpdateVis(geom);
 		geom=rrRecalculate(geom);
 		DbInsert(geom);
 	} 

@@ -211,10 +211,15 @@ withHelp help {
 	display: block;
 	border: 1px solid #243;
     padding: 8px;
-    position: absolute;
+    position: fixed;
+	left:30%;
+	top:30%;
     z-index: 1;
     background-color: wheat;
     color: #444;
+}
+withHelp hr {
+	border: 0.5px dashed #960;
 }
 
 withHelp:hover help {

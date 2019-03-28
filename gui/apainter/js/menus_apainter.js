@@ -1,5 +1,4 @@
-var ApainterReader={};
-
+var ggx;
 $(function() { 
 	left_menu_box();
 	import_cadjson();
@@ -197,7 +196,7 @@ function help_utils_into_setup_box() {//{{{
 //}}}
 function cad_json_reader(file) {//{{{
 	// renderUnderlayImage(this.files[0])
-	ApainterReader.ggx=revert_gg();
+	ggx=revert_gg();
 	var reader = new FileReader();
 	reader.onload = function(event) {
 		json=JSON.parse(event.target.result);
@@ -240,12 +239,13 @@ function into_db(json) { //{{{
 	for (var floor in json) { 
 		for (var i in elems) {
 			for (var geometry in json[floor][elems[i]]) {
-				letter=ApainterReader.ggx[elems[i]];
+				letter=ggx[elems[i]];
 				arr=json[floor][elems[i]][geometry];
 				geom=read_record(parseInt(floor),letter,arr,ii);
 				geom=Attr_cad_json(geom);
 				DbInsert(geom);
 				CreateSvg(geom);
+				UpdateVis(geom);
 				ii++;
 			}
 		}
@@ -326,7 +326,7 @@ function ajax_save_cadjson(json_data) { //{{{
 function import_cadjson() { //{{{
 	$.post('/aamks/ajax.php?ajaxApainterImport', { }, function (json) { 
 		ajax_msg(json); 
-		ApainterReader.ggx=revert_gg();
+		ggx=revert_gg();
 		init_svg_groups(json.data);
 		into_db(json.data);
 	});
