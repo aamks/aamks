@@ -209,7 +209,7 @@ function cad_json_reader(file) {//{{{
 function revert_gg() {//{{{
 	var z={};
 	for (var letter in gg) {
-		z[gg[letter].xx]=letter;
+		z[gg[letter].x]=letter;
 	}
 	return z;
 }
@@ -231,30 +231,28 @@ function init_svg_groups(json) {//{{{
 function into_db(json) { //{{{
 	// Geoms must come in order, otherwise we could see DOOR under ROOM if geoms were created in that order.
 	db().remove();
-	var ii=1;
 	var letter;
 	var arr;
 	var geom;
-	var elems=["ROOM","COR","W","STAI","HALL","VVENT","MVENT","OBST","EVACUEE","HOLE","D","C","E","UNDERLAY_SCALER"];
+	var elems=["ROOM","COR","STAI","HALL","OBST","VVENT","MVENT","HOLE","WIN","DOOR","DCLOSER","DELECTR","EVACUEE","UNDERLAY_SCALER"];
+
 	for (var floor in json) { 
 		for (var i in elems) {
 			for (var geometry in json[floor][elems[i]]) {
 				letter=ggx[elems[i]];
 				arr=json[floor][elems[i]][geometry];
-				geom=read_record(parseInt(floor),letter,arr,ii);
+				geom=read_record(parseInt(floor),letter,arr);
 				geom=Attr_cad_json(geom);
 				DbInsert(geom);
 				CreateSvg(geom);
 				UpdateVis(geom);
-				ii++;
 			}
 		}
 	}
-	counter=ii;
-	//console.log("reader", db().select( "cad_json", "dimx", "dimy", "dimz", "floor", "exit_type", "letter", "mvent_offsetz", "mvent_throughput", "name", "type", "x0", "y0"));
+	//console.log("reader", db().get());
 }
 //}}}
-function read_record(floor,letter,arr,ii) { //{{{
+function read_record(floor,letter,arr) { //{{{
 	var x0=arr[0][0];
 	var y0=arr[0][1];
 	var z0=arr[0][2];
@@ -263,7 +261,8 @@ function read_record(floor,letter,arr,ii) { //{{{
 	var z1=arr[1][2];
 
 	var record={
-		name: gg[letter].x+ii,
+		idx: arr[2]['idx'],
+		name: letter+arr[2]['idx'],
 		letter: letter,
 		type: gg[letter].t,
 		floor: floor,
@@ -281,10 +280,10 @@ function read_record(floor,letter,arr,ii) { //{{{
 	};
 
 	if(gg[letter].t == 'door') { 
-		record.exit_type=arr[2];
+		record.exit_type=arr[2]['exit_type'];
 	}
 	if(gg[letter].t == 'room') { 
-		record.room_enter=arr[2];
+		record.room_enter=arr[2]['room_enter'];
 	}
 
 	if(gg[letter].t == 'mvent') { 
@@ -370,7 +369,7 @@ function db2cadjson() {//{{{
 				num_data.push("\t\t\t"+x[r]);
 			}
 			var geom='';
-			geom+='\t\t"'+gg[letter].xx+'": [';
+			geom+='\t\t"'+gg[letter].x+'": [';
 			if(num_data.length>0) { 
 				geom+="\n"+num_data.join(",\n");
 				geom+='\n\t\t]';
@@ -399,7 +398,9 @@ function copy_to_floor() {	//{{{
 	floors_count++;
 	g_floor=g_aamks.append("g").attr("id", "floor"+c2f).attr({"class": "g_floor", "opacity": 0, "visibility": "hidden"});
 	var src=db({'floor': floor}).get();
+	var counter;
 	for (var i in src) {
+		counter=NextIdx();
 		if (src[i]['letter'] == 's') { continue; }
 		var geom = $.extend({}, src[i]);
 		geom['floor']=c2f;
@@ -410,7 +411,6 @@ function copy_to_floor() {	//{{{
 		var letter=geom['letter'];
 		DbInsert(geom);
 		CreateSvg(geom);
-		counter++;
 	}
 	$("#floor"+c2f).attr({"class": "g_floor", "fill-opacity": 0.4, "visibility": "hidden"});
 

@@ -5,6 +5,7 @@ var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var gg;
 var DbInsert;
 var UpdateVis;
+var NextIdx;
 var currentView=0;
 var Attr_cad_json;
 var CreateSvg;
@@ -16,7 +17,6 @@ var svg;
 var floor=0;
 var floors_count=1;
 var floor_zorig=0;
-var counter=0;
 var g_aamks;
 var g_floor;
 var g_img;
@@ -100,32 +100,32 @@ CreateSvg=function create_svg(geom) { //{{{
 Attr_cad_json=function cad_json_dbinsert(geom) { //{{{
 	// Create cad_json attribute for the DB. underlay.js uses us too.
 	if(geom.type=='door') {
-		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], "${geom.exit_type}" ]`; 
+		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "idx": ${geom.idx}, "exit_type": "${geom.exit_type}"} ]`; 
 	} else if(geom.type=='room') {
-		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ],  "${geom.room_enter}" ]`; 
+		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "idx": ${geom.idx}, "room_enter": "${geom.room_enter}"} ]`; 
 	} else if(geom.type=='mvent') {
-		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "throughput": ${geom.mvent_throughput}, "offset": ${geom.mvent_offsetz}} ]`; 
+		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "idx": ${geom.idx}, "throughput": ${geom.mvent_throughput}, "offset": ${geom.mvent_offsetz}} ]`; 
 	} else if(geom.type=='window') {
-		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "offset": ${geom.window_offsetz}} ]`; 
+		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "idx": ${geom.idx}, "offset": ${geom.window_offsetz}} ]`; 
 	} else {
-		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ]]`; 
+		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "idx": ${geom.idx} } ]`; 
 	}
 	return geom;
 }
 //}}}
 UpdateVis=function updateVisPropsElem(geom) {//{{{
 	if(geom.type=='door') { 
-		if(geom.exit_type=='exit_sec') { 
+		if(geom.exit_type=='secondary') { 
 			$("#"+geom.name).css({ stroke: "#000" });   
-		} else if(geom.exit_type=='exit_pri') { 
+		} else if(geom.exit_type=='primary') { 
 			$("#"+geom.name).css({ stroke: "#f0f" });   
-		} else if(geom.exit_type=='exit_auto') { 
+		} else if(geom.exit_type=='auto') { 
 			$("#"+geom.name).css({ stroke: gg[geom.letter].stroke });   
 		}
 	} else if (geom.type=='room') { 
-		if(geom.room_enter=='cannot_enter') { 
+		if(geom.room_enter=='no') { 
 			$("#"+geom.name).attr('fill', "#000");
-		} else if(geom.room_enter=='can_enter') { 
+		} else if(geom.room_enter=='yes') { 
 			$("#"+geom.name).attr('fill', gg[geom.letter].c);
 		}
 	}
@@ -141,30 +141,30 @@ DbInsert=function db_insert(geom) { //{{{
 	}
 	selected_geom=geom.name;
 	if(geom.type!='underlay_scaler') {
-		db.insert({ "name": geom.name, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "window_offsetz": geom.window_offsetz, "mvent_offsetz": geom.mvent_offsetz, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type, "room_enter": geom.room_enter });
+		db.insert({ "name": geom.name, "idx": geom.idx, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "window_offsetz": geom.window_offsetz, "mvent_offsetz": geom.mvent_offsetz, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type, "room_enter": geom.room_enter });
 		show_selected_properties();
 		geoms_changed();
 	}
-	//console.log("painter", db().get());
+	console.log("insert", db().get());
 }
 //}}}
 
 function make_gg() {//{{{
 	return {
-		r: { legendary: 1 , x: "ROOM"            , xx: "ROOM"            , t: "room"            , c: "#729fcf" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
-		c: { legendary: 1 , x: "COR"             , xx: "COR"             , t: "room"            , c: "#3465a4" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
-		d: { legendary: 1 , x: "DOOR"            , xx: "D"               , t: "door"            , c: "#73d216" , stroke: "#73d216" , font: "#fff" , strokewidth: 5 }   ,
-		z: { legendary: 1 , x: "HOLE"            , xx: "HOLE"            , t: "hole"            , c: "#c4a000" , stroke: "#c4a000" , font: "#224" , strokewidth: 5 }   ,
-		w: { legendary: 1 , x: "WIN"             , xx: "W"               , t: "window"          , c: "#fff"    , stroke: "#fff"    , font: "#444" , strokewidth: 4 }   ,
-		s: { legendary: 1 , x: "STAI"            , xx: "STAI"            , t: "room"            , c: "#5c3566" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
-		a: { legendary: 1 , x: "HALL"            , xx: "HALL"            , t: "room"            , c: "#e9b96e" , stroke: "#fff"    , font: "#000" , strokewidth: 5 }   ,
-		q: { legendary: 1 , x: "ClosD"           , xx: "C"               , t: "door"            , c: "#cc0000" , stroke: "#cc0000" , font: "#fff" , strokewidth: 5 }   ,
-		e: { legendary: 1 , x: "ElktD"           , xx: "E"               , t: "door"            , c: "#436"    , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
-		v: { legendary: 1 , x: "VVENT"           , xx: "VVENT"           , t: "vvent"           , c: "#ffaa00" , stroke: "#820"    , font: "#224" , strokewidth: 2.5 } ,
-		b: { legendary: 1 , x: "MVENT"           , xx: "MVENT"           , t: "mvent"           , c: "#084"    , stroke: "#062"    , font: "#fff" , strokewidth: 2.5 } ,
-		t: { legendary: 1 , x: "OBST"            , xx: "OBST"            , t: "obst"            , c: "#000"    , stroke: "#222"    , font: "#fff" , strokewidth: 0.5 } ,
-		f: { legendary: 1 , x: "EVACUEE"         , xx: "EVACUEE"         , t: "evacuee"         , c: "#fff"    , stroke: "#fff"    , font: "#444" , strokewidth: 0 }   ,
-		p: { legendary: 0 , x: "UNDERLAY_SCALER" , xx: "UNDERLAY_SCALER" , t: "underlay_scaler" , c: "#f0f"    , stroke: "#fff"    , font: "#444" , strokewidth: 0 }   ,
+		r: { legendary: 1 , x: "ROOM"            , t: "room"            , c: "#729fcf" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
+		c: { legendary: 1 , x: "COR"             , t: "room"            , c: "#3465a4" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
+		d: { legendary: 1 , x: "DOOR"            , t: "door"            , c: "#73d216" , stroke: "#73d216" , font: "#fff" , strokewidth: 5 }   ,
+		z: { legendary: 1 , x: "HOLE"            , t: "hole"            , c: "#c4a000" , stroke: "#c4a000" , font: "#224" , strokewidth: 5 }   ,
+		w: { legendary: 1 , x: "WIN"             , t: "window"          , c: "#fff"    , stroke: "#fff"    , font: "#444" , strokewidth: 4 }   ,
+		s: { legendary: 1 , x: "STAI"            , t: "room"            , c: "#5c3566" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
+		a: { legendary: 1 , x: "HALL"            , t: "room"            , c: "#e9b96e" , stroke: "#fff"    , font: "#000" , strokewidth: 5 }   ,
+		q: { legendary: 1 , x: "DCLOSER"         , t: "door"            , c: "#cc0000" , stroke: "#cc0000" , font: "#fff" , strokewidth: 5 }   ,
+		e: { legendary: 1 , x: "DELECTR"         , t: "door"            , c: "#436"    , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
+		v: { legendary: 1 , x: "VVENT"           , t: "vvent"           , c: "#ffaa00" , stroke: "#820"    , font: "#224" , strokewidth: 2.5 } ,
+		b: { legendary: 1 , x: "MVENT"           , t: "mvent"           , c: "#084"    , stroke: "#062"    , font: "#fff" , strokewidth: 2.5 } ,
+		t: { legendary: 1 , x: "OBST"            , t: "obst"            , c: "#000"    , stroke: "#222"    , font: "#fff" , strokewidth: 0.5 } ,
+		f: { legendary: 1 , x: "EVACUEE"         , t: "evacuee"         , c: "#fff"    , stroke: "#fff"    , font: "#444" , strokewidth: 0 }   ,
+		p: { legendary: 0 , x: "UNDERLAY_SCALER" , t: "underlay_scaler" , c: "#f0f"    , stroke: "#fff"    , font: "#444" , strokewidth: 0 }   ,
 	}
 }
 //}}}
@@ -405,11 +405,11 @@ function make_room_properties() {//{{{
 	var prop='';
 	if(gg[active_letter].t=='room') {
 		var selected=db({'name':selected_geom}).select("room_enter")[0];
-		prop+="<tr><td>enter <withHelp>?<help><orange>can_enter</orange> agents can evacuate via this room<br><hr><orange>cannot_enter</orange> agents can not evacuate via this room</help></withHelp>";
+		prop+="<tr><td>enter <withHelp>?<help><orange>yes</orange> agents can evacuate via this room<br><hr><orange>no</orange> agents can not evacuate via this room</help></withHelp>";
 		prop+="<td><select id=alter_room_enter>";
 		prop+="<option value="+selected+">"+selected+"</option>";
-		prop+="<option value='can_enter'>can_enter</option>";
-		prop+="<option value='cannot_enter'>cannot_enter</option>";
+		prop+="<option value='yes'>yes</option>";
+		prop+="<option value='no'>no</option>";
 		prop+="</select>";
 	} else {
 		prop+="<input id=alter_room_enter type=hidden value=0>";
@@ -443,12 +443,12 @@ function make_door_properties() {//{{{
 	var prop='';
 	if(gg[active_letter].t=='door') {
 		var selected=db({'name':selected_geom}).select("exit_type")[0];
-		prop+="<tr><td>exit <withHelp>?<help><orange>exit_auto</orange> any evacuee can use them<br><hr><orange>exit_pri</orange> (primary) many evacuees have had used them to get in and will use them to get out<br><hr><orange>exit_sec</orange> (secondary) extra doors known to the personel</help></withHelp>";
+		prop+="<tr><td>exit <withHelp>?<help><orange>auto</orange> any evacuee can use them<br><hr><orange>primary</orange> many evacuees have had used them to get in and will use them to get out<br><hr><orange>secondary</orange> extra doors known to the personel</help></withHelp>";
 		prop+="<td><select id=alter_exit_type>";
 		prop+="<option value="+selected+">"+selected+"</option>";
-		prop+="<option value='exit_auto'>exit_auto</option>";
-		prop+="<option value='exit_pri'>exit_pri</option>";
-		prop+="<option value='exit_sec'>exit_sec</option>";
+		prop+="<option value='auto'>auto</option>";
+		prop+="<option value='primary'>primary</option>";
+		prop+="<option value='secondary'>secondary</option>";
 		prop+="</select>";
 	} else {
 		prop+="<input id=alter_exit_type type=hidden value=0>";
@@ -467,7 +467,7 @@ function show_selected_properties() {//{{{
 	    "<input id=geom_properties type=hidden value=1>"+
 		"<wheat><letter>x</letter> to delete, <letter>g</letter> for listing</wheat>"+
 		"<table>"+
-	    "<tr><td>name <td><input id=alter_name type=hidden value="+db({'name':selected_geom}).select("name")[0]+">"+db({'name':selected_geom}).select("name")[0]+
+	    "<tr><td>name <td>"+db({'name':selected_geom}).select("name")[0]+
 		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_geom}).select("x0")[0]+">"+
 		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_geom}).select("y0")[0]+">"+
 		dim_properties+
@@ -606,11 +606,13 @@ function save_setup_box() {//{{{
 		default_window_offsetz=parseInt($("#default_window_offsetz").val());
 		legend();
 	} 
+	var x=db({'name':selected_geom}).get();
 
 	if ($("#geom_properties").val() != null) { 
 		var geom={
+			idx: x['idx'],
+			name: x['name'],
 			floor: floor,
-			name: $("#alter_name").val(),
 			letter: active_letter,
 			type: gg[active_letter].t,
 			room_enter: $("#alter_room_enter").val(),
@@ -626,7 +628,8 @@ function save_setup_box() {//{{{
 				y1: parseInt($("#alter_y0").val())+parseInt($("#alter_dimy").val())
 			}
 		};
-		db({"name":$("#alter_name").val()}).remove();
+		db({"name": geom.name}).remove();
+		console.log(geom);
 		updateSvgElem(geom);
 		UpdateVis(geom);
 		geom=rrRecalculate(geom);
@@ -745,20 +748,22 @@ function snap(m,rect,after_click) {//{{{
 
 //}}}
 function create_self_props(self) {//{{{
+	var counter=NextIdx();
 	self.rr={};
 	self.floor=floor;
 	self.letter=active_letter;
 	self.type=gg[active_letter].t;
-	self.name=gg[active_letter].x+counter;
+	self.name=active_letter+counter;
+	self.idx=counter;
 	self.mvent_offsetz=0;
 	self.mvent_throughput=0;
 	self.exit_type='';
 	if (self.type=='door') {
 		self.dimz=default_door_dimz;
-		self.exit_type='exit_auto';
+		self.exit_type='auto';
 	} else if (self.type=='room') {
 		self.dimz=default_floor_dimz;
-		self.room_enter='can_enter';
+		self.room_enter='yes';
 	} else if (self.type=='mvent') {
 		self.dimz=50;
 	} else if (self.type=='window') {
@@ -774,7 +779,6 @@ function new_geom() {//{{{
 	// The most tricky scenario is when first mouse click happens before mousemove.
 	// geom.rr.x0 & friends are temporary -- we don't want to recalculate min, max, width, heigh on every mouse drag
 	// geom.x0 & friends are for db and some svg operations
-	counter++;
 	var mouse;
 	var after_click=0;
 	var mx, my;
@@ -820,7 +824,6 @@ function new_geom() {//{{{
 		}
 		if(self.rr.x0 == self.rr.x1 || self.rr.y0 == self.rr.y1 || self.rr.x0 == null) { 
 			$("#"+self.name).remove();
-			counter--;
 		} else {
 			if (['hole', 'window'].includes(self.type)) { self=fix_hole_offset(self); }
 			updateSvgElem(self);
@@ -841,6 +844,11 @@ function updateSvgElem(geom) {  //{{{
 		width: Math.abs(geom.rr.x1 - geom.rr.x0) ,
 		height: Math.abs(geom.rr.y1 - geom.rr.y0)
 	});   
+}
+//}}}
+
+NextIdx=function next_idx() {//{{{
+	return db().max("idx")+1;
 }
 //}}}
 CanvasBuilder=function canvas_builder() { //{{{
