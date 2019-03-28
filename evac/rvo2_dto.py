@@ -8,6 +8,7 @@ import os
 import json
 from include import Navmesh
 from shapely.geometry import LineString
+import heapq
 
 
 class EvacEnv:
@@ -104,7 +105,7 @@ class EvacEnv:
                                                   maxStraightPath=100, floor=str(self.floor))
                 paths.append(LineString(path).length)
 
-            closest_exit = paths.index(min(paths))
+            closest_exit = paths.index(heapq.nsmallest(len(self.evacuees.get_blocked_exits(evacuee))+1, paths)[-1])
             self.evacuees.set_exit_door(ped_no=evacuee, exit_door=(self.general['doors'][closest_exit]['center_x'], self.general['doors'][closest_exit]['center_y']))
 
     def set_goal(self):
@@ -125,11 +126,16 @@ class EvacEnv:
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
-                optical_density = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(i),
+                agent_od = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(i),
                                                                                self.current_time, self.floor)
 
-                self.evacuees.update_speed_of_pedestrian(i, optical_density)
+                goal_od = self.smoke_query.get_visibility(self.evacuees.get_goal(i), self.current_time, self.floor)
+
+                self.evacuees.update_speed_of_pedestrian(i, agent_od)
                 self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_of_pedestrian(i))
+
+                if agent_od < goal_od:
+                    self.evacuees.mark_exit_as_blocked(ped_no=i, blocked_exit_door=self.evacuees.get_exit_door(i))
 
     def update_fed(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
@@ -215,9 +221,9 @@ class EvacEnv:
             self.sim.doStep()
             logging.debug('Simulation step: {}'.format(step))
             self.update_agents_position()
-            #self.update_state()
             self.update_time()
             self.update_fed()
+            self.set_exit_door()
             self.save_data_for_visualization()
             self.get_rset_time()
             if self.rset != 0:
