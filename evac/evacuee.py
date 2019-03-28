@@ -16,6 +16,7 @@ class Evacuee:
         self.origin = origin
         self.goal = None
         self.exit_door = None
+        self.blocked_exits = list()
         self.fed = 0
         self.distance = 1
         self.velocity = (0, 0)
@@ -38,13 +39,6 @@ class Evacuee:
 
     def __setattr__(self, key, value):
         self.__dict__[key] = value
-
-    @property
-    def focus(self):
-        #logging.info('Roadmap {}, current goal for visible {}'.format(self.roadmap, self.goal_s))
-        if self.goal_s < 0:
-            self.goal_s = 0
-        return tuple(self.roadmap[self.goal_s])
 
     def update_fed(self, fed):
         assert isinstance(fed, float), '%fed is not required type float'

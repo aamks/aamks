@@ -93,14 +93,19 @@ class EvacEnv:
     def set_exit_door(self):
         for evacuee in range(self.evacuees.get_number_of_pedestrians()):
             paths = list()
+
+            if (self.evacuees.get_exit_door(evacuee) not in self.evacuees.get_blocked_exits(evacuee)) and self.evacuees.get_exit_door(evacuee) is not None:
+                continue
+            if len(self.evacuees.get_blocked_exits(evacuee)) == len(self.general['doors']):
+                continue
+
             for door in self.general['doors']:
-                    path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (door['center_x'], door['center_y'])],
+                path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (door['center_x'], door['center_y'])],
                                                   maxStraightPath=100, floor=str(self.floor))
-                    paths.append(LineString(path).length)
+                paths.append(LineString(path).length)
 
             closest_exit = paths.index(min(paths))
             self.evacuees.set_exit_door(ped_no=evacuee, exit_door=(self.general['doors'][closest_exit]['center_x'], self.general['doors'][closest_exit]['center_y']))
-
 
     def set_goal(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):

@@ -110,6 +110,14 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].exit_door
 
+    def mark_exit_as_blocked(self, ped_no, blocked_exit_door):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].blocked_exits.append(blocked_exit_door)
+
+    def get_blocked_exits(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].blocked_exits
+
     def get_first_evacuees_time(self):
         pre_evacuation_times = [self.pedestrians[i].pre_evacuation_time for i in range(len(self.pedestrians))]
         return round(min(pre_evacuation_times), 2)
