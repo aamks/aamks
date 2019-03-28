@@ -115,6 +115,7 @@ function createScene() { //{{{
     camera.eye =  [50, 50, 20];
     camera.look = [50, 0, 20];
 	camera.projection = "perspective"; 
+	//camera.projection = "ortho"; 
     //camera.gimbalLock = true;
     camera.up = [0, 0, -1]; 
 	new xeogl.AmbientLight({ color: [0.2, 0.2, 0.2], intensity: 1 });
