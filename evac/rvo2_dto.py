@@ -7,8 +7,7 @@ import logging
 import os
 import json
 from include import Navmesh
-from shapely.geometry import Polygon
-from scipy.spatial.distance import cdist
+from shapely.geometry import LineString
 
 
 class EvacEnv:
@@ -97,10 +96,7 @@ class EvacEnv:
             for door in self.general['doors']:
                     path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (door['center_x'], door['center_y'])],
                                                   maxStraightPath=100, floor=str(self.floor))
-                    if len(path) < 3:
-                        paths.append(cdist([path[0]], [path[-1]], 'euclidean'))
-                    else:
-                        paths.append(Polygon(path).length)
+                    paths.append(LineString(path).length)
 
             closest_exit = paths.index(min(paths))
             self.evacuees.set_exit_door(ped_no=evacuee, exit_door=(self.general['doors'][closest_exit]['center_x'], self.general['doors'][closest_exit]['center_y']))
