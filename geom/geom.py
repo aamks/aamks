@@ -28,6 +28,7 @@ class Geom():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.geomsMap=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['aamksGeomsMap']
         self._doors_width=32
         self._wall_width=4
         self._make_elem_counter()
@@ -113,10 +114,7 @@ class Geom():
                     width= p1[0]-p0[0]
                     depth= p1[1]-p0[1]
                     height=p1[2]-p0[2]
-                    try:
-                        attrs=v[2]
-                    except:
-                        attrs=None
+                    attrs=v[2]
                     record=self._prepare_geom_record(k,[p0,p1],width,depth,height,floor,attrs)
                     if record != False:
                         data.append(record)
@@ -154,18 +152,18 @@ class Geom():
         
         
         # HVENT  
-        elif k in ('D', 'C', 'E', 'HOLE', 'W'): 
+        elif k in ('DOOR', 'DCLOSER', 'DELECTR', 'HOLE', 'WIN'): 
             width=max(width,self._doors_width)
             depth=max(depth,self._doors_width)
             type_pri='HVENT'
-            if k in ('D', 'C', 'E', 'HOLE'): 
+            if k in ('DOOR', 'DCLOSER', 'DELECTR', 'HOLE'): 
                 type_tri='DOOR'
-            elif k in ('W'):
+            elif k in ('WIN'):
                 type_tri='WIN'
 
         self._elem_counter[type_pri]+=1
         global_type_id=self._elem_counter[type_pri]
-        name='{}_{}'.format(k[0], global_type_id)
+        name='{}{}'.format(self.geomsMap[k], global_type_id)
 
         #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , exit_type , room_enter , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore)")
         return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , 1         , 1          , v[0][0] , v[0][1] , v[0][2] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0)

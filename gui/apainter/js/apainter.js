@@ -7,7 +7,6 @@ var DbInsert;
 var UpdateVis;
 var NextIdx;
 var currentView=0;
-var Attr_cad_json;
 var CreateSvg;
 var CanvasBuilder;
 var selected_geom='';
@@ -69,7 +68,6 @@ function rrRecalculate(geom) {//{{{
 		geom.z1=floor_zorig + geom.dimz;
 	}
 
-	geom=Attr_cad_json(geom);
 	return geom;
 }
 //}}}
@@ -95,22 +93,6 @@ CreateSvg=function create_svg(geom) { //{{{
 		.attr('cy', geom.y0)
 		.attr('width', geom.x1 - geom.x0)
 		.attr('height', geom.y1 - geom.y0)
-}
-//}}}
-Attr_cad_json=function cad_json_dbinsert(geom) { //{{{
-	// Create cad_json attribute for the DB. underlay.js uses us too.
-	if(geom.type=='door') {
-		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "idx": ${geom.idx}, "exit_type": "${geom.exit_type}"} ]`; 
-	} else if(geom.type=='room') {
-		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "idx": ${geom.idx}, "room_enter": "${geom.room_enter}"} ]`; 
-	} else if(geom.type=='mvent') {
-		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "idx": ${geom.idx}, "throughput": ${geom.mvent_throughput}, "offset": ${geom.mvent_offsetz}} ]`; 
-	} else if(geom.type=='window') {
-		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "idx": ${geom.idx}, "offset": ${geom.window_offsetz}} ]`; 
-	} else {
-		geom.cad_json=`[[ ${geom.x0}, ${geom.y0}, ${geom.z0} ], [ ${geom.x1}, ${geom.y1}, ${geom.z1} ], { "idx": ${geom.idx} } ]`; 
-	}
-	return geom;
 }
 //}}}
 UpdateVis=function updateVisPropsElem(geom) {//{{{
@@ -145,7 +127,11 @@ DbInsert=function db_insert(geom) { //{{{
 		show_selected_properties();
 		geoms_changed();
 	}
-	console.log("insert", db().get());
+	//dd();
+}
+//}}}
+NextIdx=function next_idx() {//{{{
+	return db({"type": gg[active_letter].t}).max("idx")+1;
 }
 //}}}
 
@@ -265,14 +251,14 @@ function remove_geom(geom) {//{{{
 function properties_type_listing_plain() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim";
-	var items=db({'letter': active_letter, 'floor': floor}).select("dimx", "dimy", "dimz", "name", "x0", "y0");
+	var items=db({'letter': active_letter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i][3]+ ">"+ items[i][3]+"</td>"+
-			"<td>"+items[i][4]+
-			"<td>"+items[i][5]+
-			"<td>"+items[i][0]+
-			"<td>"+items[i][1]+
-			"<td>"+items[i][2];
+		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+			"<td>"+items[i]['x0']+
+			"<td>"+items[i]['y0']+
+			"<td>"+items[i]['dimx']+
+			"<td>"+items[i]['dimy']+
+			"<td>"+items[i]['dimz'];
 	}
 	return tbody;
 }
@@ -280,16 +266,16 @@ function properties_type_listing_plain() {//{{{
 function properties_type_listing_mvent() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>z-offset<td>throughput";
-	var items=db({'letter': active_letter, 'floor': floor}).select("dimx", "dimy", "dimz", "mvent_offsetz", "mvent_throughput", "name", "x0", "y0");
+	var items=db({'letter': active_letter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i][5]+ ">"+ items[i][5]+"</td>"+
-			"<td>"+items[i][6]+
-			"<td>"+items[i][7]+
-			"<td>"+items[i][0]+
-			"<td>"+items[i][1]+
-			"<td>"+items[i][2]+
-			"<td>"+items[i][3]+
-			"<td>"+items[i][4];
+		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+			"<td>"+items[i]['x0']+
+			"<td>"+items[i]['y0']+
+			"<td>"+items[i]['dimx']+
+			"<td>"+items[i]['dimy']+
+			"<td>"+items[i]['dimz']+
+			"<td>"+items[i]['mvent_offsetz']+
+			"<td>"+items[i]['mvent_throughput'];
 	}
 	return tbody;
 }
@@ -297,15 +283,15 @@ function properties_type_listing_mvent() {//{{{
 function properties_type_listing_window() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>z-offset";
-	var items=db({'letter': active_letter, 'floor': floor}).select("dimx", "dimy", "dimz", "window_offsetz", "name", "x0", "y0");
+	var items=db({'letter': active_letter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i][4]+ ">"+ items[i][4]+"</td>"+
-			"<td>"+items[i][5]+
-			"<td>"+items[i][6]+
-			"<td>"+items[i][0]+
-			"<td>"+items[i][1]+
-			"<td>"+items[i][2]+
-			"<td>"+items[i][3];
+		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+			"<td>"+items[i]['x0']+
+			"<td>"+items[i]['y0']+
+			"<td>"+items[i]['dimx']+
+			"<td>"+items[i]['dimy']+
+			"<td>"+items[i]['dimz']+
+			"<td>"+items[i]['window_offsetz'];
 	}
 	return tbody;
 }
@@ -313,15 +299,15 @@ function properties_type_listing_window() {//{{{
 function properties_type_listing_door() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>exit_type";
-	var items=db({'letter': active_letter, 'floor': floor}).select("dimx", "dimy", "dimz", "exit_type", "name", "x0", "y0");
+	var items=db({'letter': active_letter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i][4]+ ">"+ items[i][4]+"</td>"+
-			"<td>"+items[i][5]+
-			"<td>"+items[i][6]+
-			"<td>"+items[i][0]+
-			"<td>"+items[i][1]+
-			"<td>"+items[i][2]+
-			"<td>"+items[i][3];
+		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+			"<td>"+items[i]['x0']+
+			"<td>"+items[i]['y0']+
+			"<td>"+items[i]['dimx']+
+			"<td>"+items[i]['dimy']+
+			"<td>"+items[i]['dimz']+
+			"<td>"+items[i]['exit_type'];
 	}
 	return tbody;
 }
@@ -345,11 +331,12 @@ function properties_type_listing_room() {//{{{
 function properties_type_listing_evacuee() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0";
-	var items=db({'letter': active_letter, 'floor': floor}).select("name", "x0", "y0");
+
+	var items=db({'letter': active_letter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i][0]+ ">"+ items[i][0]+"</td>"+
-			"<td>"+items[i][1]+
-			"<td>"+items[i][2];
+		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+			"<td>"+items[i]['x0']+
+			"<td>"+items[i]['y0'];
 	}
 	return tbody;
 }
@@ -386,6 +373,7 @@ function properties_type_listing() {//{{{
 
 }
 //}}}
+
 function make_dim_properties() {//{{{
 	var prop='';
 	if(gg[active_letter].t!='evacuee') {
@@ -610,8 +598,8 @@ function save_setup_box() {//{{{
 
 	if ($("#geom_properties").val() != null) { 
 		var geom={
-			idx: x['idx'],
-			name: x['name'],
+			idx: x[0]['idx'],
+			name: x[0]['name'],
 			floor: floor,
 			letter: active_letter,
 			type: gg[active_letter].t,
@@ -629,7 +617,6 @@ function save_setup_box() {//{{{
 			}
 		};
 		db({"name": geom.name}).remove();
-		console.log(geom);
 		updateSvgElem(geom);
 		UpdateVis(geom);
 		geom=rrRecalculate(geom);
@@ -844,11 +831,6 @@ function updateSvgElem(geom) {  //{{{
 		width: Math.abs(geom.rr.x1 - geom.rr.x0) ,
 		height: Math.abs(geom.rr.y1 - geom.rr.y0)
 	});   
-}
-//}}}
-
-NextIdx=function next_idx() {//{{{
-	return db().max("idx")+1;
 }
 //}}}
 CanvasBuilder=function canvas_builder() { //{{{

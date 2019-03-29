@@ -67,9 +67,15 @@ function right_menu_box() {//{{{
 }
 //}}}
 
-$.getJSON("colors.json", function(cols) {
+$.getJSON("inc.json", function(cols) {
+	//"aamksGeoms": {
+
+	//	"r":          { "legendary": 1 , "x": "ROOM"            , "t": "room"            , "c": "#729fcf" , "lightc": "#ffffff" , "stroke": "#ffffff" , "font": "#ffffff" , "strokewidth": 5 }   ,
+	//	"c":          { "legendary": 1 , "x": "COR"             , "t": "room"            , "c": "#3465a4" , "lightc": "#ffffff" , "stroke": "#ffffff" , "font": "#ffffff" , "strokewidth": 5 }   ,
+	//	"d":          { "legendary": 1 , "x": "DOOR"            , "t": "door"            , "c": "#73d216" , "lightc": "#888888" , "stroke": "#73d216" , "font": "#ffffff" , "strokewidth": 5 }   ,
+	//	"z":          { "legendary": 1 , "x": "HOLE"            , "t": "hole"            , "c": "#c4a000" , "lightc": "#000000" , "stroke": "#c4a000" , "font": "#222244" , "strokewidth": 5 }   ,
 	colorsDb=cols;
-	colors=colorsDb['darkColors'];
+	colors=colorsDb['aamksGeoms'];
 	$.post('/aamks/ajax.php?ajaxAnimsList', function (response) { 
 		ajax_msg(response);
 		var data=response['data'];

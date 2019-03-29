@@ -1,10 +1,14 @@
 var ggx;
+var dd;
 $(function() { 
 	left_menu_box();
 	import_cadjson();
 	register_listeners();
 });
-
+dd=function () {//{{{
+	console.log(db().get());
+}
+//}}}
 function register_listeners() {//{{{
 
 	$("right-menu-box").on("click" , "#btn_copy_to_floor"   , function() { copy_to_floor() });
@@ -14,6 +18,27 @@ function register_listeners() {//{{{
 	$("right-menu-box").on("click" , '#utils_setup_button'  , function() { utils_into_setup_box(); });
 	$("body").on("click"           , '#btn-cad-json-save'   , function() { cad_json_textarea_save(); });
 	$("body").on("click"           , '#btn-cad-json-cancel' , function() { cad_json_textarea_close(); });
+}
+//}}}
+function cad_jsons_db() { //{{{
+	// Create cad_json attribute for the DB
+	var cad_json;
+	var r=db().get();
+	for (var rr in r) {	
+		i=r[rr];
+		if(i.type=='door') {
+			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "exit_type": "${i.exit_type}"} ]`; 
+		} else if(i.type=='room') {
+			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "room_enter": "${i.room_enter}"} ]`; 
+		} else if(i.type=='mvent') {
+			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "throughput": ${i.mvent_throughput}, "offset": ${i.mvent_offsetz}} ]`; 
+		} else if(i.type=='window') {
+			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "offset": ${i.window_offsetz}} ]`; 
+		} else {
+			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx} } ]`; 
+		}
+		db({'name': i.name}).update({'cad_json': cad_json});
+	}
 }
 //}}}
 function renderUnderlayImage(file) {//{{{
@@ -242,14 +267,13 @@ function into_db(json) { //{{{
 				letter=ggx[elems[i]];
 				arr=json[floor][elems[i]][geometry];
 				geom=read_record(parseInt(floor),letter,arr);
-				geom=Attr_cad_json(geom);
 				DbInsert(geom);
 				CreateSvg(geom);
 				UpdateVis(geom);
 			}
 		}
 	}
-	//console.log("reader", db().get());
+	console.log("reader", db().get());
 }
 //}}}
 function read_record(floor,letter,arr) { //{{{
@@ -336,7 +360,7 @@ function legend_static() {//{{{
 	$('apainter-legend-static').prepend("<open3dview>3D</open3dview> &nbsp;");
 	$('apainter-legend-static').prepend("<write>SAVE</write> &nbsp;");
 
-	$('write').click(function() { var pretty_json=db2cadjson(); ajax_save_cadjson(pretty_json); });
+	$('write').click(function() { db2cadjson();  });
 	$('open3dview').click(function() { view3d(); });
 }
 //}}}
@@ -356,9 +380,28 @@ function legend() { //{{{
 	});
 }
 //}}}
+function reorder_db() {//{{{
+	// Re-enumerate all elems in this fashion: r0, r1, r2, ..., d0, d1, d2, ...
+	// CFAST expects elems to be numbered as above
+	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst'], ['evacuee'] ];
+	for (var i in types) {
+		var idx=0;
+		var r=db({"type": types[i]}).get();
+		db({"type": types[i]}).remove();
+		for (var ii in r) {
+			r[ii]['idx']=idx;
+			r[ii]['name']=r[ii]['letter']+idx;
+			db.insert(r[ii]);
+			idx++;
+		}
+	}
+	cad_jsons_db();
+}
+//}}}
 function db2cadjson() {//{{{
 	// Instead of JSON.stringify we prefer our own pretty formatting.
-
+	// Since names appear in SVG and we are reordering we need to write and reread 
+	reorder_db();
 	var json=[];
 	for(var f=0; f<floors_count; f++) { 
 		var geoms=[];
@@ -384,7 +427,10 @@ function db2cadjson() {//{{{
 		ff+='\n\t}';
 		json.push(ff);
 	}
-	return "{\n"+json.join(",\n")+"\n}\n";
+	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
+	ajax_save_cadjson(pretty_json);
+	import_cadjson();
+	return pretty_json;
 }
 //}}}
 function copy_to_floor() {	//{{{
@@ -407,7 +453,6 @@ function copy_to_floor() {	//{{{
 		geom['name']=gg[geom['letter']].x+counter;
 		geom['z1']=z0 + geom['z1']-geom['z0'];
 		geom['z0']=z0;
-		geom=Attr_cad_json(geom);
 		var letter=geom['letter'];
 		DbInsert(geom);
 		CreateSvg(geom);
