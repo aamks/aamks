@@ -31,7 +31,6 @@ class Geom():
         self.geomsMap=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['aamksGeomsMap']
         self._doors_width=32
         self._wall_width=4
-        self._make_elem_counter()
         self._geometry2sqlite()
         self._enhancements()
         self._init_dd_geoms()
@@ -97,9 +96,7 @@ class Geom():
                 ]
             ]
 
-        Each geom entity will be classified as DOOR, WINDOW, ROOM etc, and will
-        get a unique name via elem_counter. Some columns in db are left empty
-        for now. 
+        Some columns in db are left empty for now. 
 
         Sqlite's aamks_geom table must use two unique ids a) 'name' for
         visualisation and b) 'global_type_id' for cfast enumeration. 
@@ -120,7 +117,7 @@ class Geom():
                         data.append(record)
         self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,exit_type,room_enter,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
-        dd(self.s.dump())
+        #dd(self.s.dump())
 #}}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor,attrs):# {{{
         ''' Format a record for sqlite. Hvents get fixed width self._doors_width cm '''
@@ -161,8 +158,7 @@ class Geom():
             elif k in ('WIN'):
                 type_tri='WIN'
 
-        self._elem_counter[type_pri]+=1
-        global_type_id=self._elem_counter[type_pri]
+        global_type_id=attrs['idx'];
         name='{}{}'.format(self.geomsMap[k], global_type_id)
 
         #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , exit_type , room_enter , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore)")
@@ -319,18 +315,6 @@ class Geom():
             self.s.query("UPDATE aamks_geom set smoke_detectors = 1 WHERE type_pri='COMPA'")
         if len(''.join([ str(i) for i in self.conf['sprinklers'].values() ])) > 0:
             self.s.query("UPDATE aamks_geom set sprinklers = 1 WHERE type_pri='COMPA'")
-# }}}
-    def _make_elem_counter(self):# {{{
-        ''' 
-        Geom primary types are enumerated globally for the building in sqlite.
-        Each of the types has separate numbering starting from 1. ROOM_2_8
-        refers to the eight compartment in the building which happens to exist
-        on floor 2.
-        '''
-
-        self._elem_counter={}
-        for i in ('COMPA', 'HVENT', 'VVENT', 'OBST', 'EE', 'MVENT'):
-            self._elem_counter[i]=0
 # }}}
 
 # INTERSECTIONS
@@ -603,7 +587,7 @@ class Geom():
             self.nav[floor].build(obj, os.environ['AAMKS_PROJECT'], floor)
             #self._navmesh_test(floor)
 
-        Vis({'highlight_geom': None, 'anim': None, 'title': 'Navmesh test', 'srv': 1})
+        #Vis({'highlight_geom': None, 'anim': None, 'title': 'Navmesh test', 'srv': 1})
 
 # }}}
     def _obj_platform(self,floor):# {{{

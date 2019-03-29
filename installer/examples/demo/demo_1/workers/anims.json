@@ -9,11 +9,11 @@
     },
     {
         "sort_id": -2,
-        "title": "funUpDown 370 agents demo@aamks",
+        "title": "funExplode demo@aamks",
         "floor": "0",
         "fire_origin": [],
         "highlight_geom": null,
-        "anim": "funUpDown"
+        "anim": "funExplode"
     },
     {
         "sort_id": -1,

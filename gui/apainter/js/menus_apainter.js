@@ -1,14 +1,8 @@
-var ggx;
-var dd;
 $(function() { 
 	left_menu_box();
 	import_cadjson();
 	register_listeners();
 });
-dd=function () {//{{{
-	console.log(db().get());
-}
-//}}}
 function register_listeners() {//{{{
 
 	$("right-menu-box").on("click" , "#btn_copy_to_floor"   , function() { copy_to_floor() });
@@ -221,7 +215,6 @@ function help_utils_into_setup_box() {//{{{
 //}}}
 function cad_json_reader(file) {//{{{
 	// renderUnderlayImage(this.files[0])
-	ggx=revert_gg();
 	var reader = new FileReader();
 	reader.onload = function(event) {
 		json=JSON.parse(event.target.result);
@@ -229,14 +222,6 @@ function cad_json_reader(file) {//{{{
 		into_db(json);
 	}
 	reader.readAsText(file);
-}
-//}}}
-function revert_gg() {//{{{
-	var z={};
-	for (var letter in gg) {
-		z[gg[letter].x]=letter;
-	}
-	return z;
 }
 //}}}
 function init_svg_groups(json) {//{{{
@@ -273,7 +258,6 @@ function into_db(json) { //{{{
 			}
 		}
 	}
-	console.log("reader", db().get());
 }
 //}}}
 function read_record(floor,letter,arr) { //{{{
@@ -349,7 +333,6 @@ function ajax_save_cadjson(json_data) { //{{{
 function import_cadjson() { //{{{
 	$.post('/aamks/ajax.php?ajaxApainterImport', { }, function (json) { 
 		ajax_msg(json); 
-		ggx=revert_gg();
 		init_svg_groups(json.data);
 		into_db(json.data);
 	});
@@ -384,6 +367,8 @@ function reorder_db() {//{{{
 	// Re-enumerate all elems in this fashion: r0, r1, r2, ..., d0, d1, d2, ...
 	// CFAST expects elems to be numbered as above
 	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst'], ['evacuee'] ];
+	db.sort("floor,x0,y0");
+	//dd();
 	for (var i in types) {
 		var idx=0;
 		var r=db({"type": types[i]}).get();
@@ -406,6 +391,7 @@ function db2cadjson() {//{{{
 	for(var f=0; f<floors_count; f++) { 
 		var geoms=[];
 		for(var letter in gg) {
+			if (gg[letter]['legendary'] == 0) { continue; }
 			var x=db({"floor": f, "letter": letter}).select("cad_json");
 			var num_data=[];
 			for (var r in x) { 

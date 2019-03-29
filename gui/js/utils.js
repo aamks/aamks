@@ -59,6 +59,15 @@ function left_menu_box() {//{{{
 	});
 }
 //}}}
+function dd(x) {//{{{
+	console.log("dd:", x);
+}
+//}}}
+function ddd() {//{{{
+	// taffydb dump all
+	console.log("ddd:", db().get());
+}
+//}}}
 
 $(function() { 
 	scenario_changer();

@@ -3,6 +3,7 @@ var canvas=[screen.width-30,screen.height-190];
 var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var gg;
+var ggx;
 var DbInsert;
 var UpdateVis;
 var NextIdx;
@@ -135,23 +136,11 @@ NextIdx=function next_idx() {//{{{
 }
 //}}}
 
-function make_gg() {//{{{
-	return {
-		r: { legendary: 1 , x: "ROOM"            , t: "room"            , c: "#729fcf" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
-		c: { legendary: 1 , x: "COR"             , t: "room"            , c: "#3465a4" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
-		d: { legendary: 1 , x: "DOOR"            , t: "door"            , c: "#73d216" , stroke: "#73d216" , font: "#fff" , strokewidth: 5 }   ,
-		z: { legendary: 1 , x: "HOLE"            , t: "hole"            , c: "#c4a000" , stroke: "#c4a000" , font: "#224" , strokewidth: 5 }   ,
-		w: { legendary: 1 , x: "WIN"             , t: "window"          , c: "#fff"    , stroke: "#fff"    , font: "#444" , strokewidth: 4 }   ,
-		s: { legendary: 1 , x: "STAI"            , t: "room"            , c: "#5c3566" , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
-		a: { legendary: 1 , x: "HALL"            , t: "room"            , c: "#e9b96e" , stroke: "#fff"    , font: "#000" , strokewidth: 5 }   ,
-		q: { legendary: 1 , x: "DCLOSER"         , t: "door"            , c: "#cc0000" , stroke: "#cc0000" , font: "#fff" , strokewidth: 5 }   ,
-		e: { legendary: 1 , x: "DELECTR"         , t: "door"            , c: "#436"    , stroke: "#fff"    , font: "#fff" , strokewidth: 5 }   ,
-		v: { legendary: 1 , x: "VVENT"           , t: "vvent"           , c: "#ffaa00" , stroke: "#820"    , font: "#224" , strokewidth: 2.5 } ,
-		b: { legendary: 1 , x: "MVENT"           , t: "mvent"           , c: "#084"    , stroke: "#062"    , font: "#fff" , strokewidth: 2.5 } ,
-		t: { legendary: 1 , x: "OBST"            , t: "obst"            , c: "#000"    , stroke: "#222"    , font: "#fff" , strokewidth: 0.5 } ,
-		f: { legendary: 1 , x: "EVACUEE"         , t: "evacuee"         , c: "#fff"    , stroke: "#fff"    , font: "#444" , strokewidth: 0 }   ,
-		p: { legendary: 0 , x: "UNDERLAY_SCALER" , t: "underlay_scaler" , c: "#f0f"    , stroke: "#fff"    , font: "#444" , strokewidth: 0 }   ,
-	}
+function make_gg() { //{{{
+	$.getJSON("inc.json", function(x) {
+		gg=x['aamksGeoms'];
+		ggx=x['aamksGeomsMap'];
+	});
 }
 //}}}
 function canvas_zoomer() { //{{{
@@ -161,7 +150,6 @@ function canvas_zoomer() { //{{{
 		.attr("id", 'zoomer')
 		.attr("width", canvas[0])
 		.attr("height", canvas[1])
-		.attr("fill", "#a40")
 		.attr("opacity", 0)
 		.attr("pointer-events", "visible")
 		.attr("visibility", "hidden")
@@ -431,7 +419,7 @@ function make_door_properties() {//{{{
 	var prop='';
 	if(gg[active_letter].t=='door') {
 		var selected=db({'name':selected_geom}).select("exit_type")[0];
-		prop+="<tr><td>exit <withHelp>?<help><orange>auto</orange> any evacuee can use them<br><hr><orange>primary</orange> many evacuees have had used them to get in and will use them to get out<br><hr><orange>secondary</orange> extra doors known to the personel</help></withHelp>";
+		prop+="<tr><td>exit <withHelp>?<help><orange>auto</orange> any evacuee can use this door<br><hr><orange>primary</orange> many evacuees have had used this door to get in and will use it to get out<br><hr><orange>secondary</orange> extra door known to the personel</help></withHelp>";
 		prop+="<td><select id=alter_exit_type>";
 		prop+="<option value="+selected+">"+selected+"</option>";
 		prop+="<option value='auto'>auto</option>";
@@ -834,7 +822,7 @@ function updateSvgElem(geom) {  //{{{
 }
 //}}}
 CanvasBuilder=function canvas_builder() { //{{{
-	gg=make_gg();
+	make_gg();
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
 	d3.select('view2d').append('button-right-menu-box').html("SETUP");

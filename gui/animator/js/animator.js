@@ -21,8 +21,8 @@ var canvasHeight=$(window).height()-20;
 var fireScale;
 var intervalId;
 var fireScaleCounter;
+var incDB;
 var colors;
-var colorsDb;
 var staticGeoms;
 var burningFireLocation;
 var wallsSize;
@@ -43,7 +43,7 @@ var lerps;
 var lastFrame=1;
 var deltaTime=0; 
 var timeShift=0; 
-var labelsSize=40;
+var labelsSize=50;
 var sliderPos=0;
 var lerpFrame=0;
 var frame=0;
@@ -66,16 +66,21 @@ function right_menu_box() {//{{{
 	});
 }
 //}}}
-
-$.getJSON("inc.json", function(cols) {
-	//"aamksGeoms": {
-
-	//	"r":          { "legendary": 1 , "x": "ROOM"            , "t": "room"            , "c": "#729fcf" , "lightc": "#ffffff" , "stroke": "#ffffff" , "font": "#ffffff" , "strokewidth": 5 }   ,
-	//	"c":          { "legendary": 1 , "x": "COR"             , "t": "room"            , "c": "#3465a4" , "lightc": "#ffffff" , "stroke": "#ffffff" , "font": "#ffffff" , "strokewidth": 5 }   ,
-	//	"d":          { "legendary": 1 , "x": "DOOR"            , "t": "door"            , "c": "#73d216" , "lightc": "#888888" , "stroke": "#73d216" , "font": "#ffffff" , "strokewidth": 5 }   ,
-	//	"z":          { "legendary": 1 , "x": "HOLE"            , "t": "hole"            , "c": "#c4a000" , "lightc": "#000000" , "stroke": "#c4a000" , "font": "#222244" , "strokewidth": 5 }   ,
-	colorsDb=cols;
-	colors=colorsDb['aamksGeoms'];
+function setColors(mode) {//{{{
+	colors={};
+	for (var i in incDB['aamksGeoms']) {
+		if(mode=='dark') { 
+			colors[incDB['aamksGeoms'][i]['x']]=incDB['aamksGeoms'][i]['c'];
+		} else {
+			colors[incDB['aamksGeoms'][i]['x']]=incDB['aamksGeoms'][i]['lightc'];
+		}
+	}
+	$("#animator-canvas").css("background-color", colors['canvas']);
+}
+//}}}
+$.getJSON("inc.json", function(x) {
+	incDB=x;
+	setColors("dark");
 	$.post('/aamks/ajax.php?ajaxAnimsList', function (response) { 
 		ajax_msg(response);
 		var data=response['data'];
@@ -138,7 +143,7 @@ function showStaticImage(chosenAnim) {
 
 		if(chosenAnim["highlight_geom"]!=null) { highlightGeom(chosenAnim["highlight_geom"]); }
 		
-		if(chosenAnim["anim"]!='') { 
+		if(chosenAnim["anim"] != undefined) { 
 			showAnimation(chosenAnim);
 		}
 
@@ -150,6 +155,7 @@ function showAnimation(chosenAnim) {
 	// 0.000001 & friends prevent divisions by 0.
 	
 	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': chosenAnim['anim'] }, function(response) { 
+		ajax_msg(response);
 		animJson=response['data'];
 		timeShift=animJson.time_shift;
 		deltaTime=animJson.simulation_time-timeShift;
@@ -164,7 +170,7 @@ function showAnimation(chosenAnim) {
 		$("#speed").on("keyup", function(){
 			lerps=Math.round(1/(($('#speed').val()/100)+0.0000000000000000001))+1;
 			lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
-			$('.canvas_slider_rect').css("fill" , "#000000");
+			$('.canvas_slider_rect').attr("fill", "#333"); 
 		});
 
 		visContainsAnimation=1;
@@ -180,6 +186,7 @@ function resetCanvas() {
     append_dd_geoms();
 	paperjsLetItBurn();
 	paperjsDisplayAnimation();
+	
 }
 
 function makeAnimationControls() {
@@ -264,7 +271,8 @@ function paperjsDisplayImage() {
 	}
 
 	for (var key in rooms) {
-		staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['stroke'], strokeWidth:0.2, fillColor:colors[rooms[key]["type_sec"]]}));
+		staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:colors[rooms[key]["type_sec"]]}));
+
 	}
 
 	for (var i=0; i<obstacles.length; i++) {
@@ -273,7 +281,7 @@ function paperjsDisplayImage() {
 
 	if (labelsSize != 0) { 
 		for (var key in rooms) {
-			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+10,rooms[key]["y0"]+30), fillColor:colors["fg"], content: rooms[key]["name"], fontFamily: 'Roboto', fontSize: labelsSize }));
+			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+20,rooms[key]["y0"]+50), fillColor:colors["fg"], content: rooms[key]["name"], fontFamily: 'Roboto', fontSize: labelsSize }));
 		}
 	}
 
@@ -282,7 +290,7 @@ function paperjsDisplayImage() {
 			staticGeoms.addChild(new Path.Rectangle({point: new Point(doors[key]["x0"],doors[key]["y0"]), size: new Size(doors[key]["width"],doors[key]["depth"]), strokeColor: colors['door'], strokeWidth:doorsSize  }));
 		}
 		if (labelsSize != 0) { 
-			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]+10,doors[key]["center_y"]+10), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
+			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-30,doors[key]["center_y"]+10), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
 		}
 	}
 
@@ -363,11 +371,11 @@ function updateAnimatedElement(i) {
 
 function afterLerpFrame() {
 	// The slider moves after each frame. The slider is a collection of 100 svg rectangles. We need to clear the previous rectangle and mark the current rectangle
-	$('#slider_'+(sliderPos)).css("fill", "#000");
+	$('#slider_'+(sliderPos)).attr("fill", "#333");
 	$("animator-time").html(animTimeFormat());
 	sliderPos=Math.round(lerpFrame/(lerps*lastFrame)*100);
 	lerpFrame++;
-	$('#slider_'+(sliderPos-0)).css("fill", "#555");
+	$('#slider_'+(sliderPos-0)).attr("fill", "#f80");
 
 	if(lerpFrame%lerps==0) {
 		frame++;
@@ -434,13 +442,11 @@ function listenEvents() {
 		if (this.value == "Light") { 
 			doorsSize=0;
 			labelsSize=0;
-			resetCanvas(); 
-			colors=colorsDb['lightColors']
+			setColors('light');
 		} else {
-			colors=colorsDb['darkColors']
+			setColors('dark');
 		}
 		resetCanvas();
-		$("#animator-canvas").css("background", colors['bg']);
 	});
 
 	$('#highlight-geoms').on('change', function() {
@@ -452,7 +458,7 @@ function listenEvents() {
 		sliderPos=$(this).data('id');
 		lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
 		frame=Math.floor(lerpFrame/lerps);
-		$('.canvas_slider_rect').css("fill" , "#000");
+		$('.canvas_slider_rect').attr("fill", "#333");
 	});
 }
 

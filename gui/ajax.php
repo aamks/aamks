@@ -72,15 +72,15 @@ function ajaxAnimsStatic() { /*{{{*/
 }
 /*}}}*/
 function ajaxSingleAnim() { /*{{{*/
-	if($_POST['unzip']=='funUpDown') { 
-		ajaxSingleAnimFunUpDown();
+	if($_POST['unzip']=='funExplode') { 
+		ajaxSingleAnimFunExplode();
 	} else if($_POST['unzip']=='funCircle') { 
 		ajaxSingleAnimFunCircle();
 	} else { 
 		$f=$_SESSION['main']['working_home']."/workers/$_POST[unzip]";
 		if(is_file($f)) { 
 			$sh=shell_exec("unzip -qq -c $f anim.json");
-			$z=json_decode($s);
+			$z=json_decode($sh);
 		}
 		if(!empty($z)) { 
 			echo json_encode(array("msg"=>"", "err"=>0, "data"=>$z));
@@ -107,20 +107,17 @@ function ajaxSingleAnimFunCircle() { /*{{{*/
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$collect));
 }
 /*}}}*/
-function ajaxSingleAnimFunUpDown() { /*{{{*/
+function ajaxSingleAnimFunExplode() { /*{{{*/
 	$arr=[];
 	$colors=["H", "M", "L", "N"];
 	$y=[];
-	for($t=0; $t<10; $t+=1) { 
+	for($t=0; $t<4; $t+=1) { 
 		$record=[];
-		for($a=0; $a<370; $a++) { 
-			$y[$a]=rand(520,980);
+		for($a=0; $a<700; $a++) { 
 			$color=floor($a/100);
-			$record[]=[ 1020 + 8*$a, $y[$a], 0, 0, $colors[$color], 1 ];
-			$y[$a]+=1500-2*$y[$a];
+			$record[]=[ 2000+$t*rand(-12,12)*$a/10, 1000+$t*rand(-12,12)*$a/10, 0, 0, $colors[$color], 1 ];
 		}
 		$arr[]=$record;
-		#dd2($arr);
 	}
 	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0  ];
 	$collect['data']=$arr;

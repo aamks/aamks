@@ -77,9 +77,9 @@
         }
     ],
     "vents_open": {
-        "E": 0.04,
-        "C": 0.14,
-        "D": 0.5,
+        "DELECTR": 0.04,
+        "DCLOSER": 0.14,
+        "DOOR": 0.5,
         "VVENTS": 0.96
     },
     "c_const": 8,
