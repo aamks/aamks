@@ -17,7 +17,6 @@ from math import sqrt
 from include import Sqlite
 from include import Json
 from include import Dump as dd
-from include import Navmesh
 from include import Vis
 
 # }}}
@@ -48,7 +47,6 @@ class Geom():
         self._auto_detectors_and_sprinklers()
         self._create_obstacles()
         self.make_vis('Create obstacles')
-        self._navmesh()
         self._assert_faces_ok()
         self._assert_room_has_door()
         #self.s.dumpall()
@@ -498,12 +496,8 @@ class Geom():
             data['points'][floor]=[]
             data['named'][floor]=[]
             boxen=[]
-            # TODO: once cad.json uses 'OBST': [], there's no need to try.
-            try:
-                for v in gg['OBST']:
-                    boxen.append(box(int(v[0][0]), int(v[0][1]), int(v[1][0]), int(v[1][1])))
-            except:
-                pass
+            for v in gg['OBST']:
+                boxen.append(box(int(v[0][0]), int(v[0][1]), int(v[1][0]), int(v[1][1])))
                 
             boxen+=self._rooms_into_boxen(floor)
             data['named'][floor]=self._boxen_into_rectangles(boxen)
@@ -522,10 +516,12 @@ class Geom():
 
         walls=[]
         for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
-            walls.append((i['x0']+self._wall_width , i['y0']            , i['x0']+i['width']            , i['y0']+self._wall_width)                )
-            walls.append((i['x0']+i['width'] , i['y0']            , i['x0']+i['width']+self._wall_width , i['y0']+i['depth']+self._wall_width)     )
-            walls.append((i['x0']+self._wall_width , i['y0']+i['depth'] , i['x0']+i['width']            , i['y0']+i['depth']+self._wall_width)     )
-            walls.append((i['x0']            , i['y0']            , i['x0']+self._wall_width            , i['y0']+i['depth']+self._wall_width)     )
+
+            walls.append((i['x0']+self._wall_width , i['y0']            , i['x0']+i['width']                  , i['y0']+self._wall_width)                )
+            walls.append((i['x0']+i['width']       , i['y0']            , i['x0']+i['width']+self._wall_width , i['y0']+i['depth']+self._wall_width)     )
+            walls.append((i['x0']+self._wall_width , i['y0']+i['depth'] , i['x0']+i['width']                  , i['y0']+i['depth']+self._wall_width)     )
+            walls.append((i['x0']                  , i['y0']            , i['x0']+self._wall_width            , i['y0']+i['depth']+self._wall_width)     )
+
         walls_polygons=([box(ii[0],ii[1],ii[2],ii[3]) for ii in set(walls)])
 
         doors_polygons=[]
@@ -561,79 +557,6 @@ class Geom():
             rectangles.append(coords)
 
         return rectangles
-# }}}
-
-# NAVMESH 
-    def _navmesh(self):# {{{
-        ''' 
-        1. Create obj file from aamks geometries.
-        2. Build navmesh with golang, obj is input
-        3. Query navmesh with python
-        '''
-
-        self.nav=OrderedDict()
-        z=self.s.query("SELECT json FROM obstacles")
-        for floor,faces in json.loads(z[0]['json'])['points'].items():
-            self._obj_num=0;
-            obj='';
-            for face in faces:
-                obj+=self._obj_elem(face,99)
-            for face in self._obj_platform(floor):
-                obj+=self._obj_elem(face,0)
-        
-            with open("{}/{}.obj".format(os.environ['AAMKS_PROJECT'], floor), "w") as f: 
-                f.write(obj)
-            self.nav[floor]=Navmesh()
-            self.nav[floor].build(obj, os.environ['AAMKS_PROJECT'], floor)
-            #self._navmesh_test(floor)
-
-        #Vis({'highlight_geom': None, 'anim': None, 'title': 'Navmesh test', 'srv': 1})
-
-# }}}
-    def _obj_platform(self,floor):# {{{
-        z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,))
-        platforms=[]
-        for i in z:
-            platforms.append([ (i['x1'], i['y1']), (i['x1'], i['y0']), (i['x0'], i['y0']), (i['x0'], i['y1']) ])
-        return platforms
-
-# }}}
-    def _obj_elem(self,face,z):# {{{
-        elem=''
-        elem+="o Face{}\n".format(self._obj_num)
-        for verts in face[:4]:
-            elem+="v {}\n".format(" ".join([ str(i/100) for i in [verts[0], z, verts[1]]]))
-        elem+="f {}\n\n".format(" ".join([ str(4*self._obj_num+i)+"//1" for i in [1,2,3,4]]))
-        self._obj_num+=1
-        return elem
-# }}}
-    def _navmesh_test(self,floor):# {{{
-        colors=["#fff", "#f80", "#f00", "#8f0", "#08f", "#f0f" ]
-        navmesh_paths=[]
-
-        for x in range(6):
-            src_dest=[]
-            for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY RANDOM() LIMIT 2", (floor,)):
-                src_dest.append([round(uniform(i['x0'], i['x1'])), round(uniform(i['y0'], i['y1']))])
-
-            z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-            z[floor]['circles'].append({ "xy": (src_dest[0]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
-            z[floor]['circles'].append({ "xy": (src_dest[1]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
-            self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-            navmesh_paths.append(self.nav[floor].query(src_dest, floor))
-        self._navmesh_vis(floor,navmesh_paths,colors)
-# }}}
-    def _navmesh_vis(self,floor,navmesh_paths,colors):# {{{
-        j=Json()
-        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for cc,path in enumerate(navmesh_paths):
-            for i,p in enumerate(path):
-                try:
-                    z[floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": colors[cc], "strokeWidth": 2  , "opacity": 0.7 } )
-                except:
-                    pass
-
-        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
 
 # ASSERTIONS
