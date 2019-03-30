@@ -3,7 +3,7 @@
         "sort_id": -3,
         "title": "funCircle demo@aamks",
         "floor": "0",
-        "fire_origin": [],
+        "fire_origin": [2600,1300],
         "highlight_geom": null,
         "anim": "funCircle"
     },
@@ -11,7 +11,7 @@
         "sort_id": -2,
         "title": "funExplode demo@aamks",
         "floor": "0",
-        "fire_origin": [],
+        "fire_origin": [2600,1300],
         "highlight_geom": null,
         "anim": "funExplode"
     },
@@ -19,7 +19,7 @@
         "sort_id": -1,
         "title": "f0.zip demo demo@aamks, f0",
         "floor": "0",
-        "fire_origin": [],
+        "fire_origin": [2600,1300],
         "highlight_geom": null,
         "anim": "1/f0.zip"
     }

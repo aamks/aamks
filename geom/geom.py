@@ -77,7 +77,7 @@ class Geom():
 
             center=(minx + int(width/2), miny + int(height/2), z0)
 
-            animation_scale=round(min(1600/width,800/height)*0.95, 2) # 0.95 is canvas padding
+            animation_scale=round(min(1600/width,800/height)*0.8, 2) # 0.8 is canvas padding
             animation_translate=[ int(maxx-0.5*width), int(maxy-0.5*height) ]
 
             values[floor]=OrderedDict([('width', width) , ('height', height) , ('z', z0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy) , ('animation_scale', animation_scale), ('animation_translate',  animation_translate)])

@@ -112,7 +112,7 @@ function showStaticImage(chosenAnim) {
 	// We can only start animation after we are done with static rooms, doors etc.
 	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
-		//ajax_msg(response);
+		ajax_msg(response);
 		var dstatic=response['data'];
 		var floor=chosenAnim["floor"];
 		var newScale=dstatic[floor]['meta']['scale'];
@@ -146,6 +146,11 @@ function showStaticImage(chosenAnim) {
 		if(chosenAnim["anim"] != undefined) { 
 			showAnimation(chosenAnim);
 		}
+		//project.importSVG("flame3.svg", function (item) {
+		//  item.position.x=2600;
+		//  item.position.y=1500;
+		//});
+
 
 	});
 }
@@ -201,7 +206,7 @@ function makeAnimationControls() {
 }
 
 function makeSetupBoxInputs() {
-	$("size-labels").html("<input type=text size=2 name=labels-size id=labels-size value=20>");
+	$("size-labels").html("<input type=text size=2 name=labels-size id=labels-size value=50>");
 	$("size-walls").html("<input type=text size=2 name=walls-size id=walls-size value="+wallsSize+">");
 	$("size-doors").html("<input type=text size=2 name=doors-size id=doors-size value="+doorsSize+">");
 	$("size-balls").html("<input type=text size=2 name=balls-size id=balls-size value="+ballsSize+">");
@@ -290,7 +295,7 @@ function paperjsDisplayImage() {
 			staticGeoms.addChild(new Path.Rectangle({point: new Point(doors[key]["x0"],doors[key]["y0"]), size: new Size(doors[key]["width"],doors[key]["depth"]), strokeColor: colors['door'], strokeWidth:doorsSize  }));
 		}
 		if (labelsSize != 0) { 
-			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-30,doors[key]["center_y"]+10), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
+			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-20,doors[key]["center_y"]+15), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
 		}
 	}
 
@@ -414,8 +419,8 @@ function onMouseDown(event) {
 
 function listenEvents() {
 	$('#labels-size').on('keyup'     , function() { labelsSize=this.value     ; resetCanvas() ; })
-	$('#walls-size').on('keyup'      , function() { wallsSize=this.value      ; resetCanvas() ; })
 	$('#doors-size').on('keyup'      , function() { doorsSize=this.value      ; resetCanvas() ; })
+	$('#walls-size').on('keyup'      , function() { wallsSize=this.value      ; resetCanvas() ; })
 	$('#balls-size').on('keyup'      , function() { ballsSize=this.value      ; resetCanvas() ; })
 	$('#velocities-size').on('keyup' , function() { velocitiesSize=this.value ; resetCanvas() ; })
 
@@ -444,6 +449,8 @@ function listenEvents() {
 			labelsSize=0;
 			setColors('light');
 		} else {
+			labelsSize=$('#labels-size').val();
+			doorsSize=$('#doors-size').val();
 			setColors('dark');
 		}
 		resetCanvas();

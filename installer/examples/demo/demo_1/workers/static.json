@@ -1,1 +1,321 @@
-{"1": {"meta": {"scale": 0.5, "translate": [2508, 1250]}, "rooms": {"R_6": {"name": "R_6", "x0": 1000, "y0": 1000, "width": 1000, "depth": 1000, "type_sec": "ROOM"}, "R_7": {"name": "R_7", "x0": 2000, "y0": 1000, "width": 1000, "depth": 1000, "type_sec": "ROOM"}, "R_8": {"name": "R_8", "x0": 3000, "y0": 1000, "width": 1000, "depth": 1000, "type_sec": "ROOM"}, "C_9": {"name": "C_9", "x0": 1000, "y0": 500, "width": 3000, "depth": 500, "type_sec": "COR"}}, "doors": {"D_6": {"name": "D_6", "x0": 3984, "y0": 741, "center_x": 4000, "center_y": 782, "width": 32, "depth": 86, "type_sec": "D"}, "D_7": {"name": "D_7", "x0": 1414, "y0": 984, "center_x": 1455, "center_y": 1000, "width": 86, "depth": 32, "type_sec": "D"}, "D_8": {"name": "D_8", "x0": 2398, "y0": 984, "center_x": 2439, "center_y": 1000, "width": 86, "depth": 32, "type_sec": "D"}, "D_9": {"name": "D_9", "x0": 3314, "y0": 984, "center_x": 3355, "center_y": 1000, "width": 86, "depth": 32, "type_sec": "D"}}, "obstacles": [{"y0": 1000, "x0": 1500, "depth": 4, "width": 500}, {"y0": 1000, "x0": 1004, "depth": 4, "width": 410}, {"y0": 2000, "x0": 1004, "depth": 4, "width": 996}, {"y0": 1000, "x0": 3400, "depth": 4, "width": 600}, {"y0": 1000, "x0": 3004, "depth": 4, "width": 310}, {"y0": 2000, "x0": 3004, "depth": 4, "width": 996}, {"y0": 500, "x0": 4000, "depth": 241, "width": 4}, {"y0": 827, "x0": 4000, "depth": 177, "width": 4}, {"y0": 500, "x0": 1004, "depth": 4, "width": 2996}, {"y0": 1000, "x0": 1000, "depth": 1004, "width": 4}, {"y0": 1000, "x0": 3000, "depth": 1004, "width": 4}, {"y0": 1000, "x0": 3400, "depth": 4, "width": 600}, {"y0": 1000, "x0": 2484, "depth": 4, "width": 830}, {"y0": 1000, "x0": 1500, "depth": 4, "width": 898}, {"y0": 1000, "x0": 1004, "depth": 4, "width": 410}, {"y0": 1000, "x0": 2484, "depth": 4, "width": 516}, {"y0": 1000, "x0": 2004, "depth": 4, "width": 394}, {"y0": 2000, "x0": 2004, "depth": 4, "width": 996}, {"y0": 500, "x0": 1000, "depth": 504, "width": 4}, {"y0": 1000, "x0": 2000, "depth": 1004, "width": 4}, {"y0": 1000, "x0": 4000, "depth": 1004, "width": 4}], "dd_geoms": {"rectangles": [], "lines": [], "circles": [{"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [4000, 782]}, {"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [1455, 1000]}, {"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [2439, 1000]}, {"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [3355, 1000]}], "texts": []}}, "2": {"meta": {"scale": 0.5, "translate": [2508, 1250]}, "rooms": {"R_10": {"name": "R_10", "x0": 1000, "y0": 1000, "width": 1000, "depth": 1000, "type_sec": "ROOM"}, "R_11": {"name": "R_11", "x0": 2000, "y0": 1000, "width": 1000, "depth": 1000, "type_sec": "ROOM"}, "R_12": {"name": "R_12", "x0": 3000, "y0": 1000, "width": 1000, "depth": 1000, "type_sec": "ROOM"}, "C_13": {"name": "C_13", "x0": 1000, "y0": 500, "width": 3000, "depth": 500, "type_sec": "COR"}}, "doors": {"D_10": {"name": "D_10", "x0": 3984, "y0": 741, "center_x": 4000, "center_y": 782, "width": 32, "depth": 86, "type_sec": "D"}, "D_11": {"name": "D_11", "x0": 1414, "y0": 984, "center_x": 1455, "center_y": 1000, "width": 86, "depth": 32, "type_sec": "D"}, "D_12": {"name": "D_12", "x0": 2398, "y0": 984, "center_x": 2439, "center_y": 1000, "width": 86, "depth": 32, "type_sec": "D"}, "D_13": {"name": "D_13", "x0": 3314, "y0": 984, "center_x": 3355, "center_y": 1000, "width": 86, "depth": 32, "type_sec": "D"}}, "obstacles": [{"y0": 1000, "x0": 1500, "depth": 4, "width": 500}, {"y0": 1000, "x0": 1004, "depth": 4, "width": 410}, {"y0": 2000, "x0": 1004, "depth": 4, "width": 996}, {"y0": 1000, "x0": 3400, "depth": 4, "width": 600}, {"y0": 1000, "x0": 3004, "depth": 4, "width": 310}, {"y0": 2000, "x0": 3004, "depth": 4, "width": 996}, {"y0": 500, "x0": 4000, "depth": 241, "width": 4}, {"y0": 827, "x0": 4000, "depth": 177, "width": 4}, {"y0": 500, "x0": 1004, "depth": 4, "width": 2996}, {"y0": 1000, "x0": 1000, "depth": 1004, "width": 4}, {"y0": 1000, "x0": 3000, "depth": 1004, "width": 4}, {"y0": 1000, "x0": 3400, "depth": 4, "width": 600}, {"y0": 1000, "x0": 2484, "depth": 4, "width": 830}, {"y0": 1000, "x0": 1500, "depth": 4, "width": 898}, {"y0": 1000, "x0": 1004, "depth": 4, "width": 410}, {"y0": 1000, "x0": 2484, "depth": 4, "width": 516}, {"y0": 1000, "x0": 2004, "depth": 4, "width": 394}, {"y0": 2000, "x0": 2004, "depth": 4, "width": 996}, {"y0": 500, "x0": 1000, "depth": 504, "width": 4}, {"y0": 1000, "x0": 2000, "depth": 1004, "width": 4}, {"y0": 1000, "x0": 4000, "depth": 1004, "width": 4}], "dd_geoms": {"rectangles": [], "lines": [], "circles": [{"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [4000, 782]}, {"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [1455, 1000]}, {"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [2439, 1000]}, {"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [3355, 1000]}], "texts": []}}, "0": {"meta": {"scale": 0.38, "translate": [2758, 1000]}, "rooms": {"R_1": {"name": "R_1", "x0": 1000, "y0": 1000, "width": 1000, "depth": 1000, "type_sec": "ROOM"}, "R_2": {"name": "R_2", "x0": 2000, "y0": 1000, "width": 1000, "depth": 1000, "type_sec": "ROOM"}, "R_3": {"name": "R_3", "x0": 3000, "y0": 1000, "width": 1000, "depth": 1000, "type_sec": "ROOM"}, "C_4": {"name": "C_4", "x0": 1000, "y0": 500, "width": 3000, "depth": 500, "type_sec": "COR"}, "S_5": {"name": "S_5", "x0": 4000, "y0": 0, "width": 500, "depth": 1000, "type_sec": "STAI"}}, "doors": {"D_1": {"name": "D_1", "x0": 3984, "y0": 741, "center_x": 4000, "center_y": 782, "width": 32, "depth": 86, "type_sec": "D"}, "D_2": {"name": "D_2", "x0": 4484, "y0": 729, "center_x": 4500, "center_y": 770, "width": 32, "depth": 86, "type_sec": "D"}, "D_3": {"name": "D_3", "x0": 1414, "y0": 984, "center_x": 1455, "center_y": 1000, "width": 86, "depth": 32, "type_sec": "D"}, "D_4": {"name": "D_4", "x0": 2398, "y0": 984, "center_x": 2439, "center_y": 1000, "width": 86, "depth": 32, "type_sec": "D"}, "D_5": {"name": "D_5", "x0": 3314, "y0": 984, "center_x": 3355, "center_y": 1000, "width": 86, "depth": 32, "type_sec": "D"}}, "obstacles": [{"y0": 0, "x0": 4500, "depth": 729, "width": 4}, {"y0": 815, "x0": 4500, "depth": 189, "width": 4}, {"y0": 1000, "x0": 1500, "depth": 4, "width": 500}, {"y0": 1000, "x0": 1004, "depth": 4, "width": 410}, {"y0": 2000, "x0": 1004, "depth": 4, "width": 996}, {"y0": 1000, "x0": 3400, "depth": 4, "width": 600}, {"y0": 1000, "x0": 3004, "depth": 4, "width": 310}, {"y0": 2000, "x0": 3004, "depth": 4, "width": 996}, {"y0": 500, "x0": 4000, "depth": 241, "width": 4}, {"y0": 827, "x0": 4000, "depth": 177, "width": 4}, {"y0": 500, "x0": 1004, "depth": 4, "width": 2996}, {"y0": 1000, "x0": 1000, "depth": 1004, "width": 4}, {"y0": 1000, "x0": 3000, "depth": 1004, "width": 4}, {"y0": 0, "x0": 4000, "depth": 741, "width": 4}, {"y0": 827, "x0": 4000, "depth": 177, "width": 4}, {"y0": 0, "x0": 4004, "depth": 4, "width": 496}, {"y0": 1000, "x0": 3400, "depth": 4, "width": 600}, {"y0": 1000, "x0": 2484, "depth": 4, "width": 830}, {"y0": 1000, "x0": 1500, "depth": 4, "width": 898}, {"y0": 1000, "x0": 1004, "depth": 4, "width": 410}, {"y0": 1000, "x0": 2484, "depth": 4, "width": 516}, {"y0": 1000, "x0": 2004, "depth": 4, "width": 394}, {"y0": 2000, "x0": 2004, "depth": 4, "width": 996}, {"y0": 500, "x0": 1000, "depth": 504, "width": 4}, {"y0": 1000, "x0": 2000, "depth": 1004, "width": 4}, {"y0": 1000, "x0": 4000, "depth": 1004, "width": 4}, {"y0": 1000, "x0": 4004, "depth": 4, "width": 496}], "dd_geoms": {"rectangles": [], "lines": [], "circles": [{"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [4000, 782]}, {"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [4500, 770]}, {"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [1455, 1000]}, {"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [2439, 1000]}, {"fillColor": "#fff", "radius": 90, "opacity": 0.05, "xy": [3355, 1000]}], "texts": []}}}
+{
+    "0": {
+        "meta": {
+            "scale": 0.3,
+            "translate": [
+                2758,
+                1000
+            ]
+        },
+        "rooms": {
+            "R_1": {
+                "name": "R_1",
+                "x0": 1000,
+                "y0": 1000,
+                "width": 1000,
+                "depth": 1000,
+                "type_sec": "ROOM"
+            },
+            "R_2": {
+                "name": "R_2",
+                "x0": 2000,
+                "y0": 1000,
+                "width": 1000,
+                "depth": 1000,
+                "type_sec": "ROOM"
+            },
+            "R_3": {
+                "name": "R_3",
+                "x0": 3000,
+                "y0": 1000,
+                "width": 1000,
+                "depth": 1000,
+                "type_sec": "ROOM"
+            },
+            "C_4": {
+                "name": "C_4",
+                "x0": 1000,
+                "y0": 500,
+                "width": 3000,
+                "depth": 500,
+                "type_sec": "COR"
+            },
+            "S_5": {
+                "name": "S_5",
+                "x0": 4000,
+                "y0": 0,
+                "width": 500,
+                "depth": 1000,
+                "type_sec": "STAI"
+            }
+        },
+        "doors": {
+            "D_1": {
+                "name": "D_1",
+                "x0": 3984,
+                "y0": 741,
+                "center_x": 4000,
+                "center_y": 782,
+                "width": 32,
+                "depth": 86,
+                "type_sec": "D"
+            },
+            "D_2": {
+                "name": "D_2",
+                "x0": 4484,
+                "y0": 729,
+                "center_x": 4500,
+                "center_y": 770,
+                "width": 32,
+                "depth": 86,
+                "type_sec": "D"
+            },
+            "D_3": {
+                "name": "D_3",
+                "x0": 1414,
+                "y0": 984,
+                "center_x": 1455,
+                "center_y": 1000,
+                "width": 86,
+                "depth": 32,
+                "type_sec": "D"
+            },
+            "D_4": {
+                "name": "D_4",
+                "x0": 2398,
+                "y0": 984,
+                "center_x": 2439,
+                "center_y": 1000,
+                "width": 86,
+                "depth": 32,
+                "type_sec": "D"
+            },
+            "D_5": {
+                "name": "D_5",
+                "x0": 3314,
+                "y0": 984,
+                "center_x": 3355,
+                "center_y": 1000,
+                "width": 86,
+                "depth": 32,
+                "type_sec": "D"
+            }
+        },
+        "obstacles": [
+            {
+                "y0": 0,
+                "x0": 4500,
+                "depth": 729,
+                "width": 4
+            },
+            {
+                "y0": 815,
+                "x0": 4500,
+                "depth": 189,
+                "width": 4
+            },
+            {
+                "y0": 1000,
+                "x0": 1500,
+                "depth": 4,
+                "width": 500
+            },
+            {
+                "y0": 1000,
+                "x0": 1004,
+                "depth": 4,
+                "width": 410
+            },
+            {
+                "y0": 2000,
+                "x0": 1004,
+                "depth": 4,
+                "width": 996
+            },
+            {
+                "y0": 1000,
+                "x0": 3400,
+                "depth": 4,
+                "width": 600
+            },
+            {
+                "y0": 1000,
+                "x0": 3004,
+                "depth": 4,
+                "width": 310
+            },
+            {
+                "y0": 2000,
+                "x0": 3004,
+                "depth": 4,
+                "width": 996
+            },
+            {
+                "y0": 500,
+                "x0": 4000,
+                "depth": 241,
+                "width": 4
+            },
+            {
+                "y0": 827,
+                "x0": 4000,
+                "depth": 177,
+                "width": 4
+            },
+            {
+                "y0": 500,
+                "x0": 1004,
+                "depth": 4,
+                "width": 2996
+            },
+            {
+                "y0": 1000,
+                "x0": 1000,
+                "depth": 1004,
+                "width": 4
+            },
+            {
+                "y0": 1000,
+                "x0": 3000,
+                "depth": 1004,
+                "width": 4
+            },
+            {
+                "y0": 0,
+                "x0": 4000,
+                "depth": 741,
+                "width": 4
+            },
+            {
+                "y0": 827,
+                "x0": 4000,
+                "depth": 177,
+                "width": 4
+            },
+            {
+                "y0": 0,
+                "x0": 4004,
+                "depth": 4,
+                "width": 496
+            },
+            {
+                "y0": 1000,
+                "x0": 3400,
+                "depth": 4,
+                "width": 600
+            },
+            {
+                "y0": 1000,
+                "x0": 2484,
+                "depth": 4,
+                "width": 830
+            },
+            {
+                "y0": 1000,
+                "x0": 1500,
+                "depth": 4,
+                "width": 898
+            },
+            {
+                "y0": 1000,
+                "x0": 1004,
+                "depth": 4,
+                "width": 410
+            },
+            {
+                "y0": 1000,
+                "x0": 2484,
+                "depth": 4,
+                "width": 516
+            },
+            {
+                "y0": 1000,
+                "x0": 2004,
+                "depth": 4,
+                "width": 394
+            },
+            {
+                "y0": 2000,
+                "x0": 2004,
+                "depth": 4,
+                "width": 996
+            },
+            {
+                "y0": 500,
+                "x0": 1000,
+                "depth": 504,
+                "width": 4
+            },
+            {
+                "y0": 1000,
+                "x0": 2000,
+                "depth": 1004,
+                "width": 4
+            },
+            {
+                "y0": 1000,
+                "x0": 4000,
+                "depth": 1004,
+                "width": 4
+            },
+            {
+                "y0": 1000,
+                "x0": 4004,
+                "depth": 4,
+                "width": 496
+            }
+        ],
+        "dd_geoms": {
+            "rectangles": [],
+            "lines": [],
+            "circles": [
+                {
+                    "fillColor": "#fff",
+                    "radius": 90,
+                    "opacity": 0.05,
+                    "xy": [
+                        4000,
+                        782
+                    ]
+                },
+                {
+                    "fillColor": "#fff",
+                    "radius": 90,
+                    "opacity": 0.05,
+                    "xy": [
+                        4500,
+                        770
+                    ]
+                },
+                {
+                    "fillColor": "#fff",
+                    "radius": 90,
+                    "opacity": 0.05,
+                    "xy": [
+                        1455,
+                        1000
+                    ]
+                },
+                {
+                    "fillColor": "#fff",
+                    "radius": 90,
+                    "opacity": 0.05,
+                    "xy": [
+                        2439,
+                        1000
+                    ]
+                },
+                {
+                    "fillColor": "#fff",
+                    "radius": 90,
+                    "opacity": 0.05,
+                    "xy": [
+                        3355,
+                        1000
+                    ]
+                }
+            ],
+            "texts": []
+        }
+    }
+}
