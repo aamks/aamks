@@ -96,9 +96,9 @@ function ajaxSingleAnimFunCircle() { /*{{{*/
 	for($t=0; $t<15; $t+=2.5) { 
 		$record=[];
 		for($a=0; $a<19; $a++) { 
-			$record[]=[ 2450 + round(100*cos($t+$a/3)), 1000 - round(100*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
-			$record[]=[ 2450 + round(200*cos($t+$a/3)), 1000 + round(200*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
-			$record[]=[ 2450 + round(300*cos($t+$a/3)), 1000 - round(300*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
+			$record[]=[ 2600 + round(100*cos($t+$a/3)), 1200 - round(100*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
+			$record[]=[ 2600 + round(200*cos($t+$a/3)), 1200 + round(200*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
+			$record[]=[ 2600 + round(300*cos($t+$a/3)), 1200 - round(300*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
 		}
 		$arr[]=$record;
 	}
@@ -115,7 +115,7 @@ function ajaxSingleAnimFunExplode() { /*{{{*/
 		$record=[];
 		for($a=0; $a<700; $a++) { 
 			$color=floor($a/100);
-			$record[]=[ 2000+$t*rand(-12,12)*$a/10, 1000+$t*rand(-12,12)*$a/10, 0, 0, $colors[$color], 1 ];
+			$record[]=[ 2600+$t*rand(-12,12)*$a/10, 1200+$t*rand(-12,12)*$a/10, 0, 0, $colors[$color], 1 ];
 		}
 		$arr[]=$record;
 	}

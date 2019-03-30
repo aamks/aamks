@@ -18,13 +18,11 @@
 var scale=1;
 var canvasWidth=$(window).width()-20;
 var canvasHeight=$(window).height()-20;
-var fireScale;
 var intervalId;
-var fireScaleCounter;
 var incDB;
 var colors;
 var staticGeoms;
-var burningFireLocation;
+var fireXY;
 var wallsSize;
 var doorsSize;
 var ballsSize;
@@ -32,7 +30,6 @@ var velocitiesSize;
 var evacBalls;
 var evacLabels;
 var evacVelocities;
-var burningFire;
 var evacueesData;
 var numberOfEvacuees;
 var rooms;
@@ -122,7 +119,7 @@ function showStaticImage(chosenAnim) {
 
 		$("animator-title").html(chosenAnim['title']);
 		$("animator-time").html(animTimeFormat());
-		burningFireLocation=chosenAnim['fire_origin']
+		fireXY=chosenAnim['fire_origin']
 		wallsSize=Math.round(2/scale);
 		ballsSize=Math.round(5/scale);
 		velocitiesSize=Math.round(1/scale);
@@ -146,11 +143,6 @@ function showStaticImage(chosenAnim) {
 		if(chosenAnim["anim"] != undefined) { 
 			showAnimation(chosenAnim);
 		}
-		//project.importSVG("flame3.svg", function (item) {
-		//  item.position.x=2600;
-		//  item.position.y=1500;
-		//});
-
 
 	});
 }
@@ -244,27 +236,36 @@ function makeHighlightGeoms(data) {
 
 function paperjsLetItBurn() {
 	// The animated fire is displayed in a separate setInterval loop. Perhaps onFrame() suits more.
-	if (burningFire == undefined) {
-		burningFire=new Group();
-	} else {
-		burningFire.removeChildren();
-	}
-
-	if (burningFireLocation.length < 2) { 
+	if (fireXY.length < 2) { 
 		clearInterval(intervalId);
 		return; 
 	}
-	burningFire.addChild(new Path.Circle({center: new Point(burningFireLocation[0], burningFireLocation[1]) , radius:ballsSize*4 , fillColor:colors["firefill"] , strokeColor:colors["firestroke"] , strokeWidth:ballsSize }));
+	var smoke;
+	var smokeOrig;
+	var fire;
+	project.importSVG("smoke.svg", function (item) {
+	  item.position.x=fireXY[0];
+	  item.position.y=fireXY[1]-40;
+	  smoke=item;
+	  smoke.opacity=0.5;
+	  smokeOrig=item.bounds;
+	});
+	project.importSVG("fire.svg", function (item) {
+	  item.position.x=fireXY[0];
+	  item.position.y=fireXY[1];
+	  fire=item;
+	});
 
 	clearInterval(intervalId);
-	fireScale=0.9;
-	fireScaleCounter=1;
 	intervalId=setInterval(function(){ 
-		fireScaleCounter++;
-		if(fireScaleCounter%20 == 0) { 
-			fireScale=1/fireScale;
+		smoke.opacity-=0.008;
+		if (smoke.opacity<=0.15) { 
+			smoke.opacity=0.5; 
+			smoke.setBounds(smokeOrig);
 		}
-		burningFire.children[0].scale(fireScale); 
+		smoke.setPosition(smoke.getPosition().x, smoke.getPosition().y-2);
+		smoke.scale(1.02);
+		
 	},100);
 }
 
