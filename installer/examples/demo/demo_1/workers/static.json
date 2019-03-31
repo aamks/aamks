@@ -1,11 +1,14 @@
 {
     "0": {
-        "meta": {
-            "scale": 0.3,
-            "translate": [
-                2758,
-                1000
-            ]
+        "floor_meta": {
+			"center": [2750, 992, 0],
+			"height": 2016,
+			"maxx": 4500,
+			"maxy": 2000,
+			"minx": 1000,
+			"miny": -16,
+			"width": 3500,
+			"z": 0
         },
         "rooms": {
             "r1": {

@@ -2,9 +2,7 @@ from collections import OrderedDict
 from datetime import datetime
 from math import sqrt
 from numpy.random import randint
-from subprocess import Popen,PIPE
-import _recast as dt
-import subprocess
+from subprocess import Popen
 import codecs
 import inspect
 import itertools
@@ -242,16 +240,14 @@ class Vis:# {{{
         
         for floor,meta in json.loads(self.s.query("SELECT * FROM floors")[0]['json']).items():
             self._static[floor]=OrderedDict()
-            self._static[floor]['meta']=OrderedDict()
-            self._static[floor]['meta']['scale']=meta['animation_scale']
-            self._static[floor]['meta']['translate']=meta['animation_translate']
+            self._static[floor]['floor_meta']=meta
 # }}}
     def _js_make_rooms(self):# {{{
         ''' Data for rooms. '''
 
         for floor in self._static.keys():
             self._static[floor]['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,width,depth,type_sec FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
+            for i in self.s.query("SELECT name,x0,y0,width,depth,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
                 self._static[floor]['rooms'][i['name']]=i
 
 # }}}
@@ -342,104 +338,3 @@ class Vis:# {{{
         self.json.write(z, "{}/anims.json".format(vis_dir))
 # }}}
 # }}}
-class Navmesh: # {{{
-    ''' 
-    installer/navmesh_installer.sh installs all the dependencies.
-
-    * navmesh build from the obj geometry file
-    thanks to https://github.com/arl/go-detour !
-
-    * navmesh query
-    thanks to https://github.com/layzerar/recastlib/ !
-    '''
-
-    def __init__(self):
-        self.navmesh=OrderedDict()
-
-    def build(self,obj,folder=".",floor="0"):# {{{
-        file_obj="{}/{}.obj".format(folder, floor)
-        file_nav="{}/{}.nav".format(folder, floor)
-        file_conf="{}/recast.yml".format(folder)
-        with open(file_conf, "w") as f: 
-            f.write('''\
-            cellsize: 0.10
-            cellheight: 0.2
-            agentheight: 2
-            agentradius: 0.30
-            agentmaxclimb: 0.1
-            agentmaxslope: 45
-            regionminsize: 8
-            regionmergesize: 20
-            edgemaxlen: 12
-            edgemaxerror: 1.3
-            vertsperpoly: 6
-            detailsampledist: 6
-            detailsamplemaxerror: 1
-            partitiontype: 1
-            tilesize: 0
-            ''')
-        subprocess.call("rm -rf {}; recast --config {} --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_conf, file_obj, file_nav), shell=True)
-
-        try:
-            self.navmesh[floor] = dt.dtLoadSampleTileMesh(file_nav)
-        except:
-            raise SystemExit("Navmesh: cannot create {}".format(file_nav))
-
-# }}}
-    def query(self,q,floor="0",maxStraightPath=8):# {{{
-        '''
-        ./Detour/Include/DetourNavMeshQuery.h: maxStraightPath: The maximum number of points the straight path arrays can hold.  [Limit: > 0]
-        We set maxStraightPath to a default low value which stops calculations early
-        If one needs to get the full path to the destination one must call us with any high value, e.g. 999999999
-        '''
-         
-
-        filtr = dt.dtQueryFilter()
-        query = dt.dtNavMeshQuery()
-
-        status = query.init(self.navmesh[floor], 2048)
-        if dt.dtStatusFailed(status):
-            return "err", -1, status
-
-        polyPickExt = dt.dtVec3(2.0, 4.0, 2.0)
-        startPos = dt.dtVec3(q[0][0]/100, 1, q[0][1]/100)
-        endPos = dt.dtVec3(q[1][0]/100, 1, q[1][1]/100)
-
-        status, out = query.findNearestPoly(startPos, polyPickExt, filtr)
-        if dt.dtStatusFailed(status):
-            return "err", -2, status
-        startRef = out["nearestRef"]
-        _startPt = out["nearestPt"]
-
-        status, out = query.findNearestPoly(endPos, polyPickExt, filtr)
-        if dt.dtStatusFailed(status):
-            return "err", -3, status
-        endRef = out["nearestRef"]
-        _endPt = out["nearestPt"]
-
-        status, out = query.findPath(startRef, endRef, startPos, endPos, filtr, maxStraightPath)
-        if dt.dtStatusFailed(status):
-            return "err", -4, status
-        pathRefs = out["path"]
-
-        status, fixEndPos = query.closestPointOnPoly(pathRefs[-1], endPos)
-        if dt.dtStatusFailed(status):
-            return "err", -5, status
-
-        status, out = query.findStraightPath(startPos, fixEndPos, pathRefs, maxStraightPath, 0)
-        if dt.dtStatusFailed(status):
-            return "err", -6, status
-        straightPath = out["straightPath"]
-        straightPathFlags = out["straightPathFlags"]
-        straightPathRefs = out["straightPathRefs"]
-        
-        path=[]
-        for i in straightPath:
-            path.append((i[0]*100, i[2]*100))
-
-        if path[0]=="err":
-            return None
-        else :
-            return path
-# }}}
-

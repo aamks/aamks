@@ -7,7 +7,9 @@ import re
 import sys
 import codecs
 import itertools
+import _recast as dt
 
+import subprocess
 from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
@@ -17,20 +19,43 @@ from math import sqrt
 from include import Sqlite
 from include import Json
 from include import Dump as dd
-from include import Navmesh
 from include import Vis
 
 # }}}
 
-class Nav():
+class Navmesh: 
     def __init__(self):# {{{
+        ''' 
+        installer/navmesh_installer.sh installs all the dependencies.
+
+        * navmesh build from the obj geometry file
+        thanks to https://github.com/arl/go-detour !
+
+        * navmesh query
+        thanks to https://github.com/layzerar/recastlib/ !
+
+        ============================================
+
+        This is how we are supposed to be called:
+
+        nav=Navmesh()
+        nav.build(floor)
+        nav.query([(1300,600), (3100,1800)])
+
+            or if you want to block r1 and r2 and have the navmeshes named
+
+        navs=dict()
+        navs[('r1','r2')]=Navmesh()
+        navs[('r1','r2')].build(floor,('r1','r2'))
+        navs[('r1','r2')].query([(1300,600), (3100,1800)])
+
+        '''
+
         self.json=Json()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        #self.s.dump()
-        #self.s.dumpall()
-        self.create(str(0), ['r3'])
+        self.navmesh=OrderedDict()
 # }}}
-    def _bricked_wall(self, floor, bypass_rooms):# {{{
+    def _bricked_wall(self, floor, bypass_rooms=[]):# {{{
         '''
         For navmesh we may wish to turn some doors into bricks.
         '''
@@ -73,38 +98,7 @@ class Nav():
         self._obj_num+=1
         return elem
 # }}}
-    def _navmesh_test(self,floor,bypass_rooms):# {{{
-        colors=["#fff", "#f80", "#f00", "#8f0", "#08f", "#f0f" ]
-        navmesh_paths=[]
-
-        for x in range(3):
-            src_dest=[]
-            where=" name!="+" AND name!=".join([ "'{}'".format(i) for i in bypass_rooms])
-            for i in self.s.query("SELECT center_x,center_y FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND {} ORDER BY RANDOM() LIMIT 2".format(where), (floor,)):
-                r=round(uniform(-150,150))
-                src_dest.append([i['center_x']+r, i['center_y']+r])
-
-            z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-            z[floor]['circles'].append({ "xy": (src_dest[0]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
-            z[floor]['circles'].append({ "xy": (src_dest[1]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
-            self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-            navmesh_paths.append(self.nav[floor].query(src_dest, floor,100))
-        self._navmesh_vis(floor,navmesh_paths,colors)
-# }}}
-    def _navmesh_vis(self,floor,navmesh_paths,colors):# {{{
-        j=Json()
-        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for cc,path in enumerate(navmesh_paths):
-            for i,p in enumerate(path):
-                try:
-                    z[floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": colors[cc], "strokeWidth": 2  , "opacity": 0.7 } )
-                except:
-                    pass
-
-        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-# }}}
-
-    def create(self,floor,bypass_rooms=[]):# {{{
+    def _obj_make(self,floor,bypass_rooms):# {{{
         ''' 
         1. Create obj file from aamks geometries.
         2. Build navmesh with golang, obj is input
@@ -112,7 +106,6 @@ class Nav():
         4. bypass_rooms are the rooms excluded from navigation
         '''
 
-        self.nav=OrderedDict()
         z=self._bricked_wall(floor,bypass_rooms)
         obj='';
         self._obj_num=0;
@@ -121,14 +114,138 @@ class Nav():
         for face in self._obj_platform(floor):
             obj+=self._obj_elem(face,0)
         
-        path="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], floor)
-        #dd(path)
+        path="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], self.nav_name)
         with open(path, "w") as f: 
             f.write(obj)
-        self.nav[floor]=Navmesh()
-        self.nav[floor].build(obj, os.environ['AAMKS_PROJECT'], floor)
-        self._navmesh_test(floor, bypass_rooms)
-
-        Vis({'highlight_geom': None, 'anim': None, 'title': 'Navmesh test', 'srv': 1})
+        return path
 
 # }}}
+    def _navmesh_vis(self,navmesh_paths,colors):# {{{
+        j=Json()
+        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        for cc,path in enumerate(navmesh_paths):
+            for i,p in enumerate(path):
+                try:
+                    z[self.floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": colors[cc], "strokeWidth": 2  , "opacity": 0.7 } )
+                except:
+                    pass
+
+        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+# }}}
+
+    def test(self):# {{{
+        colors=["#fff", "#f80", "#f00", "#8f0", "#08f", "#f0f" ]
+        navmesh_paths=[]
+
+        for x in range(6):
+            q=[]
+            where=''
+            if len(self.bypass_rooms) > 0:
+                where="AND name!="+" AND name!=".join([ "'{}'".format(i) for i in self.bypass_rooms])
+            for i in self.s.query("SELECT center_x,center_y FROM aamks_geom WHERE type_pri='COMPA' AND floor=? {} ORDER BY RANDOM() LIMIT 2".format(where), (self.floor,)):
+                r=round(uniform(-150,150))
+                q.append([i['center_x']+r, i['center_y']+r])
+
+            z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            z[self.floor]['circles'].append({ "xy": (q[0]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
+            z[self.floor]['circles'].append({ "xy": (q[1]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
+            self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            navmesh_paths.append(self.query(q,100))
+        self._navmesh_vis(navmesh_paths,colors)
+        Vis({'highlight_geom': None, 'anim': None, 'title': 'Nav {} test'.format(self.nav_name), 'srv': 1})
+# }}}
+    def _get_name(self,floor,bypass_rooms=[]):# {{{
+        brooms=''
+        if len(bypass_rooms)>0:
+            brooms="-"+"-".join(bypass_rooms)
+        self.nav_name="{}{}.nav".format(floor,brooms)
+
+# }}}
+    def build(self,floor,bypass_rooms=[]):# {{{
+        self.floor=floor
+        self.bypass_rooms=bypass_rooms
+        self._get_name(floor,bypass_rooms)
+        file_obj=self._obj_make(floor,bypass_rooms)
+        file_nav="{}/{}".format(os.environ['AAMKS_PROJECT'], self.nav_name)
+        file_conf="{}/recast.yml".format(os.environ['AAMKS_PROJECT'])
+        with open(file_conf, "w") as f: 
+            f.write('''\
+            cellsize: 0.10
+            cellheight: 0.2
+            agentheight: 2
+            agentradius: 0.30
+            agentmaxclimb: 0.1
+            agentmaxslope: 45
+            regionminsize: 8
+            regionmergesize: 20
+            edgemaxlen: 12
+            edgemaxerror: 1.3
+            vertsperpoly: 6
+            detailsampledist: 6
+            detailsamplemaxerror: 1
+            partitiontype: 1
+            tilesize: 0
+            ''')
+        subprocess.call("rm -rf {}; recast --config {} --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_conf, file_obj, file_nav), shell=True)
+
+        try:
+            self.NAV = dt.dtLoadSampleTileMesh(file_nav)
+        except:
+            raise SystemExit("Navmesh: cannot create {}".format(file_nav))
+# }}}
+    def query(self,q,maxStraightPath=8):# {{{
+        '''
+        ./Detour/Include/DetourNavMeshQuery.h: maxStraightPath: The maximum number of points the straight path arrays can hold.  [Limit: > 0]
+        We set maxStraightPath to a default low value which stops calculations early
+        If one needs to get the full path to the destination one must call us with any high value, e.g. 999999999
+        '''
+
+        filtr = dt.dtQueryFilter()
+        query = dt.dtNavMeshQuery()
+
+        status = query.init(self.NAV, 2048)
+        if dt.dtStatusFailed(status):
+            return "err", -1, status
+
+        polyPickExt = dt.dtVec3(2.0, 4.0, 2.0)
+        startPos = dt.dtVec3(q[0][0]/100, 1, q[0][1]/100)
+        endPos = dt.dtVec3(q[1][0]/100, 1, q[1][1]/100)
+
+        status, out = query.findNearestPoly(startPos, polyPickExt, filtr)
+        if dt.dtStatusFailed(status):
+            return "err", -2, status
+        startRef = out["nearestRef"]
+        _startPt = out["nearestPt"]
+
+        status, out = query.findNearestPoly(endPos, polyPickExt, filtr)
+        if dt.dtStatusFailed(status):
+            return "err", -3, status
+        endRef = out["nearestRef"]
+        _endPt = out["nearestPt"]
+
+        status, out = query.findPath(startRef, endRef, startPos, endPos, filtr, maxStraightPath)
+        if dt.dtStatusFailed(status):
+            return "err", -4, status
+        pathRefs = out["path"]
+
+        status, fixEndPos = query.closestPointOnPoly(pathRefs[-1], endPos)
+        if dt.dtStatusFailed(status):
+            return "err", -5, status
+
+        status, out = query.findStraightPath(startPos, fixEndPos, pathRefs, maxStraightPath, 0)
+        if dt.dtStatusFailed(status):
+            return "err", -6, status
+        straightPath = out["straightPath"]
+        straightPathFlags = out["straightPathFlags"]
+        straightPathRefs = out["straightPathRefs"]
+        
+        path=[]
+        for i in straightPath:
+            path.append((i[0]*100, i[2]*100))
+
+        if path[0]=="err":
+            return None
+        else :
+            return path
+# }}}
+

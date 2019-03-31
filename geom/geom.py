@@ -18,6 +18,7 @@ from include import Sqlite
 from include import Json
 from include import Dump as dd
 from include import Vis
+from geom.nav import Navmesh
 
 # }}}
 
@@ -49,17 +50,14 @@ class Geom():
         self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
+        self._navmeshes_for_floors()
         #self.s.dumpall()
         #self.s.dump()
 # }}}
 
     def _floors_details(self):# {{{
         ''' 
-        Floor dimensions are needed here and there, therefore we store it in
-        sqlite. Canvas size is 1600 x 800 in css.css. Calculate how to scale
-        the whole floor to fit the canvas. Minima don't have to be at (0,0) in
-        autocad, therefore we also need to translate the drawing for the
-        canvas. 
+        Floor dimensions are needed here and there. 
         '''
 
         values=OrderedDict()
@@ -75,10 +73,7 @@ class Geom():
 
             center=(minx + int(width/2), miny + int(height/2), z0)
 
-            animation_scale=round(min(1600/width,800/height)*0.8, 2) # 0.8 is canvas padding
-            animation_translate=[ int(maxx-0.5*width), int(maxy-0.5*height) ]
-
-            values[floor]=OrderedDict([('width', width) , ('height', height) , ('z', z0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy) , ('animation_scale', animation_scale), ('animation_translate',  animation_translate)])
+            values[floor]=OrderedDict([('width', width) , ('height', height) , ('z', z0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy) ])
         self.s.query("CREATE TABLE floors(json)")
         self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(values),))
 # }}}
@@ -109,14 +104,20 @@ class Geom():
                     width= p1[0]-p0[0]
                     depth= p1[1]-p0[1]
                     height=p1[2]-p0[2]
-                    attrs=v[2]
+                    attrs=self._prepare_attrs(v[2])
                     record=self._prepare_geom_record(k,[p0,p1],width,depth,height,floor,attrs)
                     if record != False:
                         data.append(record)
-        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,exit_type,room_enter,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore)")
+        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
         #dd(self.s.dump())
 #}}}
+    def _prepare_attrs(self,attrs):# {{{
+        aa={"mvent_throughput": None, "exit_type": None, "room_enter": None }
+        for k,v in attrs.items():
+            aa[k]=v
+        return aa
+# }}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor,attrs):# {{{
         ''' Format a record for sqlite. Hvents get fixed width self._doors_width cm '''
         # OBST
@@ -159,8 +160,8 @@ class Geom():
         global_type_id=attrs['idx'];
         name='{}{}'.format(self.geomsMap[k], global_type_id)
 
-        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , exit_type , room_enter , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore)")
-        return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , 1         , 1          , v[0][0] , v[0][1] , v[0][2] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0)
+        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput          , exit_type          , room_enter         )")
+        return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , v[0][0] , v[0][1] , v[0][2] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , attrs['mvent_throughput'] , attrs['exit_type'] , attrs['room_enter'] )
 
 # }}}
     def _enhancements(self):# {{{
@@ -578,6 +579,19 @@ class Geom():
                 self.make_vis('Room without door (see Animator)', i['global_type_id'], 'COMPA')
 # }}}
 
+    def _navmeshes_for_floors(self):# {{{
+        navs={}
+        for floor in self.floors:
+            z=self.s.query("SELECT name FROM aamks_geom WHERE floor=? AND room_enter='no'", (floor,))
+            bypass_rooms=[]
+            for i in z:
+                bypass_rooms.append(i['name'])
+            navs[tuple(bypass_rooms)]=Navmesh()
+            navs[tuple(bypass_rooms)].build(floor,bypass_rooms)
+            navs[tuple(bypass_rooms)].query([(1300,600), (3100,1800)])
+            if self.conf['navmesh_debug']==1:
+                navs[tuple(bypass_rooms)].test()
+# }}}
     def make_vis(self, title, faulty_id='', type_pri='HVENT'):# {{{
         ''' 
         This method is for visualizing both errors and just how things look. 

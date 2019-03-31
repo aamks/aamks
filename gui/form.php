@@ -266,7 +266,7 @@ function form($variant) { /*{{{*/
 	$update_var='update_form2';
 	$json=read_aamks_conf_json();
 	if($variant=='easy') { 
-		foreach(array("outdoor_temperature","indoor_pressure","windows","vents_open","c_const","evacuees_max_h_speed","evacuees_max_v_speed","evacuees_alpha_v","evacuees_beta_v","fire_starts_in_a_room","hrrpua","hrr_alpha","evacuees_concentration","pre_evac","pre_evac_fire_origin") as $i) { 
+		foreach(array("navmesh_debug", "outdoor_temperature","indoor_pressure","windows","vents_open","c_const","evacuees_max_h_speed","evacuees_max_v_speed","evacuees_alpha_v","evacuees_beta_v","fire_starts_in_a_room","hrrpua","hrr_alpha","evacuees_concentration","pre_evac","pre_evac_fire_origin") as $i) { 
 			unset ($json[$i]);
 		}
 		$update_var='update_form1';

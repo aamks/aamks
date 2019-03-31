@@ -1,6 +1,7 @@
 {
     "project_id": 1,
     "scenario_id": 1,
+	"navmesh_debug":0, 
     "number_of_simulations": 1,
     "simulation_time": 100,
     "indoor_temperature": 20,

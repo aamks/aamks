@@ -3,6 +3,7 @@ function make_help() { /*{{{*/
 	$help=[]                                                                                                                                                              ;
 	$help["project_id"]              = ["scenario"                         , "This is scenario"]                                                         ;
 	$help["number_of_simulations"]   = ["number of simulations"            , "write me..."]                                                              ;
+	$help["navmesh_debug"]			 = ["navmesh_debug"                    , "write me..."]                                                              ;
 	$help["simulation_time"]         = ["simulation time"                  , "write me..."]                                                              ;
 	$help["indoor_temperature"]      = ["indoor_temperature"               , "write me..."]                                                              ;
 	$help["outdoor_temperature"]     = ["outdoor_temperature"              , "write me..."]                                                              ;
@@ -306,6 +307,7 @@ function get_defaults($q) {/*{{{*/
 	$db['setup1']='
 	{
 		"outdoor_temperature": { "mean": 20, "sd": 2 },
+		"navmesh_debug": 0,
 		"indoor_pressure": 101325,
 		"windows": [ 
 			{ "min": -99999 , "max": -5    , "quarter": -5 , "full": 0.11 } ,

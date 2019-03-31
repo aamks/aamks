@@ -13,6 +13,7 @@ INSERT INTO projects(user_id,project_name) values(1,'four');
 INSERT INTO projects(user_id,project_name) values(1,'five');
 DELETE FROM scenarios;
 INSERT INTO scenarios(project_id,scenario_name) values(1,'demo_1');
+INSERT INTO scenarios(project_id,scenario_name) values(1,'demo_2');
 INSERT INTO scenarios(project_id,scenario_name) values(2,'three_1');
 INSERT INTO scenarios(project_id,scenario_name) values(3,'three_1');
 INSERT INTO scenarios(project_id,scenario_name) values(3,'three_2');
