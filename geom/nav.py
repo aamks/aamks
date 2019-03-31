@@ -28,7 +28,7 @@ class Nav():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         #self.s.dump()
         #self.s.dumpall()
-        self.create(str(0), ['r4','r6'])
+        self.create(str(0), ['r3'])
 # }}}
     def _bricked_wall(self, floor, bypass_rooms):# {{{
         '''
@@ -56,36 +56,6 @@ class Nav():
         return bricked_wall
 
 # }}}
-    def create(self,floor,bypass_rooms=[]):# {{{
-        ''' 
-        1. Create obj file from aamks geometries.
-        2. Build navmesh with golang, obj is input
-        3. Query navmesh with python
-        4. bypass_rooms are the rooms excluded from navigation
-        '''
-
-        self.nav=OrderedDict()
-        z=self._bricked_wall(floor,bypass_rooms)
-        obj='';
-        self._obj_num=0;
-        for face in z:
-            obj+=self._obj_elem(face,99)
-        for face in self._obj_platform(floor):
-            obj+=self._obj_elem(face,0)
-        
-        path="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], floor)
-        #dd(path)
-        with open(path, "w") as f: 
-            f.write(obj)
-        #with open("/home/mimooh/0.obj", "w") as f: 
-        #    f.write(obj)
-        self.nav[floor]=Navmesh()
-        self.nav[floor].build(obj, os.environ['AAMKS_PROJECT'], floor)
-        self._navmesh_test(floor)
-
-        Vis({'highlight_geom': None, 'anim': None, 'title': 'Navmesh test', 'srv': 1})
-
-# }}}
     def _obj_platform(self,floor):# {{{
         z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,))
         platforms=[]
@@ -103,14 +73,15 @@ class Nav():
         self._obj_num+=1
         return elem
 # }}}
-    def _navmesh_test(self,floor):# {{{
+    def _navmesh_test(self,floor,bypass_rooms):# {{{
         colors=["#fff", "#f80", "#f00", "#8f0", "#08f", "#f0f" ]
         navmesh_paths=[]
 
-        for x in range(6):
+        for x in range(3):
             src_dest=[]
-            for i in self.s.query("SELECT center_x,center_y FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY RANDOM() LIMIT 2", (floor,)):
-                r=round(uniform(-100,100))
+            where=" name!="+" AND name!=".join([ "'{}'".format(i) for i in bypass_rooms])
+            for i in self.s.query("SELECT center_x,center_y FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND {} ORDER BY RANDOM() LIMIT 2".format(where), (floor,)):
+                r=round(uniform(-150,150))
                 src_dest.append([i['center_x']+r, i['center_y']+r])
 
             z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
@@ -133,4 +104,31 @@ class Nav():
         j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
 
+    def create(self,floor,bypass_rooms=[]):# {{{
+        ''' 
+        1. Create obj file from aamks geometries.
+        2. Build navmesh with golang, obj is input
+        3. Query navmesh with python
+        4. bypass_rooms are the rooms excluded from navigation
+        '''
 
+        self.nav=OrderedDict()
+        z=self._bricked_wall(floor,bypass_rooms)
+        obj='';
+        self._obj_num=0;
+        for face in z:
+            obj+=self._obj_elem(face,99)
+        for face in self._obj_platform(floor):
+            obj+=self._obj_elem(face,0)
+        
+        path="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], floor)
+        #dd(path)
+        with open(path, "w") as f: 
+            f.write(obj)
+        self.nav[floor]=Navmesh()
+        self.nav[floor].build(obj, os.environ['AAMKS_PROJECT'], floor)
+        self._navmesh_test(floor, bypass_rooms)
+
+        Vis({'highlight_geom': None, 'anim': None, 'title': 'Navmesh test', 'srv': 1})
+
+# }}}

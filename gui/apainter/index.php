@@ -5,7 +5,6 @@ require_once("../inc.php");
 function site() {/*{{{*/
 	echo "
 	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
-	<script src='js/taffy-min.js'></script>
 	<script src='js/d3.v4.min.js'></script>
 	<script src='js/apainter.js'></script>
 	<script src='js/menus_apainter.js'></script>
