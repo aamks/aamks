@@ -214,8 +214,8 @@ class Geom():
             z[floor]['circles']=[]         
             z[floor]['texts']=[]           
             z[floor]['rectangles']=[]      
-            for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' AND floor=?", (floor,)): 
-                z[floor]['circles'].append({ "xy": (i['center_x'] , i['center_y']) , "radius": 90 , "fillColor": "#fff" , "opacity": 0.05 } )
+            #for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' AND floor=?", (floor,)): 
+            #    z[floor]['circles'].append({ "xy": (i['center_x'] , i['center_y']) , "radius": 90 , "fillColor": "#fff" , "opacity": 0.05 } )
 
             # Example usage anywhere inside aamks:
 

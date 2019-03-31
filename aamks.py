@@ -12,7 +12,6 @@ from include import SendMessage
 OnInit()
 Geom()
 Nav()
-#exit()
 CfastPartition(0) # 1 enabled debugging
 CfastMcarlo()
 EvacMcarlo()

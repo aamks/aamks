@@ -28,26 +28,25 @@ class Nav():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         #self.s.dump()
         #self.s.dumpall()
-        self.create(str(0))
+        self.create(str(0), ['r4','r6'])
 # }}}
     def _bricked_wall(self, floor, bypass_rooms):# {{{
         '''
-        For navmesh (only) we must turn some doors into bricks.
+        For navmesh we may wish to turn some doors into bricks.
         '''
 
-        floors_meta=json.loads(self.s.query("SELECT json FROM floors")[0]['json'])
-        elevation=floors_meta[floor]['z']
+        bricked_wall=[]
 
-        where=''
         if len(bypass_rooms) > 0 :
+            floors_meta=json.loads(self.s.query("SELECT json FROM floors")[0]['json'])
+            elevation=floors_meta[floor]['z']
             where=" WHERE "
             where+=" vent_from_name="+" OR vent_from_name=".join([ "'{}'".format(i) for i in bypass_rooms])
             where+=" OR vent_to_name="+" OR vent_to_name=".join([ "'{}'".format(i) for i in bypass_rooms])
-        bypass_doors=self.s.query("SELECT name,x0,y0,x1,y1 FROM aamks_geom {}".format(where))
+            bypass_doors=self.s.query("SELECT name,x0,y0,x1,y1 FROM aamks_geom {}".format(where))
 
-        bricked_wall=[]
-        for i in bypass_doors:
-            bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
+            for i in bypass_doors:
+                bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
 
         z=self.s.query("SELECT json FROM obstacles")
         json.loads(z[0]['json'])['points'].items()
@@ -67,17 +66,19 @@ class Nav():
 
         self.nav=OrderedDict()
         z=self._bricked_wall(floor,bypass_rooms)
+        obj='';
+        self._obj_num=0;
         for face in z:
-            self._obj_num=0;
-            obj='';
             obj+=self._obj_elem(face,99)
-            for pp in self._obj_platform(floor):
-                obj+=self._obj_elem(pp,0)
+        for face in self._obj_platform(floor):
+            obj+=self._obj_elem(face,0)
         
         path="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], floor)
-        dd(path)
+        #dd(path)
         with open(path, "w") as f: 
             f.write(obj)
+        #with open("/home/mimooh/0.obj", "w") as f: 
+        #    f.write(obj)
         self.nav[floor]=Navmesh()
         self.nav[floor].build(obj, os.environ['AAMKS_PROJECT'], floor)
         self._navmesh_test(floor)
@@ -108,8 +109,9 @@ class Nav():
 
         for x in range(6):
             src_dest=[]
-            for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY RANDOM() LIMIT 2", (floor,)):
-                src_dest.append([round(uniform(i['x0'], i['x1'])), round(uniform(i['y0'], i['y1']))])
+            for i in self.s.query("SELECT center_x,center_y FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY RANDOM() LIMIT 2", (floor,)):
+                r=round(uniform(-100,100))
+                src_dest.append([i['center_x']+r, i['center_y']+r])
 
             z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
             z[floor]['circles'].append({ "xy": (src_dest[0]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
