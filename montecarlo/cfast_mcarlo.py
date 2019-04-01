@@ -39,6 +39,7 @@ class CfastMcarlo():
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self._psql_collector=OrderedDict()
+        self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,sim_id)")
 
         si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
         for self._sim_id in range(*si.get()):
@@ -54,31 +55,33 @@ class CfastMcarlo():
         self._psql_log_variable('outdoort',outdoor_temp)
         return outdoor_temp
 # }}}
-    def _draw_fire(self):# {{{
-        ''' 
-        FIRE_ORIGIN is passed via fire_origin.json to evac.in 
-        TODO: we should have a better way of passing FIRE_ORIGIN, psql perhaps?
-        '''
+    def _save_fire_origin(self, fire_origin):# {{{
+        fire_origin.append(self._sim_id)
+        self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?)', fire_origin)
 
-        origin_in_room=binomial(1,self.conf['fire_starts_in_a_room'])
+        self._psql_log_variable('fireorigname',fire_origin[0])
+        self._psql_log_variable('fireorig',fire_origin[1])
+# }}}
+    def _draw_fire(self):# {{{
+        is_origin_in_room=binomial(1,self.conf['fire_starts_in_a_room'])
         
         self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY name") ]
         self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY name") ]
-        if origin_in_room==1 or len(self.all_corridors_and_halls)==0:
-            chosen=str(choice(self.all_rooms))
-            self._psql_log_variable('fireorig','room')
-            self._psql_log_variable('fireorigname',chosen)
+        fire_origin=[]
+        if is_origin_in_room==1 or len(self.all_corridors_and_halls)==0:
+            fire_origin.append(str(choice(self.all_rooms)))
+            fire_origin.append('room')
         else:
-            chosen=str(choice(self.all_corridors_and_halls))
-            self._psql_log_variable('fireorig','non_room')
-            self._psql_log_variable('fireorigname',chosen)
-        self.conf['ROOM_OF_FIRE_ORIGIN']=chosen
+            fire_origin.append(str(choice(self.all_corridors_and_halls)))
+            fire_origin.append('non_room')
 
-        compa=self.s.query("SELECT * FROM aamks_geom WHERE name=? and type_pri='COMPA'", (chosen,))[0]
-        self.json.write(chosen, "{}/workers/{}/fire_origin.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
+        compa=self.s.query("SELECT * FROM aamks_geom WHERE name=? and type_pri='COMPA'", (fire_origin[0],))[0]
         x=round(compa['width']/(2.0*100),2)
         y=round(compa['depth']/(2.0*100),2)
         z=round(compa['height']/100.0 * (1-math.log10(uniform(1,10))),2)
+
+        fire_origin+=[x,y,z]
+        self._save_fire_origin(fire_origin)
 
         collect=('FIRE', compa['global_type_id'], x, y, z, 1, 'TIME' ,'0','0','0','0','medium')
         return (','.join(str(i) for i in collect))

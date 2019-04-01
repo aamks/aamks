@@ -53,14 +53,11 @@ class EvacMcarlo():
         AAMKS_PROJECT must be propagated to worker environment.
         '''
 
-        fire_origin_file="{}/workers/{}/fire_origin.json".format(os.environ['AAMKS_PROJECT'], self._sim_id)
-
         self._evac_conf=self.conf
         self._evac_conf['AAMKS_PROJECT']=os.environ['AAMKS_PROJECT']
         self._evac_conf['SIM_ID']=self._sim_id
         self._evac_conf['SERVER']=os.environ['AAMKS_SERVER']
-        self._evac_conf['FIRE_ORIGIN']=self.json.read(fire_origin_file)
-        os.remove(fire_origin_file)
+        self._evac_conf['FIRE_ORIGIN']=self.s.query("SELECT name FROM fire_origin WHERE sim_id=?", (self._sim_id,))[0]['name']
 # }}}
     def _make_pre_evacuation(self,room,type_sec):# {{{
         ''' 
@@ -86,6 +83,30 @@ class EvacMcarlo():
         raise Exception("Cannot determine the density for {}".format(name))
 
 # }}}
+    def _evac_rooms(self,floor): # {{{
+        '''
+        * plain: plain rooms
+        * manual: manually asigned evacuees 
+        '''
+
+        rooms={}
+        plain_rooms={}
+        for i in self.s.query("SELECT x0, x1, y0, y1, name, type_sec, room_area FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY global_type_id", (floor,)):
+            plain_rooms[i['name']]=i
+
+        manual_rooms={}
+        for i in self.s.query("SELECT name, x0, y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=?", (floor,)):
+            q=(floor,i['x0'], i['y0'], i['x0'], i['y0'])
+            x=self.s.query("SELECT name,type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND x0<=? AND y0<=? AND x1>=? AND y1>=?", q)[0]
+            if not x['name'] in manual_rooms:
+                manual_rooms[x['name']]={'type_sec': x['type_sec'], 'pos': [] }
+                del plain_rooms[x['name']]
+            manual_rooms[x['name']]['pos'].append((i['x0'], i['y0']))
+
+        rooms['plain']=plain_rooms
+        rooms['manual']=manual_rooms
+        return rooms
+# }}}
     def _dispatch_evacuees(self):# {{{
         ''' 
         We dispatch the evacuees across the building according to the density
@@ -97,14 +118,18 @@ class EvacMcarlo():
         for floor in self.floors:
             self.pre_evacuation[floor] = list()
             positions = []
-            rooms = self.s.query("SELECT x0, x1, y0, y1, name, type_sec, room_area FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,))
-            for r in rooms:
+            evac_rooms=self._evac_rooms(floor)
+            for name,r in evac_rooms['plain'].items():
                 density=self._get_density(r['name'],r['type_sec'],floor)
                 x = uniform(r['x0'] + 50 , r['x1'] - 50 , int(r['room_area'] / density))
                 y = uniform(r['y0'] + 50 , r['y1'] - 50 , int(r['room_area'] / density))
                 positions += list(zip(x, y))
                 for i in x:
                     self.pre_evacuation[floor].append(self._make_pre_evacuation(r['name'], r['type_sec']))
+            for name,r in evac_rooms['manual'].items():
+                positions += r['pos']
+                for i in r['pos']:
+                    self.pre_evacuation[floor].append(self._make_pre_evacuation(name, r['type_sec']))
             self.dispatched_evacuees[floor] = [list([int(i) for i in l]) for l in positions]
 # }}}
     def _make_evac_conf(self):# {{{

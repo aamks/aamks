@@ -73,7 +73,8 @@ class Geom():
 
             center=(minx + int(width/2), miny + int(height/2), z0)
 
-            values[floor]=OrderedDict([('width', width) , ('height', height) , ('z', z0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy) ])
+            values[floor]=OrderedDict([('width', width) , ('height', height) , ('z', z0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy)])
+
         self.s.query("CREATE TABLE floors(json)")
         self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(values),))
 # }}}
@@ -127,7 +128,7 @@ class Geom():
 
         # EVACUEE
         elif k in ('EVACUEE',):                  
-            type_pri='EE'
+            type_pri='EVACUEE'
             type_tri=''
 
         # MVENT      
@@ -160,7 +161,7 @@ class Geom():
         global_type_id=attrs['idx'];
         name='{}{}'.format(self.geomsMap[k], global_type_id)
 
-        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput          , exit_type          , room_enter         )")
+        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput          , exit_type          , room_enter          )")
         return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , v[0][0] , v[0][1] , v[0][2] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , attrs['mvent_throughput'] , attrs['exit_type'] , attrs['room_enter'] )
 
 # }}}
@@ -327,7 +328,7 @@ class Geom():
         for floor in self.floors:
             for elem in self.aamks_polies.keys():
                 self.aamks_polies[elem][floor]=OrderedDict()
-            for v in self.s.query("SELECT * FROM aamks_geom WHERE type_pri NOT IN('OBST', 'EE') AND floor=?", (floor,)):
+            for v in self.s.query("SELECT * FROM aamks_geom WHERE type_pri NOT IN('OBST', 'EVACUEE') AND floor=?", (floor,)):
                 self.aamks_polies[v['type_pri']][floor][v['global_type_id']]=box(v['x0'], v['y0'], v['x0']+v['width'], v['y0']+v['depth'])
 # }}}
     def _get_faces(self):# {{{

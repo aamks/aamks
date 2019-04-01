@@ -224,8 +224,15 @@ function geom_select_deselect() { //{{{
 	//}}}
 function alternative_view() {//{{{
 	//console.log(currentView);
+
+	// For production
+	// if(currentView==0) { currentView=1; view3d(); }
+	// else if(currentView==1) { currentView=0; close3dview(); }
+
+	// For devel we have this 3 view cycles
 	if(currentView==0) { currentView=1; view3d(); }
-	else if(currentView==1) { currentView=0; close3dview(); }
+	else if(currentView==1) { currentView=2; close3dview(); textarea_edit_cad_json(); }
+	else if(currentView==2) { currentView=0; cad_json_textarea_close();  }
 	//console.log(currentView);
 	//console.log("===========");
 }

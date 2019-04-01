@@ -4,7 +4,6 @@ $(function() {
 	register_listeners();
 });
 function register_listeners() {//{{{
-
 	$("right-menu-box").on("click" , "#btn_copy_to_floor"   , function() { copy_to_floor() });
 	$("right-menu-box").on("click" , "#btn_edit_cad_json"   , function() { textarea_edit_cad_json() });
 	$("right-menu-box").on("click" , "#btn_submit_cad_json" , function() { textarea_edit_cad_json() });
@@ -366,9 +365,13 @@ function legend() { //{{{
 function reorder_db() {//{{{
 	// Re-enumerate all elems in this fashion: r0, r1, r2, ..., d0, d1, d2, ...
 	// CFAST expects elems to be numbered as above
-	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst'], ['evacuee'] ];
+	// Evacuees will be in original order for navmesh testing pairing: e1 > e2, e3 > e4, ...
+	db.sort("idx");
+	var ee=db({"type": 'evacuee'}).get();
+	db({"type": 'evacuee'}).remove();
+
+	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst'] ];
 	db.sort("floor,x0,y0");
-	//dd();
 	for (var i in types) {
 		var idx=0;
 		var r=db({"type": types[i]}).get();
@@ -379,6 +382,12 @@ function reorder_db() {//{{{
 			db.insert(r[ii]);
 			idx++;
 		}
+	}
+	for (var i in ee) {
+		ee[i]['idx']=idx;
+		ee[i]['name']="e"+idx;
+		db.insert(ee[i]);
+		idx++;
 	}
 	cad_jsons_db();
 }

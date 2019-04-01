@@ -6,7 +6,7 @@ require_once("lib.form.php");
 function read_aamks_conf_json() { /*{{{*/
 	$_SESSION['nn']->assert_working_home_exists();
 	if(!is_file($_SESSION['main']['working_home']."/conf.json")) { 
-		$template=file_get_contents(getenv("AAMKS_PATH")."/installer/examples/demo/demo_1/conf.json");
+		$template=file_get_contents(getenv("AAMKS_PATH")."/installer/examples/demo/simple/conf.json");
 		$template_json=json_decode($template,1);
 		$template_json['project_id']=$_SESSION['main']['project_id'];
 		$template_json['scenario_id']=$_SESSION['main']['scenario_id'];
@@ -349,10 +349,10 @@ function change_editor() {/*{{{*/
 }
 /*}}}*/
 function form_delete() { #{{{
-	// demo/demo_1 is the built-in scenario which must never be deleted
+	// demo/simple is the built-in scenario which must never be deleted
 	// This way we make sure there will always be a fallback in $_SESSION['main']
 
-	if($_SESSION['main']['scenario_name']=='demo_1' && $_SESSION['main']['project_name']=='demo') { return; }
+	if($_SESSION['main']['scenario_name']=='simple' && $_SESSION['main']['project_name']=='demo') { return; }
 	echo "<form method=post>";
 	echo "<input autocomplete=off style='float:right' class=srlink type=submit name=delete_scenario value='delete this scenario'>";
 	echo "</form>";

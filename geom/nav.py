@@ -8,8 +8,8 @@ import sys
 import codecs
 import itertools
 import _recast as dt
-
 import subprocess
+
 from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
@@ -126,33 +126,16 @@ class Navmesh:
         for cc,path in enumerate(navmesh_paths):
             for i,p in enumerate(path):
                 try:
-                    z[self.floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": colors[cc], "strokeWidth": 2  , "opacity": 0.7 } )
+                    z[self.floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": colors[cc], "strokeWidth": 14  , "opacity": 0.5 } )
                 except:
                     pass
 
         j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
-
-    def test(self):# {{{
-        colors=["#fff", "#f80", "#f00", "#8f0", "#08f", "#f0f" ]
-        navmesh_paths=[]
-
-        for x in range(6):
-            q=[]
-            where=''
-            if len(self.bypass_rooms) > 0:
-                where="AND name!="+" AND name!=".join([ "'{}'".format(i) for i in self.bypass_rooms])
-            for i in self.s.query("SELECT center_x,center_y FROM aamks_geom WHERE type_pri='COMPA' AND floor=? {} ORDER BY RANDOM() LIMIT 2".format(where), (self.floor,)):
-                r=round(uniform(-150,150))
-                q.append([i['center_x']+r, i['center_y']+r])
-
-            z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-            z[self.floor]['circles'].append({ "xy": (q[0]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
-            z[self.floor]['circles'].append({ "xy": (q[1]),"radius": 20, "fillColor": colors[x] , "opacity": 1 } )
-            self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-            navmesh_paths.append(self.query(q,100))
-        self._navmesh_vis(navmesh_paths,colors)
-        Vis({'highlight_geom': None, 'anim': None, 'title': 'Nav {} test'.format(self.nav_name), 'srv': 1})
+    def _chunks(self,l, n):# {{{
+        """Yield successive n-sized chunks from l."""
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
 # }}}
     def _get_name(self,floor,bypass_rooms=[]):# {{{
         brooms=''
@@ -160,6 +143,24 @@ class Navmesh:
             brooms="-"+"-".join(bypass_rooms)
         self.nav_name="{}{}.nav".format(floor,brooms)
 
+# }}}
+
+    def test(self):# {{{
+        agents_pairs=6
+        colors=[ "#f80", "#f00", "#8f0", "#08f", "#f0f", "#f8f", "#0ff", "#ff0" ]
+        navmesh_paths=[]
+
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        evacuees=self.s.query("SELECT x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
+        for x,i in enumerate(self._chunks(evacuees,2)):
+            p0=(i[0]['x0'], i[0]['y0'])
+            p1=(i[1]['x0'], i[1]['y0'])
+            z[self.floor]['circles'].append({ "xy": p0, "radius": 20, "fillColor": colors[x] , "opacity": 1 } )
+            z[self.floor]['circles'].append({ "xy": p1, "radius": 20, "fillColor": colors[x] , "opacity": 1 } )
+            navmesh_paths.append(self.query((p0,p1),300))
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        self._navmesh_vis(navmesh_paths,colors)
+        Vis({'highlight_geom': None, 'anim': None, 'title': 'Nav {} test'.format(self.nav_name), 'srv': 1})
 # }}}
     def build(self,floor,bypass_rooms=[]):# {{{
         self.floor=floor
