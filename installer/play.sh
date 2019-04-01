@@ -14,7 +14,7 @@ INSERT INTO scenarios(project_id,scenario_name) values(1,'navmesh');
 
 sudo rm -rf /home/aamks_users/mimoohowy@gmail.com/
 mkdir -p /home/aamks_users/mimoohowy@gmail.com/
-cp -r examples/demo/ /home/aamks_users/mimoohowy@gmail.com/demo
+cp -r demo/ /home/aamks_users/mimoohowy@gmail.com/demo
 sudo chmod -R g+w /home/aamks_users/
 sudo chmod -R g+s /home/aamks_users/
 sudo chown -R $USER:www-data /home/aamks_users
