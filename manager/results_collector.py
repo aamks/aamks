@@ -61,7 +61,7 @@ try:
             self.jsonOut['highlight_geom']=None
             self.jsonOut['anim']="{}/{}".format(self.meta['sim_id'],self.meta['animation'])
 
-            anims_master="{}/workers/vis/anims.json".format(self.meta['path_to_project'])
+            anims_master="{}workers/anims.json".format(self.meta['path_to_project'])
             try:
                 z=self.json.read(anims_master)
             except:
