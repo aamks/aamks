@@ -35,6 +35,7 @@ var rooms;
 var doors;
 var obstacles;
 var dd_geoms;
+var staticEvacuees;
 var lerps;
 var lastFrame=1;
 var deltaTime=0; 
@@ -47,7 +48,7 @@ var	visContainsAnimation=0;
 var	animationIsRunning=0;
 
 $(function()  { 
-	makeAnimationControls();
+makeAnimationControls();
 	resizeAndRedrawCanvas();
 	left_menu_box();
 	right_menu_box();
@@ -192,6 +193,7 @@ function showStaticImage(chosenAnim) {//{{{
 		doors=dstatic[floor].doors;
 		obstacles=dstatic[floor].obstacles;
         dd_geoms=dstatic[floor].dd_geoms;
+		if(chosenAnim["anim"] == undefined) { staticEvacuees=dstatic[floor].evacuees; } else { staticEvacuees=[]; }
 		
 		makeSetupBoxInputs();
 		makeColors();
@@ -201,10 +203,7 @@ function showStaticImage(chosenAnim) {//{{{
 		resetCanvas();
 
 		if(chosenAnim["highlight_geom"]!=null) { highlightGeom(chosenAnim["highlight_geom"]); }
-		
-		if(chosenAnim["anim"] != undefined) { 
-			showAnimation(chosenAnim);
-		}
+		if(chosenAnim["anim"] != undefined) { showAnimation(chosenAnim); } 
 
 	});
 }
@@ -365,6 +364,10 @@ function paperjsDisplayImage() {//{{{
 		if (labelsSize != 0) { 
 			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-20,doors[key]["center_y"]+15), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
 		}
+	}
+
+	for (var key in staticEvacuees) {
+		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: ballsSize, strokeColor: "#ffffff", strokeWidth: 0.5 }));
 	}
 
 } 

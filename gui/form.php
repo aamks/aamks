@@ -6,7 +6,7 @@ require_once("lib.form.php");
 function read_aamks_conf_json() { /*{{{*/
 	$_SESSION['nn']->assert_working_home_exists();
 	if(!is_file($_SESSION['main']['working_home']."/conf.json")) { 
-		$template=file_get_contents(getenv("AAMKS_PATH")."/installer/examples/demo/simple/conf.json");
+		$template=file_get_contents(getenv("AAMKS_PATH")."/installer/demo/simple/conf.json");
 		$template_json=json_decode($template,1);
 		$template_json['project_id']=$_SESSION['main']['project_id'];
 		$template_json['scenario_id']=$_SESSION['main']['scenario_id'];
@@ -293,7 +293,7 @@ function form3() { /*{{{*/
 }
 /*}}}*/
 function form4() { /*{{{*/
-	echo "<br><br><wheat> The browser of the building profiles </wheat><br><br>";
+	echo "<br><br><wheat> Browser of the building profiles </wheat><br><br>";
 	$v=array();
 	if(isset($_POST['post']['building_profile'])) { 
 		$v=$_POST['post']['building_profile'];
@@ -310,11 +310,11 @@ function form4() { /*{{{*/
 function editors() {/*{{{*/
 	$td="style='color: #111'";
 	$editors_help="
-	<table >
-		<tr><td $td>easy <td $td>reasonable defaults, asking for the very basics 
-		<tr><td $td>advanced<td $td> access to distributions and other details
-		<tr><td $td>text<td $td> direct access to even more, possibly not documented params 
-	</table>
+	<orange>easy</orange> reasonable defaults, asking for the very basics 
+	<hr>
+	<orange>advanced</orange> access to distributions and other details
+	<hr>
+	<orange>text</orange> direct access to even more, possibly not documented params 
 	";
 	$xx='';
 	foreach(array('easy','advanced','text') as $k=>$v) { 

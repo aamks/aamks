@@ -46,6 +46,7 @@ class EvacMcarlo():
             self._static_evac_conf()
             self._dispatch_evacuees()
             self._make_evac_conf()
+        self._evacuees_static_animator()
 
 # }}}
     def _static_evac_conf(self):# {{{
@@ -142,7 +143,7 @@ class EvacMcarlo():
             self._evac_conf['FLOORS_DATA'][floor]['EVACUEES']=OrderedDict()
             z=self.s.query("SELECT z0 FROM aamks_geom WHERE floor=?", (floor,))[0]['z0']
             for i,pos in enumerate(self.dispatched_evacuees[floor]):
-                e_id='E{}'.format(i)
+                e_id='f{}'.format(i)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]=OrderedDict()
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['ORIGIN']         = (pos[0], pos[1])
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION'] = self.pre_evacuation[floor][i]
@@ -153,5 +154,20 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(self.conf['evacuees_max_v_speed']['mean'] , self.conf['evacuees_max_v_speed']['sd']) , 2)
 
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
+
+    def _evacuees_static_animator(self):# {{{
+        ''' 
+        For the animator. We just pick a single, newest sim_id and display
+        evacuees init positions. Animator can use it when there are no worker
+        provided animations (moving evacuees for specific sim_id). 
+        '''
+
+        for floor in self.floors:
+            m=self.json.read("{}/workers/static.json".format(os.environ['AAMKS_PROJECT']))
+            m[floor]['evacuees']=self.dispatched_evacuees[floor]
+            m[floor]['sim_id']=self._sim_id
+            self.json.write(m,"{}/workers/static.json".format(os.environ['AAMKS_PROJECT']))
+        
+# }}}
 
 # }}}

@@ -24,7 +24,7 @@ function cad_jsons_db() { //{{{
 		} else if(i.type=='room') {
 			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "room_enter": "${i.room_enter}"} ]`; 
 		} else if(i.type=='mvent') {
-			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "throughput": ${i.mvent_throughput}, "offset": ${i.mvent_offsetz}} ]`; 
+			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "mvent_throughput": ${i.mvent_throughput}, "offset": ${i.mvent_offsetz}} ]`; 
 		} else if(i.type=='window') {
 			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "offset": ${i.window_offsetz}} ]`; 
 		} else {
@@ -295,7 +295,7 @@ function read_record(floor,letter,arr) { //{{{
 
 	if(gg[letter].t == 'mvent') { 
 		record.mvent_offsetz=arr[2]['offset'];
-		record.mvent_throughput=arr[2]['throughput'];
+		record.mvent_throughput=arr[2]['mvent_throughput'];
 	}
 
 	return record;
