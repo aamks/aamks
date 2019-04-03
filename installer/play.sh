@@ -10,6 +10,7 @@ INSERT INTO projects(user_id,project_name) values(1,'demo');
 DELETE FROM scenarios;
 INSERT INTO scenarios(project_id,scenario_name) values(1,'simple');
 INSERT INTO scenarios(project_id,scenario_name) values(1,'navmesh');
+INSERT INTO scenarios(project_id,scenario_name) values(1,'three');
 ";
 
 sudo rm -rf /home/aamks_users/mimoohowy@gmail.com/
