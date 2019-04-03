@@ -73,11 +73,12 @@ sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && {
 	sudo apt-get update 
 	sudo apt-get --yes install gearman
 	echo; echo;
-	echo "Gearmand (job server) will be configured to --listen on all interfaces (0.0.0.0) or whatever else you wish"
-	echo "Gearmand has no authorization mechanisms and its the responsibility of the users to secure the environment"
-	echo "One idea is a firewall rule, that only workers are allowed to connect to 0.0.0.0:4730"
-	echo "Another idea is to have the whole Aamks environment (srv + workers) inside a secured LAN"
-	echo "Configuring via /lib/systemd/system/gearman-job-server.service" 
+	echo "Gearmand (job server) will be configured to --listen on all interfaces (0.0.0.0) or whatever else you wish."
+	echo "Gearmand has no authorization mechanisms and its the responsibility of the users to secure the environment."
+	echo "One idea is a firewall rule, that only workers are allowed to connect to 0.0.0.0:4730."
+	echo "Another idea is to have the whole Aamks environment (srv + workers) inside a secured LAN."
+	echo "Yet another idea is to listen on the secure 127.0.0.1:4730."
+	echo "You may want to edit /lib/systemd/system/gearman-job-server.service youself after this setup completes."
 	echo; echo;
 	cat /lib/systemd/system/gearman-job-server.service
 	echo; echo;
@@ -86,19 +87,19 @@ sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && {
 	echo; echo;
 	
 	cat << EOF | sudo tee /lib/systemd/system/gearman-job-server.service
-	[Unit]
-	Description=gearman job control server
+[Unit]
+Description=gearman job control server
 
-	[Service]
-	ExecStartPre=/usr/bin/install -d -o gearman /run/gearman
-	PermissionsStartOnly=true
-	User=gearman
-	Restart=always
-	PIDFile=/run/gearman/server.pid
-	ExecStart=/usr/sbin/gearmand --listen=0.0.0.0 --pid-file=/run/gearman/server.pid --log-file=/var/log/gearman-job-server/gearman.log
+[Service]
+ExecStartPre=/usr/bin/install -d -o gearman /run/gearman
+PermissionsStartOnly=true
+User=gearman
+Restart=always
+PIDFile=/run/gearman/server.pid
+ExecStart=/usr/sbin/gearmand --listen=0.0.0.0 --pid-file=/run/gearman/server.pid --log-file=/var/log/gearman-job-server/gearman.log
 
-	[Install]
-	WantedBy=multi-user.target
+[Install]
+WantedBy=multi-user.target
 EOF
 	echo; echo;
 	sudo systemctl daemon-reload
