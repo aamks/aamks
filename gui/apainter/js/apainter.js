@@ -37,7 +37,10 @@ var vh_snap=[];
 $(function()  { 
 	CanvasBuilder();
 });
-
+function ddd() {//{{{
+	dd(db().get());
+}
+//}}}
 function rrRecalculate(geom) {//{{{
 	// real x,y are calculated as minimum/maximum values from rr
 	// z needs separate calculations here.
@@ -132,7 +135,14 @@ DbInsert=function db_insert(geom) { //{{{
 }
 //}}}
 NextIdx=function next_idx() {//{{{
-	return db({"type": gg[active_letter].t}).max("idx")+1;
+	var next=db({"type": gg[active_letter].t}).max("idx");
+	if(next == undefined) { 
+		next=1;
+	} else {
+		next+=1;
+	}
+	
+	return next;
 }
 //}}}
 

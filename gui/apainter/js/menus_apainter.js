@@ -106,6 +106,10 @@ function cad_json_textarea_save() {//{{{
 	import_cadjson();
 }
 //}}}
+function ddd() {//{{{
+	dd(db().get());
+}
+//}}}
 function textarea_edit_cad_json() {//{{{
 	$("view2d").css("visibility", "hidden");
 	$("button-left-menu-box").css("visibility", "hidden");
@@ -363,7 +367,7 @@ function legend() { //{{{
 }
 //}}}
 function reorder_db() {//{{{
-	// Re-enumerate all elems in this fashion: r0, r1, r2, ..., d0, d1, d2, ...
+	// Re-enumerate all elems in this fashion: r1, r2, r3, ..., d1, d2, d3, ...
 	// CFAST expects elems to be numbered as above
 	// Evacuees will be in original order for navmesh testing pairing: e1 > e2, e3 > e4, ...
 	db.sort("idx");
@@ -373,7 +377,7 @@ function reorder_db() {//{{{
 	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst'] ];
 	db.sort("floor,x0,y0");
 	for (var i in types) {
-		var idx=0;
+		var idx=1;
 		var r=db({"type": types[i]}).get();
 		db({"type": types[i]}).remove();
 		for (var ii in r) {
@@ -425,6 +429,9 @@ function db2cadjson() {//{{{
 	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
 	ajax_save_cadjson(pretty_json);
 	import_cadjson();
+	dd(['floor', floor]);
+	dd(db({'floor':0}).select("floor", "name"));
+	dd(db({'floor':1}).select("floor", "name"));
 	return pretty_json;
 }
 //}}}
