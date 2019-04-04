@@ -6,7 +6,7 @@ from math import ceil
 import logging
 import os
 import json
-from include import Navmesh
+from nav import Navmesh
 from shapely.geometry import LineString
 import heapq
 
@@ -101,8 +101,7 @@ class EvacEnv:
                 continue
 
             for door in self.general['doors']:
-                path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (door['center_x'], door['center_y'])],
-                                                  maxStraightPath=100, floor=str(self.floor))
+                path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (door['center_x'], door['center_y'])], maxStraightPath=100)
                 paths.append(LineString(path).length)
 
             closest_exit = paths.index(heapq.nsmallest(len(self.evacuees.get_blocked_exits(evacuee))+1, paths)[-1])
@@ -170,7 +169,7 @@ class EvacEnv:
 
     def generate_nav_mesh(self):
         self.nav = Navmesh()
-        self.nav.build(obj=str(self.floor)+'.obj')
+        self.nav.build(floor=str(self.floor))
 
     def do_step(self):
         self.sim.doStep()
