@@ -65,8 +65,8 @@ class CfastMcarlo():
     def _draw_fire(self):# {{{
         is_origin_in_room=binomial(1,self.conf['fire_starts_in_a_room'])
         
-        self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY name") ]
-        self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY name") ]
+        self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY global_type_id") ]
+        self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY global_type_id") ]
         fire_origin=[]
         if is_origin_in_room==1 or len(self.all_corridors_and_halls)==0:
             fire_origin.append(str(choice(self.all_rooms)))
@@ -266,7 +266,7 @@ class CfastMcarlo():
 # }}}
     def _section_compa(self):# {{{
         txt=['!! COMPA,name,width,depth,height,x,y,z,matl_ceiling,matl_floor,matl_wall']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA'"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' ORDER BY global_type_id"):
             collect=[]
             collect.append('COMPA')                    # COMPA
             collect.append(v['name'])                  # NAME
