@@ -35,7 +35,7 @@ class Geom():
         self._enhancements()
         self._init_dd_geoms()
         self._make_fake_wells()
-        self._floors_details()
+        self._floors_meta()
         self._aamks_geom_into_polygons()
         self._make_id2compa_name()
         self._find_intersections_within_floor()
@@ -47,6 +47,9 @@ class Geom():
         self._calculate_sills()
         self._auto_detectors_and_sprinklers()
         self._create_obstacles()
+        self._make_world2d()
+        self._make_world2d_meta()
+        self._make_world2d_obstacles()
         self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
@@ -54,13 +57,43 @@ class Geom():
         #self.s.dumpall()
         #self.s.dump()
 # }}}
+    def _bak(self):# {{{
+        self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
+        ty=0
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        for floor,meta in self.floors_meta.items():
+            meta['t_center']=(meta['center'][0], meta['center'][1]+ty,0)
+            meta['t_minx']=meta['minx']
+            meta['t_miny']=meta['miny']+ty
+            meta['t_maxx']=meta['maxx']
+            meta['t_maxy']=meta['maxy']+ty
+            self.floors_meta[floor]=meta
+            z["2"]['rectangles'].append( { "xy": (meta['t_minx'], meta['t_miny']) , "width": meta['width'], "depth": meta['height'], "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#ff0" , "opacity": 0.7 } )
+            ty+=meta['height']+400
+            if(floor=="2"):
+                meta['minx']=0
+                meta['miny']=0
+                meta['height']=11000
+                meta['maxx']=4000
+                meta['maxy']=11000
+            #dd(meta)
+        #dd(z)
+        #exit()
 
-    def _floors_details(self):# {{{
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
+        #self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
+        #self.s.dumpall()
+        self.s.query("CREATE TABLE floors(json)")
+        self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(self.floors_meta),))
+
+# }}}
+    def _floors_meta(self):# {{{
         ''' 
         Floor dimensions are needed here and there. 
         '''
 
-        values=OrderedDict()
+        self.floors_meta=OrderedDict()
         for floor in self.floors:
             minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (floor,))[0]['minx']
             miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (floor,))[0]['miny']
@@ -73,10 +106,10 @@ class Geom():
 
             center=(minx + int(width/2), miny + int(height/2), z0)
 
-            values[floor]=OrderedDict([('width', width) , ('height', height) , ('z', z0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy)])
-
+            self.floors_meta[floor]=OrderedDict([('width', width) , ('height', height) , ('z', z0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy)])
         self.s.query("CREATE TABLE floors(json)")
-        self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(values),))
+        self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(self.floors_meta),))
+
 # }}}
     def _geometry2sqlite(self):# {{{
         ''' 
@@ -202,10 +235,10 @@ class Geom():
         on it. 
 
         Procedure:  
-            * z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-            *   z["0"]['circles'].append({ "xy": (i['center_x'], i['center_y']),"radius": 200, "fillColor": "#fff" , "opacity": 0.3 } )
-            *   z["0"]['circles'].append({ "xy": (i['center_x'], i['center_y']),"radius": 200, "fillColor": "#fff" , "opacity": 0.3 } )
-            * self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            z["0"]['rectangles'].append( { "xy": (0    , 0)    , "width": 200              , "depth": 200        , "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#f80" , "opacity": 0.7 } )
+            z["0"]['circles'].append({ "xy": (i['center_x'], i['center_y']),"radius": 200, "fillColor": "#fff" , "opacity": 0.3 } )
+            self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         '''
 
         z=dict()
@@ -559,6 +592,72 @@ class Geom():
             rectangles.append(coords)
 
         return rectangles
+# }}}
+
+# WORLD 2D
+    def _make_world2d(self):# {{{
+        '''
+        CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
+        '''
+
+        self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
+        self.s.query("INSERT INTO world2d SELECT * FROM aamks_geom")
+        ty=0
+        self.world2d_ty=OrderedDict()
+        for floor,meta in self.floors_meta.items():
+            self.world2d_ty[floor]=ty
+            self.s.query("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
+            ty+=meta['height']+100
+        self.s.query("UPDATE world2d SET floor='world2d'")
+# }}}
+    def _make_world2d_meta(self):# {{{
+
+        minx=self.s.query("SELECT min(x0) AS minx FROM world2d")[0]['minx']
+        miny=self.s.query("SELECT min(y0) AS miny FROM world2d")[0]['miny']
+        maxx=self.s.query("SELECT max(x1) AS maxx FROM world2d")[0]['maxx']
+        maxy=self.s.query("SELECT max(y1) AS maxy FROM world2d")[0]['maxy']
+        width= maxx - minx
+        height= maxy - miny
+        center=(minx + int(width/2), miny + int(height/2), 0)
+
+        world2d_meta=OrderedDict([('width', width) , ('height', height) , ('z', 0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('world2d_ty', self.world2d_ty)])
+        self.s.query("CREATE TABLE world2d_meta(json)")
+        self.s.query('INSERT INTO world2d_meta VALUES (?)', (json.dumps(world2d_meta),))
+
+# }}}
+    def _make_world2d_obstacles(self):# {{{
+        '''
+        CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
+        '''
+
+        obstacles=json.loads(self.s.query("SELECT json FROM obstacles")[0]['json'])
+        data={}
+        data['points']=[]
+        for floor,obsts in obstacles['points'].items():
+            for obst in obsts:
+                obst[0][1]+=self.world2d_ty[floor]
+                obst[1][1]+=self.world2d_ty[floor]
+                obst[2][1]+=self.world2d_ty[floor]
+                obst[3][1]+=self.world2d_ty[floor]
+                obst[4][1]+=self.world2d_ty[floor]
+
+                obst[0][2]=300
+                obst[1][2]=300
+                obst[2][2]=300
+                obst[3][2]=300
+                obst[4][2]=300
+                data['points'].append(obst)
+
+        data['named']=[]
+        for floor,obsts in obstacles['named'].items():
+            for obst in obsts:
+                obst['y0']+=self.world2d_ty[floor]
+                data['named'].append(obst)
+
+        self.s.query("CREATE TABLE world2d_obstacles(json)")
+        self.s.query("INSERT INTO world2d_obstacles VALUES (?)", (json.dumps(data),))
+        obstacles=json.loads(self.s.query("SELECT json FROM world2d_obstacles")[0]['json'])
+
 # }}}
 
 # ASSERTIONS
