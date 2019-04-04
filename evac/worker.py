@@ -47,6 +47,10 @@ class Worker:
         self.working_dir = self.url.split('aamks_users/')[1]
         self.cross_building_results = None
 
+    def error_report(self, message):
+        with open("/tmp/aamks.log", "a") as output:
+            output.write(message)
+
     def _report_error(self, exception: Exception) -> logging:
         print('Error occurred, see aamks.log file for details.')
         logging.error('Cannot create RVO2 environment: {}'.format(str(exception)))
@@ -57,7 +61,6 @@ class Worker:
             f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
             self.config = json.load(f)
         except Exception as e:
-            print('Cannot read config file: {}'.format(e))
             sys.exit(1)
 
         try:
@@ -279,7 +282,6 @@ class Worker:
 
     def main(self):
         self.get_config()
-        SendMessage('Worker: {} start_sim: {}'.format(self.host_name, self.sim_id))
         self._create_workspace()
         self.get_geom_and_cfast()
         self.create_geom_database()
@@ -287,10 +289,10 @@ class Worker:
         self.prepare_simulations()
         self.do_simulation()
         self.send_report()
-        SendMessage('Worker: {} end sim: {}'.format(self.host_name, self.sim_id))
+        #SendMessage('Worker: {} end sim: {}'.format(self.host_name, self.sim_id))
 
     def test(self):
-        self.get_config()
+        #self.get_config()
         self.get_geom_and_cfast()
         self.create_geom_database()
         self.prepare_simulations()
@@ -299,19 +301,21 @@ class Worker:
 
 
 w = Worker()
-w.main()
+#w.test()
 
-#if SIMULATION_TYPE == 'NO_CFAST':
-#    try:
-#        w.test()
-#    except Exception as e:
-#        SendMessage(e)
-#    else:
-#        SendMessage("Worker: Alles in grunem bereisch")
-#else:
-#    try:
-#        w.main()
-#    except Exception as e:
-#        SendMessage(e)
-#    else:
-#        SendMessage("Worker: Alles in grunem bereisch")
+if SIMULATION_TYPE == 'NO_CFAST':
+    try:
+        w.test()
+    except Exception as e:
+        SendMessage(e)
+    else:
+        SendMessage("Worker: Alles in grunem bereisch")
+else:
+    try:
+        w.main()
+    except Exception as e:
+        w.error_report('expeption: {}'.format(e))
+        #SendMessage(e)
+    else:
+        #SendMessage("Worker: Alles in grunem bereisch")
+        w.error_report('expeption: {}'.format('OK'))
