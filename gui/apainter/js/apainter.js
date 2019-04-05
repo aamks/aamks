@@ -11,7 +11,6 @@ var currentView=0;
 var CreateSvg;
 var CanvasBuilder;
 var selected_geom='';
-var gg_opacity=0.4;
 var active_letter='r';
 var svg;
 var floor=0;
@@ -35,7 +34,11 @@ var vh_snap=[];
 //}}}
 
 $(function()  { 
-	CanvasBuilder();
+	$.getJSON("inc.json", function(x) {
+		gg=x['aamksGeoms'];
+		ggx=x['aamksGeomsMap'];
+		CanvasBuilder();
+	});
 });
 function ddd() {//{{{
 	dd(db().get());
@@ -131,7 +134,6 @@ DbInsert=function db_insert(geom) { //{{{
 		show_selected_properties();
 		geoms_changed();
 	}
-	//dd();
 }
 //}}}
 NextIdx=function next_idx() {//{{{
@@ -146,13 +148,6 @@ NextIdx=function next_idx() {//{{{
 }
 //}}}
 
-function make_gg() { //{{{
-	$.getJSON("inc.json", function(x) {
-		gg=x['aamksGeoms'];
-		ggx=x['aamksGeomsMap'];
-	});
-}
-//}}}
 function canvas_zoomer() { //{{{
 	var zoom = d3.zoom().on("zoom", zoomed_canvas);
 
@@ -242,7 +237,7 @@ function alternative_view() {//{{{
 	// For devel we have this 3 view cycles
 	if(currentView==0) { currentView=1; view3d(); }
 	else if(currentView==1) { currentView=2; close3dview(); textarea_edit_cad_json(); }
-	else if(currentView==2) { currentView=0; cad_json_textarea_close();  }
+	else if(currentView==2) { currentView=0; cad_json_textarea_close(); }
 	//console.log(currentView);
 	//console.log("===========");
 }
@@ -475,9 +470,7 @@ function show_selected_properties() {//{{{
 }
 //}}}
 function geoms_changed() { //{{{
-	// elems count
 	// snap lines
-	legend();
 	d3.select("#g_snap_lines").selectAll("line").remove();
 	var lines=db({'floor': floor}).select("lines");
 	snap_lines['horiz']=[];
@@ -553,6 +546,7 @@ function guess_floors_z_origin() {//{{{
 }
 //}}}
 function change_floor() {//{{{
+
 	if (floor == parseInt($("#floor").val())) { 
 		return;
 	}
@@ -561,27 +555,27 @@ function change_floor() {//{{{
 	guess_floors_z_origin();
 	if(floor > floors_count-1) { 
 		floors_count++;
-		g_floor = g_aamks.append("g").attr("id", "floor"+floor).attr("class", "g_floor").attr('fill-opacity',gg_opacity);
+		g_floor = g_aamks.append("g").attr("id", "floor"+floor).attr("class", "g_floor").attr('fill-opacity',0.4);
 	}
 	var active_f="#floor"+floor;
 	var inactive_f=".g_floor:not("+active_f+")";
 	g_floor=d3.select(active_f);
-	$(inactive_f).animate({"opacity": 0}, 2000, function(){
-		$(inactive_f).css("visibility","hidden");
+	$(inactive_f).animate({"opacity": 0}, 1000, function(){
+		$(inactive_f).attr("visibility","hidden");
 	});
-	$(active_f).css({ "visibility":"visible","opacity":0}).animate({"opacity": 1}, 2000);
+	$(active_f).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1000);
 
 	var active_img="#g_img"+floor;
 	var inactive_img=".g_img:not("+active_img+")";
 	g_img=d3.select(active_img);
-	$(inactive_img).animate({"opacity": 0}, 2000, function(){
-		$(inactive_img).css("visibility","hidden");
+	$(inactive_img).animate({"opacity": 0}, 1000, function(){
+		$(inactive_img).attr("visibility","hidden");
 	});
-	$(active_img).css({ "visibility":"visible","opacity":0}).animate({"opacity": 1}, 2000);
+	$(active_img).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1000);
 
 	geoms_changed();
 	d3.select("#floor_text").text("floor "+floor);
-	$("#floor_text").css({ "opacity":1 }).animate({"opacity": 0.05}, 2000);
+	$("#floor_text").css("opacity",1).animate({"opacity": 0.05}, 1000);
 
 }
 //}}}
@@ -600,14 +594,15 @@ function save_setup_box() {//{{{
 		legend();
 	} 
 	var x=db({'name':selected_geom}).get();
+	if (x.length==0) { return; }
 
 	if ($("#geom_properties").val() != null) { 
 		var geom={
 			idx: x[0]['idx'],
 			name: x[0]['name'],
-			floor: floor,
-			letter: active_letter,
-			type: gg[active_letter].t,
+			floor: x[0]['floor'],
+			letter: x[0]['letter'],
+			type: x[0]['type'],
 			room_enter: $("#alter_room_enter").val(),
 			exit_type: $("#alter_exit_type").val(),
 			dimz: parseInt($("#alter_dimz").val()),
@@ -621,11 +616,15 @@ function save_setup_box() {//{{{
 				y1: parseInt($("#alter_y0").val())+parseInt($("#alter_dimy").val())
 			}
 		};
-		db({"name": geom.name}).remove();
-		updateSvgElem(geom);
-		UpdateVis(geom);
-		geom=rrRecalculate(geom);
-		DbInsert(geom);
+		// If the below is false, then geom from floorX is somehow controlled by the menu from floorY
+		// which must be stopped. Happened, was fixed, but makes me careful...
+		if(geom.floor == floor) { 
+			db({"name": geom.name}).remove();
+			updateSvgElem(geom);
+			UpdateVis(geom);
+			geom=rrRecalculate(geom);
+			DbInsert(geom);
+		}
 	} 
 	save_setup_box_underlay();
 
@@ -839,7 +838,6 @@ function updateSvgElem(geom) {  //{{{
 }
 //}}}
 CanvasBuilder=function canvas_builder() { //{{{
-	make_gg();
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
 	d3.select('view2d').append('button-right-menu-box').html("SETUP");
@@ -852,7 +850,7 @@ CanvasBuilder=function canvas_builder() { //{{{
 	svg.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor"+floor);
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
-	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',gg_opacity);
+	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',0.4);
 	g_snap_lines = svg.append("g").attr("id", "g_snap_lines");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend_static();

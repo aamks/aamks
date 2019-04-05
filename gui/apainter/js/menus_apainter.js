@@ -233,12 +233,11 @@ function init_svg_groups(json) {//{{{
 	$(".snap_h").remove();
 
 	floors_count=0;
-	for (var floor in json) { 
-		d3.select("#g_aamks").append("g").attr("id", "floor"+floor).attr("class", "g_floor").attr("fill-opacity", gg_opacity).attr('visibility',"hidden");
+	for (var _floor in json) { 
+		d3.select("#g_aamks").append("g").attr("id", "floor"+_floor).attr("class", "g_floor").attr("fill-opacity", 0.4).attr('visibility',"hidden");
 		floors_count++;
 	}
-	$("#floor0").attr('visibility',"visible");
-	floor=0;
+	$("#floor"+floor).attr('visibility',"visible").css("opacity", 1);
 }
 //}}}
 function into_db(json) { //{{{
@@ -335,9 +334,13 @@ function ajax_save_cadjson(json_data) { //{{{
 //}}}
 function import_cadjson() { //{{{
 	$.post('/aamks/ajax.php?ajaxApainterImport', { }, function (json) { 
+		// We loop thru DbInsert() here which updates the selected_geom
+		// At the end the last elem in the loop would be the selected_geom
+		// which may run into this-elem-doesnt-belong-to-this-floor problem.
 		ajax_msg(json); 
 		init_svg_groups(json.data);
 		into_db(json.data);
+		selected_geom='';
 	});
 }
 //}}}
@@ -429,9 +432,6 @@ function db2cadjson() {//{{{
 	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
 	ajax_save_cadjson(pretty_json);
 	import_cadjson();
-	dd(['floor', floor]);
-	dd(db({'floor':0}).select("floor", "name"));
-	dd(db({'floor':1}).select("floor", "name"));
 	return pretty_json;
 }
 //}}}
