@@ -88,7 +88,7 @@ class Worker:
 
         try:
             urlretrieve('{}/../../aamks.sqlite'.format(self.url), 'aamks.sqlite')
-            urlretrieve('{}/../../0.obj'.format(self.url), '0.obj')
+            urlretrieve('{}/../../0.nav.obj'.format(self.url), '0.obj')
 
         except Exception as e:
             self._report_error(e)
