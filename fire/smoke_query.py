@@ -189,7 +189,7 @@ class SmokeQuery:
         conditions from the cell. 
         '''
 
-        floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
+        floors=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
         self.floor_dim = floors[str(floor)]
 
         x=self.floor_dim['minx'] + self._square_side * int((q[0]-self.floor_dim['minx'])/self._square_side) 

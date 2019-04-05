@@ -57,43 +57,16 @@ class Geom():
         #self.s.dumpall()
         #self.s.dump()
 # }}}
-    def _bak(self):# {{{
-        self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
-        ty=0
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for floor,meta in self.floors_meta.items():
-            meta['t_center']=(meta['center'][0], meta['center'][1]+ty,0)
-            meta['t_minx']=meta['minx']
-            meta['t_miny']=meta['miny']+ty
-            meta['t_maxx']=meta['maxx']
-            meta['t_maxy']=meta['maxy']+ty
-            self.floors_meta[floor]=meta
-            z["2"]['rectangles'].append( { "xy": (meta['t_minx'], meta['t_miny']) , "width": meta['width'], "depth": meta['height'], "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#ff0" , "opacity": 0.7 } )
-            ty+=meta['height']+400
-            if(floor=="2"):
-                meta['minx']=0
-                meta['miny']=0
-                meta['height']=11000
-                meta['maxx']=4000
-                meta['maxy']=11000
-            #dd(meta)
-        #dd(z)
-        #exit()
-
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-
-        #self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
-        #self.s.dumpall()
-        self.s.query("CREATE TABLE floors(json)")
-        self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(self.floors_meta),))
-
-# }}}
     def _floors_meta(self):# {{{
         ''' 
         Floor dimensions are needed here and there. 
         '''
 
         self.floors_meta=OrderedDict()
+        self._world_minx=9999999
+        self._world_miny=9999999
+        self._world_maxx=-9999999
+        self._world_maxy=-9999999
         for floor in self.floors:
             minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (floor,))[0]['minx']
             miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (floor,))[0]['miny']
@@ -103,12 +76,17 @@ class Geom():
 
             width= maxx - minx
             height= maxy - miny
-
             center=(minx + int(width/2), miny + int(height/2), z0)
-
             self.floors_meta[floor]=OrderedDict([('width', width) , ('height', height) , ('z', z0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy)])
-        self.s.query("CREATE TABLE floors(json)")
-        self.s.query('INSERT INTO floors VALUES (?)', (json.dumps(self.floors_meta),))
+
+            self._world_minx=min(self._world_minx, minx)
+            self._world_miny=min(self._world_miny, miny)
+            self._world_maxx=max(self._world_maxx, maxx)
+            self._world_maxy=max(self._world_maxy, maxy)
+            self._world_miny=min(self._world_miny, miny)
+
+        self.s.query("CREATE TABLE floors_meta(json)")
+        self.s.query('INSERT INTO floors_meta VALUES (?)', (json.dumps(self.floors_meta),))
 
 # }}}
     def _geometry2sqlite(self):# {{{
@@ -242,7 +220,7 @@ class Geom():
         '''
 
         z=dict()
-        for floor in self.floors:
+        for floor in self.floors+['world2d']:
             z[floor]=dict()
             z[floor]['rectangles']=[]      
             z[floor]['lines']=[]           
@@ -526,7 +504,7 @@ class Geom():
         data=OrderedDict()
         data['points']=OrderedDict()
         data['named']=OrderedDict()
-        floors_meta=json.loads(self.s.query("SELECT json FROM floors")[0]['json'])
+        floors_meta=self.json.readdb('floors_meta')
         for floor,gg in self.raw_geometry.items():
             data['points'][floor]=[]
             data['named'][floor]=[]
@@ -602,13 +580,21 @@ class Geom():
 
         self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
         self.s.query("INSERT INTO world2d SELECT * FROM aamks_geom")
-        ty=0
         self.world2d_ty=OrderedDict()
+        floors_meta=self.json.readdb("floors_meta")
+        last_maxy=-200
+
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         for floor,meta in self.floors_meta.items():
-            self.world2d_ty[floor]=ty
+            ty=last_maxy+200-meta['miny']
+            last_maxy+=meta['height']+400
             self.s.query("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
-            ty+=meta['height']+100
+            z['world2d']['lines'].append( { "xy": (self._world_minx-300 , last_maxy)     , "x1": self._world_maxx , "y1": last_maxy , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
+            z['world2d']['texts'].append( { "xy": (self._world_minx-300 , last_maxy-100) , "content": floor       , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
+            self.world2d_ty[floor]=ty
+
         self.s.query("UPDATE world2d SET floor='world2d'")
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
     def _make_world2d_meta(self):# {{{
 
@@ -630,7 +616,7 @@ class Geom():
         CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
         '''
 
-        obstacles=json.loads(self.s.query("SELECT json FROM obstacles")[0]['json'])
+        obstacles=self.json.readdb("obstacles")
         data={}
         data['points']=[]
         for floor,obsts in obstacles['points'].items():
@@ -656,7 +642,7 @@ class Geom():
 
         self.s.query("CREATE TABLE world2d_obstacles(json)")
         self.s.query("INSERT INTO world2d_obstacles VALUES (?)", (json.dumps(data),))
-        obstacles=json.loads(self.s.query("SELECT json FROM world2d_obstacles")[0]['json'])
+        obstacles=self.json.readdb("world2d_obstacles")
 
 # }}}
 

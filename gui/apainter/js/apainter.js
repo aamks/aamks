@@ -33,13 +33,18 @@ var underlay_draggable=0;
 var vh_snap=[];
 //}}}
 
+// on start{{{
 $(function()  { 
 	$.getJSON("inc.json", function(x) {
 		gg=x['aamksGeoms'];
 		ggx=x['aamksGeomsMap'];
 		CanvasBuilder();
+		left_menu_box();
+		import_cadjson();
+		register_listeners();
 	});
 });
+//}}}
 function ddd() {//{{{
 	dd(db().get());
 }

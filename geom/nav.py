@@ -63,7 +63,7 @@ class Navmesh:
         bricked_wall=[]
 
         if len(bypass_rooms) > 0 :
-            floors_meta=json.loads(self.s.query("SELECT json FROM floors")[0]['json'])
+            floors_meta=json.loads(self.s.query("SELECT json FROM floors_meta")[0]['json'])
             elevation=floors_meta[floor]['z']
             where=" WHERE "
             where+=" vent_from_name="+" OR vent_from_name=".join([ "'{}'".format(i) for i in bypass_rooms])

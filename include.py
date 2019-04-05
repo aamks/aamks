@@ -133,7 +133,7 @@ class Sqlite: # {{{
     def dumpall(self):
         ''' Remember to add all needed sqlite tables here '''
         print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
-        for i in ('aamks_geom', 'translated_geoms', 'floors', 'obstacles', 'partition', 'cell2compa', 'navmeshes'):
+        for i in ('aamks_geom', 'world2d', 'floors_meta', 'world2d_meta', 'obstacles', 'partition', 'cell2compa', 'navmeshes'):
             try:
                 print("\n=======================")
                 print("table:", i)
@@ -182,6 +182,10 @@ class Psql: # {{{
 
 # }}}
 class Json: # {{{
+    def readdb(self,table):
+        if not hasattr(self, 's'):
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        return json.loads(self.s.query("SELECT json FROM {}".format(table))[0]['json'])
     def read(self,path): 
         try:
             f=open(path, 'r')
@@ -239,7 +243,7 @@ class Vis:# {{{
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''
         
-        for floor,meta in json.loads(self.s.query("SELECT * FROM floors")[0]['json']).items():
+        for floor,meta in json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json']).items():
             self._static_floors[floor]=OrderedDict()
             self._static_floors[floor]['floor_meta']=meta
 
@@ -304,8 +308,7 @@ class Vis:# {{{
         for floor in self._static_floors.keys():
             self._static_floors[floor]['dd_geoms']=f[floor]
 
-        #for floor in self._static_world2d.keys():
-        #    self._static_world2d['dd_geoms']=f[floor]
+        self._static_world2d['dd_geoms']=f['world2d']
 # }}}
     def _reorder_anims(self, z):# {{{
         '''
@@ -350,7 +353,7 @@ class Vis:# {{{
             anim_record=OrderedDict()
             anim_record['sort_id']=lowest_id
             lowest_id-=1
-            anim_record['title']="{} {}, f{}".format(params['title'], datetime.now().strftime('%H:%M'), floor)
+            anim_record['title']="{}: {} {}".format(floor, params['title'], datetime.now().strftime('%H:%M'))
             anim_record['floor']=floor
             anim_record['fire_origin']=params['fire_origin']
             anim_record['highlight_geom']=params['highlight_geom']

@@ -1,9 +1,5 @@
-$(function() { 
-	left_menu_box();
-	import_cadjson();
-	register_listeners();
-});
 function register_listeners() {//{{{
+	dd("yy");
 	$("right-menu-box").on("click" , "#btn_copy_to_floor"   , function() { copy_to_floor() });
 	$("right-menu-box").on("click" , "#btn_edit_cad_json"   , function() { textarea_edit_cad_json() });
 	$("right-menu-box").on("click" , "#btn_submit_cad_json" , function() { textarea_edit_cad_json() });
@@ -179,7 +175,6 @@ function setup_underlay_into_setup_box() {//{{{
 }
 //}}}
 function utils_into_setup_box() {//{{{
-	//"<tr><td colspan=2><input type=file id=open_existing style='display:none'><label class=blink for='open_existing'>import cad.json from disk<br>TODO: textarea rather</label>"+
 	d3.select('right-menu-box').html(
 		"<input id=utils_setup type=hidden value=1>"+
 		"<table>"+
