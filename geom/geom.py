@@ -48,6 +48,7 @@ class Geom():
         self._auto_detectors_and_sprinklers()
         self._create_obstacles()
         self._make_world2d()
+        self._make_world2d_staircases()
         self._make_world2d_meta()
         self._make_world2d_obstacles()
         self.make_vis('Create obstacles')
@@ -55,6 +56,8 @@ class Geom():
         self._assert_room_has_door()
         self._navmeshes_for_floors()
         #self.s.dumpall()
+        #self.s.dump_geoms()
+        #dd(self.s.query("select * from aamks_geom where type_sec='STAI'"))
         #self.s.dump()
 # }}}
     def _floors_meta(self):# {{{
@@ -103,8 +106,9 @@ class Geom():
 
         Some columns in db are left empty for now. 
 
-        Sqlite's aamks_geom table must use two unique ids a) 'name' for
-        visualisation and b) 'global_type_id' for cfast enumeration. 
+        Sqlite's aamks_geom table must use two unique ids 
+        a) 'name' for visualisation and 
+        b) 'global_type_id' for cfast enumeration. 
         '''
 
         data=[]
@@ -256,8 +260,6 @@ class Geom():
         vent_to properly. 
         '''
 
-        return
-
         add_wells={}
         for w in self.s.query("SELECT floor,global_type_id,height FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
             add_wells[(w['floor'], w['global_type_id'])]=[]
@@ -271,9 +273,11 @@ class Geom():
 
         for w, floors in add_wells.items():
             row=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND global_type_id=?", (w[1],))[0]
+            orig_name=row['name']
             for floor in floors:
                 row['fire_model_ignore']=1
                 row['floor']=floor
+                row['name']="{}.{}".format(orig_name,floor)
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
 
 # }}}
@@ -595,6 +599,50 @@ class Geom():
 
         self.s.query("UPDATE world2d SET floor='world2d'")
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+# }}}
+    def _make_world2d_staircases(self):# {{{
+
+        floors_meta=self.json.readdb("floors_meta")
+        self.vert_world2d_tx=OrderedDict()
+        last_maxy=-200
+
+        offset=self._world_maxx + 800
+
+        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_sec='STAI' AND fire_model_ignore=0"):
+            i['floor']='world2d'
+            i['name']+=".v"
+            i['x0']=offset
+            i['x1']=i['x0']+max(i['width'],i['depth'])
+            i['y0']=0
+            i['y1']=i['y0']+i['height']
+            i['depth']=i['y1']-i['y0']
+            self.vert_world2d_tx[i['name']]=offset
+            offset=i['x1']+400
+            self.s.dict_insert('world2d', i)
+
+        _offset=self._world_maxx + 800
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        for k,i in floors_meta.items():
+            z['world2d']['lines'].append( { "xy": (_offset, i['z']+350)    , "x1": offset , "y1": i['z']+350 , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
+            z['world2d']['texts'].append( { "xy": (_offset-300 , i['z']+350-100) , "content": k , "fontSize": 200  , "fillColor": "#fff"   , "opacity": 0.7 } )
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
+
+        # TODO
+
+        #dd(insert)
+        #for i in self.s.query("SELECT * FROM world2d WHERE type_sec='STAI' AND fire_model_ignore=0"):
+
+        #for floor,meta in self.floors_meta.items():
+        #    ty=last_maxy+200-meta['miny']
+        #    last_maxy+=meta['height']+400
+        #    self.s.query("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
+        #    z['world2d']['lines'].append( { "xy": (self._world_minx-300 , last_maxy)     , "x1": self._world_maxx , "y1": last_maxy , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
+        #    z['world2d']['texts'].append( { "xy": (self._world_minx-300 , last_maxy-100) , "content": floor       , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
+        #    self.world2d_ty[floor]=ty
+
+        #self.s.query("UPDATE world2d SET floor='world2d'")
+        #self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
     def _make_world2d_meta(self):# {{{
 
