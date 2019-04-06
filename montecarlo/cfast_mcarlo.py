@@ -354,8 +354,7 @@ class CfastMcarlo():
             collect.append(v['vent_from'])                                  # COMPARTMENT1
             collect.append(v['vent_to'])                                    # COMPARTMENT2
             collect.append(v['vvent_room_seq'])                             # VENT_NUMBER
-            # TODO: we have it calcuated, right? collect.append(v['room_area'])                                 # AREA OF THE ROOM, feb.2018: previously: round((v['width']*v['depth'])/1e4, 2) 
-            collect.append(round((v['width']*v['depth'])/1e4, 2))                                  # AREA OF THE ROOM, feb.2018: previously: round((v['width']*v['depth'])/1e4, 2)
+            collect.append(round((v['width']*v['depth'])/1e4, 2))           # AREA OF THE ROOM, feb.2018: previously: round((v['width']*v['depth'])/1e4, 2)
             collect.append(2)                                               # Type of dumper 1 - round, 2 - squere
             collect.append('TIME')                                          # Type of realease
             collect.append('')                                              # empty for time release

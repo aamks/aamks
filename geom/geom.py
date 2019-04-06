@@ -14,6 +14,7 @@ from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from shapely.ops import polygonize
 from numpy.random import uniform
 from math import sqrt
+from math import floor
 from include import Sqlite
 from include import Json
 from include import Dump as dd
@@ -202,7 +203,7 @@ class Geom():
         self.s.query("UPDATE aamks_geom SET is_vertical=0, cfast_width=width WHERE type_pri='HVENT' AND width > depth")
         self.s.query("UPDATE aamks_geom SET is_vertical=1, cfast_width=depth WHERE type_pri='HVENT' AND width < depth")
 
-        self.s.query("UPDATE aamks_geom SET room_area=round(width*depth/10000,2) WHERE type_pri='COMPA'")
+        self.s.query("UPDATE aamks_geom SET room_area=width*depth WHERE type_pri='COMPA'")
         self.s.query("UPDATE aamks_geom SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
 
         self.s.query("UPDATE aamks_geom SET y0=y0+?, depth=depth-? WHERE type_tri='DOOR' AND is_vertical=1", (self._wall_width, self._wall_width))
@@ -600,21 +601,51 @@ class Geom():
         self.s.query("UPDATE world2d SET floor='world2d'")
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
+    def _floors_span(self,i,floors_meta):# {{{
+        ''' 
+        The floor segment of a staircase (FSoS) is a cuboid which may be
+        perceived as a stretched plane. Then FSoS contains as many agents as
+        just a flat floor (top projection) does.
+
+        We represent agents as the same balls for top and side views. Therefore
+        we need to scale the staircase height so that the same number of agents
+        fits the given cuboid. 
+
+        FSoS projection must then equal room_area which must equal height x
+        max(width,depth) since we used max(width,depth) for staircase
+        projection ealier.
+
+        We need to calculate how many FSoS'es there are for the i-staircase
+        '''
+
+        count=0
+        for k,v in floors_meta.items():
+            if v['z'] < i['height']:
+                count+=1
+            else:
+                return count 
+
+        return count 
+
+# }}}
     def _make_world2d_staircases(self):# {{{
 
         floors_meta=self.json.readdb("floors_meta")
+        dd(floors_meta)
         self.vert_world2d_tx=OrderedDict()
         last_maxy=-200
 
         offset=self._world_maxx + 800
 
+        # TODO cannot continue with dd_geoms lines -- staircases should have their own world2d floor probably
         for i in self.s.query("SELECT * FROM aamks_geom WHERE type_sec='STAI' AND fire_model_ignore=0"):
+            fsos_count=self._floors_span(i,floors_meta)
             i['floor']='world2d'
             i['name']+=".v"
             i['x0']=offset
             i['x1']=i['x0']+max(i['width'],i['depth'])
             i['y0']=0
-            i['y1']=i['y0']+i['height']
+            i['y1']=i['y0']+min(i['width'],i['depth'])*fsos_count
             i['depth']=i['y1']-i['y0']
             self.vert_world2d_tx[i['name']]=offset
             offset=i['x1']+400
@@ -627,22 +658,6 @@ class Geom():
             z['world2d']['texts'].append( { "xy": (_offset-300 , i['z']+350-100) , "content": k , "fontSize": 200  , "fillColor": "#fff"   , "opacity": 0.7 } )
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 
-
-        # TODO
-
-        #dd(insert)
-        #for i in self.s.query("SELECT * FROM world2d WHERE type_sec='STAI' AND fire_model_ignore=0"):
-
-        #for floor,meta in self.floors_meta.items():
-        #    ty=last_maxy+200-meta['miny']
-        #    last_maxy+=meta['height']+400
-        #    self.s.query("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
-        #    z['world2d']['lines'].append( { "xy": (self._world_minx-300 , last_maxy)     , "x1": self._world_maxx , "y1": last_maxy , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
-        #    z['world2d']['texts'].append( { "xy": (self._world_minx-300 , last_maxy-100) , "content": floor       , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
-        #    self.world2d_ty[floor]=ty
-
-        #self.s.query("UPDATE world2d SET floor='world2d'")
-        #self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
     def _make_world2d_meta(self):# {{{
 
