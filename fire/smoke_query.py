@@ -257,8 +257,6 @@ class SmokeQuery:
         else:
             finals['dcbe'] = dcbe
 
-        print(str(self.sf.query("SELECT * FROM finals")))
-
         # min(HGT_COR) 
         finals['min_hgt_cor']=self.sf.query("SELECT MIN(value) FROM finals WHERE compa_type='c' AND param='HGT'")[0]['MIN(value)']
 
