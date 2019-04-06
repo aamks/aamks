@@ -251,14 +251,16 @@ class SmokeQuery:
         finals=OrderedDict()
 
         # min(time) for HGT_COR < 1.8
-        dcbe = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='C' AND param='HGT' AND value < 1.8")[0]['MIN(time)']
+        dcbe = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='HGT' AND value < 1.8")[0]['MIN(time)']
         if dcbe == None:
             finals['dcbe'] = 9999
         else:
             finals['dcbe'] = dcbe
 
+        print(str(self.sf.query("SELECT * FROM finals")))
+
         # min(HGT_COR) 
-        finals['min_hgt_cor']=self.sf.query("SELECT MIN(value) FROM finals WHERE compa_type='C' AND param='HGT'")[0]['MIN(value)']
+        finals['min_hgt_cor']=self.sf.query("SELECT MIN(value) FROM finals WHERE compa_type='c' AND param='HGT'")[0]['MIN(value)']
 
         # min(HGT_COMPA)
         finals['min_hgt_compa']=self.sf.query("SELECT MIN(value) FROM finals WHERE param='HGT'")[0]['MIN(value)']
@@ -268,7 +270,7 @@ class SmokeQuery:
 
         c_const = 5
         # min(ULOD_COR)
-        ul_od_cor = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='C' AND param='ULOD'")[0]['MAX(value)']
+        ul_od_cor = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='c' AND param='ULOD'")[0]['MAX(value)']
         if ul_od_cor == 0:
             finals['min_vis_cor'] = 30
         else:
