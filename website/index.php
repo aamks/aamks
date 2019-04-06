@@ -3,7 +3,7 @@
 $menu=" 
 <ul>
 <li class='lnav'><a href=?node=about>About</a>
-<li class='lnav'><a href=?node=youtube>Youtube</a>
+<li class='lnav'><a target=_blank href=https://www.youtube.com/channel/UCKhHI32-1TQL6AKQ4IdDRLg>Youtube</a>
 <li class='lnav'><a href=?node=tests>Tests</a>
 <li class='lnav'><a href=?node=demo>Demo</a>
 <li class='lnav'><a href=?node=papers>Papers</a>
@@ -22,11 +22,6 @@ evacuation simulations (a-evac) and then evaluates the results.
 
 
 ");
-/*}}}*/
-$nodes['youtube']=array("Youtube channel", /*{{{*/
-'
-TODO
-');
 /*}}}*/
 $nodes['tests']=array("Tests", /*{{{*/
 '
