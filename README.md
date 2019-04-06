@@ -25,4 +25,4 @@ Aamks is web-based so doesn't need to be installed. Aamks uses such
 technologies as Navmesh and RVO2.
 
 Aamks is not production ready, but you can have a look 
-on ![the progress](https://aamks.szach.in/?node=demo)
+on [the progress](https://aamks.szach.in/?node=demo)
