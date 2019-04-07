@@ -35,7 +35,7 @@ class Geom():
         self._geometry2sqlite()
         self._enhancements()
         self._init_dd_geoms()
-        self._towers_span()
+        self._make_towers()
         self._floors_meta()
         self._aamks_geom_into_polygons()
         self._make_id2compa_name()
@@ -124,7 +124,7 @@ class Geom():
                     record=self._prepare_geom_record(k,[p0,p1],width,depth,height,floor,attrs)
                     if record != False:
                         data.append(record)
-        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter,is_world2d_tower,tower_span)")
+        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
         #dd(self.s.dump())
 #}}}
@@ -176,8 +176,8 @@ class Geom():
         global_type_id=attrs['idx'];
         name='{}{}'.format(self.geomsMap[k], global_type_id)
 
-        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput          , exit_type          , room_enter          , is_world2d_tower , tower_span)")
-        return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , v[0][0] , v[0][1] , v[0][2] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , attrs['mvent_throughput'] , attrs['exit_type'] , attrs['room_enter'] , None             , None)
+        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput          , exit_type          , room_enter          )")
+        return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , v[0][0] , v[0][1] , v[0][2] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , attrs['mvent_throughput'] , attrs['exit_type'] , attrs['room_enter'] )
 
 # }}}
     def _enhancements(self):# {{{
@@ -247,19 +247,33 @@ class Geom():
 
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
-    def _towers_span(self):# {{{
-        ''' 
+    def _towers_rectangles(self):# {{{
+        '''
+        All FSoS'es will be represented at constant height to better fit
+        Animator. It will allow to compare to vertical speed at the same
+        distance for each staircase and align the floors. We are free to deform
+        any staircase in any way taking the resulting area (the capacity for
+        evacuees) is not changed. Therefore we pick the preferred height and
+        alter width to keep to original area.
 
-        This is for evacuation only and cannot interfere with fire models
-        (fire_model_ignore=1). Most STAI(RCASES) or HALL(S) are drawn on floor
-        0, but they are tall and need to cross other floors (towers). Say we
-        have floor bottoms at 0, 3, 6, 9, 12 metres and STAI's top is at 9
-        metres - the STAI belongs to floors 0, 1, 2. We INSERT fake (x,y) STAI
-        slices on proper floors in order to calculate vent_from / vent_to
-        properly. 
+        animator_floor_height=1000 seems like a reasonable height for animator.
+        Speed of agents will be scaled to match this height.
+        '''
 
-        ========================= World2d issues ==========================
+        animator_floor_height=self._towers['animator_floor_height']
+        towers=self._towers['towers']
+        lines=self._towers['lines']
 
+        t=dict()
+        for k,v in towers.items():
+            i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k[2],))[0]
+            y0=len(v)-1
+            t[i['name']]={'lines': v, 'y0': lines[y0], 'height': animator_floor_height * (y0+1), 'width': int(i['width']*i['depth'] / animator_floor_height)}
+        return t
+
+# }}}
+    def _towers_db(self, towers):# {{{
+        '''
         The floor segment of a staircase (FSoS) is a cuboid which may be
         perceived as a deformed plane originally. Then FSoS contains as many
         agents as just a flat floor (top projection) does.
@@ -274,7 +288,56 @@ class Geom():
 
         We need to calculate how many FSoS'es there are for each staircase
         (tower_span).
-        
+
+        On the top-most-floor there only fit a single row of 54cm balls.)
+        '''
+
+        for k,v in towers.items():
+            towers[k]=['0']+v
+
+        self._towers={}
+        self._towers['animator_floor_height']=1000
+        self._towers['top_single_row_size']=60
+        self._towers['towers']=towers
+        self._towers['max_spans']=self._towers_max_spans()
+        self._towers['lines']=self._towers_enumerate_lines()
+        self._towers['rectangles']=self._towers_rectangles()
+# }}}
+    def _towers_enumerate_lines(self):# {{{
+        '''
+        Helper horizontal lines for Animator: 2, 1, 0
+        '''
+        maxs=self._towers['max_spans']
+        animator_floor_height=self._towers['animator_floor_height']
+        top_single_row_size=self._towers['top_single_row_size']
+        lines=OrderedDict()
+        for i in reversed(range(maxs[1])):
+            lines[i] = animator_floor_height * (maxs[1]-1-i) + top_single_row_size
+        return lines
+
+# }}}
+    def _towers_max_spans(self):# {{{
+        '''
+        The number of floors in the heighest staircase 
+        '''
+
+        max_spans=-1
+        for k,v in self._towers['towers'].items():
+            if len(v) > max_spans: 
+                max_spans=len(v)
+                maxs=(k[2], max_spans)
+        return maxs
+# }}}
+    def _make_towers(self):# {{{
+        ''' 
+        This is for evacuation only and cannot interfere with fire models
+        (fire_model_ignore=1). Most STAI(RCASES) or HALL(S) are drawn on floor
+        0, but they are tall and need to cross other floors (towers). Say we
+        have floor bottoms at 0, 3, 6, 9, 12 metres and STAI's top is at 9
+        metres - the STAI belongs to floors 0, 1, 2. We INSERT fake (x,y) STAI
+        slices on proper floors in order to calculate vent_from / vent_to
+        properly. 
+
         '''
 
         towers={}
@@ -288,9 +351,6 @@ class Geom():
                         towers[(w['floor'], w['global_type_id'], w['name'], w['type_sec'])].append(floor)
             towers[(w['floor'], w['global_type_id'], w['name'], w['type_sec'])].remove(current_floor)
         
-        for w, floors in towers.items(): # FSoS
-            self.s.query("UPDATE aamks_geom SET tower_span=? WHERE name=?", (len(floors)+1,w[2]))
-
         for w, floors in towers.items():
             row=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND global_type_id=?", (w[1],))[0]
             orig_name=row['name']
@@ -300,6 +360,7 @@ class Geom():
                 row['name']="{}.{}".format(orig_name,floor)
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
 
+        self._towers_db(towers)
 # }}}
 
     def _make_id2compa_name(self):# {{{
@@ -602,14 +663,15 @@ class Geom():
         CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
         '''
 
-        self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter,is_world2d_tower,tower_span)")
+        self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
         self.s.query("INSERT INTO world2d SELECT * FROM aamks_geom")
         self.world2d_ty=OrderedDict()
         floors_meta=self.json.readdb("floors_meta")
         last_maxy=-200
 
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for floor,meta in self.floors_meta.items():
+        for floor in list(self.floors_meta.keys())[::-1]:
+            meta=self.floors_meta[floor]
             ty=last_maxy+200-meta['miny']
             last_maxy+=meta['height']+400
             self.s.query("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
@@ -619,27 +681,22 @@ class Geom():
 
         self.s.query("UPDATE world2d SET floor='world2d'")
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        self._make_world2d_staircases_lines()
         self._make_world2d_staircases()
 # }}}
-    def _make_world2d_staircases_lines(self, mm):# {{{
+    def _make_world2d_staircases_lines(self):# {{{
         ''' 
         mm contains [ x0, x1, y1, span_count ] vectors. We need to pick min
         here and max there to properly draw the white separator lines.
 
         '''
-        data=list(zip(*mm))
-        c=dict()
-        x0=min(data[0])
-        x1=max(data[1])
-        y1=max(data[2])
-        span_count=max(data[3])
-        span_size=y1/span_count
 
+        x0=5000 # TODO
+        x1=8000 # TODO
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for i in range(1,span_count+1):
-            y=i*span_size
-            z['world2d']['lines'].append( { "xy": (x0-300 , y) , "x1": x1       , "y1": y         , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
-            z['world2d']['texts'].append( { "xy": (x0-300 , y-100) , "content": i-1 , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
+        for k,v in self._towers['lines'].items():
+            z['world2d']['lines'].append( { "xy": (x0-300 , v)     , "x1": x1       , "y1": v         , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
+            z['world2d']['texts'].append( { "xy": (x0-300 , v-100) , "content": k, "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
 
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 
@@ -649,12 +706,15 @@ class Geom():
         self.vert_world2d_tx=OrderedDict()
         last_maxy=-200
         offset=self._world_maxx + 800
-        mm=[]
 
-        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_sec='STAI' AND fire_model_ignore=0"):
+        return
+        for k,v in self._towers['rectangles'].items():
+            print(k,v)
+            i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k,))[0]
+            dd(i)
+            exit()
             i['floor']='world2d'
             i['name']+=".v"
-            i['is_world2d_tower']=1
             i['x0']=offset
             i['x1']=i['x0']+max(i['width'],i['depth'])
             i['y0']=0
@@ -664,9 +724,6 @@ class Geom():
             self.vert_world2d_tx[i['name']]=offset
             offset=i['x1']+400
             self.s.dict_insert('world2d', i)
-
-        self._make_world2d_staircases_lines(mm)
-
 # }}}
     def _make_world2d_meta(self):# {{{
 
@@ -713,9 +770,9 @@ class Geom():
                 obst['y0']+=self.world2d_ty[floor]
                 data['named'].append(obst)
 
-        staircase_obstacles=self._make_world2d_staircases_obstacles()
-        data['points']+=staircase_obstacles['points']
-        data['named']+=staircase_obstacles['named']
+        #staircase_obstacles=self._make_world2d_staircases_obstacles()
+        #data['points']+=staircase_obstacles['points']
+        #data['named']+=staircase_obstacles['named']
 
         self.s.query("CREATE TABLE world2d_obstacles(json)")
         self.s.query("INSERT INTO world2d_obstacles VALUES (?)", (json.dumps(data),))
@@ -727,7 +784,7 @@ class Geom():
         The width of the hole is hardcoded to 200 cm (center_x +/-100).
 
         '''
-        
+
         walls=[]
         for i in self.s.query("SELECT * FROM world2d WHERE is_world2d_tower=1"):
             walls.append((i['x0']+self._wall_width , i['y0']            , i['x0']+i['width']                  , i['y0']+self._wall_width)            )
