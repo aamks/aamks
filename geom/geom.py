@@ -680,7 +680,8 @@ class Geom():
 
         world2d_meta=OrderedDict([('width', width) , ('height', height) , ('z', 0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('world2d_ty', self.world2d_ty)])
         self.s.query("CREATE TABLE world2d_meta(json)")
-        self.s.query('INSERT INTO world2d_meta VALUES (?)', (json.dumps(world2d_meta),))
+        self.s.query("INSERT INTO world2d_meta VALUES (?)", (json.dumps(world2d_meta),))
+        self.s.query("UPDATE world2d SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
 
 # }}}
     def _make_world2d_obstacles(self):# {{{
@@ -712,16 +713,47 @@ class Geom():
                 obst['y0']+=self.world2d_ty[floor]
                 data['named'].append(obst)
 
+        staircase_obstacles=self._make_world2d_staircases_obstacles()
+        data['points']+=staircase_obstacles['points']
+        data['named']+=staircase_obstacles['named']
+
         self.s.query("CREATE TABLE world2d_obstacles(json)")
         self.s.query("INSERT INTO world2d_obstacles VALUES (?)", (json.dumps(data),))
-        self._make_world2d_staircases_obstacles()
 
 # }}}
     def _make_world2d_staircases_obstacles(self):# {{{
-        for i in self.s.query("SELECT * FROM world2d WHERE is_world2d_tower=1"):
-            dd(i)
-        exit()
+        '''
+        We are cutting holes in the bottom of each FSoS.
+        The width of the hole is hardcoded to 200 cm (center_x +/-100).
 
+        '''
+        
+        walls=[]
+        for i in self.s.query("SELECT * FROM world2d WHERE is_world2d_tower=1"):
+            walls.append((i['x0']+self._wall_width , i['y0']            , i['x0']+i['width']                  , i['y0']+self._wall_width)            )
+            walls.append((i['x0']+i['width']       , i['y0']            , i['x0']+i['width']+self._wall_width , i['y0']+i['depth']+self._wall_width) )
+            walls.append((i['x0']                  , i['y0']            , i['x0']+self._wall_width            , i['y0']+i['depth']+self._wall_width) )
+            span_size=i['depth']/i['tower_span']
+            for ii in range(1,i['tower_span']+1):
+                y=ii*span_size
+                walls.append((i['x0']+i['width']/2+100 , i['y0']+y , i['x0']+i['width']       , i['y0']+y+self._wall_width) )
+                walls.append((i['x0']+self._wall_width , i['y0']+y , i['x0']+i['width']/2-100 , i['y0']+y+self._wall_width) )
+
+        walls_polygons=([box(ii[0],ii[1],ii[2],ii[3]) for ii in set(walls)])
+
+        obstacles={}
+        obstacles['points']=[]
+        obstacles['named']=[]
+        for i in walls:
+            obstacles['points'].append([ [i[0] , i[1] , 300 ] , [ i[2] , i[1] , 300 ] , [ i[2] , i[3] , 300 ] , [ i[0] , i[3] , 300 ] , [ i[0] , i[1] , 300 ] ])
+            obstacles['named'].append({'x0': i[0], 'y0': i[1], 'width': i[2]-i[0], 'depth': i[3]-i[1]})
+
+        return obstacles
+
+        #z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        #for v in walls:
+        #    z["world2d"]['rectangles'].append( { "xy": (v[0], v[1]) , "width": v[2]-v[0], "depth": v[3]-v[1], "strokeColor": "#0ff" , "strokeWidth": 10 , "fillColor": "#f80" , "opacity": 0.7 } )
+        #self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 
 # }}}
 
