@@ -189,7 +189,7 @@ class SmokeQuery:
         conditions from the cell. 
         '''
 
-        floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
+        floors=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
         self.floor_dim = floors[str(floor)]
 
         x=self.floor_dim['minx'] + self._square_side * int((q[0]-self.floor_dim['minx'])/self._square_side) 
@@ -260,7 +260,7 @@ class SmokeQuery:
         ult = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='ULT' AND value > 60")[0]['MIN(time)']
         if ult == None:
             ult = 9999
-        dcbe=max(hgt, ulod, ult)
+        finals['dcbe']=max(hgt, ulod, ult)
 
         # min(HGT_COR) 
         finals['min_hgt_cor']=self.sf.query("SELECT MIN(value) FROM finals WHERE compa_type='c' AND param='HGT'")[0]['MIN(value)']
