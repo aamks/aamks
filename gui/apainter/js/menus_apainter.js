@@ -1,5 +1,8 @@
+function ddd() {//{{{
+	dd(db().get());
+}
+//}}}
 function register_listeners() {//{{{
-	dd("yy");
 	$("right-menu-box").on("click" , "#btn_copy_to_floor"   , function() { copy_to_floor() });
 	$("right-menu-box").on("click" , "#btn_edit_cad_json"   , function() { textarea_edit_cad_json() });
 	$("right-menu-box").on("click" , "#btn_submit_cad_json" , function() { textarea_edit_cad_json() });
@@ -100,10 +103,6 @@ function cad_json_textarea_save() {//{{{
 	ajax_save_cadjson(json_data); 
 	cad_json_textarea_close();
 	import_cadjson();
-}
-//}}}
-function ddd() {//{{{
-	dd(db().get());
 }
 //}}}
 function textarea_edit_cad_json() {//{{{

@@ -598,6 +598,7 @@ function save_setup_box() {//{{{
 		default_window_offsetz=parseInt($("#default_window_offsetz").val());
 		legend();
 	} 
+	save_setup_box_underlay();
 	var x=db({'name':selected_geom}).get();
 	if (x.length==0) { return; }
 
@@ -631,7 +632,6 @@ function save_setup_box() {//{{{
 			DbInsert(geom);
 		}
 	} 
-	save_setup_box_underlay();
 
 }
 //}}}
