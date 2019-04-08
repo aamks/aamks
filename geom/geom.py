@@ -49,8 +49,6 @@ class Geom():
         self._auto_detectors_and_sprinklers()
         self._create_obstacles()
         self._make_world2d()
-        self._make_world2d_meta()
-        self._make_world2d_obstacles()
         self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
@@ -247,122 +245,6 @@ class Geom():
 
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
-    def _towers_rectangles(self):# {{{
-        '''
-        All FSoS'es will be represented at constant height to better fit
-        Animator. It will allow to compare to vertical speed at the same
-        distance for each staircase and align the floors. We are free to deform
-        any staircase in any way taking the resulting area (the capacity for
-        evacuees) is not changed. Therefore we pick the preferred height and
-        alter width to keep to original area.
-
-        animator_floor_height=1000 seems like a reasonable height for animator.
-        Speed of agents will be scaled to match this height.
-        '''
-
-        animator_floor_height=self._towers['animator_floor_height']
-        towers=self._towers['towers']
-        lines=self._towers['lines']
-
-        t=dict()
-        for k,v in towers.items():
-            i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k[2],))[0]
-            y0=len(v)-1
-            t[i['name']]={'lines': v, 'y0': lines[y0], 'height': animator_floor_height * (y0+1), 'width': int(i['width']*i['depth'] / animator_floor_height)}
-        return t
-
-# }}}
-    def _towers_db(self, towers):# {{{
-        '''
-        The floor segment of a staircase (FSoS) is a cuboid which may be
-        perceived as a deformed plane originally. Then FSoS contains as many
-        agents as just a flat floor (top projection) does.
-
-        In Animator the agents will have the same balls sizes for top and side
-        views. Therefore we need to scale the staircase height so that the same
-        number of agents fits the given cuboid. 
-
-        FSoS side projection must then equal room_area which must equal height
-        x max(width,depth) since we pick max of width or depth for staircase
-        projection. 
-
-        We need to calculate how many FSoS'es there are for each staircase
-        (tower_span).
-
-        On the top-most-floor there only fit a single row of 54cm balls.)
-        '''
-
-        for k,v in towers.items():
-            towers[k]=['0']+v
-
-        self._towers={}
-        self._towers['animator_floor_height']=1000
-        self._towers['top_single_row_size']=60
-        self._towers['towers']=towers
-        self._towers['max_spans']=self._towers_max_spans()
-        self._towers['lines']=self._towers_enumerate_lines()
-        self._towers['rectangles']=self._towers_rectangles()
-# }}}
-    def _towers_enumerate_lines(self):# {{{
-        '''
-        Helper horizontal lines for Animator: 2, 1, 0
-        '''
-        maxs=self._towers['max_spans']
-        animator_floor_height=self._towers['animator_floor_height']
-        top_single_row_size=self._towers['top_single_row_size']
-        lines=OrderedDict()
-        for i in reversed(range(maxs[1])):
-            lines[i] = animator_floor_height * (maxs[1]-1-i) + top_single_row_size
-        return lines
-
-# }}}
-    def _towers_max_spans(self):# {{{
-        '''
-        The number of floors in the heighest staircase 
-        '''
-
-        max_spans=-1
-        for k,v in self._towers['towers'].items():
-            if len(v) > max_spans: 
-                max_spans=len(v)
-                maxs=(k[2], max_spans)
-        return maxs
-# }}}
-    def _make_towers(self):# {{{
-        ''' 
-        This is for evacuation only and cannot interfere with fire models
-        (fire_model_ignore=1). Most STAI(RCASES) or HALL(S) are drawn on floor
-        0, but they are tall and need to cross other floors (towers). Say we
-        have floor bottoms at 0, 3, 6, 9, 12 metres and STAI's top is at 9
-        metres - the STAI belongs to floors 0, 1, 2. We INSERT fake (x,y) STAI
-        slices on proper floors in order to calculate vent_from / vent_to
-        properly. 
-
-        '''
-
-        towers={}
-        for w in self.s.query("SELECT floor,global_type_id,height,name,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
-            towers[(w['floor'], w['global_type_id'], w['name'], w['type_sec'])]=[]
-            current_floor=w['floor']
-
-            for floor in self.floors:
-                for v in self.s.query("SELECT min(z0) FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,)):
-                    if v['min(z0)'] < w['height']:
-                        towers[(w['floor'], w['global_type_id'], w['name'], w['type_sec'])].append(floor)
-            towers[(w['floor'], w['global_type_id'], w['name'], w['type_sec'])].remove(current_floor)
-        
-        for w, floors in towers.items():
-            row=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND global_type_id=?", (w[1],))[0]
-            orig_name=row['name']
-            for floor in floors:
-                row['fire_model_ignore']=1
-                row['floor']=floor
-                row['name']="{}.{}".format(orig_name,floor)
-                self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
-
-        self._towers_db(towers)
-# }}}
-
     def _make_id2compa_name(self):# {{{
         ''' 
         Create a map of ids to names for COMPAS, e.g. _id2compa_name[4]='ROOM_1_4' 
@@ -411,6 +293,171 @@ class Geom():
             self.s.query("UPDATE aamks_geom set smoke_detectors = 1 WHERE type_pri='COMPA'")
         if len(''.join([ str(i) for i in self.conf['sprinklers'].values() ])) > 0:
             self.s.query("UPDATE aamks_geom set sprinklers = 1 WHERE type_pri='COMPA'")
+# }}}
+
+# TOWERS
+    def _make_towers(self):# {{{
+        ''' 
+        This is for evacuation only and cannot interfere with fire models
+        (fire_model_ignore=1). Most STAI(RCASES) or HALL(S) are drawn on floor
+        0, but they are tall and need to cross other floors (towers). Say we
+        have floor bottoms at 0, 3, 6, 9, 12 metres and STAI's top is at 9
+        metres - the STAI belongs to floors 0, 1, 2. We INSERT fake (x,y) STAI
+        slices on proper floors in order to calculate vent_from / vent_to
+        properly. 
+
+        '''
+
+        towers={}
+        for w in self.s.query("SELECT floor,height,name,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
+            towers[(w['floor'], w['name'], w['type_sec'])]=[]
+            current_floor=w['floor']
+
+            for floor in self.floors:
+                for v in self.s.query("SELECT min(z0) FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,)):
+                    if v['min(z0)'] < w['height']:
+                        towers[(w['floor'], w['name'], w['type_sec'])].append(floor)
+            towers[(w['floor'], w['name'], w['type_sec'])].remove(current_floor)
+
+        towers=self._drop_f0_only_towers(towers)
+        
+        for w, floors in towers.items():
+            self.s.query("UPDATE aamks_geom set type_tri='TOWER_BASE' WHERE name=?", (w[1],))
+            row=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (w[1],))[0]
+            orig_name=row['name']
+            for floor in floors:
+                row['fire_model_ignore']=1
+                row['floor']=floor
+                row['name']="{}.{}".format(orig_name,floor)
+                row['type_tri']="TOWER_FLOOR"
+                self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
+
+        self._towers_meta(towers)
+# }}}
+    def _drop_f0_only_towers(self,towers):# {{{
+        '''
+        Towers are for only more than one floor, as the vertical evacuation
+        happens only there.
+        '''
+
+        drop=[]
+        for w, floors in towers.items():
+            if len(floors)==0:
+                drop.append(w)
+        for i in drop:
+            del towers[i]
+        return towers
+# }}}
+    def _towers_meta(self, towers):# {{{
+        '''
+        The floor segment of a staircase (FSoS) is a cuboid which may be
+        perceived as a deformed plane originally. Then FSoS contains as many
+        agents as just a flat floor (top projection) does.
+
+        In Animator the agents will have the same balls sizes for top and side
+        views. Therefore we need to scale the staircase height so that the same
+        number of agents fits the given cuboid. 
+
+        FSoS side projection must then equal room_area which must equal height
+        x max(width,depth) since we pick max of width or depth for staircase
+        projection. 
+
+        We need to calculate how many FSoS'es there are for each staircase
+        (tower_span).
+
+        Assumption: on the top-most-floor there only fit two rows of agents,
+        i.e. 2 x 54cm balls rows.
+
+        '''
+
+        for k,v in towers.items():
+            towers[k]=['0']+v
+
+        self._towers={}
+        self._towers['x_offset']=300
+        self._towers['animator_floor_height']=1000
+        self._towers['top_floor_area']=120
+        self._towers['towers']=towers
+        self._towers['max_spans']=self._towers_max_spans()
+        self._towers['lines']=self._towers_lines()
+        self._towers['rectangles']=self._towers_rectangles()
+        self._towers['width']=self._towers_width()
+# }}}
+    def _towers_max_spans(self):# {{{
+        '''
+        The number of floors in the heighest staircase 
+        '''
+
+        max_spans=-1
+        for k,v in self._towers['towers'].items():
+            if len(v) > max_spans: 
+                max_spans=len(v)
+                maxs=(k[2], max_spans)
+        return maxs
+# }}}
+    def _towers_lines(self):# {{{
+        '''
+        Helper horizontal lines for Animator: 2, 1, 0
+        '''
+        maxs=self._towers['max_spans']
+        animator_floor_height=self._towers['animator_floor_height']
+        top_floor_area=self._towers['top_floor_area']
+        lines=OrderedDict()
+        for i in reversed(range(maxs[1])):
+            lines[i] = animator_floor_height * (maxs[1]-1-i) + top_floor_area
+        return lines
+
+# }}}
+    def _towers_rectangles(self):# {{{
+        '''
+        All FSoS'es will be represented at constant height to better fit
+        Animator. It will allow to compare to vertical speed at the same
+        distance for each staircase and align the floors. We are free to deform
+        any staircase in any way taking the resulting area (the capacity for
+        evacuees) is not changed. Therefore we pick the preferred height and
+        alter width to keep to original area.
+
+        animator_floor_height=1000 seems like a reasonable height for animator.
+        Speed of agents will be scaled to match the vertical movement in this
+        height.
+        '''
+
+        animator_floor_height=self._towers['animator_floor_height']
+        top_floor_area=self._towers['top_floor_area']
+        towers=self._towers['towers']
+        lines=self._towers['lines']
+        dd(lines)
+
+        t=OrderedDict()
+        x_offset=self._towers['x_offset']
+        for k,v in towers.items():
+            i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k[1],))[0]
+            for i in v:
+                
+            full_floors=len(v)-1
+            height=animator_floor_height * full_floors + top_floor_area
+            y0=lines[full_floors] - top_floor_area
+            width=int(i['width']*i['depth'] / animator_floor_height)
+            t[i['name']]={'x0': x_offset, 'y0': y0, 'height': height,  'width': width }
+            x_offset+=width+self._towers['x_offset']
+        dd(t)
+        return t
+
+# }}}
+    def _towers_f0_staircase(self):# {{{
+        '''
+        A special model needed for a floor0-only FSoS as it's distinct from
+        floor-0-plus FSoS'es. Probably many behaviours needed here.
+
+        '''
+
+
+# }}}
+    def _towers_width(self):# {{{
+        mmax=-99999
+        for i in self._towers['rectangles'].values():
+            mmax=max(mmax,(i['width']+i['x0']))
+        return mmax
 # }}}
 
 # INTERSECTIONS
@@ -683,49 +730,40 @@ class Geom():
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         self._make_world2d_staircases_lines()
         self._make_world2d_staircases()
+        self._make_world2d_meta()
+        self._make_world2d_obstacles()
 # }}}
     def _make_world2d_staircases_lines(self):# {{{
-        ''' 
-        mm contains [ x0, x1, y1, span_count ] vectors. We need to pick min
-        here and max there to properly draw the white separator lines.
 
-        '''
-
-        x0=5000 # TODO
-        x1=8000 # TODO
+        self._towers['x0']=self.s.query("SELECT max(x1) AS maxx FROM world2d")[0]['maxx']
+        x0=self._towers['x0'] + self._towers['x_offset']
+        x1=x0+self._towers['width']
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         for k,v in self._towers['lines'].items():
-            z['world2d']['lines'].append( { "xy": (x0-300 , v)     , "x1": x1       , "y1": v         , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
-            z['world2d']['texts'].append( { "xy": (x0-300 , v-100) , "content": k, "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
+            z['world2d']['lines'].append( { "xy": (x0 , v)     , "x1": x1       , "y1": v         , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
+            z['world2d']['texts'].append( { "xy": (x0 , v-100) , "content": k, "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
 
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 
     # }}}
     def _make_world2d_staircases(self):# {{{
-
-        self.vert_world2d_tx=OrderedDict()
-        last_maxy=-200
-        offset=self._world_maxx + 800
-
-        return
-        for k,v in self._towers['rectangles'].items():
-            print(k,v)
+        towers_offset=self.s.query("SELECT max(x1) AS maxx FROM world2d")[0]['maxx'] + self._towers['x_offset']
+        for k,tt in self._towers['rectangles'].items():
             i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k,))[0]
-            dd(i)
-            exit()
             i['floor']='world2d'
             i['name']+=".v"
-            i['x0']=offset
-            i['x1']=i['x0']+max(i['width'],i['depth'])
-            i['y0']=0
-            i['y1']=i['y0']+min(i['width'],i['depth']) * i['tower_span']
+            i['x0']=towers_offset+tt['x0']
+            i['x1']=i['x0']+tt['width']
+            i['y0']=tt['y0']
+            i['width']=tt['width']
+            i['y1']=i['y0']+tt['height']
             i['depth']=i['y1']-i['y0']
-            mm.append([i['x0'], i['x1'], i['y1'], i['tower_span']])
-            self.vert_world2d_tx[i['name']]=offset
-            offset=i['x1']+400
             self.s.dict_insert('world2d', i)
 # }}}
     def _make_world2d_meta(self):# {{{
+        '''
+        For Animator after geoms and towers made it into the world2d.
+        '''
 
         minx=self.s.query("SELECT min(x0) AS minx FROM world2d")[0]['minx']
         miny=self.s.query("SELECT min(y0) AS miny FROM world2d")[0]['miny']
@@ -770,9 +808,9 @@ class Geom():
                 obst['y0']+=self.world2d_ty[floor]
                 data['named'].append(obst)
 
-        #staircase_obstacles=self._make_world2d_staircases_obstacles()
-        #data['points']+=staircase_obstacles['points']
-        #data['named']+=staircase_obstacles['named']
+        # staircase_obstacles=self._make_world2d_staircases_obstacles()
+        # data['points']+=staircase_obstacles['points']
+        # data['named']+=staircase_obstacles['named']
 
         self.s.query("CREATE TABLE world2d_obstacles(json)")
         self.s.query("INSERT INTO world2d_obstacles VALUES (?)", (json.dumps(data),))
@@ -786,7 +824,50 @@ class Geom():
         '''
 
         walls=[]
-        for i in self.s.query("SELECT * FROM world2d WHERE is_world2d_tower=1"):
+        #dd(self._towers)
+        dd(self._towers['rectangles'])
+
+        for k,i in self._towers['rectangles'].items():
+            exit()
+            x0=self._towers['x0'] + i['x0']
+            walls.append((x0+self._wall_width , i['y0']            , i['x0']+i['width']                  , i['y0']+self._wall_width)            )
+            walls.append((x0+i['width']       , i['y0']            , i['x0']+i['width']+self._wall_width , i['y0']+i['depth']+self._wall_width) )
+            walls.append((x0                  , i['y0']            , i['x0']+self._wall_width            , i['y0']+i['depth']+self._wall_width) )
+            span_size=i['depth']/i['tower_span']
+            for ii in range(1,i['tower_span']+1):
+                y=ii*span_size
+                walls.append((i['x0']+i['width']/2+100 , i['y0']+y , i['x0']+i['width']       , i['y0']+y+self._wall_width) )
+                walls.append((i['x0']+self._wall_width , i['y0']+y , i['x0']+i['width']/2-100 , i['y0']+y+self._wall_width) )
+
+        walls_polygons=([box(ii[0],ii[1],ii[2],ii[3]) for ii in set(walls)])
+
+        obstacles={}
+        obstacles['points']=[]
+        obstacles['named']=[]
+        for i in walls:
+            obstacles['points'].append([ [i[0] , i[1] , 300 ] , [ i[2] , i[1] , 300 ] , [ i[2] , i[3] , 300 ] , [ i[0] , i[3] , 300 ] , [ i[0] , i[1] , 300 ] ])
+            obstacles['named'].append({'x0': i[0], 'y0': i[1], 'width': i[2]-i[0], 'depth': i[3]-i[1]})
+
+        return obstacles
+
+        #z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        #for v in walls:
+        #    z["world2d"]['rectangles'].append( { "xy": (v[0], v[1]) , "width": v[2]-v[0], "depth": v[3]-v[1], "strokeColor": "#0ff" , "strokeWidth": 10 , "fillColor": "#f80" , "opacity": 0.7 } )
+        #self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
+# }}}
+    def ______make_world2d_staircases_obstacles(self):# {{{
+        '''
+        We are cutting holes in the bottom of each FSoS.
+        The width of the hole is hardcoded to 200 cm (center_x +/-100).
+
+        '''
+
+        walls=[]
+        dd(self._towers['rectangles'])
+        exit()
+        dd(self.s.query("SELECT * FROM world2d WHERE type_tri LIKE 'TOWER%'"))
+        for i in self.s.query("SELECT * FROM world2d WHERE type_tri='VERTICAL_EVAC'"):
             walls.append((i['x0']+self._wall_width , i['y0']            , i['x0']+i['width']                  , i['y0']+self._wall_width)            )
             walls.append((i['x0']+i['width']       , i['y0']            , i['x0']+i['width']+self._wall_width , i['y0']+i['depth']+self._wall_width) )
             walls.append((i['x0']                  , i['y0']            , i['x0']+self._wall_width            , i['y0']+i['depth']+self._wall_width) )
