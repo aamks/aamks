@@ -189,7 +189,7 @@ class SmokeQuery:
         conditions from the cell. 
         '''
 
-        floors=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
+        floors=json.loads(self.s.query("SELECT * FROM floors")[0]['json'])
         self.floor_dim = floors[str(floor)]
 
         x=self.floor_dim['minx'] + self._square_side * int((q[0]-self.floor_dim['minx'])/self._square_side) 
@@ -251,11 +251,16 @@ class SmokeQuery:
         finals=OrderedDict()
 
         # min(time) for HGT_COR < 1.8
-        dcbe = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='HGT' AND value < 1.8")[0]['MIN(time)']
-        if dcbe == None:
-            finals['dcbe'] = 9999
-        else:
-            finals['dcbe'] = dcbe
+        hgt = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='HGT' AND value < 1.8")[0]['MIN(time)']
+        if hgt == None:
+            hgt = 9999
+        ulod = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='ULOD' AND value > 0")[0]['MIN(time)']
+        if ulod == None:
+            ulod = 9999
+        ult = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='ULT' AND value > 60")[0]['MIN(time)']
+        if ult == None:
+            ult = 9999
+        dcbe=max(hgt, ulod, ult)
 
         # min(HGT_COR) 
         finals['min_hgt_cor']=self.sf.query("SELECT MIN(value) FROM finals WHERE compa_type='c' AND param='HGT'")[0]['MIN(value)']
