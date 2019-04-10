@@ -194,7 +194,7 @@ class Navmesh:
         except:
             raise SystemExit("Navmesh: cannot create {}".format(file_nav))
 # }}}
-    def query(self,q,maxStraightPath=8):# {{{
+    def query(self,q,maxStraightPath=16):# {{{
         '''
         ./Detour/Include/DetourNavMeshQuery.h: maxStraightPath: The maximum number of points the straight path arrays can hold.  [Limit: > 0]
         We set maxStraightPath to a default low value which stops calculations early

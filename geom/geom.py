@@ -378,10 +378,15 @@ class Geom():
         self._towers['animator_floor_height']=1000
         self._towers['top_floor_area']=120
         self._towers['towers']=towers
-        self._towers['max_spans']=self._towers_max_spans()
-        self._towers['lines']=self._towers_lines()
-        self._towers['rectangles']=self._towers_rectangles()
-        self._towers['width']=self._towers_width()
+        if bool(towers):
+            self._towers['max_spans']=self._towers_max_spans()
+            self._towers['lines']=self._towers_lines()
+            self._towers['rectangles']=self._towers_rectangles()
+            self._towers['width']=self._towers_width()
+        else:
+            self._towers['width']=1
+            self._towers['lines']={}
+            self._towers['rectangles']={}
 # }}}
     def _towers_max_spans(self):# {{{
         '''
@@ -567,7 +572,7 @@ class Geom():
             for vent_id,v in vc_intersections.items():
                 v=sorted(v)
                 if len(v) == 2 and self.aamks_polies['COMPA'][floor][v[0]].intersects(self.aamks_polies['COMPA'][floor][v[1]]) == False:
-                    self.make_vis("Space between compas".format(floor), vent_id)
+                    self.make_vis("Space between compas", vent_id)
                 if len(v) == 1:
                     v.append(self.outside_compa)
                 if len(v) > 2:
@@ -707,6 +712,7 @@ class Geom():
         last_maxy=-200
 
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        dd(self.floors_meta)
         for floor in list(self.floors_meta.keys())[::-1]:
             meta=self.floors_meta[floor]
             ty=last_maxy+200-meta['miny']
