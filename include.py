@@ -11,7 +11,18 @@ import numpy as np
 import os
 import sqlite3
 import sys
-# test
+def dd(struct):# {{{
+    '''debugging function, much like print but handles various types better'''
+    print()
+    if isinstance(struct, list):
+        for i in struct:
+            print(i)
+    elif isinstance(struct, dict):
+        for k, v in struct.items():
+            print (str(k)+':', v)
+    else:
+        print(struct)
+# }}}
 
 class SendMessage:# {{{
     ''' 
@@ -354,7 +365,8 @@ class Vis:# {{{
         '''
 
         vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        self._static_floors['world2d']=self._static_world2d
+        if self._static_world2d['floor_meta']['multifloor']==1:
+            self._static_floors['world2d']=self._static_world2d
         self.json.write(self._static_floors, '{}/static.json'.format(vis_dir)) 
 
         try:
