@@ -73,14 +73,16 @@ class EvacMcarlo():
         return round(lognorm(s=1, loc=pe['mean'], scale=pe['sd']).rvs(), 2)
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
-        ''' Special selectors from distributions.json
+        ''' 
+        Special selectors from distributions.json
         First we try to return ROOM_1_2, then ROOM_FLOOR_1, then ROOM
+        Concentration comes as m^2, but aamks uses 10000 cm^2 
         '''
 
         z=self.conf['evacuees_concentration']
         for i in [name, "{}_FLOOR_{}".format(type_sec,floor), type_sec]:
             if i in z.keys():
-                return z[i]
+                return z[i] * 10000
         raise Exception("Cannot determine the density for {}".format(name))
 
 # }}}

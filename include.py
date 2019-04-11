@@ -11,7 +11,18 @@ import numpy as np
 import os
 import sqlite3
 import sys
-# test
+def dd(struct):# {{{
+    '''debugging function, much like print but handles various types better'''
+    print()
+    if isinstance(struct, list):
+        for i in struct:
+            print(i)
+    elif isinstance(struct, dict):
+        for k, v in struct.items():
+            print (str(k)+':', v)
+    else:
+        print(struct)
+# }}}
 
 class SendMessage:# {{{
     ''' 
@@ -108,6 +119,12 @@ class Sqlite: # {{{
         if query[:6] in("select", "SELECT"):
             return self.sqlitedb.fetchall() 
 
+    def dict_insert(self, table, named_records):
+        columns = ', '.join(named_records.keys())
+        placeholders = ':'+', :'.join(named_records.keys())
+        query='INSERT INTO {} ({}) VALUES ({})'.format(table, columns, placeholders)
+        self.query(query, named_records)
+
     def executemany(self,query,data=tuple()):
         ''' Query sqlite, return results as dict. '''
         self.sqlitedb.executemany(query,data)
@@ -120,19 +137,29 @@ class Sqlite: # {{{
 
     def dump(self):
         print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
+        print("project: {}".format(os.environ['AAMKS_PROJECT']))
+        print()
         for i in self.query('SELECT * FROM aamks_geom order by floor,type_pri,global_type_id'):
             print(i)
 
-    def dump_geoms(self,floor):
+    def dump_geoms(self,floor='all'):
         print("dump_geom() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
+        print("project: {}".format(os.environ['AAMKS_PROJECT']))
         print()
-        print("name;x0;y0;x1;y1,z0,z1")
-        for i in self.query('SELECT name,x0,y0,x1,y1,z0,z1 FROM aamks_geom WHERE floor=? ORDER BY type_pri,global_type_id', (floor,)):
-            print("{};{};{};{};{};{};{}".format(i['name'],i['x0'], i['y0'], i['x1'], i['y1'], i['z0'], i['z1']))
+        if floor=='all':
+            print("f;name;x0;y0;x1;y1;z0;z1;pri;sec")
+            for i in self.query('SELECT floor,name,x0,y0,x1,y1,z0,z1,type_pri,type_sec FROM aamks_geom ORDER BY floor,type_pri,global_type_id'):
+                print("{};{};{};{};{};{};{};{};{};{}".format(i['floor'],i['name'],i['x0'], i['y0'], i['x1'], i['y1'], i['z0'], i['z1'], i['type_pri'], i['type_sec']))
+        else:
+            print("name;x0;y0;x1;y1;z0;z1")
+            for i in self.query('SELECT name,x0,y0,x1,y1,z0,z1 FROM aamks_geom WHERE floor=? ORDER BY type_pri,global_type_id', (floor,)):
+                print("{};{};{};{};{};{};{}".format(i['name'],i['x0'], i['y0'], i['x1'], i['y1'], i['z0'], i['z1']))
 
     def dumpall(self):
         ''' Remember to add all needed sqlite tables here '''
         print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
+        print("project: {}".format(os.environ['AAMKS_PROJECT']))
+        print()
         for i in ('aamks_geom', 'world2d', 'floors_meta', 'world2d_meta', 'obstacles', 'partition', 'cell2compa', 'navmeshes'):
             try:
                 print("\n=======================")
@@ -338,7 +365,8 @@ class Vis:# {{{
         '''
 
         vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        self._static_floors['world2d']=self._static_world2d
+        if self._static_world2d['floor_meta']['multifloor']==1:
+            self._static_floors['world2d']=self._static_world2d
         self.json.write(self._static_floors, '{}/static.json'.format(vis_dir)) 
 
         try:
