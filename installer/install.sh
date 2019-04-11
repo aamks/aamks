@@ -21,8 +21,8 @@
 
 # CONFIGURATION, must be copied to ~/.bashrc
 
-AAMKS_SERVER=127.0.0.1
-#AAMKS_SERVER=192.168.0.10
+#AAMKS_SERVER=127.0.0.1
+AAMKS_SERVER=192.168.100.131
 AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 AAMKS_TESTING=0
 AAMKS_USE_GEARMAN=1
@@ -127,7 +127,8 @@ USER=`id -ru`
 sudo locale-gen en_US.UTF-8
 sudo apt-get update 
 sudo apt-get --yes install postgresql subversion python3-pip python3-psycopg2 sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php
-sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx
+sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx sns seaborn statsmodels PyQt5 ete3
+
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`
