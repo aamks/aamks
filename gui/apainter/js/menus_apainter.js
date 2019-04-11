@@ -1,5 +1,4 @@
 function register_listeners() {//{{{
-	dd("yy");
 	$("right-menu-box").on("click" , "#btn_copy_to_floor"   , function() { copy_to_floor() });
 	$("right-menu-box").on("click" , "#btn_edit_cad_json"   , function() { textarea_edit_cad_json() });
 	$("right-menu-box").on("click" , "#btn_submit_cad_json" , function() { textarea_edit_cad_json() });
@@ -99,7 +98,6 @@ function cad_json_textarea_save() {//{{{
 	var json_data=$("#cad-json-textarea").val();
 	ajax_save_cadjson(json_data); 
 	cad_json_textarea_close();
-	import_cadjson();
 }
 //}}}
 function ddd() {//{{{
@@ -211,17 +209,6 @@ function help_utils_into_setup_box() {//{{{
 
 }
 //}}}
-function cad_json_reader(file) {//{{{
-	// renderUnderlayImage(this.files[0])
-	var reader = new FileReader();
-	reader.onload = function(event) {
-		json=JSON.parse(event.target.result);
-		init_svg_groups(json);
-		into_db(json);
-	}
-	reader.readAsText(file);
-}
-//}}}
 function init_svg_groups(json) {//{{{
 	$(".g_floor").remove();
 	$(".snap_v").remove();
@@ -324,7 +311,10 @@ function ajaxPdf2svg() { //{{{
 }
 //}}}
 function ajax_save_cadjson(json_data) { //{{{
-	$.post('/aamks/ajax.php?ajaxApainterExport', { 'cadfile': json_data }, function (json) { ajax_msg(json); });
+	$.post('/aamks/ajax.php?ajaxApainterExport', { 'cadfile': json_data }, function (json) { 
+		ajax_msg(json); 
+		import_cadjson();
+	});
 }
 //}}}
 function import_cadjson() { //{{{
@@ -426,7 +416,6 @@ function db2cadjson() {//{{{
 	}
 	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
 	ajax_save_cadjson(pretty_json);
-	import_cadjson();
 	return pretty_json;
 }
 //}}}
