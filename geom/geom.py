@@ -19,7 +19,6 @@ from include import Sqlite
 from include import Json
 from include import Dump as dd
 from include import Vis
-from geom.nav import Navmesh
 
 # }}}
 
@@ -49,10 +48,9 @@ class Geom():
         self._auto_detectors_and_sprinklers()
         self._create_obstacles()
         self._make_world2d()
-        self.make_vis('Create obstacles')
+        #self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
-        self._navmeshes_for_floors()
         #self.s.dumpall()
         #self.s.dump_geoms()
         #dd(self.s.query("select * from aamks_geom where type_sec='STAI'"))
@@ -142,6 +140,11 @@ class Geom():
         # EVACUEE
         elif k in ('EVACUEE',):                  
             type_pri='EVACUEE'
+            type_tri=''
+
+        # FIRE
+        elif k in ('FIRE',):                  
+            type_pri='FIRE'
             type_tri=''
 
         # MVENT      
@@ -468,7 +471,7 @@ class Geom():
         for floor in self.floors:
             for elem in self.aamks_polies.keys():
                 self.aamks_polies[elem][floor]=OrderedDict()
-            for v in self.s.query("SELECT * FROM aamks_geom WHERE type_pri NOT IN('OBST', 'EVACUEE') AND floor=?", (floor,)):
+            for v in self.s.query("SELECT * FROM aamks_geom WHERE type_pri NOT IN('OBST', 'EVACUEE', 'FIRE') AND floor=?", (floor,)):
                 self.aamks_polies[v['type_pri']][floor][v['global_type_id']]=box(v['x0'], v['y0'], v['x0']+v['width'], v['y0']+v['depth'])
 # }}}
     def _get_faces(self):# {{{
@@ -870,19 +873,6 @@ class Geom():
                 self.make_vis('Room without door (see Animator)', i['global_type_id'], 'COMPA')
 # }}}
 
-    def _navmeshes_for_floors(self):# {{{
-        navs={}
-        for floor in self.floors:
-            z=self.s.query("SELECT name FROM aamks_geom WHERE floor=? AND room_enter='no'", (floor,))
-            bypass_rooms=[]
-            for i in z:
-                bypass_rooms.append(i['name'])
-            navs[tuple(bypass_rooms)]=Navmesh()
-            navs[tuple(bypass_rooms)].build(floor,bypass_rooms)
-            navs[tuple(bypass_rooms)].query([(1300,600), (3100,1800)])
-            if self.conf['navmesh_debug']==1:
-                navs[tuple(bypass_rooms)].test()
-# }}}
     def make_vis(self, title, faulty_id='', type_pri='HVENT'):# {{{
         ''' 
         This method is for visualizing both errors and just how things look. 

@@ -11,6 +11,9 @@ import numpy as np
 import os
 import sqlite3
 import sys
+
+#JSON=self.json=Json()
+
 def dd(struct):# {{{
     '''debugging function, much like print but handles various types better'''
     print()
@@ -263,7 +266,7 @@ class Vis:# {{{
         self._js_make_dd_geoms()
 
         if 'fire_origin' not in params:
-            params['fire_origin']=[]
+            params['fire_origin']=self._js_vis_fire_origin()
 
         self._save(params)
 # }}}
@@ -311,11 +314,12 @@ class Vis:# {{{
         '''
 
         try:
-            _json=json.loads(self.s.query("SELECT * FROM obstacles")[0]['json'])
+            _json=JSON.readdb("obstacles")
+            #dd(_json)
             for floor,obstacles in _json['named'].items():
                 self._static_floors[floor]['obstacles']=obstacles
 
-            _json=json.loads(self.s.query("SELECT * FROM world2d_obstacles")[0]['json'])
+            _json=JSON.readdb("world2d_obstacles")
             self._static_world2d['obstacles']=_json['named']
 
         except:
@@ -336,6 +340,14 @@ class Vis:# {{{
             self._static_floors[floor]['dd_geoms']=f[floor]
 
         self._static_world2d['dd_geoms']=f['world2d']
+# }}}
+    def _js_vis_fire_origin(self):# {{{
+        try:
+            z=self.s.query("SELECT center_x, center_y FROM aamks_geom WHERE type_pri='FIRE'")
+            fire_origin=[z[0]['center_x'], z[0]['center_y']]
+        except:
+            fire_origin=[]
+        return fire_origin
 # }}}
     def _reorder_anims(self, z):# {{{
         '''
@@ -393,3 +405,5 @@ class Vis:# {{{
         self.json.write(z, "{}/anims.json".format(vis_dir))
 # }}}
 # }}}
+
+JSON=Json()

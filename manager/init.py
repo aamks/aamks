@@ -7,9 +7,11 @@ import shutil
 from distutils.dir_util import copy_tree
 from include import Json
 from include import Psql
+from include import Sqlite
 from include import Dump as dd
 from include import SimIterations
 from include import Vis
+from geom.nav import Navmesh
 
 class OnInit():
     def __init__(self):# {{{
@@ -94,9 +96,24 @@ class OnEnd():
         ''' Stuff that happens at the end of the project '''
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']
         self.p=Psql()
+        self._navmeshes_for_floors()
+        Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
         self._gearman_register_works()
+# }}}
+    def _navmeshes_for_floors(self):# {{{
+        navs={}
+        for floor in self.json.readdb('floors_meta').keys():
+            z=self.s.query("SELECT name FROM aamks_geom WHERE floor=? AND room_enter='no'", (floor,))
+            bypass_rooms=[]
+            for i in z:
+                bypass_rooms.append(i['name'])
+            navs[tuple(bypass_rooms)]=Navmesh()
+            navs[tuple(bypass_rooms)].build(floor,bypass_rooms)
+            if self.conf['navmesh_debug']==1:
+                navs[tuple(bypass_rooms)].test()
 # }}}
     def _gearman_register_works(self):# {{{
         ''' 

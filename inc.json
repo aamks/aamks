@@ -14,6 +14,7 @@
 		"b":          { "legendary": 1 , "x": "MVENT"           , "t": "mvent"           , "c": "#008844" , "lightc": "#000000" , "stroke": "#006622" , "font": "#ffffff" , "strokewidth": 2.5 } ,
 		"t":          { "legendary": 1 , "x": "OBST"            , "t": "obst"            , "c": "#000000" , "lightc": "#222222" , "stroke": "#222222" , "font": "#ffffff" , "strokewidth": 0.5 } ,
 		"f":          { "legendary": 1 , "x": "EVACUEE"         , "t": "evacuee"         , "c": "#ffffff" , "lightc": "#ffffff" , "stroke": "#ffffff" , "font": "#444444" , "strokewidth": 0 }   ,
+		"y":          { "legendary": 1 , "x": "FIRE"            , "t": "fire"            , "c": "#ff4400" , "lightc": "#ffffff" , "stroke": "#220000" , "font": "#ffffff" , "strokewidth": 10 }   ,
 		"p":          { "legendary": 0 , "x": "UNDERLAY_SCALER" , "t": "underlay_scaler" , "c": "#ff00ff" , "lightc": "#ffffff" , "stroke": "#ffffff" , "font": "#444444" , "strokewidth": 0 }   ,
 		"canvas":     { "legendary": 0 , "x": "canvas"          , "t": "canvas"          , "c": "#333333" , "lightc": "#ffffff" , "stroke": "#ffffff" , "font": "#444444" , "strokewidth": 0 }   ,
 		"door":       { "legendary": 0 , "x": "door"            , "t": "door"            , "c": "#888801" , "lightc": "#ffffff" , "stroke": "#ffffff" , "font": "#444444" , "strokewidth": 0 }   ,
@@ -24,8 +25,8 @@
 		"fg":         { "legendary": 0 , "x": "fg"              , "t": "fg"              , "c": "#ffffff" , "lightc": "#222222" , "stroke": "#ffffff" , "font": "#444444" , "strokewidth": 0 }   ,
 		"firefill":   { "legendary": 0 , "x": "firefill"        , "t": "firefill"        , "c": "#ffff00" , "lightc": "#333333" , "stroke": "#ffffff" , "font": "#444444" , "strokewidth": 0 }   ,
 		"firestroke": { "legendary": 0 , "x": "firestroke"      , "t": "firestroke"      , "c": "#ff0000" , "lightc": "#555555" , "stroke": "#ffffff" , "font": "#444444" , "strokewidth": 0 }   ,
-		"obsts":      { "legendary": 0 , "x": "obsts"           , "t": "obsts"           , "c": "#bbbbbb" , "lightc": "#222222" , "stroke": "#ffffff" , "font": "#444444" , "strokewidth": 0 }   
-	},
+		"obsts":      { "legendary": 0 , "x": "obsts"           , "t": "obsts"           , "c": "#bbbbbb" , "lightc": "#222222" , "stroke": "#ffffff" , "font": "#444444" , "strokewidth": 0 }
+	}                                  ,
 
 	"aamksGeomsMap": {
 		"ROOM"    : "r" ,
@@ -40,6 +41,7 @@
 		"VVENT"   : "v" ,
 		"MVENT"   : "b" ,
 		"OBST"    : "t" ,
-		"EVACUEE" : "f"
+		"EVACUEE" : "f" ,
+		"FIRE"	  : "y"
 	}
 }

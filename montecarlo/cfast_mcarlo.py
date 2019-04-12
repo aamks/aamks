@@ -39,7 +39,7 @@ class CfastMcarlo():
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self._psql_collector=OrderedDict()
-        self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,sim_id)")
+        self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,sim_id)")
 
         si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
         for self._sim_id in range(*si.get()):
@@ -57,12 +57,12 @@ class CfastMcarlo():
 # }}}
     def _save_fire_origin(self, fire_origin):# {{{
         fire_origin.append(self._sim_id)
-        self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?)', fire_origin)
+        self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?,?)', fire_origin)
 
         self._psql_log_variable('fireorigname',fire_origin[0])
         self._psql_log_variable('fireorig',fire_origin[1])
 # }}}
-    def _draw_fire(self):# {{{
+    def _draw_fire_origin(self):# {{{
         is_origin_in_room=binomial(1,self.conf['fire_starts_in_a_room'])
         
         self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY global_type_id") ]
@@ -81,11 +81,36 @@ class CfastMcarlo():
         z=round(compa['height']/100.0 * (1-math.log10(uniform(1,10))),2)
 
         fire_origin+=[x,y,z]
+        fire_origin+=[compa['floor']]
         self._save_fire_origin(fire_origin)
 
         collect=('FIRE', compa['global_type_id'], x, y, z, 1, 'TIME' ,'0','0','0','0','medium')
         return (','.join(str(i) for i in collect))
 
+# }}}
+    def _fire_origin(self):# {{{
+        '''
+        Either deterministic fire from Apainter, or probabilistic (_draw_fire_origin()). 
+        '''
+
+        if len(self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")) > 0:
+            z=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")
+            i=z[0]
+            x=i['center_x']/100.0
+            y=i['center_y']/100.0
+            z=i['center_z']/100.0
+            room=self.s.query("SELECT floor,name,type_sec,global_type_id FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND x0<=? AND y0<=? AND x1>=? AND y1>=?", (i['floor'], i['x0'], i['y0'], i['x1'], i['y1']))
+            if room[0]['type_sec'] in ('COR','HALL'):
+                fire_origin=[room[0]['name'], 'non_room', x, y, z, room[0]['floor']]
+            else:
+                fire_origin=[room[0]['name'], 'room', x, y , z,  room[0]['floor']]
+            self._save_fire_origin(fire_origin)
+            collect=('FIRE', room[0]['global_type_id'], x, y, z, 1, 'TIME' ,'0','0','0','0','medium')
+            cfast_fire=(','.join(str(i) for i in collect))
+        else:
+            cfast_fire=self._draw_fire_origin()
+
+        return cfast_fire
 # }}}
     def _draw_fire_properties(self,intervals):# {{{
         i              = OrderedDict()
@@ -111,7 +136,7 @@ class CfastMcarlo():
 # }}}
     def _draw_fire_development(self): # {{{
         ''' 
-        Generate the fire. Alpha t square on the left, then constant in the
+        Generate fire. Alpha t square on the left, then constant in the
         middle, then fading on the right. At the end read hrrs at given times.
         '''
 
@@ -456,13 +481,41 @@ class CfastMcarlo():
 
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
+    def _fire_obstacle(self):# {{{
+        '''
+        Fire Obstacle prevents humans to walk right through the fire. Currently
+        we build the rectangle 200x200 around x,y. Perhaps Aamks could scale
+        the fire obstacle to match fire size.
+        '''
+
+        xx=100
+        yy=100
+
+        z=self.s.query("SELECT * FROM fire_origin") 
+        i=z[0]
+        i['x']=int(i['x'] * 100)
+        i['y']=int(i['y'] * 100)
+        i['z']=int(i['z'] * 100)
+
+        points=[ [i['x']-xx, i['y']-yy], [i['x']+xx, i['y']-yy], [i['x']+xx, i['y']+yy], [i['x']-xx, i['y']+yy], [i['x']-xx, i['y']-yy], None ]
+        named={ 'x0': i['x']-100, 'y0': i['y']-100, 'width': 2*xx, 'depth': 2*yy, 'display': None }
+
+        obstacles=self.json.readdb("obstacles")
+        obstacles['points'][i['floor']].append(points)
+        obstacles['named'][i['floor']].append(named)
+
+        self.s.query("UPDATE obstacles SET json=?", (json.dumps(obstacles),)) 
+
+# }}}
     def _section_fire(self):# {{{
         times, hrrs=self._draw_fire_development()
         fire_properties = self._draw_fire_properties(len(times))
+        fire_origin=self._fire_origin()
+        self._fire_obstacle()
         area = (((npa(hrrs)/1000)/(fire_properties['q_star'] * 1.204 * 1.005 * 293 * sqrt(9.81))) ** (2/5)) + 0.0001
         txt=(
             '!! FIRE,compa,x,y,z,fire_number,ignition_type,ignition_criterion,ignition_target,?,?,name',
-            self._draw_fire(),
+            fire_origin,
             '',
             '!! CHEMI,?,?,?,?',
             'CHEMI,1,1.8,0.3,0.05,0,0.283,{}'.format(fire_properties['heatcom']),
