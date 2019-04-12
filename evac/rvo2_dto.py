@@ -33,6 +33,7 @@ class EvacEnv:
         self.floor = 0
         self.nav = None
 
+
         f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
         self.config = json.load(f)
 
@@ -97,14 +98,16 @@ class EvacEnv:
 
             if (self.evacuees.get_exit_door(evacuee) not in self.evacuees.get_blocked_exits(evacuee)) and self.evacuees.get_exit_door(evacuee) is not None:
                 continue
-            if len(self.evacuees.get_blocked_exits(evacuee)) == len(self.general['doors']):
-                continue
 
             for door in self.general['doors']:
                 path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (door['center_x'], door['center_y'])], maxStraightPath=100)
                 paths.append(LineString(path).length)
 
-            closest_exit = paths.index(heapq.nsmallest(len(self.evacuees.get_blocked_exits(evacuee))+1, paths)[-1])
+            if len(self.evacuees.get_blocked_exits(evacuee)) == len(self.general['doors']):
+                closest_exit = paths.index(heapq.nsmallest(1, paths)[-1])
+            else:
+                closest_exit = paths.index(heapq.nsmallest(len(self.evacuees.get_blocked_exits(evacuee))+1, paths)[-1])
+
             self.evacuees.set_exit_door(ped_no=evacuee, exit_door=(self.general['doors'][closest_exit]['center_x'], self.general['doors'][closest_exit]['center_y']))
 
     def set_goal(self):
@@ -112,7 +115,7 @@ class EvacEnv:
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
-                goal = self.nav.query([self.evacuees.get_position_of_pedestrian(i), self.evacuees.get_exit_door(i)])
+                goal = self.nav.query([self.evacuees.get_position_of_pedestrian(i), self.evacuees.get_exit_door(i)], maxStraightPath=32)
                 self.evacuees.set_goal(ped_no=i, goal=goal)
 
         self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
@@ -142,7 +145,8 @@ class EvacEnv:
                 continue
             else:
                 fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i), self.current_time, self.floor)
-                self.evacuees.update_fed_of_pedestrian(i, fed)
+                self.evacuees.update_fed_of_pedestrian(i, fed * self.config['SMOKE_QUERY_RESOLUTION'])
+
         fed = [self.evacuees.get_fed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
         c = None
         fed_symbilic = []
@@ -215,13 +219,15 @@ class EvacEnv:
         time_range = int(time/self.config['TIME_STEP'])
         for step in range(time_range - 100, time_range):
             self.set_goal()
-            self.update_speed()
+            if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
+                self.update_speed()
             self.update_agents_velocity()
             self.sim.doStep()
             logging.debug('Simulation step: {}'.format(step))
             self.update_agents_position()
             self.update_time()
-            self.update_fed()
+            if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
+                self.update_fed()
             self.set_exit_door()
             self.save_data_for_visualization()
             self.get_rset_time()
