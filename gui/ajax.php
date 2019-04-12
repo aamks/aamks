@@ -91,7 +91,7 @@ function ajaxSingleAnim() { /*{{{*/
 /*}}}*/
 function ajaxSingleAnimFunCircle() { /*{{{*/
 	$arr=[];
-	$colors=["H", "M", "L", "N"];
+	$colors=["N", "N", "N", "N"];
 	for($t=0; $t<15; $t+=2.5) { 
 		$record=[];
 		for($a=0; $a<19; $a++) { 
@@ -103,12 +103,12 @@ function ajaxSingleAnimFunCircle() { /*{{{*/
 	}
 	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 200, "time_shift" => 0  ];
 	$collect['data']=$arr;
-	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$collect));
+	echo json_encode(array("msg"=>"", "err"=>0, "data"=> json_encode($collect)));
 }
 /*}}}*/
 function ajaxSingleAnimFunExplode() { /*{{{*/
 	$arr=[];
-	$colors=["H", "M", "L", "N"];
+	$colors=["L", "N", "N", "N"];
 	$y=[];
 	for($t=0; $t<4; $t+=1) { 
 		$record=[];
@@ -120,7 +120,7 @@ function ajaxSingleAnimFunExplode() { /*{{{*/
 	}
 	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0  ];
 	$collect['data']=$arr;
-	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$collect));
+	echo json_encode(array("msg"=>"", "err"=>0, "data"=> json_encode($collect)));
 }
 /*}}}*/
 function ajaxApainterExport() { /*{{{*/
