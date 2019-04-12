@@ -54,6 +54,10 @@ makeAnimationControls();
 	right_menu_box();
 });
 
+function ddd() {//{{{
+	dd(db().get());
+}
+//}}}
 function listenEvents() {//{{{
 	$(window).resize(resizeAndRedrawCanvas);
 	$('#labels-size').on('keyup'     , function() { labelsSize=this.value     ; resetCanvas() ; })
@@ -107,10 +111,6 @@ function listenEvents() {//{{{
 	});
 }
 //}}}
-function ddd() {//{{{
-	dd(db().get());
-}
-//}}}
 function right_menu_box() {//{{{
 	$('close-right-menu-box').click(function() {
 		$('right-menu-box').fadeOut();
@@ -125,12 +125,12 @@ function setColors(mode) {//{{{
 	colors={};
 	for (var i in incDB['aamksGeoms']) {
 		if(mode=='dark') { 
-			colors[incDB['aamksGeoms'][i]['x']]=incDB['aamksGeoms'][i]['c'];
+			colors[incDB['aamksGeoms'][i]['x']]=incDB['aamksGeoms'][i];
 		} else {
-			colors[incDB['aamksGeoms'][i]['x']]=incDB['aamksGeoms'][i]['lightc'];
+			colors[incDB['aamksGeoms'][i]['x']]=incDB['aamksGeoms'][i];
 		}
 	}
-	$("#animator-canvas").css("background-color", colors['canvas']);
+	$("#animator-canvas").css("background-color", colors['canvas']['c']);
 }
 //}}}
 $.getJSON("inc.json", function(x) {//{{{
@@ -341,33 +341,33 @@ function paperjsDisplayImage() {//{{{
 
 	for (var key in rooms) {
 		if(rooms[key]['room_enter']=='yes') {
-			staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:colors[rooms[key]["type_sec"]]}));
+			staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['ROOM']['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:colors[rooms[key]["type_sec"]]['c']}));
 		} else {
-			staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:"#333"}));
+			staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['ROOM']['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:"#333"}));
 		}
 	}
 
 	for (var i=0; i<obstacles.length; i++) {
-		staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],obstacles[i]["depth"]), fillColor: colors['obsts'], strokeColor: colors['obsts'], strokeWidth:wallsSize }));
+		staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],obstacles[i]["depth"]), fillColor:colors['OBST']['c'], strokeColor: colors['fg']['c'], opacity: 0.6, strokeWidth:wallsSize }));
 	}
 
 	if (labelsSize != 0) { 
 		for (var key in rooms) {
-			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+20,rooms[key]["y0"]+50), fillColor:colors["fg"], content: rooms[key]["name"], fontFamily: 'Roboto', fontSize: labelsSize }));
+			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+20,rooms[key]["y0"]+50), fillColor:colors["fg"]['c'], content: rooms[key]["name"], fontFamily: 'Roboto', fontSize: labelsSize }));
 		}
 	}
 
 	for (var key in doors) {
 		if (doorsSize != 0) { 
-			staticGeoms.addChild(new Path.Rectangle({point: new Point(doors[key]["x0"],doors[key]["y0"]), size: new Size(doors[key]["width"],doors[key]["depth"]), strokeColor: colors['door'], strokeWidth:doorsSize  }));
+			staticGeoms.addChild(new Path.Rectangle({point: new Point(doors[key]["x0"],doors[key]["y0"]), size: new Size(doors[key]["width"],doors[key]["depth"]), strokeColor: colors['DOOR']['c'], opacity: colors['DOOR']['animOpacity']/3, strokeWidth:doorsSize  }));
 		}
 		if (labelsSize != 0) { 
-			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-20,doors[key]["center_y"]+15), fillColor:colors["fg"], content: doors[key]["name"], opacity: 0.7, fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
+			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-20,doors[key]["center_y"]+15), fillColor:colors["fg"]['c'], content: doors[key]["name"], opacity: colors['DOOR']['animOpacity'], fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
 		}
 	}
 
 	for (var key in staticEvacuees) {
-		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: ballsSize, strokeColor: "#ffffff", strokeWidth: 0.5 }));
+		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: ballsSize,  fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
 	}
 
 } 
@@ -415,11 +415,11 @@ function paperjsDisplayAnimation() { //{{{
 	if (visContainsAnimation==0) { return; } 
 
 	for (var i=0; i<numberOfEvacuees; i++) {
-		evacVelocities.addChild( new Path.Line({ from: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), to: new Point(evacueesData[0][i][2],evacueesData[0][i][3]), strokeColor:colors['fg'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+		evacVelocities.addChild( new Path.Line({ from: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), to: new Point(evacueesData[0][i][2],evacueesData[0][i][3]), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
 	}
 
 	for (var i=0; i<numberOfEvacuees; i++) {
-		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: ballsSize, fillColor: colors['doseN'] }));
+		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: ballsSize, fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
 	}
 
 }
@@ -433,8 +433,9 @@ function updateAnimatedElement(i) {//{{{
 	// todo performance? 
 	// if(frame == 0 || evacueesData[frame][i][5] != evacueesData[frame-1][i][5] ) {  evacBalls.children[i].opacity=evacVelocities.children[i].opacity=evacueesData[frame][i][5]; }
 	// if(frame == 0 || evacueesData[frame][i][4] != evacueesData[frame-1][i][4] ) {  evacBalls.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]; } 
-	evacBalls.children[i].opacity=evacVelocities.children[i].opacity=evacueesData[frame+1][i][5]; 
-	evacBalls.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]; 
+	// evacBalls.children[i].opacity=evacVelocities.children[i].opacity=evacueesData[frame+1][i][5]; 
+	evacBalls.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]['c']; 
+	evacBalls.children[i].strokeColor=colors['dose'+evacueesData[frame][i][4]]['stroke']; 
 
 	evacBalls.children[i].position.x =  evacueesData[frame][i][0] + (evacueesData[frame+1][i][0] - evacueesData[frame][i][0]) * (lerpFrame%lerps)/lerps; 
 	evacBalls.children[i].position.y =  evacueesData[frame][i][1] + (evacueesData[frame+1][i][1] - evacueesData[frame][i][1]) * (lerpFrame%lerps)/lerps; 
@@ -482,8 +483,8 @@ function onMouseDown(event) {//{{{
 	for (var i = 0; i < numberOfEvacuees; i++) { 
 		x=evacBalls.children[i].position.x;
 		y=evacBalls.children[i].position.y;
-		evacLabels.addChild(new Path.Circle({ center: new Point(x,y), radius:ballsSize*1.4, fillColor:"#f80" }));
-		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y-ballsSize/3), fillColor:"#000", content: "e"+i, fontFamily: 'Roboto', fontSize: ballsSize*0.7 }));
+		evacLabels.addChild(new Path.Circle({ center: new Point(x,y), radius:ballsSize*0.01, fillColor:"#f80" }));
+		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y-ballsSize/3), fillColor:"#000", content: "f"+i, fontFamily: 'Roboto', fontSize: ballsSize*0.7 }));
 		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y+ballsSize/2), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: ballsSize*0.7}));
 	}
 };

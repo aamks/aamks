@@ -96,7 +96,7 @@ CreateSvg=function create_svg(geom) { //{{{
 		.attr('fill', gg[geom.letter].c)
 		.attr('class', gg[geom.letter].t)
 		.style('stroke', gg[geom.letter].stroke)
-		.style('stroke-width', gg[geom.letter].strokewidth)
+		.style('stroke-width', gg[geom.letter].strokeWidth)
 
 	$("#"+geom.name)
 		.attr('x', geom.x0)
@@ -207,7 +207,7 @@ function keyboard_events() {//{{{
 //}}}
 function blink_selected() {//{{{
 	$("#"+selected_geom).css('stroke-width', '100px');
-	$("#"+selected_geom).animate({ 'stroke-width': gg[active_letter].strokewidth}, 400);
+	$("#"+selected_geom).animate({ 'stroke-width': gg[active_letter].strokeWidth}, 400);
 }
 //}}}
 function geom_select_deselect() { //{{{

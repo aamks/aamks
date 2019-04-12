@@ -114,7 +114,7 @@ function ajaxSingleAnimFunExplode() { /*{{{*/
 	for($t=0; $t<4; $t+=1) { 
 		$record=[];
 		for($a=0; $a<700; $a++) { 
-			$color=floor($a/100);
+			$color=floor($a/100)%4;
 			$record[]=[ 2600+$t*rand(-12,12)*$a/10, 1200+$t*rand(-12,12)*$a/10, 0, 0, $colors[$color], 1 ];
 		}
 		$arr[]=$record;
