@@ -79,13 +79,12 @@ function ajaxSingleAnim() { /*{{{*/
 	} else { 
 		$f=$_SESSION['main']['working_home']."/workers/$_POST[unzip]";
 		if(is_file($f)) { 
-			$sh=shell_exec("unzip -qq -c $f anim.json");
-			$z=json_decode($sh);
+			$z=shell_exec("unzip -qq -c $f anim.json");
 		}
 		if(!empty($z)) { 
 			echo json_encode(array("msg"=>"", "err"=>0, "data"=>$z));
 		} else {
-			echo json_encode(array("msg"=>"ajaxSingleAnim(): Empty or broken json $f $sh", "err"=>1, "data"=>''));
+			echo json_encode(array("msg"=>"ajaxSingleAnim(): Empty or broken json $f $z", "err"=>1, "data"=>''));
 		}
 	}
 }

@@ -214,7 +214,7 @@ function showAnimation(chosenAnim) {//{{{
 	
 	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': chosenAnim['anim'] }, function(response) { 
 		ajax_msg(response);
-		animJson=response['data'];
+		animJson=JSON.parse(response['data']);
 		timeShift=animJson.time_shift;
 		deltaTime=animJson.simulation_time-timeShift;
 		$("animator-time").html(animTimeFormat());
