@@ -101,14 +101,15 @@ function ajaxSingleAnimFunCircle() { /*{{{*/
 		}
 		$arr[]=$record;
 	}
-	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 200, "time_shift" => 0  ];
-	$collect['data']=$arr;
+	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0, "data" => array() ];
+	$collect['data']['evacuees']=$arr;
+	$collect['data']['rooms_opacity']=[];
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=> json_encode($collect)));
 }
 /*}}}*/
 function ajaxSingleAnimFunExplode() { /*{{{*/
 	$arr=[];
-	$colors=["L", "N", "N", "N"];
+	$colors=["M", "L", "N", "H" ];
 	$y=[];
 	for($t=0; $t<4; $t+=1) { 
 		$record=[];
@@ -118,8 +119,9 @@ function ajaxSingleAnimFunExplode() { /*{{{*/
 		}
 		$arr[]=$record;
 	}
-	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0  ];
-	$collect['data']=$arr;
+	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0, "data" => array() ];
+	$collect['data']['evacuees']=$arr;
+	$collect['data']['rooms_opacity']=[];
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=> json_encode($collect)));
 }
 /*}}}*/

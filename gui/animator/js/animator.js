@@ -21,6 +21,7 @@ var intervalId;
 var incDB;
 var colors;
 var staticGeoms;
+var smokeRectangles;
 var fireXY;
 var wallsSize;
 var doorsSize;
@@ -30,6 +31,7 @@ var evacBalls;
 var evacLabels;
 var evacVelocities;
 var evacueesData;
+var roomsOpacity;
 var numberOfEvacuees;
 var rooms;
 var doors;
@@ -218,9 +220,10 @@ function showAnimation(chosenAnim) {//{{{
 		timeShift=animJson.time_shift;
 		deltaTime=animJson.simulation_time-timeShift;
 		$("animator-time").html(animTimeFormat());
-		evacueesData=animJson.data;
-		lastFrame=animJson.data.length-1;
-		numberOfEvacuees=animJson.data[0].length;
+		evacueesData=animJson.animations.evacuees;
+		roomsOpacity=animJson.animations.rooms_opacity;
+		lastFrame=animJson.animations.evacuees.length-1;
+		numberOfEvacuees=animJson.animations.evacuees[0].length;
 		var speedProposal=Math.round(lastFrame/5)
 		$("animation-speed").html("<input type=text size=2 name=speed id=speed value="+speedProposal+">");
 		lerps=Math.round(1/((speedProposal/100)+0.0000000000000000001))+1;
@@ -335,16 +338,22 @@ function paperjsLetItBurn() {//{{{
 function paperjsDisplayImage() {//{{{
 	if (staticGeoms == undefined) {
 		staticGeoms=new Group();
+		smokeRectangles=new Group();
 	} else {
 		staticGeoms.removeChildren();
+		smokeRectangles.removeChildren();
 	}
 
 	for (var key in rooms) {
+		var namedChild;
 		if(rooms[key]['room_enter']=='yes') {
 			staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['ROOM']['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:colors[rooms[key]["type_sec"]]['c']}));
 		} else {
 			staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['ROOM']['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:"#333"}));
 		}
+		namedChild=new Path.Rectangle({point: new Point(rooms[key]["x0"]+50,rooms[key]["y0"]+50), size: new Size(rooms[key]["width"]-100,rooms[key]["depth"]-100), opacity: 0, fillColor:'#000'});
+		namedChild.name=rooms[key]['name'];
+		smokeRectangles.addChild(namedChild);
 	}
 
 	for (var i=0; i<obstacles.length; i++) {
@@ -505,12 +514,21 @@ function highlightGeom(key) {//{{{
 	}
 }
 //}}}
+function updateSmokeRectangles() {//{{{
+	for (var i in smokeRectangles.children) {
+		if(roomsOpacity[frame][i] != undefined) { 
+			smokeRectangles.children[i].opacity=roomsOpacity[frame][i];
+		}
+	}
+}
+//}}}
 function onFrame(event) {//{{{
 	// Main animation loop
 	if (animationIsRunning==1) {
 		for (var i = 0; i < numberOfEvacuees; i++) { 
 			updateAnimatedElement(i);
 		}
+		updateSmokeRectangles();
 		afterLerpFrame();
 	}
 }

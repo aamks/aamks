@@ -5,10 +5,13 @@ require_once("../inc.php");
 function site() {/*{{{*/
 	$colors=json_decode(file_get_contents("inc.json"),1)['aamksGeoms'];
 	$doses="
-	<span style='font-size:11px; padding: 4px; display: inline; border: 1px solid ".$colors['doseN']['stroke']."; background-color: ".$colors['doseN']['c']."; color: #000'>Neutral</span>
-	<span style='font-size:11px; padding: 4px; display: inline; border: 1px solid ".$colors['doseL']['stroke']."; background-color: ".$colors['doseL']['c']."; color: #fff'>Low</span>
-	<span style='font-size:11px; padding: 4px; display: inline; border: 1px solid ".$colors['doseM']['stroke']."; background-color: ".$colors['doseM']['c']."; color: #fff'>Medium</span>
-	<span style='font-size:11px; padding: 4px; display: inline; border: 1px solid ".$colors['doseH']['stroke']."; background-color: ".$colors['doseH']['c']."; color: #fff'>High</span>
+	<div style='display: flex'>
+		<a target=blank_ href=https://www.google.com/search?q=fractional+effective+dose>FED</a>: 
+		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['doseN']['stroke']."; background-color: ".$colors['doseN']['c']."; color: #000'></div>Neutral
+		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['doseL']['stroke']."; background-color: ".$colors['doseL']['c']."; color: #000'></div>Low
+		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['doseM']['stroke']."; background-color: ".$colors['doseM']['c']."; color: #000'></div>Medium
+		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['doseH']['stroke']."; background-color: ".$colors['doseH']['c']."; color: #000'></div>High
+	</div>
 	";
 	echo "
 	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
@@ -32,7 +35,7 @@ function site() {/*{{{*/
 				<tr><td>Balls size          <td><size-balls></size-balls> 
 				<tr><td>Vectors size        <td><size-velocities></size-velocities> 
 				<tr><td>Speed               <td><animation-speed></animation-speed>
-				<tr><td><a target=blank_ href=https://www.google.com/search?q=fractional+effective+dose>FED</a><td>$doses
+				<tr><td colspan=2>$doses
 			</table>
 		</right-menu-box>
 	</div>
