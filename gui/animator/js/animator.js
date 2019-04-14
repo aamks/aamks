@@ -21,7 +21,6 @@ var intervalId;
 var incDB;
 var colors;
 var staticGeoms;
-var smokeRectangles;
 var fireXY;
 var wallsSize;
 var doorsSize;
@@ -47,10 +46,15 @@ var sliderPos=0;
 var lerpFrame=0;
 var frame=0;
 var	visContainsAnimation=0;
+var	isDemoAnimation=0;
 var	animationIsRunning=0;
 
 $(function()  { 
-makeAnimationControls();
+	var nn;
+	makeAnimationControls();
+	nn=new Layer; nn.name='rooms';
+	nn=new Layer; nn.name='roomSmoke';
+	nn=new Layer; nn.name='roomFire';
 	resizeAndRedrawCanvas();
 	left_menu_box();
 	right_menu_box();
@@ -151,7 +155,7 @@ function makeChooseVis(data) {//{{{
 	var items = [];
 	items.push("<select id=choose-vis>");
 	for (var i=0; i<data.length; i++) { 
-		items.push( "<option value='" + i + "'>" + data[i]["title"] + "</option>" );
+		items.push( "<option value='" + i + "'>" + data[i]["title"] + " " + data[i]["time"] +"</option>" );
 	}
 	items.push("</select>");
 	$("choose-vis").html(items.join());
@@ -196,6 +200,7 @@ function showStaticImage(chosenAnim) {//{{{
 		obstacles=dstatic[floor].obstacles;
         dd_geoms=dstatic[floor].dd_geoms;
 		if(chosenAnim["anim"] == undefined) { staticEvacuees=dstatic[floor].evacuees; } else { staticEvacuees=[]; }
+		if(chosenAnim["demo"] == undefined) { isDemoAnimation=0; } else { isDemoAnimation=1; }
 		
 		makeSetupBoxInputs();
 		makeColors();
@@ -237,16 +242,18 @@ function showAnimation(chosenAnim) {//{{{
 		visContainsAnimation=1;
 		animationIsRunning=1;
 		paperjsDisplayAnimation();
+		initRoomSmoke();
 	});
 }
 //}}}
 function resetCanvas() {//{{{
 	// Reset on new visualization, on scaling walls, etc.
 	
+	clearSmoke();
 	paperjsDisplayImage();
     append_dd_geoms();
-	paperjsLetItBurn();
 	paperjsDisplayAnimation();
+	paperjsLetItBurn();
 	
 }
 //}}}
@@ -300,15 +307,19 @@ function makeHighlightGeoms(data) {//{{{
 //}}}
 function paperjsLetItBurn() {//{{{
 	// The animated fire is displayed in a separate setInterval loop. Perhaps onFrame() suits more.
-	if (fireXY.length < 2) { 
-		clearInterval(intervalId);
-		return; 
-	}
+	//if (fireXY.length < 2) { 
+	//	clearInterval(intervalId);
+	//	return; 
+	//}
 	var smoke;
 	var smokeOrig;
 	var fire;
 
-	staticGeoms.importSVG("smoke.svg", function (item) {
+	if ('roomFire' in project.layers) {
+		project.layers['roomFire'].removeChildren();
+	} 
+
+	project.layers['roomFire'].importSVG("smoke.svg", function (item) {
 		item.position.x=fireXY[0];
 		item.position.y=fireXY[1]-40;
 		item.position.y=fireXY[1]-40;
@@ -316,7 +327,8 @@ function paperjsLetItBurn() {//{{{
 		smoke.opacity=0.5;
 		smokeOrig=item.bounds;
 	});
-	staticGeoms.importSVG("fire.svg", function (item) {
+	
+	project.layers['roomFire'].importSVG("fire.svg", function (item) {
 		item.position.x=fireXY[0];
 		item.position.y=fireXY[1];
 		fire=item;
@@ -336,12 +348,13 @@ function paperjsLetItBurn() {//{{{
 }
 //}}}
 function paperjsDisplayImage() {//{{{
+
+	project.layers['rooms'].activate();
+	
 	if (staticGeoms == undefined) {
 		staticGeoms=new Group();
-		smokeRectangles=new Group();
 	} else {
 		staticGeoms.removeChildren();
-		smokeRectangles.removeChildren();
 	}
 
 	for (var key in rooms) {
@@ -351,13 +364,14 @@ function paperjsDisplayImage() {//{{{
 		} else {
 			staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['ROOM']['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:"#333"}));
 		}
-		namedChild=new Path.Rectangle({point: new Point(rooms[key]["x0"]+50,rooms[key]["y0"]+50), size: new Size(rooms[key]["width"]-100,rooms[key]["depth"]-100), opacity: 0, fillColor:'#000'});
-		namedChild.name=rooms[key]['name'];
-		smokeRectangles.addChild(namedChild);
 	}
 
 	for (var i=0; i<obstacles.length; i++) {
-		staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],obstacles[i]["depth"]), fillColor:colors['OBST']['c'], strokeColor: colors['fg']['c'], opacity: 0.6, strokeWidth:wallsSize }));
+		if ('fire_obstacle' in obstacles[i]) { 
+			if(isDemoAnimation==0) { staticGeoms.addChild(new Path.Circle({center: new Point(obstacles[i]["x0"]+obstacles[i]["width"]/2,obstacles[i]["y0"]+obstacles[i]["depth"]/2), radius:obstacles[i]['width']/2, strokeColor: "#ffffff", dashArray: [20,10], strokeWidth: wallsSize })); }
+		} else {
+			staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],obstacles[i]["depth"]), fillColor:colors['OBST']['c'], strokeColor: colors['fg']['c'], opacity: 0.6, strokeWidth:wallsSize }));
+		}
 	}
 
 	if (labelsSize != 0) { 
@@ -411,6 +425,7 @@ function paperjsDisplayAnimation() { //{{{
 	// evacLabels are (e1 x,y) displayed on top of each ball
 	// Old elements must be removed on various occassions, so we cannot return to early.
 	
+	project.layers['rooms'].activate();
 	if (evacVelocities == undefined) {
 		evacVelocities=new Group();
 		evacBalls=new Group();
@@ -514,22 +529,38 @@ function highlightGeom(key) {//{{{
 	}
 }
 //}}}
-function updateSmokeRectangles() {//{{{
-	for (var i in smokeRectangles.children) {
-		if(roomsOpacity[frame][i] != undefined) { 
-			smokeRectangles.children[i].opacity=roomsOpacity[frame][i];
+function randBetween(min, max) {//{{{
+    return Math.random() * (max - min) + min;
+}
+//}}}
+function clearSmoke() {//{{{
+	if ('roomSmoke' in project.layers) {
+		project.layers['roomSmoke'].removeChildren();
+	} 
+}
+//}}}
+function initRoomSmoke() {//{{{
+	project.layers['roomSmoke'].activate();
+	var radius=400;
+	var roomMargin=25;
+	for (var room in roomsOpacity[0]) {
+		group=new Group;
+		group.name=room;
+		group.addChild(new Path.Rectangle({ point: new Point(rooms[room].x0+roomMargin, rooms[room].y0+roomMargin), size: new Size(rooms[room]["width"]-2*roomMargin,rooms[room]["depth"]-2*roomMargin)}));
+		group.clipped=true;
+		group.opacity=0.3;
+		for (var b=0; b < rooms[room].width * rooms[room].depth/150000; b++) { 
+			group.addChild(new Path.Circle({ opacity: 0.65, center: new Point(rooms[room].x0 + rooms[room].width*Math.random(), rooms[room].y0 + rooms[room].depth*Math.random()), radius: radius*randBetween(0.6,1),  fillColor: "#000000" }));
 		}
 	}
 }
 //}}}
-function onFrame(event) {//{{{
-	// Main animation loop
-	if (animationIsRunning==1) {
-		for (var i = 0; i < numberOfEvacuees; i++) { 
-			updateAnimatedElement(i);
+function updateRoomSmoke() {//{{{
+	if (roomsOpacity.length==0) { return; }
+	for (var i in project.layers['roomSmoke'].children) {
+		if(roomsOpacity[frame][i] != undefined) { 
+			project.layers['roomSmoke'].children[i].opacity=roomsOpacity[frame][i];
 		}
-		updateSmokeRectangles();
-		afterLerpFrame();
 	}
 }
 //}}}
@@ -544,4 +575,14 @@ function resizeAndRedrawCanvas() {//{{{
 	view.draw();
 }
 
+//}}}
+function onFrame(event) {//{{{
+	if (animationIsRunning==1) {
+		for (var i = 0; i < numberOfEvacuees; i++) { 
+			updateAnimatedElement(i);
+		}
+		updateRoomSmoke();
+		afterLerpFrame();
+	}
+}
 //}}}
