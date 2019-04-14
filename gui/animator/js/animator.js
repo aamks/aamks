@@ -550,7 +550,7 @@ function initRoomSmoke() {//{{{
 		group.clipped=true;
 		group.opacity=0.3;
 		for (var b=0; b < rooms[room].width * rooms[room].depth/150000; b++) { 
-			group.addChild(new Path.Circle({ opacity: 0.65, center: new Point(rooms[room].x0 + rooms[room].width*Math.random(), rooms[room].y0 + rooms[room].depth*Math.random()), radius: radius*randBetween(0.6,1),  fillColor: "#000000" }));
+			group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(rooms[room].x0 + rooms[room].width*Math.random(), rooms[room].y0 + rooms[room].depth*Math.random()), radius: radius*randBetween(0.7,1),  fillColor: "#000000" }));
 		}
 	}
 }
