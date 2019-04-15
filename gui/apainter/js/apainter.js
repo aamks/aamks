@@ -195,12 +195,22 @@ function fadeout_setup_box() {//{{{
 	underlay_draggable=0;
 }
 //}}}
+function calc_next_floor() {//{{{
+	if (floor == floors_count - 1) {
+		return 0;
+	} else {
+		return floor+1;
+	}
+}
+//}}}
 function keyboard_events() {//{{{
 	$(this).keypress((e) => { 
 		if (e.key == 'g')     { properties_type_listing(); }
 		else if (e.key in gg) { active_letter=e.key; new_geom(); }
 	});
 	$(this).keydown((e) =>  { if (e.key == 'h')     { alternative_view(); } });
+	$(this).keydown((e) =>  { if (e.key == 'H')     { change_floor(calc_next_floor()); } }); 
+
 	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "hidden"); } });
 	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "visible"); } });
 }
@@ -551,13 +561,9 @@ function guess_floors_z_origin() {//{{{
 	$("#floor_zorig").val(0);
 }
 //}}}
-function change_floor() {//{{{
-
-	if (floor == parseInt($("#floor").val())) { 
-		return;
-	}
-
-	floor=parseInt($("#floor").val());
+function change_floor(requested_floor) {//{{{
+	if (floor == requested_floor) { return; }
+	floor=requested_floor;
 	guess_floors_z_origin();
 	if(floor > floors_count-1) { 
 		floors_count++;
@@ -590,7 +596,7 @@ function save_setup_box() {//{{{
 	// so we need to find out which form is submitted
 
 	if ($("#general_setup").val() != null) { 
-		change_floor();
+		change_floor(parseInt($("#floor").val()));
 		floor_zorig=parseInt($("#floor_zorig").val());
 		default_door_dimz=parseInt($("#default_door_dimz").val());
 		default_door_width=parseInt($("#default_door_width").val());

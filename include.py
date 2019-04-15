@@ -145,6 +145,14 @@ class Sqlite: # {{{
         for i in self.query('SELECT * FROM aamks_geom order by floor,type_pri,global_type_id'):
             print(i)
 
+    def dump2(self):
+        print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
+        print("project: {}".format(os.environ['AAMKS_PROJECT']))
+        print()
+        for i in self.query('SELECT * FROM world2d order by floor,type_pri,global_type_id'):
+            print(i)
+
+
     def dump_geoms(self,floor='all'):
         print("dump_geom() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         print("project: {}".format(os.environ['AAMKS_PROJECT']))
@@ -342,8 +350,11 @@ class Vis:# {{{
         self._static_world2d['dd_geoms']=f['world2d']
 # }}}
     def _js_vis_fire_origin(self):# {{{
-        z=self.s.query("SELECT x, y FROM fire_origin")
-        return (z[0]['x']*100, z[0]['y']*100)
+        try:
+            z=self.s.query("SELECT x, y FROM fire_origin")
+            return (z[0]['x']*100, z[0]['y']*100)
+        except:
+            return tuple()
 # }}}
     def _reorder_anims(self, z):# {{{
         '''
@@ -401,7 +412,7 @@ class Vis:# {{{
         unique=[]
         for i in z:
             for r in records:
-                if i['title'] != r['title']:
+                if i['title'] != r['title'] and r['srv'] == 1:
                     unique.append(i)
         unique = records + unique
         self.json.write(unique, "{}/anims.json".format(vis_dir))

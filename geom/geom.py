@@ -48,13 +48,9 @@ class Geom():
         self._auto_detectors_and_sprinklers()
         self._create_obstacles()
         self._make_world2d()
-        #self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
-        #self.s.dumpall()
-        #self.s.dump_geoms()
-        #dd(self.s.query("select * from aamks_geom where type_sec='STAI'"))
-        #self.s.dump()
+        self._debug()
 # }}}
     def _floors_meta(self):# {{{
         ''' 
@@ -311,6 +307,7 @@ class Geom():
 
         '''
 
+        next_id=self.s.query("SELECT max(global_type_id) as m FROM aamks_geom WHERE type_pri='COMPA'")[0]['m']+1
         towers={}
         for w in self.s.query("SELECT floor,height,name,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
             towers[(w['floor'], w['name'], w['type_sec'])]=[]
@@ -331,6 +328,8 @@ class Geom():
             for floor in floors:
                 row['fire_model_ignore']=1
                 row['floor']=floor
+                row['global_type_id']=next_id
+                next_id+=1
                 row['name']="{}.{}".format(orig_name,floor)
                 row['type_tri']="TOWER_FLOOR"
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
@@ -735,6 +734,8 @@ class Geom():
         self._make_world2d_staircases()
         self._make_world2d_meta()
         self._make_world2d_obstacles()
+        self.s.query("UPDATE aamks_geom SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE world2d SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
 # }}}
     def _make_world2d_staircases_lines(self):# {{{
 
@@ -755,7 +756,7 @@ class Geom():
             i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k,))[0]
             for ii in tt:
                 i['floor']='world2d'
-                i['name']="{}:{}".format(k,ii['floor'])
+                i['name']="{}|{}".format(k,ii['floor'])
                 i['x0']=towers_offset+ii['x0']
                 i['x1']=i['x0']+ii['width']
                 i['y1']=ii['y1']
@@ -887,4 +888,17 @@ class Geom():
             sys.exit()
         else:
             Vis({'highlight_geom': None, 'anim': None, 'title': title, 'srv': 1})
+# }}}
+
+    def _debug(self):# {{{
+        pass
+        #dd(os.environ['AAMKS_PROJECT'])
+        #self.s.dumpall()
+        #self.s.dump_geoms()
+        #dd(self.s.query("select * from aamks_geom"))
+        #dd(self.s.query("select * from world2d where type_sec='STAI' or name='d14'"))
+        #dd(self.s.query("select * from world2d"))
+        #exit()
+        #self.s.dump()
+        
 # }}}
