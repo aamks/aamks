@@ -539,18 +539,40 @@ function clearSmoke() {//{{{
 	} 
 }
 //}}}
+function bubbles_ranges(side) { //{{{
+	// Room divided into segments results in smoke more even than purely random
+	var bubbles_segment=300;
+	var count=side/bubbles_segment;
+
+	var ranges=[];
+	for (var i=0; i < count; i++) { 
+		ranges.push([ i * bubbles_segment, i * bubbles_segment + bubbles_segment]);
+	}
+	return ranges;
+}
+//}}}
 function initRoomSmoke() {//{{{
 	project.layers['roomSmoke'].activate();
-	var radius=400;
+	var radius=350;
 	var roomMargin=25;
+	var center;
+	var x_ranges, y_ranges;
 	for (var room in roomsOpacity[0]) {
 		group=new Group;
 		group.name=room;
 		group.addChild(new Path.Rectangle({ point: new Point(rooms[room].x0+roomMargin, rooms[room].y0+roomMargin), size: new Size(rooms[room]["width"]-2*roomMargin,rooms[room]["depth"]-2*roomMargin)}));
 		group.clipped=true;
 		group.opacity=0.3;
-		for (var b=0; b < rooms[room].width * rooms[room].depth/150000; b++) { 
-			group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(rooms[room].x0 + rooms[room].width*Math.random(), rooms[room].y0 + rooms[room].depth*Math.random()), radius: radius*randBetween(0.7,1),  fillColor: "#000000" }));
+		x_ranges=bubbles_ranges(rooms[room].width);
+		y_ranges=bubbles_ranges(rooms[room].depth);
+		for (var xx in x_ranges) {
+			for (var yy in y_ranges) {
+				center=[
+					rooms[room].x0 + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
+					rooms[room].y0 + randBetween (y_ranges[yy][0], y_ranges[yy][1] )
+				]
+				group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center), radius: radius*randBetween(0.7,1),  fillColor: "#000000" }));
+			}
 		}
 	}
 }
