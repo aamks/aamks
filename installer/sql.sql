@@ -57,6 +57,7 @@ CREATE TABLE simulations ( ---{{{
     door text,
     dcloser text,
     delectr text,
+    vnt text,
     vvent text,
     sprinklers text,
     wcbe text,

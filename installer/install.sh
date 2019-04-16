@@ -21,11 +21,11 @@
 
 # CONFIGURATION, must be copied to ~/.bashrc
 
-#AAMKS_SERVER=127.0.0.1
-AAMKS_SERVER=192.168.100.131
+#AAMKS_SERVER=192.168.100.131
+AAMKS_SERVER=127.0.0.1
+AAMKS_USE_GEARMAN=0
 AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 AAMKS_TESTING=0
-AAMKS_USE_GEARMAN=1
 AAMKS_PATH='/usr/local/aamks'
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
@@ -35,9 +35,9 @@ PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 echo "This is the default Aamks configuration. You can change it in install.sh. "
 echo; echo;
 echo "AAMKS_SERVER: $AAMKS_SERVER"
+echo "AAMKS_USE_GEARMAN: $AAMKS_USE_GEARMAN"
 echo "AAMKS_NOTIFY: $AAMKS_NOTIFY"
 echo "AAMKS_TESTING: $AAMKS_TESTING"
-echo "AAMKS_USE_GEARMAN: $AAMKS_USE_GEARMAN"
 echo "AAMKS_PATH: $AAMKS_PATH"
 echo "AAMKS_PROJECT: $AAMKS_PROJECT"
 echo "AAMKS_PG_PASS: $AAMKS_PG_PASS"

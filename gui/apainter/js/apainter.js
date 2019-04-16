@@ -545,18 +545,21 @@ function axes() { //{{{
 }
 //}}}
 function guess_floors_z_origin() {//{{{
+    // This is just a guess, user may overwrite via a form
 	// Guess 1: Perhaps user has set the z-origin for this floor -- we will then find it in db()
 	// Guess 2: If we are the first time on floor 5, then multiply floor0's dimz * 5
 	// Guess 3: If there's no floor0 even or any other occassion z-origin=0
 	var guess=db({"floor": floor, 'letter': 'r'}).select("z0");
 	if(guess[0] != undefined) {
 		$("#floor_zorig").val(guess[0]);
+		floor_zorig=guess[0];
 		return;
 	}
 
 	var guess=db({"floor": 0, 'letter': 'r'}).select("dimz");
 	if(guess[0] != undefined) {
 		$("#floor_zorig").val(guess[0]*floor);
+		floor_zorig=guess[0]*floor;
 		return;
 	}
 
@@ -564,7 +567,6 @@ function guess_floors_z_origin() {//{{{
 }
 //}}}
 function change_floor(requested_floor) {//{{{
-	if (floor == requested_floor) { return; }
 	floor=requested_floor;
 	guess_floors_z_origin();
 	if(floor > floors_count-1) { 
@@ -598,7 +600,7 @@ function save_setup_box() {//{{{
 	// so we need to find out which form is submitted
 
 	if ($("#general_setup").val() != null) { 
-		change_floor(parseInt($("#floor").val()));
+        if (floor != $("#floor").val()) { change_floor(parseInt($("#floor").val())); }
 		floor_zorig=parseInt($("#floor_zorig").val());
 		default_door_dimz=parseInt($("#default_door_dimz").val());
 		default_door_width=parseInt($("#default_door_width").val());

@@ -24,7 +24,7 @@ var staticGeoms;
 var fireXY;
 var wallsSize;
 var doorsSize;
-var ballsSize;
+var evacueeRadius;
 var velocitiesSize;
 var evacBalls;
 var evacLabels;
@@ -69,7 +69,7 @@ function listenEvents() {//{{{
 	$('#labels-size').on('keyup'     , function() { labelsSize=this.value     ; resetCanvas() ; })
 	$('#doors-size').on('keyup'      , function() { doorsSize=this.value      ; resetCanvas() ; })
 	$('#walls-size').on('keyup'      , function() { wallsSize=this.value      ; resetCanvas() ; })
-	$('#balls-size').on('keyup'      , function() { ballsSize=this.value      ; resetCanvas() ; })
+	$('#evacuee-radius').on('keyup'  , function() { evacueeRadius=this.value  ; resetCanvas() ; })
 	$('#velocities-size').on('keyup' , function() { velocitiesSize=this.value ; resetCanvas() ; })
 
 	$('canvas-mouse-coords').click(function() {
@@ -141,6 +141,7 @@ function setColors(mode) {//{{{
 //}}}
 $.getJSON("inc.json", function(x) {//{{{
 	incDB=x;
+    evacueeRadius=x['evacueeRadius'];
 	setColors("dark");
 	$.post('/aamks/ajax.php?ajaxAnimsList', function (response) { 
 		ajax_msg(response);
@@ -191,7 +192,7 @@ function showStaticImage(chosenAnim) {//{{{
 		$("animator-time").html(animTimeFormat());
 		fireXY=chosenAnim['fire_origin']
 		wallsSize=Math.round(2/scale);
-		ballsSize=Math.round(5/scale);
+		//evacueeRadius=Math.round(5/scale);
 		velocitiesSize=Math.round(1/scale);
 		doorsSize=Math.round(0.2*wallsSize);
 
@@ -272,7 +273,7 @@ function makeSetupBoxInputs() {//{{{
 	$("size-labels").html("<input type=text size=2 name=labels-size id=labels-size value=50>");
 	$("size-walls").html("<input type=text size=2 name=walls-size id=walls-size value="+wallsSize+">");
 	$("size-doors").html("<input type=text size=2 name=doors-size id=doors-size value="+doorsSize+">");
-	$("size-balls").html("<input type=text size=2 name=balls-size id=balls-size value="+ballsSize+">");
+	$("radius-evacuee").html("<input type=text size=2 name=evacuee-radius id=evacuee-radius value="+evacueeRadius+">");
 	$("size-velocities").html("<input type=text size=2 name=velocities-size id=velocities-size value="+velocitiesSize+">");
 	$("animation-speed").html('');
 }
@@ -390,7 +391,7 @@ function paperjsDisplayImage() {//{{{
 	}
 
 	for (var key in staticEvacuees) {
-		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: ballsSize,  fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
+		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: evacueeRadius,  fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
 	}
 
 } 
@@ -443,7 +444,7 @@ function paperjsDisplayAnimation() { //{{{
 	}
 
 	for (var i=0; i<numberOfEvacuees; i++) {
-		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: ballsSize, fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
+		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: evacueeRadius, fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
 	}
 
 }
@@ -507,9 +508,9 @@ function onMouseDown(event) {//{{{
 	for (var i = 0; i < numberOfEvacuees; i++) { 
 		x=evacBalls.children[i].position.x;
 		y=evacBalls.children[i].position.y;
-		evacLabels.addChild(new Path.Circle({ center: new Point(x,y), radius:ballsSize*0.01, fillColor:"#f80" }));
-		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y-ballsSize/3), fillColor:"#000", content: "f"+i, fontFamily: 'Roboto', fontSize: ballsSize*0.7 }));
-		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y+ballsSize/2), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: ballsSize*0.7}));
+		evacLabels.addChild(new Path.Circle({ center: new Point(x,y), radius:evacueeRadius*0.01, fillColor:"#f80" }));
+		evacLabels.addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y-evacueeRadius/3), fillColor:"#000", content: "f"+(i+1), fontFamily: 'Roboto', fontSize: evacueeRadius*0.7 }));
+		evacLabels.addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y+evacueeRadius/2), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.7}));
 	}
 };
 //}}}

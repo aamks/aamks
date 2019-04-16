@@ -305,9 +305,11 @@ class Geom():
         slices on proper floors in order to calculate vent_from / vent_to
         properly. 
 
+        These fake entities are enumerated from 100000
+
         '''
 
-        next_id=self.s.query("SELECT max(global_type_id) as m FROM aamks_geom WHERE type_pri='COMPA'")[0]['m']+1
+        next_id=100000
         towers={}
         for w in self.s.query("SELECT floor,height,name,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
             towers[(w['floor'], w['name'], w['type_sec'])]=[]
@@ -735,7 +737,9 @@ class Geom():
         self._make_world2d_meta()
         self._make_world2d_obstacles()
         self.s.query("UPDATE aamks_geom SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
-        self.s.query("UPDATE world2d SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE world2d    SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE aamks_geom SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
+        self.s.query("UPDATE world2d    SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
 # }}}
     def _make_world2d_staircases_lines(self):# {{{
 
