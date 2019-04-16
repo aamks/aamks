@@ -39,5 +39,7 @@
 		"OBST"    : "t" ,
 		"EVACUEE" : "f" ,
 		"FIRE"	  : "y"
-	}
+	}, 
+
+	"evacueeRadius": 25 
 }

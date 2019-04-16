@@ -31,6 +31,7 @@ var default_window_offsetz=100;
 var underlay_imgs={};
 var underlay_draggable=0;
 var vh_snap=[];
+var evacueeRadius;
 //}}}
 
 // on start{{{
@@ -38,6 +39,7 @@ $(function()  {
 	$.getJSON("inc.json", function(x) {
 		gg=x['aamksGeoms'];
 		ggx=x['aamksGeomsMap'];
+		evacueeRadius=x['evacueeRadius'];
 		CanvasBuilder();
 		left_menu_box();
 		import_cadjson();
@@ -92,7 +94,7 @@ CreateSvg=function create_svg(geom) { //{{{
 	g_floor=d3.select("#floor"+geom.floor);
 	g_floor.append(elem)
 		.attr('id', geom.name)
-		.attr('r', 25)
+		.attr('r', evacueeRadius)
 		.attr('fill', gg[geom.letter].c)
 		.attr('class', gg[geom.letter].t)
 		.style('stroke', gg[geom.letter].stroke)
