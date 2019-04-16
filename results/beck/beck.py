@@ -31,7 +31,7 @@ class processDists:
         self.dir = sys.argv[1]
         self.configs = self._get_json('{}/conf.json'.format(self.dir))
         try:
-            self.psql_connection=psycopg2.connect("dbname='aamks' user='aamks' host=192.168.100.131 password='TopSecretOfSgsp'")
+            self.psql_connection=psycopg2.connect("dbname='aamks' user='aamks' host=192.168.0.10 password='hulakula'")
 
         except:
             print("postresql fatal")
@@ -46,11 +46,12 @@ class processDists:
 
     def plot_dcbe_dist(self):
 #        plt.clf()
-        query = "SELECT dcbe_time FROM simulations where project = {} AND dcbe_time is not null".format(self.configs['project_id'])
+        query = "SELECT dcbe_time FROM simulations where project = {} AND dcbe_time is not null AND dcbe_time < 9999".format(self.configs['project_id'])
         results = self.query(query)
         dcbe = [int(i[0]) for i in results]
-        sns_plot = sns.distplot(dcbe)
-#        plt.xlabel=('DCBE [s]')
+        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True}, bins=50)
+        #plt.xlabel=('DCBE [s]')
+        #plt.xlim([0,499])
         fig = sns_plot.get_figure()
         fig.savefig("{}/picts/dcbe.png".format(self.dir))
         plt.clf()
@@ -62,8 +63,9 @@ class processDists:
         dcbe = [json.loads(i[0]) for i in results]
         for i in dcbe:
             for value in i.values():
-                wcbe.append(value)
-        sns_plot = sns.distplot(wcbe)
+                if value > 0:
+                    wcbe.append(value)
+        sns_plot = sns.distplot(wcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
 #        plt.xlabel('WCBE [s]')
 #        plt.ylabel('Prawdopodobieństwo')
         fig = sns_plot.get_figure()
@@ -75,7 +77,7 @@ class processDists:
             .format(self.configs['project_id'])
         results = self.query(query)
         dcbe = [float(i[0]) for i in results]
-        sns_plot = sns.distplot(dcbe)
+        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
 #        sns.plt.xlabel('Wysokość warstwy dymu [cm]')
 #        sns.plt.ylabel('Prawdopodobieństwo')
         fig = sns_plot.get_figure()
@@ -87,7 +89,7 @@ class processDists:
             .format(self.configs['project_id'])
         results = self.query(query)
         dcbe = [float(i[0]) for i in results]
-        sns_plot = sns.distplot(dcbe)
+        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
 #        sns.plt.xlabel('Wysokość warstwy dymu [cm]')
 #        sns.plt.ylabel('Prawdopodobieństwo')
         fig = sns_plot.get_figure()
@@ -99,7 +101,7 @@ class processDists:
         query = "SELECT min_vis_compa FROM simulations where project = {} AND min_vis_compa < 60".format(self.configs['project_id'])
         results = self.query(query)
         vis = [float(i[0]) for i in results]
-        sns_plot = sns.distplot(vis, bins=30)
+        sns_plot = sns.distplot(vis, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
 #        sns.plt.xlabel('Zasięg widzialności [m]')
 #        sns.plt.ylabel('Prawdopodobieństwo')
         fig = sns_plot.get_figure()
@@ -110,7 +112,7 @@ class processDists:
         query = "SELECT min_vis_cor FROM simulations where project = {} AND min_vis_cor < 60".format(self.configs['project_id'])
         results = self.query(query)
         vis = [float(i[0]) for i in results]
-        sns_plot = sns.distplot(vis, bins=30)
+        sns_plot = sns.distplot(vis, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
         #sns.plt.xlabel('Zasięg widzialności [m]')
         #sns.plt.ylabel('Prawdopodobieństwo')
         fig = sns_plot.get_figure()
@@ -128,7 +130,7 @@ class processDists:
         #print(param)
         dcbe_n = np.array(dcbe)
         self.t_k= len(dcbe_n[dcbe_n > 450])
-        sns_plot = sns.distplot(dcbe)
+        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
 #        sns.plt.xlabel('Temperatura ')
 #        sns.plt.ylabel('Prawdopodobieństwo')
         fig = sns_plot.get_figure()
@@ -257,8 +259,8 @@ class processDists:
         nursing = [2e-4, 5e-6, -0.61, -0.05]
         educational = [0.003, 3e-6, -1.26, -0.05]
         building = {'other_building': other_building, 'office': office, 'warehouse': warehouse, 'commercial': commercial,
-                    'nursing': nursing}
-        b_type = 'commercial'
+                    'nursing': nursing, 'educational': educational}
+        b_type = 'educational'
         ignition = building[b_type][0]*(area) ** (building[b_type][2]) + \
                    building[b_type][1] * (area) ** (building[b_type][3])
         return ignition
@@ -340,7 +342,7 @@ p.plot_pie_fault()
 
 bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
 #bar = 10e-6 * 1530
-#print(bar)
+print(p.calculate_building_area())
 #if p.losses_num[4] == 0:
 #    p.losses_num[4] = 1e-12
 
@@ -348,7 +350,7 @@ fed_f = float('%.3f' % (len(p.losses['dead'])/p.total))
 fed_m = float('%.3f' % (len(p.losses['heavy'])/p.total))
 fed_l = float('%.3f' % (len(p.losses['light'])/p.total))
 fed_n = float('%.3f' % (len(p.losses['neglegible'])/p.total))
-t_kryt = float('%.3f' % (len(p.losses['light'])/p.total))
+t_kryt = float('%.3f' % (len(p.losses['dead'])/p.total))
 p_ext = float('%.3f' % 0.17)
 p_tk = float('%.3f' % (p.t_k/p.total))
 
