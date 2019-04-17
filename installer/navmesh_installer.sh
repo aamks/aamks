@@ -46,4 +46,4 @@ sudo apt-get --yes install libboost-python-dev
 git clone https://github.com/layzerar/recastlib.git
 cd recastlib
 cp -rf ./Recast\(Patched\)/Detour/ ./Recast/
-python3 setup.py install
+sudo python3 setup.py install
