@@ -67,9 +67,9 @@ class EvacMcarlo():
         '''
 
         if room != self._evac_conf['FIRE_ORIGIN']:
-            pe=self.conf['pre_evac_fire_origin']
-        else:
             pe=self.conf['pre_evac']
+        else:
+            pe=self.conf['pre_evac_fire_origin']
         return round(lognorm(s=1, loc=pe['mean'], scale=pe['sd']).rvs(), 2)
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
