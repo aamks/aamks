@@ -24,12 +24,13 @@ var staticGeoms;
 var fireXY;
 var wallsSize;
 var doorsSize;
-var ballsSize;
+var evacueeRadius;
 var velocitiesSize;
 var evacBalls;
 var evacLabels;
 var evacVelocities;
 var evacueesData;
+var roomsOpacity;
 var numberOfEvacuees;
 var rooms;
 var doors;
@@ -45,10 +46,15 @@ var sliderPos=0;
 var lerpFrame=0;
 var frame=0;
 var	visContainsAnimation=0;
+var	isDemoAnimation=0;
 var	animationIsRunning=0;
 
 $(function()  { 
-makeAnimationControls();
+	var nn;
+	makeAnimationControls();
+	nn=new Layer; nn.name='rooms';
+	nn=new Layer; nn.name='roomSmoke';
+	nn=new Layer; nn.name='roomFire';
 	resizeAndRedrawCanvas();
 	left_menu_box();
 	right_menu_box();
@@ -63,7 +69,7 @@ function listenEvents() {//{{{
 	$('#labels-size').on('keyup'     , function() { labelsSize=this.value     ; resetCanvas() ; })
 	$('#doors-size').on('keyup'      , function() { doorsSize=this.value      ; resetCanvas() ; })
 	$('#walls-size').on('keyup'      , function() { wallsSize=this.value      ; resetCanvas() ; })
-	$('#balls-size').on('keyup'      , function() { ballsSize=this.value      ; resetCanvas() ; })
+	$('#evacuee-radius').on('keyup'  , function() { evacueeRadius=this.value  ; resetCanvas() ; })
 	$('#velocities-size').on('keyup' , function() { velocitiesSize=this.value ; resetCanvas() ; })
 
 	$('canvas-mouse-coords').click(function() {
@@ -135,6 +141,7 @@ function setColors(mode) {//{{{
 //}}}
 $.getJSON("inc.json", function(x) {//{{{
 	incDB=x;
+    evacueeRadius=x['evacueeRadius'];
 	setColors("dark");
 	$.post('/aamks/ajax.php?ajaxAnimsList', function (response) { 
 		ajax_msg(response);
@@ -149,7 +156,7 @@ function makeChooseVis(data) {//{{{
 	var items = [];
 	items.push("<select id=choose-vis>");
 	for (var i=0; i<data.length; i++) { 
-		items.push( "<option value='" + i + "'>" + data[i]["title"] + "</option>" );
+		items.push( "<option value='" + i + "'>" + data[i]["title"] + " " + data[i]["time"] +"</option>" );
 	}
 	items.push("</select>");
 	$("choose-vis").html(items.join());
@@ -185,7 +192,7 @@ function showStaticImage(chosenAnim) {//{{{
 		$("animator-time").html(animTimeFormat());
 		fireXY=chosenAnim['fire_origin']
 		wallsSize=Math.round(2/scale);
-		ballsSize=Math.round(5/scale);
+		//evacueeRadius=Math.round(5/scale);
 		velocitiesSize=Math.round(1/scale);
 		doorsSize=Math.round(0.2*wallsSize);
 
@@ -194,6 +201,7 @@ function showStaticImage(chosenAnim) {//{{{
 		obstacles=dstatic[floor].obstacles;
         dd_geoms=dstatic[floor].dd_geoms;
 		if(chosenAnim["anim"] == undefined) { staticEvacuees=dstatic[floor].evacuees; } else { staticEvacuees=[]; }
+		if(chosenAnim["demo"] == undefined) { isDemoAnimation=0; } else { isDemoAnimation=1; }
 		
 		makeSetupBoxInputs();
 		makeColors();
@@ -218,9 +226,10 @@ function showAnimation(chosenAnim) {//{{{
 		timeShift=animJson.time_shift;
 		deltaTime=animJson.simulation_time-timeShift;
 		$("animator-time").html(animTimeFormat());
-		evacueesData=animJson.data;
-		lastFrame=animJson.data.length-1;
-		numberOfEvacuees=animJson.data[0].length;
+		evacueesData=animJson.animations.evacuees;
+		roomsOpacity=animJson.animations.rooms_opacity;
+		lastFrame=animJson.animations.evacuees.length-1;
+		numberOfEvacuees=animJson.animations.evacuees[0].length;
 		var speedProposal=Math.round(lastFrame/5)
 		$("animation-speed").html("<input type=text size=2 name=speed id=speed value="+speedProposal+">");
 		lerps=Math.round(1/((speedProposal/100)+0.0000000000000000001))+1;
@@ -234,16 +243,18 @@ function showAnimation(chosenAnim) {//{{{
 		visContainsAnimation=1;
 		animationIsRunning=1;
 		paperjsDisplayAnimation();
+		initRoomSmoke();
 	});
 }
 //}}}
 function resetCanvas() {//{{{
 	// Reset on new visualization, on scaling walls, etc.
 	
+	clearSmoke();
 	paperjsDisplayImage();
     append_dd_geoms();
-	paperjsLetItBurn();
 	paperjsDisplayAnimation();
+	paperjsLetItBurn();
 	
 }
 //}}}
@@ -262,7 +273,7 @@ function makeSetupBoxInputs() {//{{{
 	$("size-labels").html("<input type=text size=2 name=labels-size id=labels-size value=50>");
 	$("size-walls").html("<input type=text size=2 name=walls-size id=walls-size value="+wallsSize+">");
 	$("size-doors").html("<input type=text size=2 name=doors-size id=doors-size value="+doorsSize+">");
-	$("size-balls").html("<input type=text size=2 name=balls-size id=balls-size value="+ballsSize+">");
+	$("radius-evacuee").html("<input type=text size=2 name=evacuee-radius id=evacuee-radius value="+evacueeRadius+">");
 	$("size-velocities").html("<input type=text size=2 name=velocities-size id=velocities-size value="+velocitiesSize+">");
 	$("animation-speed").html('');
 }
@@ -297,15 +308,19 @@ function makeHighlightGeoms(data) {//{{{
 //}}}
 function paperjsLetItBurn() {//{{{
 	// The animated fire is displayed in a separate setInterval loop. Perhaps onFrame() suits more.
-	if (fireXY.length < 2) { 
-		clearInterval(intervalId);
-		return; 
-	}
+	//if (fireXY.length < 2) { 
+	//	clearInterval(intervalId);
+	//	return; 
+	//}
 	var smoke;
 	var smokeOrig;
 	var fire;
 
-	staticGeoms.importSVG("smoke.svg", function (item) {
+	if ('roomFire' in project.layers) {
+		project.layers['roomFire'].removeChildren();
+	} 
+
+	project.layers['roomFire'].importSVG("smoke.svg", function (item) {
 		item.position.x=fireXY[0];
 		item.position.y=fireXY[1]-40;
 		item.position.y=fireXY[1]-40;
@@ -313,7 +328,8 @@ function paperjsLetItBurn() {//{{{
 		smoke.opacity=0.5;
 		smokeOrig=item.bounds;
 	});
-	staticGeoms.importSVG("fire.svg", function (item) {
+	
+	project.layers['roomFire'].importSVG("fire.svg", function (item) {
 		item.position.x=fireXY[0];
 		item.position.y=fireXY[1];
 		fire=item;
@@ -333,6 +349,9 @@ function paperjsLetItBurn() {//{{{
 }
 //}}}
 function paperjsDisplayImage() {//{{{
+
+	project.layers['rooms'].activate();
+	
 	if (staticGeoms == undefined) {
 		staticGeoms=new Group();
 	} else {
@@ -340,6 +359,7 @@ function paperjsDisplayImage() {//{{{
 	}
 
 	for (var key in rooms) {
+		var namedChild;
 		if(rooms[key]['room_enter']=='yes') {
 			staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['ROOM']['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:colors[rooms[key]["type_sec"]]['c']}));
 		} else {
@@ -348,7 +368,11 @@ function paperjsDisplayImage() {//{{{
 	}
 
 	for (var i=0; i<obstacles.length; i++) {
-		staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],obstacles[i]["depth"]), fillColor:colors['OBST']['c'], strokeColor: colors['fg']['c'], opacity: 0.6, strokeWidth:wallsSize }));
+		if ('fire_obstacle' in obstacles[i]) { 
+			if(isDemoAnimation==0) { staticGeoms.addChild(new Path.Circle({center: new Point(obstacles[i]["x0"]+obstacles[i]["width"]/2,obstacles[i]["y0"]+obstacles[i]["depth"]/2), radius:obstacles[i]['width']/2, strokeColor: "#ffffff", dashArray: [20,10], strokeWidth: wallsSize })); }
+		} else {
+			staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],obstacles[i]["depth"]), fillColor:colors['OBST']['c'], strokeColor: colors['fg']['c'], opacity: 0.6, strokeWidth:wallsSize }));
+		}
 	}
 
 	if (labelsSize != 0) { 
@@ -367,7 +391,7 @@ function paperjsDisplayImage() {//{{{
 	}
 
 	for (var key in staticEvacuees) {
-		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: ballsSize,  fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
+		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: evacueeRadius,  fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
 	}
 
 } 
@@ -402,6 +426,7 @@ function paperjsDisplayAnimation() { //{{{
 	// evacLabels are (e1 x,y) displayed on top of each ball
 	// Old elements must be removed on various occassions, so we cannot return to early.
 	
+	project.layers['rooms'].activate();
 	if (evacVelocities == undefined) {
 		evacVelocities=new Group();
 		evacBalls=new Group();
@@ -419,7 +444,7 @@ function paperjsDisplayAnimation() { //{{{
 	}
 
 	for (var i=0; i<numberOfEvacuees; i++) {
-		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: ballsSize, fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
+		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: evacueeRadius, fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
 	}
 
 }
@@ -483,9 +508,9 @@ function onMouseDown(event) {//{{{
 	for (var i = 0; i < numberOfEvacuees; i++) { 
 		x=evacBalls.children[i].position.x;
 		y=evacBalls.children[i].position.y;
-		evacLabels.addChild(new Path.Circle({ center: new Point(x,y), radius:ballsSize*0.01, fillColor:"#f80" }));
-		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y-ballsSize/3), fillColor:"#000", content: "f"+i, fontFamily: 'Roboto', fontSize: ballsSize*0.7 }));
-		evacLabels.addChild(new PointText(  { point: new Point(x-ballsSize/1,y+ballsSize/2), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: ballsSize*0.7}));
+		evacLabels.addChild(new Path.Circle({ center: new Point(x,y), radius:evacueeRadius*0.01, fillColor:"#f80" }));
+		evacLabels.addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y-evacueeRadius/3), fillColor:"#000", content: "f"+(i+1), fontFamily: 'Roboto', fontSize: evacueeRadius*0.7 }));
+		evacLabels.addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y+evacueeRadius/2), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.7}));
 	}
 };
 //}}}
@@ -505,13 +530,60 @@ function highlightGeom(key) {//{{{
 	}
 }
 //}}}
-function onFrame(event) {//{{{
-	// Main animation loop
-	if (animationIsRunning==1) {
-		for (var i = 0; i < numberOfEvacuees; i++) { 
-			updateAnimatedElement(i);
+function randBetween(min, max) {//{{{
+    return Math.random() * (max - min) + min;
+}
+//}}}
+function clearSmoke() {//{{{
+	if ('roomSmoke' in project.layers) {
+		project.layers['roomSmoke'].removeChildren();
+	} 
+}
+//}}}
+function bubbles_ranges(side) { //{{{
+	// Room divided into segments results in smoke more even than purely random
+	var bubbles_segment=300;
+	var count=side/bubbles_segment;
+
+	var ranges=[];
+	for (var i=0; i < count; i++) { 
+		ranges.push([ i * bubbles_segment, i * bubbles_segment + bubbles_segment]);
+	}
+	return ranges;
+}
+//}}}
+function initRoomSmoke() {//{{{
+	project.layers['roomSmoke'].activate();
+	var radius=350;
+	var roomMargin=25;
+	var center;
+	var x_ranges, y_ranges;
+	for (var room in roomsOpacity[0]) {
+		group=new Group;
+		group.name=room;
+		group.addChild(new Path.Rectangle({ point: new Point(rooms[room].x0+roomMargin, rooms[room].y0+roomMargin), size: new Size(rooms[room]["width"]-2*roomMargin,rooms[room]["depth"]-2*roomMargin)}));
+		group.clipped=true;
+		group.opacity=0.3;
+		x_ranges=bubbles_ranges(rooms[room].width);
+		y_ranges=bubbles_ranges(rooms[room].depth);
+		for (var xx in x_ranges) {
+			for (var yy in y_ranges) {
+				center=[
+					rooms[room].x0 + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
+					rooms[room].y0 + randBetween (y_ranges[yy][0], y_ranges[yy][1] )
+				]
+				group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center), radius: radius*randBetween(0.7,1),  fillColor: "#000000" }));
+			}
 		}
-		afterLerpFrame();
+	}
+}
+//}}}
+function updateRoomSmoke() {//{{{
+	if (roomsOpacity.length==0) { return; }
+	for (var i in project.layers['roomSmoke'].children) {
+		if(roomsOpacity[frame][i] != undefined) { 
+			project.layers['roomSmoke'].children[i].opacity=roomsOpacity[frame][i];
+		}
 	}
 }
 //}}}
@@ -526,4 +598,14 @@ function resizeAndRedrawCanvas() {//{{{
 	view.draw();
 }
 
+//}}}
+function onFrame(event) {//{{{
+	if (animationIsRunning==1) {
+		for (var i = 0; i < numberOfEvacuees; i++) { 
+			updateAnimatedElement(i);
+		}
+		updateRoomSmoke();
+		afterLerpFrame();
+	}
+}
 //}}}

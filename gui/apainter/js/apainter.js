@@ -31,6 +31,7 @@ var default_window_offsetz=100;
 var underlay_imgs={};
 var underlay_draggable=0;
 var vh_snap=[];
+var evacueeRadius;
 //}}}
 
 // on start{{{
@@ -38,6 +39,7 @@ $(function()  {
 	$.getJSON("inc.json", function(x) {
 		gg=x['aamksGeoms'];
 		ggx=x['aamksGeomsMap'];
+		evacueeRadius=x['evacueeRadius'];
 		CanvasBuilder();
 		left_menu_box();
 		import_cadjson();
@@ -92,7 +94,7 @@ CreateSvg=function create_svg(geom) { //{{{
 	g_floor=d3.select("#floor"+geom.floor);
 	g_floor.append(elem)
 		.attr('id', geom.name)
-		.attr('r', 25)
+		.attr('r', evacueeRadius)
 		.attr('fill', gg[geom.letter].c)
 		.attr('class', gg[geom.letter].t)
 		.style('stroke', gg[geom.letter].stroke)
@@ -195,12 +197,22 @@ function fadeout_setup_box() {//{{{
 	underlay_draggable=0;
 }
 //}}}
+function calc_next_floor() {//{{{
+	if (floor == floors_count - 1) {
+		return 0;
+	} else {
+		return floor+1;
+	}
+}
+//}}}
 function keyboard_events() {//{{{
 	$(this).keypress((e) => { 
 		if (e.key == 'g')     { properties_type_listing(); }
 		else if (e.key in gg) { active_letter=e.key; new_geom(); }
 	});
 	$(this).keydown((e) =>  { if (e.key == 'h')     { alternative_view(); } });
+	$(this).keydown((e) =>  { if (e.key == 'H')     { change_floor(calc_next_floor()); } }); 
+
 	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "hidden"); } });
 	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "visible"); } });
 }
@@ -533,31 +545,29 @@ function axes() { //{{{
 }
 //}}}
 function guess_floors_z_origin() {//{{{
+    // This is just a guess, user may overwrite via a form
 	// Guess 1: Perhaps user has set the z-origin for this floor -- we will then find it in db()
 	// Guess 2: If we are the first time on floor 5, then multiply floor0's dimz * 5
 	// Guess 3: If there's no floor0 even or any other occassion z-origin=0
 	var guess=db({"floor": floor, 'letter': 'r'}).select("z0");
 	if(guess[0] != undefined) {
 		$("#floor_zorig").val(guess[0]);
+		floor_zorig=guess[0];
 		return;
 	}
 
 	var guess=db({"floor": 0, 'letter': 'r'}).select("dimz");
 	if(guess[0] != undefined) {
 		$("#floor_zorig").val(guess[0]*floor);
+		floor_zorig=guess[0]*floor;
 		return;
 	}
 
 	$("#floor_zorig").val(0);
 }
 //}}}
-function change_floor() {//{{{
-
-	if (floor == parseInt($("#floor").val())) { 
-		return;
-	}
-
-	floor=parseInt($("#floor").val());
+function change_floor(requested_floor) {//{{{
+	floor=requested_floor;
 	guess_floors_z_origin();
 	if(floor > floors_count-1) { 
 		floors_count++;
@@ -590,7 +600,7 @@ function save_setup_box() {//{{{
 	// so we need to find out which form is submitted
 
 	if ($("#general_setup").val() != null) { 
-		change_floor();
+        if (floor != $("#floor").val()) { change_floor(parseInt($("#floor").val())); }
 		floor_zorig=parseInt($("#floor_zorig").val());
 		default_door_dimz=parseInt($("#default_door_dimz").val());
 		default_door_width=parseInt($("#default_door_width").val());

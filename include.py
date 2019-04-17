@@ -145,6 +145,14 @@ class Sqlite: # {{{
         for i in self.query('SELECT * FROM aamks_geom order by floor,type_pri,global_type_id'):
             print(i)
 
+    def dump2(self):
+        print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
+        print("project: {}".format(os.environ['AAMKS_PROJECT']))
+        print()
+        for i in self.query('SELECT * FROM world2d order by floor,type_pri,global_type_id'):
+            print(i)
+
+
     def dump_geoms(self,floor='all'):
         print("dump_geom() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         print("project: {}".format(os.environ['AAMKS_PROJECT']))
@@ -343,11 +351,10 @@ class Vis:# {{{
 # }}}
     def _js_vis_fire_origin(self):# {{{
         try:
-            z=self.s.query("SELECT center_x, center_y FROM aamks_geom WHERE type_pri='FIRE'")
-            fire_origin=[z[0]['center_x'], z[0]['center_y']]
+            z=self.s.query("SELECT x, y FROM fire_origin")
+            return (z[0]['x']*100, z[0]['y']*100)
         except:
-            fire_origin=[]
-        return fire_origin
+            return tuple()
 # }}}
     def _reorder_anims(self, z):# {{{
         '''
@@ -393,16 +400,22 @@ class Vis:# {{{
             anim_record=OrderedDict()
             anim_record['sort_id']=lowest_id
             lowest_id-=1
-            anim_record['title']="{}: {} {}".format(floor, params['title'], datetime.now().strftime('%H:%M'))
+            anim_record['title']="{}: {}".format(floor, params['title'])
+            anim_record['time']=datetime.now().strftime('%H:%M')
             anim_record['floor']=floor
             anim_record['fire_origin']=params['fire_origin']
             anim_record['highlight_geom']=params['highlight_geom']
             anim_record['srv']=params['srv']
             anim_record['anim']=params['anim']
-
             records = [anim_record] + records
-        z = records + z
-        self.json.write(z, "{}/anims.json".format(vis_dir))
+
+        unique=[]
+        for i in z:
+            for r in records:
+                if i['title'] != r['title'] and r['srv'] == 1:
+                    unique.append(i)
+        unique = records + unique
+        self.json.write(unique, "{}/anims.json".format(vis_dir))
 # }}}
 # }}}
 
