@@ -29,7 +29,10 @@ class Queue:  # {{{
 
     def insert(self, floor, data):
         self.queue.insert(floor*self.floor_space, data)
-        self.queue = self.queue[:-1]
+        for i in range(floor*self.floor_space, len(self.queue)):
+            if self.queue[i] is None:
+                del self.queue[i]
+                break
 
     def pop(self):
         data = self.queue.pop(0)
@@ -40,7 +43,7 @@ class Queue:  # {{{
         return self.queue
 
     def len_que(self):
-        return len(self.queue)
+        return len(self.queue)   # }}}
 
 
 class Agent:  # {{{
@@ -117,8 +120,8 @@ class Pedestrians:  # {{{
                     i.position = (1, x)
                 except:
                     pass
-            print(self.QUEUE.que())
-            print([x for x in self.QUEUE.que() if x is not None], len([x for x in self.QUEUE.que() if x is not None]))
+            #print(self.QUEUE.que())
+            #print([x for x in self.QUEUE.que() if x is not None], len([x for x in self.QUEUE.que() if x is not None]))
             print("\n")
 
             traj = []
@@ -128,9 +131,6 @@ class Pedestrians:  # {{{
             if len([x for x in self.QUEUE.que() if x is not None]) == 0:
                 print("zakonczono w: ", krok, " krokach")
                 break  # }}}
-
-
-A = Pedestrians()
 
 
 class Animation:  # {{{
@@ -164,4 +164,6 @@ class Animation:  # {{{
         plt.show()  # }}}
 
 
-Animation().do_animation(CZAS_INTERWALU)
+if __name__ == "__main__":
+    A = Pedestrians()
+    Animation().do_animation(CZAS_INTERWALU)
