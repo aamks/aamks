@@ -268,7 +268,7 @@ class CfastMcarlo():
 
         txt=(
         'VERSN,7,{}_{}'.format('SIM', self.conf['project_id']),
-        'TIMES,600,-120,10,10',
+        'TIMES,{},-120,10,10'.format(self.conf['simulation_time']),
         'EAMB,{},101300,0'.format(273+outdoor_temp),
         'TAMB,293.15,101300,0,50',
         'DTCHECK,1.E-9,100',
