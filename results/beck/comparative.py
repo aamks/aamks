@@ -18,6 +18,9 @@ import scipy.stats as stat
 import collections
 from include import Sqlite
 import csv
+from numpy.random import binomial
+from scipy.stats.distributions import lognorm
+from collections import OrderedDict
 
 
 class processDists:
@@ -45,32 +48,41 @@ class processDists:
         cursor.execute(query)
         return cursor.fetchall()
 
-    def plot_dcbe_dist(self):
+    def plot_dcbe_dist(self, project_list):
 #        plt.clf()
-        query = "SELECT dcbe_time FROM simulations where project = {} AND dcbe_time is not null AND dcbe_time < 9999".format(self.configs['project_id'])
-        results = self.query(query)
-        dcbe = [int(i[0]) for i in results]
-        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True}, bins=50)
-        #plt.xlabel=('DCBE [s]')
-        #plt.xlim([0,499])
+        n = 1
+        for proj in project_list:
+            query = "SELECT dcbe_time FROM simulations where project = {} AND dcbe_time is not null AND dcbe_time < 9999".format(proj)
+            results = self.query(query)
+            dcbe = [int(i[0]) for i in results]
+            sns_plot = sns.distplot(dcbe, kde_kws={'cumulative': True, 'label': 'CDF A{}'.format(n)}, bins=50)
+            n+=1
         fig = sns_plot.get_figure()
-        fig.savefig("{}/picts/dcbe.png".format(self.dir))
+        fig.savefig("{}/picts/m_dcbe.png".format(self.dir))
         plt.clf()
 
-    def plot_wcbe_dist(self):
-        query = "SELECT wcbe FROM simulations where project = {} AND dcbe_time is not null".format(self.configs['project_id'])
-        results = self.query(query)
-        wcbe = list()
-        dcbe = [json.loads(i[0]) for i in results]
-        for i in dcbe:
-            for value in i.values():
-                if value > 0:
-                    wcbe.append(value)
-        sns_plot = sns.distplot(wcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
+    def plot_wcbe_dist(self, project_list):
+        n = 1
+        for proj in project_list:
+            add = 0
+            query = "SELECT wcbe FROM simulations where project = {} AND dcbe_time is not null".format(proj)
+            if proj == 4:
+                add = lognorm(s=1, loc=899, scale=5.92).rvs() * binomial(1, 0.3)
+            results = self.query(query)
+            wcbe = list()
+            dcbe = [json.loads(i[0]) for i in results]
+            for i in dcbe:
+                for value in i.values():
+                    if proj == 4:
+                        wcbe.append(lognorm(s=1, loc=30, scale=2.92).rvs() + add)
+                    if value > 0:
+                        wcbe.append(value)
+            sns_plot = sns.distplot(wcbe, kde_kws={'cumulative': True, 'label': 'CDF A{}'.format(n)}, bins=50)
+            n+=1
 #        plt.xlabel('WCBE [s]')
 #        plt.ylabel('Prawdopodobieństwo')
         fig = sns_plot.get_figure()
-        fig.savefig("{}/picts/wcbe.png".format(self.dir))
+        fig.savefig("{}/picts/m_wcbe.png".format(self.dir))
         plt.clf()
 
     def plot_min_height(self):
@@ -138,54 +150,57 @@ class processDists:
         fig.savefig("{}/picts/temp.png".format(self.dir))
         plt.clf()
 
-    def calculate_ccdf(self):
-        losses={'dead': list(), 'heavy': list(), 'light': list(), 'neglegible': list()}
+    def calculate_ccdf(self, project_list):
 
-        query = "SELECT fed, id FROM simulations where project = {} " \
-                "and dcbe_time IS NOT NULL".format(self.configs['project_id'])
-        results = self.query(query)
-        self.total = len(results)
-        row = [json.loads(i[0]) for i in results]
-        fed=list()
-        for i in row:
-            for values in i.values():
-                 fed.append(collections.Counter(np.array(values)))
-
-        for item in fed:
-            for key in item.keys():
-                if key == 'H':
-                    losses['dead'].append(item[key])
-                if key == 'M':
-                    losses['heavy'].append(item[key])
-                if key == 'L':
-                    losses['light'].append(item[key])
-                if key == 'N':
-                    losses['neglegible'].append(item[key])
-
-        self.losses = losses
-
-    def plot_ccdf(self):
         fig = plt.figure(figsize=(12, 3))
         axs = [fig.add_subplot(131), fig.add_subplot(132), fig.add_subplot(133)]
 
         xtic = tic.MaxNLocator(3)
+        n = 1
+        for proj in project_list:
 
-        wykres = 0
-        for key in self.losses.keys():
-            if key == 'neglegible':
-                continue
-            if len(self.losses[key]) == 0:
-                continue 
-            dane = ecdf(self.losses[key])
-            axs[wykres].plot(sorted(self.losses[key]), 1-dane(sorted(self.losses[key])))
-            axs[wykres].set_xlabel('Number of people')
-            axs[wykres].set_ylabel('Likelihood')
-            axs[wykres].set_title(key)
-            wykres += 1
+            losses = OrderedDict()
+            losses={'fatalities': list(), 'heavy injured': list(), 'light injured': list(), 'neglegible': list()}
+
+            query = "SELECT fed, id FROM simulations where project = {} " \
+                "and dcbe_time IS NOT NULL".format(proj)
+            results = self.query(query)
+            self.total = len(results)
+            row = [json.loads(i[0]) for i in results]
+            fed=list()
+            for i in row:
+                for values in i.values():
+                    fed.append(collections.Counter(np.array(values)))
+
+            for item in fed:
+                for key in item.keys():
+                    if key == 'H':
+                        losses['fatalities'].append(item[key])
+                    if key == 'M':
+                        losses['heavy injured'].append(item[key])
+                    if key == 'L':
+                        losses['light injured'].append(item[key])
+                    if key == 'N':
+                        losses['neglegible'].append(item[key])
+
+            wykres = 0
+            for key in losses.keys():
+                if key == 'neglegible':
+                    continue
+                if len(losses[key]) == 0:
+                    continue 
+                dane = ecdf(losses[key])
+                axs[wykres].plot(sorted(losses[key]), 1-dane(sorted(losses[key])), label='A{}'.format(n))
+                axs[wykres].legend()
+                axs[wykres].set_xlabel('Number of people')
+                axs[wykres].set_ylabel('Likelihood')
+                axs[wykres].set_title(key)
+                wykres += 1
             #axs[i].xaxis.set_major_formatter(tic.FormatStrFormatter('%4.f'))
+            n+=1
 
         fig.tight_layout()
-        fig.savefig('{}/picts/ccdf.png'.format(self.dir))
+        fig.savefig('{}/picts/m_ccdf.png'.format(self.dir))
         fig.clf()
 
     def plot_ccdf_percentage(self):
@@ -325,54 +340,54 @@ class processDists:
         return result[0]['total']
 
 p = processDists()
-p.plot_dcbe_dist()
-p.plot_wcbe_dist()
-p.plot_min_height()
-p.plot_min_height_cor()
-p.plot_max_temp()
-p.plot_min_vis()
-p.plot_min_vis_cor()
+p.plot_dcbe_dist(project_list=[4,9,5,8])
+p.plot_wcbe_dist(project_list=[4,9,5,8])
+#p.plot_min_height()
+#p.plot_min_height_cor()
+#p.plot_max_temp()
+#p.plot_min_vis()
+#p.plot_min_vis_cor()
 #wprint(p.wcbe_time(1000))
-p.calculate_ccdf()
-p.plot_ccdf()
+p.calculate_ccdf(project_list=[5,9,4,8])
+#p.plot_ccdf()
 #p.plot_ccdf_percentage()
-p.plot_losses_hist()
-p.plot_pie_fault()
+#p.plot_losses_hist()
+#p.plot_pie_fault()
 #print(p.total)
 
-bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
+#bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
 #bar = 10e-6 * 1530
-print(p.calculate_building_area())
+#print(p.calculate_building_area())
 #if p.losses_num[4] == 0:
 #    p.losses_num[4] = 1e-12
-
-fed_f = float('%.3f' % (len(p.losses['dead'])/p.total))
-fed_m = float('%.3f' % (len(p.losses['heavy'])/p.total))
-fed_l = float('%.3f' % (len(p.losses['light'])/p.total))
-fed_n = float('%.3f' % (len(p.losses['neglegible'])/p.total))
-t_kryt = float('%.3f' % (len(p.losses['dead'])/p.total))
-p_ext = float('%.3f' % 0.17)
-p_tk = float('%.3f' % (p.t_k/p.total))
-
-with open('{}/picts/dane.txt'.format(p.dir), 'w') as g: 
-    dcbe_val = p.dcbe_values()
-    g.write("DCBE - PER: {}, MEAN: {}".format(dcbe_val[0], dcbe_val[1]))
-    #wcbe_val = p.wcbe_values()
-    #g.write("WCBE -  MEAN: {} s, {} min".format(wcbe_val, wcbe_val/60))
-    min_height_val = p.min_height_values()
-    g.write("MIN_HEIGHT - PER: {}, MEAN: {}".format(min_height_val[0], min_height_val[1]))
-    min_vis = p.vis_values()
-    g.write("MIN_VISIBILITY - PER: {}, MEAN: {}".format(min_vis[0], min_vis[1]))
-    temp_val = p.temp_values()
-    g.write("MAX_TEMP - PER: {}, MEAN: {}".format(temp_val[0], temp_val[1]))
-    g.write('P_dcbe: {}'.format(t_kryt*bar*p_ext))
-
-
-t = EventTreeFED(building=p.dir, p_general=bar, p_develop=p_ext, p_dcbe=t_kryt, p_fed_n=fed_n, p_fed_l=fed_l, p_fed_m=fed_m, p_fed_f=fed_f)
-t.draw_tree()
-
-s = EventTreeSteel(building=p.dir, p_general=bar, p_develop=p_ext, p_Tk=p_tk, p_time_less=0.001)
-s.draw_tree()
-#p.plot_event_tree()
+#
+#fed_f = float('%.3f' % (len(p.losses['dead'])/p.total))
+#fed_m = float('%.3f' % (len(p.losses['heavy'])/p.total))
+#fed_l = float('%.3f' % (len(p.losses['light'])/p.total))
+#fed_n = float('%.3f' % (len(p.losses['neglegible'])/p.total))
+#t_kryt = float('%.3f' % (len(p.losses['dead'])/p.total))
+#p_ext = float('%.3f' % 0.17)
+#p_tk = float('%.3f' % (p.t_k/p.total))
+#
+#with open('{}/picts/dane.txt'.format(p.dir), 'w') as g: 
+#    dcbe_val = p.dcbe_values()
+#    g.write("DCBE - PER: {}, MEAN: {}".format(dcbe_val[0], dcbe_val[1]))
+#    #wcbe_val = p.wcbe_values()
+#    #g.write("WCBE -  MEAN: {} s, {} min".format(wcbe_val, wcbe_val/60))
+#    min_height_val = p.min_height_values()
+#    g.write("MIN_HEIGHT - PER: {}, MEAN: {}".format(min_height_val[0], min_height_val[1]))
+#    min_vis = p.vis_values()
+#    g.write("MIN_VISIBILITY - PER: {}, MEAN: {}".format(min_vis[0], min_vis[1]))
+#    temp_val = p.temp_values()
+#    g.write("MAX_TEMP - PER: {}, MEAN: {}".format(temp_val[0], temp_val[1]))
+#    g.write('P_dcbe: {}'.format(t_kryt*bar*p_ext))
+#
+#
+#t = EventTreeFED(building=p.dir, p_general=bar, p_develop=p_ext, p_dcbe=t_kryt, p_fed_n=fed_n, p_fed_l=fed_l, p_fed_m=fed_m, p_fed_f=fed_f)
+#t.draw_tree()
+#
+#s = EventTreeSteel(building=p.dir, p_general=bar, p_develop=p_ext, p_Tk=p_tk, p_time_less=0.001)
+#s.draw_tree()
+##p.plot_event_tree()
 
 print('Charts are ready to display')
