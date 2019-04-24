@@ -15,17 +15,23 @@ class Queue:  # {{{
         self.floor_space = floor_space
         self.queue = floor*floor_space*[None]
 
-    def if_free(self, floor):
+    def add(self, floor, data):
         if self.queue[floor*self.floor_space] is None:
             if self.queue[floor*self.floor_space+1] is None:
-                return 0
-            else:
+                self.queue[floor*self.floor_space] = data
                 return 1
+            else:
+                if not random.randint(0,3):
+                    self.queue[floor*self.floor_space] = data
+                    return 1
+                else:
+                    return 0
         else:
-            return 2
-
-    def add(self, floor, data):
-        self.queue[floor*self.floor_space] = data
+            if not random.randint(0,3):
+                self.insert(floor, data)
+                return 1
+            else:
+                return 0
 
     def insert(self, floor, data):
         self.queue.insert(floor*self.floor_space, data)
@@ -93,27 +99,17 @@ class Pedestrians:  # {{{
         while True:
             krok += 1
             for floor in self.floorque.keys():
-                if not self.QUEUE.if_free(floor):
-                    try:
-                        self.QUEUE.add(floor, self.floorque[floor].pop(0))
-                    except:
-                        pass
-                elif self.QUEUE.if_free(floor) == 1:
-                    try:
-                        if not self.floorque[floor][0].if_in():
-                            self.QUEUE.add(floor, self.floorque[floor].pop(0))
-                    except:
-                        pass
-                else:
-                    try:
-                        if not self.floorque[floor][0].if_in():
-                            self.QUEUE.insert(floor, self.floorque[floor].pop(0))
-                            break
-                    except:
-                        pass
+                a = None
+                try:
+                    a = self.floorque[floor].pop(0)
+                except IndexError:
+                    pass
+                if a is not None:
+                    if not self.QUEUE.add(floor, a):
+                        self.floorque[floor].insert(0, a)
             try:
                 self.QUEUE.pop().position = (2+krok/10, 1)
-            except:
+            except AttributeError:
                 pass
             for x, i in enumerate(self.QUEUE.que()):
                 try:

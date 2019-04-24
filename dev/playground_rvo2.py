@@ -21,18 +21,21 @@ from include import Json
 from include import Dump as dd
 from include import Vis
 from numpy.random import uniform
+from schody import Queue 
+import numpy.random as random
 # }}}
 
 class EvacEnv:
     def __init__(self):# {{{
+        self.que = Queue(3, 4)
         self.json=Json()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
 
         self.evacuee_radius=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['evacueeRadius']
         time=1
         #self.sim rvo2.PyRVOSimulator TIME_STEP , NEIGHBOR_DISTANCE , MAX_NEIGHBOR , TIME_HORIZON , TIME_HORIZON_OBSTACLE , RADIUS , MAX_SPEED
-        self.sim = rvo2.PyRVOSimulator(time     , 40                , 5            , time         , time                  , self.evacuee_radius , 30)
-        self.door1='d10'
+        self.sim=rvo2.PyRVOSimulator(time,40,5,time,time,self.evacuee_radius,30)
+        self.door1='d11'
         self.door2=(6100,2100)
         self._create_teleports()
         self._create_agents()
@@ -91,6 +94,13 @@ class EvacEnv:
         x=a['target'][0] - self.sim.getAgentPosition(a['id'])[0]
         y=a['target'][1] - self.sim.getAgentPosition(a['id'])[1]
         if abs(x) + abs(y) < 30:
+            if y < 1030:
+                pietro = 2
+            elif y > 1030 and y < 3400:
+                pietro = 1
+            else:
+                pietro = 0
+            self.que.add(pietro, a['id'])
             self.sim.setAgentPosition(a['id'], self._teleport_from[self.door1][1])
             a['target']=self.door2
         else:
@@ -110,9 +120,12 @@ class EvacEnv:
         zf.close()
 # }}}
     def _run(self):# {{{
-        for t in range(100):
+        for t in range(40):
             self.sim.doStep()
             self._update()
+            #print([x for x in self.que.que() if x is not None])
+            print(self.que.que())
+            self.que.pop()
 # }}}
 
 e=EvacEnv()
