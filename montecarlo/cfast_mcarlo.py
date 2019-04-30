@@ -497,12 +497,11 @@ class CfastMcarlo():
         i['y']=int(i['y'] * 100)
         i['z']=int(i['z'] * 100)
 
-        points=[ [i['x']-xx, i['y']-yy], [i['x']+xx, i['y']-yy], [i['x']+xx, i['y']+yy], [i['x']-xx, i['y']+yy], [i['x']-xx, i['y']-yy], 'fire_obstacle' ]
-        named={ 'x0': i['x']-xx, 'y0': i['y']-yy, 'width': 2*xx, 'depth': 2*yy, 'fire_obstacle': 1 }
+        points=[ [i['x']-xx, i['y']-yy], [i['x']+xx, i['y']-yy], [i['x']+xx, i['y']+yy], [i['x']-xx, i['y']+yy], [i['x']-xx, i['y']-yy] ]
 
         obstacles=self.json.readdb("obstacles")
-        obstacles['points'][i['floor']].append(points)
-        obstacles['named'][i['floor']].append(named)
+        obstacles['fire_obstacle']=points
+        obstacles['fire_obstacle_floor']=i['floor'] 
 
         self.s.query("UPDATE obstacles SET json=?", (json.dumps(obstacles),)) 
 

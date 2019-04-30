@@ -336,22 +336,24 @@ class Vis:# {{{
         try:
             _json=JSON.readdb("obstacles")
             for floor,obstacles in _json['points'].items():
-                self._static_floors[floor]['obstacles']={'points': []}
+                self._static_floors[floor]['obstacles']=[]
                 for obst in obstacles:
-                    self._static_floors[floor]['obstacles']['points'].append([ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ])
+                    self._static_floors[floor]['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ]})
+                self._static_floors[floor]['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in _json['fire_obstacle'][:4] ], 'type':'fire_obstacle'})
 
             _json=JSON.readdb("world2d_obstacles")
             obstacles=_json['points']
-            self._static_world2d['obstacles']={'points': []}
+            self._static_world2d['obstacles']=[]
             for obst in obstacles:
-                self._static_world2d['obstacles']['points'].append([ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ])
+                self._static_world2d['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ]})
 
         except:
             empty_obst=[ OrderedDict([('x', o[0]),('y', o[1])]) for o in [(0,0),(0,0),(0,0),(0,0)] ]
             for floor in self._static_floors.keys():
-                self._static_floors[floor]['obstacles']={'points': empty_obst}
+                self._static_floors[floor]['obstacles']=[]
+                self._static_floors[floor]['obstacles'].append({'points': empty_obst })
 
-            self._static_world2d['obstacles']={'points': empty_obst}
+            self._static_world2d['obstacles'].append({'points': empty_obst })
 # }}}
     def _js_make_dd_geoms(self):# {{{
         ''' 

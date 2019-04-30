@@ -13,7 +13,6 @@
 //     0      , 1      , 2        , 3        , 4            , 5
 //     agentX , agentY , headingX , headingY , FED: N|L|M|H , opacity
 //}}}
-var _ = require('lodash');
 
 var scale=1;
 var wWidth;
@@ -362,14 +361,14 @@ function paperjsDisplayImage() {//{{{
 	// Creating rooms
 	_.forEach(rooms, function(room) {
 		var roomPath = new Path();
-		roomPath.strokeColor = colors['ROOM']['stroke'];
+		roomPath.strokeColor = colors.ROOM.stroke;
 		roomPath.strokeWidth = 0.2;
 		roomPath.opacity = 0.4;
 		// Change color depending on room_enter posibility
-		roomPath.fillColor = room.room_enter == 'yes' ? colors[room["type_sec"]]['c'] : "#333";
+		roomPath.fillColor = room.room_enter == 'yes' ? colors[room.type_sec].c : "#333";
 		// Draw polygon
-		_forEach(room["points"], function(point) {
-			roomPath.add(new Point(point["x"], point["y"]));
+		_.forEach(room.points, function(point) {
+			roomPath.add(new Point(point.x, point.y));
 		});
 		// Close polygon
 		roomPath.closed = true;
@@ -378,43 +377,57 @@ function paperjsDisplayImage() {//{{{
 	});
 
 	// Creating obstacles
-	for (var i=0; i<obstacles.length; i++) {
-		if ('fire_obstacle' in obstacles[i]) { 
-			if(isDemoAnimation==0) { staticGeoms.addChild(new Path.Circle({center: new Point(obstacles[i]["x0"]+obstacles[i]["width"]/2,obstacles[i]["y0"]+obstacles[i]["depth"]/2), radius:obstacles[i]['width']/2, strokeColor: "#ffffff", dashArray: [20,10], strokeWidth: wallsSize })); }
+	_.forEach(obstacles, function(obst) {
+		if(obst.type && obst.type == 'fire_obstacle') {
+			if(isDemoAnimation == 0 && obst.points.lenght >= 3) { 
+				// TODO refactor center & radius if polygon
+				var center = new Point(obst.points[0].x + (obst.points[2].x - obst.points[0].x)/2, obst.points[0].y + (obst.points[2].y - obst.points[0].y)/2);
+				var radius = (obst.points[2].x - obst.points[0].x)/2;
+				var obstPath = new Path.Circle(center, radius);
+				obstPath.strokeColor = "#ffffff";
+				obstPath.dashArray = [20,10];
+				obstPath.strokeWidth = wallsSize;
+			}
 		} else {
 			var obstPath = new Path();
-			obstPath.strokeColor = colors['fg']['c'];
+			obstPath.strokeColor = colors.fg.c;
 			obstPath.strokeWidth = wallsSize;
 			obstPath.opacity = 0.6;
-			obstPath.fillColor = colors['OBST']['c']
+			obstPath.fillColor = colors.OBST.c;
 			// Draw polygon
-			obstacles[i]["points"].forEach(function(point) {
-				obstPath.add(new Point(point["x"], point["y"]));
+			_.forEach(obst.points, function(point) {
+				obstPath.add(new Point(point.x, point.y));
 			});
 			// Close polygon
 			obstPath.closed = true;
 			// Add path to staticGeoms
 			staticGeoms.addChild(obstPath);
 		}
-	}
+	});
 
 	// Add labels to rooms
 	if (labelsSize != 0) { 
-		for (var key in rooms) {
-			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+20,rooms[key]["y0"]+50), fillColor:colors["fg"]['c'], content: rooms[key]["name"], fontFamily: 'Roboto', fontSize: labelsSize }));
-		}
+		_.forEach(rooms, function(room) {
+			var roomLabel = new PointText(new Point(room.points[0].x + 20, room.points[0].y + 50));
+			roomLabel.fillColor = colors.fg.c;
+			roomLabel.content = room.name;
+			roomLabel.fontFamily = 'Roboto';
+			roomLabel.fontSize = labelsSize;
+			// Add label to staticGeoms
+			staticGeoms.addChild(roomLabel);
+		});
 	}
 
 	// Create doors
-	doors.forEach(function(room) {
+	_.forEach(doors, function(door) {
 		if (doorsSize != 0) { 
 			var doorPath = new Path();
-			doorPath.strokeColor = colors['DOOR']['c'];
+			doorPath.strokeColor = colors.DOOR.c;
 			doorPath.strokeWidth = doorsSize;
-			doorPath.opacity = colors['DOOR']['animOpacity']/3;
+			doorPath.opacity = colors.DOOR.animOpacity / 3;
 			// Draw polygon
-			doors["points"].forEach(function(point) {
-				doorPath.add(new Point(point["x"], point["y"]));
+			_.forEach(door.points, function(point) {
+				doorPath.add(new Point(point.x, point.y));
 			});
 			// Close polygon
 			doorPath.closed = true;
@@ -422,10 +435,19 @@ function paperjsDisplayImage() {//{{{
 			staticGeoms.addChild(doorPath);
 		}
 		if (labelsSize != 0) { 
-			staticGeoms.addChild(new PointText({point: new Point(doors["center_x"]-20,doors["center_y"]+15), fillColor:colors["fg"]['c'], content: doors["name"], opacity: colors['DOOR']['animOpacity'], fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
+			// TODO distinguish vertical and horizontal doors
+			var doorLabel = new PointText(new Point(door.points[0].x + 30, door.points[0].y + 30));
+			doorLabel.fillColor = colors.fg.c;
+			doorLabel.content = door.name;
+			doorLabel.opacity = colors.DOOR.animOpacity;
+			doorLabel.fontFamily = 'Roboto';
+			doorLabel.fontSize = labelsSize * 0.75;
+			// Add label to staticGeoms
+			staticGeoms.addChild(doorLabel);
 		}
 	});
 
+	// Draw static evacuees
 	for (var key in staticEvacuees) {
 		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: evacueeRadius,  fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
 	}
