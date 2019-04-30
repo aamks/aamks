@@ -288,32 +288,44 @@ class Vis:# {{{
         meta=json.loads(self.s.query("SELECT * FROM world2d_meta")[0]['json'])
         self._static_world2d['floor_meta']=meta
 # }}}
+    def _make_poly(self,i):# {{{
+        points=[]
+        points.append(OrderedDict([('x', i['x0']), ("y", i['y0'])]))
+        points.append(OrderedDict([('x', i['x1']), ("y", i['y0'])]))
+        points.append(OrderedDict([('x', i['x1']), ("y", i['y1'])]))
+        points.append(OrderedDict([('x', i['x0']), ("y", i['y1'])]))
+        return points
+# }}}
     def _js_make_rooms(self):# {{{
         ''' Data for rooms. '''
 
         for floor in self._static_floors.keys():
-            self._static_floors[floor]['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,width,depth,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
-                self._static_floors[floor]['rooms'][i['name']]=i
+            self._static_floors[floor]['rooms']=[]
+            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
+                points=self._make_poly(i)
+                self._static_floors[floor]['rooms'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)]))
 
         for floor in ['world2d']:
-            self._static_world2d['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,width,depth,type_sec,room_enter FROM world2d WHERE floor=? AND type_pri='COMPA'", (floor,)):
-                self._static_world2d['rooms'][i['name']]=i
+            self._static_world2d['rooms']=[]
+            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec,room_enter FROM world2d WHERE floor=? AND type_pri='COMPA'", (floor,)):
+                points=self._make_poly(i)
+                self._static_world2d['rooms'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)]))
 
 # }}}
     def _js_make_doors(self):# {{{
         ''' Data for doors. '''
 
         for floor in self._static_floors.keys():
-            self._static_floors[floor]['doors']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,center_x,center_y,width,depth,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
-                self._static_floors[floor]['doors'][i['name']]=i
+            self._static_floors[floor]['doors']=[]
+            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
+                points=self._make_poly(i)
+                self._static_floors[floor]['doors'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)]))
 
         for floor in ['world2d']:
-            self._static_world2d['doors']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,center_x,center_y,width,depth,type_sec FROM world2d WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
-                self._static_world2d['doors'][i['name']]=i
+            self._static_world2d['doors']=[]
+            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM world2d WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
+                points=self._make_poly(i)
+                self._static_world2d['doors'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)]))
 # }}}
     def _js_make_obstacles(self):# {{{
         ''' 
@@ -323,18 +335,23 @@ class Vis:# {{{
 
         try:
             _json=JSON.readdb("obstacles")
-            #dd(_json)
-            for floor,obstacles in _json['named'].items():
-                self._static_floors[floor]['obstacles']=obstacles
+            for floor,obstacles in _json['points'].items():
+                self._static_floors[floor]['obstacles']={'points': []}
+                for obst in obstacles:
+                    self._static_floors[floor]['obstacles']['points'].append([ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ])
 
             _json=JSON.readdb("world2d_obstacles")
-            self._static_world2d['obstacles']=_json['named']
+            obstacles=_json['points']
+            self._static_world2d['obstacles']={'points': []}
+            for obst in obstacles:
+                self._static_world2d['obstacles']['points'].append([ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ])
 
         except:
+            empty_obst=[ OrderedDict([('x', o[0]),('y', o[1])]) for o in [(0,0),(0,0),(0,0),(0,0)] ]
             for floor in self._static_floors.keys():
-                self._static_floors['obstacles']=[ dict([("x0",0), ("y0",0), ("width",0), ("depth",0) ]) ]
+                self._static_floors[floor]['obstacles']={'points': empty_obst}
 
-            self._static_world2d['obstacles']=[ dict([("x0",0), ("y0",0), ("width",0), ("depth",0) ]) ]
+            self._static_world2d['obstacles']={'points': empty_obst}
 # }}}
     def _js_make_dd_geoms(self):# {{{
         ''' 

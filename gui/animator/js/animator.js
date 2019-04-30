@@ -13,6 +13,7 @@
 //     0      , 1      , 2        , 3        , 4            , 5
 //     agentX , agentY , headingX , headingY , FED: N|L|M|H , opacity
 //}}}
+var _ = require('lodash');
 
 var scale=1;
 var wWidth;
@@ -358,37 +359,72 @@ function paperjsDisplayImage() {//{{{
 		staticGeoms.removeChildren();
 	}
 
-	for (var key in rooms) {
-		var namedChild;
-		if(rooms[key]['room_enter']=='yes') {
-			staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['ROOM']['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:colors[rooms[key]["type_sec"]]['c']}));
-		} else {
-			staticGeoms.addChild(new Path.Rectangle({point: new Point(rooms[key]["x0"],rooms[key]["y0"]), size: new Size(rooms[key]["width"],rooms[key]["depth"]), strokeColor:colors['ROOM']['stroke'], strokeWidth:0.2, opacity: 0.4, fillColor:"#333"}));
-		}
-	}
+	// Creating rooms
+	_.forEach(rooms, function(room) {
+		var roomPath = new Path();
+		roomPath.strokeColor = colors['ROOM']['stroke'];
+		roomPath.strokeWidth = 0.2;
+		roomPath.opacity = 0.4;
+		// Change color depending on room_enter posibility
+		roomPath.fillColor = room.room_enter == 'yes' ? colors[room["type_sec"]]['c'] : "#333";
+		// Draw polygon
+		_forEach(room["points"], function(point) {
+			roomPath.add(new Point(point["x"], point["y"]));
+		});
+		// Close polygon
+		roomPath.closed = true;
+		// Add path to staticGeoms
+		staticGeoms.addChild(roomPath);
+	});
 
+	// Creating obstacles
 	for (var i=0; i<obstacles.length; i++) {
 		if ('fire_obstacle' in obstacles[i]) { 
 			if(isDemoAnimation==0) { staticGeoms.addChild(new Path.Circle({center: new Point(obstacles[i]["x0"]+obstacles[i]["width"]/2,obstacles[i]["y0"]+obstacles[i]["depth"]/2), radius:obstacles[i]['width']/2, strokeColor: "#ffffff", dashArray: [20,10], strokeWidth: wallsSize })); }
 		} else {
-			staticGeoms.addChild(new Path.Rectangle({point: new Point(obstacles[i]["x0"],obstacles[i]["y0"]), size: new Size(obstacles[i]["width"],obstacles[i]["depth"]), fillColor:colors['OBST']['c'], strokeColor: colors['fg']['c'], opacity: 0.6, strokeWidth:wallsSize }));
+			var obstPath = new Path();
+			obstPath.strokeColor = colors['fg']['c'];
+			obstPath.strokeWidth = wallsSize;
+			obstPath.opacity = 0.6;
+			obstPath.fillColor = colors['OBST']['c']
+			// Draw polygon
+			obstacles[i]["points"].forEach(function(point) {
+				obstPath.add(new Point(point["x"], point["y"]));
+			});
+			// Close polygon
+			obstPath.closed = true;
+			// Add path to staticGeoms
+			staticGeoms.addChild(obstPath);
 		}
 	}
 
+	// Add labels to rooms
 	if (labelsSize != 0) { 
 		for (var key in rooms) {
 			staticGeoms.addChild(new PointText({point: new Point(rooms[key]["x0"]+20,rooms[key]["y0"]+50), fillColor:colors["fg"]['c'], content: rooms[key]["name"], fontFamily: 'Roboto', fontSize: labelsSize }));
 		}
 	}
 
-	for (var key in doors) {
+	// Create doors
+	doors.forEach(function(room) {
 		if (doorsSize != 0) { 
-			staticGeoms.addChild(new Path.Rectangle({point: new Point(doors[key]["x0"],doors[key]["y0"]), size: new Size(doors[key]["width"],doors[key]["depth"]), strokeColor: colors['DOOR']['c'], opacity: colors['DOOR']['animOpacity']/3, strokeWidth:doorsSize  }));
+			var doorPath = new Path();
+			doorPath.strokeColor = colors['DOOR']['c'];
+			doorPath.strokeWidth = doorsSize;
+			doorPath.opacity = colors['DOOR']['animOpacity']/3;
+			// Draw polygon
+			doors["points"].forEach(function(point) {
+				doorPath.add(new Point(point["x"], point["y"]));
+			});
+			// Close polygon
+			doorPath.closed = true;
+			// Add path to staticGeoms
+			staticGeoms.addChild(doorPath);
 		}
 		if (labelsSize != 0) { 
-			staticGeoms.addChild(new PointText({point: new Point(doors[key]["center_x"]-20,doors[key]["center_y"]+15), fillColor:colors["fg"]['c'], content: doors[key]["name"], opacity: colors['DOOR']['animOpacity'], fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
+			staticGeoms.addChild(new PointText({point: new Point(doors["center_x"]-20,doors["center_y"]+15), fillColor:colors["fg"]['c'], content: doors["name"], opacity: colors['DOOR']['animOpacity'], fontFamily: 'Roboto', fontSize: labelsSize*0.75 }));
 		}
-	}
+	});
 
 	for (var key in staticEvacuees) {
 		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: evacueeRadius,  fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
