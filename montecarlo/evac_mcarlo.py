@@ -156,19 +156,28 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(self.conf['evacuees_max_v_speed']['mean'] , self.conf['evacuees_max_v_speed']['sd']) , 2)
 
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
-
+# }}}
     def _evacuees_static_animator(self):# {{{
         ''' 
         For the animator. We just pick a single, newest sim_id and display
         evacuees init positions. Animator can use it when there are no worker
         provided animations (moving evacuees for specific sim_id). 
+
         '''
 
-        for floor in self.floors:
-            m=self.json.read("{}/workers/static.json".format(os.environ['AAMKS_PROJECT']))
-            m[floor]['evacuees']=self.dispatched_evacuees[floor]
-            m[floor]['sim_id']=self._sim_id
-            self.json.write(m,"{}/workers/static.json".format(os.environ['AAMKS_PROJECT']))
+        # TODO: see if we really need it
+        # static.json may not exist at this stage, so we preserve the data and
+        # the actual write happens in init.py 
+
+        pass
+        # m={}
+        # for floor in self.floors:
+        #     m[floor]['evacuees']=self.dispatched_evacuees[floor]
+        #     m[floor]['sim_id']=self._sim_id
+        # self.json.write(m,"{}/workers/static.json".format(os.environ['AAMKS_PROJECT']))
+
+        # self.s.query("CREATE TABLE dispatched_evacuees(json)")
+        # self.s.query('INSERT INTO floors_meta VALUES (?)', (json.dumps(self.floors_meta),))
         
 # }}}
 

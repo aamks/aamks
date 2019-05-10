@@ -145,6 +145,14 @@ class Sqlite: # {{{
         for i in self.query('SELECT * FROM aamks_geom order by floor,type_pri,global_type_id'):
             print(i)
 
+    def dump2(self):
+        print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
+        print("project: {}".format(os.environ['AAMKS_PROJECT']))
+        print()
+        for i in self.query('SELECT * FROM world2d order by floor,type_pri,global_type_id'):
+            print(i)
+
+
     def dump_geoms(self,floor='all'):
         print("dump_geom() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         print("project: {}".format(os.environ['AAMKS_PROJECT']))
@@ -258,17 +266,33 @@ class Vis:# {{{
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 
         self._static_floors=OrderedDict()
-        self._static_world2d=OrderedDict()
         self._js_make_floors_and_meta()
         self._js_make_rooms()
         self._js_make_doors()
         self._js_make_obstacles()
         self._js_make_dd_geoms()
 
+        self.global_meta=JSON.readdb("global_meta")
+        if self.global_meta['multifloor_building']==1:
+            self._static_world2d=OrderedDict()
+            self._js_make_floors_and_meta_world2d()
+            self._js_make_rooms_world2d()
+            self._js_make_doors_world2d()
+            self._js_make_obstacles_world2d()
+            self._js_make_dd_geoms_world2d()
+
         if 'fire_origin' not in params:
             params['fire_origin']=self._js_vis_fire_origin()
 
         self._save(params)
+# }}}
+    def _make_poly(self,i):# {{{
+        points=[]
+        points.append(OrderedDict([('x', i['x0']), ("y", i['y0'])]))
+        points.append(OrderedDict([('x', i['x1']), ("y", i['y0'])]))
+        points.append(OrderedDict([('x', i['x1']), ("y", i['y1'])]))
+        points.append(OrderedDict([('x', i['x0']), ("y", i['y1'])]))
+        return points
 # }}}
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''
@@ -276,7 +300,10 @@ class Vis:# {{{
         for floor,meta in json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json']).items():
             self._static_floors[floor]=OrderedDict()
             self._static_floors[floor]['floor_meta']=meta
-
+# }}}
+    def _js_make_floors_and_meta_world2d(self):# {{{
+        ''' Animation meta tells how to scale and translate canvas view '''
+        
         meta=json.loads(self.s.query("SELECT * FROM world2d_meta")[0]['json'])
         self._static_world2d['floor_meta']=meta
 # }}}
@@ -284,28 +311,38 @@ class Vis:# {{{
         ''' Data for rooms. '''
 
         for floor in self._static_floors.keys():
-            self._static_floors[floor]['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,width,depth,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
-                self._static_floors[floor]['rooms'][i['name']]=i
+            self._static_floors[floor]['rooms']=[]
+            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
+                points=self._make_poly(i)
+                self._static_floors[floor]['rooms'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)]))
+# }}}
+    def _js_make_rooms_world2d(self):# {{{
+        ''' Data for rooms. '''
 
         for floor in ['world2d']:
-            self._static_world2d['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,width,depth,type_sec,room_enter FROM world2d WHERE floor=? AND type_pri='COMPA'", (floor,)):
-                self._static_world2d['rooms'][i['name']]=i
+            self._static_world2d['rooms']=[]
+            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec,room_enter FROM world2d WHERE floor=? AND type_pri='COMPA'", (floor,)):
+                points=self._make_poly(i)
+                self._static_world2d['rooms'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)]))
 
 # }}}
     def _js_make_doors(self):# {{{
         ''' Data for doors. '''
 
         for floor in self._static_floors.keys():
-            self._static_floors[floor]['doors']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,center_x,center_y,width,depth,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
-                self._static_floors[floor]['doors'][i['name']]=i
+            self._static_floors[floor]['doors']=[]
+            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
+                points=self._make_poly(i)
+                self._static_floors[floor]['doors'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)]))
+# }}}
+    def _js_make_doors_world2d(self):# {{{
+        ''' Data for doors. '''
 
         for floor in ['world2d']:
-            self._static_world2d['doors']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,center_x,center_y,width,depth,type_sec FROM world2d WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
-                self._static_world2d['doors'][i['name']]=i
+            self._static_world2d['doors']=[]
+            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM world2d WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
+                points=self._make_poly(i)
+                self._static_world2d['doors'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)]))
 # }}}
     def _js_make_obstacles(self):# {{{
         ''' 
@@ -315,18 +352,34 @@ class Vis:# {{{
 
         try:
             _json=JSON.readdb("obstacles")
-            #dd(_json)
-            for floor,obstacles in _json['named'].items():
-                self._static_floors[floor]['obstacles']=obstacles
-
-            _json=JSON.readdb("world2d_obstacles")
-            self._static_world2d['obstacles']=_json['named']
+            for floor,obstacles in _json['points'].items():
+                self._static_floors[floor]['obstacles']=[]
+                for obst in obstacles:
+                    self._static_floors[floor]['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ]})
+                self._static_floors[floor]['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in _json['fire_obstacle'][:4] ], 'type':'fire_obstacle'})
 
         except:
+            empty_obst=[ OrderedDict([('x', o[0]),('y', o[1])]) for o in [(0,0),(0,0),(0,0),(0,0)] ]
             for floor in self._static_floors.keys():
-                self._static_floors['obstacles']=[ dict([("x0",0), ("y0",0), ("width",0), ("depth",0) ]) ]
+                self._static_floors[floor]['obstacles']=[]
+                self._static_floors[floor]['obstacles'].append({'points': empty_obst })
+# }}}
+    def _js_make_obstacles_world2d(self):# {{{
+        ''' 
+        Data for obstacles. It may happen that geom.py was interrupted before
+        obstacles were created, so we produce a 0 size obstacle in try/except. 
+        '''
 
-            self._static_world2d['obstacles']=[ dict([("x0",0), ("y0",0), ("width",0), ("depth",0) ]) ]
+        try:
+            _json=JSON.readdb("world2d_obstacles")
+            obstacles=_json['points']
+            self._static_world2d['obstacles']=[]
+            for obst in obstacles:
+                self._static_world2d['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ]})
+
+        except:
+            empty_obst=[ OrderedDict([('x', o[0]),('y', o[1])]) for o in [(0,0),(0,0),(0,0),(0,0)] ]
+            self._static_world2d['obstacles'].append({'points': empty_obst })
 # }}}
     def _js_make_dd_geoms(self):# {{{
         ''' 
@@ -338,16 +391,23 @@ class Vis:# {{{
         f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
         for floor in self._static_floors.keys():
             self._static_floors[floor]['dd_geoms']=f[floor]
+# }}}
+    def _js_make_dd_geoms_world2d(self):# {{{
+        ''' 
+        dd_geoms are initialized in geom.py. Those are optional extra
+        rectangles, points, lines and circles that are written to on top of our
+        geoms. Useful for debugging.
+        '''
 
+        f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
         self._static_world2d['dd_geoms']=f['world2d']
 # }}}
     def _js_vis_fire_origin(self):# {{{
         try:
-            z=self.s.query("SELECT center_x, center_y FROM aamks_geom WHERE type_pri='FIRE'")
-            fire_origin=[z[0]['center_x'], z[0]['center_y']]
+            z=self.s.query("SELECT x, y FROM fire_origin")
+            return (z[0]['x']*100, z[0]['y']*100)
         except:
-            fire_origin=[]
-        return fire_origin
+            return tuple()
 # }}}
     def _reorder_anims(self, z):# {{{
         '''
@@ -377,7 +437,7 @@ class Vis:# {{{
         '''
 
         vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        if self._static_world2d['floor_meta']['multifloor']==1:
+        if self.global_meta['multifloor_building']==1:
             self._static_floors['world2d']=self._static_world2d
         self.json.write(self._static_floors, '{}/static.json'.format(vis_dir)) 
 
@@ -393,16 +453,22 @@ class Vis:# {{{
             anim_record=OrderedDict()
             anim_record['sort_id']=lowest_id
             lowest_id-=1
-            anim_record['title']="{}: {} {}".format(floor, params['title'], datetime.now().strftime('%H:%M'))
+            anim_record['title']="{}: {}".format(floor, params['title'])
+            anim_record['time']=datetime.now().strftime('%H:%M')
             anim_record['floor']=floor
             anim_record['fire_origin']=params['fire_origin']
             anim_record['highlight_geom']=params['highlight_geom']
             anim_record['srv']=params['srv']
             anim_record['anim']=params['anim']
-
             records = [anim_record] + records
-        z = records + z
-        self.json.write(z, "{}/anims.json".format(vis_dir))
+
+        unique=[]
+        for i in z:
+            for r in records:
+                if i['title'] != r['title'] and r['srv'] == 1:
+                    unique.append(i)
+        unique = records + unique
+        self.json.write(unique, "{}/anims.json".format(vis_dir))
 # }}}
 # }}}
 

@@ -36,6 +36,7 @@ class Geom():
         self._init_dd_geoms()
         self._make_towers()
         self._floors_meta()
+        self._global_meta()
         self._aamks_geom_into_polygons()
         self._make_id2compa_name()
         self._find_intersections_within_floor()
@@ -48,13 +49,9 @@ class Geom():
         self._auto_detectors_and_sprinklers()
         self._create_obstacles()
         self._make_world2d()
-        #self.make_vis('Create obstacles')
         self._assert_faces_ok()
         self._assert_room_has_door()
-        #self.s.dumpall()
-        #self.s.dump_geoms()
-        #dd(self.s.query("select * from aamks_geom where type_sec='STAI'"))
-        #self.s.dump()
+        self._debug()
 # }}}
     def _floors_meta(self):# {{{
         ''' 
@@ -86,6 +83,18 @@ class Geom():
 
         self.s.query("CREATE TABLE floors_meta(json)")
         self.s.query('INSERT INTO floors_meta VALUES (?)', (json.dumps(self.floors_meta),))
+
+# }}}
+    def _global_meta(self):# {{{
+        self.s.query("CREATE TABLE global_meta(json)")
+        self.global_meta={}
+
+        if len(self.floors_meta) > 1:
+            self.global_meta['multifloor_building']=1
+        else: 
+            self.global_meta['multifloor_building']=0
+
+        self.s.query('INSERT INTO global_meta(json) VALUES (?)', (json.dumps(self.global_meta),))
 
 # }}}
     def _geometry2sqlite(self):# {{{
@@ -309,8 +318,11 @@ class Geom():
         slices on proper floors in order to calculate vent_from / vent_to
         properly. 
 
+        These fake entities are enumerated from 100000
+
         '''
 
+        next_id=100000
         towers={}
         for w in self.s.query("SELECT floor,height,name,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
             towers[(w['floor'], w['name'], w['type_sec'])]=[]
@@ -331,6 +343,8 @@ class Geom():
             for floor in floors:
                 row['fire_model_ignore']=1
                 row['floor']=floor
+                row['global_type_id']=next_id
+                next_id+=1
                 row['name']="{}.{}".format(orig_name,floor)
                 row['type_tri']="TOWER_FLOOR"
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
@@ -386,9 +400,9 @@ class Geom():
             self._towers['lines']=self._towers_lines()
             self._towers['rectangles']=self._towers_rectangles()
             self._towers['width']=self._towers_width()
-            self._towers['multifloor']=1
+            #self._towers['multifloor']=1
         else:
-            self._towers['multifloor']=None
+            #self._towers['multifloor']=None
             self._towers['width']=1
             self._towers['lines']={}
             self._towers['rectangles']={}
@@ -636,7 +650,6 @@ class Geom():
         data=OrderedDict()
         data['points']=OrderedDict()
         data['named']=OrderedDict()
-        floors_meta=self.json.readdb('floors_meta')
         for floor,gg in self.raw_geometry.items():
             data['points'][floor]=[]
             data['named'][floor]=[]
@@ -647,7 +660,7 @@ class Geom():
             boxen+=self._rooms_into_boxen(floor)
             data['named'][floor]=self._boxen_into_rectangles(boxen)
             for i in boxen:
-                data['points'][floor].append([(int(x),int(y), floors_meta[floor]['z']) for x,y in i.exterior.coords])
+                data['points'][floor].append([(int(x),int(y), self.floors_meta[floor]['z']) for x,y in i.exterior.coords])
         self.s.query("CREATE TABLE obstacles(json)")
         self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
 #}}}
@@ -709,14 +722,18 @@ class Geom():
         '''
         CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
         '''
+        
+        if self.global_meta['multifloor_building']==0:
+            return
 
         self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
         self.s.query("INSERT INTO world2d SELECT * FROM aamks_geom")
 
         # TODO: we should probably do without self.world2d_ty var, since later we've got this
         # self._towers={} thing, which should be even wiser.
+        # ty stands for translate y
+
         self.world2d_ty=OrderedDict()
-        floors_meta=self.json.readdb("floors_meta")
         last_maxy=-200
 
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
@@ -735,6 +752,10 @@ class Geom():
         self._make_world2d_staircases()
         self._make_world2d_meta()
         self._make_world2d_obstacles()
+        self.s.query("UPDATE aamks_geom SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE world2d    SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE aamks_geom SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
+        self.s.query("UPDATE world2d    SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
 # }}}
     def _make_world2d_staircases_lines(self):# {{{
 
@@ -755,7 +776,7 @@ class Geom():
             i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k,))[0]
             for ii in tt:
                 i['floor']='world2d'
-                i['name']="{}:{}".format(k,ii['floor'])
+                i['name']="{}|{}".format(k,ii['floor'])
                 i['x0']=towers_offset+ii['x0']
                 i['x1']=i['x0']+ii['width']
                 i['y1']=ii['y1']
@@ -779,7 +800,7 @@ class Geom():
         height= maxy - miny
         center=(minx + int(width/2), miny + int(height/2), 0)
 
-        world2d_meta=OrderedDict([('multifloor', self._towers['multifloor']), ('width', width) , ('height', height) , ('z', 0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('world2d_ty', self.world2d_ty)])
+        world2d_meta=OrderedDict([('width', width) , ('height', height) , ('z', 0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('world2d_ty', self.world2d_ty)])
         self.s.query("CREATE TABLE world2d_meta(json)")
         self.s.query("INSERT INTO world2d_meta VALUES (?)", (json.dumps(world2d_meta),))
         self.s.query("UPDATE world2d SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
@@ -887,4 +908,17 @@ class Geom():
             sys.exit()
         else:
             Vis({'highlight_geom': None, 'anim': None, 'title': title, 'srv': 1})
+# }}}
+
+    def _debug(self):# {{{
+        pass
+        #dd(os.environ['AAMKS_PROJECT'])
+        #self.s.dumpall()
+        #self.s.dump_geoms()
+        #dd(self.s.query("select * from aamks_geom"))
+        #dd(self.s.query("select * from world2d where type_sec='STAI' or name='d14'"))
+        #dd(self.s.query("select * from world2d"))
+        #exit()
+        #self.s.dump()
+        
 # }}}

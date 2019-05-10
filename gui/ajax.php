@@ -73,9 +73,9 @@ function ajaxAnimsStatic() { /*{{{*/
 /*}}}*/
 function ajaxSingleAnim() { /*{{{*/
 	if($_POST['unzip']=='funExplode') { 
-		ajaxSingleAnimFunExplode();
+		funExplode();
 	} else if($_POST['unzip']=='funCircle') { 
-		ajaxSingleAnimFunCircle();
+		funCircle();
 	} else { 
 		$f=$_SESSION['main']['working_home']."/workers/$_POST[unzip]";
 		if(is_file($f)) { 
@@ -89,7 +89,7 @@ function ajaxSingleAnim() { /*{{{*/
 	}
 }
 /*}}}*/
-function ajaxSingleAnimFunCircle() { /*{{{*/
+function funCircle() { /*{{{*/
 	$arr=[];
 	$colors=["N", "N", "N", "N"];
 	for($t=0; $t<15; $t+=2.5) { 
@@ -101,14 +101,15 @@ function ajaxSingleAnimFunCircle() { /*{{{*/
 		}
 		$arr[]=$record;
 	}
-	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 200, "time_shift" => 0  ];
-	$collect['data']=$arr;
+	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0, "animations" => array() ];
+	$collect['animations']['evacuees']=$arr;
+	$collect['animations']['rooms_opacity']=[];
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=> json_encode($collect)));
 }
 /*}}}*/
-function ajaxSingleAnimFunExplode() { /*{{{*/
+function funExplode() { /*{{{*/
 	$arr=[];
-	$colors=["L", "N", "N", "N"];
+	$colors=["M", "L", "N", "H" ];
 	$y=[];
 	for($t=0; $t<4; $t+=1) { 
 		$record=[];
@@ -118,8 +119,9 @@ function ajaxSingleAnimFunExplode() { /*{{{*/
 		}
 		$arr[]=$record;
 	}
-	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0  ];
-	$collect['data']=$arr;
+	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0, "animations" => array() ];
+	$collect['animations']['evacuees']=$arr;
+	$collect['animations']['rooms_opacity']=[];
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=> json_encode($collect)));
 }
 /*}}}*/

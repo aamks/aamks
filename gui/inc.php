@@ -28,6 +28,16 @@ function dd3($arr) {
 }
 
 /*}}}*/
+function init_main_vars() { #{{{
+	#psql aamks -c 'select * from users'
+	#psql aamks -c 'select * from projects'
+	if(isset($_SESSION['main']['project_id'])) { return; }
+	$_SESSION['main']['user_id']=1;
+	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
+	$_SESSION['nn']->ch_main_vars($r[0]);
+}
+/*}}}*/
+
 class Aamks {/*{{{*/
 	public function __construct($site){
 		if($site!="ajax") { $this->htmlHead($site); } 
