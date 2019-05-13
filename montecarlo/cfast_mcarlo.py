@@ -84,7 +84,7 @@ class CfastMcarlo():
         fire_origin+=[compa['floor']]
         self._save_fire_origin(fire_origin)
 
-        collect=('FIRE', compa['global_type_id'], x, y, z, 1, 'TIME' ,'0','0','0','0','medium')
+        collect=('FIRE', compa['global_type_id'], round(compa['width']/(2.0*100),2), round(compa['depth']/(2.0*100),2), z, 1, 'TIME' ,'0','0','0','0','medium')
         return (','.join(str(i) for i in collect))
 
 # }}}
