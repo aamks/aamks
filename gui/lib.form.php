@@ -315,7 +315,7 @@ function get_defaults($q) {/*{{{*/
 			{ "min": 15     , "max": 27    , "quarter": 0  , "full": 0.5 }  ,
 			{ "min": 27     , "max": 99999 , "quarter": 0  , "full": 0.5 }
 		], 
-		"vents_open": { "DELECTR": 0.04, "DCLOSER": 0.14, "DOOR": 0.5, "VVENTS": 0.96 },
+		"vents_open": { "DELECTR": 0.04, "DCLOSER": 0.14, "DOOR": 0.5, "VVENT": 0.96 },
 		"c_const": 8,
 		"evacuees_max_h_speed" : { "mean" : 120    , "sd" : 20 },
 		"evacuees_max_v_speed" : { "mean" : 80     , "sd" : 20 },
