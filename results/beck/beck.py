@@ -366,6 +366,7 @@ with open('{}/picts/dane.txt'.format(p.dir), 'w') as g:
     temp_val = p.temp_values()
     g.write("MAX_TEMP - PER: {}, MEAN: {}".format(temp_val[0], temp_val[1]))
     g.write('P_dcbe: {}'.format(t_kryt*bar*p_ext))
+    g.write('DEAD RATIO: {}'.format(sum(p.losses['dead'])/p.total))
 
 
 t = EventTreeFED(building=p.dir, p_general=bar, p_develop=p_ext, p_dcbe=t_kryt, p_fed_n=fed_n, p_fed_l=fed_l, p_fed_m=fed_m, p_fed_f=fed_f)
