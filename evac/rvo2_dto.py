@@ -47,6 +47,39 @@ class EvacEnv:
         logging.basicConfig(filename='aamks.log', level='logging.{}'.format(self.config['LOGGING_MODE']),
                             format='%(asctime)s %(levelname)s: %(message)s')
 
+    def _find_closest_exit(self, evacuee):
+        paths, paths_free_of_smoke = list(), list()
+
+        for door in self.general['doors']:
+            x,y = door['center_x'],door['center_y']
+            path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (x, y)], maxStraightPath=100)
+            if self._next_room_in_smoke(evacuee, path) is not True:
+                paths_free_of_smoke.append([x, y, LineString(path).length])
+                paths.append([x, y, LineString(path).length])
+            else:
+                paths.append([x, y, LineString(path).length])
+
+        if len(paths_free_of_smoke) > 0:
+            exits = list(zip(*paths_free_of_smoke))[0]
+            return paths_free_of_smoke[exits.index(max(exits))][0], paths_free_of_smoke[exits.index(max(exits))][1]
+        else:
+            exits = list(zip(*paths))[0]
+            return paths[exits.index(max(exits))][0], paths[exits.index(max(exits))][1]
+
+
+
+    def _next_room_in_smoke(self, evacuee, path):
+        od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee), self.current_time, self.floor)
+        self.evacuees.set_optical_density(evacuee, od_at_agent_position)
+        if self.config['SMOKE_AWARENESS']:
+            od_next_room = self.smoke_query.get_visibility(path[1], self.current_time, self.floor)
+            if od_at_agent_position < od_next_room:
+                return True
+            else:
+                return False
+        else:
+            return False
+
     def read_cfast_record(self, time):
         self.smoke_query.read_cfast_record(time)
 
@@ -92,35 +125,17 @@ class EvacEnv:
         self.velocities = [tuple((int(self.sim.getAgentPrefVelocity(i)[0]), int(self.sim.getAgentPrefVelocity(i)[1]))) for (i)
                            in range(self.sim.getNumAgents())]
 
-    def set_exit_door(self):
-        for evacuee in range(self.evacuees.get_number_of_pedestrians()):
-            paths = list()
-
-            if (self.evacuees.get_exit_door(evacuee) not in self.evacuees.get_blocked_exits(evacuee)) and self.evacuees.get_exit_door(evacuee) is not None:
-                continue
-
-            for door in self.general['doors']:
-                path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (door['center_x'], door['center_y'])], maxStraightPath=100)
-                paths.append(LineString(path).length)
-
-            if len(self.evacuees.get_blocked_exits(evacuee)) == len(self.general['doors']):
-                closest_exit = paths.index(heapq.nsmallest(1, paths)[-1])
-            else:
-                closest_exit = paths.index(heapq.nsmallest(len(self.evacuees.get_blocked_exits(evacuee))+1, paths)[-1])
-
-            self.evacuees.set_exit_door(ped_no=evacuee, exit_door=(self.general['doors'][closest_exit]['center_x'], self.general['doors'][closest_exit]['center_y']))
-
     def set_goal(self):
-        for i in range(self.evacuees.get_number_of_pedestrians()):
-            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
+        for e in range(self.evacuees.get_number_of_pedestrians()):
+            if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
                 continue
             else:
-                goal = self.nav.query([self.evacuees.get_position_of_pedestrian(i), self.evacuees.get_exit_door(i)], maxStraightPath=32)
-                self.evacuees.set_goal(ped_no=i, goal=goal)
+                goal = self.nav.query([self.evacuees.get_position_of_pedestrian(e), self._find_closest_exit(e)], maxStraightPath=32)
+                self.evacuees.set_goal(ped_no=e, goal=goal)
 
         self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
-        for i in range(self.sim.getNumAgents()):
-            self.focus.append(self.evacuees.get_goal_of_pedestrian(i))
+        for e in range(self.sim.getNumAgents()):
+            self.focus.append(self.evacuees.get_goal_of_pedestrian(e))
 
     def update_speed(self):
         logging.debug('Flooor {} udated speed'.format(self.floor))
@@ -128,16 +143,8 @@ class EvacEnv:
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
-                agent_od = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(i),
-                                                                               self.current_time, self.floor)
-
-                goal_od = self.smoke_query.get_visibility(self.evacuees.get_goal(i), self.current_time, self.floor)
-
-                self.evacuees.update_speed_of_pedestrian(i, agent_od)
+                self.evacuees.update_speed_of_pedestrian(i)
                 self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_of_pedestrian(i))
-
-                if agent_od < goal_od:
-                    self.evacuees.mark_exit_as_blocked(ped_no=i, blocked_exit_door=self.evacuees.get_exit_door(i))
 
     def update_fed(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
@@ -211,7 +218,10 @@ class EvacEnv:
              'simulation_id': self.general['SIM_ID'],
              'simulation_time': self.get_simulation_time(),
              'time_shift': self.evacuees.get_first_evacuees_time(),
-             'data': data
+             'animations': {
+                 'evacuees': data,
+                 'rooms_opacity': []
+             }
              }
         return json_content
 
@@ -228,7 +238,6 @@ class EvacEnv:
             self.update_time()
             if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
                 self.update_fed()
-            self.set_exit_door()
             self.save_data_for_visualization()
             self.get_rset_time()
             if self.rset != 0:

@@ -182,7 +182,7 @@ class Worker:
 
             e = self._create_evacuees(i)
             eenv.place_evacuees(e)
-            eenv.set_exit_door()
+            #eenv.set_exit_door()
             self.floors.append(eenv)
 
     def do_simulation(self):
@@ -236,7 +236,6 @@ class Worker:
         self._write_meta()
 
         Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
-        #print("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id) )
     # }}}
     def _write_animation_zips(self):# {{{
         '''

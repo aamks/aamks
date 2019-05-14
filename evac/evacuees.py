@@ -117,12 +117,20 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].blocked_exits
 
+    def clear_blocked_exits(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].blocked_exits = list()
+
+    def set_optical_density(self, ped_no, optical_density):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].optical_density_at_position = optical_density
+
     def get_first_evacuees_time(self):
         pre_evacuation_times = [self.pedestrians[i].pre_evacuation_time for i in range(len(self.pedestrians))]
         return round(min(pre_evacuation_times), 2)
 
-    def update_speed_of_pedestrian(self, ped_no, optical_density):
-        self.pedestrians[ped_no].update_speed(optical_density)
+    def update_speed_of_pedestrian(self, ped_no):
+        self.pedestrians[ped_no].update_speed()
 
     def update_fed_of_pedestrian(self, ped_no, fed):
         self.pedestrians[ped_no].update_fed(fed)
