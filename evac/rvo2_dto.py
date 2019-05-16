@@ -1,4 +1,5 @@
 import warnings
+
 warnings.simplefilter('ignore', RuntimeWarning)
 import rvo2
 from evac.evacuees import Evacuees
@@ -33,7 +34,6 @@ class EvacEnv:
         self.floor = 0
         self.nav = None
 
-
         f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
         self.config = json.load(f)
 
@@ -51,27 +51,41 @@ class EvacEnv:
         paths, paths_free_of_smoke = list(), list()
 
         for door in self.general['doors']:
-            x,y = door['center_x'],door['center_y']
+            x, y = door['center_x'], door['center_y']
             path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (x, y)], maxStraightPath=100)
             if self._next_room_in_smoke(evacuee, path) is not True:
-                paths_free_of_smoke.append([x, y, LineString(path).length])
-                paths.append([x, y, LineString(path).length])
+                try:
+                    paths_free_of_smoke.append([x, y, LineString(path).length])
+                except:
+                    self.evacuees.set_finish_to_agent(evacuee)
+                    paths_free_of_smoke.append([x, y, 0])
+                    logging.info(
+                        'Evacuee: {} pos: {} path {}'.format(evacuee, self.evacuees.get_goal_of_pedestrian(evacuee),
+                                                             path))
+
+                # paths.append([x, y, LineString(path).length])
             else:
                 paths.append([x, y, LineString(path).length])
 
         if len(paths_free_of_smoke) > 0:
-            exits = list(zip(*paths_free_of_smoke))[0]
-            return paths_free_of_smoke[exits.index(max(exits))][0], paths_free_of_smoke[exits.index(max(exits))][1]
+            exits = list(zip(*paths_free_of_smoke))[-1]
+            return paths_free_of_smoke[exits.index(min(exits))][0], paths_free_of_smoke[exits.index(min(exits))][1]
         else:
             exits = list(zip(*paths))[0]
-            return paths[exits.index(max(exits))][0], paths[exits.index(max(exits))][1]
-
-
+            return paths[exits.index(min(exits))][0], paths[exits.index(min(exits))][1]
 
     def _next_room_in_smoke(self, evacuee, path):
-        od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee), self.current_time, self.floor)
+        # logging.info('Evacuee: {}'.format(evacuee))
+        try:
+            od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee),
+                                                                   self.current_time, self.floor)
+        except:
+            od_at_agent_position = 0
+            logging.info(
+                'Evacuee: {} pos: {} path {}'.format(evacuee, self.evacuees.get_goal_of_pedestrian(evacuee), path[1]))
+
         self.evacuees.set_optical_density(evacuee, od_at_agent_position)
-        if self.config['SMOKE_AWARENESS']:
+        if self.config['SMOKE_AWARENESS'] and len(path) > 1:
             od_next_room = self.smoke_query.get_visibility(path[1], self.current_time, self.floor)
             if od_at_agent_position < od_next_room:
                 return True
@@ -97,7 +111,7 @@ class EvacEnv:
 
     @staticmethod
     def discretize_time(time):
-        return int(ceil(time/10.0)) * 10
+        return int(ceil(time / 10.0)) * 10
 
     def save_data_for_visualization(self):
         self.trajectory.append(self.positions)
@@ -108,10 +122,12 @@ class EvacEnv:
     def update_agents_position(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
-                self.sim.setAgentPosition(i, (10000+i * 200, 10000))
+                self.sim.setAgentPosition(i, (10000 + i * 200, 10000))
                 continue
             else:
-                self.evacuees.set_position_to_pedestrian(i, self.sim.getAgentPosition(i))
+                self.evacuees.set_position_to_pedestrian(i, (int(self.sim.getAgentPosition(i)[0]),
+                                                             int(self.sim.getAgentPosition(i)[1])))
+
         self.positions = [tuple((int(self.sim.getAgentPosition(i)[0]), int(self.sim.getAgentPosition(i)[1]))) for (i)
                           in range(self.sim.getNumAgents())]
         for i in range(self.evacuees.get_number_of_pedestrians()):
@@ -119,10 +135,13 @@ class EvacEnv:
 
     def update_agents_velocity(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
+            if i == 328:
+                self.evacuees.dump_evacuee_vars(i)
             self.evacuees.calculate_pedestrian_velocity(i, self.current_time)
         for i in range(self.evacuees.get_number_of_pedestrians()):
             self.sim.setAgentPrefVelocity(i, self.evacuees.get_velocity_of_pedestrian(i))
-        self.velocities = [tuple((int(self.sim.getAgentPrefVelocity(i)[0]), int(self.sim.getAgentPrefVelocity(i)[1]))) for (i)
+        self.velocities = [tuple((int(self.sim.getAgentPrefVelocity(i)[0]), int(self.sim.getAgentPrefVelocity(i)[1])))
+                           for (i)
                            in range(self.sim.getNumAgents())]
 
     def set_goal(self):
@@ -130,8 +149,16 @@ class EvacEnv:
             if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
                 continue
             else:
-                goal = self.nav.query([self.evacuees.get_position_of_pedestrian(e), self._find_closest_exit(e)], maxStraightPath=32)
-                self.evacuees.set_goal(ped_no=e, goal=goal)
+                position = self.evacuees.get_position_of_pedestrian(e)
+                goal = self.nav.query([position, self._find_closest_exit(e)], maxStraightPath=32)
+                try:
+                    vis = self.sim.queryVisibility(position, goal[2])
+                    if vis:
+                        self.evacuees.set_goal(ped_no=e, goal=goal[1:])
+                    else:
+                        self.evacuees.set_goal(ped_no=e, goal=goal)
+                except:
+                    self.evacuees.set_goal(ped_no=e, goal=goal)
 
         self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
         for e in range(self.sim.getNumAgents()):
@@ -148,10 +175,14 @@ class EvacEnv:
 
     def update_fed(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
-            if(self.evacuees.get_finshed_of_pedestrian(i)) == 0:
+            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
-                fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i), self.current_time, self.floor)
+                try:
+                    fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i), self.current_time,
+                                               self.floor)
+                except:
+                    fed = 0.0
                 self.evacuees.update_fed_of_pedestrian(i, fed * self.config['SMOKE_QUERY_RESOLUTION'])
 
         fed = [self.evacuees.get_fed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
@@ -213,23 +244,23 @@ class EvacEnv:
                 data.append(time_row)
 
         json_content = {'number_of_evacuees': self.sim.getNumAgents(),
-             'frame_rate': self.config['TIME_STEP'] * self.config['VISUALIZATION_RESOLUTION'],
-             'project_name': self.general['project_id'],
-             'simulation_id': self.general['SIM_ID'],
-             'simulation_time': self.get_simulation_time(),
-             'time_shift': self.evacuees.get_first_evacuees_time(),
-             'animations': {
-                 'evacuees': data,
-                 'rooms_opacity': []
-             }
-             }
+                        'frame_rate': self.config['TIME_STEP'] * self.config['VISUALIZATION_RESOLUTION'],
+                        'project_name': self.general['project_id'],
+                        'simulation_id': self.general['SIM_ID'],
+                        'simulation_time': self.get_simulation_time(),
+                        'time_shift': self.evacuees.get_first_evacuees_time(),
+                        'animations': {
+                            'evacuees': data,
+                            'rooms_opacity': []
+                        }
+                        }
         return json_content
 
     def do_simulation(self, time):
-        time_range = int(time/self.config['TIME_STEP'])
-        for step in range(time_range - 100, time_range):
-            self.set_goal()
+        time_range = int(time / self.config['TIME_STEP'])
+        for step in range(0, time_range):
             if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
+                self.set_goal()
                 self.update_speed()
             self.update_agents_velocity()
             self.sim.doStep()
@@ -242,4 +273,3 @@ class EvacEnv:
             self.get_rset_time()
             if self.rset != 0:
                 break
-

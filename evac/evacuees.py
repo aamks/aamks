@@ -1,4 +1,5 @@
 from evac.evacuee import Evacuee
+from pprint import pprint
 import logging
 
 #logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
@@ -139,6 +140,13 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].fed
 
+    def set_finish_to_agent(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].finished = 0
+
     def get_finshed_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].finished
+
+    def dump_evacuee_vars(self, ped_no):
+        pprint(vars(self.pedestrians[ped_no]))
