@@ -91,7 +91,7 @@ function ajaxSingleAnim() { /*{{{*/
 /*}}}*/
 function funCircle() { /*{{{*/
 	$arr=[];
-	$colors=["N", "N", "N", "N"];
+	$colors=["N", "L", "M", "H"];
 	for($t=0; $t<15; $t+=2.5) { 
 		$record=[];
 		for($a=0; $a<19; $a++) { 

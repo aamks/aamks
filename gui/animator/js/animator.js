@@ -449,7 +449,7 @@ function paperjsDisplayImage() {//{{{
 
 	// Draw static evacuees
 	for (var key in staticEvacuees) {
-		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: evacueeRadius,  fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
+		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: evacueeRadius,  fillColor: colors['doseN']['c'] }));
 	}
 
 } 
@@ -502,7 +502,7 @@ function paperjsDisplayAnimation() { //{{{
 	}
 
 	for (var i=0; i<numberOfEvacuees; i++) {
-		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: evacueeRadius, fillColor: colors['doseN']['c'], strokeColor: colors['doseN']['stroke'], strokeWidth: colors['doseN']['strokeWidth'] }));
+		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: evacueeRadius, fillColor: colors['doseN']['c'] }));
 	}
 
 }
@@ -518,7 +518,6 @@ function updateAnimatedElement(i) {//{{{
 	// if(frame == 0 || evacueesData[frame][i][4] != evacueesData[frame-1][i][4] ) {  evacBalls.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]; } 
 	// evacBalls.children[i].opacity=evacVelocities.children[i].opacity=evacueesData[frame+1][i][5]; 
 	evacBalls.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]['c']; 
-	evacBalls.children[i].strokeColor=colors['dose'+evacueesData[frame][i][4]]['stroke']; 
 
 	evacBalls.children[i].position.x =  evacueesData[frame][i][0] + (evacueesData[frame+1][i][0] - evacueesData[frame][i][0]) * (lerpFrame%lerps)/lerps; 
 	evacBalls.children[i].position.y =  evacueesData[frame][i][1] + (evacueesData[frame+1][i][1] - evacueesData[frame][i][1]) * (lerpFrame%lerps)/lerps; 
@@ -567,8 +566,8 @@ function onMouseDown(event) {//{{{
 		x=evacBalls.children[i].position.x;
 		y=evacBalls.children[i].position.y;
 		evacLabels.addChild(new Path.Circle({ center: new Point(x,y), radius:evacueeRadius*0.01, fillColor:"#f80" }));
-		evacLabels.addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y-evacueeRadius/3), fillColor:"#000", content: "f"+(i+1), fontFamily: 'Roboto', fontSize: evacueeRadius*0.7 }));
-		evacLabels.addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y+evacueeRadius/2), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.7}));
+		evacLabels.addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y-evacueeRadius/3), fillColor:"#fff", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.7 }));
+		evacLabels.addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y+evacueeRadius/2), fillColor:"#fff", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.7}));
 	}
 };
 //}}}
@@ -611,6 +610,16 @@ function bubbles_ranges(side) { //{{{
 }
 //}}}
 function initRoomSmoke() {//{{{
+	// TODO: Smoke animations: we have lost keys and have indices now. Some db to fix it?
+
+ 	// r1: {name: "r1", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
+ 	// r2: {name: "r2", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
+ 	// r3: {name: "r3", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
+
+ 	// 0: {name: "r1", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
+ 	// 1: {name: "r2", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
+ 	// 2: {name: "r3", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
+
 	project.layers['roomSmoke'].activate();
 	var radius=350;
 	var roomMargin=25;
