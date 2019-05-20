@@ -268,7 +268,7 @@ class CfastMcarlo():
 
         txt=(
         'VERSN,7,{}_{}'.format('SIM', self.conf['project_id']),
-        'TIMES,600,-120,10,10',
+        'TIMES,{},-120,10,10'.format(self.conf['simulation_time']),
         'EAMB,{},101300,0'.format(273+outdoor_temp),
         'TAMB,293.15,101300,0,50',
         'DTCHECK,1.E-9,100',
@@ -373,7 +373,8 @@ class CfastMcarlo():
     def _section_vvent(self):# {{{
         # VVENT AREA, SHAPE, INITIAL_FRACTION
         txt=['!! VVENT,top,bottom,id,area,shape,rel_type,criterion,target,i_time, i_frac, f_time, f_frac, offset_x, offset_y']
-        for v in self.s.query("SELECT distinct v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_pri='VVENT' AND c.type_pri = 'COMPA' ORDER BY v.vent_from,v.vent_to"):
+        #for v in self.s.query("SELECT distinct v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_pri='VVENTS' AND c.type_pri = 'COMPA' ORDER BY v.vent_from,v.vent_to"):
+        for v in self.s.query("SELECT distinct v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to"):
             collect=[]
             collect.append('VVENT')                                         # VVENT AREA, SHAPE, INITIAL_FRACTION
             collect.append(v['vent_from'])                                  # COMPARTMENT1
@@ -554,7 +555,7 @@ class CfastMcarlo():
             ('sprinklers'      , []) ,
             ('heatcom'         , []) ,
             ('delectr'         , []) ,
-            ('vnt'             , []) ,
+            ('vvent'           , []) ,
             ('radfrac'         , []) ,
         ])
 #}}}

@@ -98,22 +98,22 @@ class EventTreeFED:
 
         ax.plot([3.3, 6.5], [-0.5, -0.5], linewidth=0.1, color='white')
 
-        c = patches.Ellipse(xy=(0.643, 0.442), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='b')
+        c = patches.Ellipse(xy=(0.671, 0.442), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='b')
         ax.add_patch(c)
         p1 = float(self.p_general) * self.p_develop * self.p_dcbe * self.p_fed_f
         ax.text(4.65, -0.335, r'$P_4 =  %.2E; S_4 = H$' % Decimal(p1))
 
-        c = patches.Ellipse(xy=(0.643, 0.347), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='b')
+        c = patches.Ellipse(xy=(0.671, 0.347), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='b')
         ax.add_patch(c)
         p2 = float(self.p_general) * self.p_develop * self.p_dcbe * self.p_fed_m
         ax.text(4.65, -0.2, r'$P_3 =  %.2E; S_3 = M$' % Decimal(p2))
 
-        c = patches.Ellipse(xy=(0.643, 0.25), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='b')
+        c = patches.Ellipse(xy=(0.671, 0.25), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='b')
         ax.add_patch(c)
         p = float(self.p_general) * self.p_develop * self.p_dcbe * self.p_fed_l
         ax.text(4.65, -0.052, r'$P_2 =  %.2E; S_2 = L$' % Decimal(p))
 
-        c = patches.Ellipse(xy=(0.643, 0.159), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='b')
+        c = patches.Ellipse(xy=(0.671, 0.159), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='b')
         ax.add_patch(c)
         p = float(self.p_general) * self.p_develop * self.p_dcbe * self.p_fed_n
         ax.text(4.65, 0.094, r'$P_1 =  %.2E; S_1 = N$' % Decimal(p))

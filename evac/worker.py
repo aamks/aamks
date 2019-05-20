@@ -174,7 +174,7 @@ class Worker:
                 logging.info('RVO2 ready on {} floors'.format(i))
 
             for obst in self.obstacles['points'][str(i)]:
-                obstacles.append([tuple(x) for x in obst])
+                obstacles.append([tuple(x) for x in obst[:4]])
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
             eenv.generate_nav_mesh()

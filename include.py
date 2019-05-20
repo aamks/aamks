@@ -187,7 +187,6 @@ class Sqlite: # {{{
 # }}}
 class Psql: # {{{
     def __init__(self):
-        ''' Blender's python doesn't need nor supports psql '''
 
         import psycopg2
         import psycopg2.extras
