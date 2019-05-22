@@ -21,16 +21,63 @@ from include import Json
 from include import Dump as dd
 from include import Vis
 from numpy.random import uniform
-from schody import Queue 
-import numpy.random as random
 # }}}
+
+from schody import Queue 
+#s.query("select count(name), min(x0), max(x1) from world2d where name LIKE 's4|%'")[0].values()
+#s.query("select y0, y1 from world2d where name LIKE 's4|1'")[0].values()
+
+class Prepare_queues:
+
+    def __init__(self, floors=3, number_queues=3, width=1000, height=1000):
+        self.floors = floors
+        self.number_queues = number_queues
+        self.width = width
+        self.height = height
+        self.lenght = (self.width**2+self.height**2)**(1/2)
+        self.size = int((self.width+self.lenght)/50)
+
+    def create_queues(self):
+        que = []
+        for i in range(self.number_queues):
+            que.append(Queue(i, self.floors, self.size))
+        return que
+
+
+    def create_floor_positions(self,floor=0, offset=0):
+        positions = []
+        sin_alfa = self.height/self.lenght
+        cos_alfa = self.width/self.lenght
+        lenght_steps = (self.width+self.lenght)/self.size
+        for i in range(self.size):
+            l = i*lenght_steps
+            x = offset+l*cos_alfa
+            y = floor*self.height+l*sin_alfa
+            if l>self.lenght:
+                x = offset+lenght_steps*(self.size-i)
+                y = floor*self.height+self.height
+            positions.append((x,y))
+        return positions
+
+    def create_positions(self, offset=0):
+        positions = []
+        for i in range(self.floors):
+            positions.extend(self.create_floor_positions(floor=i, offset=offset))
+        for i in positions:
+            print(i)
+        #return positions
+
+A = Prepare_queues()
+A.size = 5
+q = A.create_queues()
+print(q, q[0].floor, q[0].floor_space)
+A.create_positions()
 
 class EvacEnv:
     def __init__(self):# {{{
-        self.que = Queue(3, 4)
+        self.que = create_queues()
         self.json=Json()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-
         self.evacuee_radius=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['evacueeRadius']
         time=1
         #self.sim rvo2.PyRVOSimulator TIME_STEP , NEIGHBOR_DISTANCE , MAX_NEIGHBOR , TIME_HORIZON , TIME_HORIZON_OBSTACLE , RADIUS , MAX_SPEED
@@ -120,7 +167,7 @@ class EvacEnv:
         zf.close()
 # }}}
     def _run(self):# {{{
-        for t in range(40):
+        for t in range(30):
             self.sim.doStep()
             self._update()
             #print([x for x in self.que.que() if x is not None])
@@ -128,4 +175,4 @@ class EvacEnv:
             self.que.pop()
 # }}}
 
-e=EvacEnv()
+#e=EvacEnv()

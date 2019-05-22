@@ -10,10 +10,14 @@ LICZBA_AGENTOW = 40
 
 class Queue:  # {{{
 
-    def __init__(self, floor, floor_space):
+    def __init__(self,name, floor, floor_space):
+        self.name = name
         self.floor = floor
         self.floor_space = floor_space
         self.queue = floor*floor_space*[None]
+
+    def __repr__(self):
+        return str(self.name)+"-queue"
 
     def add(self, floor, data):
         if self.queue[floor*self.floor_space] is None:
@@ -50,6 +54,10 @@ class Queue:  # {{{
 
     def len_que(self):
         return len(self.queue)   # }}}
+
+    def set_position(self):
+        for x, agent in enumerate(self.queue):
+            print(x)
 
 
 class Agent:  # {{{

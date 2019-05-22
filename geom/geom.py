@@ -51,6 +51,9 @@ class Geom():
         self._assert_faces_ok()
         self._assert_room_has_door()
         self._debug()
+        self.s.query("UPDATE world2d SET x0=5200 where name='s4|0'")
+        dd(s.query("select name, x0, x1, y0, y1 from world2d where name LIKE 's4|%'"))
+
 # }}}
     def _floors_meta(self):# {{{
         ''' 
@@ -896,7 +899,7 @@ class Geom():
 
     def _debug(self):# {{{
         pass
-        #dd(os.environ['AAMKS_PROJECT'])
+#        dd(os.environ['AAMKS_PROJECT'])
         #self.s.dumpall()
         #self.s.dump_geoms()
         #dd(self.s.query("select * from aamks_geom"))
@@ -904,5 +907,7 @@ class Geom():
         #dd(self.s.query("select * from world2d"))
         #exit()
         #self.s.dump()
+        #dd(self.s.query("select name, x0, y0 from aamks_geom WHERE name='d10'"))
+        #dd(self.s.query("select name, x0, y0 from aamks_geom WHERE name=?", ('d10',)))
         
 # }}}
