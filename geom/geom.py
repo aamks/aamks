@@ -62,14 +62,12 @@ class Geom():
         CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
         '''
         # TODO: remove block
-        z=World2d()
-        z.make(self)
+        z=World2d(self)
         
         if self.global_meta['multifloor_building']==0:
             return
         else:
-            #z=World2d()
-            #z.make(self)
+            #z=World2d(self)
             pass
 
 # }}}
@@ -81,12 +79,11 @@ class Geom():
         '''
 
         self.floors_meta=OrderedDict()
-        self._world_minx=9999999
-        self._world_miny=9999999
-        self._world_minz_abs=9999999
-        self._world_maxx=-9999999
-        self._world_maxy=-9999999
-        self._world_maxz_abs=-9999999
+        self._world=dict()
+        self._world['minx']=9999999
+        self._world['maxx']=-9999999
+        self._world['miny']=9999999
+        self._world['maxy']=-9999999
         prev_maxz=0
         for floor in self.floors:
             minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (floor,))[0]['minx']
@@ -103,10 +100,10 @@ class Geom():
             center=(minx + int(width/2), miny + int(height/2), minz_abs)
             self.floors_meta[floor]=OrderedDict([('width', width) , ('height', height) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim) ])
 
-            self._world_minx=min(self._world_minx, minx)
-            self._world_maxx=max(self._world_maxx, maxx)
-            self._world_miny=min(self._world_miny, miny)
-            self._world_maxy=max(self._world_maxy, maxy)
+            self._world['minx']=min(self._world['minx'], minx)
+            self._world['maxx']=max(self._world['maxx'], maxx)
+            self._world['miny']=min(self._world['miny'], miny)
+            self._world['maxy']=max(self._world['maxy'], maxy)
 
         self.s.query("CREATE TABLE floors_meta(json)")
         self.s.query('INSERT INTO floors_meta VALUES (?)', (json.dumps(self.floors_meta),))
@@ -115,6 +112,7 @@ class Geom():
     def _global_meta(self):# {{{
         self.s.query("CREATE TABLE global_meta(json)")
         self.global_meta={}
+        self.global_meta['world']=self._world
 
         if len(self.floors_meta) > 1:
             self.global_meta['multifloor_building']=1

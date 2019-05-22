@@ -17,23 +17,26 @@ from math import sqrt
 from math import floor
 from include import Sqlite
 from include import Json
-from include import Dump as dd
 from include import Vis
+from include import Dump as dd
 
 # }}}
 
 class World2d():
-    def make(self,x):
-        print('world', os.environ['AAMKS_PROJECT'])
+    def __init__(self,x):# {{{
+        #print('world', os.environ['AAMKS_PROJECT'])
+        #Vis({'highlight_geom': None, 'anim': None, 'title': '11', 'srv': 1})
         self.s=x.s
         self.json=x.json
         self.floors=x.floors
         self.floors_meta=x.floors_meta
+        self.global_meta=x.global_meta
         self.conf=x.conf
         self._towers_init()
         self._towers_meta_make()
         self._towers_db_write()
-
+        self._make_world2d()
+# }}}
     def _towers_init(self):# {{{
         ''' 
         This is for evacuation only and cannot interfere with fire models
@@ -59,22 +62,6 @@ class World2d():
                             self.towers[(w['floor'], w['name'], w['type_sec'])].append(floor)
                 self.towers[(w['floor'], w['name'], w['type_sec'])].remove(current_floor)
 # }}}
-
-    def _towers_db_write(self):# {{{
-        next_id=100000
-        for w, floors in self.towers.items():
-            self.s.query("UPDATE aamks_geom set type_tri='TOWER_BASE' WHERE name=?", (w[1],))
-            row=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (w[1],))[0]
-            orig_name=row['name']
-            for floor in floors:
-                row['fire_model_ignore']=1
-                row['floor']=floor
-                row['global_type_id']=next_id
-                next_id+=1
-                row['name']="{}.{}".format(orig_name,floor)
-                row['type_tri']="TOWER_FLOOR"
-                self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
-# }}}
     def _towers_meta_make(self):# {{{
         '''
         The floor segment of a staircase (FSoS) is a cuboid which may be
@@ -85,9 +72,9 @@ class World2d():
         views. Therefore we need to scale the staircase height so that the same
         number of agents fits the given cuboid. 
 
-        FSoS side projection must then equal room_area which must equal height
-        x max(width,depth) since we pick max of width or depth for staircase
-        projection. 
+        FSoS side projection must then equal the size of the room_area which
+        must equal height x max(width,depth) since we pick max of width or
+        depth for staircase projection. 
 
         We need to calculate how many FSoS'es there are for each staircase
         (tower_span).
@@ -138,7 +125,7 @@ class World2d():
     def _towers_rectangles(self):# {{{
         '''
         All FSoS'es will be represented at constant height to better fit
-        Animator. It will allow to compare to vertical speed at the same
+        Animator. It will allow to compare the vertical speed at the same
         distance for each staircase and align the floors. We are free to deform
         any staircase in any way taking the resulting area (the capacity for
         evacuees) is not changed. Therefore we pick the preferred height and
@@ -176,21 +163,34 @@ class World2d():
                 mmax=max(mmax,(i['width']+i['x0']))
         return mmax
 # }}}
+    def _towers_db_write(self):# {{{
+        next_id=100000
+        for w, floors in self.towers.items():
+            self.s.query("UPDATE aamks_geom set type_tri='TOWER_BASE' WHERE name=?", (w[1],))
+            row=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (w[1],))[0]
+            orig_name=row['name']
+            for floor in floors:
+                row['fire_model_ignore']=1
+                row['floor']=floor
+                row['global_type_id']=next_id
+                next_id+=1
+                row['name']="{}.{}".format(orig_name,floor)
+                row['type_tri']="TOWER_FLOOR"
+                self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
+# }}}
 
     def _make_world2d(self):# {{{
         '''
         CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
         '''
         
-        if self.global_meta['multifloor_building']==0:
-            return
-
         self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
         self.s.query("INSERT INTO world2d SELECT * FROM aamks_geom")
 
         # TODO: we should probably do without self.world2d_ty var, since later we've got this
         # self.towers_meta={} thing, which should be even wiser.
         # ty stands for translate y
+        # dd(self.towers_meta['rectangles'])
 
         self.world2d_ty=OrderedDict()
         last_maxy=-200
@@ -201,9 +201,10 @@ class World2d():
             ty=last_maxy+200-meta['miny']
             last_maxy+=meta['height']+400
             self.s.query("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
-            z['world2d']['lines'].append( { "xy": (self._world_minx-300 , last_maxy)     , "x1": self._world_maxx , "y1": last_maxy , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
-            z['world2d']['texts'].append( { "xy": (self._world_minx-300 , last_maxy-50) , "content": floor       , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
+            z['world2d']['lines'].append( { "xy": (self.global_meta['world']['minx']-300 , last_maxy)    , "x1": self.global_meta['world']['maxx'] , "y1": last_maxy , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
+            z['world2d']['texts'].append( { "xy": (self.global_meta['world']['minx']-300 , last_maxy-50) , "content": floor       , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
             self.world2d_ty[floor]=ty
+        #dd(self.world2d_ty)
 
         self.s.query("UPDATE world2d SET floor='world2d'")
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
