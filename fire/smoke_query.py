@@ -207,6 +207,8 @@ class SmokeQuery:
 # }}}
     def get_visibility(self, position, time, floor):# {{{
         conditions = self.get_conditions(position, floor)
+        if conditions == 'outside':
+            print('outside')
         logging.debug('Query visibility at time: {} on position: {}'.format(time, position))
 
         hgt = conditions['HGT']
