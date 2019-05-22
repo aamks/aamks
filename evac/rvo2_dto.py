@@ -229,7 +229,7 @@ class EvacEnv:
 
     def get_rset_time(self) -> None:
         exited = self.finished.count(0)
-        #print('Time: {}, evacuated: {}'.format(self.get_simulation_time(), exited))
+        logging.info('Time: {}, evacuated: {}'.format(self.get_simulation_time(), exited))
         if (exited > len(self.finished) * 0.98) and self.per_9 == 0:
             self.rset9 = self.current_time + 30
         if all(x == 0 for x in self.finished) and self.rset == 0:
