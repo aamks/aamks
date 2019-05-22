@@ -174,7 +174,7 @@ class Worker:
                 logging.info('RVO2 ready on {} floors'.format(i))
 
             for obst in self.obstacles['points'][str(i)]:
-                obstacles.append([tuple(x) for x in obst[:4]])
+                obstacles.append([tuple(x) for x in array(obst)[[0,1,2,3,4,1]]])
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
             eenv.generate_nav_mesh()
@@ -217,8 +217,8 @@ class Worker:
             else:
                 time.sleep(1)
             print('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
-            #if time_frame > (self.vars['conf']['simulation_time'] - 10):
-            if time_frame > 80:
+            if time_frame > (self.vars['conf']['simulation_time'] - 10):
+            #if time_frame > 80:
                 break
             if prod(array(l)) > 0:
                 break

@@ -31,6 +31,8 @@ class Evacuee:
         self.alpha_v = alpha_v
         self.beta_v = beta_v
         self.max_speed = h_speed
+        self.num_of_obstacle_neighbours = 0
+        self.num_of_orca_lines = 0
 
         logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
                             format='%(asctime)s %(levelname)s: %(message)s')

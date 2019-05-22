@@ -135,8 +135,10 @@ class EvacEnv:
 
     def update_agents_velocity(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
-            if i == 328:
-                self.evacuees.dump_evacuee_vars(i)
+            self.evacuees.set_num_of_obstacle_neighbours(i, self.sim.getAgentNumObstacleNeighbors(i))
+            self.evacuees.set_num_of_orca_lines(i, self.sim.getAgentNumORCALines(i))
+            #if i == 210:
+                #self.evacuees.dump_evacuee_vars(i)
             self.evacuees.calculate_pedestrian_velocity(i, self.current_time)
         for i in range(self.evacuees.get_number_of_pedestrians()):
             self.sim.setAgentPrefVelocity(i, self.evacuees.get_velocity_of_pedestrian(i))
@@ -227,11 +229,11 @@ class EvacEnv:
 
     def get_rset_time(self) -> None:
         exited = self.finished.count(0)
-        logging.info('Time: {}, floor: {}, evacuated: {}'.format(self.get_simulation_time(), self.floor, exited))
-        if (exited > len(self.finished) * 0.1) and self.per_9 == 0:
-            self.per_9 = self.current_time
+        #print('Time: {}, evacuated: {}'.format(self.get_simulation_time(), exited))
+        if (exited > len(self.finished) * 0.98) and self.per_9 == 0:
+            self.rset9 = self.current_time + 30
         if all(x == 0 for x in self.finished) and self.rset == 0:
-            self.rset = self.current_time
+            self.rset = self.current_time + 30
 
     def record_data(self):
         data = []

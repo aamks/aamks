@@ -150,3 +150,11 @@ class Evacuees:
 
     def dump_evacuee_vars(self, ped_no):
         pprint(vars(self.pedestrians[ped_no]))
+
+    def set_num_of_obstacle_neighbours(self, ped_no, num_of_neighbours):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].num_of_obstacle_neighbours = num_of_neighbours
+
+    def set_num_of_orca_lines(self, ped_no, num_of_lines):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].num_of_orca_lines = num_of_lines
