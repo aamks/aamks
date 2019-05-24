@@ -24,7 +24,7 @@ from include import Dump as dd
 
 class World2d():
     def __init__(self,x):# {{{
-        #print('world', os.environ['AAMKS_PROJECT'])
+        print('world2d', os.environ['AAMKS_PROJECT'])
         #Vis({'highlight_geom': None, 'anim': None, 'title': '11', 'srv': 1})
         self.s=x.s
         self.json=x.json
@@ -65,22 +65,22 @@ class World2d():
     def _towers_meta_make(self):# {{{
         '''
         The floor segment of a staircase (FSoS) is a cuboid which may be
-        perceived as a deformed plane originally. Then FSoS contains as many
-        agents as just a flat floor (top projection) does.
+        perceived as a deformed plane originally. It can be shown, that the
+        agents' capacity of FSoS equals the number of agents on a flat floor
+        (top projection). 
 
         In Animator the agents will have the same balls sizes for top and side
         views. Therefore we need to scale the staircase height so that the same
         number of agents fits the given cuboid. 
 
         FSoS side projection must then equal the size of the room_area which
-        must equal height x max(width,depth) since we pick max of width or
-        depth for staircase projection. 
+        must equal height x width. 
 
         We need to calculate how many FSoS'es there are for each staircase
         (tower_span).
 
         Assumption: on the top-most-floor there only fit two rows of agents,
-        i.e. 2 x 54cm balls rows.
+        i.e. 2 x 54cm balls rows =~ 120 area.
 
         '''
 
@@ -175,7 +175,7 @@ class World2d():
                 row['global_type_id']=next_id
                 next_id+=1
                 row['name']="{}.{}".format(orig_name,floor)
-                row['type_tri']="TOWER_FLOOR"
+                row['type_tri']="TOWER_LEFT"
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
 # }}}
 
@@ -186,16 +186,29 @@ class World2d():
         
         self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
         self.s.query("INSERT INTO world2d SELECT * FROM aamks_geom")
+        self.s.query("UPDATE world2d SET floor='world2d'")
+        self._make_world2d_paint_floor_lines()
+        self._make_world2d_staircases_on_the_right()
+        self._make_world2d_meta()
+        self.s.query("UPDATE aamks_geom SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE world2d    SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE aamks_geom SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
+        self.s.query("UPDATE world2d    SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
+        #self._make_world2d_obstacles()
+        #dd(self.s.query("SELECT name,floor,x0,x1,y0,y1,width,height FROM world2d where type_sec='STAI'"))
 
-        # TODO: we should probably do without self.world2d_ty var, since later we've got this
-        # self.towers_meta={} thing, which should be even wiser.
-        # ty stands for translate y
-        # dd(self.towers_meta['rectangles'])
+        dd(self.towers_meta['rectangles']['s4'])
+        dd(self.towers_meta)
+# }}}
+    def _make_world2d_paint_floor_lines(self):# {{{
 
-        self.world2d_ty=OrderedDict()
-        last_maxy=-200
-
+        self.towers_meta['x0']=self.s.query("SELECT max(x1) AS maxx FROM world2d")[0]['maxx']
+        x0=self.towers_meta['x0'] + self.towers_meta['x_offset']
+        x1=self.towers_meta['x0'] + self.towers_meta['x_offset'] + self.towers_meta['width']
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
+        last_maxy=-200
+        # The lines on the left
         for floor in list(self.floors_meta.keys())[::-1]:
             meta=self.floors_meta[floor]
             ty=last_maxy+200-meta['miny']
@@ -203,35 +216,23 @@ class World2d():
             self.s.query("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
             z['world2d']['lines'].append( { "xy": (self.global_meta['world']['minx']-300 , last_maxy)    , "x1": self.global_meta['world']['maxx'] , "y1": last_maxy , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
             z['world2d']['texts'].append( { "xy": (self.global_meta['world']['minx']-300 , last_maxy-50) , "content": floor       , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
-            self.world2d_ty[floor]=ty
-        #dd(self.world2d_ty)
 
-        self.s.query("UPDATE world2d SET floor='world2d'")
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        self._make_world2d_staircases_lines()
-        self._make_world2d_staircases()
-        self._make_world2d_meta()
-        #self._make_world2d_obstacles()
-        self.s.query("UPDATE aamks_geom SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
-        self.s.query("UPDATE world2d    SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
-        self.s.query("UPDATE aamks_geom SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
-        self.s.query("UPDATE world2d    SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
-# }}}
-    def _make_world2d_staircases_lines(self):# {{{
-
-        self.towers_meta['x0']=self.s.query("SELECT max(x1) AS maxx FROM world2d")[0]['maxx']
-        x0=self.towers_meta['x0'] + self.towers_meta['x_offset']
-        x1=x0+self.towers_meta['width']
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        # The lines on the right
         for k,v in self.towers_meta['lines'].items():
-            z['world2d']['lines'].append( { "xy": (x0 , v)     , "x1": x1       , "y1": v         , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
-            z['world2d']['texts'].append( { "xy": (x0 , v-50) , "content": k, "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
+            z['world2d']['lines'].append( { "xy": (x0 , v)    , "x1": x1     , "y1": v         , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
+            z['world2d']['texts'].append( { "xy": (x0 , v-50) , "content": k , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
 
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 
     # }}}
-    def _make_world2d_staircases(self):# {{{
-        towers_offset=self.s.query("SELECT max(x1) AS maxx FROM world2d")[0]['maxx'] + self.towers_meta['x_offset']
+    def _make_world2d_staircases_on_the_right(self):# {{{
+        '''
+        Apainter will plot world2d. 
+        On the left we will have the original apainter image. 
+        On the right we will have the projections of staircases.
+        '''
+
+        towers_offset=self.towers_meta['x0'] + self.towers_meta['x_offset']
         for k,tt in self.towers_meta['rectangles'].items():
             i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k,))[0]
             for ii in tt:
@@ -243,9 +244,10 @@ class World2d():
                 i['width']=ii['width']
                 i['y0']=i['y1']-ii['height']
                 i['depth']=i['y1']-i['y0']
-                i['type_tri']='TOWER_FLOOR'
+                i['type_tri']='TOWER_RIGHT'
                 self.s.query("DELETE FROM world2d WHERE name=?", (i['name'],))
                 self.s.dict_insert('world2d', i)
+        dd(self.s.query("SELECT name,type_pri,type_sec,type_tri from world2d"))
 # }}}
     def _make_world2d_meta(self):# {{{
         '''
@@ -260,7 +262,7 @@ class World2d():
         height= maxy - miny
         center=(minx + int(width/2), miny + int(height/2), 0)
 
-        world2d_meta=OrderedDict([('width', width) , ('height', height) , ('z', 0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('world2d_ty', self.world2d_ty)])
+        world2d_meta=OrderedDict([('width', width) , ('height', height) , ('z', 0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy)])
         self.s.query("CREATE TABLE world2d_meta(json)")
         self.s.query("INSERT INTO world2d_meta VALUES (?)", (json.dumps(world2d_meta),))
         self.s.query("UPDATE world2d SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
