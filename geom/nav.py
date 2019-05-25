@@ -64,7 +64,7 @@ class Navmesh:
 
         if len(bypass_rooms) > 0 :
             floors_meta=json.loads(self.s.query("SELECT json FROM floors_meta")[0]['json'])
-            elevation=floors_meta[floor]['z']
+            elevation=floors_meta[floor]['minz_abs']
             where=" WHERE "
             where+=" vent_from_name="+" OR vent_from_name=".join([ "'{}'".format(i) for i in bypass_rooms])
             where+=" OR vent_to_name="+" OR vent_to_name=".join([ "'{}'".format(i) for i in bypass_rooms])

@@ -32,8 +32,8 @@ class Geom():
         self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.geomsMap=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['aamksGeomsMap']
-        self._doors_width=32
-        self._wall_width=4
+        self.doors_width=32
+        self.walls_width=4
         self._geometry2sqlite()
         self._enhancements()
         self._init_dd_geoms()
@@ -49,9 +49,8 @@ class Geom():
         self._add_names_to_vents_from_to()
         self._calculate_sills()
         self._auto_detectors_and_sprinklers()
-        self._make_world2d()
-        exit()
         self._create_obstacles()
+        self._make_world2d()
         self._assert_faces_ok()
         self._assert_room_has_door()
         self._debug()
@@ -62,12 +61,12 @@ class Geom():
         CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
         '''
         # TODO: remove block
-        z=World2d(self)
+        z=World2d()
         
         if self.global_meta['multifloor_building']==0:
             return
         else:
-            #z=World2d(self)
+            #z=World2d()
             pass
 
 # }}}
@@ -113,6 +112,8 @@ class Geom():
         self.s.query("CREATE TABLE global_meta(json)")
         self.global_meta={}
         self.global_meta['world']=self._world
+        self.global_meta['walls_width']=self.walls_width
+        self.global_meta['doors_width']=self.doors_width
 
         if len(self.floors_meta) > 1:
             self.global_meta['multifloor_building']=1
@@ -165,7 +166,7 @@ class Geom():
         return aa
 # }}}
     def _prepare_geom_record(self,k,v,width,depth,height,floor,attrs):# {{{
-        ''' Format a record for sqlite. Hvents get fixed width self._doors_width cm '''
+        ''' Format a record for sqlite. Hvents get fixed width self.doors_width cm '''
         # OBST
         if k in ('OBST',):
             type_pri='OBST'
@@ -200,8 +201,8 @@ class Geom():
         
         # HVENT  
         elif k in ('DOOR', 'DCLOSER', 'DELECTR', 'HOLE', 'WIN'): 
-            width=max(width,self._doors_width)
-            depth=max(depth,self._doors_width)
+            width=max(width,self.doors_width)
+            depth=max(depth,self.doors_width)
             type_pri='HVENT'
             if k in ('DOOR', 'DCLOSER', 'DELECTR', 'HOLE'): 
                 type_tri='DOOR'
@@ -240,8 +241,8 @@ class Geom():
         self.s.query("UPDATE aamks_geom SET room_area=width*depth WHERE type_pri='COMPA'")
         self.s.query("UPDATE aamks_geom SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
 
-        self.s.query("UPDATE aamks_geom SET y0=y0+?, depth=depth-? WHERE type_tri='DOOR' AND is_vertical=1", (self._wall_width, self._wall_width))
-        self.s.query("UPDATE aamks_geom SET x0=x0+?, width=width-? WHERE type_tri='DOOR' AND is_vertical=0", (self._wall_width, self._wall_width))
+        self.s.query("UPDATE aamks_geom SET y0=y0+?, depth=depth-? WHERE type_tri='DOOR' AND is_vertical=1", (self.walls_width, self.walls_width))
+        self.s.query("UPDATE aamks_geom SET x0=x0+?, width=width-? WHERE type_tri='DOOR' AND is_vertical=0", (self.walls_width, self.walls_width))
 
 # }}}
     def _init_dd_geoms(self):# {{{
@@ -332,7 +333,6 @@ class Geom():
             self.s.query("UPDATE aamks_geom set sprinklers = 1 WHERE type_pri='COMPA'")
 # }}}
 
-
 # INTERSECTIONS
     def _aamks_geom_into_polygons(self):# {{{
         ''' aamks_geom into shapely polygons for intersections '''
@@ -349,8 +349,8 @@ class Geom():
 # }}}
     def _get_faces(self):# {{{
         ''' 
-        Cfast faces and offsets calculation. HVENTS have self._doors_width, so
-        we only consider intersection.length > self._doors_width Faces are
+        Cfast faces and offsets calculation. HVENTS have self.doors_width, so
+        we only consider intersection.length > self.doors_width Faces are
         properties of doors. They are calculated in respect to the room of
         lower id. The orientation of faces in each room:
 
@@ -372,7 +372,7 @@ class Geom():
                 lines[4]=LineString([compa[2], compa[3]])
                 lines[1]=LineString([compa[3], compa[0]])
                 for key,line in lines.items():
-                    if hvent_poly.intersection(line).length > self._doors_width:
+                    if hvent_poly.intersection(line).length > self.doors_width:
                         pt=list(zip(*line.xy))[0]
                         face=key
                         offset=hvent_poly.distance(Point(pt))
@@ -519,13 +519,13 @@ class Geom():
             boxen+=self._rooms_into_boxen(floor)
             data['named'][floor]=self._boxen_into_rectangles(boxen)
             for i in boxen:
-                data['points'][floor].append([(int(x),int(y), self.floors_meta[floor]['z']) for x,y in i.exterior.coords])
+                data['points'][floor].append([(int(x),int(y), self.floors_meta[floor]['minz_abs']) for x,y in i.exterior.coords])
         self.s.query("CREATE TABLE obstacles(json)")
         self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
 #}}}
     def _rooms_into_boxen(self,floor):# {{{
         ''' 
-        For a roomX we create a roomX_ghost, we move it by self._wall_width,
+        For a roomX we create a roomX_ghost, we move it by self.walls_width,
         which must match the width of hvents. Then we create walls via logical
         operations. Finally doors cut the openings in walls.
 
@@ -534,10 +534,10 @@ class Geom():
         walls=[]
         for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
 
-            walls.append((i['x0']+self._wall_width , i['y0']            , i['x0']+i['width']                  , i['y0']+self._wall_width)                )
-            walls.append((i['x0']+i['width']       , i['y0']            , i['x0']+i['width']+self._wall_width , i['y0']+i['depth']+self._wall_width)     )
-            walls.append((i['x0']+self._wall_width , i['y0']+i['depth'] , i['x0']+i['width']                  , i['y0']+i['depth']+self._wall_width)     )
-            walls.append((i['x0']                  , i['y0']            , i['x0']+self._wall_width            , i['y0']+i['depth']+self._wall_width)     )
+            walls.append((i['x0']+self.walls_width , i['y0']            , i['x0']+i['width']                  , i['y0']+self.walls_width)                )
+            walls.append((i['x0']+i['width']       , i['y0']            , i['x0']+i['width']+self.walls_width , i['y0']+i['depth']+self.walls_width)     )
+            walls.append((i['x0']+self.walls_width , i['y0']+i['depth'] , i['x0']+i['width']                  , i['y0']+i['depth']+self.walls_width)     )
+            walls.append((i['x0']                  , i['y0']            , i['x0']+self.walls_width            , i['y0']+i['depth']+self.walls_width)     )
 
         walls_polygons=([box(ii[0],ii[1],ii[2],ii[3]) for ii in set(walls)])
 
