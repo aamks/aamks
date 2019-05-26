@@ -24,58 +24,63 @@ from numpy.random import uniform
 # }}}
 
 from schody import Queue 
+from schody import Agent
 #s.query("select count(name), min(x0), max(x1) from world2d where name LIKE 's4|%'")[0].values()
 #s.query("select y0, y1 from world2d where name LIKE 's4|1'")[0].values()
 
-class Prepare_queues:
+#jeżeli w kolejce obok wolne miejsce, to przeniesienie do innej 
 
-    def __init__(self, floors=3, number_queues=3, width=1000, height=1000):
+class Prepare_Queues:
+    def __init__(self, floors=3, number_queues=3, width=1000, height=1000, offsetx=5600, offsety=0):# {{{
         self.floors = floors
         self.number_queues = number_queues
         self.width = width
         self.height = height
+        self.offsetx = offsetx
+        self.offsety = offsety
         self.lenght = (self.width**2+self.height**2)**(1/2)
         self.size = int((self.width+self.lenght)/50)
-
-    def create_queues(self):
+        self.ques = self.create_queues()
+        self.positions = self.create_positions() # }}}
+    def create_queues(self):# {{{
         que = []
         for i in range(self.number_queues):
             que.append(Queue(i, self.floors, self.size))
-        return que
-
-
-    def create_floor_positions(self,floor=0, offset=0):
+        return que# }}}
+    def create_floor_positions(self,floor=0):# {{{
         positions = []
         sin_alfa = self.height/self.lenght
         cos_alfa = self.width/self.lenght
         lenght_steps = (self.width+self.lenght)/self.size
         for i in range(self.size):
             l = i*lenght_steps
-            x = offset+l*cos_alfa
-            y = floor*self.height+l*sin_alfa
+            x = self.offsetx+l*cos_alfa
+            y = self.offsety+floor*self.height+l*sin_alfa
             if l>self.lenght:
-                x = offset+lenght_steps*(self.size-i)
-                y = floor*self.height+self.height
+                x = self.offsetx+lenght_steps*(self.size-i)
+                y = self.offsety+floor*self.height+self.height
             positions.append((x,y))
-        return positions
-
-    def create_positions(self, offset=0):
+        return positions# }}}
+    def create_positions(self):# {{{
         positions = []
         for i in range(self.floors):
-            positions.extend(self.create_floor_positions(floor=i, offset=offset))
-        for i in positions:
-            print(i)
-        #return positions
+            positions.extend(self.create_floor_positions(floor=i))
+        positions.reverse()
+        return positions# }}}
+    def add_to_queues(self, floor, data):# {{{
+        for i in self.ques:
+            if i.add(floor, data):
+                break# }}}
+    def move(self):# {{{
+        for i in self.ques:
+            i.go_on(self.positions)# }}}
+    def listed_ques(self):
+        for i in range(len(self.ques[0].
 
-A = Prepare_queues()
-A.size = 5
-q = A.create_queues()
-print(q, q[0].floor, q[0].floor_space)
-A.create_positions()
 
 class EvacEnv:
     def __init__(self):# {{{
-        self.que = create_queues()
+        self.Que = Prepare_Queues()
         self.json=Json()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.evacuee_radius=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['evacueeRadius']
@@ -142,12 +147,12 @@ class EvacEnv:
         y=a['target'][1] - self.sim.getAgentPosition(a['id'])[1]
         if abs(x) + abs(y) < 30:
             if y < 1030:
-                pietro = 2
+                floor = 2
             elif y > 1030 and y < 3400:
-                pietro = 1
+                floor = 1
             else:
-                pietro = 0
-            self.que.add(pietro, a['id'])
+                floor = 0
+            self.Que.add_to_queues(floor, a['id'])
             self.sim.setAgentPosition(a['id'], self._teleport_from[self.door1][1])
             a['target']=self.door2
         else:
@@ -171,8 +176,7 @@ class EvacEnv:
             self.sim.doStep()
             self._update()
             #print([x for x in self.que.que() if x is not None])
-            print(self.que.que())
             self.que.pop()
 # }}}
 
-#e=EvacEnv()
+e=EvacEnv()

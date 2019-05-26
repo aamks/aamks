@@ -8,7 +8,7 @@ CZAS_INTERWALU = 900
 LICZBA_AGENTOW = 40
 
 
-class Queue:  # {{{
+class Queue:
 
     def __init__(self,name, floor, floor_space):
         self.name = name
@@ -47,23 +47,24 @@ class Queue:  # {{{
     def pop(self):
         data = self.queue.pop(0)
         self.queue.append(None)
-        return data
+        print(data)
 
-    def que(self):
-        return self.queue
+    def set_position(self, positions):
+        for i, agent in enumerate(self.queue):
+            if agent is not None:
+                agent.position = positions[i]
 
-    def len_que(self):
-        return len(self.queue)   # }}}
+    def give_location(self):
+        return [agent.position for agent in self.queue if agent is not None]
 
-    def set_position(self):
-        for x, agent in enumerate(self.queue):
-            print(x)
-
+    def go_on(self, positions):
+        self.pop()
+        self.set_position(positions)
 
 class Agent:  # {{{
 
-    def __init__(self):
-        self.name = ""
+    def __init__(self, name="Agent"):
+        self.name = name
         floor = [0, 3, 6, 9, 12]
         self.position = (0.5, floor[random.randint(0, 5)])
 
