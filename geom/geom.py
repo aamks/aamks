@@ -94,10 +94,10 @@ class Geom():
             zdim=maxz_abs - prev_maxz
             prev_maxz=maxz_abs
 
-            width= maxx - minx
-            height= maxy - miny
-            center=(minx + int(width/2), miny + int(height/2), minz_abs)
-            self.floors_meta[floor]=OrderedDict([('width', width) , ('height', height) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim) ])
+            xdim= maxx - minx
+            ydim= maxy - miny
+            center=(minx + int(xdim/2), miny + int(ydim/2), minz_abs)
+            self.floors_meta[floor]=OrderedDict([('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim) ])
 
             self._world['minx']=min(self._world['minx'], minx)
             self._world['maxx']=max(self._world['maxx'], maxx)

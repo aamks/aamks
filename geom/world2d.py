@@ -37,10 +37,61 @@ class World2d():
         self.walls_width=self.global_meta['walls_width']
         self.projections={'top':dict(), 'side':dict()}
 
+        self._top_projection_make()
         self._side_projection_make()
+        dd(self.projections['top'])
+        dd(self.projections['side'])
+        exit()
         self._make_world2d()
-        #dd(self.side)
+        dd(self.projections['side'])
 # }}}
+
+    def _top_projection_make(self):# {{{
+
+        self.projections['top']['padding_rectangle']=300
+        self.projections['top']['padding_vertical']=200
+        self.projections['top']['x0']=self.s.query("SELECT min(x0) AS m FROM aamks_geom")[0]['m'] - self.projections['top']['padding_rectangle']
+        self.projections['top']['x1']=self.s.query("SELECT max(x1) AS m FROM aamks_geom")[0]['m']
+        self._top_translate_geoms()
+        self._top_proj_lines()
+# }}}
+    def _top_translate_geoms(self):# {{{
+        '''
+        All geoms must be y-translated
+        '''
+
+        self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
+        self.s.query("INSERT INTO world2d SELECT * FROM aamks_geom")
+        absolute=0
+        dd(self.s.query("select name,y0,y1 from world2d where name='r14'"))
+        for floor in list(self.floors_meta.keys())[::-1]:
+            if absolute==0:
+                ty=absolute + self.floors_meta[floor]['ydim'] 
+            else:
+                ty=absolute + self.floors_meta[floor]['ydim'] + self.projections['top']['padding_vertical'] * 2 
+            self.s.query("UPDATE world2d SET y0=?, y1=?, center_y=?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
+            absolute=ty
+        dd(self.s.query("select name,y0,y1 from world2d where name='r14'"))
+        exit()
+
+# }}}
+    def _top_proj_lines(self):# {{{
+        '''
+        Helper horizontal lines for Animator: 2, 1, 0
+        '''
+
+        lines=OrderedDict()
+        absolute=0
+        for floor in list(self.floors_meta.keys())[::-1]:
+            if absolute==0:
+                lines[floor]=absolute + self.floors_meta[floor]['ydim'] + self.projections['top']['padding_vertical']
+            else:
+                lines[floor]=absolute + self.floors_meta[floor]['ydim'] + self.projections['top']['padding_vertical'] * 2 
+            absolute=lines[floor]
+        self.projections['top']['lines']=lines
+
+# }}}
+
     def _side_projection_make(self):# {{{
         '''
         The floor segment of a staircase (FSoS) is a cuboid which may be
@@ -63,18 +114,17 @@ class World2d():
 
         '''
 
-
-        self.projections['side']['x_offset']=300
+        self.projections['side']['padding_rectangle']=300
         self.projections['side']['animator_floor_height']=1000
         self.projections['side']['top_floor_area']=120
+        self.projections['side']['x0']=self.s.query("SELECT max(x1) AS m FROM aamks_geom")[0]['m'] + self.projections['side']['padding_rectangle']
+
         self._side_proj_towers()
         self._side_proj_max_spans()
         self._side_proj_lines()
         self._side_proj_rectangles()
         self._side_proj_width()
         self._side_proj_db_write()
-        dd(self.projections['side'])
-        exit()
 # }}}
     def _side_proj_towers(self):# {{{
         ''' 
@@ -150,18 +200,18 @@ class World2d():
         lines=self.projections['side']['lines']
 
         t=OrderedDict()
-        x_offset=self.projections['side']['x_offset']
+        padding_rectangle=self.projections['side']['padding_rectangle']
 
         for k,v in self.projections['side']['towers'].items():
             rects=[]
             i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k[1],))[0]
             width=int(i['width']*i['depth'] / animator_floor_height)
             for floor in v:
-                rects.append({"floor": floor, "x0": x_offset, "y1": lines[floor], 'height': animator_floor_height, 'width': width})
+                rects.append({"floor": floor, "x0": padding_rectangle, "y1": lines[floor], 'height': animator_floor_height, 'width': width})
             rects[-1]['height']=top_floor_area
 
             t[i['name']]=rects
-            x_offset+=width+self.projections['side']['x_offset']
+            padding_rectangle+=width+self.projections['side']['padding_rectangle']
         self.projections['side']['rectangles']=t
 
 # }}}
@@ -171,6 +221,7 @@ class World2d():
             for i in t:
                 mmax=max(mmax,(i['width']+i['x0']))
         self.projections['side']['width']=mmax
+        self.projections['side']['x1']=self.projections['side']['x0'] + mmax
 # }}}
     def _side_proj_db_write(self):# {{{
         next_id=100000
@@ -188,13 +239,12 @@ class World2d():
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
 # }}}
 
+
     def _make_world2d(self):# {{{
         '''
         CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
         '''
         
-        self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
-        self.s.query("INSERT INTO world2d SELECT * FROM aamks_geom")
         self._make_world2d_paint_floor_lines()
         self._make_world2d_staircases_on_the_right()
         self._make_world2d_meta()
@@ -208,9 +258,10 @@ class World2d():
 # }}}
     def _make_world2d_paint_floor_lines(self):# {{{
 
-        self.side['x0']=self.s.query("SELECT max(x1) AS maxx FROM world2d")[0]['maxx']
-        x0=self.side['x0'] + self.side['x_offset']
-        x1=self.side['x0'] + self.side['x_offset'] + self.side['width']
+        self.projections['side']['x0']=self.s.query("SELECT max(x1) AS maxx FROM world2d")[0]['maxx']
+        dd(self.projections['side'])
+        x0=self.projections['side']['x0'] + self.projections['side']['padding_rectangle']
+        x1=self.projections['side']['x0'] + self.projections['side']['padding_rectangle'] + self.projections['side']['width']
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 
         last_maxy=-200
@@ -218,14 +269,13 @@ class World2d():
         for floor in list(self.floors_meta.keys())[::-1]:
             meta=self.floors_meta[floor]
             ty=last_maxy+200-meta['miny']
-            last_maxy+=meta['height']+400
-            self.s.query("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
+            last_maxy+=meta['dimy']+400
             #self.s.querydd("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
             z['world2d']['lines'].append( { "xy": (self.global_meta['world']['minx']-300 , last_maxy)    , "x1": self.global_meta['world']['maxx'] , "y1": last_maxy , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
             z['world2d']['texts'].append( { "xy": (self.global_meta['world']['minx']-300 , last_maxy-50) , "content": floor       , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
 
         # The lines on the right
-        for k,v in self.side['lines'].items():
+        for k,v in self.projections['side']['lines'].items():
             z['world2d']['lines'].append( { "xy": (x0 , v)    , "x1": x1     , "y1": v         , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
             z['world2d']['texts'].append( { "xy": (x0 , v-50) , "content": k , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
 
@@ -239,8 +289,8 @@ class World2d():
         On the right we will have the projections of staircases.
         '''
 
-        towers_offset=self.side['x0'] + self.side['x_offset']
-        for k,tt in self.side['rectangles'].items():
+        towers_offset=self.projections['side']['x0'] + self.projections['side']['padding_rectangle']
+        for k,tt in self.projections['side']['rectangles'].items():
             i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k,))[0]
             for ii in tt:
                 i['floor']='world2d'
@@ -269,7 +319,6 @@ class World2d():
         center=(minx + int(width/2), miny + int(height/2), 0)
 
         world2d_meta=OrderedDict([('width', width) , ('height', height) , ('z', 0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy)])
-        #dd(world2d_meta)
         self.s.query("CREATE TABLE world2d_meta(json)")
         self.s.query("INSERT INTO world2d_meta VALUES (?)", (json.dumps(world2d_meta),))
         self.s.query("UPDATE world2d SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
@@ -332,9 +381,9 @@ class World2d():
 
         walls=[]
 
-        for k,rects in self.side['rectangles'].items():
+        for k,rects in self.projections['side']['rectangles'].items():
             for i in rects:
-                i['x0']+=self.side['x0']+self.side['x_offset']
+                i['x0']+=self.projections['side']['x0']+self.projections['side']['padding_rectangle']
                 i['y0']=i['y1']-i['height']
                 walls.append((i['x0']+i['width']       , i['y0']             , i['x0']+i['width']+self.walls_width , i['y0']+i['height']+self.walls_width) )
                 walls.append((i['x0']                  , i['y0']             , i['x0']+self.walls_width            , i['y0']+i['height']+self.walls_width) )
