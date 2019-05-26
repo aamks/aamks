@@ -47,7 +47,8 @@ class Queue:
     def pop(self):
         data = self.queue.pop(0)
         self.queue.append(None)
-        print(data)
+        if data is not None:
+            print(data, "pop")
 
     def set_position(self, positions):
         for i, agent in enumerate(self.queue):
@@ -79,7 +80,7 @@ class Pedestrians:  # {{{
 
     def __init__(self):
         self.agent = []
-        self.QUEUE = Queue(7, 3)
+        self.QUEUE = Queue("", 7, 3)
         for i, z in enumerate('abcdefghijklmnoprst'):
             x = Agent()
             x.position = (i/30, i)
@@ -120,20 +121,18 @@ class Pedestrians:  # {{{
                 self.QUEUE.pop().position = (2+krok/10, 1)
             except AttributeError:
                 pass
-            for x, i in enumerate(self.QUEUE.que()):
+            for x, i in enumerate(self.QUEUE.queue):
                 try:
                     i.position = (1, x)
                 except:
                     pass
             #print(self.QUEUE.que())
             #print([x for x in self.QUEUE.que() if x is not None], len([x for x in self.QUEUE.que() if x is not None]))
-            print("\n")
-
             traj = []
             for agent in self.agent:
                 traj.append(agent.position)
             self.traj.append(traj)
-            if len([x for x in self.QUEUE.que() if x is not None]) == 0:
+            if len([x for x in self.QUEUE.queue if x is not None]) == 0:
                 print("zakonczono w: ", krok, " krokach")
                 break  # }}}
 

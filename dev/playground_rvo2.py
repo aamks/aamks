@@ -28,10 +28,20 @@ from schody import Agent
 #s.query("select count(name), min(x0), max(x1) from world2d where name LIKE 's4|%'")[0].values()
 #s.query("select y0, y1 from world2d where name LIKE 's4|1'")[0].values()
 
-#jeżeli w kolejce obok wolne miejsce, to przeniesienie do innej 
+class Queue(Queue):
+    def set_position(self, positions):
+        for i, agent in enumerate(self.queue):
+            if agent is not None:
+                self.sim.setAgentPosition(agent, positions[i])
+    def give_location(self):
+        for i in self.queue:
+            if i is not None:
+                print(self.sim.getAgentPosition(i))
+    def set_sim(self, sim):
+        self.sim = sim
 
 class Prepare_Queues:
-    def __init__(self, floors=3, number_queues=3, width=1000, height=1000, offsetx=5600, offsety=0):# {{{
+    def __init__(self, floors=3, number_queues=1, width=1000, height=1000, offsetx=5600, offsety=0):# {{{
         self.floors = floors
         self.number_queues = number_queues
         self.width = width
@@ -74,9 +84,14 @@ class Prepare_Queues:
     def move(self):# {{{
         for i in self.ques:
             i.go_on(self.positions)# }}}
-    def listed_ques(self):
-        for i in range(len(self.ques[0].
-
+    def listed_ques(self):# {{{
+        for i in self.ques:
+            #i.give_location()
+            #print(i.queue)# }}}
+            print([("poz: ",x," agent: ", i) for x, i in enumerate(i.queue) if i is not None])
+    def set_sim(self, sim):# {{{
+        for i in self.ques:
+            i.set_sim(sim)# }}}
 
 class EvacEnv:
     def __init__(self):# {{{
@@ -87,14 +102,15 @@ class EvacEnv:
         time=1
         #self.sim rvo2.PyRVOSimulator TIME_STEP , NEIGHBOR_DISTANCE , MAX_NEIGHBOR , TIME_HORIZON , TIME_HORIZON_OBSTACLE , RADIUS , MAX_SPEED
         self.sim=rvo2.PyRVOSimulator(time,40,5,time,time,self.evacuee_radius,30)
+        self.Que.set_sim(self.sim)
         self.door1='d11'
         self.door2=(6100,2100)
         self._create_teleports()
         self._create_agents()
         self._load_obstacles()
         self._anim={"simulation_id": 1, "simulation_time": 20, "time_shift": 0, "animations": { "evacuees": [], "rooms_opacity": [] }}
-        self._run()
         self._write_zip()
+        self._run()
         Vis({'highlight_geom': None, 'anim': '1/f1.zip', 'title': 'x', 'srv': 1})
 
 # }}}
@@ -120,6 +136,7 @@ class EvacEnv:
             pos=[round(i) for i in self.sim.getAgentPosition(v['id'])]
             frame.append([pos[0],pos[1],0,0,"N",1])
             #print(k,",t:", self.sim.getGlobalTime(), ",pos:", pos, ",v:", [ round(i) for i in self.sim.getAgentVelocity(v['id'])])
+        #print(frame)
         self._anim["animations"]["evacuees"].append(frame)
 # }}}
     def _create_agents(self):# {{{
@@ -153,7 +170,8 @@ class EvacEnv:
             else:
                 floor = 0
             self.Que.add_to_queues(floor, a['id'])
-            self.sim.setAgentPosition(a['id'], self._teleport_from[self.door1][1])
+            #print(self.sim.getAgentPosition(a['id']))
+            #self.sim.setAgentPosition(a['id'], self._teleport_from[self.door1][1])
             a['target']=self.door2
         else:
             self.sim.setAgentPrefVelocity(a['id'], (x,y))
@@ -176,7 +194,8 @@ class EvacEnv:
             self.sim.doStep()
             self._update()
             #print([x for x in self.que.que() if x is not None])
-            self.que.pop()
+            self.Que.move()
+            self.Que.listed_ques()
 # }}}
 
 e=EvacEnv()

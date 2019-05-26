@@ -52,7 +52,7 @@ class Geom():
         self._assert_room_has_door()
         self._debug()
         self.s.query("UPDATE world2d SET x0=5200 where name='s4|0'")
-        dd(s.query("select name, x0, x1, y0, y1 from world2d where name LIKE 's4|%'"))
+        #dd(s.query("select name, x0, x1, y0, y1 from world2d where name LIKE 's4|%'"))
 
 # }}}
     def _floors_meta(self):# {{{
