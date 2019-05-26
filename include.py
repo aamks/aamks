@@ -285,26 +285,12 @@ class Vis:# {{{
 
         self._save(params)
 # }}}
-    def _make_poly(self,i):# {{{
-        points=[]
-        points.append(OrderedDict([('x', i['x0']), ("y", i['y0'])]))
-        points.append(OrderedDict([('x', i['x1']), ("y", i['y0'])]))
-        points.append(OrderedDict([('x', i['x1']), ("y", i['y1'])]))
-        points.append(OrderedDict([('x', i['x0']), ("y", i['y1'])]))
-        return points
-# }}}
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''
         
-        for floor,meta in json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json']).items():
+        for floor,meta in self.json.readdb("floors_meta").items(): 
             self._static_floors[floor]=OrderedDict()
             self._static_floors[floor]['floor_meta']=meta
-# }}}
-    def _js_make_floors_and_meta_world2d(self):# {{{
-        ''' Animation meta tells how to scale and translate canvas view '''
-        
-        meta=json.loads(self.s.query("SELECT * FROM world2d_meta")[0]['json'])
-        self._static_world2d['floor_meta']=meta
 # }}}
     def _js_make_rooms(self):# {{{
         ''' Data for rooms. '''
@@ -315,16 +301,6 @@ class Vis:# {{{
                 points=self._make_poly(i)
                 self._static_floors[floor]['rooms'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)]))
 # }}}
-    def _js_make_rooms_world2d(self):# {{{
-        ''' Data for rooms. '''
-
-        for floor in ['world2d']:
-            self._static_world2d['rooms']=[]
-            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec,room_enter FROM world2d WHERE floor=? AND type_pri='COMPA'", (floor,)):
-                points=self._make_poly(i)
-                self._static_world2d['rooms'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)]))
-
-# }}}
     def _js_make_doors(self):# {{{
         ''' Data for doors. '''
 
@@ -333,15 +309,6 @@ class Vis:# {{{
             for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
                 points=self._make_poly(i)
                 self._static_floors[floor]['doors'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)]))
-# }}}
-    def _js_make_doors_world2d(self):# {{{
-        ''' Data for doors. '''
-
-        for floor in ['world2d']:
-            self._static_world2d['doors']=[]
-            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM world2d WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
-                points=self._make_poly(i)
-                self._static_world2d['doors'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)]))
 # }}}
     def _js_make_obstacles(self):# {{{
         ''' 
@@ -363,6 +330,43 @@ class Vis:# {{{
                 self._static_floors[floor]['obstacles']=[]
                 self._static_floors[floor]['obstacles'].append({'points': empty_obst })
 # }}}
+    def _js_make_dd_geoms(self):# {{{
+        ''' 
+        dd_geoms are initialized in geom.py. Those are optional extra
+        rectangles, points, lines and circles that are written to on top of our
+        geoms. Useful for debugging.
+        '''
+
+        f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
+        for floor in self._static_floors.keys():
+            self._static_floors[floor]['dd_geoms']=f[floor]
+# }}}
+
+    def _js_make_floors_and_meta_world2d(self):# {{{
+        ''' Animation meta tells how to scale and translate canvas view '''
+        
+        meta=self.json.readdb("world2d_meta")
+        self._static_world2d['floor_meta']=meta
+# }}}
+    def _js_make_doors_world2d(self):# {{{
+        ''' Data for doors. '''
+
+        for floor in ['world2d']:
+            self._static_world2d['doors']=[]
+            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM world2d WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
+                points=self._make_poly(i)
+                self._static_world2d['doors'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)]))
+# }}}
+    def _js_make_rooms_world2d(self):# {{{
+        ''' Data for rooms. '''
+
+        for floor in ['world2d']:
+            self._static_world2d['rooms']=[]
+            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec,room_enter FROM world2d WHERE type_pri='COMPA'"):
+                points=self._make_poly(i)
+                self._static_world2d['rooms'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)]))
+
+# }}}
     def _js_make_obstacles_world2d(self):# {{{
         ''' 
         Data for obstacles. It may happen that geom.py was interrupted before
@@ -380,17 +384,6 @@ class Vis:# {{{
             empty_obst=[ OrderedDict([('x', o[0]),('y', o[1])]) for o in [(0,0),(0,0),(0,0),(0,0)] ]
             self._static_world2d['obstacles'].append({'points': empty_obst })
 # }}}
-    def _js_make_dd_geoms(self):# {{{
-        ''' 
-        dd_geoms are initialized in geom.py. Those are optional extra
-        rectangles, points, lines and circles that are written to on top of our
-        geoms. Useful for debugging.
-        '''
-
-        f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
-        for floor in self._static_floors.keys():
-            self._static_floors[floor]['dd_geoms']=f[floor]
-# }}}
     def _js_make_dd_geoms_world2d(self):# {{{
         ''' 
         dd_geoms are initialized in geom.py. Those are optional extra
@@ -400,6 +393,15 @@ class Vis:# {{{
 
         f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
         self._static_world2d['dd_geoms']=f['world2d']
+# }}}
+
+    def _make_poly(self,i):# {{{
+        points=[]
+        points.append(OrderedDict([('x', i['x0']), ("y", i['y0'])]))
+        points.append(OrderedDict([('x', i['x1']), ("y", i['y0'])]))
+        points.append(OrderedDict([('x', i['x1']), ("y", i['y1'])]))
+        points.append(OrderedDict([('x', i['x0']), ("y", i['y1'])]))
+        return points
 # }}}
     def _js_vis_fire_origin(self):# {{{
         try:

@@ -51,7 +51,7 @@ class CfastPartition():
         self.json=Json() 
         self._cell2compa=OrderedDict()
         self._save=OrderedDict()
-        floors=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
+        floors=self.json.readdb("floors_meta")
         for floor in floors.keys():
             self._init_space(floor) 
             self._intersect_space() 
@@ -66,7 +66,7 @@ class CfastPartition():
     def _init_space(self,floor):# {{{
         ''' Divide floor into squares. Prepare empty rectangles placeholders. '''
 
-        floors=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
+        floors=self.json.readdb("floors_meta")
         fdims=floors[floor]
 
         self.squares=OrderedDict()
@@ -79,8 +79,8 @@ class CfastPartition():
             self.lines.append(LineString([ Point(i['x1'],i['y1']), Point(i['x0'], i['y1'])] ))
             self.lines.append(LineString([ Point(i['x1'],i['y1']), Point(i['x1'], i['y0'])] ))
 
-        x=int(fdims['width']/self._square_side)+1
-        y=int(fdims['height']/self._square_side)+1
+        x=int(fdims['xdim']/self._square_side)+1
+        y=int(fdims['ydim']/self._square_side)+1
         for v in range(y):
             for i in range(x):
                 x_=fdims['minx']+self._square_side*i

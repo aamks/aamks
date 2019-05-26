@@ -73,9 +73,9 @@ class Navmesh:
             for i in bypass_doors:
                 bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
 
-        z=self.s.query("SELECT json FROM obstacles")
-        json.loads(z[0]['json'])['points'].items()
-        for floor,walls in json.loads(z[0]['json'])['points'].items():
+        #z=self.s.query("SELECT json FROM obstacles")
+        #for floor,walls in json.loads(z[0]['json'])['points'].items():
+        for floor,walls in self.json.readdb("obstacles").items():
             bricked_wall+=walls
 
         return bricked_wall

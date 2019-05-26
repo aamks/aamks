@@ -19,7 +19,7 @@ from include import Sqlite
 from include import Json
 from include import Dump as dd
 from include import Vis
-from geom.world2d import World2d
+from geom.obstacles import Obstacles
 
 # }}}
 
@@ -49,27 +49,12 @@ class Geom():
         self._add_names_to_vents_from_to()
         self._calculate_sills()
         self._auto_detectors_and_sprinklers()
-        self._create_obstacles()
-        self._make_world2d()
         self._assert_faces_ok()
         self._assert_room_has_door()
+        Obstacles("aamks_geom", "obstacles", self.raw_geometry)
         self._debug()
 # }}}
 
-    def _make_world2d(self):# {{{
-        '''
-        CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
-        '''
-        # TODO: remove block
-        z=World2d()
-        
-        if self.global_meta['multifloor_building']==0:
-            return
-        else:
-            #z=World2d()
-            pass
-
-# }}}
     def _floors_meta(self):# {{{
         ''' 
         Floor dimensions are needed here and there. 
@@ -497,85 +482,6 @@ class Geom():
         self.s.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
 
 # }}}
-
-# OBSTACLES
-    def _create_obstacles(self):# {{{
-        ''' 
-        Geometry may contain obstacles to model machines, FDS walls, bookcases,
-        etc. Obstacles are not visible in CFAST, since they don't belong to
-        aamks_geom table. 
-        '''
-
-        data=OrderedDict()
-        data['points']=OrderedDict()
-        data['named']=OrderedDict()
-        for floor,gg in self.raw_geometry.items():
-            data['points'][floor]=[]
-            data['named'][floor]=[]
-            boxen=[]
-            for v in gg['OBST']:
-                boxen.append(box(int(v[0][0]), int(v[0][1]), int(v[1][0]), int(v[1][1])))
-                
-            boxen+=self._rooms_into_boxen(floor)
-            data['named'][floor]=self._boxen_into_rectangles(boxen)
-            for i in boxen:
-                data['points'][floor].append([(int(x),int(y), self.floors_meta[floor]['minz_abs']) for x,y in i.exterior.coords])
-        self.s.query("CREATE TABLE obstacles(json)")
-        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps(data),))
-#}}}
-    def _rooms_into_boxen(self,floor):# {{{
-        ''' 
-        For a roomX we create a roomX_ghost, we move it by self.walls_width,
-        which must match the width of hvents. Then we create walls via logical
-        operations. Finally doors cut the openings in walls.
-
-        '''
-
-        walls=[]
-        for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
-
-            walls.append((i['x0']+self.walls_width , i['y0']            , i['x0']+i['width']                  , i['y0']+self.walls_width)                )
-            walls.append((i['x0']+i['width']       , i['y0']            , i['x0']+i['width']+self.walls_width , i['y0']+i['depth']+self.walls_width)     )
-            walls.append((i['x0']+self.walls_width , i['y0']+i['depth'] , i['x0']+i['width']                  , i['y0']+i['depth']+self.walls_width)     )
-            walls.append((i['x0']                  , i['y0']            , i['x0']+self.walls_width            , i['y0']+i['depth']+self.walls_width)     )
-
-        walls_polygons=([box(ii[0],ii[1],ii[2],ii[3]) for ii in set(walls)])
-
-        doors_polygons=[]
-        for i in self.s.query("SELECT * FROM aamks_geom WHERE floor=? AND type_tri='DOOR' ORDER BY name", (floor,)):
-            doors_polygons.append(box(i['x0'], i['y0'], i['x0']+i['width'], i['y0']+i['depth']))
-            
-        boxen=[]
-        for wall in walls_polygons:
-            for door in doors_polygons:
-                wall=wall.difference(door)
-            if isinstance(wall, MultiPolygon):
-                for i in polygonize(wall):
-                    boxen.append(i)
-            elif isinstance(wall, Polygon):
-                boxen.append(wall)
-        return boxen 
-# }}}
-    def _boxen_into_rectangles(self,boxen):# {{{
-        ''' 
-        Transform shapely boxen into rectangles for paperjs visualization:
-            [(x0,y0,width,height)]
-        '''
-
-        rectangles=[]
-
-        for i in boxen:
-            m=i.bounds
-            coords=OrderedDict()
-            coords["x0"]=int(m[0])
-            coords["y0"]=int(m[1])
-            coords["width"]=int(m[2]-m[0])
-            coords["depth"]=int(m[3]-m[1])
-            rectangles.append(coords)
-
-        return rectangles
-# }}}
-
 
 # ASSERTIONS
     def _assert_faces_ok(self):# {{{

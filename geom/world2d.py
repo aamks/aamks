@@ -17,16 +17,13 @@ from math import sqrt
 from math import floor
 from include import Sqlite
 from include import Json
-from include import Vis
 from include import Dump as dd
+from geom.obstacles import Obstacles
 
 # }}}
 
 class World2d():
-
     def __init__(self):# {{{
-        print('world2d', os.environ['AAMKS_PROJECT'])
-        #Vis({'highlight_geom': None, 'anim': None, 'title': '11', 'srv': 1})
 
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -39,21 +36,30 @@ class World2d():
 
         self._top_projection_make()
         self._side_projection_make()
-        dd(self.projections['top'])
-        dd(self.projections['side'])
+        self._db_rectangles_top()
+        self._db_rectangles_side()
+        self._world2d_make()
+        self._extra_geoms_make()
         exit()
-        self._make_world2d()
-        dd(self.projections['side'])
+        Obstacles("world2d", "world2d_obstacles", self._extra_geoms_make())
+        dd(self.json.readdb("world2d_obstacles"))
+        exit()
 # }}}
+    def _extra_geoms_make(self):
+        print("insert obstacles x0,y0 into aamks_geom?")
+        exit()
 
     def _top_projection_make(self):# {{{
+        '''
+        In world2d we have top and left projections
+        '''
 
         self.projections['top']['padding_rectangle']=300
         self.projections['top']['padding_vertical']=200
         self.projections['top']['x0']=self.s.query("SELECT min(x0) AS m FROM aamks_geom")[0]['m'] - self.projections['top']['padding_rectangle']
         self.projections['top']['x1']=self.s.query("SELECT max(x1) AS m FROM aamks_geom")[0]['m']
-        self._top_translate_geoms()
         self._top_proj_lines()
+        self._top_translate_geoms()
 # }}}
     def _top_translate_geoms(self):# {{{
         '''
@@ -62,17 +68,9 @@ class World2d():
 
         self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
         self.s.query("INSERT INTO world2d SELECT * FROM aamks_geom")
-        absolute=0
-        dd(self.s.query("select name,y0,y1 from world2d where name='r14'"))
-        for floor in list(self.floors_meta.keys())[::-1]:
-            if absolute==0:
-                ty=absolute + self.floors_meta[floor]['ydim'] 
-            else:
-                ty=absolute + self.floors_meta[floor]['ydim'] + self.projections['top']['padding_vertical'] * 2 
-            self.s.query("UPDATE world2d SET y0=?, y1=?, center_y=?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
-            absolute=ty
-        dd(self.s.query("select name,y0,y1 from world2d where name='r14'"))
-        exit()
+        for floor,line in self.projections['top']['lines'].items():
+            ty=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
+            self.s.query("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
 
 # }}}
     def _top_proj_lines(self):# {{{
@@ -124,7 +122,6 @@ class World2d():
         self._side_proj_lines()
         self._side_proj_rectangles()
         self._side_proj_width()
-        self._side_proj_db_write()
 # }}}
     def _side_proj_towers(self):# {{{
         ''' 
@@ -223,7 +220,8 @@ class World2d():
         self.projections['side']['width']=mmax
         self.projections['side']['x1']=self.projections['side']['x0'] + mmax
 # }}}
-    def _side_proj_db_write(self):# {{{
+
+    def _db_rectangles_top(self):# {{{
         next_id=100000
         for w, floors in self.projections['side']['towers'].items():
             self.s.query("UPDATE aamks_geom set type_tri='TOWER_BASE' WHERE name=?", (w[1],))
@@ -232,71 +230,21 @@ class World2d():
             for floor in floors:
                 row['fire_model_ignore']=1
                 row['floor']=floor
-                row['global_type_id']=next_id
-                next_id+=1
                 row['name']="{}.{}".format(orig_name,floor)
                 row['type_tri']="TOWER_LEFT"
+                row['global_type_id']=next_id
+                next_id+=1
                 self.s.query('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(row.keys()))), list(row.values()))
 # }}}
+    def _db_rectangles_side(self):# {{{
 
-
-    def _make_world2d(self):# {{{
-        '''
-        CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
-        '''
-        
-        self._make_world2d_paint_floor_lines()
-        self._make_world2d_staircases_on_the_right()
-        self._make_world2d_meta()
-        self.s.query("UPDATE aamks_geom SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
-        self.s.query("UPDATE world2d    SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
-        self.s.query("UPDATE aamks_geom SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
-        self.s.query("UPDATE world2d    SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
-        self.s.query("UPDATE world2d    SET floor='world2d'")
-        self._make_world2d_obstacles()
-        #dd(self.s.query("SELECT name,floor,x0,x1,y0,y1,width,height FROM world2d where type_sec='STAI'"))
-# }}}
-    def _make_world2d_paint_floor_lines(self):# {{{
-
-        self.projections['side']['x0']=self.s.query("SELECT max(x1) AS maxx FROM world2d")[0]['maxx']
-        dd(self.projections['side'])
-        x0=self.projections['side']['x0'] + self.projections['side']['padding_rectangle']
-        x1=self.projections['side']['x0'] + self.projections['side']['padding_rectangle'] + self.projections['side']['width']
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-
-        last_maxy=-200
-        # The lines on the left
-        for floor in list(self.floors_meta.keys())[::-1]:
-            meta=self.floors_meta[floor]
-            ty=last_maxy+200-meta['miny']
-            last_maxy+=meta['dimy']+400
-            #self.s.querydd("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
-            z['world2d']['lines'].append( { "xy": (self.global_meta['world']['minx']-300 , last_maxy)    , "x1": self.global_meta['world']['maxx'] , "y1": last_maxy , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
-            z['world2d']['texts'].append( { "xy": (self.global_meta['world']['minx']-300 , last_maxy-50) , "content": floor       , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
-
-        # The lines on the right
-        for k,v in self.projections['side']['lines'].items():
-            z['world2d']['lines'].append( { "xy": (x0 , v)    , "x1": x1     , "y1": v         , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
-            z['world2d']['texts'].append( { "xy": (x0 , v-50) , "content": k , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
-
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-
-    # }}}
-    def _make_world2d_staircases_on_the_right(self):# {{{
-        '''
-        Apainter will plot world2d. 
-        On the left we will have the original apainter image. 
-        On the right we will have the projections of staircases.
-        '''
-
-        towers_offset=self.projections['side']['x0'] + self.projections['side']['padding_rectangle']
         for k,tt in self.projections['side']['rectangles'].items():
             i=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (k,))[0]
             for ii in tt:
                 i['floor']='world2d'
                 i['name']="{}|{}".format(k,ii['floor'])
-                i['x0']=towers_offset+ii['x0']
-                i['x1']=i['x0']+ii['width']
+                i['x0']=ii['x0']+self.projections['side']['x0']
+                i['x1']=ii['x0']+self.projections['side']['x0']+ii['width']
                 i['y1']=ii['y1']
                 i['width']=ii['width']
                 i['y0']=i['y1']-ii['height']
@@ -305,7 +253,35 @@ class World2d():
                 self.s.query("DELETE FROM world2d WHERE name=?", (i['name'],))
                 self.s.dict_insert('world2d', i)
 # }}}
-    def _make_world2d_meta(self):# {{{
+
+    def _world2d_make(self):# {{{
+        self._world2d_paint_lines()
+        self._world2d_meta()
+        self._world2d_db_adjust
+        #self._world2d_obstacles()
+        #dd(self.s.query("SELECT name,floor,x0,x1,y0,y1,width,height FROM world2d where type_sec='STAI'"))
+# }}}
+    def _world2d_db_adjust(self):# {{{
+        self.s.query("UPDATE aamks_geom SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE world2d    SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE aamks_geom SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
+        self.s.query("UPDATE world2d    SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
+        self.s.query("UPDATE world2d    SET floor='world2d'")
+# }}}
+    def _world2d_paint_lines(self):# {{{
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
+        for proj in ['top', 'side']:
+            x0=self.projections[proj]['x0']
+            x1=self.projections[proj]['x1']
+            for floor,y in self.projections[proj]['lines'].items():
+                z['world2d']['lines'].append( { "xy": (x0 , y)    , "x1": x1         , "y1": y         , "strokeColor": "#fff" , "strokeWidth": 4   , "opacity": 0.7 } )
+                z['world2d']['texts'].append( { "xy": (x0 , y-50) , "content": floor , "fontSize": 200 , "fillColor": "#fff"   , "opacity": 0.7 } )
+
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
+    # }}}
+    def _world2d_meta(self):# {{{
         '''
         For Animator after geoms and towers made it into the world2d.
         '''
@@ -324,11 +300,11 @@ class World2d():
         self.s.query("UPDATE world2d SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
 
 # }}}
-    def _make_world2d_obstacles(self):# {{{
+
+    def _world2d_obstacles(self):# {{{
         '''
         CFAST uses the real 3D model, but for RVO2 we flatten the world to 2D
         '''
-
 
         obstacles=self.json.readdb("obstacles")
 
@@ -364,7 +340,7 @@ class World2d():
                 #obst['y0']+=self.world2d_ty[floor]
                 data['named'].append(obst)
 
-        staircase_obstacles=self._make_world2d_staircases_obstacles()
+        staircase_obstacles=self._world2d_staircases_obstacles()
         data['points']+=staircase_obstacles['points']
         data['named']+=staircase_obstacles['named']
 
@@ -372,7 +348,7 @@ class World2d():
         self.s.query("INSERT INTO world2d_obstacles VALUES (?)", (json.dumps(data),))
 
 # }}}
-    def _make_world2d_staircases_obstacles(self):# {{{
+    def _world2d_staircases_obstacles(self):# {{{
         '''
         We are cutting holes in the bottom of each FSoS.
         The width of the hole is hardcoded to 200 cm (center_x +/-100).
