@@ -39,15 +39,7 @@ class World2d():
         self._db_rectangles_top()
         self._db_rectangles_side()
         self._world2d_make()
-        self._extra_geoms_make()
-        exit()
-        Obstacles("world2d", "world2d_obstacles", self._extra_geoms_make())
-        dd(self.json.readdb("world2d_obstacles"))
-        exit()
 # }}}
-    def _extra_geoms_make(self):
-        print("insert obstacles x0,y0 into aamks_geom?")
-        exit()
 
     def _top_projection_make(self):# {{{
         '''
@@ -256,17 +248,9 @@ class World2d():
 
     def _world2d_make(self):# {{{
         self._world2d_paint_lines()
-        self._world2d_meta()
-        self._world2d_db_adjust
+        self._world2d_db_adjust()
         #self._world2d_obstacles()
         #dd(self.s.query("SELECT name,floor,x0,x1,y0,y1,width,height FROM world2d where type_sec='STAI'"))
-# }}}
-    def _world2d_db_adjust(self):# {{{
-        self.s.query("UPDATE aamks_geom SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
-        self.s.query("UPDATE world2d    SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
-        self.s.query("UPDATE aamks_geom SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
-        self.s.query("UPDATE world2d    SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
-        self.s.query("UPDATE world2d    SET floor='world2d'")
 # }}}
     def _world2d_paint_lines(self):# {{{
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
@@ -281,11 +265,7 @@ class World2d():
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 
     # }}}
-    def _world2d_meta(self):# {{{
-        '''
-        For Animator after geoms and towers made it into the world2d.
-        '''
-
+    def _world2d_db_adjust(self):# {{{
         minx=self.s.query("SELECT min(x0) AS minx FROM world2d")[0]['minx']
         miny=self.s.query("SELECT min(y0) AS miny FROM world2d")[0]['miny']
         maxx=self.s.query("SELECT max(x1) AS maxx FROM world2d")[0]['maxx']
@@ -294,12 +274,17 @@ class World2d():
         height= maxy - miny
         center=(minx + int(width/2), miny + int(height/2), 0)
 
-        world2d_meta=OrderedDict([('width', width) , ('height', height) , ('z', 0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy)])
+        world2d_meta=OrderedDict([('xdim', width) , ('ydim', height) , ('minz_abs', 0), ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy)])
         self.s.query("CREATE TABLE world2d_meta(json)")
         self.s.query("INSERT INTO world2d_meta VALUES (?)", (json.dumps(world2d_meta),))
-        self.s.query("UPDATE world2d SET x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
-
+        self.s.query("UPDATE world2d SET floor='world2d', x1=x0+width, y1=y0+depth, z1=z0+height, center_x=x0+width/2, center_y=y0+depth/2, center_z=z0+height/2")
+        self.s.query("UPDATE aamks_geom SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE world2d    SET name=name||'.0' WHERE type_tri='TOWER_BASE'")
+        self.s.query("UPDATE aamks_geom SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
+        self.s.query("UPDATE world2d    SET vent_to_name=vent_to_name||'.0' WHERE vent_to_name LIKE 's%' AND vent_to_name NOT LIKE 's%.%'")
 # }}}
+
+
 
     def _world2d_obstacles(self):# {{{
         '''

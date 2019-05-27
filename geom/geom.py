@@ -19,7 +19,6 @@ from include import Sqlite
 from include import Json
 from include import Dump as dd
 from include import Vis
-from geom.obstacles import Obstacles
 
 # }}}
 
@@ -51,7 +50,6 @@ class Geom():
         self._auto_detectors_and_sprinklers()
         self._assert_faces_ok()
         self._assert_room_has_door()
-        Obstacles("aamks_geom", "obstacles", self.raw_geometry)
         self._debug()
 # }}}
 

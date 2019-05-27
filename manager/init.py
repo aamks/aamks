@@ -99,7 +99,7 @@ class OnEnd():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']
         self.p=Psql()
-        self._navmeshes_for_floors()
+        #self._navmeshes_for_floors()
         Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
         self._gearman_register_works()
 # }}}
