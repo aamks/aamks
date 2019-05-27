@@ -1,4 +1,5 @@
 import matplotlib as mtl
+import locale
 mtl.use('Agg') 
 import json
 from collections import OrderedDict
@@ -243,8 +244,9 @@ class processDists:
     def plot_pie_fault(self):
         fig = plt.figure()
         sizes = [len(self.losses['dead']), self.total-len(self.losses['dead'])]
-        labels = 'Success', 'Failure'
-        colors = ['lightskyblue', 'lightcoral']
+        print(sizes)
+        labels = ['Failure', 'Success']
+        colors = ['lightcoral', 'lightskyblue']
         explode = (0.1, 0)
         plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True)
         plt.axis('equal')
@@ -260,7 +262,7 @@ class processDists:
         educational = [0.003, 3e-6, -1.26, -0.05]
         building = {'other_building': other_building, 'office': office, 'warehouse': warehouse, 'commercial': commercial,
                     'nursing': nursing, 'educational': educational}
-        b_type = 'educational'
+        b_type = 'commercial'
         ignition = building[b_type][0]*(area) ** (building[b_type][2]) + \
                    building[b_type][1] * (area) ** (building[b_type][3])
         return ignition
@@ -322,7 +324,7 @@ class processDists:
     def calculate_building_area(self):
         s=Sqlite("{}/aamks.sqlite".format(self.dir))
         result = s.query("SELECT sum(room_area) as total FROM aamks_geom");
-        return result[0]['total']
+        return result[0]['total']/10000
 
 p = processDists()
 p.plot_dcbe_dist()
