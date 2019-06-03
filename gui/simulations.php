@@ -15,31 +15,19 @@ function status() {/*{{{*/
 	$r=$_SESSION['nn']->query("SELECT count(*) AS total FROM simulations where project = $project_id");
 	$total=$r[0]['total'];
 	echo "<br>Complete: $finished of $total &nbsp; &nbsp; <wheat>ctrl+r to refresh</wheat>";
+
+	// Beck images are appended to this div from ajax
+	echo "<div id=beck_images></div>";
 }
-/*}}}*/
 
 /*}}}*/
-function show_pictures() {/*{{{*/
-	$f=$_SESSION['main']['working_home'];
-	$aamks=getenv("AAMKS_PATH");
-	$cmd="cd $aamks/results/beck; python3 beck.py $f 2>&1"; 
-	$z=shell_exec("$cmd");
-	echo "<br>$z";
-	$array = explode("/", $f);
-	unset($array[0]);
-	unset($array[1]);
-	echo $text = implode("/", $array);
-	echo "<img src=$text/picts/tree.png><br>";
-}
-/*}}}*/
-
 
 function main() {/*{{{*/
 	$_SESSION['nn']->htmlHead("Simulations");
+	echo '<script src="js/beck.js"></script>';
 	$_SESSION['nn']->menu('Manage simulations');
 	listing();
 	status();
-	show_pictures();
 }
 /*}}}*/
 
