@@ -1,5 +1,4 @@
 import matplotlib as mtl
-import locale
 mtl.use('Agg') 
 import json
 from collections import OrderedDict
@@ -11,6 +10,7 @@ from statsmodels.distributions.empirical_distribution import ECDF as ecdf
 import matplotlib.ticker as tic
 from ete3 import Tree, TreeStyle, TextFace
 import sys
+sys.path.insert(0, '/usr/local/aamks')
 import os
 import shutil
 from event_tree_en import EventTreeFED

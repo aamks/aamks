@@ -25,6 +25,11 @@ function show_pictures() {/*{{{*/
 	$cmd="cd $aamks/results/beck; python3 beck.py $f 2>&1"; 
 	$z=shell_exec("$cmd");
 	echo "<br>$z";
+	$array = explode("/", $f);
+	unset($array[0]);
+	unset($array[1]);
+	echo $text = implode("/", $array);
+	echo "<img src=$text/picts/tree.png><br>";
 }
 /*}}}*/
 
