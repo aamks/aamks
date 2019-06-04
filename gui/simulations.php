@@ -24,13 +24,18 @@ function show_pictures() {/*{{{*/
 
 	/*Generate pictures with using beck.py script*/
 	$aamks=getenv("AAMKS_PATH");
+	
 	$cmd="cd $aamks/results/beck; python3 beck.py $f 2>&1"; 
 	$z=shell_exec("$cmd");
 
 	echo "<br>$z";
-	$file=$f."/picts/tree.png";
-	$data64=shell_exec("base64 $file");
-	echo "<img style='display:block; width:1000px;height:500px;' src='data:image/jpeg;base64, $data64'/>";
+	$pictures_list = array('pie_fault', 'lossesdead', 'lossesheavy', 'losseslight', 'lossesneglegible', 'ccdf', 'dcbe', 'wcbe', 'height', 'hgt_cor', 'temp', 'vis', 'vis_cor', 'tree', 'tree_steel');
+	foreach($pictures_list as $picture) {
+		$file=$f."/picts/".$picture.".png";
+		$size_info=getimagesize($file);
+		$data64=shell_exec("base64 $file");
+		echo "<img style='display:block; width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
+	}
 }
 /*}}}*/
 
