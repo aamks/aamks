@@ -21,6 +21,19 @@ Aamks runs hundreds of fire simulations (CFAST) and evacuation simulations
 are moving across the building and are affected by fire and smoke.
 ");
 /*}}}*/
+$nodes['papers']=array("Publications related Aamks", /*{{{*/
+"
+<ol>
+<li> Krasuski, A. & Pecio, M. Application of an Integrated Risk Assessment Software to Quantify the Life Safety Risk in Building during a Fire. MATEC Web Conf. 247, 00011, 1–8 (2018). <a href=https://www.matec-conferences.org/articles/matecconf/pdf/2018/106/matecconf_fese2018_00011.pdf>pdf</a>
+<li> Krasuski, A. & Kuziora, Ł. Comparison of Risk Categorization Methods in a Multisimulation Framework. MATEC Web Conf. 247, 00018, 1–8 (2018). <a href=https://www.matec-conferences.org/articles/matecconf/pdf/2018/106/matecconf_fese2018_00018.pdf>pdf</a>
+<li> Kreńnski, K. & Fliszkiewicz, M. Aamks: the platform for assessing fire safety of humans in buildings. MATEC Web Conf. (2018). doi:10.1051/matecconf/201824700001 <a href=https://www.matec-conferences.org/articles/matecconf/pdf/2018/106/matecconf_fese2018_00001.pdf>pdf</a>
+<li> Kubica, P. & Wdowiak, T. The use of multisimulation in determining fire hazards in buildings covered by expertise. MATEC Web Conf. (2018). doi:10.1051/matecconf/201824700061 <a href=https://www.matec-conferences.org/articles/matecconf/pdf/2018/106/matecconf_fese2018_00061.pdf>pdf</a>
+<li> Krasuski, A. Multisimulation: Stochastic simulations for the assessment of building fire safety. (The Main School of Fire Service, 2019).
+<li> Krasuski, A. & Hostikka, S: Aamks – Integreated Cloud-based Application for Probabilistc Fire Risk Assessment. Proceeding of Interflam 2019 conferece
+</ol>
+
+");
+/*}}}*/
 $nodes['tests']=array("Tests", /*{{{*/
 '
 <br> Verif 1_1 <br><br>
