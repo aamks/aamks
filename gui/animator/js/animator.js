@@ -49,8 +49,11 @@ var	visContainsAnimation=0;
 var	isDemoAnimation=0;
 var	animationIsRunning=0;
 
-$(function()  { 
+paper.install(window);
+window.onload = function() {
 	var nn;
+	paper.setup('animator-canvas');
+	var tool=new Tool;
 	makeAnimationControls();
 	nn=new Layer; nn.name='rooms';
 	nn=new Layer; nn.name='roomSmoke';
@@ -58,7 +61,6 @@ $(function()  {
 	resizeAndRedrawCanvas();
 	left_menu_box();
 	right_menu_box();
-});
 
 function ddd() {//{{{
 	dd(db().get());
@@ -170,7 +172,6 @@ function makeChooseVis(data) {//{{{
 };
 //}}}
 function initialScaleTranslate(floor_meta) {//{{{
-	console.log(floor_meta);
 	var geomsScale=Math.min(wWidth/floor_meta['xdim'], wHeight/floor_meta['ydim'])*0.9;
 	var geomsTrans=[ floor_meta['maxx']-0.5*floor_meta['xdim'], floor_meta['maxy']-0.5*floor_meta['ydim'] ];
 	var newScale=geomsScale;
@@ -550,13 +551,13 @@ function afterLerpFrame() {//{{{
 
 }
 //}}}
-function onMouseDrag(event) {//{{{
+tool.onMouseDrag=function(event) {//{{{
 	var offset = event.downPoint - event.point;
 	view.center = view.center + offset;
 };
 
 //}}}
-function onMouseDown(event) {//{{{
+tool.onMouseDown=function(event) {//{{{
 	animationIsRunning=0;
 	lerps=9999999999; // pause
 	var x;
@@ -668,7 +669,7 @@ function resizeAndRedrawCanvas() {//{{{
 }
 
 //}}}
-function onFrame(event) {//{{{
+view.onFrame=function(event) {//{{{
 	if (animationIsRunning==1) {
 		for (var i = 0; i < numberOfEvacuees; i++) { 
 			updateAnimatedElement(i);
@@ -678,3 +679,4 @@ function onFrame(event) {//{{{
 	}
 }
 //}}}
+};

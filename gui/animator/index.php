@@ -17,7 +17,7 @@ function site() {/*{{{*/
 	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
 	<script type='text/javascript' src='js/paper-full.min.js'></script>
 	<script type='module' src='js/lodash.min.js'></script>
-	<script type='text/paperscript' canvas='animator-canvas' src='js/animator.js'></script>
+	<script type='text/javascript' src='js/animator.js'></script>
 	<div>
 		<button-left-menu-box>A</button-left-menu-box><left-menu-box></left-menu-box>
 		<animator-title></animator-title> 
