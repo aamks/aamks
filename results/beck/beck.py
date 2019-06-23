@@ -10,6 +10,7 @@ from statsmodels.distributions.empirical_distribution import ECDF as ecdf
 import matplotlib.ticker as tic
 from ete3 import Tree, TreeStyle, TextFace
 import sys
+sys.path.insert(0, '/usr/local/aamks')
 import os
 import shutil
 from event_tree_en import EventTreeFED
@@ -243,8 +244,9 @@ class processDists:
     def plot_pie_fault(self):
         fig = plt.figure()
         sizes = [len(self.losses['dead']), self.total-len(self.losses['dead'])]
-        labels = 'Success', 'Failure'
-        colors = ['lightskyblue', 'lightcoral']
+        print(sizes)
+        labels = ['Failure', 'Success']
+        colors = ['lightcoral', 'lightskyblue']
         explode = (0.1, 0)
         plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True)
         plt.axis('equal')
@@ -260,7 +262,7 @@ class processDists:
         educational = [0.003, 3e-6, -1.26, -0.05]
         building = {'other_building': other_building, 'office': office, 'warehouse': warehouse, 'commercial': commercial,
                     'nursing': nursing, 'educational': educational}
-        b_type = 'educational'
+        b_type = 'commercial'
         ignition = building[b_type][0]*(area) ** (building[b_type][2]) + \
                    building[b_type][1] * (area) ** (building[b_type][3])
         return ignition
@@ -322,7 +324,7 @@ class processDists:
     def calculate_building_area(self):
         s=Sqlite("{}/aamks.sqlite".format(self.dir))
         result = s.query("SELECT sum(room_area) as total FROM aamks_geom");
-        return result[0]['total']
+        return result[0]['total']/10000
 
 p = processDists()
 p.plot_dcbe_dist()
@@ -366,6 +368,7 @@ with open('{}/picts/dane.txt'.format(p.dir), 'w') as g:
     temp_val = p.temp_values()
     g.write("MAX_TEMP - PER: {}, MEAN: {}".format(temp_val[0], temp_val[1]))
     g.write('P_dcbe: {}'.format(t_kryt*bar*p_ext))
+    g.write('DEAD RATIO: {}'.format(sum(p.losses['dead'])/p.total))
 
 
 t = EventTreeFED(building=p.dir, p_general=bar, p_develop=p_ext, p_dcbe=t_kryt, p_fed_n=fed_n, p_fed_l=fed_l, p_fed_m=fed_m, p_fed_f=fed_f)

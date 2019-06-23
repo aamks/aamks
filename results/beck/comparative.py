@@ -97,6 +97,20 @@ class processDists:
         fig.savefig("{}/picts/height.png".format(self.dir))
         plt.clf()
 
+    def plot_run_time(self, project_list):
+        n=1
+        for proj in project_list:
+            query = "SELECT run_time FROM simulations where project = {} AND dcbe_time is not null ".format(proj)
+            results = self.query(query)
+            dcbe = [int(i[0]) for i in results]
+            sns_plot = sns.distplot(dcbe, kde_kws={'cumulative': True, 'label': 'Runtime CDF A{}'.format(n)}, bins=50)
+#        sns.plt.xlabel('Wysokość warstwy dymu [cm]')
+#        sns.plt.ylabel('Prawdopodobieństwo')
+            n+=1
+        fig = sns_plot.get_figure()
+        fig.savefig("{}/picts/runtime.png".format(self.dir))
+        plt.clf()
+
     def plot_min_height_cor(self):
         query = "SELECT min_hgt_cor * 100 FROM simulations where project = {} AND min_hgt_cor < 12.8"\
             .format(self.configs['project_id'])
@@ -342,6 +356,7 @@ class processDists:
 p = processDists()
 p.plot_dcbe_dist(project_list=[4,9,5,8])
 p.plot_wcbe_dist(project_list=[4,9,5,8])
+p.plot_run_time(project_list=[9,4,5,8])
 #p.plot_min_height()
 #p.plot_min_height_cor()
 #p.plot_max_temp()

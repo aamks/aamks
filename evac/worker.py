@@ -23,8 +23,8 @@ from subprocess import Popen
 import zipfile
 from include import SendMessage
 
-#SIMULATION_TYPE = 'NO_CFAST'
-SIMULATION_TYPE = 1
+SIMULATION_TYPE = 'NO_CFAST'
+#SIMULATION_TYPE = 1
 
 class Worker:
 
@@ -174,7 +174,7 @@ class Worker:
                 logging.info('RVO2 ready on {} floors'.format(i))
 
             for obst in self.obstacles['points'][str(i)]:
-                obstacles.append([tuple(x) for x in obst[:4]])
+                obstacles.append([tuple(x) for x in array(obst)[[0,1,2,3,4,1]]])
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
             eenv.generate_nav_mesh()
@@ -182,7 +182,7 @@ class Worker:
 
             e = self._create_evacuees(i)
             eenv.place_evacuees(e)
-            eenv.set_exit_door()
+            #eenv.set_goal()
             self.floors.append(eenv)
 
     def do_simulation(self):
@@ -216,7 +216,9 @@ class Worker:
                 time_frame += 10
             else:
                 time.sleep(1)
+            print('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
             if time_frame > (self.vars['conf']['simulation_time'] - 10):
+            #if time_frame > 80:
                 break
             if prod(array(l)) > 0:
                 break
@@ -236,7 +238,6 @@ class Worker:
         self._write_meta()
 
         Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
-        #print("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id) )
     # }}}
     def _write_animation_zips(self):# {{{
         '''
@@ -293,7 +294,7 @@ class Worker:
         #SendMessage('Worker: {} end sim: {}'.format(self.host_name, self.sim_id))
 
     def test(self):
-        #self.get_config()
+        self.get_config()
         self.get_geom_and_cfast()
         self.create_geom_database()
         self.prepare_simulations()
@@ -302,21 +303,9 @@ class Worker:
 
 
 w = Worker()
-w.main()
+#w.main()
 
-#if SIMULATION_TYPE == 'NO_CFAST':
-#    try:
-#        w.test()
-#    except Exception as e:
-#        SendMessage(e)
-#    else:
-#        SendMessage("Worker: Alles in grunem bereisch")
-#else:
-#    try:
-#        w.main()
-#    except Exception as e:
-#        w.error_report('expeption: {}'.format(e))
-#        #SendMessage(e)
-#    else:
-#        #SendMessage("Worker: Alles in grunem bereisch")
-#        w.error_report('expeption: {}'.format('OK'))
+if SIMULATION_TYPE == 'NO_CFAST':
+    w.test()
+else:
+    w.main()

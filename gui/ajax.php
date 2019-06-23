@@ -2,6 +2,13 @@
 session_name('aamks');
 require_once("inc.php"); 
 
+function ajaxBeckShowImages() { #{{{
+	$f=$_SESSION['main']['working_home']."/picts/tree.png";
+	$data64=shell_exec("base64 $f");
+	$base64img="<img style='display:block; width:100px;height:100px;' src='data:image/jpeg;base64, $data64' />";
+	echo json_encode(array("msg"=>"img src", "err"=>0, "data"=>$base64img));
+}
+/*}}}*/
 function ajaxChangeActiveScenario() { #{{{
 	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
@@ -188,16 +195,17 @@ function main() { /*{{{*/
 
 	if(!empty($_SESSION['main']['user_id']))            {
 
-		if(isset($_GET['ajaxPdf2svg']))                 { ini_set('display_errors', 0) ; ajaxPdf2svg()              ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxApainterExport']))          { ini_set('display_errors', 0) ; ajaxApainterExport()       ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxApainterImport']))          { ini_set('display_errors', 0) ; ajaxApainterImport()       ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxAnimsList']))               { ini_set('display_errors', 0) ; ajaxAnimsList()            ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxAnimsStatic']))             { ini_set('display_errors', 0) ; ajaxAnimsStatic()          ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxSingleAnim']))              { ini_set('display_errors', 0) ; ajaxSingleAnim()           ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxMenuContent']))             { ini_set('display_errors', 0) ; ajaxMenuContent()          ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxBeckShowImages']))          { ini_set('display_errors', 0) ; ajaxBeckShowImages()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxPdf2svg']))                 { ini_set('display_errors', 0) ; ajaxPdf2svg()              ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxApainterExport']))          { ini_set('display_errors', 0) ; ajaxApainterExport()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxApainterImport']))          { ini_set('display_errors', 0) ; ajaxApainterImport()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxAnimsList']))               { ini_set('display_errors', 0) ; ajaxAnimsList()            ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxAnimsStatic']))             { ini_set('display_errors', 0) ; ajaxAnimsStatic()          ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxSingleAnim']))              { ini_set('display_errors', 0) ; ajaxSingleAnim()           ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxMenuContent']))             { ini_set('display_errors', 0) ; ajaxMenuContent()          ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

@@ -6,9 +6,9 @@
         "network_208": 0,
         "network_003": 0,
         "network_tsz": 0,
-        "network_cr": 0,
+        "network_cr": 4,
         "network_zil": 0,
-        "network_wilkors": 1
+        "network_wilkors": 0
     },
 
     "networks": {
@@ -25,6 +25,8 @@
 
         "network_cr": [ 
 
+            [ "30-9c-23-3f-2b-4f" , "192.168.0.101"  , "192.168.0.255" ],
+            [ "30-9c-23-3f-2b-50" , "192.168.0.102"  , "192.168.0.255" ],
             [ "F8-B1-56-CB-2D-7C" , "192.168.0.200"  , "192.168.0.255" ] 
         ],
 
