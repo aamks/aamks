@@ -170,8 +170,9 @@ function makeChooseVis(data) {//{{{
 };
 //}}}
 function initialScaleTranslate(floor_meta) {//{{{
-	var geomsScale=Math.min(wWidth/floor_meta['width'], wHeight/floor_meta['height'])*0.9;
-	var geomsTrans=[ floor_meta['maxx']-0.5*floor_meta['width'], floor_meta['maxy']-0.5*floor_meta['height'] ];
+	console.log(floor_meta);
+	var geomsScale=Math.min(wWidth/floor_meta['xdim'], wHeight/floor_meta['ydim'])*0.9;
+	var geomsTrans=[ floor_meta['maxx']-0.5*floor_meta['xdim'], floor_meta['maxy']-0.5*floor_meta['ydim'] ];
 	var newScale=geomsScale;
 	view.scale(newScale/scale);  
 	scale=newScale;
@@ -407,6 +408,7 @@ function paperjsDisplayImage() {//{{{
 
 	// Add labels to rooms
 	if (labelsSize != 0) { 
+		console.log(rooms);
 		_.forEach(rooms, function(room) {
 			var roomLabel = new PointText(new Point(room.points[0].x + 20, room.points[0].y + 50));
 			roomLabel.fillColor = colors.fg.c;

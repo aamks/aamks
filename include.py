@@ -312,8 +312,7 @@ class Vis:# {{{
 # }}}
     def _js_make_obstacles(self):# {{{
         ''' 
-        Data for obstacles. It may happen that geom.py was interrupted before
-        obstacles were created, so we produce a 0 size obstacle in try/except. 
+        Data for obstacles. TODO: is it fine if geom.py is interrupted before obstacles are created?
         '''
 
         xx=JSON.readdb("obstacles")
@@ -366,8 +365,7 @@ class Vis:# {{{
 # }}}
     def _js_make_obstacles_world2d(self):# {{{
         ''' 
-        Data for obstacles. It may happen that geom.py was interrupted before
-        obstacles were created, so we produce a 0 size obstacle in try/except. 
+        Data for obstacles. TODO: is it fine if geom.py is interrupted before obstacles are created?
         '''
 
         self._static_world2d['obstacles']=[]
@@ -434,8 +432,9 @@ class Vis:# {{{
         if self.global_meta['multifloor_building']==1:
             self._static_floors['world2d']=self._static_world2d
         self.json.write(self._static_floors, '{}/static.json'.format(vis_dir)) 
-        print("obstacles world2d")
-        exit()
+
+        #print("obstacles world2d")
+        #exit()
 
         try:
             z=self.json.read("{}/anims.json".format(vis_dir))

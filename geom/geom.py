@@ -22,7 +22,7 @@ from include import Vis
 
 # }}}
 
-os.environ['AAMKS_PROJECT']="/home/aamks_users/mimoohowy@gmail.com/demo/three"
+#os.environ['AAMKS_PROJECT']="/home/aamks_users/mimoohowy@gmail.com/demo/navmesh"
 
 class Geom():
     def __init__(self):# {{{
@@ -488,7 +488,7 @@ class Geom():
             assert v['face_offset'] is not None, self.make_vis('Problem with cfast face calculation.', v['global_type_id'])
 # }}}
     def _assert_room_has_door(self):# {{{
-        print("enable me")
+        # TODO: MUST ENABLE! 
         return
         ''' Each room must have at least one type_tri DOOR. '''
         doors_intersect_room_ids=[]

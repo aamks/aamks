@@ -24,21 +24,21 @@ from geom.obstacles import Obstacles
 
 class World2d():
     def __init__(self):# {{{
-
         self.json=Json()
-        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.global_meta=self.json.readdb("global_meta")
-        self.floors_meta=self.json.readdb("floors_meta")
-        self.floors=self.floors_meta.keys()
-        self.walls_width=self.global_meta['walls_width']
-        self.projections={'top':dict(), 'side':dict()}
+        if self.global_meta['multifloor_building']==1:
+            self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+            self.floors_meta=self.json.readdb("floors_meta")
+            self.floors=self.floors_meta.keys()
+            self.walls_width=self.global_meta['walls_width']
+            self.projections={'top':dict(), 'side':dict()}
 
-        self._top_projection_make()
-        self._side_projection_make()
-        self._db_rectangles_top()
-        self._db_rectangles_side()
-        self._world2d_make()
+            self._top_projection_make()
+            self._side_projection_make()
+            self._db_rectangles_top()
+            self._db_rectangles_side()
+            self._world2d_make()
 # }}}
 
     def _top_projection_make(self):# {{{

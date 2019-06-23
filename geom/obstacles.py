@@ -24,7 +24,6 @@ from include import Vis
 
 class Obstacles():
     def __init__(self):# {{{
-
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -33,15 +32,15 @@ class Obstacles():
         self.floors=self.floors_meta.keys()
         self.walls_width=self.global_meta['walls_width']
         self._create_obstacles('aamks_geom', 'obstacles')
-        self._create_obstacles('world2d', 'world2d_obstacles')
+        if self.global_meta['multifloor_building']==1:
+            self._create_obstacles('world2d', 'world2d_obstacles')
         #exit()
 
 # }}}
     def _create_obstacles(self, tin, tout):# {{{
         ''' 
         Geometry may contain obstacles to model machines, FDS walls, bookcases,
-        etc. Obstacles are not visible in CFAST, since they don't belong to
-        aamks_geom table. 
+        etc. Obstacles are not visible in CFAST.
         '''
 
         data=OrderedDict()
