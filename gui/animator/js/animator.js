@@ -409,7 +409,6 @@ function paperjsDisplayImage() {//{{{
 
 	// Add labels to rooms
 	if (labelsSize != 0) { 
-		console.log(rooms);
 		_.forEach(rooms, function(room) {
 			var roomLabel = new PointText(new Point(room.points[0].x + 20, room.points[0].y + 50));
 			roomLabel.fillColor = colors.fg.c;
@@ -505,7 +504,7 @@ function paperjsDisplayAnimation() { //{{{
 	}
 
 	for (var i=0; i<numberOfEvacuees; i++) {
-		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: evacueeRadius, fillColor: colors['doseN']['c'] }));
+		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: evacueeRadius, fillColor: colors['doseN']['c']}));
 	}
 
 }
@@ -552,8 +551,7 @@ function afterLerpFrame() {//{{{
 }
 //}}}
 tool.onMouseDrag=function(event) {//{{{
-	var offset = event.downPoint - event.point;
-	view.center = view.center + offset;
+	view.setCenter(view.center.x + event.downPoint.x - event.point.x, view.center.y + event.downPoint.y - event.point.y);
 };
 
 //}}}

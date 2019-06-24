@@ -9,6 +9,10 @@ $_SESSION['main']['scenario_name']=$_GET['s'];
 $_SESSION['main']['project_name']=$_GET['p'];
 $_SESSION['main']['working_home']="/home/aamks_users/mimoohowy@gmail.com/demo/$_GET[s]";
 
-header("Location: /aamks/animator/index.php"); 
+if(isset($_GET['apainter'])) { 
+	header("Location: /aamks/apainter/index.php"); 
+} else {
+	header("Location: /aamks/animator/index.php"); 
+}
 
 ?>
