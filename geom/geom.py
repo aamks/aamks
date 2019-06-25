@@ -22,8 +22,6 @@ from include import Vis
 
 # }}}
 
-#os.environ['AAMKS_PROJECT']="/home/aamks_users/mimoohowy@gmail.com/demo/navmesh"
-
 class Geom():
     def __init__(self):# {{{
         self.json=Json()

@@ -1,19 +1,3 @@
-// Animation can be paused on mouse clicks - onFrame() always checks the animationIsRunning variable. {{{
-// On mouse clicks we display evacBalls data and mouse position
-//
-// General workflow:
-// 1. init/init.py creates master.html and attaches js/
-// 2. First we read anims.json for a list of registered visualizations
-// 3. We choose a registered animation and read first json, e.g. floor_1.json
-// 4. anims.json has "anim" key which can be empty or point to a directory, e.g 83/
-//		-- we will then get ../83/anim.zip
-//
-// Animations are frames for t0, t1, tN. Each frame contains all agents information in a vector:
-// 
-//     0      , 1      , 2        , 3        , 4            , 5
-//     agentX , agentY , headingX , headingY , FED: N|L|M|H , opacity
-//}}}
-
 var scale=1;
 var wWidth;
 var wHeight;
@@ -632,14 +616,17 @@ function initRoomSmoke() {//{{{
 		group.addChild(new Path.Rectangle({ point: new Point(rooms[room].x0+roomMargin, rooms[room].y0+roomMargin), size: new Size(rooms[room]["width"]-2*roomMargin,rooms[room]["depth"]-2*roomMargin)}));
 		group.clipped=true;
 		group.opacity=0.3;
-		x_ranges=bubbles_ranges(rooms[room].width);
-		y_ranges=bubbles_ranges(rooms[room].depth);
+		x_ranges=bubbles_ranges(rooms[room].points[0]['x'] - rooms[room].points[1]['x']);
+		y_ranges=bubbles_ranges(rooms[room].points[2]['y'] - rooms[room].points[1]['y']);
+dd(x_ranges);
 		for (var xx in x_ranges) {
+		dd(xx);
 			for (var yy in y_ranges) {
 				center=[
-					rooms[room].x0 + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
-					rooms[room].y0 + randBetween (y_ranges[yy][0], y_ranges[yy][1] )
-				]
+					rooms[room].points[0]['x'] + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
+					rooms[room].points[0]['y'] + randBetween (y_ranges[yy][0], y_ranges[yy][1] )
+				];
+dd(center);
 				group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center), radius: radius*randBetween(0.7,1),  fillColor: "#000000" }));
 			}
 		}

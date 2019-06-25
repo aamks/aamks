@@ -296,19 +296,19 @@ class Vis:# {{{
         ''' Data for rooms. '''
 
         for floor in self._static_floors.keys():
-            self._static_floors[floor]['rooms']=[]
+            self._static_floors[floor]['rooms']=OrderedDict()
             for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
                 points=self._make_poly(i)
-                self._static_floors[floor]['rooms'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)]))
+                self._static_floors[floor]['rooms'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)])
 # }}}
     def _js_make_doors(self):# {{{
         ''' Data for doors. '''
 
         for floor in self._static_floors.keys():
-            self._static_floors[floor]['doors']=[]
+            self._static_floors[floor]['doors']=OrderedDict()
             for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
                 points=self._make_poly(i)
-                self._static_floors[floor]['doors'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)]))
+                self._static_floors[floor]['doors'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)])
 # }}}
     def _js_make_obstacles(self):# {{{
         ''' 
@@ -348,19 +348,19 @@ class Vis:# {{{
         ''' Data for doors. '''
 
         for floor in ['world2d']:
-            self._static_world2d['doors']=[]
+            self._static_world2d['doors']=OrderedDict()
             for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM world2d WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
                 points=self._make_poly(i)
-                self._static_world2d['doors'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)]))
+                self._static_world2d['doors'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)])
 # }}}
     def _js_make_rooms_world2d(self):# {{{
         ''' Data for rooms. '''
 
         for floor in ['world2d']:
-            self._static_world2d['rooms']=[]
+            self._static_world2d['rooms']=OrderedDict()
             for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec,room_enter FROM world2d WHERE type_pri='COMPA'"):
                 points=self._make_poly(i)
-                self._static_world2d['rooms'].append(OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)]))
+                self._static_world2d['rooms'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)])
 
 # }}}
     def _js_make_obstacles_world2d(self):# {{{
