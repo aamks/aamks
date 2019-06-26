@@ -566,9 +566,13 @@ function animTimeFormat() {//{{{
 //}}}
 function highlightGeom(key) {//{{{
 	try {
-		new Path.Rectangle({point: new Point(Math.round(rooms[key]["x0"]),Math.round(rooms[key]["y0"])), size: new Size(Math.round(rooms[key]["width"]),Math.round(rooms[key]["depth"])), opacity:0.4, fillColor: "#0f0"});
+		rw=Math.round(rooms[key].points[1]['x'] - rooms[key].points[0]['x']);
+		rh=Math.round(rooms[key].points[2]['y'] - rooms[key].points[1]['y']);
+		new Path.Rectangle({point: new Point(Math.round(rooms[key].points[0]['x']),Math.round(rooms[key].points[0]['y'])), size: new Size(rw,rh), opacity:0.4, fillColor: "#0f0"});
 	} catch(e) {
-		new Path.Circle({center: new Point(Math.round(doors[key]["center_x"]),Math.round(doors[key]["center_y"])), radius: 100,  opacity:0.4, fillColor: "#0f0"});
+		cx=Math.round( doors[key].points[0]['x'] + 0.5 * (doors[key].points[1]['x'] - doors[key].points[0]['x']));
+		cy=Math.round( doors[key].points[1]['y'] - 0.5 * (doors[key].points[1]['y'] - doors[key].points[0]['y']));
+		new Path.Circle({center: new Point(cx,cy), radius: 100,  opacity:0.4, fillColor: "#0f0"});
 	}
 }
 //}}}
@@ -609,25 +613,27 @@ function initRoomSmoke() {//{{{
 	var radius=350;
 	var roomMargin=25;
 	var center;
+	var rw, rh;
 	var x_ranges, y_ranges;
 	for (var room in roomsOpacity[0]) {
+		rw=rooms[room].points[1]['x']- rooms[room].points[0]['x'];
+		rh=rooms[room].points[2]['y']- rooms[room].points[1]['y'];
+
 		group=new Group;
 		group.name=room;
-		group.addChild(new Path.Rectangle({ point: new Point(rooms[room].x0+roomMargin, rooms[room].y0+roomMargin), size: new Size(rooms[room]["width"]-2*roomMargin,rooms[room]["depth"]-2*roomMargin)}));
+		group.addChild(new Path.Rectangle({ point: new Point(rooms[room].points[0]['x']+roomMargin, rooms[room].points[0]['y']+roomMargin), size: new Size(rw-2*roomMargin,rh-2*roomMargin)}));
 		group.clipped=true;
 		group.opacity=0.3;
-		x_ranges=bubbles_ranges(rooms[room].points[0]['x'] - rooms[room].points[1]['x']);
+		x_ranges=bubbles_ranges(rooms[room].points[1]['x'] - rooms[room].points[0]['x']);
 		y_ranges=bubbles_ranges(rooms[room].points[2]['y'] - rooms[room].points[1]['y']);
-dd(x_ranges);
 		for (var xx in x_ranges) {
-		dd(xx);
 			for (var yy in y_ranges) {
 				center=[
 					rooms[room].points[0]['x'] + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
-					rooms[room].points[0]['y'] + randBetween (y_ranges[yy][0], y_ranges[yy][1] )
+					rooms[room].points[0]['y'] + randBetween (y_ranges[yy][0], y_ranges[yy][1] ),
 				];
-dd(center);
-				group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center), radius: radius*randBetween(0.7,1),  fillColor: "#000000" }));
+				group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center[0], center[1]), radius: radius*randBetween(0.7,1),  fillColor: "#000000" }));
+
 			}
 		}
 	}
