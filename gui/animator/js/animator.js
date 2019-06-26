@@ -571,7 +571,7 @@ function highlightGeom(key) {//{{{
 		new Path.Rectangle({point: new Point(Math.round(rooms[key].points[0]['x']),Math.round(rooms[key].points[0]['y'])), size: new Size(rw,rh), opacity:0.4, fillColor: "#0f0"});
 	} catch(e) {
 		cx=Math.round( doors[key].points[0]['x'] + 0.5 * (doors[key].points[1]['x'] - doors[key].points[0]['x']));
-		cy=Math.round( doors[key].points[1]['y'] - 0.5 * (doors[key].points[1]['y'] - doors[key].points[0]['y']));
+		cy=Math.round( doors[key].points[1]['y'] + 0.5 * (doors[key].points[2]['y'] - doors[key].points[1]['y']));
 		new Path.Circle({center: new Point(cx,cy), radius: 100,  opacity:0.4, fillColor: "#0f0"});
 	}
 }
