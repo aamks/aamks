@@ -1,7 +1,6 @@
 var scale=1;
 var wWidth;
 var wHeight;
-var intervalId;
 var incDB;
 var colors;
 var staticGeoms;
@@ -42,6 +41,8 @@ window.onload = function() {
 	nn=new Layer; nn.name='rooms';
 	nn=new Layer; nn.name='roomSmoke';
 	nn=new Layer; nn.name='roomFire';
+	nn=new Layer; nn.name='highlight';
+	nn=new Layer; nn.name='animated';
 	resizeAndRedrawCanvas();
 	left_menu_box();
 	right_menu_box();
@@ -106,6 +107,7 @@ function listenEvents() {//{{{
 function right_menu_box() {//{{{
 	$('close-right-menu-box').click(function() {
 		$('right-menu-box').fadeOut();
+		project.layers['highlight'].removeChildren();
 	});
 
 	$('button-right-menu-box').click(function() {
@@ -241,6 +243,7 @@ function resetCanvas() {//{{{
     append_dd_geoms();
 	paperjsDisplayAnimation();
 	paperjsLetItBurn();
+	project.layers['animated'].activate();
 	
 }
 //}}}
@@ -302,9 +305,8 @@ function paperjsLetItBurn() {//{{{
 	var smokeOrig;
 	var fire;
 
-	if ('roomFire' in project.layers) {
-		project.layers['roomFire'].removeChildren();
-	} 
+	if ('roomFire' in project.layers) { project.layers['roomFire'].removeChildren(); } 
+	if ('roomSmoke' in project.layers) { project.layers['roomSmoke'].removeChildren(); } 
 
 	project.layers['roomFire'].importSVG("smoke.svg", function (item) {
 		item.position.x=fireXY[0];
@@ -321,6 +323,8 @@ function paperjsLetItBurn() {//{{{
 		fire=item;
 	});
 
+
+	var intervalId;
 	clearInterval(intervalId);
 	intervalId=setInterval(function(){ 
 		smoke.opacity-=0.008;
@@ -433,7 +437,7 @@ function paperjsDisplayImage() {//{{{
 		}
 	});
 
-	// Draw static evacuees
+	// Draw srv, non-animated evacuees
 	for (var key in staticEvacuees) {
 		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: evacueeRadius,  fillColor: colors['doseN']['c'] }));
 	}
@@ -470,7 +474,7 @@ function paperjsDisplayAnimation() { //{{{
 	// evacLabels are (e1 x,y) displayed on top of each ball
 	// Old elements must be removed on various occassions, so we cannot return to early.
 	
-	project.layers['rooms'].activate();
+	project.layers['animated'].activate();
 	if (evacVelocities == undefined) {
 		evacVelocities=new Group();
 		evacBalls=new Group();
@@ -565,6 +569,7 @@ function animTimeFormat() {//{{{
 
 //}}}
 function highlightGeom(key) {//{{{
+	project.layers['highlight'].activate();
 	try {
 		rw=Math.round(rooms[key].points[1]['x'] - rooms[key].points[0]['x']);
 		rh=Math.round(rooms[key].points[2]['y'] - rooms[key].points[1]['y']);
@@ -581,9 +586,10 @@ function randBetween(min, max) {//{{{
 }
 //}}}
 function clearSmoke() {//{{{
-	if ('roomSmoke' in project.layers) {
-		project.layers['roomSmoke'].removeChildren();
-	} 
+	// TODO: JUN.2019, disable ok?
+	//if ('roomSmoke' in project.layers) {
+	//	project.layers['roomSmoke'].removeChildren();
+	//} 
 }
 //}}}
 function bubbles_ranges(side) { //{{{
@@ -599,16 +605,6 @@ function bubbles_ranges(side) { //{{{
 }
 //}}}
 function initRoomSmoke() {//{{{
-	// TODO: Smoke animations: we have lost keys and have indices now. Some db to fix it?
-
- 	// r1: {name: "r1", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
- 	// r2: {name: "r2", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
- 	// r3: {name: "r3", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
-
- 	// 0: {name: "r1", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
- 	// 1: {name: "r2", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
- 	// 2: {name: "r3", type_sec: "ROOM", room_enter: "yes", points: Array(4)}
-
 	project.layers['roomSmoke'].activate();
 	var radius=350;
 	var roomMargin=25;
@@ -632,7 +628,7 @@ function initRoomSmoke() {//{{{
 					rooms[room].points[0]['x'] + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
 					rooms[room].points[0]['y'] + randBetween (y_ranges[yy][0], y_ranges[yy][1] ),
 				];
-				group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center[0], center[1]), radius: radius*randBetween(0.7,1),  fillColor: "#000000" }));
+				group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center[0], center[1]), radius: radius*randBetween(0.7,1),  fillColor: "#023" }));
 
 			}
 		}

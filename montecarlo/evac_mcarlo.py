@@ -165,19 +165,11 @@ class EvacMcarlo():
 
         '''
 
-        # TODO: see if we really need it
-        # static.json may not exist at this stage, so we preserve the data and
-        # the actual write happens in init.py 
-
-        pass
-        # m={}
-        # for floor in self.floors:
-        #     m[floor]['evacuees']=self.dispatched_evacuees[floor]
-        #     m[floor]['sim_id']=self._sim_id
-        # self.json.write(m,"{}/workers/static.json".format(os.environ['AAMKS_PROJECT']))
-
-        # self.s.query("CREATE TABLE dispatched_evacuees(json)")
-        # self.s.query('INSERT INTO floors_meta VALUES (?)', (json.dumps(self.floors_meta),))
+        m={}
+        for floor in self.floors:
+            m[floor]=self.dispatched_evacuees[floor]
+        self.s.query("CREATE TABLE dispatched_evacuees(json)")
+        self.s.query('INSERT INTO dispatched_evacuees VALUES (?)', (json.dumps(m),))
         
 # }}}
 

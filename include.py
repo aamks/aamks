@@ -256,8 +256,9 @@ class Vis:# {{{
         highlight_geom: geom to highlight in Animator
         anim: animation file | empty
         title: title
-        srv: 0 | 1 (previous server visuals are obsolete and need to be removed)
-        fire_origin: fire_origin
+        srv: 0 | 1 comes from the server, not worker; serves the purposes:
+            * previous server visuals are obsolete and need to be removed
+            * initial Apainter's evacuees will be displayed
         '''
 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -270,6 +271,7 @@ class Vis:# {{{
         self._js_make_doors()
         self._js_make_obstacles()
         self._js_make_dd_geoms()
+        self._js_make_srv_evacuees()
 
         self.global_meta=JSON.readdb("global_meta")
         if self.global_meta['multifloor_building']==1:
@@ -325,6 +327,12 @@ class Vis:# {{{
         for floor,obstacles in xx['fire'].items():
                 self._static_floors[floor]['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ], 'type':'fire_obstacle'})
 
+# }}}
+    def _js_make_srv_evacuees(self):# {{{
+        ''' Draw srv, non-animated evacuees '''
+
+        for floor,evacuees in JSON.readdb("dispatched_evacuees").items():
+            self._static_floors[floor]['evacuees']=evacuees
 # }}}
     def _js_make_dd_geoms(self):# {{{
         ''' 

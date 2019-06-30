@@ -73,10 +73,11 @@ class Navmesh:
             for i in bypass_doors:
                 bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
 
-        #z=self.s.query("SELECT json FROM obstacles")
-        #for floor,walls in json.loads(z[0]['json'])['points'].items():
-        for floor,walls in self.json.readdb("obstacles").items():
-            bricked_wall+=walls
+        bricked_wall+=self.json.readdb("obstacles")['obstacles'][floor]
+        try:
+            bricked_wall.append(self.json.readdb("obstacles")['fire'][floor])
+        except:
+            pass
 
         return bricked_wall
 
@@ -104,6 +105,9 @@ class Navmesh:
         2. Build navmesh with golang, obj is input
         3. Query navmesh with python
         4. bypass_rooms are the rooms excluded from navigation
+
+        99 is the z-dim in cm
+
         '''
 
         z=self._bricked_wall(floor,bypass_rooms)

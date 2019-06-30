@@ -99,7 +99,8 @@ class OnEnd():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']
         self.p=Psql()
-        #self._navmeshes_for_floors()
+        if self.conf['navmesh_debug']==1:
+            self._navmeshes_for_floors()
         Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
         self._gearman_register_works()
 # }}}
@@ -112,8 +113,7 @@ class OnEnd():
                 bypass_rooms.append(i['name'])
             navs[tuple(bypass_rooms)]=Navmesh()
             navs[tuple(bypass_rooms)].build(floor,bypass_rooms)
-            if self.conf['navmesh_debug']==1:
-                navs[tuple(bypass_rooms)].test()
+            navs[tuple(bypass_rooms)].test()
 # }}}
     def _gearman_register_works(self):# {{{
         ''' 
