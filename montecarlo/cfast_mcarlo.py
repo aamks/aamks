@@ -498,7 +498,7 @@ class CfastMcarlo():
         i['y']=int(i['y'] * 100)
         i['z']=int(i['z'] * 100)
 
-        points=[ [i['x']-xx, i['y']-yy], [i['x']+xx, i['y']-yy], [i['x']+xx, i['y']+yy], [i['x']-xx, i['y']+yy], [i['x']-xx, i['y']-yy] ]
+        points=[ [i['x']-xx, i['y']-yy, 0], [i['x']+xx, i['y']-yy, 0], [i['x']+xx, i['y']+yy, 0], [i['x']-xx, i['y']+yy, 0], [i['x']-xx, i['y']-yy, 0] ]
 
         obstacles=self.json.readdb("obstacles")
         obstacles['fire']={ i['floor']: points }

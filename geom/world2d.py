@@ -37,8 +37,8 @@ class World2d():
             self._top_projection_make()
             self._side_projection_make()
             self._db_rectangles_top()
-            self._db_rectangles_side()
-            self._world2d_make()
+            #self._db_rectangles_side()
+            #self._world2d_make()
 # }}}
 
     def _top_projection_make(self):# {{{
@@ -58,11 +58,11 @@ class World2d():
         All geoms must be y-translated
         '''
 
-        self.s.query("CREATE TABLE world2d(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
-        self.s.query("INSERT INTO world2d SELECT * FROM aamks_geom")
+        floors_meta=self.json.readdb("floors_meta")
+
         for floor,line in self.projections['top']['lines'].items():
-            ty=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
-            self.s.query("UPDATE world2d SET y0=y0+?, y1=y1+?, center_y=center_y+?, z0=0, z1=0, center_z=0 WHERE floor=?", (ty,ty,ty,floor))
+            self.floors_meta[floor]['world2d_ty']=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
+        self.s.query("UPDATE floors_meta SET json=?", (json.dumps(self.floors_meta),))
 
 # }}}
     def _top_proj_lines(self):# {{{

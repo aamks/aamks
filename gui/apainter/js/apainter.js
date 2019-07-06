@@ -576,10 +576,10 @@ function change_floor(requested_floor) {//{{{
 	var active_f="#floor"+floor;
 	var inactive_f=".g_floor:not("+active_f+")";
 	g_floor=d3.select(active_f);
-	$(inactive_f).animate({"opacity": 0}, 1000, function(){
+	$(inactive_f).animate({"opacity": 0}, 1, function(){
 		$(inactive_f).attr("visibility","hidden");
 	});
-	$(active_f).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1000);
+	$(active_f).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1);
 
 	var active_img="#g_img"+floor;
 	var inactive_img=".g_img:not("+active_img+")";
@@ -587,11 +587,13 @@ function change_floor(requested_floor) {//{{{
 	$(inactive_img).animate({"opacity": 0}, 1000, function(){
 		$(inactive_img).attr("visibility","hidden");
 	});
-	$(active_img).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1000);
+	$(active_img).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1);
 
 	geoms_changed();
 	d3.select("#floor_text").text("floor "+floor);
+	$("#floor_text").clearQueue().finish();
 	$("#floor_text").css("opacity",1).animate({"opacity": 0.05}, 1000);
+
 
 }
 //}}}

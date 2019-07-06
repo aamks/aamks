@@ -145,14 +145,6 @@ class Sqlite: # {{{
         for i in self.query('SELECT * FROM aamks_geom order by floor,type_pri,global_type_id'):
             print(i)
 
-    def dump2(self):
-        print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
-        print("project: {}".format(os.environ['AAMKS_PROJECT']))
-        print()
-        for i in self.query('SELECT * FROM world2d order by floor,type_pri,global_type_id'):
-            print(i)
-
-
     def dump_geoms(self,floor='all'):
         print("dump_geom() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         print("project: {}".format(os.environ['AAMKS_PROJECT']))
@@ -171,7 +163,7 @@ class Sqlite: # {{{
         print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         print("project: {}".format(os.environ['AAMKS_PROJECT']))
         print()
-        for i in ('aamks_geom', 'world2d', 'floors_meta', 'world2d_meta', 'obstacles', 'partition', 'cell2compa', 'navmeshes'):
+        for i in ('aamks_geom', 'floors_meta', 'obstacles', 'partition', 'cell2compa', 'navmeshes'):
             try:
                 print("\n=======================")
                 print("table:", i)
@@ -274,13 +266,13 @@ class Vis:# {{{
         self._js_make_srv_evacuees()
 
         self.global_meta=JSON.readdb("global_meta")
-        if self.global_meta['multifloor_building']==1:
-            self._static_world2d=OrderedDict()
-            self._js_make_floors_and_meta_world2d()
-            self._js_make_rooms_world2d()
-            self._js_make_doors_world2d()
-            self._js_make_obstacles_world2d()
-            self._js_make_dd_geoms_world2d()
+        #if self.global_meta['multifloor_building']==1:
+        #    self._static_world2d=OrderedDict()
+        #    self._js_make_floors_and_meta_world2d()
+        #    self._js_make_rooms_world2d()
+        #    self._js_make_doors_world2d()
+        #    self._js_make_obstacles_world2d()
+        #    self._js_make_dd_geoms_world2d()
 
         if 'fire_origin' not in params:
             params['fire_origin']=self._js_vis_fire_origin()
@@ -325,7 +317,7 @@ class Vis:# {{{
                 self._static_floors[floor]['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ]})
 
         for floor,obstacles in xx['fire'].items():
-                self._static_floors[floor]['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ], 'type':'fire_obstacle'})
+                self._static_floors[floor]['fire']={'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ] }
 
 # }}}
     def _js_make_srv_evacuees(self):# {{{
@@ -437,8 +429,8 @@ class Vis:# {{{
         '''
 
         vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        if self.global_meta['multifloor_building']==1:
-            self._static_floors['world2d']=self._static_world2d
+        #if self.global_meta['multifloor_building']==1:
+        #    self._static_floors['world2d']=self._static_world2d
         self.json.write(self._static_floors, '{}/static.json'.format(vis_dir)) 
 
         #print("obstacles world2d")

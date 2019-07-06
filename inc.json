@@ -17,7 +17,7 @@
 		"y":      { "legendary": 1 , "x": "FIRE"            , "t": "fire"            , "c": "#ff4400" , "stroke": "#220000" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 1, "strokeWidth": 10 }  ,
 		"p":      { "legendary": 0 , "x": "UNDERLAY_SCALER" , "t": "underlay_scaler" , "c": "#ff00ff" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity": 1, "strokeWidth": 0 }   ,
 		"canvas": { "legendary": 0 , "x": "canvas"          , "t": "canvas"          , "c": "#333333" , "stroke": "#333333" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity": 1, "strokeWidth": 0 }   ,
-		"doseN":  { "legendary": 0 , "x": "doseN"           , "t": "doseN"           , "c": "#008800" , "stroke": "none" , "lightc": "#333333" , "font": "#444444" , "animOpacity": 1, "strokeWidth": 10 }   ,
+		"doseN":  { "legendary": 0 , "x": "doseN"           , "t": "doseN"           , "c": "#ffffff" , "stroke": "none" , "lightc": "#333333" , "font": "#444444" , "animOpacity": 1, "strokeWidth": 10 }   ,
 		"doseL":  { "legendary": 0 , "x": "doseL"           , "t": "doseL"           , "c": "#ff8800" , "stroke": "none" , "lightc": "#333333" , "font": "#444444" , "animOpacity": 1, "strokeWidth": 10 }   ,
 		"doseM":  { "legendary": 0 , "x": "doseM"           , "t": "doseM"           , "c": "#aa0000" , "stroke": "none" , "lightc": "#333333" , "font": "#444444" , "animOpacity": 1, "strokeWidth": 10 }   ,
 		"doseH":  { "legendary": 0 , "x": "doseH"           , "t": "doseH"           , "c": "#111111" , "stroke": "none" , "lightc": "#333333" , "font": "#444444" , "animOpacity": 1, "strokeWidth": 10 }   ,

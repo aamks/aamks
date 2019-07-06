@@ -15,11 +15,8 @@ var evacVelocities;
 var evacueesData;
 var roomsOpacity;
 var numberOfEvacuees;
-var rooms;
-var doors;
-var obstacles;
-var dd_geoms;
-var staticEvacuees;
+var dstatic;
+var floor;
 var lerps;
 var lastFrame=1;
 var deltaTime=0; 
@@ -29,7 +26,6 @@ var sliderPos=0;
 var lerpFrame=0;
 var frame=0;
 var	visContainsAnimation=0;
-var	isDemoAnimation=0;
 var	animationIsRunning=0;
 
 paper.install(window);
@@ -39,6 +35,9 @@ window.onload = function() {
 	var tool=new Tool;
 	makeAnimationControls();
 	nn=new Layer; nn.name='rooms';
+	//nn=new Layer; nn.name='doors';
+	//nn=new Layer; nn.name='obstacles';
+	//nn=new Layer; nn.name='dd_geoms';
 	nn=new Layer; nn.name='roomSmoke';
 	nn=new Layer; nn.name='roomFire';
 	nn=new Layer; nn.name='highlight';
@@ -172,8 +171,8 @@ function showStaticImage(chosenAnim) {//{{{
 	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
 		ajax_msg(response);
-		var dstatic=response['data'];
-		var floor=chosenAnim["floor"];
+		dstatic=response['data'];
+		floor=chosenAnim["floor"];
 		initialScaleTranslate(response['data'][floor]['floor_meta']);
 
 		$("animator-title").html(chosenAnim['title']);
@@ -184,13 +183,6 @@ function showStaticImage(chosenAnim) {//{{{
 		velocitiesSize=Math.round(1/scale);
 		doorsSize=Math.round(0.2*wallsSize);
 
-		rooms=dstatic[floor].rooms;
-		doors=dstatic[floor].doors;
-		obstacles=dstatic[floor].obstacles;
-        dd_geoms=dstatic[floor].dd_geoms;
-		if(chosenAnim["anim"] == undefined) { staticEvacuees=dstatic[floor].evacuees; } else { staticEvacuees=[]; }
-		if(chosenAnim["demo"] == undefined) { isDemoAnimation=0; } else { isDemoAnimation=1; }
-		
 		makeSetupBoxInputs();
 		makeColors();
 		makeHighlightGeoms(dstatic[floor]);
@@ -338,6 +330,51 @@ function paperjsLetItBurn() {//{{{
 	},100);
 }
 //}}}
+function drawPath(type,data,ty) {//{{{
+		if(type=='ROOM') {
+			strokeColor = colors.ROOM.stroke;
+			strokeWidth = 0.2;
+			opacity = 0.4;
+			fillColor = data.room_enter == 'yes' ? colors[data.type_sec].c : "#333";
+			var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
+		}
+		if(type=='OBST') {
+			strokeColor = colors.OBST.c;
+			strokeWidth = wallsSize;
+			opacity = 0.6;
+			fillColor = colors.OBST.c;
+			var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
+		}
+		if(type=='DOOR') {
+			strokeColor = colors.DOOR.c;
+			strokeWidth = doorsSize;
+			opacity = colors.DOOR.animOpacity / 3;
+			var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, opacity:opacity });
+        }
+
+		path.closed = true;
+		_.forEach(data.points, function(point) { path.add(new Point(point.x, point.y+ty)); });
+		staticGeoms.addChild(path);
+}
+//}}}
+function drawLabel(type,data,ty) {//{{{
+		fontFamily = 'Roboto';
+		content = data.name;
+		if(type=='ROOM') {
+			fillColor = colors.fg.c;
+			fontSize = labelsSize;
+			pos=[data.points[0].x + 20, data.points[0].y+ty + 50];
+		}
+		if(type=='DOOR') {
+			fillColor = colors.fg.c;
+			opacity = colors.DOOR.animOpacity;
+			fontSize = labelsSize * 0.75;
+			pos=[data.points[0].x + 30, data.points[0].y+ty + 30];
+        }
+		var text = new PointText({ point: new Point(pos[0], pos[1]), content: content, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
+		staticGeoms.addChild(text);
+}
+//}}}
 function paperjsDisplayImage() {//{{{
 
 	project.layers['rooms'].activate();
@@ -348,99 +385,27 @@ function paperjsDisplayImage() {//{{{
 		staticGeoms.removeChildren();
 	}
 
-	// Creating rooms
-	_.forEach(rooms, function(room) {
-		var roomPath = new Path();
-		roomPath.strokeColor = colors.ROOM.stroke;
-		roomPath.strokeWidth = 0.2;
-		roomPath.opacity = 0.4;
-		// Change color depending on room_enter posibility
-		roomPath.fillColor = room.room_enter == 'yes' ? colors[room.type_sec].c : "#333";
-		// Draw polygon
-		_.forEach(room.points, function(point) {
-			roomPath.add(new Point(point.x, point.y));
-		});
-		// Close polygon
-		roomPath.closed = true;
-		// Add path to staticGeoms
-		staticGeoms.addChild(roomPath);
-	});
+	_.forEach(dstatic, function(ffloor) {
+        var ty=ffloor.floor_meta.world2d_ty;
+        _.forEach(ffloor.rooms     , function(x) { drawPath('ROOM' , x , ty); });
+        _.forEach(ffloor.obstacles , function(x) { drawPath('OBST' , x , ty); });
 
-	// Creating obstacles
-	_.forEach(obstacles, function(obst) {
-		if(obst.type && obst.type == 'fire_obstacle') {
-			if(isDemoAnimation == 0 && obst.points.lenght >= 3) { 
-				// TODO refactor center & radius if polygon
-				var center = new Point(obst.points[0].x + (obst.points[2].x - obst.points[0].x)/2, obst.points[0].y + (obst.points[2].y - obst.points[0].y)/2);
-				var radius = (obst.points[2].x - obst.points[0].x)/2;
-				var obstPath = new Path.Circle(center, radius);
-				obstPath.strokeColor = "#ffffff";
-				obstPath.dashArray = [20,10];
-				obstPath.strokeWidth = wallsSize;
-			}
-		} else {
-			var obstPath = new Path();
-			obstPath.strokeColor = colors.fg.c;
-			obstPath.strokeWidth = wallsSize;
-			obstPath.opacity = 0.6;
-			obstPath.fillColor = colors.OBST.c;
-			// Draw polygon
-			_.forEach(obst.points, function(point) {
-				obstPath.add(new Point(point.x, point.y));
-			});
-			// Close polygon
-			obstPath.closed = true;
-			// Add path to staticGeoms
-			staticGeoms.addChild(obstPath);
+		if (doorsSize!= 0) { _.forEach(ffloor.doors , function(x) { drawPath('DOOR' , x , ty); } ); }
+
+		if (labelsSize!= 0) { 
+			_.forEach(ffloor.rooms , function(x) { drawLabel('ROOM' , x , ty); });
+			_.forEach(ffloor.doors , function(x) { drawLabel('DOOR' , x , ty); });
 		}
-	});
 
-	// Add labels to rooms
-	if (labelsSize != 0) { 
-		_.forEach(rooms, function(room) {
-			var roomLabel = new PointText(new Point(room.points[0].x + 20, room.points[0].y + 50));
-			roomLabel.fillColor = colors.fg.c;
-			roomLabel.content = room.name;
-			roomLabel.fontFamily = 'Roboto';
-			roomLabel.fontSize = labelsSize;
-			// Add label to staticGeoms
-			staticGeoms.addChild(roomLabel);
-		});
-	}
 
-	// Create doors
-	_.forEach(doors, function(door) {
-		if (doorsSize != 0) { 
-			var doorPath = new Path();
-			doorPath.strokeColor = colors.DOOR.c;
-			doorPath.strokeWidth = doorsSize;
-			doorPath.opacity = colors.DOOR.animOpacity / 3;
-			// Draw polygon
-			_.forEach(door.points, function(point) {
-				doorPath.add(new Point(point.x, point.y));
-			});
-			// Close polygon
-			doorPath.closed = true;
-			// Add path to staticGeoms
-			staticGeoms.addChild(doorPath);
-		}
-		if (labelsSize != 0) { 
-			// TODO distinguish vertical and horizontal doors
-			var doorLabel = new PointText(new Point(door.points[0].x + 30, door.points[0].y + 30));
-			doorLabel.fillColor = colors.fg.c;
-			doorLabel.content = door.name;
-			doorLabel.opacity = colors.DOOR.animOpacity;
-			doorLabel.fontFamily = 'Roboto';
-			doorLabel.fontSize = labelsSize * 0.75;
-			// Add label to staticGeoms
-			staticGeoms.addChild(doorLabel);
-		}
-	});
-
-	// Draw srv, non-animated evacuees
-	for (var key in staticEvacuees) {
-		staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: evacueeRadius,  fillColor: colors['doseN']['c'] }));
-	}
+        // Draw srv, non-animated evacuees
+        //
+		//if(chosenAnim["anim"] == undefined) { staticEvacuees=dstatic[floor].evacuees; } else { staticEvacuees=[]; }
+		
+        //for (var key in staticEvacuees) {
+        //    staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: evacueeRadius, strokeWidth:0 ,  fillColor: colors['doseN']['c'] }));
+        //}
+    });
 
 } 
 //}}}

@@ -32,8 +32,8 @@ class Obstacles():
         self.floors=self.floors_meta.keys()
         self.walls_width=self.global_meta['walls_width']
         self._create_obstacles('aamks_geom', 'obstacles')
-        if self.global_meta['multifloor_building']==1:
-            self._create_obstacles('world2d', 'world2d_obstacles')
+        #if self.global_meta['multifloor_building']==1:
+        #    self._create_obstacles('world2d', 'world2d_obstacles')
         #exit()
 
 # }}}

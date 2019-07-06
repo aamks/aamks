@@ -159,8 +159,8 @@ class Navmesh:
         for x,i in enumerate(self._chunks(evacuees,2)):
             p0=(i[0]['x0'], i[0]['y0'])
             p1=(i[1]['x0'], i[1]['y0'])
-            z[self.floor]['circles'].append({ "xy": p0, "radius": 20, "fillColor": colors[x] , "opacity": 1 } )
-            z[self.floor]['circles'].append({ "xy": p1, "radius": 20, "fillColor": colors[x] , "opacity": 1 } )
+            z[self.floor]['circles'].append({ "xy": p0, "radius": 30, "fillColor": colors[x] , "opacity": 1 } )
+            z[self.floor]['circles'].append({ "xy": p1, "radius": 30, "fillColor": colors[x] , "opacity": 1 } )
             navmesh_paths.append(self.query((p0,p1),300))
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         self._navmesh_vis(navmesh_paths,colors)
