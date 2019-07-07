@@ -1,1 +1,41 @@
-[{"sort_id": -3, "title": "Create obstacles 23:52, f2", "floor": "2", "fire_origin": [], "highlight_geom": null, "srv": 1, "anim": null}, {"sort_id": -2, "title": "Create obstacles 23:52, f1", "floor": "1", "fire_origin": [], "highlight_geom": null, "srv": 1, "anim": null}, {"sort_id": -1, "title": "Create obstacles 23:52, f0", "floor": "0", "fire_origin": [], "highlight_geom": null, "srv": 1, "anim": null}]
+[
+    {
+        "sort_id": -3,
+        "title": "f0.zip demo demo@aamks, f0",
+        "time": "",
+        "floor": "0",
+        "fire_origin": [
+            3100,
+            1180
+        ],
+        "highlight_geom": null,
+        "demo": 1,
+        "anim": "1/f0.zip"
+    },
+    {
+        "sort_id": -2,
+        "title": "funCircle demo@aamks",
+        "time": "",
+        "floor": "0",
+        "fire_origin": [
+            3100,
+            1180
+        ],
+        "highlight_geom": null,
+        "demo": 1,
+        "anim": "funCircle"
+    },
+    {
+        "sort_id": -1,
+        "title": "funExplode demo@aamks",
+        "time": "",
+        "floor": "0",
+        "fire_origin": [
+            3100,
+            1180
+        ],
+        "highlight_geom": null,
+        "demo": 1,
+        "anim": "funExplode"
+    }
+]

@@ -1,17 +1,15 @@
+var animsList;
+var currentAnimMeta;
+var currentAnimData;
 var scale=1;
 var wWidth;
 var wHeight;
 var incDB;
 var colors;
-var staticGeoms;
-var fireXY;
 var wallsSize;
 var doorsSize;
 var evacueeRadius;
 var velocitiesSize;
-var evacBalls;
-var evacLabels;
-var evacVelocities;
 var evacueesData;
 var roomsOpacity;
 var numberOfEvacuees;
@@ -19,8 +17,6 @@ var dstatic;
 var floor;
 var lerps;
 var lastFrame=1;
-var deltaTime=0; 
-var timeShift=0; 
 var labelsSize=50;
 var sliderPos=0;
 var lerpFrame=0;
@@ -35,9 +31,6 @@ window.onload = function() {
 	var tool=new Tool;
 	makeAnimationControls();
 	nn=new Layer; nn.name='rooms';
-	//nn=new Layer; nn.name='doors';
-	//nn=new Layer; nn.name='obstacles';
-	//nn=new Layer; nn.name='dd_geoms';
 	nn=new Layer; nn.name='roomSmoke';
 	nn=new Layer; nn.name='roomFire';
 	nn=new Layer; nn.name='highlight';
@@ -61,7 +54,7 @@ function listenEvents() {//{{{
 	$('canvas-mouse-coords').click(function() {
 		lerps=Math.round(1/(($('#speed').val()/100)+0.00000000000000001))+1; 
 		$("canvas-mouse-coords").delay(1500).fadeOut('slow'); 
-		evacLabels.removeChildren();
+		evacueesLabelsGroup.removeChildren();
 		animationIsRunning=1;
 	});
 
@@ -94,7 +87,7 @@ function listenEvents() {//{{{
 		if(this.value.length>0) { highlightGeom(this.value); }
 	});
 	$('.canvas_slider_rect').click(function() {
-		evacLabels.removeChildren();
+		//evacueesLabelsGroup.removeChildren();
 		animationIsRunning=1;
 		sliderPos=$(this).data('id');
 		lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
@@ -128,22 +121,23 @@ function setColors(mode) {//{{{
 //}}}
 $.getJSON("inc.json", function(x) {//{{{
 	incDB=x;
-    evacueeRadius=x['evacueeRadius'];
+    evacueeRadius=incDB['evacueeRadius'];
 	setColors("dark");
 	$.post('/aamks/ajax.php?ajaxAnimsList', function (response) { 
 		ajax_msg(response);
-		var data=response['data'];
-		makeChooseVis(data);
-		showStaticImage(data[0]);
+		animsList=response['data'];
+		makeChooseVis();
+		currentAnimMeta=animsList[0];
+		showStaticImage();
 	});
 });
 //}}}
-function makeChooseVis(data) {//{{{
+function makeChooseVis() {//{{{
 	// Droplist of anims.json (all registered visualizations)
 	var items = [];
 	items.push("<select id=choose-vis>");
-	for (var i=0; i<data.length; i++) { 
-		items.push( "<option value='" + i + "'>" + data[i]["title"] + " " + data[i]["time"] +"</option>" );
+	for (var i=0; i < animsList.length; i++) { 
+		items.push( "<option value='" + i + "'>" + animsList[i]["title"] + " " + animsList[i]["time"] +"</option>" );
 	}
 	items.push("</select>");
 	$("choose-vis").html(items.join());
@@ -152,7 +146,8 @@ function makeChooseVis(data) {//{{{
 		frame=0;
 		visContainsAnimation=0;
 		animationIsRunning=0;
-		showStaticImage(data[this.value]); 
+		currentAnimMeta=animsList[this.value];
+		showStaticImage(); 
 	});
 };
 //}}}
@@ -165,19 +160,18 @@ function initialScaleTranslate(floor_meta) {//{{{
 	view.center = new Point(geomsTrans); 
 }
 //}}}
-function showStaticImage(chosenAnim) {//{{{
+function showStaticImage() {//{{{
 	// After we read a record from anims.json we reset the current visualization and setup a new one.
 	// We can only start animation after we are done with static rooms, doors etc.
 	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
 		ajax_msg(response);
 		dstatic=response['data'];
-		floor=chosenAnim["floor"];
+		floor=currentAnimMeta['floor'];
 		initialScaleTranslate(response['data'][floor]['floor_meta']);
 
-		$("animator-title").html(chosenAnim['title']);
-		$("animator-time").html(animTimeFormat());
-		fireXY=chosenAnim['fire_origin']
+		$("animator-title").html(currentAnimMeta['title']);
+		$("animator-time").html(currentAnimMeta['time']);
 		wallsSize=Math.round(2/scale);
 		//evacueeRadius=Math.round(5/scale);
 		velocitiesSize=Math.round(1/scale);
@@ -190,27 +184,25 @@ function showStaticImage(chosenAnim) {//{{{
 		listenEvents();
 		resetCanvas();
 
-		if(chosenAnim["highlight_geom"]!=null) { highlightGeom(chosenAnim["highlight_geom"]); }
-		if(chosenAnim["anim"] != undefined) { showAnimation(chosenAnim); } 
+		if(currentAnimMeta["highlight_geom"]!=null) { highlightGeom(currentAnimMeta["highlight_geom"]); }
+		if(currentAnimMeta["anim"] != undefined) { showAnimation(currentAnimMeta); } 
 
 	});
 }
 //}}}
-function showAnimation(chosenAnim) {//{{{
+function showAnimation() {//{{{
 	// After static data is loaded to paperjs we can run animations.
 	// 0.000001 & friends prevent divisions by 0.
 	
-	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': chosenAnim['anim'] }, function(response) { 
+	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': currentAnimMeta['anim'] }, function(response) { 
 		ajax_msg(response);
-		animJson=JSON.parse(response['data']);
-		timeShift=animJson.time_shift;
-		deltaTime=animJson.simulation_time-timeShift;
-		$("animator-time").html(animTimeFormat());
-		evacueesData=animJson.animations.evacuees;
-		roomsOpacity=animJson.animations.rooms_opacity;
-		lastFrame=animJson.animations.evacuees.length-1;
-		numberOfEvacuees=animJson.animations.evacuees[0].length;
+		currentAnimData=JSON.parse(response['data']);
+		evacueesData=currentAnimData.animations.evacuees;
+		roomsOpacity=currentAnimData.animations.rooms_opacity;
+		lastFrame=currentAnimData.animations.evacuees.length-1;
+		numberOfEvacuees=currentAnimData.animations.evacuees[0].length;
 		var speedProposal=Math.round(lastFrame/5)
+		$("animator-time").html(animFormatTime());
 		$("animation-speed").html("<input type=text size=2 name=speed id=speed value="+speedProposal+">");
 		lerps=Math.round(1/((speedProposal/100)+0.0000000000000000001))+1;
 
@@ -231,11 +223,10 @@ function resetCanvas() {//{{{
 	// Reset on new visualization, on scaling walls, etc.
 	
 	clearSmoke();
-	paperjsDisplayImage();
-    append_dd_geoms();
+	initStaticGeoms();
 	paperjsDisplayAnimation();
 	paperjsLetItBurn();
-	project.layers['animated'].activate();
+	project.layers.animated.activate();
 	
 }
 //}}}
@@ -289,7 +280,7 @@ function makeHighlightGeoms(data) {//{{{
 //}}}
 function paperjsLetItBurn() {//{{{
 	// The animated fire is displayed in a separate setInterval loop. Perhaps onFrame() suits more.
-	//if (fireXY.length < 2) { 
+	//if (currentAnimMeta['fire_origin'].length < 2) { 
 	//	clearInterval(intervalId);
 	//	return; 
 	//}
@@ -297,21 +288,23 @@ function paperjsLetItBurn() {//{{{
 	var smokeOrig;
 	var fire;
 
+	// TODO: ORDER: project.activeLayer.insertChild(0, greenPath);
 	if ('roomFire' in project.layers) { project.layers['roomFire'].removeChildren(); } 
 	if ('roomSmoke' in project.layers) { project.layers['roomSmoke'].removeChildren(); } 
 
+		currentAnimMeta['fire_origin']
 	project.layers['roomFire'].importSVG("smoke.svg", function (item) {
-		item.position.x=fireXY[0];
-		item.position.y=fireXY[1]-40;
-		item.position.y=fireXY[1]-40;
+		item.position.x = currentAnimMeta['fire_origin'][0];
+		item.position.y = currentAnimMeta['fire_origin'][1]-40;
+		item.position.y = currentAnimMeta['fire_origin'][1]-40;
 		smoke=item;
 		smoke.opacity=0.5;
 		smokeOrig=item.bounds;
 	});
 	
 	project.layers['roomFire'].importSVG("fire.svg", function (item) {
-		item.position.x=fireXY[0];
-		item.position.y=fireXY[1];
+		item.position.x = currentAnimMeta['fire_origin'][0];
+		item.position.y = currentAnimMeta['fire_origin'][1];
 		fire=item;
 	});
 
@@ -331,64 +324,87 @@ function paperjsLetItBurn() {//{{{
 }
 //}}}
 function drawPath(type,data,ty) {//{{{
-		if(type=='ROOM') {
-			strokeColor = colors.ROOM.stroke;
-			strokeWidth = 0.2;
-			opacity = 0.4;
-			fillColor = data.room_enter == 'yes' ? colors[data.type_sec].c : "#333";
-			var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
-		}
-		if(type=='OBST') {
-			strokeColor = colors.OBST.c;
-			strokeWidth = wallsSize;
-			opacity = 0.6;
-			fillColor = colors.OBST.c;
-			var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
-		}
-		if(type=='DOOR') {
-			strokeColor = colors.DOOR.c;
-			strokeWidth = doorsSize;
-			opacity = colors.DOOR.animOpacity / 3;
-			var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, opacity:opacity });
-        }
+	if(type=='ROOM') {
+		strokeColor = colors.ROOM.stroke;
+		strokeWidth = 0.2;
+		opacity = 0.4;
+		fillColor = data.room_enter == 'yes' ? colors[data.type_sec].c : "#333";
+		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
+	}
+	if(type=='OBST') {
+		strokeColor = colors.OBST.c;
+		strokeWidth = wallsSize;
+		opacity = 0.6;
+		fillColor = colors.OBST.c;
+		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
+	}
+	if(type=='DOOR') {
+		strokeColor = colors.DOOR.c;
+		strokeWidth = doorsSize;
+		opacity = colors.DOOR.animOpacity / 3;
+		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, opacity:opacity });
+	}
 
-		path.closed = true;
-		_.forEach(data.points, function(point) { path.add(new Point(point.x, point.y+ty)); });
-		staticGeoms.addChild(path);
+	path.closed = true;
+	_.forEach(data.points, function(point) { path.add(new Point(point.x, point.y+ty)); });
 }
 //}}}
 function drawLabel(type,data,ty) {//{{{
-		fontFamily = 'Roboto';
-		content = data.name;
-		if(type=='ROOM') {
-			fillColor = colors.fg.c;
-			fontSize = labelsSize;
-			pos=[data.points[0].x + 20, data.points[0].y+ty + 50];
-		}
-		if(type=='DOOR') {
-			fillColor = colors.fg.c;
-			opacity = colors.DOOR.animOpacity;
-			fontSize = labelsSize * 0.75;
-			pos=[data.points[0].x + 30, data.points[0].y+ty + 30];
-        }
-		var text = new PointText({ point: new Point(pos[0], pos[1]), content: content, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
-		staticGeoms.addChild(text);
+	fontFamily = 'Roboto';
+	content = data.name;
+	if(type=='ROOM') {
+		fillColor = colors.fg.c;
+		fontSize = labelsSize;
+		pos=[data.points[0].x + 20, data.points[0].y+ty + 50];
+	}
+	if(type=='DOOR') {
+		fillColor = colors.fg.c;
+		opacity = colors.DOOR.animOpacity;
+		fontSize = labelsSize * 0.75;
+		pos=[data.points[0].x + 30, data.points[0].y+ty + 30];
+	}
+	new PointText({ point: new Point(pos[0], pos[1]), content: content, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
 }
 //}}}
-function paperjsDisplayImage() {//{{{
+function drawStaticEvacuees(data,ty) {//{{{
+	if(currentAnimMeta["anim"] == undefined) { 
+		radius=evacueeRadius;
+		strokeWidth=0; 
+		fillColor: colors['doseN']['c'];
 
-	project.layers['rooms'].activate();
-	
-	if (staticGeoms == undefined) {
-		staticGeoms=new Group();
-	} else {
-		staticGeoms.removeChildren();
+		_.forEach(data.points, function(point) { 
+			new Path.Circle({ center: new Point(point.x, point.y+ty), radius: radius, strokeWidth:strokeWidth , fillColor: fillColor });
+		});
 	}
+}
+//}}}
+function drawDDGeoms(data,ty) { //{{{
+	_.forEach(data.rectangles, function(pp) {
+		new Path.Rectangle({point: new Point(pp.xy[0], pp.xy[1]), size: new Size(pp.width,pp.depth), strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, fillColor:pp.fillColor, opacity:pp.opacity });
+	});
 
+	_.forEach(data.lines, function(pp) {
+		new Path.Line({from: new Point(pp.xy[0], pp.xy[1]), to: new Point(pp.x1,pp.y1), strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, opacity:pp.opacity });
+	});
+
+	_.forEach(data.circles, function(pp) {
+		new Path.Circle({ center: new Point(pp.xy[0], pp.xy[1]), radius:pp.radius, fillColor:pp.fillColor, opacity:pp.opacity });
+	});
+
+	_.forEach(data.texts, function(pp) {
+		new PointText({ point: new Point(pp.xy[0], pp.xy[1]), content: pp.content, fontFamily: 'Roboto', fontSize: pp.fontSize, fillColor:pp.fillColor, opacity:pp.opacity });
+	});
+}
+
+//}}}
+function initStaticGeoms() {//{{{
+	project.layers.rooms.removeChildren();
+	project.layers.rooms.activate();
+	
 	_.forEach(dstatic, function(ffloor) {
         var ty=ffloor.floor_meta.world2d_ty;
-        _.forEach(ffloor.rooms     , function(x) { drawPath('ROOM' , x , ty); });
-        _.forEach(ffloor.obstacles , function(x) { drawPath('OBST' , x , ty); });
+        _.forEach(ffloor.rooms     , function(x) { drawPath('ROOM'  , x , ty); });
+        _.forEach(ffloor.obstacles , function(x) { drawPath('OBST'  , x , ty); });
 
 		if (doorsSize!= 0) { _.forEach(ffloor.doors , function(x) { drawPath('DOOR' , x , ty); } ); }
 
@@ -397,96 +413,56 @@ function paperjsDisplayImage() {//{{{
 			_.forEach(ffloor.doors , function(x) { drawLabel('DOOR' , x , ty); });
 		}
 
-
-        // Draw srv, non-animated evacuees
-        //
-		//if(chosenAnim["anim"] == undefined) { staticEvacuees=dstatic[floor].evacuees; } else { staticEvacuees=[]; }
-		
-        //for (var key in staticEvacuees) {
-        //    staticGeoms.addChild(new Path.Circle({ center: new Point(staticEvacuees[key]), radius: evacueeRadius, strokeWidth:0 ,  fillColor: colors['doseN']['c'] }));
-        //}
+		drawStaticEvacuees(ffloor.evacuees, ty);
+        drawDDGeoms(ffloor.dd_geoms, ty); 
     });
 
 } 
 //}}}
-function append_dd_geoms() { //{{{
-	// We attach to the static geoms
-	var g;
-
-	for (var i=0; i<dd_geoms['rectangles'].length; i++) {
-		g=dd_geoms['rectangles'][i];
-		staticGeoms.addChild(new Path.Rectangle({point: new Point(g["xy"][0], g["xy"][1]), size: new Size(g["width"],g["depth"]), strokeColor:g['strokeColor'], strokeWidth:g['strokeWidth'], fillColor:g['fillColor'], opacity:g['opacity'] }));
-	}
-
-	for (var i=0; i<dd_geoms['lines'].length; i++) {
-		g=dd_geoms['lines'][i];
-		staticGeoms.addChild(new Path.Line({ from: new Point(g["xy"][0], g["xy"][1]), to: new Point(g["x1"],g["y1"]), strokeColor:g['strokeColor'], strokeWidth:g['strokeWidth'], opacity:g['opacity']  }));
-	}
-
-	for (var i=0; i<dd_geoms['circles'].length; i++) {
-		g=dd_geoms['circles'][i];
-		staticGeoms.addChild(new Path.Circle({ center: new Point(g["xy"][0], g["xy"][1]), radius:g["radius"], fillColor:g['fillColor'], opacity:g['opacity'] }));
-	}
-	for (var i=0; i<dd_geoms['texts'].length; i++) {
-		g=dd_geoms['texts'][i];
-		staticGeoms.addChild(new PointText({ point: new Point(g["xy"][0], g["xy"][1]), content: g["content"], fontFamily: 'Roboto', fontSize: g["fontSize"], fillColor:g['fillColor'], opacity:g['opacity'] }));
-	}
-}
-
-//}}}
 function paperjsDisplayAnimation() { //{{{
-	// evacVelocities are the ---------> vectors attached to each ball
-	// evacLabels are (e1 x,y) displayed on top of each ball
+	// velocitiesGroup are the ---------> vectors attached to each ball
+	// evacueesLabelsGroup are (e1 x,y) displayed on top of each ball
 	// Old elements must be removed on various occassions, so we cannot return to early.
-	
-	project.layers['animated'].activate();
-	if (evacVelocities == undefined) {
-		evacVelocities=new Group();
-		evacBalls=new Group();
-		evacLabels=new Group();
-	} else {
-		evacVelocities.removeChildren();
-		evacBalls.removeChildren();
-		evacLabels.removeChildren();
-	}
 
+	project.layers.animated.removeChildren();
 	if (visContainsAnimation==0) { return; } 
+	project.layers.animated.activate();
+	velocitiesGroup=new Group({name:'velocitiesGroup'});
+	evacueesGroup=new Group({name:'evacueesGroup'});
+	evacueesLabelsGroup=new Group({name:'evacueesLabelsGroup'});
 
 	for (var i=0; i<numberOfEvacuees; i++) {
-		evacVelocities.addChild( new Path.Line({ from: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), to: new Point(evacueesData[0][i][2],evacueesData[0][i][3]), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
-	}
-
-	for (var i=0; i<numberOfEvacuees; i++) {
-		evacBalls.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: evacueeRadius, fillColor: colors['doseN']['c']}));
+		velocitiesGroup.addChild(new Path.Line({ from: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), to: new Point(evacueesData[0][i][2],evacueesData[0][i][3]), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+		evacueesGroup.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: evacueeRadius, fillColor: colors['doseN']['c']}));
 	}
 
 }
 //}}}
 function updateAnimatedElement(i) {//{{{
 	// Lerps are Linear Interpolations. 
-	// There is data for each frame. Within each frame there are evacBalls positions. We take first frame and loop thru each evacuee. But we are not done with this frame yet:
+	// There is data for each frame. Within each frame there are evacueesGroup positions. We take first frame and loop thru each evacuee. But we are not done with this frame yet:
 	// We can have say 1 or 1000 of lerps (invented positions) between each two frames. This is for both smoothening animations and for slow/fast playbacks. 
 	// We remove an evacuee by making it transparent. When we rewind, then we initialize all opacities with 1 again.
 
 	// todo performance? 
-	// if(frame == 0 || evacueesData[frame][i][5] != evacueesData[frame-1][i][5] ) {  evacBalls.children[i].opacity=evacVelocities.children[i].opacity=evacueesData[frame][i][5]; }
-	// if(frame == 0 || evacueesData[frame][i][4] != evacueesData[frame-1][i][4] ) {  evacBalls.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]; } 
-	// evacBalls.children[i].opacity=evacVelocities.children[i].opacity=evacueesData[frame+1][i][5]; 
-	evacBalls.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]['c']; 
+	// if(frame == 0 || evacueesData[frame][i][5] != evacueesData[frame-1][i][5] ) {  evacueesGroup.children[i].opacity=velocitiesGroup.children[i].opacity=evacueesData[frame][i][5]; }
+	// if(frame == 0 || evacueesData[frame][i][4] != evacueesData[frame-1][i][4] ) {  evacueesGroup.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]; } 
+	// evacueesGroup.children[i].opacity=velocitiesGroup.children[i].opacity=evacueesData[frame+1][i][5]; 
+	evacueesGroup.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]['c']; 
 
-	evacBalls.children[i].position.x =  evacueesData[frame][i][0] + (evacueesData[frame+1][i][0] - evacueesData[frame][i][0]) * (lerpFrame%lerps)/lerps; 
-	evacBalls.children[i].position.y =  evacueesData[frame][i][1] + (evacueesData[frame+1][i][1] - evacueesData[frame][i][1]) * (lerpFrame%lerps)/lerps; 
+	evacueesGroup.children[i].position.x =  evacueesData[frame][i][0] + (evacueesData[frame+1][i][0] - evacueesData[frame][i][0]) * (lerpFrame%lerps)/lerps; 
+	evacueesGroup.children[i].position.y =  evacueesData[frame][i][1] + (evacueesData[frame+1][i][1] - evacueesData[frame][i][1]) * (lerpFrame%lerps)/lerps; 
 
-	evacVelocities.children[i].segments[0].point.x = evacBalls.children[i].position.x;
-	evacVelocities.children[i].segments[0].point.y = evacBalls.children[i].position.y;
-	evacVelocities.children[i].segments[1].point.x = evacBalls.children[i].position.x + evacueesData[frame][i][2];
-	evacVelocities.children[i].segments[1].point.y = evacBalls.children[i].position.y + evacueesData[frame][i][3];
+	velocitiesGroup.children[i].segments[0].point.x = evacueesGroup.children[i].position.x;
+	velocitiesGroup.children[i].segments[0].point.y = evacueesGroup.children[i].position.y;
+	velocitiesGroup.children[i].segments[1].point.x = evacueesGroup.children[i].position.x + evacueesData[frame][i][2];
+	velocitiesGroup.children[i].segments[1].point.y = evacueesGroup.children[i].position.y + evacueesData[frame][i][3];
 }
 //}}}
 function afterLerpFrame() {//{{{
 	// The slider moves after each frame. The slider is a collection of 100 svg rectangles. We need to clear the previous rectangle and mark the current rectangle
 	$('#slider_'+(sliderPos)).attr("fill", "#333");
-	$("animator-time").html(animTimeFormat());
+	$("animator-time").html(animFormatTime());
 	sliderPos=Math.round(lerpFrame/(lerps*lastFrame)*100);
 	lerpFrame++;
 	$('#slider_'+(sliderPos-0)).attr("fill", "#f80");
@@ -517,17 +493,17 @@ tool.onMouseDown=function(event) {//{{{
 	$("canvas-mouse-coords").text(Math.floor(event.downPoint['x'])+ "," + Math.floor(event.downPoint['y']));
 	$("canvas-mouse-coords").css({'display':'block', 'left':event.event.pageX, 'top':event.event.pageY});
 	for (var i = 0; i < numberOfEvacuees; i++) { 
-		x=evacBalls.children[i].position.x;
-		y=evacBalls.children[i].position.y;
-		evacLabels.addChild(new Path.Circle({ center: new Point(x,y), radius:evacueeRadius*0.01, fillColor:"#f80" }));
-		evacLabels.addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y-evacueeRadius/3), fillColor:"#fff", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.7 }));
-		evacLabels.addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y+evacueeRadius/2), fillColor:"#fff", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.7}));
+		x=evacueesGroup.children[i].position.x;
+		y=evacueesGroup.children[i].position.y;
+		evacueesLabelsGroup.addChild(new Path.Circle({ center: new Point(x,y), radius:evacueeRadius*0.01, fillColor:"#f80" }));
+		evacueesLabelsGroup.addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y-evacueeRadius/3), fillColor:"#fff", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.7 }));
+		evacueesLabelsGroup.addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y+evacueeRadius/2), fillColor:"#fff", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.7}));
 	}
 };
 //}}}
-function animTimeFormat() {//{{{
+function animFormatTime() {//{{{
 	var date=new Date(null);
-	var t=timeShift+deltaTime*sliderPos/100
+	var t=currentAnimData.time_shift + (currentAnimData.simulation_time - currentAnimData.time_shift) * sliderPos / 100
 	date.setSeconds(t);
 	return date.toISOString().substr(14,5);
 };
@@ -570,31 +546,39 @@ function bubbles_ranges(side) { //{{{
 }
 //}}}
 function initRoomSmoke() {//{{{
-	project.layers['roomSmoke'].activate();
+	project.layers.roomSmoke.activate();
 	var radius=350;
 	var roomMargin=25;
 	var center;
 	var rw, rh;
 	var x_ranges, y_ranges;
-	for (var room in roomsOpacity[0]) {
-		rw=rooms[room].points[1]['x']- rooms[room].points[0]['x'];
-		rh=rooms[room].points[2]['y']- rooms[room].points[1]['y'];
 
-		group=new Group;
-		group.name=room;
-		group.addChild(new Path.Rectangle({ point: new Point(rooms[room].points[0]['x']+roomMargin, rooms[room].points[0]['y']+roomMargin), size: new Size(rw-2*roomMargin,rh-2*roomMargin)}));
-		group.clipped=true;
-		group.opacity=0.3;
-		x_ranges=bubbles_ranges(rooms[room].points[1]['x'] - rooms[room].points[0]['x']);
-		y_ranges=bubbles_ranges(rooms[room].points[2]['y'] - rooms[room].points[1]['y']);
-		for (var xx in x_ranges) {
-			for (var yy in y_ranges) {
-				center=[
-					rooms[room].points[0]['x'] + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
-					rooms[room].points[0]['y'] + randBetween (y_ranges[yy][0], y_ranges[yy][1] ),
-				];
-				group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center[0], center[1]), radius: radius*randBetween(0.7,1),  fillColor: "#023" }));
+	for (var ffloor in roomsOpacity[0]) {
+        var ty=dstatic[ffloor].floor_meta.world2d_ty;
+		for (var room in roomsOpacity[0][ffloor]) {
+			points=dstatic[ffloor]['rooms'][room]['points'];
+			_.each(points, function(i) { i['y']+=ty; });
+			rw=points[1]['x'] - points[0]['x'];
+			rh=points[2]['y'] - points[1]['y'];
 
+			group=new Group();
+			group.name=room;
+			group.floor=ffloor;
+			
+			group.addChild(new Path.Rectangle({ point: new Point(points[0]['x']+roomMargin, points[0]['y']+roomMargin), size: new Size(rw-2*roomMargin,rh-2*roomMargin)}));
+			group.clipped=true;
+			group.opacity=0.3;
+			x_ranges=bubbles_ranges(points[1]['x'] - points[0]['x']);
+			y_ranges=bubbles_ranges(points[2]['y'] - points[1]['y']);
+			for (var xx in x_ranges) {
+				for (var yy in y_ranges) {
+					center=[
+						points[0]['x'] + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
+						points[0]['y'] + randBetween (y_ranges[yy][0], y_ranges[yy][1] ),
+					];
+					group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center[0], center[1]), radius: radius*randBetween(0.7,1),  fillColor: "#023" }));
+
+				}
 			}
 		}
 	}
@@ -602,11 +586,9 @@ function initRoomSmoke() {//{{{
 //}}}
 function updateRoomSmoke() {//{{{
 	if (roomsOpacity.length==0) { return; }
-	for (var i in project.layers['roomSmoke'].children) {
-		if(roomsOpacity[frame][i] != undefined) { 
-			project.layers['roomSmoke'].children[i].opacity=roomsOpacity[frame][i];
-		}
-	}
+	_.each(project.layers.roomSmoke.getItems(), function(i,key) { 
+		project.layers.roomSmoke.children[key].opacity=roomsOpacity[frame][i.floor][i.name];
+	});
 }
 //}}}
 function resizeAndRedrawCanvas() {//{{{

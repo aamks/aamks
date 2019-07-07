@@ -66,6 +66,7 @@ class Geom():
         self._world['maxy']=-9999999
         prev_maxz=0
         for floor in self.floors:
+            world2d_ty=0
             minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (floor,))[0]['minx']
             maxx=self.s.query("SELECT max(x1) AS maxx FROM aamks_geom WHERE floor=?", (floor,))[0]['maxx']
             miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (floor,))[0]['miny']
@@ -78,7 +79,7 @@ class Geom():
             xdim= maxx - minx
             ydim= maxy - miny
             center=(minx + int(xdim/2), miny + int(ydim/2), minz_abs)
-            self.floors_meta[floor]=OrderedDict([('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim) ])
+            self.floors_meta[floor]=OrderedDict([('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim), ('world2d_ty', world2d_ty) ])
 
             self._world['minx']=min(self._world['minx'], minx)
             self._world['maxx']=max(self._world['maxx'], maxx)
@@ -241,7 +242,7 @@ class Geom():
         '''
 
         z=dict()
-        for floor in self.floors+['world2d']:
+        for floor in self.floors:
             z[floor]=dict()
             z[floor]['rectangles']=[]      
             z[floor]['lines']=[]           
@@ -522,7 +523,6 @@ class Geom():
         #self.s.dumpall()
         #self.s.dump_geoms()
         #dd(self.s.query("select * from aamks_geom"))
-        #dd(self.s.query("select * from world2d where type_sec='STAI' or name='d14'"))
         #dd(self.s.query("select * from world2d"))
         #exit()
         #self.s.dump()

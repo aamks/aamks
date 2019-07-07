@@ -1,4 +1,5 @@
 import locale
+import os
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 from manager.init import OnInit, OnEnd
 from geom.geom import Geom
@@ -10,6 +11,8 @@ from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SendMessage
 
+#os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/simple'
+#print("In aamks.py:", os.environ['AAMKS_PROJECT'])
 OnInit()
 Geom()
 World2d()

@@ -324,7 +324,7 @@ class Vis:# {{{
         ''' Draw srv, non-animated evacuees '''
 
         for floor,evacuees in JSON.readdb("dispatched_evacuees").items():
-            self._static_floors[floor]['evacuees']=evacuees
+            self._static_floors[floor]['evacuees']=OrderedDict({'points': [ OrderedDict([('x', i[0]),('y', i[1])]) for i in evacuees ]})
 # }}}
     def _js_make_dd_geoms(self):# {{{
         ''' 

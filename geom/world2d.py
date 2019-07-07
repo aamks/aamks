@@ -35,8 +35,8 @@ class World2d():
             self.projections={'top':dict(), 'side':dict()}
 
             self._top_projection_make()
-            self._side_projection_make()
-            self._db_rectangles_top()
+            #self._side_projection_make()
+            #self._db_rectangles_top()
             #self._db_rectangles_side()
             #self._world2d_make()
 # }}}
@@ -51,19 +51,7 @@ class World2d():
         self.projections['top']['x0']=self.s.query("SELECT min(x0) AS m FROM aamks_geom")[0]['m'] - self.projections['top']['padding_rectangle']
         self.projections['top']['x1']=self.s.query("SELECT max(x1) AS m FROM aamks_geom")[0]['m']
         self._top_proj_lines()
-        self._top_translate_geoms()
-# }}}
-    def _top_translate_geoms(self):# {{{
-        '''
-        All geoms must be y-translated
-        '''
-
-        floors_meta=self.json.readdb("floors_meta")
-
-        for floor,line in self.projections['top']['lines'].items():
-            self.floors_meta[floor]['world2d_ty']=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
-        self.s.query("UPDATE floors_meta SET json=?", (json.dumps(self.floors_meta),))
-
+        self._meta_translate_y()
 # }}}
     def _top_proj_lines(self):# {{{
         '''
@@ -79,6 +67,19 @@ class World2d():
                 lines[floor]=absolute + self.floors_meta[floor]['ydim'] + self.projections['top']['padding_vertical'] * 2 
             absolute=lines[floor]
         self.projections['top']['lines']=lines
+
+# }}}
+    def _meta_translate_y(self):# {{{
+        '''
+        Calculate translateY (ty). Animator needs this meta info to dynamicaly
+        merge floors in world2d view 
+        '''
+
+        floors_meta=self.json.readdb("floors_meta")
+
+        for floor,line in self.projections['top']['lines'].items():
+            self.floors_meta[floor]['world2d_ty']=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
+        self.s.query("UPDATE floors_meta SET json=?", (json.dumps(self.floors_meta),))
 
 # }}}
 
