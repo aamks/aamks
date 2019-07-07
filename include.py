@@ -429,12 +429,7 @@ class Vis:# {{{
         '''
 
         vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        #if self.global_meta['multifloor_building']==1:
-        #    self._static_floors['world2d']=self._static_world2d
         self.json.write(self._static_floors, '{}/static.json'.format(vis_dir)) 
-
-        #print("obstacles world2d")
-        #exit()
 
         try:
             z=self.json.read("{}/anims.json".format(vis_dir))
@@ -443,7 +438,7 @@ class Vis:# {{{
             z=[]
             lowest_id=-1
 
-        records=[]
+        records={}
         for floor in self._static_floors.keys():
             anim_record=OrderedDict()
             anim_record['sort_id']=lowest_id
@@ -455,15 +450,15 @@ class Vis:# {{{
             anim_record['highlight_geom']=params['highlight_geom']
             anim_record['srv']=params['srv']
             anim_record['anim']=params['anim']
-            records = [anim_record] + records
+            records[anim_record['title']] = anim_record
 
-        unique=[]
+        # We are removing duplicates here
         for i in z:
-            for r in records:
-                if i['title'] != r['title'] and r['srv'] == 1:
-                    unique.append(i)
-        unique = records + unique
-        self.json.write(unique, "{}/anims.json".format(vis_dir))
+            # TODO: Jul.2019: perhaps this breaks worker animations. Consider r['srv'] == 1 ?
+            if i['title'] not in records:
+                records[i['title']]=i
+
+        self.json.write(list(records.values()), "{}/anims.json".format(vis_dir))
 # }}}
 # }}}
 
