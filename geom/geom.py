@@ -35,7 +35,7 @@ class Geom():
         self._enhancements()
         self._init_dd_geoms()
         self._floors_meta()
-        self._global_meta()
+        self._world_meta()
         self._aamks_geom_into_polygons()
         self._make_id2compa_name()
         self._find_intersections_within_floor()
@@ -59,11 +59,11 @@ class Geom():
         '''
 
         self.floors_meta=OrderedDict()
-        self._world=dict()
-        self._world['minx']=9999999
-        self._world['maxx']=-9999999
-        self._world['miny']=9999999
-        self._world['maxy']=-9999999
+        self._world3d=dict()
+        self._world3d['minx']=9999999
+        self._world3d['maxx']=-9999999
+        self._world3d['miny']=9999999
+        self._world3d['maxy']=-9999999
         prev_maxz=0
         for floor in self.floors:
             world2d_ty=0
@@ -81,28 +81,28 @@ class Geom():
             center=(minx + int(xdim/2), miny + int(ydim/2), minz_abs)
             self.floors_meta[floor]=OrderedDict([('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim), ('world2d_ty', world2d_ty) ])
 
-            self._world['minx']=min(self._world['minx'], minx)
-            self._world['maxx']=max(self._world['maxx'], maxx)
-            self._world['miny']=min(self._world['miny'], miny)
-            self._world['maxy']=max(self._world['maxy'], maxy)
+            self._world3d['minx']=min(self._world3d['minx'], minx)
+            self._world3d['maxx']=max(self._world3d['maxx'], maxx)
+            self._world3d['miny']=min(self._world3d['miny'], miny)
+            self._world3d['maxy']=max(self._world3d['maxy'], maxy)
 
         self.s.query("CREATE TABLE floors_meta(json)")
         self.s.query('INSERT INTO floors_meta VALUES (?)', (json.dumps(self.floors_meta),))
 
 # }}}
-    def _global_meta(self):# {{{
-        self.s.query("CREATE TABLE global_meta(json)")
-        self.global_meta={}
-        self.global_meta['world']=self._world
-        self.global_meta['walls_width']=self.walls_width
-        self.global_meta['doors_width']=self.doors_width
+    def _world_meta(self):# {{{
+        self.s.query("CREATE TABLE world_meta(json)")
+        self.world_meta={}
+        self.world_meta['world3d']=self._world3d
+        self.world_meta['walls_width']=self.walls_width
+        self.world_meta['doors_width']=self.doors_width
 
         if len(self.floors_meta) > 1:
-            self.global_meta['multifloor_building']=1
+            self.world_meta['multifloor_building']=1
         else: 
-            self.global_meta['multifloor_building']=0
+            self.world_meta['multifloor_building']=0
 
-        self.s.query('INSERT INTO global_meta(json) VALUES (?)', (json.dumps(self.global_meta),))
+        self.s.query('INSERT INTO world_meta(json) VALUES (?)', (json.dumps(self.world_meta),))
 
 # }}}
     def _geometry2sqlite(self):# {{{

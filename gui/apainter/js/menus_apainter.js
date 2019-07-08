@@ -195,7 +195,7 @@ function help_utils_into_setup_box() {//{{{
 		"<tr><td>double mouse1		<td> elem properties"+
 		"<tr><td>hold <letter>ctrl</letter>		<td> disable snapping"+ 
 		"<tr><td><letter>h</letter>	<td> 2D/3D views"+ 
-		"<tr><td><letter>H</letter>	<td> loop floors"+ 
+		"<tr><td><letter>n</letter>	<td> loop floors"+ 
 		"<tr><td><letter>x</letter>	<td> delete active"+
 		"<tr><td><letter>g</letter>	<td> list all of active type"+
 
@@ -329,6 +329,8 @@ function import_cadjson() { //{{{
 		init_svg_groups(json.data);
 		into_db(json.data);
 		selected_geom='';
+		$("#floor_text").remove();
+		svg.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floors_count);
 	});
 }
 //}}}

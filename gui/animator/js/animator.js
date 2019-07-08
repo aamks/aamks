@@ -1,9 +1,6 @@
 var animsList;
 var currentAnimMeta;
 var currentAnimData;
-var scale=1;
-var wWidth;
-var wHeight;
 var incDB;
 var colors;
 var wallsSize;
@@ -14,7 +11,6 @@ var evacueesData;
 var roomsOpacity;
 var numberOfEvacuees;
 var dstatic;
-var floor;
 var lerps;
 var lastFrame=1;
 var labelsSize=50;
@@ -61,9 +57,9 @@ function listenEvents() {//{{{
 
 	$('#animator-canvas').on( 'DOMMouseScroll mousewheel', function ( event ) {
 	  if( event.originalEvent.detail > 0 || event.originalEvent.wheelDelta < 0 ) { //alternative options for wheelData: wheelDeltaX & wheelDeltaY
-		view.scale(0.95);
+		view.scale(0.93);
 	  } else {
-		view.scale(1.05);
+		view.scale(1.08);
 	  }
 	  //prevent page fom scrolling
 	  return false;
@@ -151,13 +147,10 @@ function makeChooseVis() {//{{{
 	});
 };
 //}}}
-function initialScaleTranslate(floor_meta) {//{{{
-	var geomsScale=Math.min(wWidth/floor_meta['xdim'], wHeight/floor_meta['ydim'])*0.9;
-	var geomsTrans=[ floor_meta['maxx']-0.5*floor_meta['xdim'], floor_meta['maxy']-0.5*floor_meta['ydim'] ];
-	var newScale=geomsScale;
-	view.scale(newScale/scale);  
-	scale=newScale;
-	view.center = new Point(geomsTrans); 
+function initialScaleCenter() {//{{{
+	var scale=Math.min(($(window).width() - 20) / dstatic.world_meta.xdim, ($(window).height() - 70) / dstatic.world_meta.ydim)*0.9;
+	view.scale(scale);
+	view.center = new Point(dstatic.world_meta.center); 
 }
 //}}}
 function showStaticImage() {//{{{
@@ -167,20 +160,17 @@ function showStaticImage() {//{{{
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
 		ajax_msg(response);
 		dstatic=response['data'];
-		floor=currentAnimMeta['floor'];
-		initialScaleTranslate(response['data'][floor]['floor_meta']);
+		initialScaleCenter();
 
 		$("animator-title").html(currentAnimMeta['title']);
 		$("animator-time").html(currentAnimMeta['time']);
-		wallsSize=Math.round(2/scale);
-		//evacueeRadius=Math.round(5/scale);
-		velocitiesSize=Math.round(1/scale);
-		doorsSize=Math.round(0.2*wallsSize);
+		wallsSize=Math.round(0.5/view.scaling.x);
+		velocitiesSize=Math.round(1/view.scaling.x);
+		doorsSize=wallsSize;
 
 		makeSetupBoxInputs();
 		makeColors();
-		makeHighlightGeoms(dstatic[floor]);
-
+		makeHighlightGeoms(dstatic.floors[currentAnimMeta['floor']]);
 		listenEvents();
 		resetCanvas();
 
@@ -214,7 +204,7 @@ function showAnimation() {//{{{
 
 		visContainsAnimation=1;
 		animationIsRunning=1;
-		paperjsDisplayAnimation();
+		initAnimAgents();
 		initRoomSmoke();
 	});
 }
@@ -224,7 +214,7 @@ function resetCanvas() {//{{{
 	
 	clearSmoke();
 	initStaticGeoms();
-	paperjsDisplayAnimation();
+	initAnimAgents();
 	paperjsLetItBurn();
 	project.layers.animated.activate();
 	
@@ -398,10 +388,11 @@ function drawDDGeoms(data,ty) { //{{{
 
 //}}}
 function initStaticGeoms() {//{{{
+	project.layers.animated.removeChildren();
 	project.layers.rooms.removeChildren();
 	project.layers.rooms.activate();
 	
-	_.forEach(dstatic, function(ffloor) {
+	_.forEach(dstatic.floors, function(ffloor) {
         var ty=ffloor.floor_meta.world2d_ty;
         _.forEach(ffloor.rooms     , function(x) { drawPath('ROOM'  , x , ty); });
         _.forEach(ffloor.obstacles , function(x) { drawPath('OBST'  , x , ty); });
@@ -419,12 +410,10 @@ function initStaticGeoms() {//{{{
 
 } 
 //}}}
-function paperjsDisplayAnimation() { //{{{
+function initAnimAgents() { //{{{
 	// velocitiesGroup are the ---------> vectors attached to each ball
 	// evacueesLabelsGroup are (e1 x,y) displayed on top of each ball
-	// Old elements must be removed on various occassions, so we cannot return to early.
 
-	project.layers.animated.removeChildren();
 	if (visContainsAnimation==0) { return; } 
 	project.layers.animated.activate();
 	velocitiesGroup=new Group({name:'velocitiesGroup'});
@@ -432,31 +421,26 @@ function paperjsDisplayAnimation() { //{{{
 	evacueesLabelsGroup=new Group({name:'evacueesLabelsGroup'});
 
 	for (var i=0; i<numberOfEvacuees; i++) {
-		velocitiesGroup.addChild(new Path.Line({ from: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), to: new Point(evacueesData[0][i][2],evacueesData[0][i][3]), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
-		evacueesGroup.addChild(new Path.Circle({center: new Point(evacueesData[0][i][0],evacueesData[0][i][1]), radius: evacueeRadius, fillColor: colors['doseN']['c']}));
+		velocitiesGroup.addChild(new Path.Line({strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+		evacueesGroup.addChild(new Path.Circle({radius: evacueeRadius}));
 	}
-
 }
 //}}}
-function updateAnimatedElement(i) {//{{{
+function evacueesInFrame() {//{{{
 	// Lerps are Linear Interpolations. 
 	// There is data for each frame. Within each frame there are evacueesGroup positions. We take first frame and loop thru each evacuee. But we are not done with this frame yet:
 	// We can have say 1 or 1000 of lerps (invented positions) between each two frames. This is for both smoothening animations and for slow/fast playbacks. 
 	// We remove an evacuee by making it transparent. When we rewind, then we initialize all opacities with 1 again.
-
-	// todo performance? 
-	// if(frame == 0 || evacueesData[frame][i][5] != evacueesData[frame-1][i][5] ) {  evacueesGroup.children[i].opacity=velocitiesGroup.children[i].opacity=evacueesData[frame][i][5]; }
-	// if(frame == 0 || evacueesData[frame][i][4] != evacueesData[frame-1][i][4] ) {  evacueesGroup.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]; } 
-	// evacueesGroup.children[i].opacity=velocitiesGroup.children[i].opacity=evacueesData[frame+1][i][5]; 
-	evacueesGroup.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]['c']; 
-
-	evacueesGroup.children[i].position.x =  evacueesData[frame][i][0] + (evacueesData[frame+1][i][0] - evacueesData[frame][i][0]) * (lerpFrame%lerps)/lerps; 
-	evacueesGroup.children[i].position.y =  evacueesData[frame][i][1] + (evacueesData[frame+1][i][1] - evacueesData[frame][i][1]) * (lerpFrame%lerps)/lerps; 
-
-	velocitiesGroup.children[i].segments[0].point.x = evacueesGroup.children[i].position.x;
-	velocitiesGroup.children[i].segments[0].point.y = evacueesGroup.children[i].position.y;
-	velocitiesGroup.children[i].segments[1].point.x = evacueesGroup.children[i].position.x + evacueesData[frame][i][2];
-	velocitiesGroup.children[i].segments[1].point.y = evacueesGroup.children[i].position.y + evacueesData[frame][i][3];
+	
+	for (var i = 0; i < numberOfEvacuees; i++) { 
+		evacueesGroup.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]['c']; 
+		evacueesGroup.children[i].position.x =  evacueesData[frame][i][0] + (evacueesData[frame+1][i][0] - evacueesData[frame][i][0]) * (lerpFrame%lerps)/lerps; 
+		evacueesGroup.children[i].position.y =  evacueesData[frame][i][1] + (evacueesData[frame+1][i][1] - evacueesData[frame][i][1]) * (lerpFrame%lerps)/lerps; 
+		velocitiesGroup.children[i].segments[0].point.x = evacueesGroup.children[i].position.x;
+		velocitiesGroup.children[i].segments[0].point.y = evacueesGroup.children[i].position.y;
+		velocitiesGroup.children[i].segments[1].point.x = evacueesGroup.children[i].position.x + evacueesData[frame][i][2];
+		velocitiesGroup.children[i].segments[1].point.y = evacueesGroup.children[i].position.y + evacueesData[frame][i][3];
+	}
 }
 //}}}
 function afterLerpFrame() {//{{{
@@ -489,7 +473,6 @@ tool.onMouseDown=function(event) {//{{{
 	lerps=9999999999; // pause
 	var x;
 	var y;
-	//$("canvas-mouse-coords").text(Math.floor(event.downPoint['x']/100)+","+Math.floor(event.downPoint['y']/100));
 	$("canvas-mouse-coords").text(Math.floor(event.downPoint['x'])+ "," + Math.floor(event.downPoint['y']));
 	$("canvas-mouse-coords").css({'display':'block', 'left':event.event.pageX, 'top':event.event.pageY});
 	for (var i = 0; i < numberOfEvacuees; i++) { 
@@ -554,9 +537,9 @@ function initRoomSmoke() {//{{{
 	var x_ranges, y_ranges;
 
 	for (var ffloor in roomsOpacity[0]) {
-        var ty=dstatic[ffloor].floor_meta.world2d_ty;
+        var ty=dstatic.floors[ffloor].floor_meta.world2d_ty;
 		for (var room in roomsOpacity[0][ffloor]) {
-			points=dstatic[ffloor]['rooms'][room]['points'];
+			points=dstatic.floors[ffloor]['rooms'][room]['points'];
 			_.each(points, function(i) { i['y']+=ty; });
 			rw=points[1]['x'] - points[0]['x'];
 			rh=points[2]['y'] - points[1]['y'];
@@ -584,7 +567,7 @@ function initRoomSmoke() {//{{{
 	}
 }
 //}}}
-function updateRoomSmoke() {//{{{
+function roomsSmokeInFrame() {//{{{
 	if (roomsOpacity.length==0) { return; }
 	_.each(project.layers.roomSmoke.getItems(), function(i,key) { 
 		project.layers.roomSmoke.children[key].opacity=roomsOpacity[frame][i.floor][i.name];
@@ -605,10 +588,8 @@ function resizeAndRedrawCanvas() {//{{{
 //}}}
 view.onFrame=function(event) {//{{{
 	if (animationIsRunning==1) {
-		for (var i = 0; i < numberOfEvacuees; i++) { 
-			updateAnimatedElement(i);
-		}
-		updateRoomSmoke();
+		evacueesInFrame();
+		roomsSmokeInFrame();
 		afterLerpFrame();
 	}
 }

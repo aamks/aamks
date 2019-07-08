@@ -211,7 +211,7 @@ function keyboard_events() {//{{{
 		else if (e.key in gg) { active_letter=e.key; new_geom(); }
 	});
 	$(this).keydown((e) =>  { if (e.key == 'h')     { alternative_view(); } });
-	$(this).keydown((e) =>  { if (e.key == 'H')     { change_floor(calc_next_floor()); } }); 
+	$(this).keydown((e) =>  { if (e.key == 'n')     { change_floor(calc_next_floor()); } }); 
 
 	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "hidden"); } });
 	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "visible"); } });
@@ -590,7 +590,7 @@ function change_floor(requested_floor) {//{{{
 	$(active_img).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1);
 
 	geoms_changed();
-	d3.select("#floor_text").text("floor "+floor);
+	d3.select("#floor_text").text("floor "+floor+"/"+floors_count);
 	$("#floor_text").clearQueue().finish();
 	$("#floor_text").css("opacity",1).animate({"opacity": 0.05}, 1000);
 
@@ -865,7 +865,9 @@ CanvasBuilder=function canvas_builder() { //{{{
 	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
 	svg.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
-	svg.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor"+floor);
+	svg.append("text").attr("x",130).attr("y",140).attr("id", "shortcuts_help1").text("n: next floor");
+	svg.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: 3d view");
+
 	axes();
 	g_aamks = svg.append("g").attr("id", "g_aamks");
 	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',0.4);

@@ -27,12 +27,13 @@ class Obstacles():
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.global_meta=self.json.readdb("global_meta")
+        self.world_meta=self.json.readdb("world_meta")
         self.floors_meta=self.json.readdb("floors_meta")
         self.floors=self.floors_meta.keys()
-        self.walls_width=self.global_meta['walls_width']
+        self.walls_width=self.world_meta['walls_width']
         self._create_obstacles('aamks_geom', 'obstacles')
-        #if self.global_meta['multifloor_building']==1:
+        # TODO: in future we will probably process vertical staircases outside of aamks_geoms db table
+        #if self.world_meta['multifloor_building']==1:
         #    self._create_obstacles('world2d', 'world2d_obstacles')
         #exit()
 

@@ -5,6 +5,9 @@ body { overflow: hidden; }
 
 
 #floor_text, #scenario_text { fill: #fff; opacity: 0.05; font-size: 50px; font-family: 'Sans'; }
+#shortcuts_help1             { fill: #fff; opacity: 0.12; font-size: 12px; font-family: 'Sans';  }
+#shortcuts_help2             { fill: #fff; opacity: 0.12; font-size: 12px; font-family: 'Sans';  }
+
 #scenario { visibility: hidden; position: absolute; }
 .axis path, .axis line { fill: none; stroke: #383838; font-family: 'Sans' }
 .snap_v, .snap_h { stroke : #fff; stroke-width : 5; stroke-dasharray : 10; stroke-opacity : 0.7; }

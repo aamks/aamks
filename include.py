@@ -265,14 +265,6 @@ class Vis:# {{{
         self._js_make_dd_geoms()
         self._js_make_srv_evacuees()
 
-        self.global_meta=JSON.readdb("global_meta")
-        #if self.global_meta['multifloor_building']==1:
-        #    self._static_world2d=OrderedDict()
-        #    self._js_make_floors_and_meta_world2d()
-        #    self._js_make_rooms_world2d()
-        #    self._js_make_doors_world2d()
-        #    self._js_make_obstacles_world2d()
-        #    self._js_make_dd_geoms_world2d()
 
         if 'fire_origin' not in params:
             params['fire_origin']=self._js_vis_fire_origin()
@@ -338,54 +330,6 @@ class Vis:# {{{
             self._static_floors[floor]['dd_geoms']=f[floor]
 # }}}
 
-    def _js_make_floors_and_meta_world2d(self):# {{{
-        ''' Animation meta tells how to scale and translate canvas view '''
-        
-        meta=self.json.readdb("world2d_meta")
-        self._static_world2d['floor_meta']=meta
-# }}}
-    def _js_make_doors_world2d(self):# {{{
-        ''' Data for doors. '''
-
-        for floor in ['world2d']:
-            self._static_world2d['doors']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM world2d WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
-                points=self._make_poly(i)
-                self._static_world2d['doors'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)])
-# }}}
-    def _js_make_rooms_world2d(self):# {{{
-        ''' Data for rooms. '''
-
-        for floor in ['world2d']:
-            self._static_world2d['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec,room_enter FROM world2d WHERE type_pri='COMPA'"):
-                points=self._make_poly(i)
-                self._static_world2d['rooms'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)])
-
-# }}}
-    def _js_make_obstacles_world2d(self):# {{{
-        ''' 
-        Data for obstacles. TODO: is it fine if geom.py is interrupted before obstacles are created?
-        '''
-
-        self._static_world2d['obstacles']=[]
-        xx=JSON.readdb("world2d_obstacles")
-        for floor,obstacles in xx['obstacles'].items():
-            for obst in obstacles:
-                self._static_world2d['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ]})
-
-# }}}
-    def _js_make_dd_geoms_world2d(self):# {{{
-        ''' 
-        dd_geoms are initialized in geom.py. Those are optional extra
-        rectangles, points, lines and circles that are written to on top of our
-        geoms. Useful for debugging.
-        '''
-
-        f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
-        self._static_world2d['dd_geoms']=f['world2d']
-# }}}
-
     def _make_poly(self,i):# {{{
         points=[]
         points.append(OrderedDict([('x', i['x0']), ("y", i['y0'])]))
@@ -429,7 +373,8 @@ class Vis:# {{{
         '''
 
         vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        self.json.write(self._static_floors, '{}/static.json'.format(vis_dir)) 
+        
+        self.json.write(OrderedDict([('world_meta', JSON.readdb("world_meta")['world2d']), ('floors', self._static_floors)]), '{}/static.json'.format(vis_dir)) 
 
         try:
             z=self.json.read("{}/anims.json".format(vis_dir))
