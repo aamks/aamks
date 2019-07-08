@@ -68,13 +68,15 @@ class World2d():
     def _meta_translate_y(self):# {{{
         '''
         Calculate translateY (ty). Animator needs this meta info to dynamicaly
-        merge floors in world2d view 
+        merge floors in world2d view. At some point we will probably introduce
+        tx for staircases. 
         '''
 
         floors_meta=self.json.readdb("floors_meta")
 
         for floor,line in self.projections['top']['lines'].items():
             self.floors_meta[floor]['world2d_ty']=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
+            self.floors_meta[floor]['world2d_tx']=0
         self.s.query("UPDATE floors_meta SET json=?", (json.dumps(self.floors_meta),))
 
 # }}}
@@ -85,9 +87,9 @@ class World2d():
         m['maxx']=-99999999999
         m['maxy']=-99999999999
         for floor,meta in self.json.readdb("floors_meta").items():
-            m['minx']=min(m['minx'], meta['minx'])
+            m['minx']=min(m['minx'], meta['minx']+meta['world2d_tx'])
             m['miny']=min(m['miny'], meta['miny']+meta['world2d_ty'])
-            m['maxx']=max(m['maxx'], meta['maxx'])
+            m['maxx']=max(m['maxx'], meta['maxx']+meta['world2d_tx'])
             m['maxy']=max(m['maxy'], meta['maxy']+meta['world2d_ty'])
 
         m['xdim']=m['maxx']-m['minx']
