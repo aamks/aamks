@@ -7,9 +7,8 @@ var wallsSize;
 var doorsSize;
 var evacueeRadius;
 var velocitiesSize;
-var evacueesData;
+var eData;
 var roomsOpacity;
-var numberOfEvacuees;
 var dstatic;
 var lerps;
 var lastFrame=1;
@@ -19,6 +18,9 @@ var lerpFrame=0;
 var frame=0;
 var	visContainsAnimation=0;
 var	animationIsRunning=0;
+var velocitiesGroup={};
+var evacueesGroup={};
+var evacueesLabelsGroup={};
 
 paper.install(window);
 window.onload = function() {
@@ -46,7 +48,10 @@ function listenEvents() {//{{{
 	$('canvas-mouse-coords').click(function() {
 		lerps=Math.round(1/(($('#speed').val()/100)+0.00000000000000001))+1; 
 		$("canvas-mouse-coords").delay(1500).fadeOut('slow'); 
-		evacueesLabelsGroup.removeChildren();
+
+		_.each(evacueesLabelsGroup, function(e) {
+			e.removeChildren();
+		});
 		animationIsRunning=1;
 	});
 
@@ -173,7 +178,7 @@ function showStaticImage() {//{{{
 		resetCanvas();
 
 		if(currentAnimMeta["highlight_geom"]!=null) { highlightGeom(currentAnimMeta["highlight_geom"]); }
-		if(currentAnimMeta["anim"] != undefined) { showAnimation(currentAnimMeta); } 
+		if(currentAnimMeta["anim"] != undefined)    { showAnimation(currentAnimMeta); }
 
 	});
 }
@@ -185,10 +190,9 @@ function showAnimation() {//{{{
 	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': currentAnimMeta['anim'] }, function(response) { 
 		ajax_msg(response);
 		currentAnimData=JSON.parse(response['data']);
-		evacueesData=currentAnimData.animations.evacuees;
+		eData=currentAnimData.animations.evacuees;
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
-		lastFrame=currentAnimData.animations.evacuees.length-1;
-		numberOfEvacuees=currentAnimData.animations.evacuees[0].length;
+		lastFrame=eData.length-1;
 		var speedProposal=Math.round(lastFrame/5)
 		$("animator-time").html(animFormatTime());
 		$("animation-speed").html("<input type=text size=2 name=speed id=speed value="+speedProposal+">");
@@ -416,33 +420,42 @@ function initAnimAgents() { //{{{
 
 	if (visContainsAnimation==0) { return; } 
 	project.layers.animated.activate();
-	velocitiesGroup=new Group({name:'velocitiesGroup'});
-	evacueesGroup=new Group({name:'evacueesGroup'});
-	evacueesLabelsGroup=new Group({name:'evacueesLabelsGroup'});
+	console.log("todo: circleDemo");
 
-	for (var i=0; i<numberOfEvacuees; i++) {
-		velocitiesGroup.addChild(new Path.Line({strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
-		evacueesGroup.addChild(new Path.Circle({radius: evacueeRadius}));
-	}
+	_.each(eData[0], function(frame0_data,ffloor) {
+		velocitiesGroup[ffloor]=new Group();
+		evacueesGroup[ffloor]=new Group();
+		evacueesLabelsGroup[ffloor]=new Group();
+		_.each(frame0_data, function(data) {
+			velocitiesGroup[ffloor].addChild(new Path.Line({strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+			evacueesGroup[ffloor].addChild(new Path.Circle({radius: evacueeRadius}));
+		});
+	});
+
 }
 //}}}
 function evacueesInFrame() {//{{{
 	// Lerps are Linear Interpolations. 
-	// There is data for each frame. Within each frame there are evacueesGroup positions. We take first frame and loop thru each evacuee. But we are not done with this frame yet:
+	// There is eData for each frame. Within each frame there are evacueesGroup positions. We take first frame and loop thru each evacuee. But we are not done with this frame yet:
 	// We can have say 1 or 1000 of lerps (invented positions) between each two frames. This is for both smoothening animations and for slow/fast playbacks. 
 	// We remove an evacuee by making it transparent. When we rewind, then we initialize all opacities with 1 again.
 	
-	_.forEach(dstatic.floors, function(ffloor) {
-		for (var i = 0; i < numberOfEvacuees; i++) { 
-			evacueesGroup.children[i].fillColor=colors['dose'+evacueesData[frame][i][4]]['c']; 
-			evacueesGroup.children[i].position.x =  evacueesData[frame][i][0] + (evacueesData[frame+1][i][0] - evacueesData[frame][i][0]) * (lerpFrame%lerps)/lerps; 
-			evacueesGroup.children[i].position.y =  evacueesData[frame][i][1] + (evacueesData[frame+1][i][1] - evacueesData[frame][i][1]) * (lerpFrame%lerps)/lerps; 
-			velocitiesGroup.children[i].segments[0].point.x = evacueesGroup.children[i].position.x;
-			velocitiesGroup.children[i].segments[0].point.y = evacueesGroup.children[i].position.y;
-			velocitiesGroup.children[i].segments[1].point.x = evacueesGroup.children[i].position.x + evacueesData[frame][i][2];
-			velocitiesGroup.children[i].segments[1].point.y = evacueesGroup.children[i].position.y + evacueesData[frame][i][3];
-		}
-	});
+	_.each(evacueesGroup, function(data,ffloor) {
+		_.each(data.children, function(e,i) {
+			e.fillColor=colors['dose'+eData[frame][ffloor][i][4]]['c']; 
+			e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps; 
+			e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.world2d_ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
+		})
+	})
+
+	_.each(velocitiesGroup, function(data,ffloor) {
+		_.each(data.children, function(e,i) {
+			e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
+			e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
+			e.segments[1].point.x = evacueesGroup[ffloor].children[i].position.x + eData[frame][ffloor][i][2];
+			e.segments[1].point.y = evacueesGroup[ffloor].children[i].position.y + eData[frame][ffloor][i][3];
+		})
+	})
 }
 //}}}
 function afterLerpFrame() {//{{{
@@ -477,13 +490,16 @@ tool.onMouseDown=function(event) {//{{{
 	var y;
 	$("canvas-mouse-coords").text(Math.floor(event.downPoint['x'])+ "," + Math.floor(event.downPoint['y']));
 	$("canvas-mouse-coords").css({'display':'block', 'left':event.event.pageX, 'top':event.event.pageY});
-	for (var i = 0; i < numberOfEvacuees; i++) { 
-		x=evacueesGroup.children[i].position.x;
-		y=evacueesGroup.children[i].position.y;
-		evacueesLabelsGroup.addChild(new Path.Circle({ center: new Point(x,y), radius:evacueeRadius*0.01, fillColor:"#f80" }));
-		evacueesLabelsGroup.addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y-evacueeRadius/3), fillColor:"#fff", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.7 }));
-		evacueesLabelsGroup.addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y+evacueeRadius/2), fillColor:"#fff", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.7}));
-	}
+	//for (var i = 0; i < numberOfEvacuees; i++) { 
+	_.each(eData[0], function(frame0_data,ffloor) {
+		_.each(frame0_data, function(e,i) {
+			x=evacueesGroup[ffloor].children[i].position.x;
+			y=evacueesGroup[ffloor].children[i].position.y;
+			evacueesLabelsGroup[ffloor].addChild(new Path.Circle({ center: new Point(x,y), radius:evacueeRadius*0.01, fillColor:"#f80" }));
+			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y-evacueeRadius/3), fillColor:"#000", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.7 }));
+			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y+evacueeRadius/2), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.7}));
+		})
+	})
 };
 //}}}
 function animFormatTime() {//{{{

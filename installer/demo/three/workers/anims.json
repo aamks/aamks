@@ -1,7 +1,7 @@
 [
     {
         "sort_id": -3,
-        "title": "f0.zip demo demo@aamks, f0",
+        "title": "three.zip demo",
         "time": "",
         "floor": "0",
         "fire_origin": [
@@ -10,11 +10,11 @@
         ],
         "highlight_geom": null,
         "demo": 1,
-        "anim": "1/f0.zip"
+        "anim": "1/three.zip"
     },
     {
         "sort_id": -2,
-        "title": "funCircle demo@aamks",
+        "title": "funCircle demo",
         "time": "",
         "floor": "0",
         "fire_origin": [
@@ -27,7 +27,7 @@
     },
     {
         "sort_id": -1,
-        "title": "funExplode demo@aamks",
+        "title": "funExplode demo",
         "time": "",
         "floor": "0",
         "fire_origin": [

@@ -29,6 +29,7 @@
                 "minz_abs": 0,
                 "maxz_abs": 350,
                 "zdim": 350,
+                "world2d_tx": 0,
                 "world2d_ty": 3816
             },
             "rooms": {
@@ -1390,6 +1391,7 @@
                 "minz_abs": 350,
                 "maxz_abs": 700,
                 "zdim": 350,
+                "world2d_tx": 0,
                 "world2d_ty": 1400
             },
             "rooms": {
@@ -2511,6 +2513,7 @@
                 "minz_abs": 700,
                 "maxz_abs": 1050,
                 "zdim": 350,
+                "world2d_tx": 0,
                 "world2d_ty": -500
             },
             "rooms": {

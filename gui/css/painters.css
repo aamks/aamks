@@ -4,9 +4,8 @@ body { overflow: hidden; }
 .properties_type_listing:hover , .more_properties:hover {  color: #c60 !important; cursor: pointer;  }
 
 
-#floor_text, #scenario_text { fill: #fff; opacity: 0.05; font-size: 50px; font-family: 'Sans'; }
-#shortcuts_help1             { fill: #fff; opacity: 0.12; font-size: 12px; font-family: 'Sans';  }
-#shortcuts_help2             { fill: #fff; opacity: 0.12; font-size: 12px; font-family: 'Sans';  }
+#floor_text, #scenario_text        { fill: #fff; opacity: 0.05; font-size: 50px; font-family: 'Sans'; }
+#shortcuts_help1, #shortcuts_help2 { fill: #fff; opacity: 0.08; font-size: 12px; font-weight: bold; font-family: 'Sans';  }
 
 #scenario { visibility: hidden; position: absolute; }
 .axis path, .axis line { fill: none; stroke: #383838; font-family: 'Sans' }
