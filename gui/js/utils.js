@@ -67,6 +67,8 @@ function dd(x) {//{{{
 $(function() { 
 	scenario_changer();
 	launch_simulation();
+	if(navigator.userAgent.indexOf("Chrome")==-1) { alert("Aamks is designed for Google Chrome. Aamks may work, but is not supported on other browsers"); }
+	$(this).keydown(function(e) { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?'); } });
 });
 
 
