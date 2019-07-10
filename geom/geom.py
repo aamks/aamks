@@ -34,6 +34,7 @@ class Geom():
         self._geometry2sqlite()
         self._enhancements()
         self._init_dd_geoms()
+        self._floors_towers_intersections()
         self._floors_meta()
         self._world_meta()
         self._aamks_geom_into_polygons()
@@ -479,6 +480,52 @@ class Geom():
                 update.append((v[0], v[1], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
 
+# }}}
+    def _floors_towers_intersections(self):# {{{
+        ''' 
+        This is for evacuation only and cannot interfere with fire models
+        (fire_model_ignore=1). Most STAI(RCASES) or HALL(S) are drawn on floor
+        0, but they are tall and need to cross other floors (towers). Say we
+        have floor bottoms at 0, 3, 6, 9, 12 metres and STAI's top is at 9
+        metres - the STAI belongs to floors 0, 1, 2. We INSERT fake (x,y) STAI
+        slices on proper floors.
+
+        '''
+
+        # TODO: does the below still apply?
+        # We INSERT fake (x,y) STAI
+        # slices on proper floors in order to calculate vent_from / vent_to
+        # properly. These fake entities are enumerated from 100000. We only
+        # consider towers which span across more than 1 floor.
+
+        towers={}
+        for w in self.s.query("SELECT floor,height,name,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
+            maxz_abs=self.s.query("SELECT max(z1) AS maxz FROM aamks_geom WHERE type_sec NOT IN('STAI','HALL') AND floor=?", (w['floor'],))[0]['maxz']
+            if w['height'] > maxz_abs:
+
+                towers[w['name']]=[]
+                current_floor=w['floor']
+
+                for floor in self.floors:
+                    for v in self.s.query("SELECT min(z0) FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,)):
+                        if v['min(z0)'] < w['height']:
+                            towers[w['name']].append(floor)
+                towers[w['name']].remove(current_floor)
+
+        high_global_type_id=1000001
+        for orig_name,floors in towers.items():
+            orig_record=self.s.query("SELECT type_pri,type_sec,type_tri,x0,y0,width,depth,x1,y1,room_area,room_enter,1 as fire_model_ignore FROM aamks_geom WHERE name=?", (orig_name,))[0]
+            kk=list(orig_record.keys())
+            kk.append('global_type_id')
+            kk.append('floor')
+            kk.append('name')
+            for flo in floors:
+                vv=list(orig_record.values())
+                vv.append(high_global_type_id)
+                vv.append(flo)
+                vv.append("{}.{}".format(orig_name,flo))
+                self.s.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
+                high_global_type_id+=1
 # }}}
 
 # ASSERTIONS

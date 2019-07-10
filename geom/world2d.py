@@ -100,3 +100,4 @@ class World2d():
         self.s.query("UPDATE world_meta SET json=?", (json.dumps(self.world_meta),))
 
 # }}}
+
