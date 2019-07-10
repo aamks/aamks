@@ -420,7 +420,7 @@ function initAnimAgents() { //{{{
 
 	if (visContainsAnimation==0) { return; } 
 	project.layers.animated.activate();
-	console.log("todo: circleDemo");
+	dd(eData); //[i][4]]['c']; 
 
 	_.each(eData[0], function(frame0_data,ffloor) {
 		velocitiesGroup[ffloor]=new Group();

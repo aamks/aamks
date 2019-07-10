@@ -1,6 +1,6 @@
 [
     {
-        "sort_id": -3,
+        "sort_id": -1,
         "title": "three.zip demo",
         "time": "",
         "floor": "0",
@@ -11,31 +11,5 @@
         "highlight_geom": null,
         "demo": 1,
         "anim": "1/three.zip"
-    },
-    {
-        "sort_id": -2,
-        "title": "funCircle demo",
-        "time": "",
-        "floor": "0",
-        "fire_origin": [
-            3100,
-            1180
-        ],
-        "highlight_geom": null,
-        "demo": 1,
-        "anim": "funCircle"
-    },
-    {
-        "sort_id": -1,
-        "title": "funExplode demo",
-        "time": "",
-        "floor": "0",
-        "fire_origin": [
-            3100,
-            1180
-        ],
-        "highlight_geom": null,
-        "demo": 1,
-        "anim": "funExplode"
     }
 ]

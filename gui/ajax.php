@@ -97,37 +97,41 @@ function ajaxSingleAnim() { /*{{{*/
 }
 /*}}}*/
 function funCircle() { /*{{{*/
-	$arr=[];
+	$frames=[];
 	$colors=["N", "L", "M", "H"];
+	$floor=new stdClass;
 	for($t=0; $t<15; $t+=2.5) { 
-		$record=[];
+		$floor->{'0'}=[];
 		for($a=0; $a<19; $a++) { 
-			$record[]=[ 2600 + round(100*cos($t+$a/3)), 1200 - round(100*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
-			$record[]=[ 2600 + round(200*cos($t+$a/3)), 1200 + round(200*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
-			$record[]=[ 2600 + round(300*cos($t+$a/3)), 1200 - round(300*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
+			$floor->{'0'}[]=[ 2600 + round(100*cos($t+$a/3)), 1200 - round(100*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
+			$floor->{'0'}[]=[ 2600 + round(200*cos($t+$a/3)), 1200 + round(200*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
+			$floor->{'0'}[]=[ 2600 + round(300*cos($t+$a/3)), 1200 - round(300*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
 		}
-		$arr[]=$record;
+		$frames[][]=$floor->{'0'};
 	}
 	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0, "animations" => array() ];
-	$collect['animations']['evacuees']=$arr;
+	$collect['animations']['evacuees']=$frames;
 	$collect['animations']['rooms_opacity']=[];
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=> json_encode($collect)));
 }
 /*}}}*/
 function funExplode() { /*{{{*/
-	$arr=[];
+
+	$frames=[];
 	$colors=["M", "L", "N", "H" ];
-	$y=[];
+	$floor=new stdClass;
 	for($t=0; $t<4; $t+=1) { 
-		$record=[];
-		for($a=0; $a<700; $a++) { 
+		$floor->{'0'}=[];
+		for($a=0; $a<2000; $a++) { 
 			$color=floor($a/100)%4;
-			$record[]=[ 2600+$t*rand(-12,12)*$a/10, 1200+$t*rand(-12,12)*$a/10, 0, 0, $colors[$color], 1 ];
+			$floor->{'0'}[]=[ 2600+$t*rand(-12,12)*$a/10, 1200+$t*rand(-12,12)*$a/10, 0, 0, $colors[$color], 1 ];
 		}
-		$arr[]=$record;
+
+		$frames[][]=$floor->{'0'};
 	}
+
 	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0, "animations" => array() ];
-	$collect['animations']['evacuees']=$arr;
+	$collect['animations']['evacuees']=$frames;
 	$collect['animations']['rooms_opacity']=[];
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=> json_encode($collect)));
 }
