@@ -337,11 +337,8 @@ class Vis:# {{{
         return points
 # }}}
     def _js_vis_fire_origin(self):# {{{
-        try:
-            z=self.s.query("SELECT x, y FROM fire_origin")
-            return (z[0]['x']*100, z[0]['y']*100)
-        except:
-            return tuple()
+        z=self.s.query("SELECT floor, x, y FROM fire_origin")
+        return {'floor': z[0]['floor'], 'x': z[0]['x']*100, 'y': z[0]['y']*100 }
 # }}}
     def _reorder_anims(self, z):# {{{
         '''

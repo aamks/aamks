@@ -31,6 +31,7 @@ window.onload = function() {
 	nn=new Layer; nn.name='roomFire';
 	nn=new Layer; nn.name='highlight';
 	nn=new Layer; nn.name='animated';
+	nn=new Layer; nn.name='info';
 	resizeAndRedrawCanvas();
 	left_menu_box();
 	right_menu_box();
@@ -50,6 +51,7 @@ function listenEvents() {//{{{
 		_.each(evacueesLabelsGroup, function(e) {
 			e.removeChildren();
 		});
+		view.play();
 	});
 
 
@@ -81,7 +83,6 @@ function listenEvents() {//{{{
 		if(this.value.length>0) { highlightGeom(this.value); }
 	});
 	$('.canvas_slider_rect').click(function() {
-		//evacueesLabelsGroup.removeChildren();
 		sliderPos=$(this).data('id');
 		lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
 		frame=Math.floor(lerpFrame/lerps);
@@ -200,13 +201,14 @@ function showAnimation() {//{{{
 
 		initAnimAgents();
 		initRoomSmoke();
+		
 	});
 }
 //}}}
+
 function resetCanvas() {//{{{
 	// Reset on new visualization, on scaling walls, etc.
 	
-	clearSmoke();
 	initStaticGeoms();
 	initAnimAgents();
 	letItBurn();
@@ -265,34 +267,29 @@ function makeHighlightGeoms() {//{{{
 //}}}
 function letItBurn() {//{{{
 	// The animated fire is displayed in a separate setInterval loop. Perhaps onFrame() suits more.
-	//if (currentAnimMeta['fire_origin'].length < 2) { 
-	//	clearInterval(intervalId);
-	//	return; 
-	//}
+	project.layers.roomFire.removeChildren();
+	project.layers.roomFire.activate();
+
 	var smoke;
 	var smokeOrig;
 	var fire;
-	var tx=dstatic.floors['0'].floor_meta.world2d_tx; // TODO: fire should belong to world, not floor
-	var ty=dstatic.floors['0'].floor_meta.world2d_ty;
+	var tx=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.world2d_tx; 
+	var ty=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.world2d_ty;
 
-	// TODO: ORDER: project.activeLayer.insertChild(0, greenPath);
-	if ('roomFire' in project.layers) { project.layers['roomFire'].removeChildren(); } 
-	if ('roomSmoke' in project.layers) { project.layers['roomSmoke'].removeChildren(); } 
-
-	project.layers['roomFire'].importSVG("smoke.svg", function (item) {
-		item.position.x = currentAnimMeta['fire_origin'][0]+tx;
-		item.position.y = currentAnimMeta['fire_origin'][1]+ty-40;
+	project.layers.roomFire.importSVG("smoke.svg", function (item) {
+		item.position.x = currentAnimMeta['fire_origin']['x']+tx;
+		item.position.y = currentAnimMeta['fire_origin']['y']+ty-40;
 		smoke=item;
 		smoke.opacity=0.5;
 		smokeOrig=item.bounds;
-	});
-	
-	project.layers['roomFire'].importSVG("fire.svg", function (item) {
-		item.position.x = currentAnimMeta['fire_origin'][0]+tx;
-		item.position.y = currentAnimMeta['fire_origin'][1]+ty;
-		fire=item;
-	});
+		// This way the z-order is preserved
+		project.layers.roomFire.importSVG("fire.svg", function (item) {
+			item.position.x = currentAnimMeta['fire_origin']['x']+tx;
+			item.position.y = currentAnimMeta['fire_origin']['y']+ty;
+			fire=item;
 
+		});
+	});
 
 	var intervalId;
 	clearInterval(intervalId);
@@ -305,7 +302,17 @@ function letItBurn() {//{{{
 		smoke.setPosition(smoke.getPosition().x, smoke.getPosition().y-2);
 		smoke.scale(1.02);
 		
-	},100);
+	},500);
+}
+//}}}
+function drawMeta(floor,tx,ty) {//{{{
+	project.layers.info.activate();
+	fillColor = "#fff";
+	opacity = 0.1;
+	fontSize = labelsSize * 5;
+	pos=[ dstatic.world_meta['minx'] + tx - 300, dstatic.floors[floor]['floor_meta']['center'][1] + ty + 200 ] ;
+
+	new PointText({ point: new Point(pos[0], pos[1]), content: floor, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
 }
 //}}}
 function drawPath(type,data,tx,ty) {//{{{
@@ -340,6 +347,7 @@ function drawLabel(type,data,tx,ty) {//{{{
 	if(type=='ROOM') {
 		fillColor = colors.fg.c;
 		fontSize = labelsSize;
+		opacity = 1;
 		pos=[data.points[0].x + tx + 20, data.points[0].y + ty + 50];
 	}
 	if(type=='DOOR') {
@@ -348,7 +356,7 @@ function drawLabel(type,data,tx,ty) {//{{{
 		fontSize = labelsSize * 0.75;
 		pos=[data.points[0].x + tx + 30, data.points[0].y + ty + 30];
 	}
-	new PointText({ point: new Point(pos[0], pos[1]), content: content, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
+	new PointText({ point: new Point(pos[0], pos[1]), content: content, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
 }
 //}}}
 function drawStaticEvacuees(data,tx,ty) {//{{{
@@ -383,12 +391,13 @@ function drawDDGeoms(data,tx,ty) { //{{{
 
 //}}}
 function initStaticGeoms() {//{{{
+	console.log("TODO: remove old geoms");
 	project.layers.animated.removeChildren();
 	project.layers.rooms.removeChildren();
 	project.layers.rooms.activate();
 	var tx, ty;
 	
-	_.forEach(dstatic.floors, function(ffloor) {
+	_.forEach(dstatic.floors, function(ffloor,floor_name) {
         tx=ffloor.floor_meta.world2d_tx;
         ty=ffloor.floor_meta.world2d_ty;
         _.forEach(ffloor.rooms     , function(d) { drawPath('ROOM'  , d , tx, ty); });
@@ -403,7 +412,9 @@ function initStaticGeoms() {//{{{
 
 		drawStaticEvacuees(ffloor.evacuees, tx, ty);
         drawDDGeoms(ffloor.dd_geoms, tx, ty); 
+        drawMeta(floor_name,tx,ty); 
     });
+
 
 } 
 //}}}
@@ -411,7 +422,8 @@ function initAnimAgents() { //{{{
 	// velocitiesGroup are the ---------> vectors attached to each ball
 	// evacueesLabelsGroup are (e1 x,y) displayed on top of each ball
 
-	if (eData.length<1) { return; } 
+	project.layers.animated.removeChildren();
+	if (eData.length<1) { return; }
 	project.layers.animated.activate();
 
 	_.each(eData[0], function(frame0_data,ffloor) {
@@ -476,19 +488,20 @@ tool.onMouseDrag=function(event) {//{{{
 
 //}}}
 tool.onMouseDown=function(event) {//{{{
-	lerps=9999999999; // pause
+	//lerps=9999999999; // pause
+	view.pause();
 	var x;
 	var y;
 	$("canvas-mouse-coords").text(Math.floor(event.downPoint['x'])+ "," + Math.floor(event.downPoint['y']));
 	$("canvas-mouse-coords").css({'display':'block', 'left':event.event.pageX, 'top':event.event.pageY});
 	if(eData.length<1) { return; }
 	_.each(eData[0], function(frame0_data,ffloor) {
+		evacueesLabelsGroup[ffloor].removeChildren();
 		_.each(frame0_data, function(e,i) {
 			x=evacueesGroup[ffloor].children[i].position.x;
 			y=evacueesGroup[ffloor].children[i].position.y;
-			evacueesLabelsGroup[ffloor].addChild(new Path.Circle({ center: new Point(x,y), radius:evacueeRadius*0.01, fillColor:"#f80" }));
-			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y-evacueeRadius/3), fillColor:"#000", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.7 }));
-			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(x-evacueeRadius/1,y+evacueeRadius/2), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.7}));
+			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(15+x-evacueeRadius/1,y-evacueeRadius/7), fillColor:"#000", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.5 }));
+			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y+evacueeRadius/3), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.5}));
 		})
 	})
 };
@@ -521,13 +534,6 @@ function randBetween(min, max) {//{{{
     return Math.random() * (max - min) + min;
 }
 //}}}
-function clearSmoke() {//{{{
-	// TODO: JUN.2019, disable ok?
-	//if ('roomSmoke' in project.layers) {
-	//	project.layers['roomSmoke'].removeChildren();
-	//} 
-}
-//}}}
 function bubbles_ranges(side) { //{{{
 	// Room divided into segments results in smoke more even than purely random
 	var bubbles_segment=300;
@@ -541,6 +547,7 @@ function bubbles_ranges(side) { //{{{
 }
 //}}}
 function initRoomSmoke() {//{{{
+	project.layers.roomSmoke.removeChildren();
 	project.layers.roomSmoke.activate();
 	var radius=350;
 	var roomMargin=25;
@@ -603,7 +610,8 @@ view.onFrame=function(event) {//{{{
 		evacueesInFrame();
 		roomsSmokeInFrame();
 		afterLerpFrame();
-	}
+	} 
 }
 //}}}
+
 };

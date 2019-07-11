@@ -2,14 +2,9 @@
     {
         "sort_id": -1,
         "title": "three.zip demo",
-        "time": "",
-        "floor": "0",
-        "fire_origin": [
-            3100,
-            1180
-        ],
+        "fire_origin": { "floor": "0", "x": 3500, "y": 1500 },
         "highlight_geom": null,
-        "demo": 1,
+		"time": "00:00",
         "anim": "1/three.zip"
     }
 ]
