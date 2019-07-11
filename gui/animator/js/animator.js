@@ -7,8 +7,8 @@ var wallsSize;
 var doorsSize;
 var evacueeRadius;
 var velocitiesSize;
-var eData;
-var roomsOpacity;
+var eData=[];
+var roomsOpacity=[];
 var dstatic;
 var lerps;
 var lastFrame=1;
@@ -16,8 +16,6 @@ var labelsSize=50;
 var sliderPos=0;
 var lerpFrame=0;
 var frame=0;
-var	visContainsAnimation=0;
-var	animationIsRunning=0;
 var velocitiesGroup={};
 var evacueesGroup={};
 var evacueesLabelsGroup={};
@@ -52,7 +50,6 @@ function listenEvents() {//{{{
 		_.each(evacueesLabelsGroup, function(e) {
 			e.removeChildren();
 		});
-		animationIsRunning=1;
 	});
 
 
@@ -85,7 +82,6 @@ function listenEvents() {//{{{
 	});
 	$('.canvas_slider_rect').click(function() {
 		//evacueesLabelsGroup.removeChildren();
-		animationIsRunning=1;
 		sliderPos=$(this).data('id');
 		lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
 		frame=Math.floor(lerpFrame/lerps);
@@ -141,8 +137,6 @@ function makeChooseVis() {//{{{
 	$('#choose-vis').on('change', function() {
 		lerpFrame=0;
 		frame=0;
-		visContainsAnimation=0;
-		animationIsRunning=0;
 		currentAnimMeta=animsList[this.value];
 		showStaticImage(); 
 	});
@@ -173,7 +167,7 @@ function showStaticImage() {//{{{
 
 		makeSetupBoxInputs();
 		makeColors();
-		makeHighlightGeoms(dstatic.floors[currentAnimMeta['floor']]);
+		makeHighlightGeoms();
 		listenEvents();
 		resetCanvas();
 
@@ -204,8 +198,6 @@ function showAnimation() {//{{{
 			$('.canvas_slider_rect').attr("fill", "#333"); 
 		});
 
-		visContainsAnimation=1;
-		animationIsRunning=1;
 		initAnimAgents();
 		initRoomSmoke();
 	});
@@ -251,7 +243,8 @@ function makeColors() {//{{{
 	$("change-style").html(items.join());
 }
 //}}}
-function makeHighlightGeoms(data) {//{{{
+function makeHighlightGeoms() {//{{{
+    var data=dstatic.floors['0']; // TODO: highlight broken
 	var items = [];
 	items.push("<select id=highlight-geoms>");
 	items.push("<option value=''></option>");
@@ -279,8 +272,8 @@ function letItBurn() {//{{{
 	var smoke;
 	var smokeOrig;
 	var fire;
-	var tx=dstatic.floors[currentAnimMeta['floor']].floor_meta.world2d_tx;
-	var ty=dstatic.floors[currentAnimMeta['floor']].floor_meta.world2d_ty;
+	var tx=dstatic.floors['0'].floor_meta.world2d_tx; // TODO: fire should belong to world, not floor
+	var ty=dstatic.floors['0'].floor_meta.world2d_ty;
 
 	// TODO: ORDER: project.activeLayer.insertChild(0, greenPath);
 	if ('roomFire' in project.layers) { project.layers['roomFire'].removeChildren(); } 
@@ -418,9 +411,8 @@ function initAnimAgents() { //{{{
 	// velocitiesGroup are the ---------> vectors attached to each ball
 	// evacueesLabelsGroup are (e1 x,y) displayed on top of each ball
 
-	if (visContainsAnimation==0) { return; } 
+	if (eData.length<1) { return; } 
 	project.layers.animated.activate();
-	dd(eData); //[i][4]]['c']; 
 
 	_.each(eData[0], function(frame0_data,ffloor) {
 		velocitiesGroup[ffloor]=new Group();
@@ -484,13 +476,12 @@ tool.onMouseDrag=function(event) {//{{{
 
 //}}}
 tool.onMouseDown=function(event) {//{{{
-	animationIsRunning=0;
 	lerps=9999999999; // pause
 	var x;
 	var y;
 	$("canvas-mouse-coords").text(Math.floor(event.downPoint['x'])+ "," + Math.floor(event.downPoint['y']));
 	$("canvas-mouse-coords").css({'display':'block', 'left':event.event.pageX, 'top':event.event.pageY});
-	//for (var i = 0; i < numberOfEvacuees; i++) { 
+	if(eData.length<1) { return; }
 	_.each(eData[0], function(frame0_data,ffloor) {
 		_.each(frame0_data, function(e,i) {
 			x=evacueesGroup[ffloor].children[i].position.x;
@@ -504,7 +495,10 @@ tool.onMouseDown=function(event) {//{{{
 //}}}
 function animFormatTime() {//{{{
 	var date=new Date(null);
-	var t=currentAnimData.time_shift + (currentAnimData.simulation_time - currentAnimData.time_shift) * sliderPos / 100
+	if (eData.length>0) { 
+		var t=currentAnimData.time_shift + (currentAnimData.simulation_time - currentAnimData.time_shift) * sliderPos / 100
+	}
+	if(isNaN(t)) { t=0; }
 	date.setSeconds(t);
 	return date.toISOString().substr(14,5);
 };
@@ -586,7 +580,7 @@ function initRoomSmoke() {//{{{
 }
 //}}}
 function roomsSmokeInFrame() {//{{{
-	if (roomsOpacity.length==0) { return; }
+	if (eData.length<1) { return; }
 	_.each(project.layers.roomSmoke.getItems(), function(i,key) { 
 		project.layers.roomSmoke.children[key].opacity=roomsOpacity[frame][i.floor][i.name];
 	});
@@ -605,7 +599,7 @@ function resizeAndRedrawCanvas() {//{{{
 
 //}}}
 view.onFrame=function(event) {//{{{
-	if (animationIsRunning==1) {
+	if (eData.length>0) {
 		evacueesInFrame();
 		roomsSmokeInFrame();
 		afterLerpFrame();

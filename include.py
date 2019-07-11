@@ -12,8 +12,6 @@ import os
 import sqlite3
 import sys
 
-#JSON=self.json=Json()
-
 def dd(struct):# {{{
     '''debugging function, much like print but handles various types better'''
     print()
@@ -383,19 +381,17 @@ class Vis:# {{{
             z=[]
             lowest_id=-1
 
+        anim_record=OrderedDict()
+        anim_record['sort_id']=lowest_id
+        lowest_id-=1
+        anim_record['title']=params['title']
+        anim_record['time']=datetime.now().strftime('%H:%M')
+        anim_record['fire_origin']=params['fire_origin']
+        anim_record['highlight_geom']=params['highlight_geom']
+        anim_record['srv']=params['srv']
+        anim_record['anim']=params['anim']
         records={}
-        for floor in self._static_floors.keys():
-            anim_record=OrderedDict()
-            anim_record['sort_id']=lowest_id
-            lowest_id-=1
-            anim_record['title']="{}: {}".format(floor, params['title'])
-            anim_record['time']=datetime.now().strftime('%H:%M')
-            anim_record['floor']=floor
-            anim_record['fire_origin']=params['fire_origin']
-            anim_record['highlight_geom']=params['highlight_geom']
-            anim_record['srv']=params['srv']
-            anim_record['anim']=params['anim']
-            records[anim_record['title']] = anim_record
+        records[anim_record['title']] = anim_record
 
         # We are removing duplicates here
         for i in z:

@@ -65,7 +65,7 @@ class CfastMcarlo():
     def _draw_fire_origin(self):# {{{
         is_origin_in_room=binomial(1,self.conf['fire_starts_in_a_room'])
         
-        self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY global_type_id") ]
+        self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND type_sec in('COR','HALL') ORDER BY global_type_id") ]
         self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY global_type_id") ]
         fire_origin=[]
         if is_origin_in_room==1 or len(self.all_corridors_and_halls)==0:
@@ -99,7 +99,7 @@ class CfastMcarlo():
             x=i['center_x']/100.0
             y=i['center_y']/100.0
             z=i['center_z']/100.0
-            room=self.s.query("SELECT floor,name,type_sec,global_type_id FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND x0<=? AND y0<=? AND x1>=? AND y1>=?", (i['floor'], i['x0'], i['y0'], i['x1'], i['y1']))
+            room=self.s.query("SELECT floor,name,type_sec,global_type_id FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", (i['floor'], i['x0'], i['y0'], i['x1'], i['y1']))
             if room[0]['type_sec'] in ('COR','HALL'):
                 fire_origin=[room[0]['name'], 'non_room', x, y, z, room[0]['floor']]
             else:
@@ -291,7 +291,7 @@ class CfastMcarlo():
 # }}}
     def _section_compa(self):# {{{
         txt=['!! COMPA,name,width,depth,height,x,y,z,matl_ceiling,matl_floor,matl_wall']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' ORDER BY global_type_id"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 ORDER BY global_type_id"):
             collect=[]
             collect.append('COMPA')                    # COMPA
             collect.append(v['name'])                  # NAME
@@ -416,7 +416,7 @@ class CfastMcarlo():
 # }}}
     def _section_heat_detectors(self):# {{{
         txt=['!! DETECTORS,type,compa,temp,width,depth,height,rti,supress,density']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND heat_detectors=1"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND heat_detectors=1"):
             temp = self._draw_heat_detectors_triggers()                # ACTIVATION_TEMPERATURE,
             if temp == '0.0':
                 collect = [] 
@@ -439,7 +439,7 @@ class CfastMcarlo():
 # }}}
     def _section_smoke_detectors(self):# {{{
         txt=['!! DETECTORS,type,compa,temp,width,depth,height,rti,supress,density']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND smoke_detectors=1"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND smoke_detectors=1"):
             temp = self._draw_smoke_detectors_triggers()                # ACTIVATION_TEMPERATURE,
             if temp == '0.0':
                 collect = [] 
@@ -462,7 +462,7 @@ class CfastMcarlo():
 # }}}
     def _section_sprinklers(self):# {{{
         txt=['!! SPRINKLERS,type,compa,temp,width,depth,height,rti,supress,density']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' and sprinklers=1"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1"):
             temp = self._draw_sprinklers_triggers() # ACTIVATION_TEMPERATURE,
             if temp == '0.0':
                 collect = [] 
