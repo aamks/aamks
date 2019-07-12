@@ -22,20 +22,22 @@ var evacueesLabelsGroup={};
 
 paper.install(window);
 window.onload = function() {
-	var nn;
 	paper.setup('animator-canvas');
 	var tool=new Tool;
 	makeAnimationControls();
-	nn=new Layer; nn.name='rooms';
-	nn=new Layer; nn.name='roomSmoke';
-	nn=new Layer; nn.name='roomFire';
-	nn=new Layer; nn.name='highlight';
-	nn=new Layer; nn.name='animated';
-	nn=new Layer; nn.name='info';
 	resizeAndRedrawCanvas();
 	left_menu_box();
 	right_menu_box();
 
+function initLayers() {//{{{
+	new Layer({'name': 'rooms'});
+	new Layer({'name': 'roomSmoke'});
+	new Layer({'name': 'roomFire'});
+	new Layer({'name': 'highlight'});
+	new Layer({'name': 'animated'});
+	new Layer({'name': 'info'});
+}
+//}}}
 function listenEvents() {//{{{
 	$(window).resize(resizeAndRedrawCanvas);
 	$('#labels-size').on('keyup'     , function() { labelsSize=this.value     ; resetCanvas() ; })
@@ -93,7 +95,7 @@ function listenEvents() {//{{{
 function right_menu_box() {//{{{
 	$('close-right-menu-box').click(function() {
 		$('right-menu-box').fadeOut();
-		project.layers['highlight'].removeChildren();
+		project.layers.highlight.removeChildren();
 	});
 
 	$('button-right-menu-box').click(function() {
@@ -166,14 +168,11 @@ function showStaticImage() {//{{{
 		velocitiesSize=Math.round(1/view.scaling.x);
 		doorsSize=wallsSize;
 
+		resetCanvas();
 		makeSetupBoxInputs();
 		makeColors();
 		makeHighlightGeoms();
 		listenEvents();
-		resetCanvas();
-
-		if(currentAnimMeta["highlight_geom"]!=null) { highlightGeom(currentAnimMeta["highlight_geom"]); }
-		if(currentAnimMeta["anim"] != undefined)    { showAnimation(currentAnimMeta); }
 
 	});
 }
@@ -199,21 +198,23 @@ function showAnimation() {//{{{
 			$('.canvas_slider_rect').attr("fill", "#333"); 
 		});
 
-		initAnimAgents();
 		initRoomSmoke();
-		
+		initAnimAgents();
 	});
 }
 //}}}
 
 function resetCanvas() {//{{{
 	// Reset on new visualization, on scaling walls, etc.
-	
+	eData=[];
+	project.clear();
+	initLayers();
 	initStaticGeoms();
-	initAnimAgents();
 	letItBurn();
-	project.layers.animated.activate();
-	
+
+	if(currentAnimMeta["highlight_geom"]!=null) { highlightGeom(currentAnimMeta["highlight_geom"]); }
+	if(currentAnimMeta["anim"] != undefined)    { showAnimation(currentAnimMeta); }
+
 }
 //}}}
 function makeAnimationControls() {//{{{
@@ -267,9 +268,6 @@ function makeHighlightGeoms() {//{{{
 //}}}
 function letItBurn() {//{{{
 	// The animated fire is displayed in a separate setInterval loop. Perhaps onFrame() suits more.
-	project.layers.roomFire.removeChildren();
-	project.layers.roomFire.activate();
-
 	var smoke;
 	var smokeOrig;
 	var fire;
@@ -316,6 +314,7 @@ function drawMeta(floor,tx,ty) {//{{{
 }
 //}}}
 function drawPath(type,data,tx,ty) {//{{{
+	//console.log(type,project.activeLayer.name); 
 	if(type=='ROOM') {
 		strokeColor = colors.ROOM.stroke;
 		strokeWidth = 0.2;
@@ -338,7 +337,7 @@ function drawPath(type,data,tx,ty) {//{{{
 	}
 
 	path.closed = true;
-	_.forEach(data.points, function(point) { path.add(new Point(point.x+tx, point.y+ty)); });
+	_.each(data.points, function(point) { path.add(new Point(point.x+tx, point.y+ty)); });
 }
 //}}}
 function drawLabel(type,data,tx,ty) {//{{{
@@ -365,53 +364,51 @@ function drawStaticEvacuees(data,tx,ty) {//{{{
 		strokeWidth=0; 
 		fillColor: colors['doseN']['c'];
 
-		_.forEach(data.points, function(point) { 
+		_.each(data.points, function(point) { 
 			new Path.Circle({ center: new Point(point.x+tx, point.y+ty), radius: radius, strokeWidth:strokeWidth , fillColor: fillColor });
 		});
 	}
 }
 //}}}
 function drawDDGeoms(data,tx,ty) { //{{{
-	_.forEach(data.rectangles, function(pp) {
+	_.each(data.rectangles, function(pp) {
 		new Path.Rectangle({point: new Point(pp.xy[0]+tx, pp.xy[1]+ty), size: new Size(pp.width,pp.depth), strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, fillColor:pp.fillColor, opacity:pp.opacity });
 	});
 
-	_.forEach(data.lines, function(pp) {
+	_.each(data.lines, function(pp) {
 		new Path.Line({from: new Point(pp.xy[0]+tx, pp.xy[1]+ty), to: new Point(pp.x1+tx,pp.y1+ty), strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, opacity:pp.opacity });
 	});
 
-	_.forEach(data.circles, function(pp) {
+	_.each(data.circles, function(pp) {
 		new Path.Circle({ center: new Point(pp.xy[0]+tx, pp.xy[1]+ty), radius:pp.radius, fillColor:pp.fillColor, opacity:pp.opacity });
 	});
 
-	_.forEach(data.texts, function(pp) {
+	_.each(data.texts, function(pp) {
 		new PointText({ point: new Point(pp.xy[0]+tx, pp.xy[1]+ty), content: pp.content, fontFamily: 'Roboto', fontSize: pp.fontSize, fillColor:pp.fillColor, opacity:pp.opacity });
 	});
 }
 
 //}}}
 function initStaticGeoms() {//{{{
-	console.log("TODO: remove old geoms");
-	project.layers.animated.removeChildren();
-	project.layers.rooms.removeChildren();
-	project.layers.rooms.activate();
 	var tx, ty;
 	
-	_.forEach(dstatic.floors, function(ffloor,floor_name) {
+	_.each(dstatic.floors, function(ffloor,floor_name) {
+		project.layers.rooms.activate();
         tx=ffloor.floor_meta.world2d_tx;
         ty=ffloor.floor_meta.world2d_ty;
-        _.forEach(ffloor.rooms     , function(d) { drawPath('ROOM'  , d , tx, ty); });
-        _.forEach(ffloor.obstacles , function(d) { drawPath('OBST'  , d , tx, ty); });
+        _.each(ffloor.rooms     , function(d) { drawPath('ROOM'  , d , tx, ty); });
+        _.each(ffloor.obstacles , function(d) { drawPath('OBST'  , d , tx, ty); });
 
-		if (doorsSize!= 0) { _.forEach(ffloor.doors , function(d) { drawPath('DOOR' , d , tx, ty); } ); }
+		if (doorsSize!= 0) { _.each(ffloor.doors , function(d) { drawPath('DOOR' , d , tx, ty); } ); }
 
 		if (labelsSize!= 0) { 
-			_.forEach(ffloor.rooms , function(d) { drawLabel('ROOM' , d , tx, ty); });
-			_.forEach(ffloor.doors , function(d) { drawLabel('DOOR' , d , tx, ty); });
+			_.each(ffloor.rooms , function(d) { drawLabel('ROOM' , d , tx, ty); });
+			_.each(ffloor.doors , function(d) { drawLabel('DOOR' , d , tx, ty); });
 		}
 
 		drawStaticEvacuees(ffloor.evacuees, tx, ty);
         drawDDGeoms(ffloor.dd_geoms, tx, ty); 
+		project.layers.info.activate();
         drawMeta(floor_name,tx,ty); 
     });
 
@@ -422,8 +419,6 @@ function initAnimAgents() { //{{{
 	// velocitiesGroup are the ---------> vectors attached to each ball
 	// evacueesLabelsGroup are (e1 x,y) displayed on top of each ball
 
-	project.layers.animated.removeChildren();
-	if (eData.length<1) { return; }
 	project.layers.animated.activate();
 
 	_.each(eData[0], function(frame0_data,ffloor) {
@@ -547,7 +542,6 @@ function bubbles_ranges(side) { //{{{
 }
 //}}}
 function initRoomSmoke() {//{{{
-	project.layers.roomSmoke.removeChildren();
 	project.layers.roomSmoke.activate();
 	var radius=350;
 	var roomMargin=25;
@@ -557,9 +551,13 @@ function initRoomSmoke() {//{{{
 
 	for (var ffloor in roomsOpacity[0]) {
         var ty=dstatic.floors[ffloor].floor_meta.world2d_ty;
+        var tx=dstatic.floors[ffloor].floor_meta.world2d_tx;
 		for (var room in roomsOpacity[0][ffloor]) {
-			points=dstatic.floors[ffloor]['rooms'][room]['points'];
-			_.each(points, function(i) { i['y']+=ty; });
+			points=[];
+			_.each(dstatic.floors[ffloor]['rooms'][room]['points'], function(i) { 
+				points.push({'x': i['x']+tx, 'y': i['y']+ty}); 
+			});
+
 			rw=points[1]['x'] - points[0]['x'];
 			rh=points[2]['y'] - points[1]['y'];
 
