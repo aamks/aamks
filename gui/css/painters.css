@@ -12,8 +12,9 @@ body { overflow: hidden; }
 .snap_v, .snap_h { stroke : #fff; stroke-width : 5; stroke-dasharray : 10; stroke-opacity : 0.7; }
 
 apainter-legend-static { position: absolute; left: 20px; top: 8px; user-select: none; }
-animator-time { position: absolute; left: 30px; top: 8px; user-select: none; }
 animator-title { position: absolute; left: 80px; top: 8px; user-select: none; }
+animator-time { position: absolute; left: 30px; top: 8px; user-select: none; }
+animator-floor-links { position:absolute; top:1px; right: 80px; user-select: none; }
 legend { position: fixed; left: 80px; top: 4px; user-select: none; }
 .legend { display: inline-block; padding: 4px;  cursor: pointer; }
 

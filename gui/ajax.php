@@ -116,15 +116,16 @@ function funCircle() { /*{{{*/
 }
 /*}}}*/
 function funExplode() { /*{{{*/
-
 	$frames=[];
 	$colors=["M", "L", "N", "H" ];
 	$floor=new stdClass;
+	$agents=2000;
 	for($t=0; $t<4; $t+=1) { 
+		if($t%2==0) { $radius=800; }
 		$floor->{'0'}=[];
-		for($a=0; $a<2000; $a++) { 
-			$color=floor($a/100)%4;
-			$floor->{'0'}[]=[ 2600+$t*rand(-12,12)*$a/10, 1200+$t*rand(-12,12)*$a/10, 0, 0, $colors[$color], 1 ];
+		for($a=0; $a<$agents; $a++) { 
+			$radius+=log(999,99999999);
+			$floor->{'0'}[]=[ 2600+$radius*cos(2*pi()*$a/$agents*15), 1200+$radius*sin(2*pi()*$a/$agents*15), 0, 0, $colors[rand(0,3)], 1 ];
 		}
 
 		$frames[][]=$floor->{'0'};

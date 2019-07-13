@@ -20,8 +20,9 @@ function site() {/*{{{*/
 	<script type='text/javascript' src='js/animator.js'></script>
 	<div>
 		<button-left-menu-box>A</button-left-menu-box><left-menu-box></left-menu-box>
-		<animator-title></animator-title> 
 		<animator-time></animator-time>
+		<animator-title></animator-title> 
+		<animator-floor-links></animator-floor-links> 
 		<button-right-menu-box>SETUP</button-right-menu-box>
 		
 		<right-menu-box>

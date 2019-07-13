@@ -10,6 +10,7 @@ var velocitiesSize;
 var eData=[];
 var roomsOpacity=[];
 var dstatic;
+var dstaticAllFloors;
 var lerps;
 var lastFrame=1;
 var labelsSize=50;
@@ -45,6 +46,7 @@ function listenEvents() {//{{{
 	$('#walls-size').on('keyup'      , function() { wallsSize=this.value      ; resetCanvas() ; })
 	$('#evacuee-radius').on('keyup'  , function() { evacueeRadius=this.value  ; resetCanvas() ; })
 	$('#velocities-size').on('keyup' , function() { velocitiesSize=this.value ; resetCanvas() ; })
+	$('.switch-floor').on('click'    , function() { switchFloor($(this).attr('data-floor')); })
 
 	$('canvas-mouse-coords').click(function() {
 		lerps=Math.round(1/(($('#speed').val()/100)+0.00000000000000001))+1; 
@@ -145,12 +147,43 @@ function makeChooseVis() {//{{{
 	});
 };
 //}}}
-function initialScaleCenter() {//{{{
-	if(view.scaling.x!=1) { return; }
-	var scale=Math.min(($(window).width() - 20) / dstatic.world_meta.xdim, ($(window).height() - 70) / dstatic.world_meta.ydim)*0.9;
-	view.scale(scale);
-	view.center = new Point(dstatic.world_meta.center); 
-
+function initialScaleCenter(meta) {//{{{
+	if(meta=='world2d') { 
+		var center=dstatic.world_meta.center;
+		var xdim=dstatic.world_meta.xdim;
+		var ydim=dstatic.world_meta.ydim;
+	} else {
+		var center=[dstatic.floors[meta].floor_meta.center[0] + dstatic.floors[meta].floor_meta.world2d_tx, dstatic.floors[meta].floor_meta.center[1] + dstatic.floors[meta].floor_meta.world2d_ty, 0];
+		var xdim=  dstatic.floors[meta].floor_meta.xdim;
+		var ydim=  dstatic.floors[meta].floor_meta.ydim;
+	}
+	var scale=Math.min(($(window).width() - 20) / xdim, ($(window).height() - 70) / ydim)*0.9;
+	view.setScaling(scale);
+	view.center = new Point(center); 
+}
+//}}}
+function switchFloor(chosen_floor) {//{{{
+	dstatic=_.cloneDeep(dstaticAllFloors);
+	if(chosen_floor!='all') {
+		_.each(dstatic.floors, function(ffloor,floor_name) {
+			if(floor_name!=chosen_floor) { 
+				delete dstatic.floors[floor_name];
+			}
+		});
+		initialScaleCenter(chosen_floor);
+	} else {
+		initialScaleCenter('world2d');
+	}
+	resetCanvas();
+}
+//}}}
+function floorLinks() {//{{{
+	var links='floor: ';
+	links+="<a class='blink switch-floor' data-floor=all>all</a>";
+	_.each(dstatic.floors, function(ffloor,floor_name) {
+		links+="<a class='blink switch-floor' data-floor="+floor_name+">"+floor_name+"</a>";
+	});
+	$("animator-floor-links").html(links);
 }
 //}}}
 function showStaticImage() {//{{{
@@ -160,18 +193,17 @@ function showStaticImage() {//{{{
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
 		ajax_msg(response);
 		dstatic=response['data'];
-		initialScaleCenter();
+		dstaticAllFloors=response['data'];
+		initialScaleCenter('world2d');
 
 		$("animator-title").html(currentAnimMeta['title']);
 		$("animator-time").html(currentAnimMeta['time']);
-		wallsSize=Math.round(0.5/view.scaling.x);
-		velocitiesSize=Math.round(1/view.scaling.x);
-		doorsSize=wallsSize;
 
+		floorLinks();
 		resetCanvas();
 		makeSetupBoxInputs();
 		makeColors();
-		makeHighlightGeoms();
+		highlightDroplist();
 		listenEvents();
 
 	});
@@ -203,14 +235,21 @@ function showAnimation() {//{{{
 	});
 }
 //}}}
-
+function scaleAnims() {//{{{
+	wallsSize=Math.round(0.5/view.scaling.x);
+	velocitiesSize=Math.round(1/view.scaling.x);
+	doorsSize=wallsSize;
+}
+//}}}
 function resetCanvas() {//{{{
 	// Reset on new visualization, on scaling walls, etc.
+	
 	eData=[];
 	project.clear();
 	initLayers();
 	initStaticGeoms();
 	letItBurn();
+	scaleAnims();
 
 	if(currentAnimMeta["highlight_geom"]!=null) { highlightGeom(currentAnimMeta["highlight_geom"]); }
 	if(currentAnimMeta["anim"] != undefined)    { showAnimation(currentAnimMeta); }
@@ -246,20 +285,23 @@ function makeColors() {//{{{
 	$("change-style").html(items.join());
 }
 //}}}
-function makeHighlightGeoms() {//{{{
-    var data=dstatic.floors['0']; // TODO: highlight broken
+function highlightDroplist() {//{{{
 	var items = [];
 	items.push("<select id=highlight-geoms>");
 	items.push("<option value=''></option>");
 	items.push("<option value=''>ROOMS</option>");
-	for (var key in data.rooms) {
-		items.push("<option value="+key+">"+key+"</option>");
-	}
+	_.each(dstatic.floors, function(ffloor,floor_name) {
+        _.each(ffloor.rooms, function(d) { 
+			items.push("<option value="+d['name']+">"+floor_name+": "+d['name']+"</option>");
+		})
+	})
 
 	items.push("<option value=''>DOORS</option>");
-	for (var key in data.doors) {
-		items.push("<option value="+key+">"+key+"</option>");
-	}
+	_.each(dstatic.floors, function(ffloor,floor_name) {
+        _.each(ffloor.doors, function(d) { 
+			items.push("<option value="+d['name']+">"+floor_name+": "+d['name']+"</option>");
+		})
+	})
 		
 	items.push("</select>");
 	$("highlight-geoms").html(items.join());
@@ -271,6 +313,7 @@ function letItBurn() {//{{{
 	var smoke;
 	var smokeOrig;
 	var fire;
+	if(!(currentAnimMeta['fire_origin']['floor'] in dstatic.floors)) { return; }
 	var tx=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.world2d_tx; 
 	var ty=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.world2d_ty;
 
@@ -308,13 +351,12 @@ function drawMeta(floor,tx,ty) {//{{{
 	fillColor = "#fff";
 	opacity = 0.1;
 	fontSize = labelsSize * 5;
-	pos=[ dstatic.world_meta['minx'] + tx - 300, dstatic.floors[floor]['floor_meta']['center'][1] + ty + 200 ] ;
+	pos=[ dstatic.world_meta['minx'] + tx - 500, dstatic.floors[floor]['floor_meta']['center'][1] + ty + 200 ] ;
 
 	new PointText({ point: new Point(pos[0], pos[1]), content: floor, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
 }
 //}}}
 function drawPath(type,data,tx,ty) {//{{{
-	//console.log(type,project.activeLayer.name); 
 	if(type=='ROOM') {
 		strokeColor = colors.ROOM.stroke;
 		strokeWidth = 0.2;
@@ -426,8 +468,9 @@ function initAnimAgents() { //{{{
 		evacueesGroup[ffloor]=new Group();
 		evacueesLabelsGroup[ffloor]=new Group();
 		_.each(frame0_data, function(data) {
-			velocitiesGroup[ffloor].addChild(new Path.Line({strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
-			evacueesGroup[ffloor].addChild(new Path.Circle({radius: evacueeRadius}));
+			velocitiesGroup[ffloor].addChild(new Path.Line({from: new Point(-10000, -10000), to: new Point(-10000,-10000), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+			evacueesGroup[ffloor].addChild(new Path.Circle({center: new Point(-10000, -10000), radius: evacueeRadius}));
+
 		});
 	});
 
@@ -440,20 +483,24 @@ function evacueesInFrame() {//{{{
 	// We remove an evacuee by making it transparent. When we rewind, then we initialize all opacities with 1 again.
 	
 	_.each(evacueesGroup, function(data,ffloor) {
-		_.each(data.children, function(e,i) {
-			e.fillColor=colors['dose'+eData[frame][ffloor][i][4]]['c']; 
-			e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps; 
-			e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.world2d_ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
-		})
+		if(ffloor in dstatic.floors) { 
+			_.each(data.children, function(e,i) {
+				e.fillColor=colors['dose'+eData[frame][ffloor][i][4]]['c']; 
+				e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps; 
+				e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.world2d_ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
+			})
+		}
 	})
 
 	_.each(velocitiesGroup, function(data,ffloor) {
-		_.each(data.children, function(e,i) {
-			e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
-			e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
-			e.segments[1].point.x = evacueesGroup[ffloor].children[i].position.x + eData[frame][ffloor][i][2];
-			e.segments[1].point.y = evacueesGroup[ffloor].children[i].position.y + eData[frame][ffloor][i][3];
-		})
+		if(ffloor in dstatic.floors) { 
+			_.each(data.children, function(e,i) {
+				e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
+				e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
+				e.segments[1].point.x = evacueesGroup[ffloor].children[i].position.x + eData[frame][ffloor][i][2];
+				e.segments[1].point.y = evacueesGroup[ffloor].children[i].position.y + eData[frame][ffloor][i][3];
+			})
+		}
 	})
 }
 //}}}
@@ -513,16 +560,28 @@ function animFormatTime() {//{{{
 
 //}}}
 function highlightGeom(key) {//{{{
-	project.layers['highlight'].activate();
-	try {
-		rw=Math.round(rooms[key].points[1]['x'] - rooms[key].points[0]['x']);
-		rh=Math.round(rooms[key].points[2]['y'] - rooms[key].points[1]['y']);
-		new Path.Rectangle({point: new Point(Math.round(rooms[key].points[0]['x']),Math.round(rooms[key].points[0]['y'])), size: new Size(rw,rh), opacity:0.4, fillColor: "#0f0"});
-	} catch(e) {
-		cx=Math.round( doors[key].points[0]['x'] + 0.5 * (doors[key].points[1]['x'] - doors[key].points[0]['x']));
-		cy=Math.round( doors[key].points[1]['y'] + 0.5 * (doors[key].points[2]['y'] - doors[key].points[1]['y']));
-		new Path.Circle({center: new Point(cx,cy), radius: 100,  opacity:0.4, fillColor: "#0f0"});
-	}
+	project.layers.highlight.activate();
+
+	_.each(dstatic.floors, function(ffloor,floor_name) {
+        tx=ffloor.floor_meta.world2d_tx;
+        ty=ffloor.floor_meta.world2d_ty;
+        _.each(ffloor.rooms, function(d) { 
+			if (d['name']==key) {
+				rw=d.points[1]['x'] - d.points[0]['x'];
+				rh=d.points[2]['y'] - d.points[1]['y'];
+				new Path.Rectangle({point: new Point(d.points[0]['x']+tx,d.points[0]['y']+ty), size: new Size(rw,rh), opacity:0.4, fillColor: "#0f0"});
+				return;
+			}
+		})
+        _.each(ffloor.doors, function(d) { 
+			if (d['name']==key) {
+				cx=d.points[0]['x'] + 0.5 * (d.points[1]['x'] - d.points[0]['x']);
+				cy=d.points[1]['y'] + 0.5 * (d.points[2]['y'] - d.points[1]['y']);
+				new Path.Circle({center: new Point(cx+tx,cy+ty), radius: 100,  opacity:0.4, fillColor: "#0f0"});
+				return;
+			}
+		})
+	})
 }
 //}}}
 function randBetween(min, max) {//{{{
@@ -550,6 +609,7 @@ function initRoomSmoke() {//{{{
 	var x_ranges, y_ranges;
 
 	for (var ffloor in roomsOpacity[0]) {
+		if(dstatic.floors.ffloor===undefined) { continue; }
         var ty=dstatic.floors[ffloor].floor_meta.world2d_ty;
         var tx=dstatic.floors[ffloor].floor_meta.world2d_tx;
 		for (var room in roomsOpacity[0][ffloor]) {

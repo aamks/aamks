@@ -59,9 +59,9 @@ function left_menu_box() {//{{{
 	});
 }
 //}}}
-function dd(x) {//{{{
-	console.log("dd:", x);
-}
+dd = function() { //{{{
+	return console.log.apply(console, arguments); 
+};
 //}}}
 
 $(function() { 
