@@ -239,12 +239,13 @@ function into_db(json) { //{{{
 				letter=ggx[elems[i]];
 				arr=json[floor][elems[i]][geometry];
 				geom=read_record(parseInt(floor),letter,arr);
-				DbInsert(geom);
+				DbInsert(geom, 0);
 				CreateSvg(geom);
 				UpdateVis(geom);
 			}
 		}
 	}
+	geoms_changed(); // This is a heavy call, which shouldn't be called for each DbInsert()
 }
 //}}}
 function read_record(floor,letter,arr) { //{{{
