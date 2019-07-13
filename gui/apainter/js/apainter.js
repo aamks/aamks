@@ -127,8 +127,12 @@ UpdateVis=function updateVisPropsElem(geom) {//{{{
 	}
 }
 //}}}
-DbInsert=function db_insert(geom) { //{{{
-	// Function exported for menus_apainter.js also
+DbInsert=function db_insert(geom, call_geoms_changed=1) { //{{{
+	// On the occassions we are massively called from import_cadjson() and alike
+	// we don't want to auto call the heavy geoms_changed() each time -- it is sufficient 
+	// that import_cadjson() makes a single geoms_changed() call after hundreds
+	// of geoms are DbInserted().
+
 	var lines=[];
 	if(geom.type=='room') {
 		lines.push([geom.x0, geom.y0], [geom.x1, geom.y0], [geom.x1, geom.y1], [geom.x0, geom.y1]);
@@ -140,7 +144,7 @@ DbInsert=function db_insert(geom) { //{{{
 	if(geom.type!='underlay_scaler') {
 		db.insert({ "name": geom.name, "idx": geom.idx, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "window_offsetz": geom.window_offsetz, "mvent_offsetz": geom.mvent_offsetz, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type, "room_enter": geom.room_enter });
 		show_selected_properties();
-		geoms_changed();
+		if(call_geoms_changed==1) { geoms_changed(); }
 	}
 }
 //}}}
