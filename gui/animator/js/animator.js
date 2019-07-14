@@ -3,7 +3,7 @@ var currentAnimMeta;
 var currentAnimData;
 var incDB;
 var colors;
-var wallsSize;
+var wallsSize=0;
 var doorsSize;
 var evacueeRadius;
 var velocitiesSize;
@@ -72,12 +72,8 @@ function listenEvents() {//{{{
 
 	$('#style-change').on('change', function() {
 		if (this.value == "Light") { 
-			doorsSize=0;
-			labelsSize=0;
 			setColors('light');
 		} else {
-			labelsSize=$('#labels-size').val();
-			doorsSize=$('#doors-size').val();
 			setColors('dark');
 		}
 		resetCanvas();
@@ -108,10 +104,10 @@ function right_menu_box() {//{{{
 function setColors(mode) {//{{{
 	colors={};
 	for (var i in incDB['aamksGeoms']) {
-		if(mode=='dark') { 
-			colors[incDB['aamksGeoms'][i]['x']]=incDB['aamksGeoms'][i];
-		} else {
-			colors[incDB['aamksGeoms'][i]['x']]=incDB['aamksGeoms'][i];
+		colors[incDB['aamksGeoms'][i]['x']]=_.cloneDeep(incDB['aamksGeoms'][i]);
+		if(mode=='light') { 
+			colors[incDB['aamksGeoms'][i]['x']]['c']=colors[incDB['aamksGeoms'][i]['x']]['lightc'];
+			colors[incDB['aamksGeoms'][i]['x']]['stroke']="#000";
 		}
 	}
 	$("#animator-canvas").css("background-color", colors['canvas']['c']);
@@ -147,7 +143,7 @@ function makeChooseVis() {//{{{
 	});
 };
 //}}}
-function initialScaleCenter(meta) {//{{{
+function rescaleCanvas(meta) {//{{{
 	if(meta=='world2d') { 
 		var center=dstatic.world_meta.center;
 		var xdim=dstatic.world_meta.xdim;
@@ -160,6 +156,7 @@ function initialScaleCenter(meta) {//{{{
 	var scale=Math.min(($(window).width() - 20) / xdim, ($(window).height() - 70) / ydim)*0.9;
 	view.setScaling(scale);
 	view.center = new Point(center); 
+	scaleAnims();
 }
 //}}}
 function switchFloor(chosen_floor) {//{{{
@@ -170,9 +167,9 @@ function switchFloor(chosen_floor) {//{{{
 				delete dstatic.floors[floor_name];
 			}
 		});
-		initialScaleCenter(chosen_floor);
+		rescaleCanvas(chosen_floor);
 	} else {
-		initialScaleCenter('world2d');
+		rescaleCanvas('world2d');
 	}
 	resetCanvas();
 }
@@ -194,7 +191,7 @@ function showStaticImage() {//{{{
 		ajax_msg(response);
 		dstatic=response['data'];
 		dstaticAllFloors=response['data'];
-		initialScaleCenter('world2d');
+		rescaleCanvas('world2d');
 
 		$("animator-title").html(currentAnimMeta['title']);
 		$("animator-time").html(currentAnimMeta['time']);
@@ -236,7 +233,6 @@ function showAnimation() {//{{{
 }
 //}}}
 function scaleAnims() {//{{{
-	wallsSize=Math.round(0.5/view.scaling.x);
 	velocitiesSize=Math.round(1/view.scaling.x);
 	doorsSize=wallsSize;
 }
@@ -249,7 +245,6 @@ function resetCanvas() {//{{{
 	initLayers();
 	initStaticGeoms();
 	letItBurn();
-	scaleAnims();
 
 	if(currentAnimMeta["highlight_geom"]!=null) { highlightGeom(currentAnimMeta["highlight_geom"]); }
 	if(currentAnimMeta["anim"] != undefined)    { showAnimation(currentAnimMeta); }
@@ -358,23 +353,23 @@ function drawMeta(floor,tx,ty) {//{{{
 //}}}
 function drawPath(type,data,tx,ty) {//{{{
 	if(type=='ROOM') {
-		strokeColor = colors.ROOM.stroke;
-		strokeWidth = 0.2;
-		opacity = 0.4;
+		strokeColor = colors[type].stroke;
+		opacity = colors[type].animOpacity;
 		fillColor = data.room_enter == 'yes' ? colors[data.type_sec].c : "#333";
-		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
+		var path=new Path({fillColor:fillColor, opacity:opacity });
 	}
 	if(type=='OBST') {
-		strokeColor = colors.OBST.c;
+		strokeColor = colors[type].stroke;
+		opacity = colors[type].animOpacity;
+		fillColor = colors[type].c;
 		strokeWidth = wallsSize;
-		opacity = 0.6;
-		fillColor = colors.OBST.c;
 		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
 	}
 	if(type=='DOOR') {
-		strokeColor = colors.DOOR.c;
 		strokeWidth = doorsSize;
-		opacity = colors.DOOR.animOpacity / 3;
+		strokeColor = colors[type].stroke;
+		opacity = colors[type].animOpacity;
+		fillColor = colors[type].c;
 		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, opacity:opacity });
 	}
 
@@ -388,14 +383,14 @@ function drawLabel(type,data,tx,ty) {//{{{
 	if(type=='ROOM') {
 		fillColor = colors.fg.c;
 		fontSize = labelsSize;
-		opacity = 1;
-		pos=[data.points[0].x + tx + 20, data.points[0].y + ty + 50];
+		opacity = colors.fg.animOpacity;
+		pos=[data.points[0].x + tx + 30, data.points[0].y + ty + 70];
 	}
 	if(type=='DOOR') {
 		fillColor = colors.fg.c;
-		opacity = colors.DOOR.animOpacity;
-		fontSize = labelsSize * 0.75;
-		pos=[data.points[0].x + tx + 30, data.points[0].y + ty + 30];
+		opacity = colors.fg.animOpacity;
+		fontSize = labelsSize * 0.60;
+		pos=[data.points[0].x + tx + 10, data.points[0].y + ty + 30];
 	}
 	new PointText({ point: new Point(pos[0], pos[1]), content: content, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
 }
@@ -443,10 +438,10 @@ function initStaticGeoms() {//{{{
 
 		if (doorsSize!= 0) { _.each(ffloor.doors , function(d) { drawPath('DOOR' , d , tx, ty); } ); }
 
-		if (labelsSize!= 0) { 
+		//if (labelsSize!= 0) { 
 			_.each(ffloor.rooms , function(d) { drawLabel('ROOM' , d , tx, ty); });
 			_.each(ffloor.doors , function(d) { drawLabel('DOOR' , d , tx, ty); });
-		}
+		//}
 
 		drawStaticEvacuees(ffloor.evacuees, tx, ty);
         drawDDGeoms(ffloor.dd_geoms, tx, ty); 
