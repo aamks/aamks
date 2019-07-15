@@ -39,6 +39,26 @@ function initLayers() {//{{{
 	new Layer({'name': 'info'});
 }
 //}}}
+function listenForSpeedChange() {//{{{
+	$("svg-slider").on("click", function(){
+		changeSpeed(0);
+	})
+
+	$("body").on("keyup", '#speed', function() { 
+		changeSpeed(parseInt($('#speed').val()));
+	});
+
+	$('#animator-canvas').dblclick(function() {
+		if(lerps>9999999 && parseInt($('#speed').val())!=0) { // unpause;
+			changeSpeed(parseInt($('#speed').val()));
+		} else { // pause;
+			changeSpeed(0);
+		}
+		$("canvas-mouse-coords").delay(1500).fadeOut('slow'); 
+
+	});
+}
+//}}}
 function listenEvents() {//{{{
 	$(window).resize(resizeAndRedrawCanvas);
 	$('#labels-size').on('keyup'     , function() { labelsSize=this.value     ; resetCanvas() ; })
@@ -47,17 +67,6 @@ function listenEvents() {//{{{
 	$('#evacuee-radius').on('keyup'  , function() { evacueeRadius=this.value  ; resetCanvas() ; })
 	$('#velocities-size').on('keyup' , function() { velocitiesSize=this.value ; resetCanvas() ; })
 	$('.switch-floor').on('click'    , function() { switchFloor($(this).attr('data-floor')); })
-
-	$('canvas-mouse-coords').click(function() {
-		lerps=Math.round(1/(($('#speed').val()/100)+0.00000000000000001))+1; 
-		$("canvas-mouse-coords").delay(1500).fadeOut('slow'); 
-
-		_.each(evacueesLabelsGroup, function(e) {
-			e.removeChildren();
-		});
-		view.play();
-	});
-
 
 	$('#animator-canvas').on( 'DOMMouseScroll mousewheel', function ( event ) {
 	  if( event.originalEvent.detail > 0 || event.originalEvent.wheelDelta < 0 ) { //alternative options for wheelData: wheelDeltaX & wheelDeltaY
@@ -88,6 +97,8 @@ function listenEvents() {//{{{
 		frame=Math.floor(lerpFrame/lerps);
 		$('.canvas_slider_rect').attr("fill", "#333");
 	});
+
+	listenForSpeedChange();
 }
 //}}}
 function right_menu_box() {//{{{
@@ -186,7 +197,7 @@ function floorLinks() {//{{{
 function showStaticImage() {//{{{
 	// After we read a record from anims.json we reset the current visualization and setup a new one.
 	// We can only start animation after we are done with static rooms, doors etc.
-	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
+
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
 		ajax_msg(response);
 		dstatic=response['data'];
@@ -206,29 +217,49 @@ function showStaticImage() {//{{{
 	});
 }
 //}}}
+function showEvacueesLabels() {//{{{
+	if(eData.length<1) { return; }
+	evacueesInFrame(); // requrired to sync evacuees with labels positions
+	_.each(eData[0], function(frame0_data,ffloor) {
+		_.each(frame0_data, function(e,i) {
+			x=evacueesGroup[ffloor].children[i].position.x;
+			y=evacueesGroup[ffloor].children[i].position.y;
+			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(15+x-evacueeRadius/1,y-evacueeRadius/7), fillColor:"#000", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.5 }));
+			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y+evacueeRadius/3), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.5}));
+		})
+	})
+}
+//}}}
+function initSpeed() {//{{{
+	lastFrame=eData.length-1;
+	var speed=Math.round(lastFrame/5)
+	$("animator-time").html(animFormatTime());
+	$("animation-speed").html("<input type=text size=2 name=speed id=speed value="+speed+">");
+	changeSpeed(speed);
+}
+//}}}
+function changeSpeed(speed) {//{{{
+	_.each(eData[0], function(frame0_data,ffloor) {
+		evacueesLabelsGroup[ffloor].removeChildren();
+	})
+
+	lerps=Math.round(1/((speed/100)+0.0000000000000000001))+1;
+	lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
+	$('.canvas_slider_rect').attr("fill", "#333"); 
+	if(speed==0) { showEvacueesLabels(); }
+}
+//}}}
 function showAnimation() {//{{{
 	// After static data is loaded to paperjs we can run animations.
-	// 0.000001 & friends prevent divisions by 0.
 	
 	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': currentAnimMeta['anim'] }, function(response) { 
 		ajax_msg(response);
 		currentAnimData=JSON.parse(response['data']);
 		eData=currentAnimData.animations.evacuees;
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
-		lastFrame=eData.length-1;
-		var speedProposal=Math.round(lastFrame/5)
-		$("animator-time").html(animFormatTime());
-		$("animation-speed").html("<input type=text size=2 name=speed id=speed value="+speedProposal+">");
-		lerps=Math.round(1/((speedProposal/100)+0.0000000000000000001))+1;
-
-		$("#speed").on("keyup", function(){
-			lerps=Math.round(1/(($('#speed').val()/100)+0.0000000000000000001))+1;
-			lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
-			$('.canvas_slider_rect').attr("fill", "#333"); 
-		});
-
 		initRoomSmoke();
 		initAnimAgents();
+		initSpeed();
 	});
 }
 //}}}
@@ -349,6 +380,10 @@ function drawMeta(floor,tx,ty) {//{{{
 	pos=[ dstatic.world_meta['minx'] + tx - 500, dstatic.floors[floor]['floor_meta']['center'][1] + ty + 200 ] ;
 
 	new PointText({ point: new Point(pos[0], pos[1]), content: floor, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
+
+	if(dstatic.floors[Object.keys(dstatic.floors).length-1].floor_meta.name == floor) { 
+		new PointText({ point: new Point(pos[0], pos[1]), content: "double mouse click to pause/unpause", opacity: opacity, fontFamily: fontFamily, fontSize: fontSize*0.1, fillColor: fillColor });
+	}
 }
 //}}}
 function drawPath(type,data,tx,ty) {//{{{
@@ -387,10 +422,16 @@ function drawLabel(type,data,tx,ty) {//{{{
 		pos=[data.points[0].x + tx + 30, data.points[0].y + ty + 70];
 	}
 	if(type=='DOOR') {
+		if(data.points[1].x - data.points[0].x > 32) { 
+			// horizontal door
+			ttx=20; tty=30;
+		} else { 
+			ttx=0; tty=50;
+		}
 		fillColor = colors.fg.c;
 		opacity = colors.fg.animOpacity;
 		fontSize = labelsSize * 0.60;
-		pos=[data.points[0].x + tx + 10, data.points[0].y + ty + 30];
+		pos=[data.points[0].x + tx + ttx, data.points[0].y + ty + tty];
 	}
 	new PointText({ point: new Point(pos[0], pos[1]), content: content, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
 }
@@ -433,15 +474,12 @@ function initStaticGeoms() {//{{{
 		project.layers.rooms.activate();
         tx=ffloor.floor_meta.world2d_tx;
         ty=ffloor.floor_meta.world2d_ty;
-        _.each(ffloor.rooms     , function(d) { drawPath('ROOM'  , d , tx, ty); });
-        _.each(ffloor.obstacles , function(d) { drawPath('OBST'  , d , tx, ty); });
 
-		if (doorsSize!= 0) { _.each(ffloor.doors , function(d) { drawPath('DOOR' , d , tx, ty); } ); }
-
-		//if (labelsSize!= 0) { 
-			_.each(ffloor.rooms , function(d) { drawLabel('ROOM' , d , tx, ty); });
-			_.each(ffloor.doors , function(d) { drawLabel('DOOR' , d , tx, ty); });
-		//}
+        _.each(ffloor.rooms     , function(d) { drawPath('ROOM'  , d , tx , ty); });
+        _.each(ffloor.obstacles , function(d) { drawPath('OBST'  , d , tx , ty); });
+		_.each(ffloor.doors     , function(d) { drawPath('DOOR'  , d , tx , ty); });
+		_.each(ffloor.rooms     , function(d) { drawLabel('ROOM' , d , tx , ty); });
+		_.each(ffloor.doors     , function(d) { drawLabel('DOOR' , d , tx , ty); });
 
 		drawStaticEvacuees(ffloor.evacuees, tx, ty);
         drawDDGeoms(ffloor.dd_geoms, tx, ty); 
@@ -525,22 +563,8 @@ tool.onMouseDrag=function(event) {//{{{
 
 //}}}
 tool.onMouseDown=function(event) {//{{{
-	//lerps=9999999999; // pause
-	view.pause();
-	var x;
-	var y;
 	$("canvas-mouse-coords").text(Math.floor(event.downPoint['x'])+ "," + Math.floor(event.downPoint['y']));
 	$("canvas-mouse-coords").css({'display':'block', 'left':event.event.pageX, 'top':event.event.pageY});
-	if(eData.length<1) { return; }
-	_.each(eData[0], function(frame0_data,ffloor) {
-		evacueesLabelsGroup[ffloor].removeChildren();
-		_.each(frame0_data, function(e,i) {
-			x=evacueesGroup[ffloor].children[i].position.x;
-			y=evacueesGroup[ffloor].children[i].position.y;
-			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(15+x-evacueeRadius/1,y-evacueeRadius/7), fillColor:"#000", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.5 }));
-			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y+evacueeRadius/3), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.5}));
-		})
-	})
 };
 //}}}
 function animFormatTime() {//{{{
@@ -548,7 +572,7 @@ function animFormatTime() {//{{{
 	if (eData.length>0) { 
 		var t=currentAnimData.time_shift + (currentAnimData.simulation_time - currentAnimData.time_shift) * sliderPos / 100
 	}
-	if(isNaN(t)) { t=0; }
+	if(isNaN(t))   { t=0; }
 	date.setSeconds(t);
 	return date.toISOString().substr(14,5);
 };
@@ -649,8 +673,7 @@ function roomsSmokeInFrame() {//{{{
 function resizeAndRedrawCanvas() {//{{{
 	wWidth = $(window).width()-20;
 	wHeight = $(window).height()-70;
-	$("#animator-canvas").width(wWidth);
-	$("#animator-canvas").height(wHeight);
+	$("#animator-canvas").width(wWidth).height(wHeight);
 	$("#animator-time-svg").width(wWidth);
 	$("#animator-time-scroller").width(wWidth);
 	view.viewSize = new Size(wWidth, wHeight);
