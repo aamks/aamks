@@ -9,7 +9,6 @@ var UpdateVis;
 var NextIdx;
 var currentView=0;
 var CreateSvg;
-var CanvasBuilder;
 var selected_geom='';
 var active_letter='r';
 var svg;
@@ -40,7 +39,7 @@ $(function()  {
 		gg=x['aamksGeoms'];
 		ggx=x['aamksGeomsMap'];
 		evacueeRadius=x['evacueeRadius'];
-		CanvasBuilder();
+		canvas_builder();
 		left_menu_box();
 		import_cadjson();
 		register_listeners();
@@ -860,7 +859,7 @@ function updateSvgElem(geom) {  //{{{
 	});   
 }
 //}}}
-CanvasBuilder=function canvas_builder() { //{{{
+function canvas_builder() { //{{{
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
 	d3.select('view2d').append('button-right-menu-box').html("SETUP");
