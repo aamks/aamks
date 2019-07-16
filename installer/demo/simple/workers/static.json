@@ -15,6 +15,7 @@
     "floors": {
         "0": {
             "floor_meta": {
+				"name": "0",
                 "xdim": 4020,
                 "ydim": 2016,
                 "center": [

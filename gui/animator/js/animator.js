@@ -11,6 +11,7 @@ var eData=[];
 var roomsOpacity=[];
 var dstatic;
 var dstaticAllFloors;
+var paused=0;
 var lerps;
 var lastFrame=1;
 var labelsSize=50;
@@ -29,6 +30,7 @@ window.onload = function() {
 	resizeAndRedrawCanvas();
 	left_menu_box();
 	right_menu_box();
+	listenEvents();
 
 function initLayers() {//{{{
 	new Layer({'name': 'rooms'});
@@ -41,32 +43,40 @@ function initLayers() {//{{{
 //}}}
 function listenForSpeedChange() {//{{{
 	$("svg-slider").on("click", function(){
-		changeSpeed(0);
+		changeSpeed(parseInt($('#speed').val()));
+		paused=0;
 	})
 
 	$("body").on("keyup", '#speed', function() { 
 		changeSpeed(parseInt($('#speed').val()));
 	});
 
-	$('#animator-canvas').dblclick(function() {
-		if(lerps>9999999 && parseInt($('#speed').val())!=0) { // unpause;
-			changeSpeed(parseInt($('#speed').val()));
-		} else { // pause;
-			changeSpeed(0);
+	$(this).keydown((e) => { 
+		if (e.keyCode == 32) { 
+			$("input").blur();
+			$("select").blur();
+			if(paused==1) { 
+				changeSpeed(parseInt($('#speed').val()));
+				paused=0;
+			} else { 
+				changeSpeed(0);
+				showEvacueesLabels(); 
+				paused=1;
+			}
+			$("canvas-mouse-coords").delay(1500).fadeOut('slow'); 
 		}
-		$("canvas-mouse-coords").delay(1500).fadeOut('slow'); 
-
 	});
 }
 //}}}
 function listenEvents() {//{{{
 	$(window).resize(resizeAndRedrawCanvas);
-	$('#labels-size').on('keyup'     , function() { labelsSize=this.value     ; resetCanvas() ; })
-	$('#doors-size').on('keyup'      , function() { doorsSize=this.value      ; resetCanvas() ; })
-	$('#walls-size').on('keyup'      , function() { wallsSize=this.value      ; resetCanvas() ; })
-	$('#evacuee-radius').on('keyup'  , function() { evacueeRadius=this.value  ; resetCanvas() ; })
-	$('#velocities-size').on('keyup' , function() { velocitiesSize=this.value ; resetCanvas() ; })
-	$('.switch-floor').on('click'    , function() { switchFloor($(this).attr('data-floor')); })
+
+	$('body').on('keyup' , '#labels-size'     , function() { labelsSize=this.value     ; resetCanvas() ; })
+	$('body').on('keyup' , '#doors-size'      , function() { doorsSize=this.value      ; resetCanvas() ; })
+	$('body').on('keyup' , '#walls-size'      , function() { wallsSize=this.value      ; resetCanvas() ; })
+	$('body').on('keyup' , '#evacuee-radius'  , function() { evacueeRadius=this.value  ; resetCanvas() ; })
+	$('body').on('keyup' , '#velocities-size' , function() { velocitiesSize=this.value ; resetCanvas() ; })
+	$('body').on('click' , '.switch-floor'    , function() { switchFloor($(this).attr('data-floor')); })
 
 	$('#animator-canvas').on( 'DOMMouseScroll mousewheel', function ( event ) {
 	  if( event.originalEvent.detail > 0 || event.originalEvent.wheelDelta < 0 ) { //alternative options for wheelData: wheelDeltaX & wheelDeltaY
@@ -79,7 +89,7 @@ function listenEvents() {//{{{
 	});
 
 
-	$('#style-change').on('change', function() {
+	$('body').on('change', '#style-change', function() {
 		if (this.value == "Light") { 
 			setColors('light');
 		} else {
@@ -88,10 +98,10 @@ function listenEvents() {//{{{
 		resetCanvas();
 	});
 
-	$('#highlight-geoms').on('change', function() {
+	$('body').on('change', '#highlight-geoms', function() {
 		if(this.value.length>0) { highlightGeom(this.value); }
 	});
-	$('.canvas_slider_rect').click(function() {
+	$('body').on('click', '.canvas_slider_rect', function() {
 		sliderPos=$(this).data('id');
 		lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
 		frame=Math.floor(lerpFrame/lerps);
@@ -212,8 +222,6 @@ function showStaticImage() {//{{{
 		makeSetupBoxInputs();
 		makeColors();
 		highlightDroplist();
-		listenEvents();
-
 	});
 }
 //}}}
@@ -243,10 +251,9 @@ function changeSpeed(speed) {//{{{
 		evacueesLabelsGroup[ffloor].removeChildren();
 	})
 
-	lerps=Math.round(1/((speed/100)+0.0000000000000000001))+1;
+	lerps=Math.round(100/(speed+0.0000000000000000001))+1;
 	lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
 	$('.canvas_slider_rect').attr("fill", "#333"); 
-	if(speed==0) { showEvacueesLabels(); }
 }
 //}}}
 function showAnimation() {//{{{
@@ -254,6 +261,7 @@ function showAnimation() {//{{{
 	
 	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': currentAnimMeta['anim'] }, function(response) { 
 		ajax_msg(response);
+		paused=0;
 		currentAnimData=JSON.parse(response['data']);
 		eData=currentAnimData.animations.evacuees;
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
@@ -378,12 +386,7 @@ function drawMeta(floor,tx,ty) {//{{{
 	opacity = 0.1;
 	fontSize = labelsSize * 5;
 	pos=[ dstatic.world_meta['minx'] + tx - 500, dstatic.floors[floor]['floor_meta']['center'][1] + ty + 200 ] ;
-
 	new PointText({ point: new Point(pos[0], pos[1]), content: floor, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
-
-	if(dstatic.floors[Object.keys(dstatic.floors).length-1].floor_meta.name == floor) { 
-		new PointText({ point: new Point(pos[0], pos[1]), content: "double mouse click to pause/unpause", opacity: opacity, fontFamily: fontFamily, fontSize: fontSize*0.1, fillColor: fillColor });
-	}
 }
 //}}}
 function drawPath(type,data,tx,ty) {//{{{
