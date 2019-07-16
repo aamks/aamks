@@ -1,25 +1,49 @@
 1. Warto dodać na wierzchu strony przycisk add_underlay albo import_geometry.
 Od razu będzie widać, że można dodać podkład do rysowania. Dodatkowo jak się
-usunie to łatwo dodać na nowo; Na wierzchu jest miejsce na czeste funkcje.
-Jezeli ta jest czesta to nalezy przeniesc na wierzch. OK
+usunie to łatwo dodać na nowo; 
+
+KK: Na wierzchu jest miejsce na czeste funkcje. Jezeli ta jest czesta to nalezy
+przeniesc na wierzch. OK
+
+KK: lip.2019: Mysle, ze takie rozwiazanie bedzie wygodne i polaczone z pkt. 2:
+1. uzytkownik wczytuje underlay i sciezka jest zapamietywana 
+2. uzytkownik przeladowuje strone i gubi underlay
+3. system sam wczytuje underlay z zapamietanej sciezki
+4. dzieki temu przycisk underlay bedzie rzadko potrzebny i pozostanie ukryty w utils/
+
+-----------------------------
 
 2. Po wciśnięciu Ctrl + R (przeładowanie nowego zapisu usuwa podkład). Niestety
 tak nie może być. Najlepiej żeby zapisywał się w serwerze. Wtedy będzie można
-pracować nad jednym projektem w kilka osób, z różnych komputerów; Na serwer nie
-bedzie ladowania, predzej zapamietywanie lokalnej sciezki na dysku.
+pracować nad jednym projektem w kilka osób, z różnych komputerów; 
+
+KK: Na serwer nie bedzie ladowania, predzej zapamietywanie lokalnej sciezki na
+dysku. Powiazane z pkt. 1.
+
+-----------------------------
 
 3. W okienku dodawania podkładu nie ma informacji, że musi on być w formacie
 .pdf. Nie ma też informacji, że nie można w dwg. Myślę, że po korzystaniu z
 innych programów część użytkowników mogła się przyzwyczaić do importu dwg;
-pdf/png/jpg. Import DWG jest platny/niedostepny.
+
+KK: obslugujemy pdf/png/jpg. Import DWG jest platny/niedostepny.
+
+-----------------------------
 
 4. Nie ma opcji obracania podkładu (ja nie widzę). Moim zdaniem musi być choćby
-w zakresie 90,180,270,360 °; Do rozwazenia. Poki co uzytkownik ma to obrocic w
-programie graficznym.
+w zakresie 90,180,270,360 °; 
+
+KK: Do rozwazenia. Poki co uzytkownik ma to obrocic w programie graficznym.
+
+-----------------------------
 
 5. Warto dodać przycisk resetujący widok. Chodzi mi o taką kombinacje
 klawiszy, która po wciśnięciu automatycznie wyśrodkuje i przybliży mi widok na
-mój podkład; OK, to jest do zrobienia
+mój podkład; 
+
+KK: OK, to jest do zrobienia
+
+-----------------------------
 
 6. Myślę, ze warto dodać menu obsługi zaimportowanego podkładu obok narzędzi
 rysowania. Opcje to import, on,off i obracanie itp.; OK, pokrewne z pkt.1.

@@ -43,11 +43,13 @@ function initLayers() {//{{{
 //}}}
 function listenForSpeedChange() {//{{{
 	$("svg-slider").on("click", function(){
-		changeSpeed(parseInt($('#speed').val()));
+		clearEvacueesLabels();
 		paused=0;
 	})
 
 	$("body").on("keyup", '#speed', function() { 
+		clearEvacueesLabels();
+		paused=0;
 		changeSpeed(parseInt($('#speed').val()));
 	});
 
@@ -56,10 +58,9 @@ function listenForSpeedChange() {//{{{
 			$("input").blur();
 			$("select").blur();
 			if(paused==1) { 
-				changeSpeed(parseInt($('#speed').val()));
+				clearEvacueesLabels();
 				paused=0;
 			} else { 
-				changeSpeed(0);
 				showEvacueesLabels(); 
 				paused=1;
 			}
@@ -246,11 +247,13 @@ function initSpeed() {//{{{
 	changeSpeed(speed);
 }
 //}}}
-function changeSpeed(speed) {//{{{
+function clearEvacueesLabels() {//{{{
 	_.each(eData[0], function(frame0_data,ffloor) {
 		evacueesLabelsGroup[ffloor].removeChildren();
 	})
-
+}
+//}}}
+function changeSpeed(speed) {//{{{
 	lerps=Math.round(100/(speed+0.0000000000000000001))+1;
 	lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
 	$('.canvas_slider_rect').attr("fill", "#333"); 
@@ -631,7 +634,7 @@ function initRoomSmoke() {//{{{
 	var x_ranges, y_ranges;
 
 	for (var ffloor in roomsOpacity[0]) {
-		if(dstatic.floors.ffloor===undefined) { continue; }
+		if(dstatic.floors[ffloor]===undefined) { continue; }
         var ty=dstatic.floors[ffloor].floor_meta.world2d_ty;
         var tx=dstatic.floors[ffloor].floor_meta.world2d_tx;
 		for (var room in roomsOpacity[0][ffloor]) {
@@ -685,6 +688,7 @@ function resizeAndRedrawCanvas() {//{{{
 
 //}}}
 view.onFrame=function(event) {//{{{
+	if(paused==1) { return; }
 	if (eData.length>0) {
 		evacueesInFrame();
 		roomsSmokeInFrame();
