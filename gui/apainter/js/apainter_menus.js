@@ -191,6 +191,7 @@ function import_cadjson() { //{{{
 		// which may run into this-elem-doesnt-belong-to-this-floor problem.
 		ajax_msg(json); 
 		init_svg_groups(json.data);
+		import_underlays(json.data);
 		into_db(json.data);
 		selected_geom='';
 		$("#floor_text").remove();

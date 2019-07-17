@@ -2,11 +2,14 @@
 session_name('aamks');
 require_once("inc.php"); 
 
-function ajaxBeckShowImages() { #{{{
-	$f=$_SESSION['main']['working_home']."/picts/tree.png";
-	$data64=shell_exec("base64 $f");
-	$base64img="<img style='display:block; width:100px;height:100px;' src='data:image/jpeg;base64, $data64' />";
-	echo json_encode(array("msg"=>"img src", "err"=>0, "data"=>$base64img));
+function ajaxUnderlayOnInit() { #{{{
+	// todo: pdf/svg not handled yet
+	if(in_array($_POST['type'], array("jpg", "jpeg", "png"))) { 
+		$file=$_SESSION['main']['working_home']."/underlays/".$_POST['floor'].".".$_POST['type'];
+		$data64=shell_exec("base64 $file");
+		$data=array('base64'=>1, 'img'=>$data64);
+	}
+	echo json_encode(array("msg"=> '', "err"=>0, "data"=>$data));
 }
 /*}}}*/
 function ajaxChangeActiveScenario() { #{{{
@@ -200,7 +203,6 @@ function main() { /*{{{*/
 
 	if(!empty($_SESSION['main']['user_id']))            {
 
-		if(isset($_GET['ajaxBeckShowImages']))          { ini_set('display_errors', 0) ; ajaxBeckShowImages()       ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxPdf2svg']))                 { ini_set('display_errors', 0) ; ajaxPdf2svg()              ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxApainterExport']))          { ini_set('display_errors', 0) ; ajaxApainterExport()       ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxApainterImport']))          { ini_set('display_errors', 0) ; ajaxApainterImport()       ; ini_set('display_errors', 1) ; }
@@ -211,6 +213,7 @@ function main() { /*{{{*/
 		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxUnderlayOnInit']))          { ini_set('display_errors', 0) ; ajaxUnderlayOnInit()       ; ini_set('display_errors', 1) ; }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

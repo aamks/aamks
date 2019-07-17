@@ -17,7 +17,7 @@ var floors_count=1;
 var floor_zorig=0;
 var g_aamks;
 var g_floor;
-var g_img;
+var g_underlay;
 var g_snap_lines;
 var ax={};
 var snap_dist=50;
@@ -27,8 +27,6 @@ var default_door_width=90;
 var default_floor_dimz=350;
 var default_window_dimz=150;
 var default_window_offsetz=100;
-var underlay_imgs={};
-var underlay_draggable=0;
 var vh_snap=[];
 var evacueeRadius;
 //}}}
@@ -585,13 +583,13 @@ function change_floor(requested_floor) {//{{{
 	});
 	$(active_f).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1);
 
-	var active_img="#g_img"+floor;
-	var inactive_img=".g_img:not("+active_img+")";
-	g_img=d3.select(active_img);
-	$(inactive_img).animate({"opacity": 0}, 1000, function(){
-		$(inactive_img).attr("visibility","hidden");
+	var active_underlay="#g_underlay"+floor;
+	var inactive_underlay=".g_underlay:not("+active_underlay+")";
+	g_underlay=d3.select(active_underlay);
+	$(inactive_underlay).animate({"opacity": 0}, 1000, function(){
+		$(inactive_underlay).attr("visibility","hidden");
 	});
-	$(active_img).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1);
+	$(active_underlay).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1);
 
 	geoms_changed();
 	d3.select("#floor_text").text("floor "+floor+"/"+floors_count);
