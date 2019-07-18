@@ -5,9 +5,9 @@ require_once("inc.php");
 function ajaxUnderlayOnInit() { #{{{
 	// todo: pdf/svg not handled yet
 	if(in_array($_POST['type'], array("jpg", "jpeg", "png"))) { 
-		$file=$_SESSION['main']['working_home']."/underlays/".$_POST['floor'].".".$_POST['type'];
-		$data64=shell_exec("base64 $file");
-		$data=array('base64'=>1, 'img'=>$data64);
+		$data64=shell_exec("base64 ".$_SESSION['main']['working_home']."/underlays/".$_POST['floor'].".".$_POST['type']);
+		$img="data:image/$_POST[type];base64,$data64";
+		$data=array('base64'=>1, 'img'=>$img);
 	}
 	echo json_encode(array("msg"=> '', "err"=>0, "data"=>$data));
 }

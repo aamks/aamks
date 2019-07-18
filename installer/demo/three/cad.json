@@ -30,7 +30,8 @@
 		"VVENT": [ ],
 		"MVENT": [ ],
 		"EVACUEE": [ ],
-		"FIRE": [ ]
+		"FIRE": [ ],
+		"UNDERLAY": { "type": "png", "width": 4350, "opacity": 0.1, "invert": 0, "translate": [840,-660] }
 	},
 	"1": {
 		"ROOM": [
@@ -59,7 +60,8 @@
 		"VVENT": [ ],
 		"MVENT": [ ],
 		"EVACUEE": [ ],
-		"FIRE": [ ]
+		"FIRE": [ ],
+		"UNDERLAY": { "type": "jpg", "width": 2500, "opacity": 0.3, "invert": 1, "translate": [150,200] }
 	},
 	"2": {
 		"ROOM": [
