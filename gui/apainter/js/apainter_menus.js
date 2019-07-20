@@ -78,7 +78,6 @@ function help_utils_into_setup_box() {//{{{
 		"<span style='float: right' class=blink id=utils_setup_button>utils</span><br><br>"+
 		"<table class=nobreak>"+
 		"<tr><td><letter>letter</letter> + mouse1     <td> create"+
-		"<tr><td><letter>shift</letter> + mouse2	    <td> zoom/drag"+
 		"<tr><td>double mouse1		<td> elem properties"+
 		"<tr><td>hold <letter>ctrl</letter>		<td> disable snapping"+ 
 		"<tr><td><letter>h</letter>	<td> 2D/3D views"+ 

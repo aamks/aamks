@@ -31,7 +31,7 @@
 		"MVENT": [ ],
 		"EVACUEE": [ ],
 		"FIRE": [ ],
-		"UNDERLAY": { "type": "png", "width": 4350, "opacity": 0.1, "invert": 0, "translate": [840,-660] }
+		"UNDERLAY": { "type": "png", "width": 5000, "opacity": 0.2, "invert": 0, "translate": [2840,1000] }
 	},
 	"1": {
 		"ROOM": [
