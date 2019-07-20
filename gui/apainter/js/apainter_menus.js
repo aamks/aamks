@@ -100,13 +100,13 @@ function help_utils_into_setup_box() {//{{{
 }
 //}}}
 function init_svg_groups(json) {//{{{
-	$(".g_floor").remove();
+	$(".floor").remove();
 	$(".snap_v").remove();
 	$(".snap_h").remove();
 
 	floors_count=0;
 	for (var _floor in json) { 
-		d3.select("#g_aamks").append("g").attr("id", "floor"+_floor).attr("class", "g_floor").attr("fill-opacity", 0.4).attr('visibility',"hidden");
+		d3.select("#building").append("g").attr("id", "floor"+_floor).attr("class", "floor").attr("fill-opacity", 0.4).attr('visibility',"hidden");
 		floors_count++;
 	}
 	$("#floor"+floor).attr('visibility',"visible").css("opacity", 1);
@@ -132,7 +132,7 @@ function into_db(json) { //{{{
 			}
 		}
 	}
-	geoms_changed(); // This is a heavy call, which shouldn't be called for each DbInsert()
+	updateSnapLines(); // This is a heavy call, which shouldn't be called for each DbInsert()
 }
 //}}}
 function read_record(floor,letter,arr) { //{{{
@@ -194,8 +194,7 @@ function import_cadjson() { //{{{
 		import_underlays(json.data);
 		into_db(json.data);
 		selected_geom='';
-		$("#floor_text").remove();
-		svg.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floors_count);
+		d3.select('#floor_text').text("floor "+floor+"/"+floors_count);
 	});
 }
 //}}}
@@ -300,7 +299,7 @@ function copy_to_floor() {	//{{{
 		var z0=default_floor_dimz * c2f;
 	}
 	floors_count++;
-	g_floor=g_aamks.append("g").attr("id", "floor"+c2f).attr({"class": "g_floor", "opacity": 0, "visibility": "hidden"});
+	building.append("g").attr("id", "floor"+c2f).attr({"class": "floor", "opacity": 0, "visibility": "hidden"});
 	var src=db({'floor': floor}).get();
 	var counter;
 	for (var i in src) {
@@ -315,7 +314,7 @@ function copy_to_floor() {	//{{{
 		DbInsert(geom);
 		CreateSvg(geom);
 	}
-	$("#floor"+c2f).attr({"class": "g_floor", "fill-opacity": 0.4, "visibility": "hidden"});
+	$("#floor"+c2f).attr({"class": "floor", "fill-opacity": 0.4, "visibility": "hidden"});
 
 	var selected_geom='';
 	utils_into_setup_box();

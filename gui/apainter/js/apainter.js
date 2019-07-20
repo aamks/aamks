@@ -15,10 +15,8 @@ var svg;
 var floor=0;
 var floors_count=1;
 var floor_zorig=0;
-var g_aamks;
-var g_floor;
-var g_underlay;
-var g_snap_lines;
+var building;
+var snapLines;
 var ax={};
 var snap_dist=50;
 var snap_lines={};
@@ -41,6 +39,7 @@ $(function()  {
 		left_menu_box();
 		import_cadjson();
 		register_listeners();
+		dd($('#building')[0]);
 	});
 });
 //}}}
@@ -88,8 +87,8 @@ CreateSvg=function create_svg(geom) { //{{{
 	} else {
 		var elem='rect';
 	}
-	g_floor=d3.select("#floor"+geom.floor);
-	g_floor.append(elem)
+	d3.select("#floor"+geom.floor)
+		.append(elem)
 		.attr('id', geom.name)
 		.attr('r', evacueeRadius)
 		.attr('fill', gg[geom.letter].c)
@@ -124,10 +123,10 @@ UpdateVis=function updateVisPropsElem(geom) {//{{{
 	}
 }
 //}}}
-DbInsert=function db_insert(geom, call_geoms_changed=1) { //{{{
+DbInsert=function db_insert(geom, call_updateSnapLines=1) { //{{{
 	// On the occassions we are massively called from import_cadjson() and alike
-	// we don't want to auto call the heavy geoms_changed() each time -- it is sufficient 
-	// that import_cadjson() makes a single geoms_changed() call after hundreds
+	// we don't want to auto call the heavy updateSnapLines() each time -- it is sufficient 
+	// that import_cadjson() makes a single updateSnapLines() call after hundreds
 	// of geoms are DbInserted().
 
 	var lines=[];
@@ -141,7 +140,7 @@ DbInsert=function db_insert(geom, call_geoms_changed=1) { //{{{
 	if(geom.type!='underlay_scaler') {
 		db.insert({ "name": geom.name, "idx": geom.idx, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "window_offsetz": geom.window_offsetz, "mvent_offsetz": geom.mvent_offsetz, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type, "room_enter": geom.room_enter });
 		show_selected_properties();
-		if(call_geoms_changed==1) { geoms_changed(); }
+		if(call_updateSnapLines==1) { updateSnapLines(); }
 	}
 }
 //}}}
@@ -185,10 +184,10 @@ function zoomed_canvas() {//{{{
 	zt.k = Math.round(zt.k * 100) / 100;
 	zt.x = Math.round(zt.x * 100) / 100;
 	zt.y = Math.round(zt.y * 100) / 100;
-	g_aamks.attr("transform", zt);
-	g_snap_lines.attr("transform", zt);
+	building.attr("transform", zt);
+	snapLines.attr("transform", zt);
 	$("#snapper").attr("transform", zt);
-	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)));
+	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)))
 	ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
 }
 //}}}
@@ -265,7 +264,7 @@ function alternative_view() {//{{{
 function remove_geom(geom) {//{{{
 	$("#"+geom).remove();
 	db({"name":geom}).remove();
-	geoms_changed();
+	updateSnapLines();
 }
 //}}}
 function properties_type_listing_plain() {//{{{
@@ -489,9 +488,9 @@ function show_selected_properties() {//{{{
 
 }
 //}}}
-function geoms_changed() { //{{{
+function updateSnapLines() { //{{{
 	// snap lines
-	d3.select("#g_snap_lines").selectAll("line").remove();
+	d3.select("#snapLines").selectAll("line").remove();
 	var lines=db({'floor': floor}).select("lines");
 	snap_lines['horiz']=[];
 	snap_lines['vert']=[];
@@ -508,10 +507,10 @@ function geoms_changed() { //{{{
 		snap_lines['vert'].push(right);
 		snap_lines['vert'].push(left);
 
-		g_snap_lines.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
-		g_snap_lines.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
-		g_snap_lines.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , 0).attr('y2' , 100000).attr("visibility", "hidden");
-		g_snap_lines.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
+		snapLines.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
+		snapLines.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
+		snapLines.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , 0).attr('y2' , 100000).attr("visibility", "hidden");
+		snapLines.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
 
 	}
 	snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
@@ -536,12 +535,13 @@ function axes() { //{{{
 		.ticks(screen.height/200)
 		.tickSize(canvas[0])
 		.tickPadding(2 - canvas[0]);
+	svg.append("g").attr("id", "axes");
 
-	ax.gX = svg.append("g")
+	ax.gX = d3.select("#axes").append("g")
 		.attr("class", "axis axis--x")
 		.call(ax.xAxis);
 
-	ax.gY = svg.append("g")
+	ax.gY = d3.select("#axes").append("g")
 		.attr("class", "axis axis--y")
 		.call(ax.yAxis);
 }
@@ -573,10 +573,10 @@ function change_floor(requested_floor) {//{{{
 	guess_floors_z_origin();
 	if(floor > floors_count-1) { 
 		floors_count++;
-		g_floor = g_aamks.append("g").attr("id", "floor"+floor).attr("class", "g_floor").attr('fill-opacity',0.4);
+		building.append("g").attr("id", "floor"+floor).attr("class", "floor").attr('fill-opacity',0.4);
 	}
 	var active_f="#floor"+floor;
-	var inactive_f=".g_floor:not("+active_f+")";
+	var inactive_f=".floor:not("+active_f+")";
 	g_floor=d3.select(active_f);
 	$(inactive_f).animate({"opacity": 0}, 1, function(){
 		$(inactive_f).attr("visibility","hidden");
@@ -591,7 +591,7 @@ function change_floor(requested_floor) {//{{{
 	});
 	$(active_underlay).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1);
 
-	geoms_changed();
+	updateSnapLines();
 	d3.select("#floor_text").text("floor "+floor+"/"+floors_count);
 	$("#floor_text").clearQueue().finish();
 	$("#floor_text").css("opacity",1).animate({"opacity": 0.05}, 1000);
@@ -866,14 +866,16 @@ function canvas_builder() { //{{{
 	d3.select('view2d').append('left-menu-box');
 	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
-	svg.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
-	svg.append("text").attr("x",130).attr("y",140).attr("id", "shortcuts_help1").text("n: next floor");
-	svg.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: 3d view");
+	tt=svg.append("g").attr("id", "texts");
+	tt.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
+	tt.append("text").attr("x",130).attr("y",140).attr("id", "shortcuts_help1").text("n: next floor");
+	tt.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: 3d view");
+	tt.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floors_count);
 
 	axes();
-	g_aamks = svg.append("g").attr("id", "g_aamks");
-	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',0.4);
-	g_snap_lines = svg.append("g").attr("id", "g_snap_lines");
+	building = svg.append("g").attr("id", "building");
+	building.append("g").attr("id", "floor0").attr("class", "floor").attr('fill-opacity',0.4);
+	snapLines = svg.append("g").attr("id", "snapLines");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend_static();
 	legend();
