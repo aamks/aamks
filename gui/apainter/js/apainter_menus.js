@@ -2,7 +2,7 @@ function register_listeners() {//{{{
 	$("right-menu-box").on("click" , "#btn_copy_to_floor"   , function() { copy_to_floor() });
 	$("right-menu-box").on("click" , "#btn_edit_cad_json"   , function() { textarea_edit_cad_json() });
 	$("right-menu-box").on("click" , "#btn_submit_cad_json" , function() { textarea_edit_cad_json() });
-	$("right-menu-box").on("click" , '#setup_underlay'      , function() { setup_underlay_into_setup_box(); });
+	$("right-menu-box").on("click" , '#setup_underlay'      , function() { underlay_form(); });
 	$("right-menu-box").on("click" , '#utils_setup_button'  , function() { utils_into_setup_box(); });
 	$("body").on("click"           , '#btn-cad-json-save'   , function() { cad_json_textarea_save(); });
 	$("body").on("click"           , '#btn-cad-json-cancel' , function() { cad_json_textarea_close(); });
