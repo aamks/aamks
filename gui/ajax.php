@@ -2,6 +2,17 @@
 session_name('aamks');
 require_once("inc.php"); 
 
+function ajaxPostUnderlay() { #{{{
+	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor].$_POST[type]";
+	$z=file_put_contents($dest, base64_decode($_POST['base64']));
+
+	if($z>0) { 
+		echo json_encode(array("msg"=>"ajaxPostUnderlay(): OK", "err"=>0, "data"=>""));
+	} else { 
+		echo json_encode(array("msg"=>"ajaxPostUnderlay(): ".error_get_last()['message'] , "err"=>1, "data"=>""));
+	}
+}
+/*}}}*/
 function ajaxUnderlayOnInit() { #{{{
 	// todo: pdf/svg not handled yet
 	if(in_array($_POST['type'], array("jpg", "jpeg", "png"))) { 
@@ -214,6 +225,7 @@ function main() { /*{{{*/
 		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxUnderlayOnInit']))          { ini_set('display_errors', 0) ; ajaxUnderlayOnInit()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxPostUnderlay']))            { ini_set('display_errors', 0) ; ajaxPostUnderlay()         ; ini_set('display_errors', 1) ; }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

@@ -1,6 +1,6 @@
 function register_underlay_listeners() {//{{{
 	$("body").on("click"  , "#remove_underlay"    , function() { $("#underlay"+floor).remove(); });
-	$("body").on("change" , "#add_underlay"       , function() { add_underlay(); });
+	$("body").on("change" , "#add_underlay"       , function() { add_underlay(this); });
 	$("body").on("keyup"  , "#underlay_opacity"   , function() { underlay_single_attrib(floor, 'opacity' , $("#underlay_opacity").val()) ; }) ;
 	$("body").on("keyup"  , "#underlay_invert"    , function() { underlay_single_attrib(floor, 'invert'  , $("#underlay_invert").val())  ; }) ;
 	$("body").on("click"  , "#set_underlay_width" , function() { set_underlay_width(floor)   ; }) ;
@@ -23,9 +23,9 @@ function underlay_single_attrib(floor,key,val) { // {{{
 //}}}
 function underlay_attribs(floor,aa=0) {//{{{
 	if (aa==0) {
-		d3.select('#underlay'+floor).attr("visibility", "hidden").append("image").attr("id", "uimg"+floor).attr("width", 0).style("opacity", 0).attr("transform","translate(0,0)").attr("invert",0);
+		d3.select('#underlay'+floor).attr("visibility", "hidden").append("image").attr("id", "uimg"+floor).attr("width", 0).style("opacity", 0).attr("transform","translate(0,0)").attr("invert",0).attr("type", 'none');
 	} else {
-		d3.select("#uimg"+floor).attr("id", "uimg"+floor).attr("width", aa.width).style("opacity", aa.opacity).attr('filter', null).attr("invert", 0);
+		d3.select("#uimg"+floor).attr("id", "uimg"+floor).attr("width", aa.width).style("opacity", aa.opacity).attr('filter', null).attr("invert", 0).attr("type", aa.type);
 		if(aa.invert==1) { underlay_single_attrib(floor , 'invert' , 1); }
 		if("translate" in aa) { underlay_single_attrib(floor , 'transform', "translate("+aa.translate[0]+","+aa.translate[1]+")"); }
 	}
@@ -52,26 +52,13 @@ function import_underlays(cad) {//{{{
 				if(global_floor==floor) { visibility='visible'; } else { visibility='hidden'; }
 				d3.select('#underlay'+floor).attr("visibility", visibility).append("image").attr("id", "uimg"+floor).attr("xlink:href", json.data.img).attr("pointer-events", "none");
 				underlay_attribs(floor, data['UNDERLAY']);
+				underlay_save_cad('0');
 			});
 		} else {
 			underlay_attribs(floor);
 		}
 		underlay_zoomer(floor);
 	});
-}
-//}}}
-function renderUnderlayImage(file) {//{{{
-	var reader = new FileReader();
-	if(file.type=='application/pdf') {
-		ajaxPdf2svg();
-	} 
-}
-//}}}
-function add_underlay() {//{{{
-	//renderUnderlayImage(this.files[0])
-	//$("#underlay_translate").html("translate(0,0)");
-	dd('add underlay');
-	//$("#underlay"+floor).remove();
 }
 //}}}
 function underlay_form() {//{{{
@@ -83,7 +70,7 @@ function underlay_form() {//{{{
 		"underlay and the height will<br>"+
 		"change accordingly.<br><br><br>"+
 		"<input id=underlay"+floor+"_form type=hidden value=1>"+
-		"<input type=file id=add_underlay style='display:none'><label class=blink for='add_underlay'>add</label>"+
+		"<input type=file id=add_underlay    style='display:none'><label class=blink for='add_underlay'>add</label>"+
 		"<div class=blink id=remove_underlay>remove</div>"+
 		"<a href=underlay_example.svg target=_blank class=blink>scaling help</a>"+
 		"<br><br><table>"+
@@ -93,6 +80,11 @@ function underlay_form() {//{{{
 		"</table>"
 	);
 
+}
+//}}}
+function underlay_save_cad(floor) {//{{{
+	opacity=$("#uimg"+floor).css('opacity');
+	//"UNDERLAY": { "type": "png", "width": 5000, "opacity": 0.2, "invert": 0, "translate": [2840,1000] }
 }
 //}}}
 function pdf_svg_dom(json) { //{{{
@@ -117,5 +109,29 @@ function ajaxPdf2svg() { //{{{
 	  })
 	  .then(response => response.json())
 	}
+}
+//}}}
+
+function add_underlay(e) {//{{{
+	var reader = new FileReader();
+	reader.readAsDataURL(e.files[0]);
+	reader.onload = function(event) {
+		raw=event.target.result;
+		arr=raw.split(";",2);
+		type=arr[0].split(":",2)[1].split("/")[1];
+		base64=arr[1].split(",",2)[1];
+		if(['jpeg', 'png'].indexOf(type) > -1) {
+			$.post('/aamks/ajax.php?ajaxPostUnderlay', { 'floor': floor, 'type': type, 'base64': base64 }, function (json) { 
+				dd("OK", json);
+			});
+		} else {
+			ajax_msg({'msg': "Aamks only supports png/jpg/svg/pdf underlays", 'err':1});
+		}
+	}
+
+	//var reader = new FileReader();
+	//if(file.type=='application/pdf') {
+	//	ajaxPdf2svg();
+	//} 
 }
 //}}}
