@@ -1,115 +1,128 @@
-1. Warto dodać na wierzchu strony przycisk add_underlay albo import_geometry.
-Od razu będzie widać, że można dodać podkład do rysowania. Dodatkowo jak się
-usunie to łatwo dodać na nowo; 
+	1. Warto dodać na wierzchu strony przycisk add_underlay albo import_geometry.
+	Od razu będzie widać, że można dodać podkład do rysowania. Dodatkowo jak się
+	usunie to łatwo dodać na nowo; 
+	6. Myślę, ze warto dodać menu obsługi zaimportowanego podkładu obok narzędzi
+	rysowania. Opcje to import, on,off i obracanie itp.
 
-KK: Na wierzchu jest miejsce na czeste funkcje. Jezeli ta jest czesta to nalezy
-przeniesc na wierzch. OK
 
-KK: lip.2019: Mysle, ze takie rozwiazanie bedzie wygodne i polaczone z pkt. 2:
-1. uzytkownik wczytuje underlay i sciezka jest zapamietywana 
-2. uzytkownik przeladowuje strone i gubi underlay
-3. system sam wczytuje underlay z zapamietanej sciezki
-4. dzieki temu przycisk underlay bedzie rzadko potrzebny i pozostanie ukryty w utils/
++	KK: Shift szybko przechodzi do underlay
 
 -----------------------------
 
-2. Po wciśnięciu Ctrl + R (przeładowanie nowego zapisu usuwa podkład). Niestety
-tak nie może być. Najlepiej żeby zapisywał się w serwerze. Wtedy będzie można
-pracować nad jednym projektem w kilka osób, z różnych komputerów; 
+	2. Po wciśnięciu Ctrl + R (przeładowanie nowego zapisu usuwa podkład). Niestety
+	tak nie może być. Najlepiej żeby zapisywał się w serwerze. Wtedy będzie można
+	pracować nad jednym projektem w kilka osób, z różnych komputerów; 
 
-KK: Na serwer nie bedzie ladowania, predzej zapamietywanie lokalnej sciezki na
-dysku. Powiazane z pkt. 1.
-
------------------------------
-
-3. W okienku dodawania podkładu nie ma informacji, że musi on być w formacie
-.pdf. Nie ma też informacji, że nie można w dwg. Myślę, że po korzystaniu z
-innych programów część użytkowników mogła się przyzwyczaić do importu dwg;
-
-KK: obslugujemy pdf/png/jpg. Import DWG jest platny/niedostepny.
++	KK: Zrobione
 
 -----------------------------
 
-4. Nie ma opcji obracania podkładu (ja nie widzę). Moim zdaniem musi być choćby
-w zakresie 90,180,270,360 °; 
+	4. Nie ma opcji obracania podkładu (ja nie widzę). Moim zdaniem musi być choćby
+	w zakresie 90,180,270,360°; 
 
-KK: Do rozwazenia. Poki co uzytkownik ma to obrocic w programie graficznym.
-
------------------------------
-
-5. Warto dodać przycisk resetujący widok. Chodzi mi o taką kombinacje
-klawiszy, która po wciśnięciu automatycznie wyśrodkuje i przybliży mi widok na
-mój podkład; 
-
-KK: OK, to jest do zrobienia
+-	KK: W budowie. Mam watpliwosc czy obrot o 360 potrzebujemy :)
 
 -----------------------------
 
-6. Myślę, ze warto dodać menu obsługi zaimportowanego podkładu obok narzędzi
-rysowania. Opcje to import, on,off i obracanie itp.; OK, pokrewne z pkt.1.
+	5. Warto dodać przycisk resetujący widok. Chodzi mi o taką kombinacje
+	klawiszy, która po wciśnięciu automatycznie wyśrodkuje i przybliży mi widok na
+	mój podkład; 
 
-7. Może warto przygotować instrukcję, albo film jak przygotować rysunek do
-importu; Jest instrukcja importu. 
+-	KK: W budowie
 
-8. Nie znalazłem nigdzie informacji, że rysuje w cm; OK, bedzie
+-----------------------------
 
-9. Brak informacji, że wartości wpisuje się z „ . ”, a nie „ , ” OK, javascript
-bedzie o to robil awanture
+	7. Może warto przygotować instrukcję, albo film jak przygotować rysunek do
+	importu 
+	8. Nie znalazłem nigdzie informacji, że rysuje w cm; 
+	11. Jak łączyć automatycznie pomieszczenia (coś jak wcześniejsze auto hole)?
+	20. Nie jest określone jasno z jaką dokładnością można rysować. 10 cm czy 1 cm
+	3. W okienku dodawania podkładu nie ma informacji, że musi on być w formacie
+	.pdf. Nie ma też informacji, że nie można w dwg. Myślę, że po korzystaniu z
+	innych programów część użytkowników mogła się przyzwyczaić do importu dwg;
 
-10. Nie ma opisanych przycisków mouse 1 i 2. Zamieniłbym to na nazwy
-przycisków, Left buton, scroll …, Albo dodał rysunek myszki z opisanymi
-przyciskami. Może warto dodać taki przeklikiwany tutorial na początku każdego
-nowego projektu? Oczywiści musi być też opcja skip; OK, bedzie rysunek ktory
-button to ktory
+-	KK: To jest szerszy problem dokumentacji. Ja nie planuje zajmowac sie dokumentacja.
+	Małe wskazowki sa w Aamksie i dodalem kilka nastepnych. DWG nie wchodzi w gre.
 
-11. Jak łączyć automatycznie pomieszczenia (coś jak wcześniejsze auto hole)?
-Jest hole. Rysujesz miedzy dwoma pokojami.
+-----------------------------
 
-12. Brak zapamiętywania ostatniego używanego narzędzia. Przy rysowaniu
-kilkunastu pokoi za każdym razem trzeba wciskać klawisz.  Może np. 2 x r i
-będzie na stałe (+podświetlenie funkcji); W gimp/inkscape zawsze klikasz r i
-rysujesz prostokat, potem znowu r, nie uznaje tego za trudnosc, bo lewa reka
-jest na klawiaturze caly czas.
+	9. Brak informacji, że wartości wpisuje się z „ . ”, a nie „ , ” 
 
-13. Nie ma możliwości kliknięcia na przycisk (np. r ROOM) i włączenia
-odpowiedniego narzędzia; Nie ma, nikt nie ma tak rysowac. Ma sie nauczyc
-szybszego r z klawiatury.
+-	KK: W budowie.
 
-14. Po wznowieniu pracy z wygaszacza ekranu problem z płynnością pracy; Do
-google-chrome, nie do mnie.
+-----------------------------
 
-15. Problem z zapisywaniem pliku. Może warto dodać pasek pokazujący postęp
-zapisu ? Przy dużych plikach to może to zająć chwile. Będzie wiadomo czy czekać
-czy iść na herbatę; Zauwazylem, ze bardzo duze pliki spowalniaja i mysle, ze
-poprawie wydajnosc, ze to bedzie 1 sekunda zawsze.
+	10. Nie ma opisanych przycisków mouse 1 i 2. Zamieniłbym to na nazwy
+	przycisków, Left buton, scroll …, Albo dodał rysunek myszki z opisanymi
+	przyciskami. Może warto dodać taki przeklikiwany tutorial na początku każdego
+	nowego projektu? Oczywiści musi być też opcja skip; 
 
-16. Nie ma możliwości zaznaczenia kilku pomieszczeń na raz. Może to być nawet
-przez kombinacje jakiegoś klawisza i myszki pojedynczo dodając; 17. Nie ma
-możliwości edycji raz narysowanego pomieszczenia. Mam na myśli zaznaczając na
-ekranie i np. przeciągnąć; 18. Nie ma opcji cofnij o jeden ruch.. Myślę ze do 3
-ruchów należy mieć możliwość Pomyłki się zdarzają, zwłaszcza w skomplikowanych
-projektach. 21. Nie ma możliwości kopiowania i przenoszenia takich samych
-elementów (drzwi, pokoi); Nie moge zrobic nowego kompletnego autocada w
-przegladarce. Raczej nie bedzie tych funkcji. Jest funkcja kopiowania pieter. 
++	KK: Na razie problem rozwiazany, bo wylecialo wszystko oprocz mouse1
 
-19. Może warto dodać globalne ustawienie wysokości. Bo teraz jest domyślnie
-3.5. A jak chce zrobić 10 pomieszczeń po 2.5 m to za każdym razem musze
-zmieniać z palca. No chyba, że ja nie umiem; Tak, nie umiesz. Masz opcje "since
-now" i ona jest globalna dla nowych obiektow.
+-----------------------------
 
-20. Nie jest określone jasno z jaką dokładnością można rysować. 10 cm czy 1 cm
-? ; Chodzi Ci zeby podac taka informacje? Bo wiesz, ze dla aamksa wielkosci
-mniejsze niz 10cm nie maja znaczenia.
+	12. Brak zapamiętywania ostatniego używanego narzędzia. Przy rysowaniu
+	kilkunastu pokoi za każdym razem trzeba wciskać klawisz.  Może np. 2 x r i
+	będzie na stałe (+podświetlenie funkcji); 
+	13. Nie ma możliwości kliknięcia na przycisk (np. r ROOM) i włączenia
+	odpowiedniego narzędzia; 
 
-22. Nie da się ustawić „Z min’ w pokojach. Nie zawsze wartość domyślna jest ok;
-Pomieszczenia na pietrze musza miec wspolne zmin.
+-	KK:	Nie obiecuje, ale jezeli zrobie to beda obie te pokrewne funkcje na raz
 
-23. Nie da się ustawić wysokości na jakiej powinien znajdować się vent (otwor
-grawitacyjny); Ustalic z Krasuckim. Ja mam obiekty vvent i mvent, a nie vent.
-Jedne maja regulacje wysokosci a jedne sa automatycznie w suficie.
+-----------------------------
 
-24. Po dodaniu osób do modelu, bardzo długo ładuje się widok strony (na win7 mi
-się nie ładuje w ogóle, na linux ładuje od razu, więc to może być moja wina).
-Dotyczy to aktualnego projektu P0. Dr. Krasuski będzie wiedział o który mi
-chodzi. Problemy wydajnosci dla duzych rysunkow beda mysle rozwiazane. Linux vs
-windows prawdopodobnie to jest temat do google-chrome.
+	14. Po wznowieniu pracy z wygaszacza ekranu problem z płynnością pracy; 
+
+-	KK:	Problem google-chrome
+
+-----------------------------
+
+	15. Problem z zapisywaniem pliku. Może warto dodać pasek pokazujący postęp
+	zapisu ? Przy dużych plikach to może to zająć chwile. Będzie wiadomo czy czekać
+	czy iść na herbatę; 
+	24. Po dodaniu osób do modelu, bardzo długo ładuje się widok strony (na win7 mi
+	się nie ładuje w ogóle, na linux ładuje od razu, więc to może być moja wina).
+	Dotyczy to aktualnego projektu P0. Dr. Krasuski będzie wiedział o który mi
+	chodzi. 
+
++	KK:	Duze pliki zle sie zapisywaly. Teraz juz wszystko powinno dzialac szybko.
+
+-----------------------------
+
+	16. Nie ma możliwości zaznaczenia kilku pomieszczeń na raz. Może to być nawet
+	przez kombinacje jakiegoś klawisza i myszki pojedynczo dodając; 17. Nie ma
+	możliwości edycji raz narysowanego pomieszczenia. Mam na myśli zaznaczając na
+	ekranie i np. przeciągnąć; 18. Nie ma opcji cofnij o jeden ruch.. Myślę ze do 3
+	ruchów należy mieć możliwość Pomyłki się zdarzają, zwłaszcza w skomplikowanych
+	projektach. 21. Nie ma możliwości kopiowania i przenoszenia takich samych
+	elementów (drzwi, pokoi); 
+
+-	KK:	Edycja istniejacego wydaje sie niewiele szybsza od operacji x(usun) +
+	r(room). Musialbym zobaczyc na zywo te problemy, ale raczej nie bedzie
+	takich funkcji.
+
+-----------------------------
+
+	19. Może warto dodać globalne ustawienie wysokości. Bo teraz jest domyślnie
+	3.5. A jak chce zrobić 10 pomieszczeń po 2.5 m to za każdym razem musze
+	zmieniać z palca. 
+
++	KK:	"Since now" do tego sluzy
+
+-----------------------------
+
+	22. Nie da się ustawić „Z min’ w pokojach. Nie zawsze wartość domyślna jest ok;
+	Pomieszczenia na pietrze musza miec wspolne zmin.
+
++	KK:	W aamksie jest jedno z-min per pietro
+
+-----------------------------
+
+	23. Nie da się ustawić wysokości na jakiej powinien znajdować się vent (otwor
+	grawitacyjny); 
+
+-	KK:	Ustalic z Krasuckim. Ja mam obiekty vvent i mvent, a nie vent. Jedne
+	maja regulacje wysokosci a jedne sa automatycznie w suficie.
+
+-----------------------------
+
