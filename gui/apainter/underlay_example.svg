@@ -23,20 +23,20 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1274"
-     inkscape:window-height="683"
+     inkscape:window-width="1680"
+     inkscape:window-height="1004"
      id="namedview33"
      showgrid="false"
      fit-margin-top="0"
      fit-margin-left="0"
      fit-margin-right="0"
      fit-margin-bottom="0"
-     inkscape:zoom="1"
-     inkscape:cx="720.02994"
-     inkscape:cy="246.76912"
-     inkscape:window-x="237"
-     inkscape:window-y="73"
-     inkscape:window-maximized="0"
+     inkscape:zoom="0.5"
+     inkscape:cx="745.79744"
+     inkscape:cy="617.52184"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
      inkscape:current-layer="svg3538" />
   <defs
      id="defs3540" />
@@ -74,10 +74,10 @@
      x="0.47065118"
      y="0.47065118" />
   <rect
-     style="opacity:1;fill:#d3d7cf;fill-opacity:1;stroke:none;stroke-width:30.26197433"
+     style="opacity:1;fill:#d3d7cf;fill-opacity:1;stroke:none;stroke-width:30.70453835"
      id="rect5012"
      width="983.43762"
-     height="405"
+     height="416.93243"
      x="31.411457"
      y="30.463497" />
   <g
@@ -191,18 +191,18 @@
     <rect
        y="-16.797298"
        x="887.30853"
-       height="87.735916"
+       height="111.03883"
        width="967.96362"
        id="rect4622"
-       style="opacity:1;fill:#729fcf;fill-opacity:1;stroke:none;stroke-width:34.83797073" />
+       style="opacity:1;fill:#729fcf;fill-opacity:1;stroke:none;stroke-width:39.19237518" />
     <text
        id="text847"
-       y="32.617855"
+       y="40.372051"
        x="913.44971"
        style="font-style:normal;font-weight:normal;line-height:0%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.45876625px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        xml:space="preserve"><tspan
          style="font-size:18.35064888px;line-height:1.25;font-family:sans-serif;fill:#ffffff;stroke-width:0.45876625px"
-         y="32.617855"
+         y="40.372051"
          x="913.44971"
          id="tspan845"
          sodipodi:role="line">1. Load an underlay image</tspan></text>
@@ -337,29 +337,32 @@
          y="12.596869"
          style="font-size:18.35064888px;line-height:1.25;font-family:sans-serif;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.45876625px">2. Press <tspan
    style="font-weight:bold;font-family:sans-serif;text-align:center;text-anchor:middle;fill:#ffffff"
-   id="tspan4637">p</tspan> to draw a pink </tspan><tspan
+   id="tspan4637">p</tspan> and draw a pink </tspan><tspan
          sodipodi:role="line"
          x="1015.8376"
          y="35.535179"
          style="font-size:18.35064888px;line-height:1.25;font-family:sans-serif;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.45876625px"
-         id="tspan4641"><tspan
-           id="tspan4649"
-           style="font-family:sans-serif;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.45876625px">rectangle matching the known</tspan><tspan
-           style="font-family:sans-serif;text-align:center;text-anchor:middle"
-           id="tspan4645" /></tspan><tspan
+         id="tspan4641">rectangle matching the known</tspan><tspan
          sodipodi:role="line"
-         x="1015.8376"
+         x="1018.7542"
          y="58.473492"
          style="font-size:18.35064888px;line-height:1.25;font-family:sans-serif;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.45876625px"
-         id="tspan3686">width in the underlay image</tspan></text>
+         id="tspan3686"><tspan
+   style="font-weight:bold"
+   id="tspan3798">width</tspan> (not height!) in the </tspan><tspan
+         sodipodi:role="line"
+         x="1015.8376"
+         y="81.411804"
+         style="font-size:18.35064888px;line-height:1.25;font-family:sans-serif;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.45876625px"
+         id="tspan3796">underlay image</tspan></text>
   </g>
   <rect
-     style="opacity:1;fill:#888a85;fill-opacity:1;stroke:#ffffff;stroke-width:0.93750001"
+     style="opacity:1;fill:#888a85;fill-opacity:1;stroke:none;stroke-width:0.97864616"
      id="rect4651"
-     width="197.67545"
-     height="227.70857"
-     x="766.82867"
-     y="63.212368" />
+     width="215.44679"
+     height="227.66742"
+     x="766.84924"
+     y="63.232941" />
   <text
      xml:space="preserve"
      style="font-style:normal;font-weight:normal;line-height:0%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.40215102px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
@@ -372,21 +375,21 @@
        y="244.76076"
        style="font-size:15.55872726px;line-height:1.25;font-family:sans-serif;fill:#ffffff;stroke-width:0.40215102px">scaler width</tspan></text>
   <rect
-     style="opacity:1;fill:#2e3436;fill-opacity:1;stroke:none;stroke-width:30.00000191"
+     style="opacity:1;fill:#2e3436;fill-opacity:1;stroke:none;stroke-width:23.90668678"
      id="rect4657"
-     width="69.35556"
+     width="44.04306"
      height="23.082546"
      x="882.32233"
      y="227.79674" />
   <text
      xml:space="preserve"
      style="font-style:normal;font-weight:normal;line-height:0%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#2e3436;fill-opacity:1;stroke:none;stroke-width:0.47735563px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-     x="890.60291"
+     x="888.72791"
      y="245.09938"
      id="text4661"><tspan
        sodipodi:role="line"
        id="tspan4659"
-       x="890.60291"
+       x="888.72791"
        y="245.09938"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.59881687px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;fill:#ffffff;stroke-width:0.47735563px">1000</tspan></text>
   <text
@@ -418,7 +421,12 @@
          y="44.000172"
          x="1015.27"
          sodipodi:role="line"
-         id="tspan3690">(measured) dimensions</tspan></text>
+         id="tspan3690">(measured) dimensions</tspan><tspan
+         style="font-size:18.35064888px;line-height:1.25;font-family:sans-serif;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.45876625px"
+         y="66.938484"
+         x="1015.27"
+         sodipodi:role="line"
+         id="tspan3794">and press set</tspan></text>
   </g>
   <path
      style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:0.98970777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:5.93824653, 2.96912328;stroke-dashoffset:0;stroke-opacity:1"
@@ -430,4 +438,27 @@
      id="path5158"
      d="m 719.72394,22.026026 0,418.973984"
      style="fill:none;fill-rule:evenodd;stroke:#ffffff;stroke-width:0.98970777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:5.93824653, 2.96912328;stroke-dashoffset:0;stroke-opacity:1" />
+  <g
+     transform="matrix(0.04134198,0,0,0.27266328,895.15197,232.24229)"
+     id="g3788">
+    <rect
+       style="opacity:1;fill:#729fcf;fill-opacity:1;stroke:none;stroke-width:34.83797073"
+       id="rect3782"
+       width="967.96362"
+       height="87.735916"
+       x="887.30853"
+       y="-16.797298" />
+  </g>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-weight:normal;font-size:13.72382355px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.3430956px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="950.81421"
+     y="242.4167"
+     id="text3792"
+     transform="scale(0.98957902,1.0105307)"><tspan
+       sodipodi:role="line"
+       id="tspan3790"
+       x="950.81421"
+       y="242.4167"
+       style="fill:#ffffff;stroke-width:0.3430956px">set</tspan></text>
 </svg>

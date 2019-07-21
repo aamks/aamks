@@ -190,7 +190,7 @@ function import_cadjson() { //{{{
 		// which may run into this-elem-doesnt-belong-to-this-floor problem.
 		ajax_msg(json); 
 		init_svg_groups(json.data);
-		import_underlays(json.data);
+		_.each(json.data, function(data,floor) { import_underlay(data['UNDERLAY'],floor); });
 		into_db(json.data);
 		selected_geom='';
 		d3.select('#floor_text').text("floor "+floor+"/"+floors_count);
@@ -281,6 +281,7 @@ function db2cadjson() {//{{{
 		var ff='';
 		ff+='\t"'+f+'": {\n';
 		ff+=geoms.join(",\n");
+		ff+=underlay_save_cad(f);
 		ff+='\n\t}';
 		json.push(ff);
 	}

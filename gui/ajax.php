@@ -7,7 +7,7 @@ function ajaxPostUnderlay() { #{{{
 	$z=file_put_contents($dest, base64_decode($_POST['base64']));
 
 	if($z>0) { 
-		echo json_encode(array("msg"=>"ajaxPostUnderlay(): OK", "err"=>0, "data"=>""));
+		echo json_encode(array("msg"=>"", "err"=>0, "data"=>""));
 	} else { 
 		echo json_encode(array("msg"=>"ajaxPostUnderlay(): ".error_get_last()['message'] , "err"=>1, "data"=>""));
 	}

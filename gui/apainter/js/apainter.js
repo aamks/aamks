@@ -189,12 +189,6 @@ function zoomed_canvas() {//{{{
 	ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
 }
 //}}}
-function fadeout_setup_box() {//{{{
-	if(gg[active_letter].t == 'underlay_scaler') { return; }
-	$('right-menu-box').fadeOut(0);
-	underlay_draggable=0;
-}
-//}}}
 function calc_next_floor() {//{{{
 	if (floor == floors_count - 1) {
 		return 0;
@@ -209,8 +203,8 @@ function keyboard_events() {//{{{
 		else if (e.key in gg) { active_letter=e.key; new_geom(); }
 	});
 	$(this).keydown((e) => { if (e.key == 'h') { alternative_view(); } });
+	$(this).keydown((e) => { if (e.key == 'p') { $("#p1").remove() ; } });
 	$(this).keydown((e) => { if (e.key == 'n') { change_floor(calc_next_floor()); } });
-	$(this).keyup((e) =>   { if (e.key == 'p') { underlay_form(); }});
 	$(this).keydown((e) => { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
 }
 //}}}
@@ -565,6 +559,8 @@ function guess_floors_z_origin() {//{{{
 }
 //}}}
 function change_floor(requested_floor) {//{{{
+	$("#p1").remove();
+	$('right-menu-box').fadeOut(0);
 	floor=requested_floor;
 	guess_floors_z_origin();
 	if(floor > floors_count-1) { 
@@ -779,7 +775,7 @@ function new_geom() {//{{{
 	var mx, my;
 	var self = this;
 	create_self_props(self);
-	fadeout_setup_box(); 
+	$('right-menu-box').fadeOut(0);
 	buildingDetachZoomer();
 	svg.on('mousedown', function() {
 		after_click=1;
@@ -806,12 +802,11 @@ function new_geom() {//{{{
 		self.rr.y1=my;
 		self.rr.cx=mx;
 		self.rr.cy=my;
-		if(['room', 'hole', 'window', 'door'].includes(self.type)) { 
-			snap(mouse,self,after_click);
-		}
+		if(['room', 'hole', 'window', 'door'].includes(self.type)) { snap(mouse,self,after_click); }
 		if(after_click==1) { updateSvgElem(self); } 
 	});  
 	svg.on('mouseup', function() {
+		if(['underlay_scaler'].includes(self.type))                { underlay_form(); }
 		svg.on('mousedown', null);
 		svg.on('mousemove', null);
 		svg.on('mouseup', null);
