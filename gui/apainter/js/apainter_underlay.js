@@ -1,15 +1,37 @@
 function register_underlay_listeners() {//{{{
 	$("body").on("blur"   , "#p1"				  , function() { $("#p1").remove(); });
-	$("body").on("click"  , "#remove_underlay"    , function() { $("#underlay"+floor).remove(); });
+	$("body").on("click"  , "#remove_underlay"    , function() { remove_underlay(); });
 	$("body").on("change" , "#add_underlay"       , function() { add_underlay(this); });
 	$("body").on("keyup"  , "#underlay_opacity"   , function() { underlay_single_attrib(floor, 'opacity' , $("#underlay_opacity").val()) ; }) ;
 	$("body").on("keyup"  , "#underlay_invert"    , function() { underlay_single_attrib(floor, 'invert'  , $("#underlay_invert").val())  ; }) ;
-	$("body").on("click"  , "#set_underlay_width" , function() { set_underlay_width(floor)   ; }) ;
+	$("body").on("click"  , "#set_underlay_width" , function() { calc_underlay_width(floor)   ; }) ;
 	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#apainter-svg").css("pointer-events", "auto"); $('image').css("pointer-events", "none");$('.underlay').css("pointer-events", "none"); underlay_form(); } });
 	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#apainter-svg").css("pointer-events", "none"); $('image').css("pointer-events", "auto");$('.underlay').css("pointer-events", "auto"); underlay_form(); } });
 }
 //}}}
-function set_underlay_width(floor) {//{{{
+function import_underlay(data,f,reload_form=0) {//{{{
+	// By convention underlayX and uimgX always exist but may contain zeroes
+
+	$("#underlay"+f).remove();
+	d3.select('#building').insert("g", "g").attr("id", "underlay"+f).attr("class", "underlay");
+	if(data != undefined) {
+		data['floor']=f;
+		$.post('/aamks/ajax.php?ajaxUnderlayOnInit', data, function (json) { 
+			ajax_msg(json);
+			dd(f,json);
+			if(f==floor) { visibility='visible'; } else { visibility='hidden'; }
+			d3.select('#underlay'+f).attr("visibility", visibility).append("image").attr("id", "uimg"+f).attr("xlink:href", json.data.img).attr("pointer-events", "none");
+			underlay_attribs(f, data);
+			if(reload_form==1) { underlay_form(); }
+		});
+	} else {
+		d3.select('#underlay'+f).attr("visibility", 'hidden').append("image").attr("id", "uimg"+f);
+		underlay_attribs(f);
+	}
+	underlay_zoomer(f);
+}
+//}}}
+function calc_underlay_width(floor) {//{{{
 	underlay_scale=Math.round(Number($("#uimg"+floor).attr("width")) * Number($("#underlay_width").val()) / Number($("#p1").attr('width')));
 	d3.select("#uimg"+floor).attr('width', underlay_scale); 
 	$("#p1").remove();
@@ -24,9 +46,9 @@ function underlay_single_attrib(floor,key,val) { // {{{
 //}}}
 function underlay_attribs(floor,aa=0) {//{{{
 	if (aa==0) {
-		d3.select('#underlay'+floor).attr("visibility", "hidden").append("image").attr("id", "uimg"+floor).attr("width", 0).style("opacity", 0).attr("transform","translate(0,0)").attr("invert",0).attr("type", 'none');
+		d3.select("#uimg"+floor).attr("width", 0).style("opacity", 0).attr("invert",0).attr("type", 'none');
 	} else {
-		d3.select("#uimg"+floor).attr("id", "uimg"+floor).attr("width", aa.width).style("opacity", aa.opacity).attr('filter', null).attr("invert", 0).attr("type", aa.type);
+		d3.select("#uimg"+floor).attr("width", aa.width).style("opacity", aa.opacity).attr('filter', null).attr("invert", 0).attr("type", aa.type);
 		if(aa.invert==1) { underlay_single_attrib(floor , 'invert' , 1); }
 		if("transform" in aa) { underlay_single_attrib(floor , 'transform', aa.transform); }
 	}
@@ -39,25 +61,6 @@ function underlay_zoomer(floor) {//{{{
 				d3.select("#uimg"+floor).attr("transform","translate("+Math.round(d3.event.transform.x)+","+Math.round(d3.event.transform.y)+")"); 
 			})
 		)
-}
-//}}}
-function import_underlay(data,f,display_updated_form=0) {//{{{
-	$("#underlay"+f).remove();
-	d3.select('#building').insert("g", "g").attr("id", "underlay"+f).attr("class", "underlay");
-	if(data != undefined) {
-		data['floor']=f;
-		$.post('/aamks/ajax.php?ajaxUnderlayOnInit', data, function (json) { 
-			ajax_msg(json);
-			if(f==floor) { visibility='visible'; } else { visibility='hidden'; }
-			d3.select('#underlay'+f).attr("visibility", visibility).append("image").attr("id", "uimg"+f).attr("xlink:href", json.data.img).attr("pointer-events", "none");
-			underlay_attribs(f, data);
-				underlay_save_cad("0");
-			if(display_updated_form==1) { underlay_form(); }
-		});
-	} else {
-		underlay_attribs(f);
-	}
-	underlay_zoomer(f);
 }
 //}}}
 function underlay_form() {//{{{
@@ -83,8 +86,36 @@ function underlay_form() {//{{{
 
 }
 //}}}
+function remove_underlay() {//{{{
+	$.post('/aamks/ajax.php?ajaxRemoveUnderlay', {'floor': floor}, function (json) {});
+	$("#uimg"+floor).remove(); 
+	d3.select('#underlay'+floor).append("image").attr("id", "uimg"+floor);
+	underlay_attribs(floor);
+	db2cadjson();
+}
+//}}}
+function add_underlay(e) {//{{{
+	var reader = new FileReader();
+	reader.readAsDataURL(e.files[0]);
+	reader.onload = function(event) {
+		raw=event.target.result;
+		arr=raw.split(";",2);
+		type=arr[0].split(":",2)[1].split("/")[1];
+		base64=arr[1].split(",",2)[1];
+		if(['jpeg', 'png'].indexOf(type) > -1) {
+			uSetup={ 'floor': floor, 'type': type, 'base64': base64, 'width':4000, 'opacity': 0.5, 'transform': "translate(0,0)" };
+			$.post('/aamks/ajax.php?ajaxAddUnderlay', uSetup, function (json) { 
+				ajax_msg(json);
+				import_underlay(uSetup, floor,1);
+			});
+		} else {
+			ajax_msg({'msg': "Aamks only supports png/jpg/svg/pdf underlays", 'err':1});
+		}
+	}
+}
+//}}}
 function underlay_save_cad(floor) {//{{{
-	if($("#uimg"+floor).attr('width') == 0) {
+	if($("#uimg"+floor).attr('width') == 0) { // Empty exists with a zero-width
 		return "";
 	}
 	json={}
@@ -100,25 +131,5 @@ function pdf_svg_dom(json) { //{{{
 	ajax_msg(json);
 	$('#underlay'+floor).attr("href", 'data:image/svg+xml;utf8,'+json.data);
 	$('#underlay'+floor).attr("width", 8000);
-}
-//}}}
-function add_underlay(e) {//{{{
-	var reader = new FileReader();
-	reader.readAsDataURL(e.files[0]);
-	reader.onload = function(event) {
-		raw=event.target.result;
-		arr=raw.split(";",2);
-		type=arr[0].split(":",2)[1].split("/")[1];
-		base64=arr[1].split(",",2)[1];
-		if(['jpeg', 'png'].indexOf(type) > -1) {
-			uSetup={ 'floor': floor, 'type': type, 'base64': base64, 'width':4000, 'opacity': 0.5, 'transform': "translate(0,0)" };
-			$.post('/aamks/ajax.php?ajaxPostUnderlay', uSetup, function (json) { 
-				ajax_msg(json);
-				import_underlay(uSetup, floor,1);
-			});
-		} else {
-			ajax_msg({'msg': "Aamks only supports png/jpg/svg/pdf underlays", 'err':1});
-		}
-	}
 }
 //}}}
