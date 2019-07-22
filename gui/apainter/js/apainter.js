@@ -4,22 +4,20 @@ var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var gg;
 var ggx;
+var zoom;
 var DbInsert;
 var UpdateVis;
 var NextIdx;
 var currentView=0;
 var CreateSvg;
-var CanvasBuilder;
 var selected_geom='';
 var active_letter='r';
 var svg;
 var floor=0;
 var floors_count=1;
 var floor_zorig=0;
-var g_aamks;
-var g_floor;
-var g_img;
-var g_snap_lines;
+var building;
+var snapLines;
 var ax={};
 var snap_dist=50;
 var snap_lines={};
@@ -28,8 +26,6 @@ var default_door_width=90;
 var default_floor_dimz=350;
 var default_window_dimz=150;
 var default_window_offsetz=100;
-var underlay_imgs={};
-var underlay_draggable=0;
 var vh_snap=[];
 var evacueeRadius;
 //}}}
@@ -40,10 +36,12 @@ $(function()  {
 		gg=x['aamksGeoms'];
 		ggx=x['aamksGeomsMap'];
 		evacueeRadius=x['evacueeRadius'];
-		CanvasBuilder();
+		canvas_builder();
 		left_menu_box();
 		import_cadjson();
 		register_listeners();
+		register_underlay_listeners();
+		//dd($('#building')[0]);
 	});
 });
 //}}}
@@ -91,8 +89,8 @@ CreateSvg=function create_svg(geom) { //{{{
 	} else {
 		var elem='rect';
 	}
-	g_floor=d3.select("#floor"+geom.floor);
-	g_floor.append(elem)
+	d3.select("#floor"+geom.floor)
+		.append(elem)
 		.attr('id', geom.name)
 		.attr('r', evacueeRadius)
 		.attr('fill', gg[geom.letter].c)
@@ -127,10 +125,10 @@ UpdateVis=function updateVisPropsElem(geom) {//{{{
 	}
 }
 //}}}
-DbInsert=function db_insert(geom, call_geoms_changed=1) { //{{{
+DbInsert=function db_insert(geom, call_updateSnapLines=1) { //{{{
 	// On the occassions we are massively called from import_cadjson() and alike
-	// we don't want to auto call the heavy geoms_changed() each time -- it is sufficient 
-	// that import_cadjson() makes a single geoms_changed() call after hundreds
+	// we don't want to auto call the heavy updateSnapLines() each time -- it is sufficient 
+	// that import_cadjson() makes a single updateSnapLines() call after hundreds
 	// of geoms are DbInserted().
 
 	var lines=[];
@@ -144,8 +142,8 @@ DbInsert=function db_insert(geom, call_geoms_changed=1) { //{{{
 	if(geom.type!='underlay_scaler') {
 		db.insert({ "name": geom.name, "idx": geom.idx, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "window_offsetz": geom.window_offsetz, "mvent_offsetz": geom.mvent_offsetz, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type, "room_enter": geom.room_enter });
 		show_selected_properties();
-		if(call_geoms_changed==1) { geoms_changed(); }
-	}
+		if(call_updateSnapLines==1) { updateSnapLines(); }
+	} 
 }
 //}}}
 NextIdx=function next_idx() {//{{{
@@ -159,46 +157,37 @@ NextIdx=function next_idx() {//{{{
 	return next;
 }
 //}}}
-
-function canvas_zoomer() { //{{{
-	var zoom = d3.zoom().on("zoom", zoomed_canvas);
-
-	svg.append("rect")
-		.attr("id", 'zoomer')
-		.attr("width", canvas[0])
-		.attr("height", canvas[1])
-		.attr("opacity", 0)
-		.attr("pointer-events", "visible")
-		.attr("visibility", "hidden")
-		.call(zoom)
-		.call(zoom.transform, d3.zoomIdentity.translate(100,100).scale(0.2))
+function buildingDetachZoomer() {//{{{
+	d3.select("#apainter-svg").call(d3.zoom().on("zoom", null)).on("mousedown.zoom", null);
+}
+//}}}
+function buildingAttachZoomer() {//{{{
+	d3.select("#apainter-svg")
 		.call(d3.zoom()
 			.scaleExtent([1 / 30, 4])
-			.filter(function(){
-			return ( event.button === 0 ||
-					 event.button === 1);
-			})
 			.translateExtent([[-1200, -1200], [1000000 , 1000000]])
 			.on("zoom", zoomed_canvas)
-		);
+		)
+		.on("dblclick.zoom", null);
+}
+//}}}
+function resetView(){//{{{
+	zoom.transform(svg, d3.zoomIdentity.translate(100,100).scale(0.2));
+}
+//}}}
+function zoomInit() { //{{{
+	zoom = d3.zoom().on("zoom", zoomed_canvas);
+	resetView();
+	buildingAttachZoomer(); 
 }
 //}}}
 function zoomed_canvas() {//{{{
 	zt=d3.event.transform;
-	zt.k = Math.round(zt.k * 100) / 100;
-	zt.x = Math.round(zt.x * 100) / 100;
-	zt.y = Math.round(zt.y * 100) / 100;
-	g_aamks.attr("transform", zt);
-	g_snap_lines.attr("transform", zt);
+	building.attr("transform", zt);
+	snapLines.attr("transform", zt);
 	$("#snapper").attr("transform", zt);
-	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)));
+	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)))
 	ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
-}
-//}}}
-function fadeout_setup_box() {//{{{
-	if(gg[active_letter].t == 'underlay_scaler') { return; }
-	$('right-menu-box').fadeOut(0);
-	underlay_draggable=0;
 }
 //}}}
 function calc_next_floor() {//{{{
@@ -214,12 +203,11 @@ function keyboard_events() {//{{{
 		if (e.key == 'g')     { properties_type_listing(); }
 		else if (e.key in gg) { active_letter=e.key; new_geom(); }
 	});
-	$(this).keydown((e) =>  { if (e.key == 'h')     { alternative_view(); } });
-	$(this).keydown((e) =>  { if (e.key == 'n')     { change_floor(calc_next_floor()); } }); 
-
-	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "hidden"); } });
-	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#zoomer").attr("visibility", "visible"); } });
-	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?'); } });
+	$(this).keydown((e) => { if (e.key == 'h') { alternative_view(); } });
+	$(this).keydown((e) => { if (e.key == 'p') { $("#p1").remove() ; } });
+	$(this).keydown((e) => { if (e.key == 'n') { change_floor(calc_next_floor()); } });
+	$(this).keydown((e) => { if (e.key == '=') { resetView(); } });
+	$(this).keydown((e) => { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
 }
 //}}}
 function blink_selected() {//{{{
@@ -268,7 +256,7 @@ function alternative_view() {//{{{
 function remove_geom(geom) {//{{{
 	$("#"+geom).remove();
 	db({"name":geom}).remove();
-	geoms_changed();
+	updateSnapLines();
 }
 //}}}
 function properties_type_listing_plain() {//{{{
@@ -492,9 +480,9 @@ function show_selected_properties() {//{{{
 
 }
 //}}}
-function geoms_changed() { //{{{
+function updateSnapLines() { //{{{
 	// snap lines
-	d3.select("#g_snap_lines").selectAll("line").remove();
+	d3.select("#snapLines").selectAll("line").remove();
 	var lines=db({'floor': floor}).select("lines");
 	snap_lines['horiz']=[];
 	snap_lines['vert']=[];
@@ -511,10 +499,10 @@ function geoms_changed() { //{{{
 		snap_lines['vert'].push(right);
 		snap_lines['vert'].push(left);
 
-		g_snap_lines.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
-		g_snap_lines.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
-		g_snap_lines.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , 0).attr('y2' , 100000).attr("visibility", "hidden");
-		g_snap_lines.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
+		snapLines.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
+		snapLines.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
+		snapLines.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , 0).attr('y2' , 100000).attr("visibility", "hidden");
+		snapLines.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
 
 	}
 	snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
@@ -539,12 +527,13 @@ function axes() { //{{{
 		.ticks(screen.height/200)
 		.tickSize(canvas[0])
 		.tickPadding(2 - canvas[0]);
+	svg.append("g").attr("id", "axes");
 
-	ax.gX = svg.append("g")
+	ax.gX = d3.select("#axes").append("g")
 		.attr("class", "axis axis--x")
 		.call(ax.xAxis);
 
-	ax.gY = svg.append("g")
+	ax.gY = d3.select("#axes").append("g")
 		.attr("class", "axis axis--y")
 		.call(ax.yAxis);
 }
@@ -572,34 +561,25 @@ function guess_floors_z_origin() {//{{{
 }
 //}}}
 function change_floor(requested_floor) {//{{{
+	$("#p1").remove();
+	$('right-menu-box').fadeOut(0);
 	floor=requested_floor;
 	guess_floors_z_origin();
 	if(floor > floors_count-1) { 
 		floors_count++;
-		g_floor = g_aamks.append("g").attr("id", "floor"+floor).attr("class", "g_floor").attr('fill-opacity',0.4);
+		building.append("g").attr("id", "floor"+floor).attr("class", "floor").attr('fill-opacity',0.4);
 	}
-	var active_f="#floor"+floor;
-	var inactive_f=".g_floor:not("+active_f+")";
-	g_floor=d3.select(active_f);
-	$(inactive_f).animate({"opacity": 0}, 1, function(){
-		$(inactive_f).attr("visibility","hidden");
-	});
-	$(active_f).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1);
 
-	var active_img="#g_img"+floor;
-	var inactive_img=".g_img:not("+active_img+")";
-	g_img=d3.select(active_img);
-	$(inactive_img).animate({"opacity": 0}, 1000, function(){
-		$(inactive_img).attr("visibility","hidden");
-	});
-	$(active_img).attr("visibility","visible").css("opacity",0).animate({"opacity": 1}, 1);
+	$(".floor").attr("visibility","hidden");
+	$("#floor"+floor).attr("visibility","visible");
 
-	geoms_changed();
+	$(".underlay").attr("visibility","hidden");
+	$("#underlay"+floor).attr("visibility","visible");
+
+	updateSnapLines();
 	d3.select("#floor_text").text("floor "+floor+"/"+floors_count);
 	$("#floor_text").clearQueue().finish();
 	$("#floor_text").css("opacity",1).animate({"opacity": 0.05}, 1000);
-
-
 }
 //}}}
 function save_setup_box() {//{{{
@@ -616,7 +596,6 @@ function save_setup_box() {//{{{
 		default_window_offsetz=parseInt($("#default_window_offsetz").val());
 		legend();
 	} 
-	save_setup_box_underlay();
 	var x=db({'name':selected_geom}).get();
 	if (x.length==0) { return; }
 
@@ -798,7 +777,8 @@ function new_geom() {//{{{
 	var mx, my;
 	var self = this;
 	create_self_props(self);
-	fadeout_setup_box(); 
+	$('right-menu-box').fadeOut(0);
+	buildingDetachZoomer();
 	svg.on('mousedown', function() {
 		after_click=1;
 		mouse=d3.mouse(this);
@@ -824,12 +804,11 @@ function new_geom() {//{{{
 		self.rr.y1=my;
 		self.rr.cx=mx;
 		self.rr.cy=my;
-		if(['room', 'hole', 'window', 'door'].includes(self.type)) { 
-			snap(mouse,self,after_click);
-		}
+		if(['room', 'hole', 'window', 'door'].includes(self.type)) { snap(mouse,self,after_click); }
 		if(after_click==1) { updateSvgElem(self); } 
 	});  
 	svg.on('mouseup', function() {
+		if(['underlay_scaler'].includes(self.type))                { underlay_form(); }
 		svg.on('mousedown', null);
 		svg.on('mousemove', null);
 		svg.on('mouseup', null);
@@ -846,6 +825,7 @@ function new_geom() {//{{{
 		}
 		after_click=0;
 		$('#snapper').attr('fill-opacity', 0);
+		buildingAttachZoomer();
 	});
 }
 //}}}
@@ -860,7 +840,7 @@ function updateSvgElem(geom) {  //{{{
 	});   
 }
 //}}}
-CanvasBuilder=function canvas_builder() { //{{{
+function canvas_builder() { //{{{
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
 	d3.select('view2d').append('button-right-menu-box').html("SETUP");
@@ -869,19 +849,21 @@ CanvasBuilder=function canvas_builder() { //{{{
 	d3.select('view2d').append('left-menu-box');
 	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
-	svg.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
-	svg.append("text").attr("x",130).attr("y",140).attr("id", "shortcuts_help1").text("n: next floor");
-	svg.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: 3d view");
+	tt=svg.append("g").attr("id", "texts");
+	tt.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
+	tt.append("text").attr("x",130).attr("y",140).attr("id", "shortcuts_help1").text("n: next floor");
+	tt.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: 3d view");
+	tt.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floors_count);
 
 	axes();
-	g_aamks = svg.append("g").attr("id", "g_aamks");
-	g_floor = g_aamks.append("g").attr("id", "floor0").attr("class", "g_floor").attr('fill-opacity',0.4);
-	g_snap_lines = svg.append("g").attr("id", "g_snap_lines");
+	building = svg.append("g").attr("id", "building");
+	building.append("g").attr("id", "floor0").attr("class", "floor").attr('fill-opacity',0.4);
+	snapLines = svg.append("g").attr("id", "snapLines");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend_static();
 	legend();
 	make_setup_box();
-	canvas_zoomer();
+	zoomInit();
 	keyboard_events();
 	geom_select_deselect();
 

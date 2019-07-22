@@ -2,11 +2,48 @@
 session_name('aamks');
 require_once("inc.php"); 
 
-function ajaxBeckShowImages() { #{{{
-	$f=$_SESSION['main']['working_home']."/picts/tree.png";
-	$data64=shell_exec("base64 $f");
-	$base64img="<img style='display:block; width:100px;height:100px;' src='data:image/jpeg;base64, $data64' />";
-	echo json_encode(array("msg"=>"img src", "err"=>0, "data"=>$base64img));
+function ajaxAddUnderlay() { #{{{
+	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor].$_POST[type]";
+	if($_POST['type']=='pdf') { 
+		$z=pdf2svg();
+	} else {
+		$z=file_put_contents($dest, base64_decode($_POST['base64']));
+	}
+
+	if($z>0) { 
+		echo json_encode(array("msg"=>"", "err"=>0, "data"=> ""));
+	} else { 
+		echo json_encode(array("msg"=>"ajaxAddUnderlay(): ".error_get_last()['message'] , "err"=>1, "data"=>""));
+	}
+}
+/*}}}*/
+function pdf2svg() { /*{{{*/
+	$src=$_SESSION['main']['working_home']."/underlays/$_POST[floor].pdf";
+	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor].svg";
+	file_put_contents($src, base64_decode($_POST['base64']));
+	exec("pdf2svg $src $dest && rm -rf $src", $x, $z);
+	if(empty($z)) { return 1; } else { return 0; }
+
+}
+/*}}}*/
+function ajaxRemoveUnderlay() { #{{{
+	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor]";
+	shell_exec("rm $dest.*");
+}
+/*}}}*/
+function ajaxGetUnderlay() { #{{{
+	if($_POST['type']=='pdf') { $_POST['type']='svg'; }
+	$src=$_SESSION['main']['working_home']."/underlays/$_POST[floor].$_POST[type]";
+	if(in_array($_POST['type'], array("jpeg", "png"))) { 
+		$data64=shell_exec("base64 $src");
+		$img="data:image/$_POST[type];base64,$data64";
+	}
+	if(in_array($_POST['type'], array("svg"))) { 
+		$img=shell_exec("cat $src"); 
+		$img=preg_replace("/#/", "%23", $img);
+		$img="data:image/svg+xml;utf8,$img";
+	}
+	echo json_encode(array("msg"=> '', "err"=>0, "data"=>$img));
 }
 /*}}}*/
 function ajaxChangeActiveScenario() { #{{{
@@ -179,20 +216,6 @@ function ajaxGoogleLogin() { /*{{{*/
 	$_SESSION['nn']->set_user_variables($ret[0]);
 }
 /*}}}*/
-function ajaxPdf2svg() { /*{{{*/
-	$src=$_FILES['file']['tmp_name'];
-	$dest=$_SESSION['main']['working_home']."/out.svg";
-	$z=shell_exec("pdf2svg $src $dest 2>&1");
-	$svg='';
-	if(empty($z)) { 
-		$svg=shell_exec("cat $dest"); 
-		$svg=preg_replace("/#/", "%23", $svg);
-		echo json_encode(array("msg"=>"", "err"=>0,  "data"=>$svg));
-	} else {
-		echo json_encode(array("msg"=>"ajaxPdf2svg(): $z", "err"=>1, "data"=>""));
-	}
-}
-/*}}}*/
 function main() { /*{{{*/
 	header('Content-type: application/json');
 
@@ -200,7 +223,6 @@ function main() { /*{{{*/
 
 	if(!empty($_SESSION['main']['user_id']))            {
 
-		if(isset($_GET['ajaxBeckShowImages']))          { ini_set('display_errors', 0) ; ajaxBeckShowImages()       ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxPdf2svg']))                 { ini_set('display_errors', 0) ; ajaxPdf2svg()              ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxApainterExport']))          { ini_set('display_errors', 0) ; ajaxApainterExport()       ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxApainterImport']))          { ini_set('display_errors', 0) ; ajaxApainterImport()       ; ini_set('display_errors', 1) ; }
@@ -211,6 +233,9 @@ function main() { /*{{{*/
 		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxGetUnderlay']))          { ini_set('display_errors', 0) ; ajaxGetUnderlay()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxAddUnderlay']))             { ini_set('display_errors', 0) ; ajaxAddUnderlay()          ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxRemoveUnderlay']))          { ini_set('display_errors', 0) ; ajaxRemoveUnderlay()       ; ini_set('display_errors', 1) ; }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

@@ -3,7 +3,7 @@ var currentAnimMeta;
 var currentAnimData;
 var incDB;
 var colors;
-var wallsSize;
+var wallsSize=0;
 var doorsSize;
 var evacueeRadius;
 var velocitiesSize;
@@ -11,6 +11,7 @@ var eData=[];
 var roomsOpacity=[];
 var dstatic;
 var dstaticAllFloors;
+var paused=0;
 var lerps;
 var lastFrame=1;
 var labelsSize=50;
@@ -29,6 +30,7 @@ window.onload = function() {
 	resizeAndRedrawCanvas();
 	left_menu_box();
 	right_menu_box();
+	listenEvents();
 
 function initLayers() {//{{{
 	new Layer({'name': 'rooms'});
@@ -39,25 +41,43 @@ function initLayers() {//{{{
 	new Layer({'name': 'info'});
 }
 //}}}
-function listenEvents() {//{{{
-	$(window).resize(resizeAndRedrawCanvas);
-	$('#labels-size').on('keyup'     , function() { labelsSize=this.value     ; resetCanvas() ; })
-	$('#doors-size').on('keyup'      , function() { doorsSize=this.value      ; resetCanvas() ; })
-	$('#walls-size').on('keyup'      , function() { wallsSize=this.value      ; resetCanvas() ; })
-	$('#evacuee-radius').on('keyup'  , function() { evacueeRadius=this.value  ; resetCanvas() ; })
-	$('#velocities-size').on('keyup' , function() { velocitiesSize=this.value ; resetCanvas() ; })
-	$('.switch-floor').on('click'    , function() { switchFloor($(this).attr('data-floor')); })
+function listenForSpeedChange() {//{{{
+	$("svg-slider").on("click", function(){
+		clearEvacueesLabels();
+		paused=0;
+	})
 
-	$('canvas-mouse-coords').click(function() {
-		lerps=Math.round(1/(($('#speed').val()/100)+0.00000000000000001))+1; 
-		$("canvas-mouse-coords").delay(1500).fadeOut('slow'); 
-
-		_.each(evacueesLabelsGroup, function(e) {
-			e.removeChildren();
-		});
-		view.play();
+	$("body").on("keyup", '#speed', function() { 
+		clearEvacueesLabels();
+		paused=0;
+		changeSpeed(parseInt($('#speed').val()));
 	});
 
+	$(this).keydown((e) => { 
+		if (e.keyCode == 32) { 
+			$("input").blur();
+			$("select").blur();
+			if(paused==1) { 
+				clearEvacueesLabels();
+				paused=0;
+			} else { 
+				showEvacueesLabels(); 
+				paused=1;
+			}
+			$("canvas-mouse-coords").delay(1500).fadeOut('slow'); 
+		}
+	});
+}
+//}}}
+function listenEvents() {//{{{
+	$(window).resize(resizeAndRedrawCanvas);
+
+	$('body').on('keyup' , '#labels-size'     , function() { labelsSize=this.value     ; resetCanvas() ; })
+	$('body').on('keyup' , '#doors-size'      , function() { doorsSize=this.value      ; resetCanvas() ; })
+	$('body').on('keyup' , '#walls-size'      , function() { wallsSize=this.value      ; resetCanvas() ; })
+	$('body').on('keyup' , '#evacuee-radius'  , function() { evacueeRadius=this.value  ; resetCanvas() ; })
+	$('body').on('keyup' , '#velocities-size' , function() { velocitiesSize=this.value ; resetCanvas() ; })
+	$('body').on('click' , '.switch-floor'    , function() { switchFloor($(this).attr('data-floor')); })
 
 	$('#animator-canvas').on( 'DOMMouseScroll mousewheel', function ( event ) {
 	  if( event.originalEvent.detail > 0 || event.originalEvent.wheelDelta < 0 ) { //alternative options for wheelData: wheelDeltaX & wheelDeltaY
@@ -70,28 +90,26 @@ function listenEvents() {//{{{
 	});
 
 
-	$('#style-change').on('change', function() {
+	$('body').on('change', '#style-change', function() {
 		if (this.value == "Light") { 
-			doorsSize=0;
-			labelsSize=0;
 			setColors('light');
 		} else {
-			labelsSize=$('#labels-size').val();
-			doorsSize=$('#doors-size').val();
 			setColors('dark');
 		}
 		resetCanvas();
 	});
 
-	$('#highlight-geoms').on('change', function() {
+	$('body').on('change', '#highlight-geoms', function() {
 		if(this.value.length>0) { highlightGeom(this.value); }
 	});
-	$('.canvas_slider_rect').click(function() {
+	$('body').on('click', '.canvas_slider_rect', function() {
 		sliderPos=$(this).data('id');
 		lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
 		frame=Math.floor(lerpFrame/lerps);
 		$('.canvas_slider_rect').attr("fill", "#333");
 	});
+
+	listenForSpeedChange();
 }
 //}}}
 function right_menu_box() {//{{{
@@ -108,10 +126,10 @@ function right_menu_box() {//{{{
 function setColors(mode) {//{{{
 	colors={};
 	for (var i in incDB['aamksGeoms']) {
-		if(mode=='dark') { 
-			colors[incDB['aamksGeoms'][i]['x']]=incDB['aamksGeoms'][i];
-		} else {
-			colors[incDB['aamksGeoms'][i]['x']]=incDB['aamksGeoms'][i];
+		colors[incDB['aamksGeoms'][i]['x']]=_.cloneDeep(incDB['aamksGeoms'][i]);
+		if(mode=='light') { 
+			colors[incDB['aamksGeoms'][i]['x']]['c']=colors[incDB['aamksGeoms'][i]['x']]['lightc'];
+			colors[incDB['aamksGeoms'][i]['x']]['stroke']="#000";
 		}
 	}
 	$("#animator-canvas").css("background-color", colors['canvas']['c']);
@@ -147,7 +165,7 @@ function makeChooseVis() {//{{{
 	});
 };
 //}}}
-function initialScaleCenter(meta) {//{{{
+function rescaleCanvas(meta) {//{{{
 	if(meta=='world2d') { 
 		var center=dstatic.world_meta.center;
 		var xdim=dstatic.world_meta.xdim;
@@ -160,6 +178,7 @@ function initialScaleCenter(meta) {//{{{
 	var scale=Math.min(($(window).width() - 20) / xdim, ($(window).height() - 70) / ydim)*0.9;
 	view.setScaling(scale);
 	view.center = new Point(center); 
+	scaleAnims();
 }
 //}}}
 function switchFloor(chosen_floor) {//{{{
@@ -170,9 +189,9 @@ function switchFloor(chosen_floor) {//{{{
 				delete dstatic.floors[floor_name];
 			}
 		});
-		initialScaleCenter(chosen_floor);
+		rescaleCanvas(chosen_floor);
 	} else {
-		initialScaleCenter('world2d');
+		rescaleCanvas('world2d');
 	}
 	resetCanvas();
 }
@@ -189,12 +208,12 @@ function floorLinks() {//{{{
 function showStaticImage() {//{{{
 	// After we read a record from anims.json we reset the current visualization and setup a new one.
 	// We can only start animation after we are done with static rooms, doors etc.
-	// Paperjs can only scale relative to current size, so we must always return to the previous scale in view.scale().
+
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
 		ajax_msg(response);
 		dstatic=response['data'];
 		dstaticAllFloors=response['data'];
-		initialScaleCenter('world2d');
+		rescaleCanvas('world2d');
 
 		$("animator-title").html(currentAnimMeta['title']);
 		$("animator-time").html(currentAnimMeta['time']);
@@ -204,39 +223,58 @@ function showStaticImage() {//{{{
 		makeSetupBoxInputs();
 		makeColors();
 		highlightDroplist();
-		listenEvents();
-
 	});
+}
+//}}}
+function showEvacueesLabels() {//{{{
+	if(eData.length<1) { return; }
+	evacueesInFrame(); // requrired to sync evacuees with labels positions
+	_.each(eData[0], function(frame0_data,ffloor) {
+		_.each(frame0_data, function(e,i) {
+			x=evacueesGroup[ffloor].children[i].position.x;
+			y=evacueesGroup[ffloor].children[i].position.y;
+			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(15+x-evacueeRadius/1,y-evacueeRadius/7), fillColor:"#000", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.5 }));
+			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y+evacueeRadius/3), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.5}));
+		})
+	})
+}
+//}}}
+function initSpeed() {//{{{
+	lastFrame=eData.length-1;
+	var speed=Math.round(lastFrame/5)
+	$("animator-time").html(animFormatTime());
+	$("animation-speed").html("<input type=text size=2 name=speed id=speed value="+speed+">");
+	changeSpeed(speed);
+}
+//}}}
+function clearEvacueesLabels() {//{{{
+	_.each(eData[0], function(frame0_data,ffloor) {
+		evacueesLabelsGroup[ffloor].removeChildren();
+	})
+}
+//}}}
+function changeSpeed(speed) {//{{{
+	lerps=Math.round(100/(speed+0.0000000000000000001))+1;
+	lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
+	$('.canvas_slider_rect').attr("fill", "#333"); 
 }
 //}}}
 function showAnimation() {//{{{
 	// After static data is loaded to paperjs we can run animations.
-	// 0.000001 & friends prevent divisions by 0.
 	
 	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': currentAnimMeta['anim'] }, function(response) { 
 		ajax_msg(response);
+		paused=0;
 		currentAnimData=JSON.parse(response['data']);
 		eData=currentAnimData.animations.evacuees;
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
-		lastFrame=eData.length-1;
-		var speedProposal=Math.round(lastFrame/5)
-		$("animator-time").html(animFormatTime());
-		$("animation-speed").html("<input type=text size=2 name=speed id=speed value="+speedProposal+">");
-		lerps=Math.round(1/((speedProposal/100)+0.0000000000000000001))+1;
-
-		$("#speed").on("keyup", function(){
-			lerps=Math.round(1/(($('#speed').val()/100)+0.0000000000000000001))+1;
-			lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
-			$('.canvas_slider_rect').attr("fill", "#333"); 
-		});
-
 		initRoomSmoke();
 		initAnimAgents();
+		initSpeed();
 	});
 }
 //}}}
 function scaleAnims() {//{{{
-	wallsSize=Math.round(0.5/view.scaling.x);
 	velocitiesSize=Math.round(1/view.scaling.x);
 	doorsSize=wallsSize;
 }
@@ -249,7 +287,6 @@ function resetCanvas() {//{{{
 	initLayers();
 	initStaticGeoms();
 	letItBurn();
-	scaleAnims();
 
 	if(currentAnimMeta["highlight_geom"]!=null) { highlightGeom(currentAnimMeta["highlight_geom"]); }
 	if(currentAnimMeta["anim"] != undefined)    { showAnimation(currentAnimMeta); }
@@ -352,29 +389,28 @@ function drawMeta(floor,tx,ty) {//{{{
 	opacity = 0.1;
 	fontSize = labelsSize * 5;
 	pos=[ dstatic.world_meta['minx'] + tx - 500, dstatic.floors[floor]['floor_meta']['center'][1] + ty + 200 ] ;
-
 	new PointText({ point: new Point(pos[0], pos[1]), content: floor, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
 }
 //}}}
 function drawPath(type,data,tx,ty) {//{{{
 	if(type=='ROOM') {
-		strokeColor = colors.ROOM.stroke;
-		strokeWidth = 0.2;
-		opacity = 0.4;
+		strokeColor = colors[type].stroke;
+		opacity = colors[type].animOpacity;
 		fillColor = data.room_enter == 'yes' ? colors[data.type_sec].c : "#333";
-		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
+		var path=new Path({fillColor:fillColor, opacity:opacity });
 	}
 	if(type=='OBST') {
-		strokeColor = colors.OBST.c;
+		strokeColor = colors[type].stroke;
+		opacity = colors[type].animOpacity;
+		fillColor = colors[type].c;
 		strokeWidth = wallsSize;
-		opacity = 0.6;
-		fillColor = colors.OBST.c;
 		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
 	}
 	if(type=='DOOR') {
-		strokeColor = colors.DOOR.c;
 		strokeWidth = doorsSize;
-		opacity = colors.DOOR.animOpacity / 3;
+		strokeColor = colors[type].stroke;
+		opacity = colors[type].animOpacity;
+		fillColor = colors[type].c;
 		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, opacity:opacity });
 	}
 
@@ -388,14 +424,20 @@ function drawLabel(type,data,tx,ty) {//{{{
 	if(type=='ROOM') {
 		fillColor = colors.fg.c;
 		fontSize = labelsSize;
-		opacity = 1;
-		pos=[data.points[0].x + tx + 20, data.points[0].y + ty + 50];
+		opacity = colors.fg.animOpacity;
+		pos=[data.points[0].x + tx + 30, data.points[0].y + ty + 70];
 	}
 	if(type=='DOOR') {
+		if(data.points[1].x - data.points[0].x > 32) { 
+			// horizontal door
+			ttx=20; tty=30;
+		} else { 
+			ttx=0; tty=50;
+		}
 		fillColor = colors.fg.c;
-		opacity = colors.DOOR.animOpacity;
-		fontSize = labelsSize * 0.75;
-		pos=[data.points[0].x + tx + 30, data.points[0].y + ty + 30];
+		opacity = colors.fg.animOpacity;
+		fontSize = labelsSize * 0.60;
+		pos=[data.points[0].x + tx + ttx, data.points[0].y + ty + tty];
 	}
 	new PointText({ point: new Point(pos[0], pos[1]), content: content, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
 }
@@ -438,15 +480,12 @@ function initStaticGeoms() {//{{{
 		project.layers.rooms.activate();
         tx=ffloor.floor_meta.world2d_tx;
         ty=ffloor.floor_meta.world2d_ty;
-        _.each(ffloor.rooms     , function(d) { drawPath('ROOM'  , d , tx, ty); });
-        _.each(ffloor.obstacles , function(d) { drawPath('OBST'  , d , tx, ty); });
 
-		if (doorsSize!= 0) { _.each(ffloor.doors , function(d) { drawPath('DOOR' , d , tx, ty); } ); }
-
-		if (labelsSize!= 0) { 
-			_.each(ffloor.rooms , function(d) { drawLabel('ROOM' , d , tx, ty); });
-			_.each(ffloor.doors , function(d) { drawLabel('DOOR' , d , tx, ty); });
-		}
+        _.each(ffloor.rooms     , function(d) { drawPath('ROOM'  , d , tx , ty); });
+        _.each(ffloor.obstacles , function(d) { drawPath('OBST'  , d , tx , ty); });
+		_.each(ffloor.doors     , function(d) { drawPath('DOOR'  , d , tx , ty); });
+		_.each(ffloor.rooms     , function(d) { drawLabel('ROOM' , d , tx , ty); });
+		_.each(ffloor.doors     , function(d) { drawLabel('DOOR' , d , tx , ty); });
 
 		drawStaticEvacuees(ffloor.evacuees, tx, ty);
         drawDDGeoms(ffloor.dd_geoms, tx, ty); 
@@ -530,22 +569,8 @@ tool.onMouseDrag=function(event) {//{{{
 
 //}}}
 tool.onMouseDown=function(event) {//{{{
-	//lerps=9999999999; // pause
-	view.pause();
-	var x;
-	var y;
 	$("canvas-mouse-coords").text(Math.floor(event.downPoint['x'])+ "," + Math.floor(event.downPoint['y']));
 	$("canvas-mouse-coords").css({'display':'block', 'left':event.event.pageX, 'top':event.event.pageY});
-	if(eData.length<1) { return; }
-	_.each(eData[0], function(frame0_data,ffloor) {
-		evacueesLabelsGroup[ffloor].removeChildren();
-		_.each(frame0_data, function(e,i) {
-			x=evacueesGroup[ffloor].children[i].position.x;
-			y=evacueesGroup[ffloor].children[i].position.y;
-			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(15+x-evacueeRadius/1,y-evacueeRadius/7), fillColor:"#000", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.5 }));
-			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y+evacueeRadius/3), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.5}));
-		})
-	})
 };
 //}}}
 function animFormatTime() {//{{{
@@ -553,7 +578,7 @@ function animFormatTime() {//{{{
 	if (eData.length>0) { 
 		var t=currentAnimData.time_shift + (currentAnimData.simulation_time - currentAnimData.time_shift) * sliderPos / 100
 	}
-	if(isNaN(t)) { t=0; }
+	if(isNaN(t))   { t=0; }
 	date.setSeconds(t);
 	return date.toISOString().substr(14,5);
 };
@@ -609,7 +634,7 @@ function initRoomSmoke() {//{{{
 	var x_ranges, y_ranges;
 
 	for (var ffloor in roomsOpacity[0]) {
-		if(dstatic.floors.ffloor===undefined) { continue; }
+		if(dstatic.floors[ffloor]===undefined) { continue; }
         var ty=dstatic.floors[ffloor].floor_meta.world2d_ty;
         var tx=dstatic.floors[ffloor].floor_meta.world2d_tx;
 		for (var room in roomsOpacity[0][ffloor]) {
@@ -654,8 +679,7 @@ function roomsSmokeInFrame() {//{{{
 function resizeAndRedrawCanvas() {//{{{
 	wWidth = $(window).width()-20;
 	wHeight = $(window).height()-70;
-	$("#animator-canvas").width(wWidth);
-	$("#animator-canvas").height(wHeight);
+	$("#animator-canvas").width(wWidth).height(wHeight);
 	$("#animator-time-svg").width(wWidth);
 	$("#animator-time-scroller").width(wWidth);
 	view.viewSize = new Size(wWidth, wHeight);
@@ -664,6 +688,7 @@ function resizeAndRedrawCanvas() {//{{{
 
 //}}}
 view.onFrame=function(event) {//{{{
+	if(paused==1) { return; }
 	if (eData.length>0) {
 		evacueesInFrame();
 		roomsSmokeInFrame();

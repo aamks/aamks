@@ -1,12 +1,8 @@
-function ddd() {//{{{
-	dd(db().get());
-}
-//}}}
 function register_listeners() {//{{{
 	$("right-menu-box").on("click" , "#btn_copy_to_floor"   , function() { copy_to_floor() });
 	$("right-menu-box").on("click" , "#btn_edit_cad_json"   , function() { textarea_edit_cad_json() });
 	$("right-menu-box").on("click" , "#btn_submit_cad_json" , function() { textarea_edit_cad_json() });
-	$("right-menu-box").on("click" , '#setup_underlay'      , function() { setup_underlay_into_setup_box(); });
+	$("right-menu-box").on("click" , '#setup_underlay'      , function() { underlay_form(); });
 	$("right-menu-box").on("click" , '#utils_setup_button'  , function() { utils_into_setup_box(); });
 	$("body").on("click"           , '#btn-cad-json-save'   , function() { cad_json_textarea_save(); });
 	$("body").on("click"           , '#btn-cad-json-cancel' , function() { cad_json_textarea_close(); });
@@ -33,64 +29,6 @@ function cad_jsons_db() { //{{{
 		}
 		db({'name': i.name}).update({'cad_json': cad_json});
 	}
-}
-//}}}
-function renderUnderlayImage(file) {//{{{
-	var reader = new FileReader();
-	if(file.type=='application/pdf') {
-		ajaxPdf2svg();
-	} else {
-		reader.onload = function(event) {
-			$('#img'+floor).attr("href", event.target.result);
-			$('#img'+floor).attr("width", 8000);
-		}
-		reader.readAsDataURL(file);
-	}
-}
-//}}}
-function save_setup_box_underlay() {//{{{
-	if ($("#alter_underlay_opacity").val() != null) { 
-		underlay_imgs[floor]['opacity']=parseFloat($("#alter_underlay_opacity").val());
-		$("#img"+floor).attr("opacity",underlay_imgs[floor]['opacity']);
-
-		if(document.querySelector('#alter_underlay_invert_colors').checked) {
-			$("#img"+floor).attr('filter', "url(#invertColorsFilter)");
-			underlay_imgs[floor]['invert_colors']='checked';
-		} else {
-			$("#img"+floor).removeAttr("filter");
-			underlay_imgs[floor]['invert_colors']='';
-		}
-
-		if($("#alter_underlay_width").val() != "" && document.getElementById(selected_geom)) {
-			underlay_imgs[floor]['width']=parseInt($("#alter_underlay_width").val());
-			var uReq=parseInt($("#alter_underlay_width").val());
-			var uRect=parseInt($("#"+selected_geom).attr('width'));
-			var uImg=parseInt($("#img"+floor).attr('width'));
-			$("#img"+floor).attr("width", uImg * uReq/uRect);
-			$(".underlay_scaler").remove();
-		}  else {
-			underlay_imgs[floor]['width']="";
-		}
-	}
-}
-//}}}
-function underlay_changed() {//{{{
-	$("#g_img"+floor).remove();
-	g_img = g_aamks.insert("g", "g").attr("id", "g_img"+floor).attr("class", "g_img");
-	var _img=g_img.append("svg:image").attr("id", "img"+floor);
-	g_img.call(d3.zoom()
-		.scaleExtent([1 / 10, 40])
-		.filter(function(){
-			return (event.button === 1);
-		})
-		.translateExtent([[-10000, -10000], [10000 , 10000]])
-		.on("zoom", function() {
-			if (underlay_draggable==0) {  return; }
-			_img.attr("transform","translate("+Math.round(d3.event.transform.x)+","+Math.round(d3.event.transform.y)+")");
-			underlay_imgs[floor]['transform']=_img.attr("transform");
-			$("#underlay_translate").html(underlay_imgs[floor]['transform']);
-		})
-	)
 }
 //}}}
 function cad_json_textarea_close() {//{{{
@@ -123,57 +61,6 @@ function textarea_edit_cad_json() {//{{{
 	);
 }
 //}}}
-function setup_underlay_into_setup_box() {//{{{
-	underlay_draggable=1;
-	if(underlay_imgs[floor]==null) { 
-		underlay_imgs[floor]={};
-		var width='value=""';
-		var opacity='value=0.3';
-		var invert_colors='';
-		var fname='';
-	} else {
-		var width="value="+underlay_imgs[floor]['width'];
-		var opacity="value="+underlay_imgs[floor]['opacity'];
-		var invert_colors=underlay_imgs[floor]['invert_colors'];
-		var fname=underlay_imgs[floor]['fname'];
-	}
-	d3.select('right-menu-box').html(
-		"You can load an underlay png/jpg/svg.<br><br>"+
-		"You can drag the underlay img with <br>"+
-		"middle mouse button only while<br>"+ 
-		"this window is open.<br><br>"+
-		"You can only alter the width of the<br>"+ 
-		"underlay img, and the height will<br>"+
-		"change accordingly.<br><br><br>"+
-		"<input type=file id=underlay_loader style='display:none'><label class=blink for='underlay_loader'>attach underlay image</label>"+
-		"<br><br><table>"+
-		"<tr><td>image<td id=underlay_img_fname><span class=grey>auto</span>"+
-		"<tr><td>origin<td id=underlay_translate><span class=grey>auto</span>"+
-		"<tr><td>scaler width<td><input id=alter_underlay_width type=text size=4 "+width+"> <a href=underlay_example.svg target=_blank class=blink>help</a>"+
-		"<tr><td>opacity<td><input id=alter_underlay_opacity type=text size=4 "+opacity+">"+
-		"<tr><td>invert colors<td><input type=checkbox id=alter_underlay_invert_colors "+invert_colors+">"+
-		"</table>"+
-		"<br><div class=blink id=detach_underlay>detach underlay image</div>"
-	);
-
-	$("#detach_underlay").click(function() {
-		$("#img"+floor).remove();
-	});
-
-	$("#underlay_translate").html(underlay_imgs[floor]['transform']);
-	$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
-
-	$("#underlay_loader").change(function() {
-		underlay_changed();
-		renderUnderlayImage(this.files[0])
-		underlay_imgs[floor]['fname']=this.files[0].name;
-		$("#underlay_img_fname").html(underlay_imgs[floor]['fname']);
-		$("#underlay_translate").html("translate(0,0)");
-	});
-
-
-}
-//}}}
 function utils_into_setup_box() {//{{{
 	d3.select('right-menu-box').html(
 		"<input id=utils_setup type=hidden value=1>"+
@@ -191,7 +78,6 @@ function help_utils_into_setup_box() {//{{{
 		"<span style='float: right' class=blink id=utils_setup_button>utils</span><br><br>"+
 		"<table class=nobreak>"+
 		"<tr><td><letter>letter</letter> + mouse1     <td> create"+
-		"<tr><td><letter>shift</letter> + mouse2	    <td> zoom/drag"+
 		"<tr><td>double mouse1		<td> elem properties"+
 		"<tr><td>hold <letter>ctrl</letter>		<td> disable snapping"+ 
 		"<tr><td><letter>h</letter>	<td> 2D/3D views"+ 
@@ -213,13 +99,13 @@ function help_utils_into_setup_box() {//{{{
 }
 //}}}
 function init_svg_groups(json) {//{{{
-	$(".g_floor").remove();
+	$(".floor").remove();
 	$(".snap_v").remove();
 	$(".snap_h").remove();
 
 	floors_count=0;
 	for (var _floor in json) { 
-		d3.select("#g_aamks").append("g").attr("id", "floor"+_floor).attr("class", "g_floor").attr("fill-opacity", 0.4).attr('visibility',"hidden");
+		d3.select("#building").append("g").attr("id", "floor"+_floor).attr("class", "floor").attr("fill-opacity", 0.4).attr('visibility',"hidden");
 		floors_count++;
 	}
 	$("#floor"+floor).attr('visibility',"visible").css("opacity", 1);
@@ -245,7 +131,7 @@ function into_db(json) { //{{{
 			}
 		}
 	}
-	geoms_changed(); // This is a heavy call, which shouldn't be called for each DbInsert()
+	updateSnapLines(); // This is a heavy call, which shouldn't be called for each DbInsert()
 }
 //}}}
 function read_record(floor,letter,arr) { //{{{
@@ -290,30 +176,6 @@ function read_record(floor,letter,arr) { //{{{
 	return record;
 }
 //}}}
-function pdf_svg_dom(json) { //{{{
-	ajax_msg(json);
-	$('#img'+floor).attr("href", 'data:image/svg+xml;utf8,'+json.data);
-	$('#img'+floor).attr("width", 8000);
-}
-//}}}
-function ajaxPdf2svg() { //{{{
-	postFile('/aamks/ajax.php?ajaxPdf2svg')
-	  .then(data => pdf_svg_dom(data))
-	  .catch(error => ajax_msg(error))
-
-	function postFile(url) {
-	  const formData = new FormData()
-	  const fileField = document.querySelector('#underlay_loader')
-	  formData.append('file', fileField.files[0]);
-
-	  return fetch(url, {
-		method: 'POST', 
-		body: formData  
-	  })
-	  .then(response => response.json())
-	}
-}
-//}}}
 function ajax_save_cadjson(json_data) { //{{{
 	$.post('/aamks/ajax.php?ajaxApainterExport', { 'cadfile': json_data }, function (json) { 
 		ajax_msg(json); 
@@ -328,10 +190,10 @@ function import_cadjson() { //{{{
 		// which may run into this-elem-doesnt-belong-to-this-floor problem.
 		ajax_msg(json); 
 		init_svg_groups(json.data);
+		_.each(json.data, function(data,floor) { import_underlay(data['UNDERLAY'],floor); });
 		into_db(json.data);
 		selected_geom='';
-		$("#floor_text").remove();
-		svg.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floors_count);
+		d3.select('#floor_text').text("floor "+floor+"/"+floors_count);
 	});
 }
 //}}}
@@ -419,6 +281,7 @@ function db2cadjson() {//{{{
 		var ff='';
 		ff+='\t"'+f+'": {\n';
 		ff+=geoms.join(",\n");
+		ff+=underlay_save_cad(f);
 		ff+='\n\t}';
 		json.push(ff);
 	}
@@ -436,7 +299,7 @@ function copy_to_floor() {	//{{{
 		var z0=default_floor_dimz * c2f;
 	}
 	floors_count++;
-	g_floor=g_aamks.append("g").attr("id", "floor"+c2f).attr({"class": "g_floor", "opacity": 0, "visibility": "hidden"});
+	building.append("g").attr("id", "floor"+c2f).attr({"class": "floor", "opacity": 0, "visibility": "hidden"});
 	var src=db({'floor': floor}).get();
 	var counter;
 	for (var i in src) {
@@ -451,7 +314,7 @@ function copy_to_floor() {	//{{{
 		DbInsert(geom);
 		CreateSvg(geom);
 	}
-	$("#floor"+c2f).attr({"class": "g_floor", "fill-opacity": 0.4, "visibility": "hidden"});
+	$("#floor"+c2f).attr({"class": "floor", "fill-opacity": 0.4, "visibility": "hidden"});
 
 	var selected_geom='';
 	utils_into_setup_box();

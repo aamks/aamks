@@ -63,7 +63,6 @@ dd = function() { //{{{
 	return console.log.apply(console, arguments); 
 };
 //}}}
-
 $(function() { 
 	scenario_changer();
 	launch_simulation();

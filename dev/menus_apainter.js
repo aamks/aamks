@@ -1,1 +1,0 @@
-../gui/apainter/js/menus_apainter.js

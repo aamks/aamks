@@ -81,7 +81,7 @@ class Geom():
             xdim= maxx - minx
             ydim= maxy - miny
             center=(minx + int(xdim/2), miny + int(ydim/2), minz_abs)
-            self.floors_meta[floor]=OrderedDict([('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim), ('world2d_ty', world2d_ty), ('world2d_tx', world2d_tx)  ])
+            self.floors_meta[floor]=OrderedDict([('name', floor), ('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim), ('world2d_ty', world2d_ty), ('world2d_tx', world2d_tx)  ])
 
             self._world3d['minx']=min(self._world3d['minx'], minx)
             self._world3d['maxx']=max(self._world3d['maxx'], maxx)

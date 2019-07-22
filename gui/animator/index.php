@@ -16,7 +16,6 @@ function site() {/*{{{*/
 	echo "
 	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
 	<script type='text/javascript' src='js/paper-full.min.js'></script>
-	<script type='module' src='js/lodash.min.js'></script>
 	<script type='text/javascript' src='js/animator.js'></script>
 	<div>
 		<button-left-menu-box>A</button-left-menu-box><left-menu-box></left-menu-box>
@@ -28,6 +27,7 @@ function site() {/*{{{*/
 		<right-menu-box>
 			<close-right-menu-box><img src=/aamks/css/close.svg></close-right-menu-box><br>
 			<table>
+				<tr><td><letter>Space</letter><td>pause/unpause animation
 				<tr><td>Animation           <td><choose-vis></choose-vis> 
 				<tr><td>Highlight           <td><highlight-geoms></highlight-geoms> 
 				<tr><td>Style               <td><change-style></change-style> 

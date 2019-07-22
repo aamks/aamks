@@ -141,6 +141,7 @@ public function me(){/*{{{*/
 			<script src='/aamks/js/jquery.js'></script>
 			<script src='/aamks/js/form.js'></script>
 			<script src='/aamks/js/utils.js'></script>
+			<script type='module' src='/aamks/js/lodash.min.js'></script>
 			<script src='/aamks/js/taffy-min.js'></script>
 			<script src='https://apis.google.com/js/platform.js' async defer></script>
 			<div id='hidden_form_container' style='display:none;'></div> 
