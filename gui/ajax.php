@@ -4,13 +4,26 @@ require_once("inc.php");
 
 function ajaxAddUnderlay() { #{{{
 	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor].$_POST[type]";
-	$z=file_put_contents($dest, base64_decode($_POST['base64']));
+	if($_POST['type']=='pdf') { 
+		$z=pdf2svg();
+	} else {
+		$z=file_put_contents($dest, base64_decode($_POST['base64']));
+	}
 
 	if($z>0) { 
-		echo json_encode(array("msg"=>"", "err"=>0, "data"=>""));
+		echo json_encode(array("msg"=>"", "err"=>0, "data"=> ""));
 	} else { 
 		echo json_encode(array("msg"=>"ajaxAddUnderlay(): ".error_get_last()['message'] , "err"=>1, "data"=>""));
 	}
+}
+/*}}}*/
+function pdf2svg() { /*{{{*/
+	$src=$_SESSION['main']['working_home']."/underlays/$_POST[floor].pdf";
+	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor].svg";
+	file_put_contents($src, base64_decode($_POST['base64']));
+	exec("pdf2svg $src $dest && rm -rf $src", $x, $z);
+	if(empty($z)) { return 1; } else { return 0; }
+
 }
 /*}}}*/
 function ajaxRemoveUnderlay() { #{{{
@@ -18,12 +31,19 @@ function ajaxRemoveUnderlay() { #{{{
 	shell_exec("rm $dest.*");
 }
 /*}}}*/
-function ajaxUnderlayOnInit() { #{{{
-	// todo: pdf/svg not handled yet
-	if(in_array($_POST['type'], array("jpg", "jpeg", "png"))) { 
-		$data64=shell_exec("base64 ".$_SESSION['main']['working_home']."/underlays/".$_POST['floor'].".".$_POST['type']);
+function ajaxGetUnderlay() { #{{{
+	if($_POST['type']=='pdf') { $_POST['type']='svg'; }
+	$src=$_SESSION['main']['working_home']."/underlays/$_POST[floor].$_POST[type]";
+	if(in_array($_POST['type'], array("jpeg", "png"))) { 
+		$data64=shell_exec("base64 $src");
 		$img="data:image/$_POST[type];base64,$data64";
 		$data=array('base64'=>1, 'img'=>$img);
+	}
+	if(in_array($_POST['type'], array("svg"))) { 
+		$img=shell_exec("cat $src"); 
+		$img=preg_replace("/#/", "%23", $img);
+		$img="data:image/svg+xml;utf8,$img";
+		$data=array('base64'=>0, 'img'=> $img);
 	}
 	echo json_encode(array("msg"=> '', "err"=>0, "data"=>$data));
 }
@@ -198,20 +218,6 @@ function ajaxGoogleLogin() { /*{{{*/
 	$_SESSION['nn']->set_user_variables($ret[0]);
 }
 /*}}}*/
-function ajaxPdf2svg() { /*{{{*/
-	$src=$_FILES['file']['tmp_name'];
-	$dest=$_SESSION['main']['working_home']."/out.svg";
-	$z=shell_exec("pdf2svg $src $dest 2>&1");
-	$svg='';
-	if(empty($z)) { 
-		$svg=shell_exec("cat $dest"); 
-		$svg=preg_replace("/#/", "%23", $svg);
-		echo json_encode(array("msg"=>"", "err"=>0,  "data"=>$svg));
-	} else {
-		echo json_encode(array("msg"=>"ajaxPdf2svg(): $z", "err"=>1, "data"=>""));
-	}
-}
-/*}}}*/
 function main() { /*{{{*/
 	header('Content-type: application/json');
 
@@ -229,7 +235,7 @@ function main() { /*{{{*/
 		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
-		if(isset($_GET['ajaxUnderlayOnInit']))          { ini_set('display_errors', 0) ; ajaxUnderlayOnInit()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxGetUnderlay']))          { ini_set('display_errors', 0) ; ajaxGetUnderlay()       ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxAddUnderlay']))             { ini_set('display_errors', 0) ; ajaxAddUnderlay()          ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxRemoveUnderlay']))          { ini_set('display_errors', 0) ; ajaxRemoveUnderlay()       ; ini_set('display_errors', 1) ; }
 	}

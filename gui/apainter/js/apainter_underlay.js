@@ -16,13 +16,18 @@ function import_underlay(data,f,reload_form=0) {//{{{
 	d3.select('#building').insert("g", "g").attr("id", "underlay"+f).attr("class", "underlay");
 	if(data != undefined) {
 		data['floor']=f;
-		$.post('/aamks/ajax.php?ajaxUnderlayOnInit', data, function (json) { 
+		$.post('/aamks/ajax.php?ajaxGetUnderlay', data, function (json) { 
 			ajax_msg(json);
 			dd(f,json);
 			if(f==floor) { visibility='visible'; } else { visibility='hidden'; }
-			d3.select('#underlay'+f).attr("visibility", visibility).append("image").attr("id", "uimg"+f).attr("xlink:href", json.data.img).attr("pointer-events", "none");
+			if(json.data.base64==1) { 
+				d3.select('#underlay'+f).attr("visibility", visibility).append("image").attr("id", "uimg"+f).attr("xlink:href", json.data.img).attr("pointer-events", "none");
+			} else {
+				d3.select('#underlay'+f).attr("visibility", visibility).attr("href", json.data.img).attr("width", 8000);
+			}
 			underlay_attribs(f, data);
 			if(reload_form==1) { underlay_form(); }
+			dd($('#building')[0]);
 		});
 	} else {
 		d3.select('#underlay'+f).attr("visibility", 'hidden').append("image").attr("id", "uimg"+f);
@@ -38,19 +43,19 @@ function calc_underlay_width(floor) {//{{{
 }
 //}}}
 function underlay_single_attrib(floor,key,val) { // {{{
-	if(key=='opacity')          { d3.select("#uimg"+floor).style(key, val)                                               ; }
-	if(key=='transform')        { d3.select("#uimg"+floor).attr(key, val)                                                ; }
-	if(key=='invert' && val==1) { d3.select("#uimg"+floor).attr('invert' , 1).attr('filter', "url(#invertColorsFilter)") ; }
-	if(key=='invert' && val==0) { d3.select("#uimg"+floor).attr('invert' , 0).attr('filter', null)                       ; }
+	if(key=='opacity')          { d3.select("#underlay"+floor).style(key, val)                                               ; }
+	if(key=='transform')        { d3.select("#underlay"+floor).attr(key, val)                                                ; }
+	if(key=='invert' && val==1) { d3.select("#underlay"+floor).attr('invert' , 1).attr('filter', "url(#invertColorsFilter)") ; }
+	if(key=='invert' && val==0) { d3.select("#underlay"+floor).attr('invert' , 0).attr('filter', null)                       ; }
 }
 //}}}
 function underlay_attribs(floor,aa=0) {//{{{
 	if (aa==0) {
-		d3.select("#uimg"+floor).attr("width", 0).style("opacity", 0).attr("invert",0).attr("type", 'none');
+		d3.select("#underlay"+floor).style("opacity", 0).attr("invert",0).attr("type", 'none');
 	} else {
-		d3.select("#uimg"+floor).attr("width", aa.width).style("opacity", aa.opacity).attr('filter', null).attr("invert", 0).attr("type", aa.type);
+		d3.select("#underlay"+floor).style("opacity", aa.opacity).attr('filter', null).attr("invert", 0).attr("type", aa.type);
 		if(aa.invert==1) { underlay_single_attrib(floor , 'invert' , 1); }
-		if("transform" in aa) { underlay_single_attrib(floor , 'transform', aa.transform); }
+		if("transform" in aa) { underlay_single_attrib(floor, 'transform', aa.transform); }
 	}
 }
 //}}}
@@ -102,10 +107,11 @@ function add_underlay(e) {//{{{
 		arr=raw.split(";",2);
 		type=arr[0].split(":",2)[1].split("/")[1];
 		base64=arr[1].split(",",2)[1];
-		if(['jpeg', 'png'].indexOf(type) > -1) {
+		if(['jpeg', 'png', 'pdf', 'svg'].indexOf(type) > -1) {
 			uSetup={ 'floor': floor, 'type': type, 'base64': base64, 'width':4000, 'opacity': 0.5, 'transform': "translate(0,0)" };
 			$.post('/aamks/ajax.php?ajaxAddUnderlay', uSetup, function (json) { 
 				ajax_msg(json);
+				//dd(json);
 				import_underlay(uSetup, floor,1);
 			});
 		} else {
@@ -119,11 +125,12 @@ function underlay_save_cad(floor) {//{{{
 		return "";
 	}
 	json={}
-	json.type=$("#uimg"+floor).attr('type');
+	json.type=$("#underlay"+floor).attr('type');
 	json.width=$("#uimg"+floor).attr('width');
-	json.opacity=$("#uimg"+floor).css('opacity');
-	json.invert=$("#uimg"+floor).attr('invert');
-	json.transform=$("#uimg"+floor).attr('transform');
+	json.opacity=$("#underlay"+floor).css('opacity');
+	json.invert=$("#underlay"+floor).attr('invert');
+	json.transform=$("#underlay"+floor).attr('transform');
+	if(json.type=='pdf') { json.type='svg'; }
 	return ',\n\t\t"UNDERLAY": '+JSON.stringify(json)+"\n";
 }
 //}}}
