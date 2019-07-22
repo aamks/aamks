@@ -4,6 +4,7 @@ var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var gg;
 var ggx;
+var zoom;
 var DbInsert;
 var UpdateVis;
 var NextIdx;
@@ -40,7 +41,7 @@ $(function()  {
 		import_cadjson();
 		register_listeners();
 		register_underlay_listeners();
-		dd($('#building')[0]);
+		//dd($('#building')[0]);
 	});
 });
 //}}}
@@ -170,18 +171,18 @@ function buildingAttachZoomer() {//{{{
 		.on("dblclick.zoom", null);
 }
 //}}}
+function resetView(){//{{{
+	zoom.transform(svg, d3.zoomIdentity.translate(100,100).scale(0.2));
+}
+//}}}
 function zoomInit() { //{{{
-	var zoom = d3.zoom().on("zoom", zoomed_canvas);
-	d3.select("#apainter-svg")
-		.call(zoom.transform, d3.zoomIdentity.translate(100,100).scale(0.2))
+	zoom = d3.zoom().on("zoom", zoomed_canvas);
+	resetView();
 	buildingAttachZoomer(); 
 }
 //}}}
 function zoomed_canvas() {//{{{
 	zt=d3.event.transform;
-	zt.k = Math.round(zt.k * 100) / 100;
-	zt.x = Math.round(zt.x * 100) / 100;
-	zt.y = Math.round(zt.y * 100) / 100;
 	building.attr("transform", zt);
 	snapLines.attr("transform", zt);
 	$("#snapper").attr("transform", zt);
@@ -205,6 +206,7 @@ function keyboard_events() {//{{{
 	$(this).keydown((e) => { if (e.key == 'h') { alternative_view(); } });
 	$(this).keydown((e) => { if (e.key == 'p') { $("#p1").remove() ; } });
 	$(this).keydown((e) => { if (e.key == 'n') { change_floor(calc_next_floor()); } });
+	$(this).keydown((e) => { if (e.key == '=') { resetView(); } });
 	$(this).keydown((e) => { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
 }
 //}}}

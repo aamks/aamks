@@ -37,15 +37,13 @@ function ajaxGetUnderlay() { #{{{
 	if(in_array($_POST['type'], array("jpeg", "png"))) { 
 		$data64=shell_exec("base64 $src");
 		$img="data:image/$_POST[type];base64,$data64";
-		$data=array('base64'=>1, 'img'=>$img);
 	}
 	if(in_array($_POST['type'], array("svg"))) { 
 		$img=shell_exec("cat $src"); 
 		$img=preg_replace("/#/", "%23", $img);
 		$img="data:image/svg+xml;utf8,$img";
-		$data=array('base64'=>0, 'img'=> $img);
 	}
-	echo json_encode(array("msg"=> '', "err"=>0, "data"=>$data));
+	echo json_encode(array("msg"=> '', "err"=>0, "data"=>$img));
 }
 /*}}}*/
 function ajaxChangeActiveScenario() { #{{{
