@@ -84,6 +84,7 @@ function help_utils_into_setup_box() {//{{{
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
 		"<tr><td><letter>x</letter>	<td> delete active"+
 		"<tr><td><letter>g</letter>	<td> list all of active type"+
+		"<tr><td><letter>=</letter>	<td> original zoom"+
 
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor<td><input id=floor type=number min=0 name=floor style='width:3em' value="+floor+">"+ 
