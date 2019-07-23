@@ -77,13 +77,14 @@ function help_utils_into_setup_box() {//{{{
 		"<input id=general_setup type=hidden value=1>"+
 		"<span style='float: right' class=blink id=utils_setup_button>utils</span><br><br>"+
 		"<table class=nobreak>"+
-		"<tr><td><letter>letter</letter> + mouse1     <td> create"+
+		"<tr><td><letter>letter</letter> + mouse1     <td> create elem"+
 		"<tr><td>double mouse1		<td> elem properties"+
 		"<tr><td>hold <letter>ctrl</letter>		<td> disable snapping"+ 
-		"<tr><td><letter>h</letter>	<td> 2D/3D views"+ 
+		"<tr><td><letter>h</letter>	<td> loop views"+ 
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
 		"<tr><td><letter>x</letter>	<td> delete active"+
 		"<tr><td><letter>g</letter>	<td> list all of active type"+
+		"<tr><td><letter>shift</letter>	<td> underlays"+
 
 		"<tr><td colspan=2 style='text-align: center'><br>since now"+
 		"<tr><td>floor<td><input id=floor type=number min=0 name=floor style='width:3em' value="+floor+">"+ 

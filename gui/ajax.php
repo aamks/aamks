@@ -3,6 +3,7 @@ session_name('aamks');
 require_once("inc.php"); 
 
 function ajaxAddUnderlay() { #{{{
+	shell_exec("mkdir -p ".$_SESSION['main']['working_home']."/underlays/");
 	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor].$_POST[type]";
 	if($_POST['type']=='pdf') { 
 		$z=pdf2svg();
