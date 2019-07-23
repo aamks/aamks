@@ -69,10 +69,16 @@ Karamouzas is Predictive Collision Pedestrian Model (2009). https://doi.org/10.1
 ');
 /*}}}*/
 $nodes['demo']=array("Demo", /*{{{*/
-'
-Aamks is a work in progress, but you can see some of the development progress <a href=https://student.szach.in/aamks/>here</a>
-');
-/*}}}*/
+"
+Aamks is a work in progress, but you can see some of the development progress
+<a href=https://student.szach.in/aamks/>here</a>.<br><br>
+
+Demo doesn't mean there's another paid full-featured version of Aamks
+elsewhere. Demo means you can play with the latest version of Aamks without
+installing it on your server. This server doesn't have the computing power to
+run simulations for you, so you can just play with Aamks interface.
+
+"); /*}}}*/
 
 #Engine/*{{{*/
 if(!isset($_GET['node'])){
