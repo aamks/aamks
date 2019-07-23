@@ -27,5 +27,5 @@ status { cursor: default; float: right; }
 text { fill: #888; font-size: 11px; user-select: none; }
 
 canvas-mouse-coords { pointer-events: none; z-index:20; display: none; background-color: #600; font-size: 12px; padding: 4px; color: #fff; border: 1px solid #a77; position: absolute; }
-#cad-json-textarea { position:absolute; width:70%; max-width:1000px; height:95%; padding:5px; }
+#cad-json-textarea { position:absolute; width:70%; max-width:1100px; height:95%; padding:5px; }
 letter { display: inline; padding: 0px 4px 1px 4px; background-color: #960; color: #fff;  }

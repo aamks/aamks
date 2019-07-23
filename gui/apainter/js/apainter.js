@@ -32,6 +32,7 @@ var evacueeRadius;
 
 // on start{{{
 $(function()  { 
+	temp_chrome_transforms();
 	$.getJSON("inc.json", function(x) {
 		gg=x['aamksGeoms'];
 		ggx=x['aamksGeomsMap'];
@@ -45,6 +46,15 @@ $(function()  {
 	});
 });
 //}}}
+
+function temp_chrome_transforms() {//{{{
+	// At some point chrome will enable separate css transformations and this call will be removed
+	d3.select('body').append('temp_checker').attr("id", "temp_checker").style("scale", 1);
+	if(d3.select('#temp_checker').style("scale")=='') {
+		$("body").html("Aamks requires the experimental web features of Google Chrome.<br>You can paste the orange text to the address bar and enable them<br><span style='color: orange'>chrome://flags/#enable-experimental-web-platform-features</span>"); 
+		throw new Error("");
+	}
+} //}}}
 function ddd() {//{{{
 	dd(db().get());
 }

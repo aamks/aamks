@@ -1,3 +1,62 @@
+	7. Może warto przygotować instrukcję, albo film jak przygotować rysunek do
+	importu 
+	8. Nie znalazłem nigdzie informacji, że rysuje w cm; 
+	11. Jak łączyć automatycznie pomieszczenia (coś jak wcześniejsze auto hole)?
+	20. Nie jest określone jasno z jaką dokładnością można rysować. 10 cm czy 1 cm
+	3. W okienku dodawania podkładu nie ma informacji, że musi on być w formacie
+	.pdf. Nie ma też informacji, że nie można w dwg. Myślę, że po korzystaniu z
+	innych programów część użytkowników mogła się przyzwyczaić do importu dwg;
+
+-	KK: To jest szerszy problem dokumentacji. Ja nie planuje zajmowac sie dokumentacja.
+	Małe wskazowki sa w Aamksie i dodalem kilka nastepnych. DWG nie wchodzi w gre.
+
+-----------------------------
+
+	9. Brak informacji, że wartości wpisuje się z „ . ”, a nie „ , ” 
+
+-	KK: W budowie.
+
+-----------------------------
+
+	12. Brak zapamiętywania ostatniego używanego narzędzia. Przy rysowaniu
+	kilkunastu pokoi za każdym razem trzeba wciskać klawisz.  Może np. 2 x r i
+	będzie na stałe (+podświetlenie funkcji); 
+	13. Nie ma możliwości kliknięcia na przycisk (np. r ROOM) i włączenia
+	odpowiedniego narzędzia; 
+
+-	KK:	Nie obiecuje, ale jezeli zrobie to beda obie te pokrewne funkcje na raz
+
+-----------------------------
+
+	14. Po wznowieniu pracy z wygaszacza ekranu problem z płynnością pracy; 
+
+-	KK:	Problem google-chrome
+
+-----------------------------
+
+	16. Nie ma możliwości zaznaczenia kilku pomieszczeń na raz. Może to być nawet
+	przez kombinacje jakiegoś klawisza i myszki pojedynczo dodając; 17. Nie ma
+	możliwości edycji raz narysowanego pomieszczenia. Mam na myśli zaznaczając na
+	ekranie i np. przeciągnąć; 18. Nie ma opcji cofnij o jeden ruch.. Myślę ze do 3
+	ruchów należy mieć możliwość Pomyłki się zdarzają, zwłaszcza w skomplikowanych
+	projektach. 21. Nie ma możliwości kopiowania i przenoszenia takich samych
+	elementów (drzwi, pokoi); 
+
+-	KK:	Edycja istniejacego wydaje sie niewiele szybsza od operacji x(usun) +
+	r(room). Musialbym zobaczyc na zywo te problemy, ale raczej nie bedzie
+	takich funkcji.
+
+-----------------------------
+
+	23. Nie da się ustawić wysokości na jakiej powinien znajdować się vent (otwor
+	grawitacyjny); 
+
+-	KK:	Ustalic z Krasuckim. Ja mam obiekty vvent i mvent, a nie vent. Jedne
+	maja regulacje wysokosci a jedne sa automatycznie w suficie.
+
+
+-----------------------------
+
 	1. Warto dodać na wierzchu strony przycisk add_underlay albo import_geometry.
 	Od razu będzie widać, że można dodać podkład do rysowania. Dodatkowo jak się
 	usunie to łatwo dodać na nowo; 
@@ -20,7 +79,7 @@
 	4. Nie ma opcji obracania podkładu (ja nie widzę). Moim zdaniem musi być choćby
 	w zakresie 90,180,270,360°; 
 
--	KK: W budowie. Mam watpliwosc czy obrot o 360 potrzebujemy :)
++	KK: Zrobione
 
 -----------------------------
 
@@ -28,29 +87,10 @@
 	klawiszy, która po wciśnięciu automatycznie wyśrodkuje i przybliży mi widok na
 	mój podkład; 
 
--	KK: W budowie
++	KK: Zrobione. '=' resetuje. 
 
 -----------------------------
 
-	7. Może warto przygotować instrukcję, albo film jak przygotować rysunek do
-	importu 
-	8. Nie znalazłem nigdzie informacji, że rysuje w cm; 
-	11. Jak łączyć automatycznie pomieszczenia (coś jak wcześniejsze auto hole)?
-	20. Nie jest określone jasno z jaką dokładnością można rysować. 10 cm czy 1 cm
-	3. W okienku dodawania podkładu nie ma informacji, że musi on być w formacie
-	.pdf. Nie ma też informacji, że nie można w dwg. Myślę, że po korzystaniu z
-	innych programów część użytkowników mogła się przyzwyczaić do importu dwg;
-
--	KK: To jest szerszy problem dokumentacji. Ja nie planuje zajmowac sie dokumentacja.
-	Małe wskazowki sa w Aamksie i dodalem kilka nastepnych. DWG nie wchodzi w gre.
-
------------------------------
-
-	9. Brak informacji, że wartości wpisuje się z „ . ”, a nie „ , ” 
-
--	KK: W budowie.
-
------------------------------
 
 	10. Nie ma opisanych przycisków mouse 1 i 2. Zamieniłbym to na nazwy
 	przycisków, Left buton, scroll …, Albo dodał rysunek myszki z opisanymi
@@ -58,22 +98,6 @@
 	nowego projektu? Oczywiści musi być też opcja skip; 
 
 +	KK: Na razie problem rozwiazany, bo wylecialo wszystko oprocz mouse1
-
------------------------------
-
-	12. Brak zapamiętywania ostatniego używanego narzędzia. Przy rysowaniu
-	kilkunastu pokoi za każdym razem trzeba wciskać klawisz.  Może np. 2 x r i
-	będzie na stałe (+podświetlenie funkcji); 
-	13. Nie ma możliwości kliknięcia na przycisk (np. r ROOM) i włączenia
-	odpowiedniego narzędzia; 
-
--	KK:	Nie obiecuje, ale jezeli zrobie to beda obie te pokrewne funkcje na raz
-
------------------------------
-
-	14. Po wznowieniu pracy z wygaszacza ekranu problem z płynnością pracy; 
-
--	KK:	Problem google-chrome
 
 -----------------------------
 
@@ -89,25 +113,11 @@
 
 -----------------------------
 
-	16. Nie ma możliwości zaznaczenia kilku pomieszczeń na raz. Może to być nawet
-	przez kombinacje jakiegoś klawisza i myszki pojedynczo dodając; 17. Nie ma
-	możliwości edycji raz narysowanego pomieszczenia. Mam na myśli zaznaczając na
-	ekranie i np. przeciągnąć; 18. Nie ma opcji cofnij o jeden ruch.. Myślę ze do 3
-	ruchów należy mieć możliwość Pomyłki się zdarzają, zwłaszcza w skomplikowanych
-	projektach. 21. Nie ma możliwości kopiowania i przenoszenia takich samych
-	elementów (drzwi, pokoi); 
-
--	KK:	Edycja istniejacego wydaje sie niewiele szybsza od operacji x(usun) +
-	r(room). Musialbym zobaczyc na zywo te problemy, ale raczej nie bedzie
-	takich funkcji.
-
------------------------------
-
 	19. Może warto dodać globalne ustawienie wysokości. Bo teraz jest domyślnie
 	3.5. A jak chce zrobić 10 pomieszczeń po 2.5 m to za każdym razem musze
 	zmieniać z palca. 
 
-+	KK:	"Since now" do tego sluzy
++	KK:	"Since now" do tego sluzy. Trzeba najpierw ustawic, a potem rysowac.
 
 -----------------------------
 
@@ -117,12 +127,3 @@
 +	KK:	W aamksie jest jedno z-min per pietro
 
 -----------------------------
-
-	23. Nie da się ustawić wysokości na jakiej powinien znajdować się vent (otwor
-	grawitacyjny); 
-
--	KK:	Ustalic z Krasuckim. Ja mam obiekty vvent i mvent, a nie vent. Jedne
-	maja regulacje wysokosci a jedne sa automatycznie w suficie.
-
------------------------------
-

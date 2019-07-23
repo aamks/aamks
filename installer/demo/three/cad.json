@@ -31,7 +31,7 @@
 		"MVENT": [ ],
 		"EVACUEE": [ ],
 		"FIRE": [ ],
-		"UNDERLAY": { "type": "png", "opacity": 0.7, "invert": 0, "transform": "translate(2000,1000) scale(0.77)" }
+		"UNDERLAY": { "type": "png", "opacity": 0.7, "invert": 0, "scale": "0.77", "rotate": "45deg", "translate": "2000px 1000px" }
 	},
 	"1": {
 		"ROOM": [
@@ -61,7 +61,7 @@
 		"MVENT": [ ],
 		"EVACUEE": [ ],
 		"FIRE": [ ],
-		"UNDERLAY": { "type": "jpeg", "opacity": 0.2, "invert": 1, "transform": "translate(3000,1200) scale(1.23)" }
+		"UNDERLAY": { "type": "jpeg", "opacity": 0.3, "invert": 1, "scale": "1.23", "rotate": "0deg", "translate": "3000px 1200px" }
 	},
 	"2": {
 		"ROOM": [

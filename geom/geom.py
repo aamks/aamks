@@ -129,6 +129,8 @@ class Geom():
         data=[]
         for floor,gg in self.raw_geometry.items():
             for k,arr in gg.items():
+                if k in ('UNDERLAY'):
+                    continue
                 for v in arr:
                     p0=[ int(i) for i in v[0] ]
                     p1=[ int(i) for i in v[1] ]
