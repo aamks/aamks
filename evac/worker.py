@@ -23,8 +23,8 @@ from subprocess import Popen
 import zipfile
 from include import SendMessage
 
-SIMULATION_TYPE = 'NO_CFAST'
-#SIMULATION_TYPE = 1
+#SIMULATION_TYPE = 'NO_CFAST'
+SIMULATION_TYPE = 1
 
 class Worker:
 
@@ -47,6 +47,9 @@ class Worker:
         os.environ["AAMKS_PROJECT"]='.'
         self.working_dir = self.url.split('aamks_users/')[1]
         self.cross_building_results = None
+        self.master_query = None
+        self.simulation_time = None
+        self.time_shift = None
 
     def error_report(self, message):
         with open("/tmp/aamks.log", "a") as output:
@@ -88,7 +91,6 @@ class Worker:
 
         try:
             urlretrieve('{}/../../aamks.sqlite'.format(self.url), 'aamks.sqlite')
-            urlretrieve('{}/../../0.nav.obj'.format(self.url), '0.obj')
 
         except Exception as e:
             self._report_error(e)
@@ -161,10 +163,10 @@ class Worker:
         return e
 
     def prepare_simulations(self):
-        logging.info('Number of floors processed: {}'.format(len(self.obstacles['points'])))
+        logging.info('Number of floors processed: {}'.format(len(self.obstacles['obstacles'])))
         obstacles = []
 
-        for i in range(len(self.obstacles['points'])):
+        for i in self.obstacles['obstacles'].keys():
             try:
                 eenv = EvacEnv(self.vars['conf'])
                 eenv.floor = i
@@ -173,57 +175,71 @@ class Worker:
             else:
                 logging.info('RVO2 ready on {} floors'.format(i))
 
-            for obst in self.obstacles['points'][str(i)]:
+            for obst in self.obstacles['obstacles'][str(i)]:
                 obstacles.append([tuple(x) for x in array(obst)[[0,1,2,3,4,1]]])
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
             eenv.generate_nav_mesh()
-            logging.info('Added obstacles on floor: {}, number of vercites: {}'.format(str(i+1), num_of_vertices))
+            logging.info('Added obstacles on floor: {}, number of vercites: {}'.format(1, num_of_vertices))
 
             e = self._create_evacuees(i)
             eenv.place_evacuees(e)
             #eenv.set_goal()
             self.floors.append(eenv)
 
-    def do_simulation(self):
-        logging.info('Starting simulations')
-        master_query = None
+    def connect_rvo2_with_smoke_query(self):
+        logging.info('Connectiong to smoke queries ')
 
-        time_frame = 10
-        floor = 0
         try:
-            master_query = SmokeQuery(floor='0')
+            self.master_query = SmokeQuery(floor='0')
         except Exception as e:
             self._report_error(e)
 
         for i in self.floors:
             try:
-                i.smoke_query = master_query
+                i.smoke_query = self.master_query
             except Exception as e:
                 self._report_error(e)
             else:
-                logging.info('Smoke query connected to floor: {}'.format(floor))
-            floor += 1
+                logging.info('Smoke query connected to floor: {}'.format(i.floor))
+
+    def do_simulation(self):
+        logging.info('Starting simulations')
+        time_frame = 10
+        first_evacuue = []
         while 1:
-            x = master_query.cfast_has_time(time_frame)
-            if master_query.cfast_has_time(time_frame) == 1:
+            self.animation_data = []
+            self.master_query.cfast_has_time(time_frame)
+            if self.master_query.cfast_has_time(time_frame) == 1:
                 logging.info('Simulation time: {}'.format(time_frame))
-                l = []
+                rsets = []
                 for i in self.floors:
                     i.read_cfast_record(time_frame)
-                    i.do_simulation(time_frame)
-                    l.append(i.rset)
+                    first_evacuue.append(i.evacuees.get_first_evacuees_time())
+
+                for step in range(0, int(time_frame / self.floors[0].config['TIME_STEP'])):
+                    time_row = []
+                    for i in self.floors:
+                        i.do_simulation(step)
+                        if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
+                            time_row.append({str(i.floor): i.get_data_for_visualization()})
+                    if len(time_row) > 0:
+                        self.animation_data.append(time_row)
+
+                for i in self.floors:
+                    rsets.append(i.rset)
                 time_frame += 10
             else:
                 time.sleep(1)
             print('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
             if time_frame > (self.vars['conf']['simulation_time'] - 10):
-            #if time_frame > 80:
                 break
-            if prod(array(l)) > 0:
+            if prod(array(rsets)) > 0:
+                self.simulation_time = max(rsets)
+                self.time_shift = min(first_evacuue)
                 break
 
-        self.cross_building_results = master_query.get_final_vars()
+        self.cross_building_results = self.master_query.get_final_vars()
 
     def send_report(self): # {{{
         '''
@@ -245,16 +261,20 @@ class Worker:
         with anim.json inside.
         '''
 
-        floor = 0
-        for i in self.floors:
-            animation_data = i.record_data()
-            zf = zipfile.ZipFile("f{}_s{}.anim.zip".format(floor, self.sim_id), mode='w',
-                                 compression=zipfile.ZIP_DEFLATED)
-            try:
-                zf.writestr("anim.json", json.dumps(animation_data))
-            finally:
-                zf.close()
-            floor += 1
+        json_content = {
+                        'simulation_id': self.sim_id,
+                        'simulation_time': self.simulation_time,
+                        'time_shift': self.time_shift,
+                        'animations': {
+                            'evacuees': self.animation_data,
+                            'rooms_opacity': []
+                        }
+                        }
+        zf = zipfile.ZipFile("{}_{}.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id']), mode='w', compression=zipfile.ZIP_DEFLATED)
+        try:
+            zf.writestr("anim.json", json.dumps(json_content))
+        finally:
+            zf.close()
 
     # }}}
     def _write_meta(self):# {{{
@@ -289,6 +309,7 @@ class Worker:
         self.create_geom_database()
         self.run_cfast_simulations()
         self.prepare_simulations()
+        self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
         #SendMessage('Worker: {} end sim: {}'.format(self.host_name, self.sim_id))

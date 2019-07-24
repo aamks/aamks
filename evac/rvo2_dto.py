@@ -60,7 +60,7 @@ class EvacEnv:
                     self.evacuees.set_finish_to_agent(evacuee)
                     paths_free_of_smoke.append([x, y, 0])
                     logging.info(
-                        'Evacuee: {} pos: {} path {}'.format(evacuee, self.evacuees.get_goal_of_pedestrian(evacuee),
+                        'Floor: {} Evacuee: {} pos: {} path {}'.format(self.floor, evacuee, self.evacuees.get_goal_of_pedestrian(evacuee),
                                                              path))
 
                 # paths.append([x, y, LineString(path).length])
@@ -113,11 +113,11 @@ class EvacEnv:
     def discretize_time(time):
         return int(ceil(time / 10.0)) * 10
 
-    def save_data_for_visualization(self):
-        self.trajectory.append(self.positions)
-        self.velocity_vector.append(self.velocities)
-        self.fed_vec.append(self.fed)
-        self.finished_vec.append(self.finished)
+    def get_data_for_visualization(self):
+        data_row=[]
+        for n in range(self.sim.getNumAgents()):
+            data_row.append([self.positions[n][0], self.positions[n][1], self.velocities[n][0], self.velocities[n][1], self.fed[n], self.finished[n]])
+        return data_row
 
     def update_agents_position(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
@@ -229,7 +229,7 @@ class EvacEnv:
 
     def get_rset_time(self) -> None:
         exited = self.finished.count(0)
-        logging.info('Time: {}, evacuated: {}'.format(self.get_simulation_time(), exited))
+        logging.info('Time: {}, Floor: {} evacuated: {}'.format(self.get_simulation_time(), self.floor, exited))
         if (exited > len(self.finished) * 0.98) and self.per_9 == 0:
             self.rset = self.current_time + 30
         if all(x == 0 for x in self.finished) and self.rset == 0:
@@ -258,20 +258,15 @@ class EvacEnv:
                         }
         return json_content
 
-    def do_simulation(self, time):
-        time_range = int(time / self.config['TIME_STEP'])
-        for step in range(0, time_range):
-            if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
-                self.set_goal()
-                self.update_speed()
-            self.update_agents_velocity()
-            self.sim.doStep()
-            logging.debug('Simulation step: {}'.format(step))
-            self.update_agents_position()
-            self.update_time()
-            if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
-                self.update_fed()
-            self.save_data_for_visualization()
-            self.get_rset_time()
-            if self.rset != 0:
-                break
+    def do_simulation(self, step):
+        if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
+            self.set_goal()
+            self.update_speed()
+        self.update_agents_velocity()
+        self.sim.doStep()
+        logging.debug('Simulation step: {}'.format(step))
+        self.update_agents_position()
+        self.update_time()
+        if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
+            self.update_fed()
+        self.get_rset_time()
