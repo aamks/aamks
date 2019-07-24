@@ -1,3 +1,18 @@
+-	AK: warunki dla lokalnego workera. Do rozwazenia osobna zmienna albo server==localhost
+-	AK: use_cfast=0 jako opcja w conf.json { "project_id": 1, "scenario_id": 10, "navmesh_debug": 1, "use_cfast": 0, }
+-	AK: braki w picts/ (instalator)
+
+-	AK: nav wysokopoziomowe:
+	* zachowanie stada, cofnij sie po synka
+
+-	KK: nav niskopoziomowe:
+	* najblizsze wyjscie z pokoju
+	* najblizsze wyjscie z budynku
+	* najblizsze primary wyjscie z budynku
+
+-----------------------------
+
+
 	7. Może warto przygotować instrukcję, albo film jak przygotować rysunek do
 	importu 
 	8. Nie znalazłem nigdzie informacji, że rysuje w cm; 
