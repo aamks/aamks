@@ -87,7 +87,7 @@ class SmokeQuery:
             compa="outside"
             logging.ERROR("Agent outside needs fixing: {}".format(e))
 
-        return self._compa_conditions[compa]
+        return self._compa_conditions[compa], compa
 # }}}
 
     def _init_compa_conditions(self):  # {{{
@@ -206,23 +206,26 @@ class SmokeQuery:
         return self._results(q, (x,y)) # outside!
 # }}}
     def get_visibility(self, position, time, floor):# {{{
-        conditions = self.get_conditions(position, floor)
+        query = self.get_conditions(position, floor)
+        conditions = query[0]
+        room = query[1]
+
         if conditions == 'outside':
             print('outside')
         logging.debug('Query visibility at time: {} on position: {}'.format(time, position))
 
         hgt = conditions['HGT']
         if hgt == None:
-            return 0
+            return 0, room
 
         if hgt > self.config['LAYER_HEIGHT']:
-            return conditions['LLOD']
+            return conditions['LLOD'], room
         else:
-            return conditions['ULOD']
+            return conditions['ULOD'], room
 # }}}
     def get_fed(self, position, time, floor):# {{{
         logging.debug('Query FED at time: {} on position: {}'.format(time, position))
-        conditions = self.get_conditions(position, floor)
+        conditions = self.get_conditions(position, floor)[0]
         hgt = conditions['HGT']
         if hgt == None:
             return 0.

@@ -3,7 +3,6 @@
 import os
 import shutil
 import sys
-import time
 from numpy import array
 from numpy import prod
 
@@ -21,7 +20,6 @@ import json
 from collections import OrderedDict
 from subprocess import Popen
 import zipfile
-from include import SendMessage
 
 #SIMULATION_TYPE = 'NO_CFAST'
 SIMULATION_TYPE = 1
@@ -50,6 +48,8 @@ class Worker:
         self.master_query = None
         self.simulation_time = None
         self.time_shift = None
+        self.animation_data = []
+        self.smoke_opacity = dict()
 
     def error_report(self, message):
         with open("/tmp/aamks.log", "a") as output:
@@ -166,7 +166,9 @@ class Worker:
         logging.info('Number of floors processed: {}'.format(len(self.obstacles['obstacles'])))
         obstacles = []
 
+
         for i in self.obstacles['obstacles'].keys():
+            rooms = dict()
             try:
                 eenv = EvacEnv(self.vars['conf'])
                 eenv.floor = i
@@ -186,6 +188,11 @@ class Worker:
             eenv.place_evacuees(e)
             #eenv.set_goal()
             self.floors.append(eenv)
+
+            rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(i))
+            for item in rooms_f:
+                rooms.update({item['name']: 0.0})
+            self.smoke_opacity.update({str(i): rooms})
 
     def connect_rvo2_with_smoke_query(self):
         logging.info('Connectiong to smoke queries ')
@@ -208,7 +215,6 @@ class Worker:
         time_frame = 10
         first_evacuue = []
         while 1:
-            self.animation_data = []
             self.master_query.cfast_has_time(time_frame)
             if self.master_query.cfast_has_time(time_frame) == 1:
                 logging.info('Simulation time: {}'.format(time_frame))
@@ -218,11 +224,11 @@ class Worker:
                     first_evacuue.append(i.evacuees.get_first_evacuees_time())
 
                 for step in range(0, int(time_frame / self.floors[0].config['TIME_STEP'])):
-                    time_row = []
+                    time_row = dict()
                     for i in self.floors:
                         i.do_simulation(step)
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
-                            time_row.append({str(i.floor): i.get_data_for_visualization()})
+                            time_row.update({str(i.floor): i.get_data_for_visualization()})
                     if len(time_row) > 0:
                         self.animation_data.append(time_row)
 
@@ -270,7 +276,7 @@ class Worker:
                             'rooms_opacity': []
                         }
                         }
-        zf = zipfile.ZipFile("{}_{}.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id']), mode='w', compression=zipfile.ZIP_DEFLATED)
+        zf = zipfile.ZipFile("{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
         try:
             zf.writestr("anim.json", json.dumps(json_content))
         finally:
@@ -295,7 +301,7 @@ class Worker:
             report['psql']['fed'][i.floor] = i.fed
             report['psql']['rset'][i.floor] = int(i.rset)
         for num_floor in range(len(self.floors)):
-            report['animation'] = "f{}_s{}.anim.zip".format(num_floor, self.sim_id)
+            report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
             report['floor'] = num_floor
 
         self.meta_file = "meta_{}.json".format(self.sim_id)

@@ -59,9 +59,6 @@ class EvacEnv:
                 except:
                     self.evacuees.set_finish_to_agent(evacuee)
                     paths_free_of_smoke.append([x, y, 0])
-                    logging.info(
-                        'Floor: {} Evacuee: {} pos: {} path {}'.format(self.floor, evacuee, self.evacuees.get_goal_of_pedestrian(evacuee),
-                                                             path))
 
                 # paths.append([x, y, LineString(path).length])
             else:
@@ -78,7 +75,7 @@ class EvacEnv:
         # logging.info('Evacuee: {}'.format(evacuee))
         try:
             od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee),
-                                                                   self.current_time, self.floor)
+                                                                   self.current_time, self.floor)[0]
         except:
             od_at_agent_position = 0
             logging.info(
@@ -86,7 +83,7 @@ class EvacEnv:
 
         self.evacuees.set_optical_density(evacuee, od_at_agent_position)
         if self.config['SMOKE_AWARENESS'] and len(path) > 1:
-            od_next_room = self.smoke_query.get_visibility(path[1], self.current_time, self.floor)
+            od_next_room = self.smoke_query.get_visibility(path[1], self.current_time, self.floor)[0]
             if od_at_agent_position < od_next_room:
                 return True
             else:
@@ -116,7 +113,7 @@ class EvacEnv:
     def get_data_for_visualization(self):
         data_row=[]
         for n in range(self.sim.getNumAgents()):
-            data_row.append([self.positions[n][0], self.positions[n][1], self.velocities[n][0], self.velocities[n][1], self.fed[n], self.finished[n]])
+            data_row.append([int(self.positions[n][0]), int(self.positions[n][1]), self.velocities[n][0], self.velocities[n][1], self.fed[n], self.finished[n]])
         return data_row
 
     def update_agents_position(self):
@@ -234,29 +231,6 @@ class EvacEnv:
             self.rset = self.current_time + 30
         if all(x == 0 for x in self.finished) and self.rset == 0:
             self.rset = self.current_time + 30
-
-    def record_data(self):
-        data = []
-        for i in range(len(self.trajectory)):
-            if (i % self.config['VISUALIZATION_RESOLUTION']) == 0:
-                time_row = []
-                for n in range(self.sim.getNumAgents()):
-                    time_row.append([self.trajectory[i][n][0], self.trajectory[i][n][1], self.velocity_vector[i][n][0],
-                                     self.velocity_vector[i][n][1], self.fed_vec[i][n], self.finished_vec[i][n]])
-                data.append(time_row)
-
-        json_content = {'number_of_evacuees': self.sim.getNumAgents(),
-                        'frame_rate': self.config['TIME_STEP'] * self.config['VISUALIZATION_RESOLUTION'],
-                        'project_name': self.general['project_id'],
-                        'simulation_id': self.general['SIM_ID'],
-                        'simulation_time': self.get_simulation_time(),
-                        'time_shift': self.evacuees.get_first_evacuees_time(),
-                        'animations': {
-                            'evacuees': data,
-                            'rooms_opacity': []
-                        }
-                        }
-        return json_content
 
     def do_simulation(self, step):
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
