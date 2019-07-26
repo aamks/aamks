@@ -12,17 +12,19 @@ import os
 import sqlite3
 import sys
 
-def dd(struct):# {{{
+
+def dd(*args):# {{{
     '''debugging function, much like print but handles various types better'''
     print()
-    if isinstance(struct, list):
-        for i in struct:
-            print(i)
-    elif isinstance(struct, dict):
-        for k, v in struct.items():
-            print (str(k)+':', v)
-    else:
-        print(struct)
+    for struct in args:
+        if isinstance(struct, list):
+            for i in struct:
+                print(struct)
+        elif isinstance(struct, dict):
+            for k, v in struct.items():
+                print (str(k)+':', v)
+        else:
+            print(struct)
 # }}}
 
 class SendMessage:# {{{
@@ -43,19 +45,18 @@ class SendMessage:# {{{
         #         Popen("printf '{}' | sendxmpp -r aamks -d -t -u aamks -p aamkstatanka -j jabb.im {}> /dev/null 2>/dev/null &".format(msg, to), shell=True)
 # }}}
 class Dump:# {{{
-    def __init__(self,struct):
+    def __init__(self,*args):
         '''debugging function, much like print but handles various types better'''
         print()
-        if isinstance(struct, list):
-            for i in struct:
-                print(i)
-        elif isinstance(struct, dict):
-            for k, v in struct.items():
-                print (str(k)+':', v)
-        #elif isinstance(struct, zip):
-        #    self.dd(list(struct))
-        else:
-            print(struct)
+        for struct in args:
+            if isinstance(struct, list):
+                for i in struct:
+                    print(i)
+            elif isinstance(struct, dict):
+                for k, v in struct.items():
+                    print (str(k)+':', v)
+            else:
+                print(struct)
 # }}}
 class Colors:# {{{
     def hex2rgb(self,color):

@@ -34,7 +34,7 @@ class Geom():
         self._geometry2sqlite()
         self._enhancements()
         self._init_dd_geoms()
-        self._floors_towers_intersections()
+        self._towers_slices()
         self._floors_meta()
         self._world_meta()
         self._aamks_geom_into_polygons()
@@ -45,7 +45,9 @@ class Geom():
         self._find_intersections_between_floors()
         self._vvents_per_room()
         self._add_names_to_vents_from_to()
+        self._recalculate_vents_from_to()
         self._calculate_sills()
+        self._terminal_doors()
         self._auto_detectors_and_sprinklers()
         self._assert_faces_ok()
         self._assert_room_has_door()
@@ -141,7 +143,7 @@ class Geom():
                     record=self._prepare_geom_record(k,[p0,p1],width,depth,height,floor,attrs)
                     if record != False:
                         data.append(record)
-        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore,mvent_throughput,exit_type,room_enter)")
+        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, exit_type, room_enter, terminal_door)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
         #dd(self.s.dump())
 #}}}
@@ -198,8 +200,8 @@ class Geom():
         global_type_id=attrs['idx'];
         name='{}{}'.format(self.geomsMap[k], global_type_id)
 
-        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput          , exit_type          , room_enter          )")
-        return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , v[0][0] , v[0][1] , v[0][2] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , attrs['mvent_throughput'] , attrs['exit_type'] , attrs['room_enter'] )
+        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput          , exit_type          , room_enter          , terminal_door)")
+        return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , v[0][0] , v[0][1] , v[0][2] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , attrs['mvent_throughput'] , attrs['exit_type'] , attrs['room_enter'] , None )
 
 # }}}
     def _enhancements(self):# {{{
@@ -294,13 +296,25 @@ class Geom():
             query.append((self._id2compa_name[v['vent_from']], self._id2compa_name[v['vent_to']], v['name']))
         self.s.executemany('UPDATE aamks_geom SET vent_from_name=?, vent_to_name=? WHERE name=?', query)
 # }}}
+    def _recalculate_vents_from_to(self):# {{{
+        ''' 
+        CFAST requires that towers slices are mapped back to the original cuboids
+        '''
+
+        update=[]
+        for hi,lo in self.towers_parents.items():
+            z=self.s.query("SELECT name,vent_from FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
+            for i in z:
+                update.append((min(lo,i['vent_from']), max(lo,i['vent_from']), i['name']))
+        self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=?  WHERE name=?", update)
+
+# }}}
     def _calculate_sills(self):# {{{
         ''' 
         Sill is the distance relative to the floor. Say there's a HVENT H
-        between rooms A and B. Say A and B have variate z0 (floor elevations).
-        How do we calculate the height of the sill? The CFAST.in solution is
-        simple: We find 'hvent_from' for H and then we use it's z0. This z0 is
-        the needed 'relative 0' for the calcuation. 
+        between rooms A and B. Say A and B may have variate z0 (floor elevations).
+        We find 'hvent_from' and then we use it's z0. This z0 is the needed
+        'relative 0' for the calcuation. 
         '''
 
         update=[]
@@ -308,6 +322,21 @@ class Geom():
             floor_baseline=self.s.query("SELECT z0 FROM aamks_geom WHERE global_type_id=? AND type_pri='COMPA'", (v['vent_from'],))[0]['z0']
             update.append((v['z0']-floor_baseline, v['global_type_id']))
         self.s.executemany("UPDATE aamks_geom SET sill=? WHERE type_pri='HVENT' AND global_type_id=?", update)
+
+# }}}
+    def _terminal_doors(self):# {{{
+        ''' 
+        Doors that lead to outside or lead to staircases are terminal
+        '''
+        terminal_rooms=self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_sec='STAI'")
+
+        update=[]
+        for i in terminal_rooms:
+            z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE type_pri='HVENT' AND (vent_from=? OR vent_to=? OR vent_to='OUTSIDE')", (i['global_type_id'], i['global_type_id']))
+            for ii in z:
+                update.append((ii['exit_type'], ii['name']))
+        self.s.executemany("UPDATE aamks_geom SET terminal_door=? WHERE name=?", update)
+        #dd(self.s.query("SELECT name,terminal_door from aamks_geom order by name"))
 
 # }}}
     def _auto_detectors_and_sprinklers(self):# {{{
@@ -336,8 +365,8 @@ class Geom():
     def _get_faces(self):# {{{
         ''' 
         Cfast faces and offsets calculation. HVENTS have self.doors_width, so
-        we only consider intersection.length > self.doors_width Faces are
-        properties of doors. They are calculated in respect to the room of
+        we only consider intersection.length > self.doors_width. Faces are
+        properties of the doors. They are calculated in respect to the room of
         lower id. The orientation of faces in each room:
 
                 3
@@ -483,51 +512,49 @@ class Geom():
         self.s.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
 
 # }}}
-    def _floors_towers_intersections(self):# {{{
+    def _towers_slices(self):# {{{
         ''' 
         This is for evacuation only and cannot interfere with fire models
         (fire_model_ignore=1). Most STAI(RCASES) or HALL(S) are drawn on floor
         0, but they are tall and need to cross other floors (towers). Say we
         have floor bottoms at 0, 3, 6, 9, 12 metres and STAI's top is at 9
-        metres - the STAI belongs to floors 0, 1, 2. We INSERT fake (x,y) STAI
-        slices on proper floors.
-
+        metres - the STAI belongs to floors 0, 1, 2. We INSERT (x,y) STAI
+        slices on proper floors. The slices are enumerated from 100000. 
+        
         '''
 
-        # TODO: does the below still apply?
-        # We INSERT fake (x,y) STAI
-        # slices on proper floors in order to calculate vent_from / vent_to
-        # properly. These fake entities are enumerated from 100000. We only
-        # consider towers which span across more than 1 floor.
-
         towers={}
-        for w in self.s.query("SELECT floor,height,name,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
-            maxz_abs=self.s.query("SELECT max(z1) AS maxz FROM aamks_geom WHERE type_sec NOT IN('STAI','HALL') AND floor=?", (w['floor'],))[0]['maxz']
-            if w['height'] > maxz_abs:
+
+        for w in self.s.query("SELECT name,z0 as tower_z0,height+z0 as tower_z1,floor,height,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
+            floor_max_z=self.s.query("SELECT max(z1) FROM aamks_geom WHERE type_sec NOT IN('STAI','HALL') AND floor=?", (w['floor'],))[0]['max(z1)']
+            if w['tower_z1'] >= floor_max_z + 200:
 
                 towers[w['name']]=[]
                 current_floor=w['floor']
 
                 for floor in self.floors:
                     for v in self.s.query("SELECT min(z0) FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,)):
-                        if v['min(z0)'] < w['height']:
+                        if v['min(z0)'] < w['tower_z1'] and v['min(z0)'] >= w['tower_z0']:
                             towers[w['name']].append(floor)
                 towers[w['name']].remove(current_floor)
 
+        self.towers_parents={}
         high_global_type_id=1000001
         for orig_name,floors in towers.items():
-            orig_record=self.s.query("SELECT type_pri,type_sec,type_tri,x0,y0,width,depth,x1,y1,room_area,room_enter,1 as fire_model_ignore FROM aamks_geom WHERE name=?", (orig_name,))[0]
+            orig_record=self.s.query("SELECT global_type_id,type_pri,type_sec,type_tri,x0,y0,width,depth,x1,y1,room_area,room_enter,1 as fire_model_ignore, terminal_door FROM aamks_geom WHERE name=?", (orig_name,))[0]
+            parent_id=orig_record['global_type_id']
             kk=list(orig_record.keys())
-            kk.append('global_type_id')
             kk.append('floor')
             kk.append('name')
             for flo in floors:
+                self.towers_parents[high_global_type_id]=parent_id
+                orig_record['global_type_id']=high_global_type_id
                 vv=list(orig_record.values())
-                vv.append(high_global_type_id)
                 vv.append(flo)
                 vv.append("{}.{}".format(orig_name,flo))
-                self.s.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
+                self.s.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
                 high_global_type_id+=1
+
 # }}}
 
 # ASSERTIONS
@@ -568,7 +595,6 @@ class Geom():
 # }}}
 
     def _debug(self):# {{{
-        pass
         #dd(os.environ['AAMKS_PROJECT'])
         #self.s.dumpall()
         #self.s.dump_geoms()
@@ -576,5 +602,6 @@ class Geom():
         #dd(self.s.query("select * from world2d"))
         #exit()
         #self.s.dump()
+        pass
         
 # }}}

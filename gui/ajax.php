@@ -181,7 +181,7 @@ function ajaxApainterExport() { /*{{{*/
 	$z=file_put_contents($dest, $src);
 
 	if($z>0) { 
-		echo json_encode(array("msg"=>"ajaxApainterExport(): OK", "err"=>0, "data"=>""));
+		echo json_encode(array("msg"=>"File saved", "err"=>0, "data"=>""));
 	} else { 
 		echo json_encode(array("msg"=>"ajaxApainterExport(): ".error_get_last()['message'] , "err"=>1, "data"=>""));
 	}

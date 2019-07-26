@@ -310,7 +310,8 @@ class CfastMcarlo():
 # }}}
     def _section_halls_onez(self):# {{{
         txt=['!! ONEZ,id']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_sec in ('STAI', 'COR') order by type_sec"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_sec in ('STAI', 'COR') AND fire_model_ignore!=1 order by type_sec"):
+
             collect=[]
             if v['type_sec']=='COR':
                 collect.append('HALL')
