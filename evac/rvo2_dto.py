@@ -224,7 +224,6 @@ class EvacEnv:
         for item in rooms_f:
             rooms.update({item['name']: 0.0})
         self.smoke_opacity.update({str(self.floor): rooms})
-        print(self.smoke_opacity)
 
     def do_step(self):
         self.sim.doStep()

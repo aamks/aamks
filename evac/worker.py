@@ -45,7 +45,6 @@ class Worker:
         os.environ["AAMKS_PROJECT"]='.'
         self.working_dir = self.url.split('aamks_users/')[1]
         self.cross_building_results = None
-        self.master_query = None
         self.simulation_time = None
         self.time_shift = None
         self.animation_data = []
@@ -193,14 +192,9 @@ class Worker:
     def connect_rvo2_with_smoke_query(self):
         logging.info('Connectiong to smoke queries ')
 
-        try:
-            self.master_query = SmokeQuery(floor='0')
-        except Exception as e:
-            self._report_error(e)
-
         for i in self.floors:
             try:
-                i.smoke_query = self.master_query
+                i.smoke_query = SmokeQuery(floor=i.floor)
             except Exception as e:
                 self._report_error(e)
             else:
@@ -211,8 +205,8 @@ class Worker:
         time_frame = 10
         first_evacuue = []
         while 1:
-            self.master_query.cfast_has_time(time_frame)
-            if self.master_query.cfast_has_time(time_frame) == 1:
+            self.floors[0].smoke_query.cfast_has_time(time_frame)
+            if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
                 logging.info('Simulation time: {}'.format(time_frame))
                 rsets = []
                 for i in self.floors:
@@ -240,8 +234,7 @@ class Worker:
                 self.simulation_time = max(rsets)
                 self.time_shift = min(first_evacuue)
                 break
-
-        self.cross_building_results = self.master_query.get_final_vars()
+        self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
 
     def send_report(self): # {{{
         '''
