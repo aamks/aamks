@@ -3,12 +3,8 @@ from collections import OrderedDict
 import csv
 import re
 import os
-import sys
-import inspect
 import json
-import time
 import bisect
-from numpy.random import randint
 from include import Sqlite
 from include import Json
 import logging
@@ -191,6 +187,7 @@ class SmokeQuery:
 
         floors=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
         self.floor_dim = floors[str(floor)]
+        print('fo')
 
         x=self.floor_dim['minx'] + self._square_side * int((q[0]-self.floor_dim['minx'])/self._square_side) 
         y=self.floor_dim['miny'] + self._square_side * int((q[1]-self.floor_dim['miny'])/self._square_side)
@@ -209,6 +206,7 @@ class SmokeQuery:
         query = self.get_conditions(position, floor)
         conditions = query[0]
         room = query[1]
+        print('FLOOR: {}, ROOM: {}, HGT: {}, TIME: {}'.format(floor, room, conditions['HGT'], time))
 
         if conditions == 'outside':
             print('outside')

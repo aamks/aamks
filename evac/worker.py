@@ -168,7 +168,6 @@ class Worker:
 
 
         for i in self.obstacles['obstacles'].keys():
-            rooms = dict()
             try:
                 eenv = EvacEnv(self.vars['conf'])
                 eenv.floor = i
@@ -187,12 +186,9 @@ class Worker:
             e = self._create_evacuees(i)
             eenv.place_evacuees(e)
             #eenv.set_goal()
+            eenv.prepare_rooms_list()
             self.floors.append(eenv)
 
-            rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(i))
-            for item in rooms_f:
-                rooms.update({item['name']: 0.0})
-            self.smoke_opacity.update({str(i): rooms})
 
     def connect_rvo2_with_smoke_query(self):
         logging.info('Connectiong to smoke queries ')

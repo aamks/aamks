@@ -1,4 +1,5 @@
 import warnings
+from collections import OrderedDict
 
 warnings.simplefilter('ignore', RuntimeWarning)
 import rvo2
@@ -9,7 +10,7 @@ import os
 import json
 from nav import Navmesh
 from shapely.geometry import LineString
-import heapq
+from include import Sqlite
 
 
 class EvacEnv:
@@ -33,6 +34,7 @@ class EvacEnv:
         self.per_9 = 0
         self.floor = 0
         self.nav = None
+        self.smoke_opacity = OrderedDict()
 
         f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
         self.config = json.load(f)
@@ -75,16 +77,19 @@ class EvacEnv:
         # logging.info('Evacuee: {}'.format(evacuee))
         try:
             od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee),
-                                                                   self.current_time, self.floor)[0]
+                                                                   self.current_time, self.floor)
         except:
-            od_at_agent_position = 0
+            od_at_agent_position = 0, 'outside'
             logging.info(
                 'Evacuee: {} pos: {} path {}'.format(evacuee, self.evacuees.get_goal_of_pedestrian(evacuee), path[1]))
 
-        self.evacuees.set_optical_density(evacuee, od_at_agent_position)
+        self.evacuees.set_optical_density(evacuee, od_at_agent_position[0])
+        self.smoke_opacity.update({str(od_at_agent_position[1]): od_at_agent_position[0]})
+        self.room = od_at_agent_position[1]
+
         if self.config['SMOKE_AWARENESS'] and len(path) > 1:
-            od_next_room = self.smoke_query.get_visibility(path[1], self.current_time, self.floor)[0]
-            if od_at_agent_position < od_next_room:
+            od_next_room = self.smoke_query.get_visibility(path[1], self.current_time, self.floor)
+            if od_at_agent_position[0] < od_next_room[0]:
                 return True
             else:
                 return False
@@ -211,6 +216,15 @@ class EvacEnv:
     def generate_nav_mesh(self):
         self.nav = Navmesh()
         self.nav.build(floor=str(self.floor))
+
+    def prepare_rooms_list(self):
+        self.s = Sqlite("aamks.sqlite")
+        rooms = dict()
+        rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
+        for item in rooms_f:
+            rooms.update({item['name']: 0.0})
+        self.smoke_opacity.update({str(self.floor): rooms})
+        print(self.smoke_opacity)
 
     def do_step(self):
         self.sim.doStep()
