@@ -40,7 +40,7 @@ class Obstacles():
 # }}}
     def _create_obstacles(self, tin, tout):# {{{
         ''' 
-        Geometry may contain obstacles to model machines, FDS walls, bookcases,
+        Geometry may contain obstacles for modeling machines, FDS walls, bookcases,
         etc. Obstacles are not visible in CFAST.
         '''
 

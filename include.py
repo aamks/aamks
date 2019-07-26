@@ -307,9 +307,6 @@ class Vis:# {{{
             for obst in obstacles:
                 self._static_floors[floor]['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ]})
 
-        for floor,obstacles in xx['fire'].items():
-                self._static_floors[floor]['fire']={'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ] }
-
 # }}}
     def _js_make_srv_evacuees(self):# {{{
         ''' Draw srv, non-animated evacuees '''
