@@ -78,7 +78,7 @@ class CfastMcarlo():
         compa=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_origin[0],))[0]
         x=round(compa['x0']/100+compa['width']/(2.0*100),2)
         y=round(compa['y0']/100+compa['depth']/(2.0*100),2)
-        z=round(compa['z0']/100+compa['height']/100.0 * (1-math.log10(uniform(1,10))),2)
+        z=round(compa['height']/100.0 * (1-math.log10(uniform(1,10))),2)
 
         fire_origin+=[x,y,z]
         fire_origin+=[compa['floor']]
@@ -98,7 +98,7 @@ class CfastMcarlo():
             i=z[0]
             x=i['center_x']/100.0
             y=i['center_y']/100.0
-            z=i['center_z']/100.0
+            z=(i['z1']-i['z0'])/100.0
             room=self.s.query("SELECT floor,name,type_sec,global_type_id FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", (i['floor'], i['x0'], i['y0'], i['x1'], i['y1']))
             if room[0]['type_sec'] in ('COR','HALL'):
                 fire_origin=[room[0]['name'], 'non_room', x, y, z, room[0]['floor']]

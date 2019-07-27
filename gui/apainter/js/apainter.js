@@ -446,6 +446,8 @@ function create_self_props(self) {//{{{
 	} else if (self.type=='window') {
 		self.dimz=defaults.window_dimz;
 		self.window_offsetz=defaults.window_offsetz;
+	} else if (self.type=='fire') {
+		self.dimz=100
 	} else { 
 		self.dimz=defaults.floor_dimz;
 	}
