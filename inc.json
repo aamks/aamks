@@ -10,7 +10,7 @@
 		"a":      { "legendary": 1 , "x": "HALL"            , "t": "room"            , "c": "#e9b96e" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#000000" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
 		"q":      { "legendary": 1 , "x": "DCLOSER"         , "t": "door"            , "c": "#cc0000" , "stroke": "#cc0000" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
 		"e":      { "legendary": 1 , "x": "DELECTR"         , "t": "door"            , "c": "#443366" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
-		"t":      { "legendary": 1 , "x": "OBST"            , "t": "obst"            , "c": "#ffffff" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#000000" , "animOpacity": 1  , "strokeWidth": 0.5 } ,
+		"t":      { "legendary": 1 , "x": "OBST"            , "t": "obst"            , "c": "#eeeeff" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#000000" , "animOpacity": 0.5, "strokeWidth": 0.5 } ,
 		"v":      { "legendary": 1 , "x": "VVENT"           , "t": "vvent"           , "c": "#ffaa00" , "stroke": "#882200" , "lightc": "#000000" , "font": "#222244" , "animOpacity": 0.4, "strokeWidth": 2.5 } ,
 		"b":      { "legendary": 1 , "x": "MVENT"           , "t": "mvent"           , "c": "#008844" , "stroke": "#006622" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 2.5 } ,
 		"f":      { "legendary": 1 , "x": "EVACUEE"         , "t": "evacuee"         , "c": "#ffffff" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity":  1 , "strokeWidth": 0 }   ,

@@ -4,8 +4,6 @@
 -	AK: nav wysokopoziomowe:
 	* zachowanie stada, zawroc, ...
 
--	KK: evacuees nie moga sie rodzic w obstach
-
 -----------------------------
 
 	7. Może warto przygotować instrukcję, albo film jak przygotować rysunek do

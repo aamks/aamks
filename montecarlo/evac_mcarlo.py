@@ -10,6 +10,8 @@ import getopt
 from pprint import pprint
 import codecs
 from subprocess import Popen,call
+from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
+from shapely.ops import unary_union
 
 from numpy.random import choice
 from numpy.random import uniform
@@ -37,6 +39,7 @@ class EvacMcarlo():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
@@ -76,37 +79,42 @@ class EvacMcarlo():
         ''' 
         Special selectors from distributions.json
         First we try to return ROOM_1_2, then ROOM_FLOOR_1, then ROOM
-        Concentration comes as m^2, but aamks uses 10000 cm^2 
+        Concentration comes as m^2, but aamks uses 100 * 100 cm^2 
         '''
 
         z=self.conf['evacuees_concentration']
         for i in [name, "{}_FLOOR_{}".format(type_sec,floor), type_sec]:
             if i in z.keys():
-                return z[i] * 10000
+                return z[i] * 100 * 100
         raise Exception("Cannot determine the density for {}".format(name))
 
 # }}}
     def _evac_rooms(self,floor): # {{{
         '''
-        * plain: plain rooms
+        * probabilistic: probabilistic rooms
         * manual: manually asigned evacuees 
         '''
 
         rooms={}
-        plain_rooms={}
-        for i in self.s.query("SELECT x0, x1, y0, y1, name, type_sec, room_area FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY global_type_id", (floor,)):
-            plain_rooms[i['name']]=i
+        probabilistic_rooms={}
+        for i in self.s.query("SELECT x0, x1, y0, y1, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY global_type_id", (floor,)):
+            i['points']=((i['x0'], i['y0']), (i['x1'], i['y0']), (i['x1'], i['y1']), (i['x0'], i['y1']), (i['x0'], i['y0']))
+            del i['x0']
+            del i['y0']
+            del i['x1']
+            del i['y1']
+            probabilistic_rooms[i['name']]=i
 
         manual_rooms={}
         for i in self.s.query("SELECT name, x0, y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=?", (floor,)):
             q=(floor,i['x0'], i['y0'], i['x0'], i['y0'])
             x=self.s.query("SELECT name,type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND x0<=? AND y0<=? AND x1>=? AND y1>=?", q)[0]
             if not x['name'] in manual_rooms:
-                manual_rooms[x['name']]={'type_sec': x['type_sec'], 'pos': [] }
-                del plain_rooms[x['name']]
-            manual_rooms[x['name']]['pos'].append((i['x0'], i['y0']))
+                manual_rooms[x['name']]={'type_sec': x['type_sec'], 'positions': [] }
+                del probabilistic_rooms[x['name']]
+            manual_rooms[x['name']]['positions'].append((i['x0'], i['y0']))
 
-        rooms['plain']=plain_rooms
+        rooms['probabilistic']=probabilistic_rooms
         rooms['manual']=manual_rooms
         return rooms
 # }}}
@@ -118,22 +126,50 @@ class EvacMcarlo():
 
         self.dispatched_evacuees=OrderedDict() 
         self.pre_evacuation=OrderedDict() 
+        self._make_floor_obstacles()
         for floor in self.floors:
             self.pre_evacuation[floor] = list()
             positions = []
             evac_rooms=self._evac_rooms(floor)
-            for name,r in evac_rooms['plain'].items():
+            for name,r in evac_rooms['probabilistic'].items():
                 density=self._get_density(r['name'],r['type_sec'],floor)
-                x = uniform(r['x0'] + 50 , r['x1'] - 50 , int(r['room_area'] / density))
-                y = uniform(r['y0'] + 50 , r['y1'] - 50 , int(r['room_area'] / density))
-                positions += list(zip(x, y))
-                for i in x:
+                room_positions=self._dispatch_inside_polygons(density,r['points'], floor, name)
+                positions += room_positions
+                for i in room_positions:
                     self.pre_evacuation[floor].append(self._make_pre_evacuation(r['name'], r['type_sec']))
             for name,r in evac_rooms['manual'].items():
-                positions += r['pos']
-                for i in r['pos']:
+                positions += r['positions']
+                for i in r['positions']:
                     self.pre_evacuation[floor].append(self._make_pre_evacuation(name, r['type_sec']))
-            self.dispatched_evacuees[floor] = [list([int(i) for i in l]) for l in positions]
+            self.dispatched_evacuees[floor] = positions
+# }}}
+    def _make_floor_obstacles(self):# {{{
+        self._floor_obstacles={}
+        for floor in self.floors:
+            obsts=self.json.readdb("obstacles")['obstacles'][floor]
+            try:
+                obsts.append(self.json.readdb("obstacles")['fire'][floor])
+            except:
+                pass
+
+            separate_obsts = [ Polygon(i) for i in obsts ]
+            self._floor_obstacles[floor]=unary_union(separate_obsts)
+
+# }}}
+    def _dispatch_inside_polygons(self,density,points,floor,name):# {{{
+        exterior=Polygon(points)
+        exterior_minus_obsts=exterior.difference(self._floor_obstacles[floor])
+        walkable=exterior_minus_obsts.buffer(- self.evacuee_radius - 10 )
+
+        bbox=list(walkable.bounds)
+        target=int(walkable.area / density)
+        positions=[]
+        while len(positions) < target:
+            x=uniform(bbox[0], bbox[2])
+            y=uniform(bbox[1], bbox[3])
+            if walkable.intersects(Point(x,y)):
+                positions.append((int(x),int(y), name))
+        return positions
 # }}}
     def _make_evac_conf(self):# {{{
         ''' Write data to sim_id/evac.json. '''
