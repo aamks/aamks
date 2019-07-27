@@ -332,11 +332,11 @@ class Geom():
 
         update=[]
         for i in terminal_rooms:
-            z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE type_pri='HVENT' AND (vent_from=? OR vent_to=? OR vent_to='OUTSIDE')", (i['global_type_id'], i['global_type_id']))
+            z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE type_pri='HVENT' AND (vent_from=? OR vent_to=? OR vent_to_name='outside')", (i['global_type_id'], i['global_type_id']))
             for ii in z:
                 update.append((ii['exit_type'], ii['name']))
         self.s.executemany("UPDATE aamks_geom SET terminal_door=? WHERE name=?", update)
-        #dd(self.s.query("SELECT name,terminal_door from aamks_geom order by name"))
+        #dd(self.s.query("SELECT name,terminal_door,vent_from_name,vent_to_name from aamks_geom order by name"))
 
 # }}}
     def _auto_detectors_and_sprinklers(self):# {{{

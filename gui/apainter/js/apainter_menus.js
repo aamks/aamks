@@ -482,13 +482,13 @@ function make_dim_properties() {//{{{
 	var prop='';
 	if(gg[active_letter].t!='evacuee') {
 		//var selected=db({'name':selected_geom}).select("exit_type")[0]; // TODO: some garbage line?
-		prop+="<tr><td>x-dim<td><input id=alter_dimx type=text size=3 value="+db({'name':selected_geom}).select("dimx")[0]+">";
-		prop+="<tr><td>y-dim<td><input id=alter_dimy type=text size=3 value="+db({'name':selected_geom}).select("dimy")[0]+">";
-		prop+="<tr><td>z-dim<td><input id=alter_dimz type=text size=3 value="+db({'name':selected_geom}).select("dimz")[0]+">";
+		prop+="<tr><td>x-dim<td><input id=alter_dimx type=text size=3 value="+db({'name':selected_geom}).select("dimx")[0]+"> cm";
+		prop+="<tr><td>y-dim<td><input id=alter_dimy type=text size=3 value="+db({'name':selected_geom}).select("dimy")[0]+"> cm";
+		prop+="<tr><td>z-dim<td><input id=alter_dimz type=text size=3 value="+db({'name':selected_geom}).select("dimz")[0]+"> cm";
 	} else {
-		prop+="<input id=alter_dimx type=hidden value=0>";
-		prop+="<input id=alter_dimy type=hidden value=0>";
-		prop+="<input id=alter_dimz type=hidden value=0>";
+		prop+="<input id=alter_dimx type=hidden value=0> cm";
+		prop+="<input id=alter_dimy type=hidden value=0> cm";
+		prop+="<input id=alter_dimz type=hidden value=0> cm";
 	}
 	return prop;
 }
@@ -570,8 +570,8 @@ function apainter_setup_box() {//{{{
 function apainter_help_box() {//{{{
 	d3.select('right-menu-box').html(
 		"<table class=nobreak>"+
-		"<tr><td><letter>letter</letter> + <letter>leftMouse</letter><td> create elem"+
-		"<tr><td>double <letter>leftMouse</letter><td> elem properties"+
+		"<tr><td><letter>letter</letter> + <letter>leftMouse</letter><td> create element"+
+		"<tr><td>double <letter>leftMouse</letter><td> element properties"+
 		"<tr><td>hold <letter>ctrl</letter>		<td> disable snapping"+ 
 		"<tr><td><letter>h</letter>	<td> loop views"+ 
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
@@ -596,8 +596,8 @@ function apainter_properties_box() {//{{{
 		"<wheat><letter>x</letter> to delete, <letter>g</letter> for listing</wheat>"+
 		"<table>"+
 	    "<tr><td>name <td>"+db({'name':selected_geom}).select("name")[0]+
-		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_geom}).select("x0")[0]+">"+
-		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_geom}).select("y0")[0]+">"+
+		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_geom}).select("x0")[0]+"> cm"+
+		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_geom}).select("y0")[0]+"> cm"+
 		dim_properties+
 		room_properties+
 		mvent_properties+

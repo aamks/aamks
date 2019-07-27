@@ -253,4 +253,46 @@ class Navmesh:
         else :
             return path
 # }}}
+    def closest_terminal(self,p0,exit_type):# {{{
+        '''
+        The shortest polyline defines the closest exit from the floor. 
+        dist < 10 test asserts the polyline has min 2 distinct points.
+
+        exit_type: primary | secondary | any
+        '''
+
+        if exit_type in ['primary', 'secondary']:
+            r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE terminal_door=? AND floor=?", (exit_type, self.floor))
+        else:
+            r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
+        m={}
+        closest={ 'len': 999999999, 'name': None, 'x': None, 'y': None }
+        for i in r:
+            if abs(i['center_x']-p0[0]) < 10 and abs(i['center_y']-p0[1]) < 10: 
+                closest={ 'name': i['name'],  'x': i['center_x'], 'y': i['center_y'],'len': 0  }
+                return closest
+            ll=LineString(self.query((p0,(i['center_x'],i['center_y'])),300)).length 
+            if ll < closest['len']:
+                closest={ 'name': i['name'], 'x': i['center_x'], 'y': i['center_y'], 'len': int(ll) }
+        return closest
+            
+# }}}
+    def closest_room_escape(self,p0,room):# {{{
+        '''
+        Evacuee finds himself in a room with smoke and needs to leave urgently
+        '''
+
+        r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE (vent_from_name=? OR vent_to_name=?) AND floor=?", (room,room,self.floor))
+        m={}
+        closest={ 'len': 999999999, 'name': None, 'x': None, 'y': None }
+        for i in r:
+            if abs(i['center_x']-p0[0]) < 10 and abs(i['center_y']-p0[1]) < 10: 
+                closest={ 'name': i['name'],  'x': i['center_x'], 'y': i['center_y'],'len': 0  }
+                return closest
+            ll=sqrt((i['center_x']-p0[0])**2 + (i['center_y']-p0[1])**2)
+            if ll < closest['len']:
+                closest={ 'name': i['name'], 'x': i['center_x'], 'y': i['center_y'], 'len': int(ll) }
+        return closest
+            
+# }}}
 

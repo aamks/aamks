@@ -1,21 +1,15 @@
 -	AK: warunki dla lokalnego workera. Do rozwazenia osobna zmienna albo server==localhost
 -	AK: use_cfast=0 jako opcja w conf.json { "project_id": 1, "scenario_id": 10, "navmesh_debug": 1, "use_cfast": 0, }
 -	AK: braki w picts/ (instalator)
-
 -	AK: nav wysokopoziomowe:
-	* zachowanie stada, cofnij sie po synka
+	* zachowanie stada, zawroc, ...
 
--	KK: nav niskopoziomowe:
-	* najblizsze wyjscie z pokoju
-	* najblizsze wyjscie z budynku
-	* najblizsze primary wyjscie z budynku
+-	KK: evacuees nie moga sie rodzic w obstach
 
 -----------------------------
 
-
 	7. Może warto przygotować instrukcję, albo film jak przygotować rysunek do
 	importu 
-	8. Nie znalazłem nigdzie informacji, że rysuje w cm; 
 	11. Jak łączyć automatycznie pomieszczenia (coś jak wcześniejsze auto hole)?
 	20. Nie jest określone jasno z jaką dokładnością można rysować. 10 cm czy 1 cm
 	3. W okienku dodawania podkładu nie ma informacji, że musi on być w formacie
@@ -24,12 +18,6 @@
 
 -	KK: To jest szerszy problem dokumentacji. Ja nie planuje zajmowac sie dokumentacja.
 	Małe wskazowki sa w Aamksie i dodalem kilka nastepnych. DWG nie wchodzi w gre.
-
------------------------------
-
-	9. Brak informacji, że wartości wpisuje się z „ . ”, a nie „ , ” 
-
--	KK: W budowie.
 
 -----------------------------
 
@@ -58,8 +46,8 @@
 	elementów (drzwi, pokoi); 
 
 -	KK:	Edycja istniejacego wydaje sie niewiele szybsza od operacji x(usun) +
-	r(room). Musialbym zobaczyc na zywo te problemy, ale raczej nie bedzie
-	takich funkcji.
+	r(room). Musialbym sie na zywo przekonac, ze to jest rzeczywiscie problem,
+	bo nie wydaje mi sie.
 
 -----------------------------
 
@@ -140,5 +128,17 @@
 	Pomieszczenia na pietrze musza miec wspolne zmin.
 
 +	KK:	W aamksie jest jedno z-min per pietro
+
+-----------------------------
+
+	9. Brak informacji, że wartości wpisuje się z „ . ”, a nie „ , ” 
+
++	KK: Pracujemy tylko z liczbami calkowitymi, nie ma przecinkow
+
+-----------------------------
+
+	8. Nie znalazłem nigdzie informacji, że rysuje w cm; 
+
++	KK: Zrobione
 
 -----------------------------
