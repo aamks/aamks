@@ -212,6 +212,7 @@ function showStaticImage() {//{{{
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
 		ajax_msg(response);
 		dstatic=response['data'];
+        dd(dstatic);
 		dstaticAllFloors=response['data'];
 		rescaleCanvas('world2d');
 
@@ -394,41 +395,45 @@ function drawMeta(floor,tx,ty) {//{{{
 //}}}
 function drawPath(type,data,tx,ty) {//{{{
 	if(type=='ROOM') {
+        var points=JSON.parse(data.points)
 		strokeColor = colors[type].stroke;
 		opacity = colors[type].animOpacity;
 		fillColor = data.room_enter == 'yes' ? colors[data.type_sec].c : "#333";
 		var path=new Path({fillColor:fillColor, opacity:opacity });
 	}
-	if(type=='OBST') {
-		strokeColor = colors[type].stroke;
-		opacity = colors[type].animOpacity;
-		fillColor = colors[type].c;
-		strokeWidth = wallsSize;
-		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
-	}
 	if(type=='DOOR') {
+        var points=JSON.parse(data.points)
 		strokeWidth = doorsSize;
 		strokeColor = colors[type].stroke;
 		opacity = colors[type].animOpacity;
 		fillColor = colors[type].c;
 		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, opacity:opacity });
 	}
+	if(type=='OBST') {
+        var points=JSON.parse(data)
+		strokeColor = colors[type].stroke;
+		opacity = colors[type].animOpacity;
+		fillColor = colors[type].c;
+		strokeWidth = wallsSize;
+		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
+	}
 
-	path.closed = true;
-	_.each(data.points, function(point) { path.add(new Point(point.x+tx, point.y+ty)); });
+	//path.closed = true;
+	_.each(points, function(point) { path.add(new Point(point[0]+tx, point[1]+ty)); });
 }
 //}}}
 function drawLabel(type,data,tx,ty) {//{{{
+    var points=JSON.parse(data.points)
 	fontFamily = 'Roboto';
 	content = data.name;
 	if(type=='ROOM') {
 		fillColor = colors.fg.c;
 		fontSize = labelsSize;
 		opacity = colors.fg.animOpacity;
-		pos=[data.points[0].x + tx + 30, data.points[0].y + ty + 70];
+		pos=[points[0][0] + tx + 30, points[0][1] + ty + 70];
 	}
 	if(type=='DOOR') {
-		if(data.points[1].x - data.points[0].x > 32) { 
+		if(points[1][0] - points[0][1] > 32) { 
 			// horizontal door
 			ttx=20; tty=30;
 		} else { 
@@ -437,19 +442,21 @@ function drawLabel(type,data,tx,ty) {//{{{
 		fillColor = colors.fg.c;
 		opacity = colors.fg.animOpacity;
 		fontSize = labelsSize * 0.60;
-		pos=[data.points[0].x + tx + ttx, data.points[0].y + ty + tty];
+		pos=[points[0][0] + tx + ttx, points[0][1] + ty + tty];
 	}
 	new PointText({ point: new Point(pos[0], pos[1]), content: content, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
 }
 //}}}
 function drawStaticEvacuees(data,tx,ty) {//{{{
+    var points=[];
+    _.each(data, function(pp) { points.push(JSON.parse(pp))});
 	if(currentAnimMeta["anim"] == undefined) { 
 		radius=evacueeRadius;
 		strokeWidth=0; 
 		fillColor: colors['doseN']['c'];
 
-		_.each(data.points, function(point) { 
-			new Path.Circle({ center: new Point(point.x+tx, point.y+ty), radius: radius, strokeWidth:strokeWidth , fillColor: fillColor });
+		_.each(points, function(point) { 
+			new Path.Circle({ center: new Point(point[0]+tx, point[1]+ty), radius: radius, strokeWidth:strokeWidth , fillColor: fillColor });
 		});
 	}
 }
@@ -592,16 +599,18 @@ function highlightGeom(key) {//{{{
         ty=ffloor.floor_meta.world2d_ty;
         _.each(ffloor.rooms, function(d) { 
 			if (d['name']==key) {
-				rw=d.points[1]['x'] - d.points[0]['x'];
-				rh=d.points[2]['y'] - d.points[1]['y'];
-				new Path.Rectangle({point: new Point(d.points[0]['x']+tx,d.points[0]['y']+ty), size: new Size(rw,rh), opacity:0.4, fillColor: "#0f0"});
+                var points=JSON.parse(d.points)
+				rw=points[1][0] - points[0][0];
+				rh=points[2][1] - points[1][1];
+				new Path.Rectangle({point: new Point(points[0][0]+tx,points[0][1]+ty), size: new Size(rw,rh), opacity:0.4, fillColor: "#0f0"});
 				return;
 			}
 		})
         _.each(ffloor.doors, function(d) { 
 			if (d['name']==key) {
-				cx=d.points[0]['x'] + 0.5 * (d.points[1]['x'] - d.points[0]['x']);
-				cy=d.points[1]['y'] + 0.5 * (d.points[2]['y'] - d.points[1]['y']);
+                var points=JSON.parse(d.points)
+				cx=points[0][0] + 0.5 * (points[1][0] - points[0][0]);
+				cy=points[1][1] + 0.5 * (points[2][1] - points[1][1]);
 				new Path.Circle({center: new Point(cx+tx,cy+ty), radius: 100,  opacity:0.4, fillColor: "#0f0"});
 				return;
 			}
@@ -638,28 +647,27 @@ function initRoomSmoke() {//{{{
         var ty=dstatic.floors[ffloor].floor_meta.world2d_ty;
         var tx=dstatic.floors[ffloor].floor_meta.world2d_tx;
 		for (var room in roomsOpacity[0][ffloor]) {
+            var pp=JSON.parse(dstatic.floors[ffloor]['rooms'][room]['points']);
 			points=[];
-			_.each(dstatic.floors[ffloor]['rooms'][room]['points'], function(i) { 
-				points.push({'x': i['x']+tx, 'y': i['y']+ty}); 
-			});
+			_.each(pp, function(i) { points.push([i[0]+tx, i[1]+ty]); });
 
-			rw=points[1]['x'] - points[0]['x'];
-			rh=points[2]['y'] - points[1]['y'];
+			rw=points[1][0] - points[0][0];
+			rh=points[2][1] - points[1][1];
 
 			group=new Group();
 			group.name=room;
 			group.floor=ffloor;
 			
-			group.addChild(new Path.Rectangle({ point: new Point(points[0]['x']+roomMargin, points[0]['y']+roomMargin), size: new Size(rw-2*roomMargin,rh-2*roomMargin)}));
+			group.addChild(new Path.Rectangle({ point: new Point(points[0][0]+roomMargin, points[0][1]+roomMargin), size: new Size(rw-2*roomMargin,rh-2*roomMargin)}));
 			group.clipped=true;
 			group.opacity=0.3;
-			x_ranges=bubbles_ranges(points[1]['x'] - points[0]['x']);
-			y_ranges=bubbles_ranges(points[2]['y'] - points[1]['y']);
+			x_ranges=bubbles_ranges(points[1][0] - points[0][0]);
+			y_ranges=bubbles_ranges(points[2][1] - points[1][1]);
 			for (var xx in x_ranges) {
 				for (var yy in y_ranges) {
 					center=[
-						points[0]['x'] + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
-						points[0]['y'] + randBetween (y_ranges[yy][0], y_ranges[yy][1] ),
+						points[0][0] + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
+						points[0][1] + randBetween (y_ranges[yy][0], y_ranges[yy][1] ),
 					];
 					group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center[0], center[1]), radius: radius*randBetween(0.7,1),  fillColor: "#023" }));
 

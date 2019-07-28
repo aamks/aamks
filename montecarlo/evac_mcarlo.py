@@ -35,16 +35,21 @@ from scipy.stats.distributions import lognorm
 class EvacMcarlo():
     def __init__(self):# {{{
         ''' Generate montecarlo evac.conf. '''
-
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
-        si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
-        for self._sim_id in range(*si.get()):
+        if self.conf['fire_model']=='CFAST':
+            si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
+            sim_ids=range(*si.get())
+        else:
+            cadfds=self.json.read("{}/cadfds.json".format(os.environ['AAMKS_PROJECT']))
+            sim_ids=[ cadfds['0']['META']['sim_id'] ]
+
+        for self._sim_id in sim_ids:
             seed(self._sim_id)
             self._static_evac_conf()
             self._dispatch_evacuees()
@@ -95,14 +100,25 @@ class EvacMcarlo():
         * manual: manually asigned evacuees 
         '''
 
+
+        # name: r1
+        # type_sec: ROOM
+        # points: ((999, 1000), (999, 1000), (999, 1000), (999, 1000), (999, 1000))
+
+        #for i in self.s.query("SELECT x0, x1, y0, y1, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY global_type_id", (floor,)):
+        #    i['points']=((i['x0'], i['y0']), (i['x1'], i['y0']), (i['x1'], i['y1']), (i['x0'], i['y1']), (i['x0'], i['y0']))
+        #    del i['x0']
+        #    del i['y0']
+        #    del i['x1']
+        #    del i['y1']
+        #    dd(i)
+        #    #xx[i['name']]=i
+        #    exit()
+
         rooms={}
         probabilistic_rooms={}
-        for i in self.s.query("SELECT x0, x1, y0, y1, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY global_type_id", (floor,)):
-            i['points']=((i['x0'], i['y0']), (i['x1'], i['y0']), (i['x1'], i['y1']), (i['x0'], i['y1']), (i['x0'], i['y0']))
-            del i['x0']
-            del i['y0']
-            del i['x1']
-            del i['y1']
+        for i in self.s.query("SELECT points, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY global_type_id", (floor,)):
+            i['points']=tuple((x,y) for x,y in json.loads(i['points']))
             probabilistic_rooms[i['name']]=i
 
         manual_rooms={}
@@ -112,7 +128,7 @@ class EvacMcarlo():
             if not x['name'] in manual_rooms:
                 manual_rooms[x['name']]={'type_sec': x['type_sec'], 'positions': [] }
                 del probabilistic_rooms[x['name']]
-            manual_rooms[x['name']]['positions'].append((i['x0'], i['y0']))
+            manual_rooms[x['name']]['positions'].append((i['x0'], i['y0'], x['name']))
 
         rooms['probabilistic']=probabilistic_rooms
         rooms['manual']=manual_rooms
@@ -151,9 +167,7 @@ class EvacMcarlo():
                 obsts.append(self.json.readdb("obstacles")['fire'][floor])
             except:
                 pass
-
-            separate_obsts = [ Polygon(i) for i in obsts ]
-            self._floor_obstacles[floor]=unary_union(separate_obsts)
+            self._floor_obstacles[floor]=unary_union([ Polygon(i) for i in obsts ])
 
 # }}}
     def _dispatch_inside_polygons(self,density,points,floor,name):# {{{
@@ -180,6 +194,7 @@ class EvacMcarlo():
             self._evac_conf['FLOORS_DATA'][floor]['NUM_OF_EVACUEES']=len(self.dispatched_evacuees[floor])
             self._evac_conf['FLOORS_DATA'][floor]['EVACUEES']=OrderedDict()
             z=self.s.query("SELECT z0 FROM aamks_geom WHERE floor=?", (floor,))[0]['z0']
+            #dd(self.dispatched_evacuees[floor])
             for i,pos in enumerate(self.dispatched_evacuees[floor]):
                 e_id='f{}'.format(i)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]=OrderedDict()

@@ -26,8 +26,8 @@ class World2d():
     ''' World2d is a display of all floors in a single 2d world '''
     def __init__(self):# {{{
         self.json=Json()
-        self.world_meta=self.json.readdb("world_meta")
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.world_meta=self.json.readdb("world_meta")
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.floors_meta=self.json.readdb("floors_meta")
         self.floors=self.floors_meta.keys()

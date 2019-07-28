@@ -25,15 +25,20 @@ from include import Vis
 class FDSImporter():
     def __init__(self):# {{{
         self.json=Json()
+        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        if self.conf['fire_model']=='CFAST':
+            return
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.raw_geometry=self.json.read("{}/cadfds.json".format(os.environ['AAMKS_PROJECT']))
+        self.cadfds=self.json.read("{}/cadfds.json".format(os.environ['AAMKS_PROJECT']))
         self.doors_width=32
         self.walls_width=4
         self._geometry2sqlite()
         self.geomsMap=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['aamksGeomsMap']
         self._floors_meta()
         self._world_meta()
-        #self._terminal_doors()
+        self._fire_origin()
+        self._init_dd_geoms()
+        self._debug()
 # }}}
 
     def _floors_meta(self):# {{{
@@ -93,9 +98,8 @@ class FDSImporter():
 
 # }}}
     def _geometry2sqlite(self):# {{{
-
         data=[]
-        for floor,gg in self.raw_geometry.items():
+        for floor,gg in self.cadfds.items():
             for k,arr in gg.items():
                 if k in ('META'):
                     continue
@@ -108,13 +112,12 @@ class FDSImporter():
                         data.append(record)
         self.s.query("CREATE TABLE aamks_geom(name,floor,type_pri,type_sec,type_tri,x0,y0,z0,x1,y1,z1,global_type_id,exit_type, room_enter, terminal_door, points)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
-        dd(self.s.dump())
 #}}}
     def _prepare_attrs(self,v):# {{{
         aa={"exit_type": None, "room_enter": None }
-        if 'attrs' in v:
-            for k,v in attrs.items():
-                aa[k]=v
+        if 'attribs' in v:
+            for kk,vv in v['attribs'].items():
+                aa[kk]=vv
         return aa
 # }}}
     def _prepare_geom_record(self,k,v,bbox,floor,attrs,meta):# {{{
@@ -162,24 +165,53 @@ class FDSImporter():
         if 'name' not in v:
             v['name']=''
 
-        #self.s.query("CREATE TABLE aamks_geom(name , floor , type_pri , type_sec , type_tri , x0      , y0      , z0         , x1      , y1      , z1         , global_type_id , exit_type          , room_enter          , terminal_door , points)")
-        return (v['name']                           , floor , type_pri , k        , type_tri , bbox[0] , bbox[1] , meta['z0'] , bbox[0] , bbox[1] , meta['z1'] , None           , attrs['exit_type'] , attrs['room_enter'] , None          , json.dumps(v['points']))
+        #self.s.query("CREATE TABLE aamks_geom(name , floor , type_pri , type_sec , type_tri , x0      , y0      , z0         , x1      , y1      , z1         , global_type_id , exit_type          , room_enter          , terminal_door      , points)")
+        return (v['name']                           , floor , type_pri , k        , type_tri , bbox[0] , bbox[1] , meta['z0'] , bbox[0] , bbox[1] , meta['z1'] , None           , attrs['exit_type'] , attrs['room_enter'] , attrs['exit_type'] , json.dumps(v['points']))
 
 # }}}
-    def _terminal_doors(self):# {{{
+    def _fire_origin(self):# {{{
+        r=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")[0]
+        self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,sim_id)")
+        fire_origin=['fire', 1, r['x0'], r['y0'], r['z0'], r['floor'], self.cadfds['0']['META']['sim_id']]
+        self.s.query('INSERT INTO fire_origin VALUES (? , ? , ? , ? , ? , ? , ?)' , fire_origin)
+# }}}
+    def _init_dd_geoms(self):# {{{
         ''' 
-        Doors that lead to outside or lead to staircases are terminal
+        dd_geoms are some optional extra rectangles, points, lines and
+        circles that are written to on top of our geoms. Useful for developing
+        and debugging features. Must come early, because visualization depends
+        on it. 
+
+        Procedure:  
+            z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            z["0"]['rectangles'].append( { "xy": (0    , 0)    , "width": 200              , "depth": 200        , "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#f80" , "opacity": 0.7 } )
+            z["0"]['circles'].append({ "xy": (i['center_x'], i['center_y']),"radius": 200, "fillColor": "#fff" , "opacity": 0.3 } )
+            self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         '''
-        terminal_rooms=self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_sec='STAI'")
 
-        update=[]
-        for i in terminal_rooms:
-            z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE type_pri='HVENT' AND (vent_from=? OR vent_to=? OR vent_to_name='outside')", (i['global_type_id'], i['global_type_id']))
-            for ii in z:
-                update.append((ii['exit_type'], ii['name']))
-        self.s.executemany("UPDATE aamks_geom SET terminal_door=? WHERE name=?", update)
-        #dd(self.s.query("SELECT name,terminal_door,vent_from_name,vent_to_name from aamks_geom order by name"))
+        z=dict()
+        for floor in self.floors:
+            z[floor]=dict()
+            z[floor]['rectangles']=[]      
+            z[floor]['lines']=[]           
+            z[floor]['circles']=[]         
+            z[floor]['texts']=[]           
+            z[floor]['rectangles']=[]      
+            #for i in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' AND floor=?", (floor,)): 
+            #    z[floor]['circles'].append({ "xy": (i['center_x'] , i['center_y']) , "radius": 90 , "fillColor": "#fff" , "opacity": 0.05 } )
 
+            # Example usage anywhere inside aamks:
+
+            # z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            # z["0"]['rectangles'].append( { "xy": (1000 , 1000) , "width": 200             , "depth": 300        , "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#f80" , "opacity": 0.7 } )
+            # z["0"]['rectangles'].append( { "xy": (0    , 0)    , "width": 200              , "depth": 200        , "strokeColor": "#fff" , "strokeWidth": 2  , "fillColor": "#f80" , "opacity": 0.7 } )
+            # z["0"]['lines'].append(      { "xy": (2000 , 200)  , "x1": 3400               , "y1": 500           , "strokeColor": "#fff" , "strokeWidth": 2  , "opacity": 0.7 } )
+            # z["0"]['texts'].append(      { "xy": (1000 , 1000) , "content": "(1000x1000)" , "fontSize": 400      , "fillColor":"#06f"    , "opacity":0.7 } )
+            # self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
+            # Vis(None, 'image', 'dd_geoms example')
+
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
     def _debug(self):# {{{
         #dd(os.environ['AAMKS_PROJECT'])

@@ -26,6 +26,7 @@ class Obstacles():
     def __init__(self):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.fire_model=self.conf['fire_model'];
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.world_meta=self.json.readdb("world_meta")
         self.floors_meta=self.json.readdb("floors_meta")
@@ -68,6 +69,8 @@ class Obstacles():
         operations. Finally doors cut the openings in walls.
 
         '''
+        if self.fire_model=='FDS':
+            return []
 
         walls=[]
         for i in self.s.query("SELECT * FROM {} WHERE floor=? AND type_pri='COMPA' ORDER BY name".format(tin), (floor,)):

@@ -282,18 +282,16 @@ class Vis:# {{{
 
         for floor in self._static_floors.keys():
             self._static_floors[floor]['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
-                points=self._make_poly(i)
-                self._static_floors[floor]['rooms'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', points)])
+            for i in self.s.query("SELECT name,points,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
+                self._static_floors[floor]['rooms'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', i['points'])])
 # }}}
     def _js_make_doors(self):# {{{
         ''' Data for doors. '''
 
         for floor in self._static_floors.keys():
             self._static_floors[floor]['doors']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,x1,y1,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
-                points=self._make_poly(i)
-                self._static_floors[floor]['doors'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', points)])
+            for i in self.s.query("SELECT name,points,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
+                self._static_floors[floor]['doors'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', i['points'])])
 # }}}
     def _js_make_obstacles(self):# {{{
         ''' 
@@ -305,14 +303,16 @@ class Vis:# {{{
         for floor,obstacles in xx['obstacles'].items():
             self._static_floors[floor]['obstacles']=[]
             for obst in obstacles:
-                self._static_floors[floor]['obstacles'].append({'points': [ OrderedDict([('x', o[0]),('y', o[1])]) for o in obst[:4] ]})
+                self._static_floors[floor]['obstacles'].append(json.dumps([ (o[0], o[1])  for o in obst[:4] ]))
 
 # }}}
     def _js_make_srv_evacuees(self):# {{{
         ''' Draw srv, non-animated evacuees '''
 
         for floor,evacuees in JSON.readdb("dispatched_evacuees").items():
-            self._static_floors[floor]['evacuees']=OrderedDict({'points': [ OrderedDict([('x', i[0]),('y', i[1])]) for i in evacuees ]})
+            self._static_floors[floor]['evacuees']=[]
+            for i in evacuees:
+                self._static_floors[floor]['evacuees'].append(json.dumps(i))
 # }}}
     def _js_make_dd_geoms(self):# {{{
         ''' 
@@ -326,14 +326,6 @@ class Vis:# {{{
             self._static_floors[floor]['dd_geoms']=f[floor]
 # }}}
 
-    def _make_poly(self,i):# {{{
-        points=[]
-        points.append(OrderedDict([('x', i['x0']), ("y", i['y0'])]))
-        points.append(OrderedDict([('x', i['x1']), ("y", i['y0'])]))
-        points.append(OrderedDict([('x', i['x1']), ("y", i['y1'])]))
-        points.append(OrderedDict([('x', i['x0']), ("y", i['y1'])]))
-        return points
-# }}}
     def _js_vis_fire_origin(self):# {{{
         z=self.s.query("SELECT floor, x, y FROM fire_origin")
         return {'floor': z[0]['floor'], 'x': z[0]['x']*100, 'y': z[0]['y']*100 }

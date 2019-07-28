@@ -21,7 +21,6 @@ class OnInit():
             os.environ["AAMKS_PROJECT"]=sys.argv[1]
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        self.fire_model=self.conf['fire_model'];
         self.project_id=self.conf['project_id']
         self.p=Psql()
         self._clear_srv_anims()

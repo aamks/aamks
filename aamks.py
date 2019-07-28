@@ -14,12 +14,10 @@ from include import SendMessage
 
 #os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/simple'
 #print("In aamks.py:", os.environ['AAMKS_PROJECT'])
-p=OnInit()
-if p.fire_model=='CFAST':
-    Geom()
-    World2d()
-else:
-    FDSImporter()
+OnInit()
+Geom()
+FDSImporter()
+World2d()
 Obstacles()
 CfastPartition(0) # 1 enabled debugging
 CfastMcarlo()
