@@ -1,7 +1,8 @@
 Bylo: fire_origin w [m]. Jest: [cm]
 Bylo: obstacles jako 4 punkty. Jest: obstacles jako N punktow. Ostatni punkt jest powtorzonym pierwszym punktem.
+Bylo: { "x":10, "y":20 }. Jest: [10,20]
 
--	AK: warunki dla lokalnego workera. Do rozwazenia osobna zmienna albo server==localhost
+-	AK: Lokalny worker: w install.sh AAMKS_LOCAL_WORKER=1. Nie mozna bazowac na localhost, bo chcialbym workera na s.szach.in.
 -	AK: use_cfast=0 jako opcja w conf.json { "project_id": 1, "scenario_id": 10, "navmesh_debug": 1, "use_cfast": 0, }
 -	AK: braki w picts/ (instalator)
 -	AK: nav wysokopoziomowe:
