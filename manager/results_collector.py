@@ -55,11 +55,11 @@ try:
 
             self.jsonOut=OrderedDict()
             self.jsonOut['sort_id']=int(sim_id)
-            self.jsonOut['title']="sim{}, f{}".format(self.meta['sim_id'], self.meta['floor'])
-            self.jsonOut['floor']=self.meta['floor']
-            self.jsonOut['fire_origin']=self._fire_origin_coords(self.meta['sim_id'])
+            self.jsonOut['title']="sim: {}".format(self.meta['floor'])
+            self.jsonOut['fire_origin'] = {"floor": self.meta['floor'], "x": self._fire_origin_coords(self.meta['sim_id'])[0],
+                                         "y": self._fire_origin_coords(self.meta['sim_id'])[1]}
             self.jsonOut['highlight_geom']=None
-            self.jsonOut['anim']="{}/{}".format(self.meta['sim_id'],self.meta['animation'])
+            self.jsonOut['anim']="{}/{}".format(self.meta['sim_id'], self.meta['animation'])
 
             anims_master="{}workers/anims.json".format(self.meta['path_to_project'])
             try:
