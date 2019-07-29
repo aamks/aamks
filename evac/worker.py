@@ -48,7 +48,8 @@ class Worker:
         self.simulation_time = None
         self.time_shift = None
         self.animation_data = []
-        self.smoke_opacity = dict()
+        self.smoke_opacity = []
+        self.rooms_in_smoke = dict()
 
     def error_report(self, message):
         with open("/tmp/aamks.log", "a") as output:
@@ -215,15 +216,20 @@ class Worker:
 
                 for step in range(0, int(time_frame / self.floors[0].config['TIME_STEP'])):
                     time_row = dict()
+                    smoke_row = dict()
                     for i in self.floors:
                         i.do_simulation(step)
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
+                            i.update_room_opacity()
+                            smoke_row.update({str(i.floor): i.smoke_opacity})
                     if len(time_row) > 0:
                         self.animation_data.append(time_row)
+                        self.smoke_opacity.append(smoke_row)
 
                 for i in self.floors:
                     rsets.append(i.rset)
+                    self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
                 time_frame += 10
             else:
                 time.sleep(1)
@@ -235,6 +241,8 @@ class Worker:
                 self.time_shift = min(first_evacuue)
                 break
         self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
+
+
 
     def send_report(self): # {{{
         '''
@@ -256,13 +264,24 @@ class Worker:
         with anim.json inside.
         '''
 
+        '''Selecting only the rooms that had smoke during simulations'''
+        smoke_data = []
+        for row in self.smoke_opacity:
+            floors = dict()
+            for key in row.keys():
+                room_on_floor = dict()
+                for room in self.rooms_in_smoke[key]:
+                    room_on_floor.update({room: row[key][room]})
+                floors.update({key: room_on_floor})
+            smoke_data.append(floors)
+
         json_content = {
                         'simulation_id': self.sim_id,
                         'simulation_time': self.simulation_time,
                         'time_shift': self.time_shift,
                         'animations': {
                             'evacuees': self.animation_data,
-                            'rooms_opacity': []
+                            'rooms_opacity': smoke_data
                         }
                         }
         zf = zipfile.ZipFile("{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)

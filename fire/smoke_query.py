@@ -83,7 +83,7 @@ class SmokeQuery:
             compa="outside"
             logging.ERROR("Agent outside needs fixing: {}".format(e))
 
-        return self._compa_conditions[compa], compa
+        return self.compa_conditions[compa], compa
 # }}}
 
     def _init_compa_conditions(self):  # {{{
@@ -107,10 +107,10 @@ class SmokeQuery:
 
         self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
 
-        self._compa_conditions = OrderedDict()
+        self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
-            self._compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME']+list(self.relevant_params)])
-        self._compa_conditions['outside']=OrderedDict([('TIME',None)])
+            self.compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME'] + list(self.relevant_params)])
+        self.compa_conditions['outside']=OrderedDict([('TIME', None)])
 # }}}
     def _cfast_headers(self):# {{{
         '''
@@ -169,12 +169,12 @@ class SmokeQuery:
                         break
 
             for compa in self.all_compas:
-                self._compa_conditions[compa]['TIME']=needed_record[0]
-            self._compa_conditions['outside']['TIME']=needed_record[0]
+                self.compa_conditions[compa]['TIME']=needed_record[0]
+            self.compa_conditions['outside']['TIME']=needed_record[0]
 
             for m in range(len(needed_record)):
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
-                    self._compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
+                    self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
         return 1
 # }}}
     def get_conditions(self,q, floor):# {{{

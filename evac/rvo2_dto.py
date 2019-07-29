@@ -11,6 +11,7 @@ import json
 from nav import Navmesh
 from shapely.geometry import LineString
 from include import Sqlite
+from math import log
 
 
 class EvacEnv:
@@ -35,6 +36,7 @@ class EvacEnv:
         self.floor = 0
         self.nav = None
         self.smoke_opacity = OrderedDict()
+        self.rooms_in_smoke = []
 
         f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
         self.config = json.load(f)
@@ -84,7 +86,6 @@ class EvacEnv:
                 'Evacuee: {} pos: {} path {}'.format(evacuee, self.evacuees.get_goal_of_pedestrian(evacuee), path[1]))
 
         self.evacuees.set_optical_density(evacuee, od_at_agent_position[0])
-        self.smoke_opacity.update({str(od_at_agent_position[1]): od_at_agent_position[0]})
         self.room = od_at_agent_position[1]
 
         if self.config['SMOKE_AWARENESS'] and len(path) > 1:
@@ -219,11 +220,37 @@ class EvacEnv:
 
     def prepare_rooms_list(self):
         self.s = Sqlite("aamks.sqlite")
-        rooms = dict()
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
-            rooms.update({item['name']: 0.0})
-        self.smoke_opacity.update({str(self.floor): rooms})
+            self.smoke_opacity.update({item['name']: 0.0})
+
+    def update_room_opacity(self):
+        for room in self.smoke_opacity.keys():
+            opacity =  0.0
+            hgt = self.smoke_query.compa_conditions[str(room)]['HGT']
+            if hgt == None:
+                opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room).split('.')[0]]['ULOD'])
+            elif hgt <= self.config['LAYER_HEIGHT']:
+                opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['ULOD'])
+            else:
+                #opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['LLOD'])
+                opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['ULOD'])
+            if opacity > 0.0 and room not in self.rooms_in_smoke:
+                self.rooms_in_smoke.append(room)
+            self.smoke_opacity.update({room: opacity})
+
+    def _OD_to_VIS(self, OD):
+        if OD == 0:
+            return 0.0
+        else:
+            vis = self.general['c_const'] / log(OD)
+            if vis <= 3:
+                return 1.0
+            elif vis >= 30:
+                return 0.0
+            else:
+                return (30-vis)/30
+
 
     def do_step(self):
         self.sim.doStep()
