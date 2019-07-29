@@ -12,21 +12,6 @@ import os
 import sqlite3
 import sys
 
-
-def dd(*args):# {{{
-    '''debugging function, much like print but handles various types better'''
-    print()
-    for struct in args:
-        if isinstance(struct, list):
-            for i in struct:
-                print(struct)
-        elif isinstance(struct, dict):
-            for k, v in struct.items():
-                print (str(k)+':', v)
-        else:
-            print(struct)
-# }}}
-
 class SendMessage:# {{{
     ''' 
     SendMessage() may fail if there are unescaped bash special chars. 
@@ -302,8 +287,8 @@ class Vis:# {{{
 
         for floor,obstacles in xx['obstacles'].items():
             self._static_floors[floor]['obstacles']=[]
-            for obst in obstacles:
-                self._static_floors[floor]['obstacles'].append(json.dumps([ (o[0], o[1])  for o in obst[:4] ]))
+            for obstacle in obstacles:
+                self._static_floors[floor]['obstacles'].append(json.dumps([ (o[0], o[1])  for o in obstacle ]))
 
 # }}}
     def _js_make_srv_evacuees(self):# {{{
@@ -328,7 +313,7 @@ class Vis:# {{{
 
     def _js_vis_fire_origin(self):# {{{
         z=self.s.query("SELECT floor, x, y FROM fire_origin")
-        return {'floor': z[0]['floor'], 'x': z[0]['x']*100, 'y': z[0]['y']*100 }
+        return {'floor': z[0]['floor'], 'x': z[0]['x'], 'y': z[0]['y'] }
 # }}}
     def _reorder_anims(self, z):# {{{
         '''
@@ -390,4 +375,5 @@ class Vis:# {{{
 # }}}
 # }}}
 
+dd=Dump
 JSON=Json()

@@ -1,3 +1,6 @@
+Bylo: fire_origin w [m]. Jest: [cm]
+Bylo: obstacles jako 4 punkty. Jest: obstacles jako N punktow. Ostatni punkt jest powtorzonym pierwszym punktem.
+
 -	AK: warunki dla lokalnego workera. Do rozwazenia osobna zmienna albo server==localhost
 -	AK: use_cfast=0 jako opcja w conf.json { "project_id": 1, "scenario_id": 10, "navmesh_debug": 1, "use_cfast": 0, }
 -	AK: braki w picts/ (instalator)

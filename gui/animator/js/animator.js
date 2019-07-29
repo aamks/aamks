@@ -212,7 +212,6 @@ function showStaticImage() {//{{{
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
 		ajax_msg(response);
 		dstatic=response['data'];
-        dd(dstatic);
 		dstaticAllFloors=response['data'];
 		rescaleCanvas('world2d');
 

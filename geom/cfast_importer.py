@@ -22,7 +22,7 @@ from include import Vis
 
 # }}}
 
-class Geom():
+class CFASTimporter():
     def __init__(self):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))

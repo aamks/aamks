@@ -22,7 +22,7 @@ from include import Vis
 
 # }}}
 
-class FDSImporter():
+class FDSimporter():
     def __init__(self):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -166,7 +166,7 @@ class FDSImporter():
             v['name']=''
 
         #self.s.query("CREATE TABLE aamks_geom(name , floor , type_pri , type_sec , type_tri , x0      , y0      , z0         , x1      , y1      , z1         , global_type_id , exit_type          , room_enter          , terminal_door      , points)")
-        return (v['name']                           , floor , type_pri , k        , type_tri , bbox[0] , bbox[1] , meta['z0'] , bbox[0] , bbox[1] , meta['z1'] , None           , attrs['exit_type'] , attrs['room_enter'] , attrs['exit_type'] , json.dumps(v['points']))
+        return (v['name']                           , floor , type_pri , k        , type_tri , bbox[0] , bbox[1] , meta['z0'] , bbox[2] , bbox[3] , meta['z1'] , None           , attrs['exit_type'] , attrs['room_enter'] , attrs['exit_type'] , json.dumps(v['points']))
 
 # }}}
     def _fire_origin(self):# {{{
