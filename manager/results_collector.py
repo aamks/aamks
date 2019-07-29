@@ -8,6 +8,7 @@ from include import SendMessage
 from collections import OrderedDict
 from include import Psql
 import traceback
+from datetime import datetime
 
 try:
     class ResultsCollector():
@@ -45,8 +46,8 @@ try:
             room=self.meta['fire_origin']
             
             self.s=Sqlite("{}/aamks.sqlite".format(self.meta['path_to_project']))
-            z=self.s.query("SELECT center_x, center_y FROM aamks_geom WHERE name=?", (room,))[0]
-            return (z['center_x'], z['center_y'])
+            z=self.s.query("SELECT floor, center_x, center_y FROM aamks_geom WHERE name=?", (room,))[0]
+            return z['floor'], z['center_x'], z['center_y']
 # }}}
         def _animation(self):# {{{
             source = self.host+':'+self.meta['path_to_project']+'workers/'+str(self.meta['sim_id'])+'/'+self.meta['animation']
@@ -55,9 +56,11 @@ try:
 
             self.jsonOut=OrderedDict()
             self.jsonOut['sort_id']=int(sim_id)
-            self.jsonOut['title']="sim: {}".format(self.meta['floor'])
-            self.jsonOut['fire_origin'] = {"floor": self.meta['floor'], "x": self._fire_origin_coords(self.meta['sim_id'])[0],
-                                         "y": self._fire_origin_coords(self.meta['sim_id'])[1]}
+            self.jsonOut['title']="sim: {}".format(sim_id)
+            self.jsonOut['time']=datetime.now().strftime('%H:%M')
+            self.jsonOut['fire_origin'] = {"floor": self._fire_origin_coords(self.meta['sim_id'])[0], 
+                                         "x": self._fire_origin_coords(self.meta['sim_id'])[1],
+                                         "y": self._fire_origin_coords(self.meta['sim_id'])[2]}
             self.jsonOut['highlight_geom']=None
             self.jsonOut['anim']="{}/{}".format(self.meta['sim_id'], self.meta['animation'])
 
