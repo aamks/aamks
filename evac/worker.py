@@ -83,9 +83,7 @@ class Worker:
 
         os.chdir(self.working_dir)
 
-
-        logging.basicConfig(filename='aamks.log', level=logging.INFO,
-                            format='%(asctime)s %(levelname)s: %(message)s')
+        logging.basicConfig(filename='aamks.log', level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
         logging.info('URL: {}'.format(self.url))
 
@@ -103,13 +101,14 @@ class Worker:
         except Exception as e:
             self._report_error(e)
         else:
-            logging.info('Cfast.in fetched from server')
+            logging.info('cfast.in fetched from server')
         print("Host: {} start simulation id: {}".format(self.host_name, self.sim_id))
 
     def _create_workspace(self):
         try:
             shutil.rmtree(self.working_dir, ignore_errors=True)
             os.makedirs(self.working_dir)
+            logging.info('Workspace created')
         except Exception as e:
             self._report_error(e)
 
@@ -333,14 +332,26 @@ class Worker:
         self.get_geom_and_cfast()
         self.create_geom_database()
         self.prepare_simulations()
+        self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
 
+    def local_worker(self):
+        self.get_config()
+        self.get_geom_and_cfast()
+        self.create_geom_database()
+        self.run_cfast_simulations()
+        self.prepare_simulations()
+        self.connect_rvo2_with_smoke_query()
+        self.do_simulation()
+
 
 w = Worker()
-#w.main()
-
 if SIMULATION_TYPE == 'NO_CFAST':
+    print('Working in NO_CFAST mode')
     w.test()
+elif os.environ['AAMKS_LOCAL_WORKER'] == '0':
+    print('Working in local mode')
+    w.local_worker()
 else:
     w.main()

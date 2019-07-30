@@ -52,6 +52,11 @@ class EvacEnv:
                             format='%(asctime)s %(levelname)s: %(message)s')
 
     def _find_closest_exit(self, evacuee):
+        '''
+        It finds the closest exit from the set of available exits.
+        :param evacuee: object evacuee with the defined parameters.
+        :return: coordinates of the closest exit.
+        '''
         paths, paths_free_of_smoke = list(), list()
 
         for door in self.general['doors']:
@@ -233,8 +238,7 @@ class EvacEnv:
             elif hgt <= self.config['LAYER_HEIGHT']:
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['ULOD'])
             else:
-                #opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['LLOD'])
-                opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['ULOD'])
+                opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['LLOD'])
             if opacity > 0.0 and room not in self.rooms_in_smoke:
                 self.rooms_in_smoke.append(room)
             self.smoke_opacity.update({room: opacity})

@@ -18,6 +18,7 @@ from event_tree_en import EventTreeSteel
 import scipy.stats as stat
 import collections
 from include import Sqlite
+from include import Psql
 import csv
 
 
@@ -32,24 +33,15 @@ class processDists:
         self.dead = 0
         self.dir = sys.argv[1]
         self.configs = self._get_json('{}/conf.json'.format(self.dir))
-        try:
-            self.psql_connection=psycopg2.connect("dbname='aamks' user='aamks' host=192.168.0.10 password='hulakula'")
-
-        except:
-            print("postresql fatal")
+        self.p = Psql()
         if os.path.exists('{}/picts'.format(self.dir)):
             shutil.rmtree('{}/picts'.format(self.dir))
         os.makedirs('{}/picts'.format(self.dir))
 
-    def query(self, query):
-        cursor = self.psql_connection.cursor()
-        cursor.execute(query)
-        return cursor.fetchall()
-
     def plot_dcbe_dist(self):
 #        plt.clf()
         query = "SELECT dcbe_time FROM simulations where project = {} AND dcbe_time is not null AND dcbe_time < 9999".format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         dcbe = [int(i[0]) for i in results]
         sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True}, bins=50)
         #plt.xlabel=('DCBE [s]')
@@ -60,7 +52,7 @@ class processDists:
 
     def plot_wcbe_dist(self):
         query = "SELECT wcbe FROM simulations where project = {} AND dcbe_time is not null".format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         wcbe = list()
         dcbe = [json.loads(i[0]) for i in results]
         for i in dcbe:
@@ -77,7 +69,7 @@ class processDists:
     def plot_min_height(self):
         query = "SELECT min_hgt_compa * 100 FROM simulations where project = {} AND min_hgt_compa < 12.8"\
             .format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         dcbe = [float(i[0]) for i in results]
         sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
 #        sns.plt.xlabel('Wysokość warstwy dymu [cm]')
@@ -89,7 +81,7 @@ class processDists:
     def plot_min_height_cor(self):
         query = "SELECT min_hgt_cor * 100 FROM simulations where project = {} AND min_hgt_cor < 12.8"\
             .format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         dcbe = [float(i[0]) for i in results]
         sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
 #        sns.plt.xlabel('Wysokość warstwy dymu [cm]')
@@ -101,7 +93,7 @@ class processDists:
 
     def plot_min_vis(self):
         query = "SELECT min_vis_compa FROM simulations where project = {} AND min_vis_compa < 60".format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         vis = [float(i[0]) for i in results]
         sns_plot = sns.distplot(vis, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
 #        sns.plt.xlabel('Zasięg widzialności [m]')
@@ -112,7 +104,7 @@ class processDists:
 
     def plot_min_vis_cor(self):
         query = "SELECT min_vis_cor FROM simulations where project = {} AND min_vis_cor < 60".format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         vis = [float(i[0]) for i in results]
         sns_plot = sns.distplot(vis, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
         #sns.plt.xlabel('Zasięg widzialności [m]')
@@ -125,7 +117,7 @@ class processDists:
     def plot_max_temp(self):
         query = "SELECT max_temp FROM simulations where project = {} and dcbe_time is " \
                 "not null".format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         dcbe = [float(i[0]) for i in results]
         dist = getattr(stat, 'norm')
         param = dist.fit(dcbe)
@@ -144,7 +136,7 @@ class processDists:
 
         query = "SELECT fed, id FROM simulations where project = {} " \
                 "and dcbe_time IS NOT NULL".format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         self.total = len(results)
         row = [json.loads(i[0]) for i in results]
         fed=list()
@@ -270,54 +262,54 @@ class processDists:
     def dcbe_values(self):
         query = "SELECT count(*) FROM simulations where project = {} AND dcbe_time < 9999".format(
             self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         lower = results[0][0]/self.total
 
         query = "SELECT avg(dcbe_time) FROM simulations where project = {} AND dcbe_time < 9999".format(
             self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         mean = results[0][0]
         return [lower, mean]
 
     def wcbe_values(self):
         query = "SELECT avg(wcbe) FROM simulations where project = {} AND dcbe_time IS NOT NULL".format(
             self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         return results[0][0]
 
     def min_height_values(self):
         query = "SELECT count(*) FROM simulations where project = {} AND min_hgt_cor < 0.5" \
             .format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         lower = results[0][0] / self.total
 
         query = "SELECT avg(min_hgt_compa) FROM simulations where project = {} AND min_hgt_cor < 1.8" \
             .format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         mean = results[0][0]
         return [lower, mean]
 
     def vis_values(self):
         query = "SELECT count(*) FROM simulations where project = {} AND min_vis_cor < 30".format(
             self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         lower = results[0][0] / self.total
 
         query = "SELECT avg(min_vis_compa) FROM simulations where project = {} AND min_vis_cor < 60".format(
             self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         mean = results[0][0]
         return [lower, mean]
 
     def temp_values(self):
         query = "SELECT count(*) FROM simulations where project = {} AND max_temp > 450".format(
             self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         lower = results[0][0] / self.total
 
         query = "SELECT avg(max_temp) FROM simulations where project = {} and dcbe_time is " \
                 "not null".format(self.configs['project_id'])
-        results = self.query(query)
+        results = self.p.query(query)
         mean = results[0][0]
         return [lower, mean]
 
