@@ -112,7 +112,7 @@ class EvacMcarlo():
             if not x['name'] in manual_rooms:
                 manual_rooms[x['name']]={'type_sec': x['type_sec'], 'positions': [] }
                 del probabilistic_rooms[x['name']]
-            manual_rooms[x['name']]['positions'].append((i['x0'], i['y0']))
+            manual_rooms[x['name']]['positions'].append((i['x0'], i['y0'], x['name']))
 
         rooms['probabilistic']=probabilistic_rooms
         rooms['manual']=manual_rooms
