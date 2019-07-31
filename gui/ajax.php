@@ -176,8 +176,12 @@ function funExplode() { /*{{{*/
 }
 /*}}}*/
 function ajaxApainterExport() { /*{{{*/
-	$src=$_POST['cadfile'];
-	$dest=$_SESSION['main']['working_home']."/cad.json";
+	$src=$_POST['data'];
+	if($_POST['fire_model']=='CFAST') { 
+		$dest=$_SESSION['main']['working_home']."/cad.json";
+	} else {
+		$dest=$_SESSION['main']['working_home']."/cadfds.json";
+	}
 	$z=file_put_contents($dest, $src);
 
 	if($z>0) { 
@@ -202,18 +206,26 @@ function ajaxApainterImport() { /*{{{*/
 			echo json_encode(array("msg"=>"ajaxApainterImport(): Project conf: fire_model not specified", "err"=>1, "data"=>""));
 			return;
 		}
-		if($conf['fire_model']=='FDS') {
-			echo json_encode(array("msg"=>"ajaxApainterImport(): Project conf: Apainter doesn't work with FDS geometries", "err"=>1, "data"=>""));
-			return;
-		}
 	}
 
-	if(is_file($_SESSION['main']['working_home']."/cad.json")) {
+	if($conf['fire_model']=='CFAST' && is_file($_SESSION['main']['working_home']."/cad.json")) {
 		$cadfile=file_get_contents($_SESSION['main']['working_home']."/cad.json");
 		if(json_decode($cadfile)) { 
 			echo json_encode(array("msg"=>"" , "err"=>0 , "data"=>json_decode($cadfile)));
+			return;
 		} else { 
 			echo json_encode(array("msg"=>"ajaxApainterImport(): Broken cad.json", "err"=>1, "data"=>""));
+			return;
+		}
+	}
+	if($conf['fire_model']=='FDS' && is_file($_SESSION['main']['working_home']."/cadfds.json")) {
+		$cadfile=file_get_contents($_SESSION['main']['working_home']."/cadfds.json");
+		if(json_decode($cadfile)) { 
+			echo json_encode(array("msg"=>"" , "err"=>'FDS', "data"=>$cadfile));
+			return;
+		} else { 
+			echo json_encode(array("msg"=>"ajaxApainterImport(): Broken cadfds.json", "err"=>1, "data"=>""));
+			return;
 		}
 	}
 }
