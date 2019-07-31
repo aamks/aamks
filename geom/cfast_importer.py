@@ -71,8 +71,8 @@ class CFASTimporter():
         self._world3d['maxy']=-9999999
         prev_maxz=0
         for floor in self.floors:
-            world2d_ty=0
-            world2d_tx=0
+            ty=0
+            tx=0
             minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (floor,))[0]['minx']
             maxx=self.s.query("SELECT max(x1) AS maxx FROM aamks_geom WHERE floor=?", (floor,))[0]['maxx']
             miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (floor,))[0]['miny']
@@ -85,7 +85,7 @@ class CFASTimporter():
             xdim= maxx - minx
             ydim= maxy - miny
             center=(minx + int(xdim/2), miny + int(ydim/2), minz_abs)
-            self.floors_meta[floor]=OrderedDict([('name', floor), ('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim), ('world2d_ty', world2d_ty), ('world2d_tx', world2d_tx)  ])
+            self.floors_meta[floor]=OrderedDict([('name', floor), ('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim), ('ty', ty), ('tx', tx)  ])
 
             self._world3d['minx']=min(self._world3d['minx'], minx)
             self._world3d['maxx']=max(self._world3d['maxx'], maxx)
@@ -543,7 +543,7 @@ class CFASTimporter():
         self.towers_parents={}
         high_global_type_id=1000001
         for orig_name,floors in towers.items():
-            orig_record=self.s.query("SELECT global_type_id,type_pri,type_sec,type_tri,x0,y0,width,depth,x1,y1,room_area,room_enter,1 as fire_model_ignore, terminal_door FROM aamks_geom WHERE name=?", (orig_name,))[0]
+            orig_record=self.s.query("SELECT global_type_id,type_pri,type_sec,type_tri,x0,y0,width,depth,x1,y1,room_area,room_enter,points,1 as fire_model_ignore, terminal_door FROM aamks_geom WHERE name=?", (orig_name,))[0]
             parent_id=orig_record['global_type_id']
             kk=list(orig_record.keys())
             kk.append('floor')
@@ -554,7 +554,7 @@ class CFASTimporter():
                 vv=list(orig_record.values())
                 vv.append(flo)
                 vv.append("{}.{}".format(orig_name,flo))
-                self.s.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
+                self.s.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
                 high_global_type_id+=1
 
 # }}}

@@ -13,12 +13,14 @@ from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from shapely.ops import polygonize
 from numpy.random import uniform
+from numpy.random import seed
 from math import sqrt
 from math import floor
 from include import Sqlite
 from include import Json
 from include import Dump as dd
 from include import Vis
+from include import SimIterations
 
 # }}}
 
@@ -57,8 +59,8 @@ class FDSimporter():
         self._world3d['maxy']=-9999999
         prev_maxz=0
         for floor in self.floors:
-            world2d_ty=0
-            world2d_tx=0
+            ty=0
+            tx=0
             minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (floor,))[0]['minx']
             maxx=self.s.query("SELECT max(x1) AS maxx FROM aamks_geom WHERE floor=?", (floor,))[0]['maxx']
             miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (floor,))[0]['miny']
@@ -71,7 +73,7 @@ class FDSimporter():
             xdim= maxx - minx
             ydim= maxy - miny
             center=(minx + int(xdim/2), miny + int(ydim/2), minz_abs)
-            self.floors_meta[floor]=OrderedDict([('name', floor), ('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim), ('world2d_ty', world2d_ty), ('world2d_tx', world2d_tx)  ])
+            self.floors_meta[floor]=OrderedDict([('name', floor), ('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim), ('ty', ty), ('tx', tx)  ])
 
             self._world3d['minx']=min(self._world3d['minx'], minx)
             self._world3d['maxx']=max(self._world3d['maxx'], maxx)
@@ -124,6 +126,9 @@ class FDSimporter():
         ''' Format a record for sqlite. Hvents get fixed width self.doors_width cm '''
         # OBST
         if k in ('OBST',):
+            if len(v['points'])>5:
+                print("You need to split obstacles having more than 5 vertices")
+                exit()
             type_pri='OBST'
             type_tri=''
 
@@ -170,10 +175,13 @@ class FDSimporter():
 
 # }}}
     def _fire_origin(self):# {{{
-        r=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")[0]
+        si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
         self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,sim_id)")
-        fire_origin=['fire', 1, r['x0'], r['y0'], r['z0'], r['floor'], self.cadfds['0']['META']['sim_id']]
-        self.s.query('INSERT INTO fire_origin VALUES (? , ? , ? , ? , ? , ? , ?)' , fire_origin)
+        for sim_id in range(*si.get()):
+            seed(sim_id)
+            r=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")[0]
+            fire_origin=['fire', 1, r['x0'], r['y0'], r['z0'], r['floor'], sim_id]
+            self.s.query('INSERT INTO fire_origin VALUES (? , ? , ? , ? , ? , ? , ?)' , fire_origin)
 # }}}
     def _init_dd_geoms(self):# {{{
         ''' 

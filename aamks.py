@@ -12,7 +12,7 @@ from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SendMessage
 
-#os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/fds'
+#os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/three'
 #print("In aamks.py:", os.environ['AAMKS_PROJECT'])
 OnInit()
 CFASTimporter()

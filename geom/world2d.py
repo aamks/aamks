@@ -75,8 +75,8 @@ class World2d():
         floors_meta=self.json.readdb("floors_meta")
 
         for floor,line in self.projections['top']['lines'].items():
-            self.floors_meta[floor]['world2d_ty']=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
-            self.floors_meta[floor]['world2d_tx']=0
+            self.floors_meta[floor]['ty']=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
+            self.floors_meta[floor]['tx']=0
         self.s.query("UPDATE floors_meta SET json=?", (json.dumps(self.floors_meta),))
 
 # }}}
@@ -87,10 +87,10 @@ class World2d():
         m['maxx']=-99999999999
         m['maxy']=-99999999999
         for floor,meta in self.json.readdb("floors_meta").items():
-            m['minx']=min(m['minx'], meta['minx']+meta['world2d_tx'])
-            m['miny']=min(m['miny'], meta['miny']+meta['world2d_ty'])
-            m['maxx']=max(m['maxx'], meta['maxx']+meta['world2d_tx'])
-            m['maxy']=max(m['maxy'], meta['maxy']+meta['world2d_ty'])
+            m['minx']=min(m['minx'], meta['minx']+meta['tx'])
+            m['miny']=min(m['miny'], meta['miny']+meta['ty'])
+            m['maxx']=max(m['maxx'], meta['maxx']+meta['tx'])
+            m['maxy']=max(m['maxy'], meta['maxy']+meta['ty'])
 
         m['xdim']=m['maxx']-m['minx']
         m['ydim']=m['maxy']-m['miny']

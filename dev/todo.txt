@@ -8,6 +8,9 @@ Bylo: { "x":10, "y":20 }. Jest: [10,20]
 -	AK: nav wysokopoziomowe:
 	* zachowanie stada, zawroc, ...
 
+-	KK: Highlight geoms
+-	KK: room labels
+
 -----------------------------
 
 	7. Może warto przygotować instrukcję, albo film jak przygotować rysunek do

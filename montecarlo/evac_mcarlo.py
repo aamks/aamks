@@ -42,13 +42,8 @@ class EvacMcarlo():
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
-        if self.conf['fire_model']=='CFAST':
-            si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
-            sim_ids=range(*si.get())
-        else:
-            cadfds=self.json.read("{}/cadfds.json".format(os.environ['AAMKS_PROJECT']))
-            self._fire_obstacle()
-            sim_ids=[ cadfds['0']['META']['sim_id'] ]
+        si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
+        sim_ids=range(*si.get())
 
         for self._sim_id in sim_ids:
             seed(self._sim_id)

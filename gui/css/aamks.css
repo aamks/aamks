@@ -259,7 +259,6 @@ table.nobreak td, table.nobreak tr {
 
 }
 dd {
-	float:right;
 	z-index: 1001;
 }
 
