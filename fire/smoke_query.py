@@ -7,7 +7,6 @@ import json
 import bisect
 from include import Sqlite
 from include import Json
-import logging
 from math import exp
 from include import Dump as dd
 
@@ -81,7 +80,6 @@ class SmokeQuery:
             compa=self._cell2compa[cell]
         except Exception as e:
             compa="outside"
-            logging.ERROR("Agent outside needs fixing: {}".format(e))
 
         return self.compa_conditions[compa], compa
 # }}}
@@ -209,7 +207,6 @@ class SmokeQuery:
 
         if conditions == 'outside':
             print('outside')
-        logging.debug('Query visibility at time: {} on position: {}'.format(time, position))
 
         hgt = conditions['HGT']
         if hgt == None:
@@ -221,7 +218,6 @@ class SmokeQuery:
             return conditions['ULOD'], room
 # }}}
     def get_fed(self, position, time, floor):# {{{
-        logging.debug('Query FED at time: {} on position: {}'.format(time, position))
         conditions = self.get_conditions(position, floor)[0]
         hgt = conditions['HGT']
         if hgt == None:

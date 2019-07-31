@@ -35,7 +35,7 @@ class EvacEnv:
         self.per_9 = 0
         self.floor = 0
         self.nav = None
-        self.smoke_opacity = OrderedDict()
+        self.room_list = OrderedDict()
         self.rooms_in_smoke = []
 
         f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
@@ -47,9 +47,8 @@ class EvacEnv:
                                        self.config['MAX_NEIGHBOR'], self.config['TIME_HORIZON'],
                                        self.config['TIME_HORIZON_OBSTACLE'], self.config['RADIUS'],
                                        self.max_speed)
-
-        logging.basicConfig(filename='aamks.log', level='logging.{}'.format(self.config['LOGGING_MODE']),
-                            format='%(asctime)s %(levelname)s: %(message)s')
+        self.elog = self.general['logger']
+        self.elog.info('ORCA on {} floor initiated'.format(self.floor))
 
     def _find_closest_exit(self, evacuee):
         '''
@@ -81,14 +80,11 @@ class EvacEnv:
             return paths[exits.index(min(exits))][0], paths[exits.index(min(exits))][1]
 
     def _next_room_in_smoke(self, evacuee, path):
-        # logging.info('Evacuee: {}'.format(evacuee))
         try:
             od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee),
                                                                    self.current_time, self.floor)
         except:
             od_at_agent_position = 0, 'outside'
-            logging.info(
-                'Evacuee: {} pos: {} path {}'.format(evacuee, self.evacuees.get_goal_of_pedestrian(evacuee), path[1]))
 
         self.evacuees.set_optical_density(evacuee, od_at_agent_position[0])
         self.room = od_at_agent_position[1]
@@ -138,8 +134,6 @@ class EvacEnv:
 
         self.positions = [tuple((int(self.sim.getAgentPosition(i)[0]), int(self.sim.getAgentPosition(i)[1]))) for (i)
                           in range(self.sim.getNumAgents())]
-        for i in range(self.evacuees.get_number_of_pedestrians()):
-            logging.debug('AGENT: {}, POSITION: {}'.format(i, self.evacuees.get_position_of_pedestrian(i)))
 
     def update_agents_velocity(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
@@ -175,7 +169,6 @@ class EvacEnv:
             self.focus.append(self.evacuees.get_goal_of_pedestrian(e))
 
     def update_speed(self):
-        logging.debug('Flooor {} udated speed'.format(self.floor))
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
@@ -227,10 +220,11 @@ class EvacEnv:
         self.s = Sqlite("aamks.sqlite")
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
-            self.smoke_opacity.update({item['name']: 0.0})
+            self.room_list.update({item['name']: 0.0})
 
     def update_room_opacity(self):
-        for room in self.smoke_opacity.keys():
+        smoke_opacity = dict()
+        for room in self.room_list.keys():
             opacity =  0.0
             hgt = self.smoke_query.compa_conditions[str(room)]['HGT']
             if hgt == None:
@@ -241,9 +235,12 @@ class EvacEnv:
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['LLOD'])
             if opacity > 0.0 and room not in self.rooms_in_smoke:
                 self.rooms_in_smoke.append(room)
-            self.smoke_opacity.update({room: opacity})
+            smoke_opacity.update({room: round(opacity, 2)})
+            self.elog.debug('ROOM: {}, opacity: {}'.format(room, round(opacity, 2)))
+        return smoke_opacity
 
     def _OD_to_VIS(self, OD):
+        self.elog.debug('TIME: {}, optical density: {}'.format(self.current_time, OD))
         if OD == 0:
             return 0.0
         else:
@@ -270,7 +267,6 @@ class EvacEnv:
 
     def get_rset_time(self) -> None:
         exited = self.finished.count(0)
-        logging.info('Time: {}, Floor: {} evacuated: {}'.format(self.get_simulation_time(), self.floor, exited))
         if (exited > len(self.finished) * 0.98) and self.per_9 == 0:
             self.rset = self.current_time + 30
         if all(x == 0 for x in self.finished) and self.rset == 0:
@@ -282,9 +278,9 @@ class EvacEnv:
             self.update_speed()
         self.update_agents_velocity()
         self.sim.doStep()
-        logging.debug('Simulation step: {}'.format(step))
         self.update_agents_position()
         self.update_time()
+        self.elog.info(self.current_time)
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
             self.update_fed()
         self.get_rset_time()
