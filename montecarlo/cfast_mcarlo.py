@@ -41,7 +41,7 @@ class CfastMcarlo():
         self._psql_collector=OrderedDict()
         self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,sim_id)")
 
-        si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
+        si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._new_psql_log()
@@ -569,7 +569,7 @@ class CfastMcarlo():
         for k,v in self._psql_collector[self._sim_id].items():
             pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
         data=', '.join(pairs)
-        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self.conf['project_id'], self._sim_id))
+        self.p.query("UPDATE simulations SET {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(data), (self.conf['project_id'], self.conf['scenario_id'], self._sim_id))
 
 #}}}
 

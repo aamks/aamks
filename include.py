@@ -73,16 +73,17 @@ class SimIterations:# {{{
     SELECT max(iteration)+1 
     '''
 
-    def __init__(self, project, how_many):
+    def __init__(self, project, scenario_id, how_many):
         self.p=Psql()
         self.project=project
+        self.scenario=scenario_id
         self.how_many=how_many
 
     def get(self):
         self.r=[]
         try:
             # If project already exists in simulations table (e.g. adding 100 simulations to existing 1000)
-            _max=self.p.query('SELECT max(iteration)+1 FROM simulations WHERE project=%s', (self.project,))[0][0]
+            _max=self.p.query('SELECT max(iteration)+1 FROM simulations WHERE project=%s AND scenario_id=%s', (self.project,self.scenario_id))[0][0]
             self.r.append(_max-self.how_many)
             self.r.append(_max)
         except:

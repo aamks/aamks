@@ -43,7 +43,7 @@ class EvacMcarlo():
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
-        si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
+        si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._static_evac_conf()

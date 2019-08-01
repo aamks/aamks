@@ -22,6 +22,7 @@ class OnInit():
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']
+        self.scenario_id=self.conf['scenario_id']
         self.p=Psql()
         self._clear_srv_anims()
         self._clear_sqlite()
@@ -71,7 +72,7 @@ class OnInit():
         r=[]
         try:
             # If the project already exists in simulations table (e.g. adding 100 simulations to existing 1000); try: fails on addition on int+None.
-            r.append(self.p.query('SELECT max(iteration)+1 FROM simulations WHERE project=%s', (self.project_id,))[0][0])
+            r.append(self.p.query('SELECT max(iteration)+1 FROM simulations WHERE project=%s AND scenario_id=%s', (self.project_id, self.scenario_id))[0][0])
             r.append(r[0]+how_many)
         except:
             # If a new project
@@ -88,7 +89,7 @@ class OnInit():
         for i in range(*irange):
             sim_dir="{}/{}".format(workers_dir,i)
             os.makedirs(sim_dir, exist_ok=True)
-            self.p.query("INSERT INTO simulations(iteration,project) VALUES(%s,%s)", (i,self.project_id))
+            self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
 
 # }}}
 class OnEnd():
@@ -98,6 +99,7 @@ class OnEnd():
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']
+        self.scenario_id=self.conf['scenario_id']
         self.p=Psql()
         if self.conf['navmesh_debug']==1:
             self._navmeshes_for_floors()
@@ -124,7 +126,7 @@ class OnEnd():
         if os.environ['AAMKS_USE_GEARMAN']=='0':
             return
 
-        si=SimIterations(self.project_id, self.conf['number_of_simulations'])
+        si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
         try:
             for i in range(*si.get()):
                 worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
