@@ -63,30 +63,27 @@ function cad_jsons_db() { //{{{
 }
 //}}}
 function cad_json_textarea_close() {//{{{
+	$("#div-cad-json-textarea").remove();
+	if(fire_model=='FDS') { return; }
 	$("view2d").css("visibility", "visible");
-	$("button-left-menu-box").css("visibility", "visible");
 	$("#apainter-svg").css("display", "block");
-	$("#floating-div").remove();
 }
 //}}}
 function cad_json_textarea_save() {//{{{
 	var json_data=$("#cad-json-textarea").val();
-	ajax_save_cadjson(json_data); 
+	ajax_save_cadjson(json_data, fire_model); 
 	cad_json_textarea_close();
 }
 //}}}
-function textarea_edit_cad_json() {//{{{
+function textarea_edit_cad_json(pretty_json="") {//{{{
 	$("view2d").css("visibility", "hidden");
-	$("button-left-menu-box").css("visibility", "hidden");
 	$("#apainter-svg").css("display", "none");
-
-	var pretty_json=db2cadjson(); 
+	if(fire_model=='CFAST') { cancel="<button class=blink id=btn-cad-json-cancel>Cancel</button><br>"; } else { cancel='<br>'; }
+	if(pretty_json=="") { var pretty_json=db2cadjson(); }
 	$("body").append(
-		"<div id=floating-div>"+
-		"<div style='float:right; margin-right:20px'>"+
-		"<button class=blink id=btn-cad-json-save>Save</button>"+
-		"<button class=blink id=btn-cad-json-cancel>Cancel</button><br>"+
-		"</div>"+
+		"<div id=div-cad-json-textarea>"+
+		"<button style='margin-left:10px' class=blink id=btn-cad-json-save>Save</button>"+
+		cancel + 
 		"<textarea id=cad-json-textarea>"+pretty_json+"</textarea>"+
 		"</div>"
 	);
@@ -170,8 +167,8 @@ function read_record(floor,letter,arr) { //{{{
 	return record;
 }
 //}}}
-function ajax_save_cadjson(json_data) { //{{{
-	$.post('/aamks/ajax.php?ajaxApainterExport', { 'cadfile': json_data }, function (json) { 
+function ajax_save_cadjson(json_data, fire_model) { //{{{
+	$.post('/aamks/ajax.php?ajaxApainterExport', { 'data': json_data, 'fire_model': fire_model }, function (json) { 
 		ajax_msg(json); 
 		import_cadjson();
 	});
@@ -183,11 +180,17 @@ function import_cadjson() { //{{{
 		// At the end the last elem in the loop would be the selected_geom
 		// which may run into this-elem-doesnt-belong-to-this-floor problem.
 		ajax_msg(json); 
-		init_svg_groups(json.data);
-		_.each(json.data, function(data,floor) { import_underlay(data['UNDERLAY'],floor); });
-		into_db(json.data);
-		selected_geom='';
-		d3.select('#floor_text').text("floor "+floor+"/"+floors_count);
+		if(json.err=='FDS') {
+			fire_model='FDS';
+			textarea_edit_cad_json(json.data);
+		} else {
+			fire_model='CFAST';
+			init_svg_groups(json.data);
+			_.each(json.data, function(data,floor) { import_underlay(data['UNDERLAY'],floor); });
+			into_db(json.data);
+			selected_geom='';
+			d3.select('#floor_text').text("floor "+floor+"/"+floors_count);
+		}
 	});
 }
 //}}}
@@ -274,7 +277,7 @@ function db2cadjson() {//{{{
 		json.push(ff);
 	}
 	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
-	ajax_save_cadjson(pretty_json);
+	ajax_save_cadjson(pretty_json, fire_model);
 	return pretty_json;
 }
 //}}}

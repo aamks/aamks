@@ -5,6 +5,7 @@ var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var gg;
 var ggx;
 var zoom;
+var fire_model='CFAST';
 var currentView=0;
 var selected_geom='';
 var active_letter='r';
@@ -213,6 +214,7 @@ function next_view() {//{{{
 	// else if(currentView==1) { currentView=0; close3dview(); }
 
 	// For devel we have this 3 view cycles
+	if(fire_model=='FDS') { return; }
 	if(currentView==0) { currentView=1; view3d(); }
 	else if(currentView==1) { currentView=2; close3dview(); textarea_edit_cad_json(); }
 	else if(currentView==2) { currentView=0; cad_json_textarea_close(); }
@@ -533,7 +535,7 @@ function canvas_builder() { //{{{
 	d3.select('view2d').append('button-right-menu-box').attr("id", "button-setup").html("SETUP");
 	d3.select('view2d').append('apainter-legend-static');
 	d3.select('view2d').append('legend');
-	d3.select('view2d').append('left-menu-box');
+	d3.select('body').append('left-menu-box');
 	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
 	tt=svg.append("g").attr("id", "texts");

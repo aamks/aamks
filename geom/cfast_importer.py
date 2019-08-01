@@ -22,12 +22,14 @@ from include import Vis
 
 # }}}
 
-class Geom():
+class CFASTimporter():
     def __init__(self):# {{{
         self.json=Json()
+        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        if self.conf['fire_model']=='FDS':
+            return
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
-        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.geomsMap=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['aamksGeomsMap']
         self.doors_width=32
         self.walls_width=4
@@ -69,8 +71,8 @@ class Geom():
         self._world3d['maxy']=-9999999
         prev_maxz=0
         for floor in self.floors:
-            world2d_ty=0
-            world2d_tx=0
+            ty=0
+            tx=0
             minx=self.s.query("SELECT min(x0) AS minx FROM aamks_geom WHERE floor=?", (floor,))[0]['minx']
             maxx=self.s.query("SELECT max(x1) AS maxx FROM aamks_geom WHERE floor=?", (floor,))[0]['maxx']
             miny=self.s.query("SELECT min(y0) AS miny FROM aamks_geom WHERE floor=?", (floor,))[0]['miny']
@@ -83,7 +85,7 @@ class Geom():
             xdim= maxx - minx
             ydim= maxy - miny
             center=(minx + int(xdim/2), miny + int(ydim/2), minz_abs)
-            self.floors_meta[floor]=OrderedDict([('name', floor), ('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim), ('world2d_ty', world2d_ty), ('world2d_tx', world2d_tx)  ])
+            self.floors_meta[floor]=OrderedDict([('name', floor), ('xdim', xdim) , ('ydim', ydim) , ('center', center), ('minx', minx) , ('miny', miny) , ('maxx', maxx) , ('maxy', maxy), ('minz_abs', minz_abs), ('maxz_abs', maxz_abs) , ('zdim', zdim), ('ty', ty), ('tx', tx)  ])
 
             self._world3d['minx']=min(self._world3d['minx'], minx)
             self._world3d['maxx']=max(self._world3d['maxx'], maxx)
@@ -134,16 +136,16 @@ class Geom():
                 if k in ('UNDERLAY'):
                     continue
                 for v in arr:
-                    p0=[ int(i) for i in v[0] ]
-                    p1=[ int(i) for i in v[1] ]
-                    width= p1[0]-p0[0]
-                    depth= p1[1]-p0[1]
-                    height=p1[2]-p0[2]
+                    rr={'x0': int(v[0][0]), 'y0': int(v[0][1]), 'x1': int(v[1][0]), 'y1': int(v[1][1]), 'z0': int(v[0][2]), 'z1': int(v[1][2])}
+                    points=((rr['x0'], rr['y0']), (rr['x1'], rr['y0']), (rr['x1'], rr['y1']), (rr['x0'], rr['y1']), (rr['x0'], rr['y0']))
+                    width= rr['x1']-rr['x0']
+                    depth= rr['y1']-rr['y0']
+                    height=rr['z1']-rr['z0']
                     attrs=self._prepare_attrs(v[2])
-                    record=self._prepare_geom_record(k,[p0,p1],width,depth,height,floor,attrs)
+                    record=self._prepare_geom_record(k,rr,points,width,depth,height,floor,attrs)
                     if record != False:
                         data.append(record)
-        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, exit_type, room_enter, terminal_door)")
+        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, exit_type, room_enter, terminal_door, points)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
         #dd(self.s.dump())
 #}}}
@@ -153,7 +155,7 @@ class Geom():
             aa[k]=v
         return aa
 # }}}
-    def _prepare_geom_record(self,k,v,width,depth,height,floor,attrs):# {{{
+    def _prepare_geom_record(self,k,rect,points,width,depth,height,floor,attrs):# {{{
         ''' Format a record for sqlite. Hvents get fixed width self.doors_width cm '''
         # OBST
         if k in ('OBST',):
@@ -200,8 +202,8 @@ class Geom():
         global_type_id=attrs['idx'];
         name='{}{}'.format(self.geomsMap[k], global_type_id)
 
-        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , x0      , y0      , z0      , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput          , exit_type          , room_enter          , terminal_door)")
-        return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , v[0][0] , v[0][1] , v[0][2] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , attrs['mvent_throughput'] , attrs['exit_type'] , attrs['room_enter'] , None )
+        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , x0         , y0         , z0         , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput          , exit_type          , room_enter          , terminal_door , points)")
+        return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , rect['x0'] , rect['y0'] , rect['z0'] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , attrs['mvent_throughput'] , attrs['exit_type'] , attrs['room_enter'] , None          , json.dumps(points))
 
 # }}}
     def _enhancements(self):# {{{
@@ -541,7 +543,7 @@ class Geom():
         self.towers_parents={}
         high_global_type_id=1000001
         for orig_name,floors in towers.items():
-            orig_record=self.s.query("SELECT global_type_id,type_pri,type_sec,type_tri,x0,y0,width,depth,x1,y1,room_area,room_enter,1 as fire_model_ignore, terminal_door FROM aamks_geom WHERE name=?", (orig_name,))[0]
+            orig_record=self.s.query("SELECT global_type_id,type_pri,type_sec,type_tri,x0,y0,width,depth,x1,y1,room_area,room_enter,points,1 as fire_model_ignore, terminal_door FROM aamks_geom WHERE name=?", (orig_name,))[0]
             parent_id=orig_record['global_type_id']
             kk=list(orig_record.keys())
             kk.append('floor')
@@ -552,7 +554,7 @@ class Geom():
                 vv=list(orig_record.values())
                 vv.append(flo)
                 vv.append("{}.{}".format(orig_name,flo))
-                self.s.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
+                self.s.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
                 high_global_type_id+=1
 
 # }}}

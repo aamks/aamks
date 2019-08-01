@@ -2,7 +2,8 @@ import locale
 import os
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 from manager.init import OnInit, OnEnd
-from geom.geom import Geom
+from geom.cfast_importer import CFASTimporter
+from geom.fds_importer import FDSimporter
 from geom.world2d import World2d
 from geom.obstacles import Obstacles
 from fire.cfast_partition import CfastPartition
@@ -11,10 +12,11 @@ from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SendMessage
 
-#os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/simple'
+#os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/three'
 #print("In aamks.py:", os.environ['AAMKS_PROJECT'])
 OnInit()
-Geom()
+CFASTimporter()
+FDSimporter()
 World2d()
 Obstacles()
 CfastPartition(0) # 1 enabled debugging

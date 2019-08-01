@@ -26,6 +26,7 @@ class Obstacles():
     def __init__(self):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.fire_model=self.conf['fire_model'];
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.world_meta=self.json.readdb("world_meta")
         self.floors_meta=self.json.readdb("floors_meta")
@@ -52,14 +53,15 @@ class Obstacles():
                 zz=self.floors_meta[floor]['minz_abs']
             data[floor]=[]
             obsts=[]
-            for o in self.s.query("SELECT x0,y0,x1,y1 FROM {} WHERE type_pri='OBST' AND floor=?".format(tin), (floor,)):
-                obsts.append(box(o['x0'], o['y0'], o['x1'], o['y1']))
+            for o in self.s.query("SELECT points FROM {} WHERE type_pri='OBST' AND floor=?".format(tin), (floor,)):
+                obsts.append(Polygon(json.loads(o['points'])))
                 
             obsts+=self._floor2obsts(tin,floor)
             for i in obsts:
                 data[floor].append([(int(x),int(y), zz) for x,y in i.exterior.coords])
         self.s.query("CREATE TABLE {} (json)".format(tout))
         self.s.query("INSERT INTO {} VALUES (?)".format(tout), (json.dumps({'obstacles': data}),))
+        #self.s.dumpall()
 #}}}
     def _floor2obsts(self,tin,floor):# {{{
         ''' 
@@ -68,6 +70,8 @@ class Obstacles():
         operations. Finally doors cut the openings in walls.
 
         '''
+        if self.fire_model=='FDS':
+            return []
 
         walls=[]
         for i in self.s.query("SELECT * FROM {} WHERE floor=? AND type_pri='COMPA' ORDER BY name".format(tin), (floor,)):
