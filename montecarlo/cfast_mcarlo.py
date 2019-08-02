@@ -21,6 +21,7 @@ from numpy.random import triangular
 from numpy.random import seed
 from numpy import array as npa
 from math import sqrt
+from numpy import around as nround
 
 from include import Sqlite
 from include import Psql
@@ -46,6 +47,7 @@ class CfastMcarlo():
         self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,sim_id)")
 
         si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
+
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._new_psql_log()
@@ -529,7 +531,7 @@ class CfastMcarlo():
         times, hrrs=self._draw_fire_development()
         fire_properties = self._draw_fire_properties(len(times))
         self._fire_obstacle()
-        area = npa(hrrs)/(self.hrrpua * 1000)
+        area = nround(npa(hrrs)/(self.hrrpua * 1000) + 0.1, decimals=1)
         txt=(
             '!! FIRE,compa,x,y,z,fire_number,ignition_type,ignition_criterion,ignition_target,?,?,name',
             fire_origin,
