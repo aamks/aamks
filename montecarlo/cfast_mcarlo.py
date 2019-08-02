@@ -40,6 +40,7 @@ class CfastMcarlo():
         self.json=Json()
         self.hrrpua = 0
         self.alpha = 0
+        self.fire_origin = None
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self._psql_collector=OrderedDict()
         self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,sim_id)")
@@ -86,6 +87,8 @@ class CfastMcarlo():
         fire_origin+=[x,y,z]
         fire_origin+=[compa['floor']]
         self._save_fire_origin(fire_origin)
+
+        self.fire_origin = fire_origin
 
         collect=('FIRE', compa['global_type_id'], round(compa['width']/(2.0*100),2), round(compa['depth']/(2.0*100),2), z, 1, 'TIME' ,'0','0','0','0','medium')
         return (','.join(str(i) for i in collect))
@@ -152,8 +155,8 @@ class CfastMcarlo():
         '''
         p = pareto(b=0.668, scale=0.775)
         fire_area = p.rvs(size=1)[0]
-        fire_origin = self._fire_origin()
-        orig_area = self.s.query("SELECT (width * depth) as area FROM aamks_geom WHERE name=?", (fire_origin[0],))[0]
+        fire_origin = self.fire_origin
+        orig_area = self.s.query("SELECT (width * depth)/10000 as area FROM aamks_geom WHERE name='{}'".format(fire_origin[0]))[0]['area']
 
         if fire_area > orig_area:
             fire_area = orig_area
@@ -522,9 +525,9 @@ class CfastMcarlo():
 
 # }}}
     def _section_fire(self):# {{{
+        fire_origin=self._fire_origin()
         times, hrrs=self._draw_fire_development()
         fire_properties = self._draw_fire_properties(len(times))
-        fire_origin=self._fire_origin()
         self._fire_obstacle()
         area = npa(hrrs)/(self.hrrpua * 1000)
         txt=(
