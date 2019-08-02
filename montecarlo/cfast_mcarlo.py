@@ -27,6 +27,7 @@ from include import Psql
 from include import Json
 from include import Dump as dd
 from include import SimIterations
+from scipy.stats import pareto
 
 # }}}
 
@@ -37,6 +38,8 @@ class CfastMcarlo():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.p=Psql()
         self.json=Json()
+        self.hrrpua = 0
+        self.alpha = 0
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self._psql_collector=OrderedDict()
         self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,sim_id)")
@@ -140,37 +143,49 @@ class CfastMcarlo():
         middle, then fading on the right. At the end read hrrs at given times.
         '''
 
-        hrrpua=self.conf['hrrpua']
+        hrrpua_d=self.conf['hrrpua']
         hrr_alpha=self.conf['hrr_alpha']
-        #'TODO:' HRR_PEAK is calculated as if each room was 10 m2, by HRRPUA times 10. It should be better addressed, by choosing room area and vent characteristics
 
-        hrr_peak=int(triangular(hrrpua['min'] , hrrpua['mode']    , hrrpua['max']) * 10000)
-        alpha=int(triangular(hrr_alpha['min'] , hrr_alpha['mode'] , hrr_alpha['max'])*1000)
+        '''
+        Fire area is draw from pareto distrubution regarding the BS PD-7974-7. 
+        There is lack of vent condition - underventilated fires
+        '''
+        p = pareto(b=0.668, scale=0.775)
+        fire_area = p.rvs(size=1)[0]
+        fire_origin = self._fire_origin()
+        orig_area = self.s.query("SELECT (width * depth) as area FROM aamks_geom WHERE name=?", (fire_origin[0],))[0]
 
-        self._psql_log_variable('hrrpeak',hrr_peak/1000)
-        self._psql_log_variable('alpha',alpha/1000.0)
+        if fire_area > orig_area:
+            fire_area = orig_area
+
+        self.hrrpua=int(triangular(hrrpua_d['min'], hrrpua_d['mode'], hrrpua_d['max']))
+        hrr_peak=int(self.hrrpua * 1000 * fire_area)
+        self.alpha=int(triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])*1000)
+
+        self._psql_log_variable('hrrpeak', hrr_peak/1000)
+        self._psql_log_variable('alpha', self.alpha/1000.0)
 
         # left
-        t_up_to_hrr_peak=int((hrr_peak/alpha)**0.5)
-        interval=int(round(t_up_to_hrr_peak/10))
-        times0=list(range(0, t_up_to_hrr_peak, interval))+[t_up_to_hrr_peak]
-        hrrs0=[ int((alpha * t ** 2)) for t in times0 ]
+        t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
+        interval = int(round(t_up_to_hrr_peak/10))
+        times0 = list(range(0, t_up_to_hrr_peak, interval))+[t_up_to_hrr_peak]
+        hrrs0 = [int((self.alpha * t ** 2)) for t in times0]
 
         # middle
-        t_up_to_starts_dropping=15 * 60
-        times1=[t_up_to_starts_dropping]
-        hrrs1=[hrr_peak]
+        t_up_to_starts_dropping = 15 * 60
+        times1 = [t_up_to_starts_dropping]
+        hrrs1 = [hrr_peak]
 
         # right
         t_up_to_drops_to_zero=t_up_to_starts_dropping+t_up_to_hrr_peak
-        interval=int(round((t_up_to_drops_to_zero - t_up_to_starts_dropping)/10))
-        times2=list(range(t_up_to_starts_dropping, t_up_to_drops_to_zero, interval))+[t_up_to_drops_to_zero]
-        hrrs2=[ int((alpha * (t - t_up_to_drops_to_zero) ** 2 )) for t in times2 ]
+        interval = int(round((t_up_to_drops_to_zero - t_up_to_starts_dropping)/10))
+        times2 = list(range(t_up_to_starts_dropping, t_up_to_drops_to_zero, interval))+[t_up_to_drops_to_zero]
+        hrrs2 = [int((self.alpha * (t - t_up_to_drops_to_zero) ** 2)) for t in times2 ]
 
-        times=list(times0 + times1 + times2)
-        hrrs=list(hrrs0 + hrrs1 + hrrs2)
+        times = list(times0 + times1 + times2)
+        hrrs = list(hrrs0 + hrrs1 + hrrs2)
 
-        return (times, hrrs)
+        return times, hrrs
 
 
 # }}}
@@ -259,7 +274,7 @@ class CfastMcarlo():
         )
 
         with open("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), "w") as output:
-            output.write("\n".join(filter(None,txt)))
+            output.write("\n".join(filter(None, txt)))
 # }}}
     def _section_preamble(self,outdoor_temp):# {{{
         ''' 
@@ -511,7 +526,7 @@ class CfastMcarlo():
         fire_properties = self._draw_fire_properties(len(times))
         fire_origin=self._fire_origin()
         self._fire_obstacle()
-        area = (((npa(hrrs)/1000)/(fire_properties['q_star'] * 1.204 * 1.005 * 293 * sqrt(9.81))) ** (2/5)) + 0.0001
+        area = npa(hrrs)/(self.hrrpua * 1000)
         txt=(
             '!! FIRE,compa,x,y,z,fire_number,ignition_type,ignition_criterion,ignition_target,?,?,name',
             fire_origin,
