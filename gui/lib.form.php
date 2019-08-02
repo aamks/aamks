@@ -4,6 +4,8 @@ function make_help() { /*{{{*/
 	$help["project_id"]              = ["scenario"                         , "This is scenario"]                                                         ;
 	$help["number_of_simulations"]   = ["number of simulations"            , "write me..."]                                                              ;
 	$help["navmesh_debug"]			 = ["navmesh_debug"                    , "write me..."]                                                              ;
+	$help["fire_model"]				 = ["fire_model"                       , "CFAST | FDS | None"]                                                              ;
+	$help["dispatch_evacuees"]		 = ["dispatch_evacuees"                , "<orange>manual+probabilistic</orange> probabilistic evacuees only in the rooms free of manual evacuees<hr> <orange>probabilistic+manual</orange> probabilistic evacuees first and then extra manual evacuees<hr> <orange>manual</orange> probabilistic evacuees are never added "]                                                              ;
 	$help["simulation_time"]         = ["simulation time"                  , "write me..."]                                                              ;
 	$help["indoor_temperature"]      = ["indoor_temperature"               , "write me..."]                                                              ;
 	$help["outdoor_temperature"]     = ["outdoor_temperature"              , "write me..."]                                                              ;

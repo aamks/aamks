@@ -36,13 +36,15 @@ class CfastMcarlo():
     def __init__(self):# {{{
         ''' Generate montecarlo cfast.in. Log what was drawn to psql. '''
 
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.p=Psql()
         self.json=Json()
         self.hrrpua = 0
         self.alpha = 0
         self.fire_origin = None
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        if self.conf['fire_model']=='FDS':
+            return
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.p=Psql()
         self._psql_collector=OrderedDict()
         self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,sim_id)")
 
@@ -82,9 +84,9 @@ class CfastMcarlo():
             fire_origin.append('non_room')
 
         compa=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_origin[0],))[0]
-        x=round(compa['x0']/100+compa['width']/(2.0*100),2)
-        y=round(compa['y0']/100+compa['depth']/(2.0*100),2)
-        z=round(compa['height']/100.0 * (1-math.log10(uniform(1,10))),2)
+        x=int(compa['x0']+compa['width']/2.0)
+        y=int(compa['y0']+compa['depth']/2.0)
+        z=int(compa['height'] * (1-math.log10(uniform(1,10))))
 
         fire_origin+=[x,y,z]
         fire_origin+=[compa['floor']]
@@ -104,16 +106,16 @@ class CfastMcarlo():
         if len(self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")) > 0:
             z=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")
             i=z[0]
-            x=i['center_x']/100.0
-            y=i['center_y']/100.0
-            z=(i['z1']-i['z0'])/100.0
+            x=i['center_x']
+            y=i['center_y']
+            z=i['z1']-i['z0']
             room=self.s.query("SELECT floor,name,type_sec,global_type_id FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", (i['floor'], i['x0'], i['y0'], i['x1'], i['y1']))
             if room[0]['type_sec'] in ('COR','HALL'):
                 fire_origin=[room[0]['name'], 'non_room', x, y, z, room[0]['floor']]
             else:
                 fire_origin=[room[0]['name'], 'room', x, y , z,  room[0]['floor']]
             self._save_fire_origin(fire_origin)
-            collect=('FIRE', room[0]['global_type_id'], x, y, z, 1, 'TIME' ,'0','0','0','0','medium')
+            collect=('FIRE', room[0]['global_type_id'], x*100, y*100, z*100, 1, 'TIME' ,'0','0','0','0','medium')
             cfast_fire=(','.join(str(i) for i in collect))
         else:
             cfast_fire=self._draw_fire_origin()
@@ -503,35 +505,14 @@ class CfastMcarlo():
 
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
-    def _fire_obstacle(self):# {{{
-        '''
-        Fire Obstacle prevents humans to walk right through the fire. Currently
-        we build the rectangle xx * yy around x,y. Perhaps this size could be
-        some function of fire properties.
-        '''
-
-        xx=150
-        yy=150
-
-        z=self.s.query("SELECT * FROM fire_origin") 
-        i=z[0]
-        i['x']=int(i['x'] * 100)
-        i['y']=int(i['y'] * 100)
-        i['z']=int(i['z'] * 100)
-
-        points=[ [i['x']-xx, i['y']-yy, 0], [i['x']+xx, i['y']-yy, 0], [i['x']+xx, i['y']+yy, 0], [i['x']-xx, i['y']+yy, 0], [i['x']-xx, i['y']-yy, 0] ]
-
-        obstacles=self.json.readdb("obstacles")
-        obstacles['fire']={ i['floor']: points }
-        self.s.query("UPDATE obstacles SET json=?", (json.dumps(obstacles),)) 
-
-# }}}
     def _section_fire(self):# {{{
         fire_origin=self._fire_origin()
         times, hrrs=self._draw_fire_development()
         fire_properties = self._draw_fire_properties(len(times))
         self._fire_obstacle()
         area = nround(npa(hrrs)/(self.hrrpua * 1000) + 0.1, decimals=1)
+        fire_origin=self._fire_origin()
+
         txt=(
             '!! FIRE,compa,x,y,z,fire_number,ignition_type,ignition_criterion,ignition_target,?,?,name',
             fire_origin,

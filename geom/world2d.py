@@ -26,8 +26,8 @@ class World2d():
     ''' World2d is a display of all floors in a single 2d world '''
     def __init__(self):# {{{
         self.json=Json()
-        self.world_meta=self.json.readdb("world_meta")
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.world_meta=self.json.readdb("world_meta")
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.floors_meta=self.json.readdb("floors_meta")
         self.floors=self.floors_meta.keys()
@@ -75,8 +75,8 @@ class World2d():
         floors_meta=self.json.readdb("floors_meta")
 
         for floor,line in self.projections['top']['lines'].items():
-            self.floors_meta[floor]['world2d_ty']=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
-            self.floors_meta[floor]['world2d_tx']=0
+            self.floors_meta[floor]['ty']=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
+            self.floors_meta[floor]['tx']=0
         self.s.query("UPDATE floors_meta SET json=?", (json.dumps(self.floors_meta),))
 
 # }}}
@@ -87,10 +87,10 @@ class World2d():
         m['maxx']=-99999999999
         m['maxy']=-99999999999
         for floor,meta in self.json.readdb("floors_meta").items():
-            m['minx']=min(m['minx'], meta['minx']+meta['world2d_tx'])
-            m['miny']=min(m['miny'], meta['miny']+meta['world2d_ty'])
-            m['maxx']=max(m['maxx'], meta['maxx']+meta['world2d_tx'])
-            m['maxy']=max(m['maxy'], meta['maxy']+meta['world2d_ty'])
+            m['minx']=min(m['minx'], meta['minx']+meta['tx'])
+            m['miny']=min(m['miny'], meta['miny']+meta['ty'])
+            m['maxx']=max(m['maxx'], meta['maxx']+meta['tx'])
+            m['maxy']=max(m['maxy'], meta['maxy']+meta['ty'])
 
         m['xdim']=m['maxx']-m['minx']
         m['ydim']=m['maxy']-m['miny']

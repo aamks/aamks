@@ -56,7 +56,7 @@ function ajaxChangeActiveScenario() { #{{{
 function ajaxLaunchSimulation() { #{{{
 	$aamks=getenv("AAMKS_PATH");
 	$working_home=$_SESSION['main']['working_home'];
-	if(!is_file("$working_home/cad.json")) { 
+	if(!is_file("$working_home/cad.json") && !is_file("$working_home/cadfds.json")) { 
 		echo json_encode(array("msg"=>"You need to draw and save the project in <a class=blink href=/aamks/apainter>Apainter</a> first", "err"=>1, "data"=>''));
 		return;
 	}
@@ -176,8 +176,12 @@ function funExplode() { /*{{{*/
 }
 /*}}}*/
 function ajaxApainterExport() { /*{{{*/
-	$src=$_POST['cadfile'];
-	$dest=$_SESSION['main']['working_home']."/cad.json";
+	$src=$_POST['data'];
+	if($_POST['fire_model']=='CFAST') { 
+		$dest=$_SESSION['main']['working_home']."/cad.json";
+	} else {
+		$dest=$_SESSION['main']['working_home']."/cadfds.json";
+	}
 	$z=file_put_contents($dest, $src);
 
 	if($z>0) { 
@@ -191,12 +195,37 @@ function ajaxApainterImport() { /*{{{*/
 	// Apainter always checks if there's a file to import.
 	// It's not an error if the file is missing -- it has been not yet created.
 
-	if(is_file($_SESSION['main']['working_home']."/cad.json")) {
+	if(is_file($_SESSION['main']['working_home']."/conf.json")) {
+		$conffile=file_get_contents($_SESSION['main']['working_home']."/conf.json");
+		if(!json_decode($conffile)) { 
+			echo json_encode(array("msg"=>"ajaxApainterImport(): Project conf: broken file?", "err"=>1, "data"=>""));
+			return;
+		}
+		$conf=json_decode($conffile, 1);
+		if(!isset($conf['fire_model'])) {
+			echo json_encode(array("msg"=>"ajaxApainterImport(): Project conf: fire_model not specified", "err"=>1, "data"=>""));
+			return;
+		}
+	}
+
+	if($conf['fire_model']=='CFAST' && is_file($_SESSION['main']['working_home']."/cad.json")) {
 		$cadfile=file_get_contents($_SESSION['main']['working_home']."/cad.json");
 		if(json_decode($cadfile)) { 
 			echo json_encode(array("msg"=>"" , "err"=>0 , "data"=>json_decode($cadfile)));
+			return;
 		} else { 
 			echo json_encode(array("msg"=>"ajaxApainterImport(): Broken cad.json", "err"=>1, "data"=>""));
+			return;
+		}
+	}
+	if($conf['fire_model']=='FDS' && is_file($_SESSION['main']['working_home']."/cadfds.json")) {
+		$cadfile=file_get_contents($_SESSION['main']['working_home']."/cadfds.json");
+		if(json_decode($cadfile)) { 
+			echo json_encode(array("msg"=>"" , "err"=>'FDS', "data"=>$cadfile));
+			return;
+		} else { 
+			echo json_encode(array("msg"=>"ajaxApainterImport(): Broken cadfds.json", "err"=>1, "data"=>""));
+			return;
 		}
 	}
 }

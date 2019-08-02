@@ -171,7 +171,7 @@ function rescaleCanvas(meta) {//{{{
 		var xdim=dstatic.world_meta.xdim;
 		var ydim=dstatic.world_meta.ydim;
 	} else {
-		var center=[dstatic.floors[meta].floor_meta.center[0] + dstatic.floors[meta].floor_meta.world2d_tx, dstatic.floors[meta].floor_meta.center[1] + dstatic.floors[meta].floor_meta.world2d_ty, 0];
+		var center=[dstatic.floors[meta].floor_meta.center[0] + dstatic.floors[meta].floor_meta.tx, dstatic.floors[meta].floor_meta.center[1] + dstatic.floors[meta].floor_meta.ty, 0];
 		var xdim=  dstatic.floors[meta].floor_meta.xdim;
 		var ydim=  dstatic.floors[meta].floor_meta.ydim;
 	}
@@ -205,6 +205,14 @@ function floorLinks() {//{{{
 	$("animator-floor-links").html(links);
 }
 //}}}
+function floors_ranges() {//{{{
+	dstatic.floor_ranges=[];
+	_.each(dstatic.floors, function(ffloor) {
+		var f=ffloor['floor_meta'];
+		dstatic.floor_ranges.push({ 'floor': f.name, 'tx': f.tx, 'ty': f.ty, 'minx':f.minx+f.tx, 'maxx':f.maxx+f.tx, 'miny': f.miny+f.ty, 'maxy': f.maxy+f.ty});
+	});
+}
+//}}}
 function showStaticImage() {//{{{
 	// After we read a record from anims.json we reset the current visualization and setup a new one.
 	// We can only start animation after we are done with static rooms, doors etc.
@@ -212,6 +220,7 @@ function showStaticImage() {//{{{
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
 		ajax_msg(response);
 		dstatic=response['data'];
+		floors_ranges();
 		dstaticAllFloors=response['data'];
 		rescaleCanvas('world2d');
 
@@ -351,8 +360,8 @@ function letItBurn() {//{{{
 	var smokeOrig;
 	var fire;
 	if(!(currentAnimMeta['fire_origin']['floor'] in dstatic.floors)) { return; }
-	var tx=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.world2d_tx; 
-	var ty=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.world2d_ty;
+	var tx=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.tx; 
+	var ty=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.ty;
 
 	project.layers.roomFire.importSVG("smoke.svg", function (item) {
 		item.position.x = currentAnimMeta['fire_origin']['x']+tx;
@@ -394,41 +403,45 @@ function drawMeta(floor,tx,ty) {//{{{
 //}}}
 function drawPath(type,data,tx,ty) {//{{{
 	if(type=='ROOM') {
+        var points=JSON.parse(data.points)
 		strokeColor = colors[type].stroke;
 		opacity = colors[type].animOpacity;
 		fillColor = data.room_enter == 'yes' ? colors[data.type_sec].c : "#333";
 		var path=new Path({fillColor:fillColor, opacity:opacity });
 	}
-	if(type=='OBST') {
-		strokeColor = colors[type].stroke;
-		opacity = colors[type].animOpacity;
-		fillColor = colors[type].c;
-		strokeWidth = wallsSize;
-		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
-	}
 	if(type=='DOOR') {
+        var points=JSON.parse(data.points)
 		strokeWidth = doorsSize;
 		strokeColor = colors[type].stroke;
 		opacity = colors[type].animOpacity;
 		fillColor = colors[type].c;
 		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, opacity:opacity });
 	}
+	if(type=='OBST') {
+        var points=JSON.parse(data)
+		strokeColor = colors[type].stroke;
+		opacity = colors[type].animOpacity;
+		fillColor = colors[type].c;
+		strokeWidth = wallsSize;
+		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
+	}
 
-	path.closed = true;
-	_.each(data.points, function(point) { path.add(new Point(point.x+tx, point.y+ty)); });
+	//path.closed = true;
+	_.each(points, function(point) { path.add(new Point(point[0]+tx, point[1]+ty)); });
 }
 //}}}
 function drawLabel(type,data,tx,ty) {//{{{
+    var points=JSON.parse(data.points)
 	fontFamily = 'Roboto';
 	content = data.name;
 	if(type=='ROOM') {
 		fillColor = colors.fg.c;
 		fontSize = labelsSize;
 		opacity = colors.fg.animOpacity;
-		pos=[data.points[0].x + tx + 30, data.points[0].y + ty + 70];
+		pos=[points[0][0] + tx + 30, points[0][1] + ty + 70];
 	}
 	if(type=='DOOR') {
-		if(data.points[1].x - data.points[0].x > 32) { 
+		if(points[1][0] - points[0][0] > 32) { 
 			// horizontal door
 			ttx=20; tty=30;
 		} else { 
@@ -437,19 +450,21 @@ function drawLabel(type,data,tx,ty) {//{{{
 		fillColor = colors.fg.c;
 		opacity = colors.fg.animOpacity;
 		fontSize = labelsSize * 0.60;
-		pos=[data.points[0].x + tx + ttx, data.points[0].y + ty + tty];
+		pos=[points[0][0] + tx + ttx, points[0][1] + ty + tty];
 	}
 	new PointText({ point: new Point(pos[0], pos[1]), content: content, opacity: opacity, fontFamily: fontFamily, fontSize: fontSize, fillColor: fillColor });
 }
 //}}}
 function drawStaticEvacuees(data,tx,ty) {//{{{
+    var points=[];
+    _.each(data, function(pp) { points.push(JSON.parse(pp))});
 	if(currentAnimMeta["anim"] == undefined) { 
 		radius=evacueeRadius;
 		strokeWidth=0; 
 		fillColor: colors['doseN']['c'];
 
-		_.each(data.points, function(point) { 
-			new Path.Circle({ center: new Point(point.x+tx, point.y+ty), radius: radius, strokeWidth:strokeWidth , fillColor: fillColor });
+		_.each(points, function(point) { 
+			new Path.Circle({ center: new Point(point[0]+tx, point[1]+ty), radius: radius, strokeWidth:strokeWidth , fillColor: fillColor });
 		});
 	}
 }
@@ -475,11 +490,10 @@ function drawDDGeoms(data,tx,ty) { //{{{
 //}}}
 function initStaticGeoms() {//{{{
 	var tx, ty;
-	
-	_.each(dstatic.floors, function(ffloor,floor_name) {
+	_.each(dstatic.floors, function(ffloor) {
 		project.layers.rooms.activate();
-        tx=ffloor.floor_meta.world2d_tx;
-        ty=ffloor.floor_meta.world2d_ty;
+        tx=ffloor.floor_meta.tx;
+        ty=ffloor.floor_meta.ty;
 
         _.each(ffloor.rooms     , function(d) { drawPath('ROOM'  , d , tx , ty); });
         _.each(ffloor.obstacles , function(d) { drawPath('OBST'  , d , tx , ty); });
@@ -490,7 +504,7 @@ function initStaticGeoms() {//{{{
 		drawStaticEvacuees(ffloor.evacuees, tx, ty);
         drawDDGeoms(ffloor.dd_geoms, tx, ty); 
 		project.layers.info.activate();
-        drawMeta(floor_name,tx,ty); 
+        drawMeta(ffloor['floor_meta']['name'],tx,ty); 
     });
 
 
@@ -526,7 +540,7 @@ function evacueesInFrame() {//{{{
 			_.each(data.children, function(e,i) {
 				e.fillColor=colors['dose'+eData[frame][ffloor][i][4]]['c']; 
 				e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps; 
-				e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.world2d_ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
+				e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
 			})
 		}
 	})
@@ -569,8 +583,16 @@ tool.onMouseDrag=function(event) {//{{{
 
 //}}}
 tool.onMouseDown=function(event) {//{{{
-	$("canvas-mouse-coords").text(Math.floor(event.downPoint['x'])+ "," + Math.floor(event.downPoint['y']));
-	$("canvas-mouse-coords").css({'display':'block', 'left':event.event.pageX, 'top':event.event.pageY});
+	var hit=false;
+	var x=Math.floor(event.downPoint['x']);
+	var y=Math.floor(event.downPoint['y']);
+	_.each(dstatic.floor_ranges, function(f) {
+		if(y >= f.miny && y <= f.maxy && x>= f.minx && x <= f.maxx) { hit=true; x=x-f.tx; y=y-f.ty; return false; }
+	});
+	if(hit === true) {
+		$("canvas-mouse-coords").text(x+ "," +y);
+		$("canvas-mouse-coords").css({'display':'block', 'left':event.event.pageX, 'top':event.event.pageY});
+	}
 };
 //}}}
 function animFormatTime() {//{{{
@@ -586,22 +608,23 @@ function animFormatTime() {//{{{
 //}}}
 function highlightGeom(key) {//{{{
 	project.layers.highlight.activate();
-
-	_.each(dstatic.floors, function(ffloor,floor_name) {
-        tx=ffloor.floor_meta.world2d_tx;
-        ty=ffloor.floor_meta.world2d_ty;
+	_.each(dstatic.floors, function(ffloor) {
+        tx=ffloor.floor_meta.tx;
+        ty=ffloor.floor_meta.ty;
         _.each(ffloor.rooms, function(d) { 
 			if (d['name']==key) {
-				rw=d.points[1]['x'] - d.points[0]['x'];
-				rh=d.points[2]['y'] - d.points[1]['y'];
-				new Path.Rectangle({point: new Point(d.points[0]['x']+tx,d.points[0]['y']+ty), size: new Size(rw,rh), opacity:0.4, fillColor: "#0f0"});
+                var points=JSON.parse(d.points)
+				rw=points[1][0] - points[0][0];
+				rh=points[2][1] - points[1][1];
+				new Path.Rectangle({point: new Point(points[0][0]+tx,points[0][1]+ty), size: new Size(rw,rh), opacity:0.4, fillColor: "#0f0"});
 				return;
 			}
 		})
         _.each(ffloor.doors, function(d) { 
 			if (d['name']==key) {
-				cx=d.points[0]['x'] + 0.5 * (d.points[1]['x'] - d.points[0]['x']);
-				cy=d.points[1]['y'] + 0.5 * (d.points[2]['y'] - d.points[1]['y']);
+                var points=JSON.parse(d.points)
+				cx=points[0][0] + 0.5 * (points[1][0] - points[0][0]);
+				cy=points[1][1] + 0.5 * (points[2][1] - points[1][1]);
 				new Path.Circle({center: new Point(cx+tx,cy+ty), radius: 100,  opacity:0.4, fillColor: "#0f0"});
 				return;
 			}
@@ -635,31 +658,30 @@ function initRoomSmoke() {//{{{
 
 	for (var ffloor in roomsOpacity[0]) {
 		if(dstatic.floors[ffloor]===undefined) { continue; }
-        var ty=dstatic.floors[ffloor].floor_meta.world2d_ty;
-        var tx=dstatic.floors[ffloor].floor_meta.world2d_tx;
+        var ty=dstatic.floors[ffloor].floor_meta.ty;
+        var tx=dstatic.floors[ffloor].floor_meta.tx;
 		for (var room in roomsOpacity[0][ffloor]) {
+            var pp=JSON.parse(dstatic.floors[ffloor]['rooms'][room]['points']);
 			points=[];
-			_.each(dstatic.floors[ffloor]['rooms'][room]['points'], function(i) { 
-				points.push({'x': i['x']+tx, 'y': i['y']+ty}); 
-			});
+			_.each(pp, function(i) { points.push([i[0]+tx, i[1]+ty]); });
 
-			rw=points[1]['x'] - points[0]['x'];
-			rh=points[2]['y'] - points[1]['y'];
+			rw=points[1][0] - points[0][0];
+			rh=points[2][1] - points[1][1];
 
 			group=new Group();
 			group.name=room;
 			group.floor=ffloor;
 			
-			group.addChild(new Path.Rectangle({ point: new Point(points[0]['x']+roomMargin, points[0]['y']+roomMargin), size: new Size(rw-2*roomMargin,rh-2*roomMargin)}));
+			group.addChild(new Path.Rectangle({ point: new Point(points[0][0]+roomMargin, points[0][1]+roomMargin), size: new Size(rw-2*roomMargin,rh-2*roomMargin)}));
 			group.clipped=true;
 			group.opacity=0.3;
-			x_ranges=bubbles_ranges(points[1]['x'] - points[0]['x']);
-			y_ranges=bubbles_ranges(points[2]['y'] - points[1]['y']);
+			x_ranges=bubbles_ranges(points[1][0] - points[0][0]);
+			y_ranges=bubbles_ranges(points[2][1] - points[1][1]);
 			for (var xx in x_ranges) {
 				for (var yy in y_ranges) {
 					center=[
-						points[0]['x'] + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
-						points[0]['y'] + randBetween (y_ranges[yy][0], y_ranges[yy][1] ),
+						points[0][0] + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
+						points[0][1] + randBetween (y_ranges[yy][0], y_ranges[yy][1] ),
 					];
 					group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center[0], center[1]), radius: radius*randBetween(0.7,1),  fillColor: "#023" }));
 

@@ -77,6 +77,9 @@ function new_project() { # {{{
 function session_dump() { # {{{
 	if(!isset($_GET['session_dump'])) { return; }
 	dd($_SESSION['main']);
+	$z=shell_exec("env | grep AAMKS | grep -v PASS | grep -v SALT");
+	echo "<tt>/etc/apache2/envvars conf</tt>";
+	dd($z);
 	exit();
 }
 /*}}}*/

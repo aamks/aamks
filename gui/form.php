@@ -28,6 +28,26 @@ function read_aamks_conf_json() { /*{{{*/
 }
 /*}}}*/
 
+function droplist_fire_model($in) {/*{{{*/
+	$select="<select name=post[fire_model]>";
+	$select.="<option value='$in'>$in</option>";
+	$select.="<option value=CFAST>CFAST</option>";
+	$select.="<option value=FDS>FDS</option>";
+	$select.="<option value=None>None</option>";
+	$select.="</select>";
+	return $select;
+}
+/*}}}*/
+function droplist_dipatch_evacuees($in) {/*{{{*/
+	$select="<select name=post[dispatch_evacuees]>";
+	$select.="<option value='$in'>$in</option>";
+	$select.="<option value='manual+probabilistic'>manual+probabilistic</option>";
+	$select.="<option value='probabilistic+manual'>probabilistic+manual</option>";
+	$select.="<option value='manual'>manual</option>";
+	$select.="</select>";
+	return $select;
+}
+/*}}}*/
 function droplist_material($k,$in) {/*{{{*/
 	$select="<select name=post[$k][type]>";
 	$select.="<option value='$in'>$in</option>";
@@ -202,8 +222,8 @@ function write($data) { #{{{
 	header("Location: form.php?edit");
 }
 /*}}}*/
-function update_form1() {/*{{{*/
-	if(empty($_POST['update_form1'])) { return; }
+function update_form_easy() {/*{{{*/
+	if(empty($_POST['update_form_easy'])) { return; }
 	$out=$_POST['post'];
 	$out+=get_defaults('setup1');
 	$z=calculate_profile($_POST['post']['building_profile']);
@@ -216,15 +236,15 @@ function update_form1() {/*{{{*/
 	write($s);
 }
 /*}}}*/
-function update_form2() {/*{{{*/
-	if(empty($_POST['update_form2'])) { return; }
+function update_form_advanced() {/*{{{*/
+	if(empty($_POST['update_form_advanced'])) { return; }
 	$out=$_POST['post'];
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
 	write($s);
 }
 /*}}}*/
-function update_form3() {/*{{{*/
-	if(empty($_POST['update_form3'])) { return; }
+function update_form_text() {/*{{{*/
+	if(empty($_POST['update_form_text'])) { return; }
 	write($_POST['json']);
 }
 /*}}}*/
@@ -238,18 +258,22 @@ function update_form4() {/*{{{*/
 function form_fields_iterator($json,$variant) { #{{{
 	// In conf.json there are 3 types of values for each key: value, array, assoc 
 
-	foreach($json as $k=>$v)            {
-		if($k=='project_id')            { echo "<tr><td>".get_help($k)."<td>$v <input autocomplete=off type=hidden name=post[$k] value='$v'>"; }
-		else if($k=='scenario_id')      { echo "/$v							<input autocomplete=off type=hidden name=post[$k] value='$v'>"; }
-		else if($k=='building_profile') { echo building_fields($v, $variant); }
-		else if($k=='heat_detectors')   { echo "<tr><td><a class='rlink switch' id='$k'>heat detectors</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='smoke_detectors')  { echo "<tr><td><a class='rlink switch' id='$k'>smoke detectors</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='sprinklers')       { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='NSHEVS')           { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='material_ceiling') { echo "<tr><td>".get_help('material')."<td>".form_material($json); }
-		else if($k=='material_floor')   { }
-		else if($k=='material_wall')    { }
-		else                            {
+	foreach($json as $k=>$v) {
+
+		if($k=='project_id')             { echo "<tr><td>".get_help($k)."<td>$v <input autocomplete=off type=hidden name=post[$k] value='$v'>"; }
+		else if($k=='scenario_id')       { echo "/$v							<input autocomplete=off type=hidden name=post[$k] value='$v'>"; }
+		else if($k=='building_profile')  { echo building_fields($v, $variant); }
+		else if($k=='heat_detectors')    { echo "<tr><td><a class='rlink switch' id='$k'>heat detectors</a><td>".form_plain_arr_switchable($k,$v); }
+		else if($k=='smoke_detectors')   { echo "<tr><td><a class='rlink switch' id='$k'>smoke detectors</a><td>".form_plain_arr_switchable($k,$v); }
+		else if($k=='sprinklers')        { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
+		else if($k=='NSHEVS')            { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
+		else if($k=='material_ceiling')  { echo "<tr><td>".get_help('material')."<td>".form_material($json); }
+		else if($k=='dispatch_evacuees') { echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($v); }
+		else if($k=='fire_model')        { echo "<tr><td>".get_help('fire_model')."<td>".droplist_fire_model($v); }
+
+		else if($k=='material_floor')         { }
+		else if($k=='material_wall')          { }
+		else {
 			if(is_array($v) and isset($v[0])) {
 				echo "<tr><td>".get_help($k)."<td>".form_arr($k,$v); 
 			} else if(is_array($v) and !isset($v[0])) {
@@ -263,13 +287,13 @@ function form_fields_iterator($json,$variant) { #{{{
 /*}}}*/
 function form($variant) { /*{{{*/
 	// variant is easy or advanced
-	$update_var='update_form2';
+	$update_var='update_form_advanced';
 	$json=read_aamks_conf_json();
 	if($variant=='easy') { 
-		foreach(array("navmesh_debug", "outdoor_temperature","indoor_pressure","windows","vents_open","c_const","evacuees_max_h_speed","evacuees_max_v_speed","evacuees_alpha_v","evacuees_beta_v","fire_starts_in_a_room","hrrpua","hrr_alpha","evacuees_concentration","pre_evac","pre_evac_fire_origin") as $i) { 
+		foreach(array("fire_model", "dispatch_evacuees", "navmesh_debug", "outdoor_temperature","indoor_pressure","windows","vents_open","c_const","evacuees_max_h_speed","evacuees_max_v_speed","evacuees_alpha_v","evacuees_beta_v","fire_starts_in_a_room","hrrpua","hrr_alpha","evacuees_concentration","pre_evac","pre_evac_fire_origin") as $i) { 
 			unset ($json[$i]);
 		}
-		$update_var='update_form1';
+		$update_var='update_form_easy';
 	}
 
 	echo "<form method=post>";
@@ -279,7 +303,7 @@ function form($variant) { /*{{{*/
 	echo "<center><br><input autocomplete=off type=submit name=$update_var value='submit'></center></form>";
 }
 /*}}}*/
-function form3() { /*{{{*/
+function form_text() { /*{{{*/
 	echo "
 	<br><wheat>
 	You can directly manipulate conf.json. Aamks will not forgive any errors here.
@@ -289,7 +313,7 @@ function form3() { /*{{{*/
 	$json=json_encode(read_aamks_conf_json(), JSON_PRETTY_PRINT);
 	echo "<form method=post>";
 	echo "<textarea name=json cols=80 rows=25>\n\n$json\n\n\n</textarea><br>";
-	echo "<br><center><input autocomplete=off type=submit name=update_form3 value='submit'></center></form>";
+	echo "<br><center><input autocomplete=off type=submit name=update_form_text value='submit'></center></form>";
 }
 /*}}}*/
 function form4() { /*{{{*/
@@ -388,9 +412,9 @@ function main() {/*{{{*/
 	if(isset($_GET['edit'])) { 
 		form_delete();
 		$e=$_SESSION['main']['active_editor'];
-		if($e==1) { update_form1(); form("easy"); }
-		if($e==2) { update_form2(); form("advanced"); }
-		if($e==3) { update_form3(); form3(); }
+		if($e==1) { update_form_easy(); form("easy"); }
+		if($e==2) { update_form_advanced(); form("advanced"); }
+		if($e==3) { update_form_text(); form_text(); }
 	}
 
 	if(isset($_GET['bprofiles'])) { form4(); update_form4(); }

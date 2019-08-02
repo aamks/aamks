@@ -35,17 +35,18 @@ from scipy.stats.distributions import lognorm
 class EvacMcarlo():
     def __init__(self):# {{{
         ''' Generate montecarlo evac.conf. '''
-
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
         si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
-        for self._sim_id in range(*si.get()):
+        sim_ids=range(*si.get())
+        for self._sim_id in sim_ids:
             seed(self._sim_id)
+            self._fire_obstacle()
             self._static_evac_conf()
             self._dispatch_evacuees()
             self._make_evac_conf()
@@ -62,6 +63,25 @@ class EvacMcarlo():
         self._evac_conf['SIM_ID']=self._sim_id
         self._evac_conf['SERVER']=os.environ['AAMKS_SERVER']
         self._evac_conf['FIRE_ORIGIN']=self.s.query("SELECT name FROM fire_origin WHERE sim_id=?", (self._sim_id,))[0]['name']
+# }}}
+    def _fire_obstacle(self):# {{{
+        '''
+        Fire Obstacle prevents humans to walk right through the fire. Currently
+        we build the rectangle xx * yy around x,y. Perhaps this size could be
+        some function of fire properties.
+        '''
+
+        xx=150
+        yy=150
+
+        z=self.s.query("SELECT * FROM fire_origin") 
+        i=z[0]
+        points=[ [i['x']-xx, i['y']-yy, 0], [i['x']+xx, i['y']-yy, 0], [i['x']+xx, i['y']+yy, 0], [i['x']-xx, i['y']+yy, 0], [i['x']-xx, i['y']-yy, 0] ]
+
+        obstacles=self.json.readdb("obstacles")
+        obstacles['fire']={ i['floor']: points }
+        self.s.query("UPDATE obstacles SET json=?", (json.dumps(obstacles),)) 
+
 # }}}
     def _make_pre_evacuation(self,room,type_sec):# {{{
         ''' 
@@ -97,12 +117,8 @@ class EvacMcarlo():
 
         rooms={}
         probabilistic_rooms={}
-        for i in self.s.query("SELECT x0, x1, y0, y1, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY global_type_id", (floor,)):
-            i['points']=((i['x0'], i['y0']), (i['x1'], i['y0']), (i['x1'], i['y1']), (i['x0'], i['y1']), (i['x0'], i['y0']))
-            del i['x0']
-            del i['y0']
-            del i['x1']
-            del i['y1']
+        for i in self.s.query("SELECT points, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY global_type_id", (floor,)):
+            i['points']=json.loads(i['points'])
             probabilistic_rooms[i['name']]=i
 
         manual_rooms={}
@@ -146,15 +162,14 @@ class EvacMcarlo():
     def _make_floor_obstacles(self):# {{{
         self._floor_obstacles={}
         for floor in self.floors:
-            obsts=self.json.readdb("obstacles")['obstacles'][floor]
+            obsts=[]
+            for x in self.json.readdb("obstacles")['obstacles'][floor]:
+                obsts.append([(o[0],o[1]) for o in x])
             try:
                 obsts.append(self.json.readdb("obstacles")['fire'][floor])
             except:
                 pass
-
-            separate_obsts = [ Polygon(i) for i in obsts ]
-            self._floor_obstacles[floor]=unary_union(separate_obsts)
-
+            self._floor_obstacles[floor]=unary_union([ Polygon(i) for i in obsts ])
 # }}}
     def _dispatch_inside_polygons(self,density,points,floor,name):# {{{
         exterior=Polygon(points)
