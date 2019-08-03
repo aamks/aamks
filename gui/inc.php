@@ -91,7 +91,7 @@ class Aamks {/*{{{*/
 		$menu=$this->rawMenu();
 		echo "<div>
 			<left-menu-box><br>$menu</left-menu-box>
-			<div style='margin-bottom:400px; position:absolute; top: 10px; left: 200px; min-width:700px'>";
+			<div style='margin-bottom:100px; position:absolute; top: 10px; left: 200px; min-width:700px;'>";
 		echo "<tt>$title</tt>";
 	}
 	/*}}}*/
@@ -175,7 +175,7 @@ public function me(){/*{{{*/
 			$setup_user="<a href=/aamks/users.php?edit_user class=blink>$name</a>";
 		}
 		echo "
-		<div style='position:fixed; top: 20px; right: 10px; text-align:right'>
+		<div style='position:absolute; top: 20px; right: 10px; text-align:right'>
 		<a href=?logout=1 class=blink >Logout</a><br>
 		$setup_user
 		</div>

@@ -222,9 +222,16 @@ function write($data) { #{{{
 	header("Location: form.php?edit");
 }
 /*}}}*/
+function alarming_defaults($x) {/*{{{*/
+	if($x=='A1') { return array('mean' =>  0   , 'sd' =>  0)   ; }
+	if($x=='A2') { return array('mean' =>  180 , 'sd' =>  120) ; }
+	if($x=='A3') { return array('mean' =>  300 , 'sd' =>  180) ; }
+}
+/*}}}*/
 function update_form_easy() {/*{{{*/
 	if(empty($_POST['update_form_easy'])) { return; }
 	$out=$_POST['post'];
+	$out['alarming']=alarming_defaults($out['building_profile']['alarming']);
 	$out+=get_defaults('setup1');
 	$z=calculate_profile($_POST['post']['building_profile']);
 	$out['evacuees_concentration']=$z['evacuees_concentration'];
@@ -248,75 +255,84 @@ function update_form_text() {/*{{{*/
 	write($_POST['json']);
 }
 /*}}}*/
-function update_form4() {/*{{{*/
-	if(empty($_POST['update_form4'])) { return; }
+function update_form_bprofiles() {/*{{{*/
+	if(empty($_POST['update_form_bprofiles'])) { return; }
 	$z=calculate_profile($_POST['post']['building_profile']);
 	dd($z);
 }
 /*}}}*/
 
-function form_fields_iterator($json,$variant) { #{{{
-	// In conf.json there are 3 types of values for each key: value, array, assoc 
-
-	foreach($json as $k=>$v) {
-
-		if($k=='project_id')             { echo "<tr><td>".get_help($k)."<td>$v <input autocomplete=off type=hidden name=post[$k] value='$v'>"; }
-		else if($k=='scenario_id')       { echo "/$v							<input autocomplete=off type=hidden name=post[$k] value='$v'>"; }
-		else if($k=='building_profile')  { echo building_fields($v, $variant); }
-		else if($k=='heat_detectors')    { echo "<tr><td><a class='rlink switch' id='$k'>heat detectors</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='smoke_detectors')   { echo "<tr><td><a class='rlink switch' id='$k'>smoke detectors</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='sprinklers')        { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='NSHEVS')            { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='material_ceiling')  { echo "<tr><td>".get_help('material')."<td>".form_material($json); }
-		else if($k=='dispatch_evacuees') { echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($v); }
-		else if($k=='fire_model')        { echo "<tr><td>".get_help('fire_model')."<td>".droplist_fire_model($v); }
-
-		else if($k=='material_floor')         { }
-		else if($k=='material_wall')          { }
-		else {
-			if(is_array($v) and isset($v[0])) {
-				echo "<tr><td>".get_help($k)."<td>".form_arr($k,$v); 
-			} else if(is_array($v) and !isset($v[0])) {
-				echo "<tr><td>".get_help($k)."<td>".form_assoc($k,$v); 
-			} else {
-				echo "<tr><td>".get_help($k)."<td><input autocomplete=off type=text automplete=off size=10 name=post[$k] value='$v'>"; 
-			}
-		}
-	}
-}
-/*}}}*/
-function form($variant) { /*{{{*/
-	// variant is easy or advanced
-	$update_var='update_form_advanced';
+function form_fields_advanced() { #{{{
 	$json=read_aamks_conf_json();
-	if($variant=='easy') { 
-		foreach(array("fire_model", "dispatch_evacuees", "navmesh_debug", "outdoor_temperature","indoor_pressure","windows","vents_open","c_const","evacuees_max_h_speed","evacuees_max_v_speed","evacuees_alpha_v","evacuees_beta_v","fire_starts_in_a_room","hrrpua","hrr_alpha","evacuees_concentration","pre_evac","pre_evac_fire_origin") as $i) { 
-			unset ($json[$i]);
-		}
-		$update_var='update_form_easy';
-	}
-
+	extract($json);
 	echo "<form method=post>";
 	echo "<table>";
-	form_fields_iterator($json,$variant);
+	echo "<tr><td>".get_help('project_id')."<td>$project_id <input autocomplete=off type=hidden name=post[project_id] value='$project_id'>"; 
+	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
+	echo "<tr><td>".get_help('number_of_simulations')."<td><input autocomplete=off type=text automplete=off size=10 name=post[number_of_simulations] value='$number_of_simulations'>"; 
+	echo "<tr><td>".get_help('simulation_time')."<td><input autocomplete=off type=text automplete=off size=10 name=post[simulation_time] value='$simulation_time'>"; 
+	echo "<tr><td>".get_help('fire_model')."<td>".droplist_fire_model($fire_model); 
+	echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($dispatch_evacuees); 
+	echo "<tr><td>".get_help('navmesh_debug')."<td><input autocomplete=off type=text automplete=off size=10 name=post[navmesh_debug] value='$navmesh_debug'>"; 
+	echo "<tr><td>".get_help('indoor_temperature')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_temperature] value='$indoor_temperature'>"; 
+	echo "<tr><td>".get_help('outdoor_temperature')."<td>".form_assoc('outdoor_temperature',$outdoor_temperature); 
+	echo "<tr><td>".get_help('indoor_pressure')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_pressure] value='$indoor_pressure'>"; 
+	echo "<tr><td>".get_help('humidity')."<td><input autocomplete=off type=text automplete=off size=10 name=post[humidity] value='$humidity'>"; 
+	echo building_fields($building_profile, 'advanced');
+	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
+	echo "<tr><td><a class='rlink switch' id='heat_detectors'>heat detectors</a><td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
+	echo "<tr><td><a class='rlink switch' id='smoke_detectors'>smoke detectors</a><td>".form_plain_arr_switchable('smoke_detectors',$smoke_detectors); 
+	echo "<tr><td><a class='rlink switch' id='sprinklers'>sprinklers</a><td>".form_plain_arr_switchable('sprinklers',$sprinklers); 
+	echo "<tr><td><a class='rlink switch' id='NSHEVS'>NSHEVS</a><td>".form_plain_arr_switchable('NSHEVS',$NSHEVS); 
+	echo "<tr><td>".get_help('windows')."<td>".form_arr('windows',$windows); 
+	echo "<tr><td>".get_help('vents_open')."<td>".form_assoc('vents_open',$vents_open); 
+	echo "<tr><td>".get_help('c_const')."<td><input autocomplete=off type=text automplete=off size=10 name=post[c_const] value='$c_const'>"; 
+	echo "<tr><td>".get_help('fire_starts_in_a_room')."<td><input autocomplete=off type=text automplete=off size=10 name=post[fire_starts_in_a_room] value='$fire_starts_in_a_room'>"; 
+	echo "<tr><td>".get_help('hrrpua')."<td>".form_assoc('hrrpua',$hrrpua); 
+	echo "<tr><td>".get_help('hrr_alpha')."<td>".form_assoc('hrr_alpha',$hrr_alpha); 
+	echo "<tr><td>".get_help('evacuees_max_h_speed')."<td>".form_assoc('evacuees_max_h_speed',$evacuees_max_h_speed); 
+	echo "<tr><td>".get_help('evacuees_max_v_speed')."<td>".form_assoc('evacuees_max_v_speed',$evacuees_max_v_speed); 
+	echo "<tr><td>".get_help('evacuees_alpha_v')."<td>".form_assoc('evacuees_alpha_v',$evacuees_alpha_v); 
+	echo "<tr><td>".get_help('evacuees_beta_v')."<td>".form_assoc('evacuees_beta_v',$evacuees_beta_v); 
+	echo "<tr><td>".get_help('evacuees_concentration')."<td>".form_assoc('evacuees_concentration',$evacuees_concentration); 
+	echo "<tr><td>".get_help('alarming')."<td>".form_assoc('alarming',$alarming); 
+	echo "<tr><td>".get_help('pre_evac')."<td>".form_assoc('pre_evac',$pre_evac); 
+	echo "<tr><td>".get_help('pre_evac_fire_origin')."<td>".form_assoc('pre_evac_fire_origin',$pre_evac_fire_origin); 
 	echo "</table>";
-	echo "<center><br><input autocomplete=off type=submit name=$update_var value='submit'></center></form>";
+	echo "<center><br><input autocomplete=off type=submit name='update_form_advanced' value='submit'></center></form>";
+}
+/*}}}*/
+function form_fields_easy() { #{{{
+	$json=read_aamks_conf_json();
+	extract($json);
+	echo "<form method=post>";
+	echo "<table>";
+	echo "<tr><td>".get_help('project_id')."<td>$project_id <input autocomplete=off type=hidden name=post[project_id] value='$project_id'>"; 
+	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
+	echo "<tr><td>".get_help('number_of_simulations')."<td><input autocomplete=off type=text automplete=off size=10 name=post[number_of_simulations] value='$number_of_simulations'>"; 
+	echo "<tr><td>".get_help('simulation_time')."<td><input autocomplete=off type=text automplete=off size=10 name=post[simulation_time] value='$simulation_time'>"; 
+	echo "<tr><td>".get_help('indoor_temperature')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_temperature] value='$indoor_temperature'>"; 
+	echo "<tr><td>".get_help('humidity')."<td><input autocomplete=off type=text automplete=off size=10 name=post[humidity] value='$humidity'>"; 
+	echo building_fields($building_profile, 'easy');
+	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
+	echo "<tr><td><a class='rlink switch' id='heat_detectors'>heat detectors</a><td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
+	echo "<tr><td><a class='rlink switch' id='smoke_detectors'>smoke detectors</a><td>".form_plain_arr_switchable('smoke_detectors',$smoke_detectors); 
+	echo "<tr><td><a class='rlink switch' id='sprinklers'>sprinklers</a><td>".form_plain_arr_switchable('sprinklers',$sprinklers); 
+	echo "<tr><td><a class='rlink switch' id='NSHEVS'>NSHEVS</a><td>".form_plain_arr_switchable('NSHEVS',$NSHEVS); 
+	echo "</table>";
+	echo "<center><br><input autocomplete=off type=submit name='update_form_easy' value='submit'></center></form>";
 }
 /*}}}*/
 function form_text() { /*{{{*/
-	echo "
-	<br><wheat>
-	You can directly manipulate conf.json. Aamks will not forgive any errors here.
-	</wheat><br><br>";
 	
 	$help=$_SESSION['help'];
 	$json=json_encode(read_aamks_conf_json(), JSON_PRETTY_PRINT);
 	echo "<form method=post>";
-	echo "<textarea name=json cols=80 rows=25>\n\n$json\n\n\n</textarea><br>";
+	echo "<textarea style='min-width: 600px; height:600px; white-space: nowrap;' name=json>\n\n$json\n\n\n</textarea><br>";
 	echo "<br><center><input autocomplete=off type=submit name=update_form_text value='submit'></center></form>";
 }
 /*}}}*/
-function form4() { /*{{{*/
+function form_bprofiles() { /*{{{*/
 	echo "<br><br><wheat> Browser of the building profiles </wheat><br><br>";
 	$v=array();
 	if(isset($_POST['post']['building_profile'])) { 
@@ -327,7 +343,7 @@ function form4() { /*{{{*/
 	echo "<table>";
 	echo building_fields($v);
 	echo "</table>";
-	echo "<input autocomplete=off type=submit name=update_form4 value='submit'></form>";
+	echo "<input autocomplete=off type=submit name=update_form_bprofiles value='submit'></form>";
 }
 /*}}}*/
 
@@ -412,12 +428,12 @@ function main() {/*{{{*/
 	if(isset($_GET['edit'])) { 
 		form_delete();
 		$e=$_SESSION['main']['active_editor'];
-		if($e==1) { update_form_easy(); form("easy"); }
-		if($e==2) { update_form_advanced(); form("advanced"); }
+		if($e==1) { update_form_easy(); form_fields_easy(); }
+		if($e==2) { update_form_advanced(); form_fields_advanced(); }
 		if($e==3) { update_form_text(); form_text(); }
 	}
 
-	if(isset($_GET['bprofiles'])) { form4(); update_form4(); }
+	if(isset($_GET['bprofiles'])) { form_bprofiles(); update_form_bprofiles(); }
 	editors();
 }
 /*}}}*/
