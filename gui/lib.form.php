@@ -308,6 +308,8 @@ function get_defaults($q) {/*{{{*/
 
 	$db['setup1']='
 	{
+		"fire_model": "CFAST",
+		"dispatch_evacuees": "manual+probabilistic",
 		"outdoor_temperature": { "mean": 20, "sd": 2 },
 		"navmesh_debug": 0,
 		"indoor_pressure": 101325,
@@ -323,10 +325,10 @@ function get_defaults($q) {/*{{{*/
 		"evacuees_max_v_speed" : { "mean" : 80     , "sd" : 20 },
 		"evacuees_alpha_v"     : { "mean" : 0.706  , "sd" : 0.069 },
 		"evacuees_beta_v"      : { "mean" : -0.057 , "sd" : 0.015 },
+		"alarming"  :            { "mean": 0, "sd": 0 },
+		"hrrpua":                { "min": 300    , "mode": 1000  , "max": 1300 },
+		"hrr_alpha":             { "min": 0.0029 , "mode": 0.047 , "max": 0.188 },
 		"fire_starts_in_a_room"  : 0.8,
-
-		"hrrpua":	 { "min": 300    , "mode": 1000  , "max": 1300 },
-		"hrr_alpha": { "min": 0.0029 , "mode": 0.047 , "max": 0.188 },
 		"evacuees_concentration": { "COR": 20 , "STAI": 50 , "ROOM": 8  , "HALL": 30 } 
 	}';
 

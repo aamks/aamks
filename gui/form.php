@@ -226,14 +226,15 @@ function alarming_defaults($x) {/*{{{*/
 	if($x=='A1') { return array('mean' =>  0   , 'sd' =>  0)   ; }
 	if($x=='A2') { return array('mean' =>  180 , 'sd' =>  120) ; }
 	if($x=='A3') { return array('mean' =>  300 , 'sd' =>  180) ; }
+	return array('mean' =>  0, 'sd' =>  0) ;  # In case none of the alarming is chosen
 }
 /*}}}*/
 function update_form_easy() {/*{{{*/
 	if(empty($_POST['update_form_easy'])) { return; }
 	$out=$_POST['post'];
-	$out['alarming']=alarming_defaults($out['building_profile']['alarming']);
 	$out+=get_defaults('setup1');
 	$z=calculate_profile($_POST['post']['building_profile']);
+	$out['alarming']=alarming_defaults($out['building_profile']['alarming']);
 	$out['evacuees_concentration']=$z['evacuees_concentration'];
 	$out['hrr_alpha']['mode']=$z['hrr_alpha_mode'];
 	$out['hrrpua']['mode']=$z['hrrpua_mode'];
