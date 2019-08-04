@@ -1,8 +1,6 @@
 var scene, camera;
 
 function init() {//{{{
-	$("view3d").append("<close-3dview style='position: fixed; left: 10px; top:10px;'><img src=/aamks/css/close.svg> </close-3dview><span style='margin-left:30px'>or h key</span>");
-	$('close-3dview').click(function() { close3dview(); });
 	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', canvas[0]).attr('height', canvas[1]);
 }
 //}}}

@@ -12,15 +12,17 @@ $(function()  {//{{{
 		});
 
 		$("body").on("click", "close-left-menu-box", function() {
-			$('left-menu-box').css({"background-color": "#444"}).animate({'width': $('left-menu-box').css("width"), "border-width": 0, 'height': 12, 'top':0, 'left':0 }).html("<input type=submit id='menu-dropdown' value=MENU>");
+			$('left-menu-box').css({"background-color": "transparent"}).animate({'width': $('left-menu-box').css("width"), "border-width": 0, 'height': 12, 'top':0, 'left':0 }).html("<input type=submit id='menu-dropdown' value=Menu>");
 		});
 	});
 });
 //}}}
 function make_legend0(module) {//{{{
+	$('legend0').html("");
 	if (module=='apainter') {
-		$('legend0').prepend("<open3dview>3D</open3dview>");
-		$('legend0').prepend("<write>SAVE</write>");
+		//$('legend0').prepend("<open3dview>x</open3dview>");
+		$('legend0').prepend("<button id=apainter-next-view>View</button>");
+		$('legend0').prepend("<button id=apainter-save>Save</button>");
 	}
 }
 //}}}

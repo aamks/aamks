@@ -4,12 +4,11 @@ function register_listeners() {//{{{
 	$("right-menu-box").on("click"     , '#setup_underlay'          , function() { underlay_form(); });
 	$("right-menu-box").on("mouseover" , ".properties_type_listing" , function() { selected_geom=$(this).attr('id'); blink_selected(); });
 	$("right-menu-box").on("click"     , '.properties_type_listing' , function() { selected_geom=$(this).attr('id'); apainter_properties_box(); blink_selected(); });
-	$("body").on("click"               , '#btn-cad-json-save'       , function() { cad_json_textarea_save(); });
-	$("body").on("click"               , '#btn-cad-json-cancel'     , function() { cad_json_textarea_close(); });
+	$("body").on("click"               , '#apainter-save'           , function() { cad_json_textarea_save(); });
+	$("body").on("click"               , '#apainter-next-view'      , function() { next_view(); });
 	$("body").on("click"               , '#button-help'             , function() { apainter_help_box(); $('right-menu-box').fadeIn(); });
 	$("body").on("click"               , '#button-setup'            , function() { apainter_setup_box(); $('right-menu-box').fadeIn(); });
 	$("body").on("click"               , 'write'                    , function() { db2cadjson();  });
-	$("body").on("click"               , 'open3dview'               , function() { view3d();  });
 	$("body").on("click"               , '.legend'                  , function() { active_letter=$(this).attr('letter'); properties_type_listing(); });
 	$("body").on("mouseleave"          , 'right-menu-box'           , function() { save_setup_box(); });
 
@@ -78,11 +77,11 @@ function cad_json_textarea_save() {//{{{
 function textarea_edit_cad_json(pretty_json="") {//{{{
 	$("view2d").css("display", "none");
 	$("#apainter-svg").css("display", "none");
-	if(fire_model=='CFAST') { cancel="<button class=blink id=btn-cad-json-cancel>Cancel</button><br>"; } else { cancel='<br>'; }
+	if(fire_model=='CFAST') { cancel="<button id=apainter-next-view>View</button><br>"; } else { cancel='<br>'; }
 	if(pretty_json=="") { var pretty_json=db2cadjson(); }
 	$("body").append(
 		"<div id=div-cad-json-textarea>"+
-		"<button style='margin-left:10px' class=blink id=btn-cad-json-save>Save</button>"+
+		"<button id=apainter-save>Save</button>"+
 		cancel + 
 		"<textarea id=cad-json-textarea>"+pretty_json+"</textarea>"+
 		"</div>"

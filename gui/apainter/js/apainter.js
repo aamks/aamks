@@ -530,9 +530,9 @@ function updateSvgElem(geom) {  //{{{
 function canvas_builder() { //{{{
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
+	d3.select('body').append('legend0');
 	d3.select('view2d').append('button-right-menu-box').attr("id", "button-help").html("HELP").style("padding-right", "50px");
 	d3.select('view2d').append('button-right-menu-box').attr("id", "button-setup").html("SETUP");
-	d3.select('view2d').append('legend0');
 	d3.select('view2d').append('legend1');
 	make_legend0("apainter");
 	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);

@@ -11,7 +11,7 @@ body { overflow: hidden; }
 .axis path, .axis line { fill: none; stroke: #383838; font-family: 'Sans' }
 .snap_v, .snap_h { stroke : #fff; stroke-width : 5; stroke-dasharray : 10; stroke-opacity : 0.7; }
 
-legend0 { position: absolute ; left: 140px ; top: 8px ; user-select: none ; }
+legend0 { position: absolute ; left: 130px ; top: 0px ; user-select: none ; }
 legend1 { position: fixed    ; left: 340px ; top: 4px ; user-select: none ; }
 .legend { display: inline-block; padding: 4px;  cursor: pointer; }
 animator-title { position: absolute; left: 80px; top: 8px; user-select: none; }
@@ -27,6 +27,6 @@ status { cursor: default; float: right; }
 text { fill: #888; font-size: 11px; user-select: none; }
 
 canvas-mouse-coords { pointer-events: none; z-index:20; display: none; background-color: #600; font-size: 12px; padding: 4px; color: #fff; border: 1px solid #a77; position: absolute; }
-#div-cad-json-textarea { height:90vh; margin-left:140px }
+#div-cad-json-textarea { height:90vh; margin-left:130px }
 #cad-json-textarea { height: 100%; }
 letter { display: inline; padding: 0px 4px 1px 4px; background-color: #960; color: #fff;  }

@@ -88,7 +88,7 @@ class Aamks {/*{{{*/
 	public function menu($title='') { /*{{{*/
 		$this->logoutButton();
 		$menu=$this->rawMenu();
-		echo "<left-menu-box> $menu </left-menu-box> <div style='height: 95vh; margin-left: 140px; padding: 0px;'>";
+		echo "<left-menu-box> $menu </left-menu-box> <div id=content-main style='height: 95vh; margin-left: 150px; padding: 0px;'>";
 		if(!empty($title)) { echo "<tt>$title</tt>"; }
 	}
 	/*}}}*/

@@ -85,20 +85,6 @@ a.blink, a.bblink, .blink, .bblink {
     padding: 5px 8px;
 }
 a.bblink, .bblink { background: #616; } 
-.sblink, .srlink { 
-	user-select: none !important;
-	background: none !important;
-	color: #6af !important;
-	padding:2px !important;
-} 
-
-.srlink { 
-	color: #f66 !important;
-	text-decoration: none !important;
-} 
-
-.sblink:hover { color: #c60 !important; }
-.srlink:hover { color: #c60 !important; }
 	
 a.rlink {
 	user-select: none;
@@ -173,14 +159,6 @@ input  {
 	color: #666;
 }
 
-input[type="submit"] {
-    padding: 4px 6px 4px 6px;
-	margin:1px;
-	color: #fff;
-    background:#579;
-	border: none;
-    cursor:pointer;
-}
 
 .nowrap {
 	white-space: nowrap;
@@ -270,12 +248,11 @@ left-menu-box                 { display: block; left: 0px; text-align: center; p
 right-menu-box                { right: 0px; }
 
 button-right-menu-box, button-left-menu-box { user-select: none; text-decoration: none; color:#6af; padding: 1px; cursor: pointer; position: absolute; top:6px; z-index:500; }
-write, open3dview                           { user-select: none; text-decoration: none; color:#6af; margin: 4px; padding: 1px; cursor: pointer; font-size: 11px; }
 close-left-menu-box, close-right-menu-box   { font-size: 18px; color: #6af; float: right; cursor:pointer; }
 button-left-menu-box                        { left:4px; font-size: 16px; font-weight: bold; cursor: pointer; }
 button-right-menu-box                       { right:4px; cursor: pointer; }
 
-button-right-menu-box:hover, button-left-menu-box:hover, write:hover, open3dview:hover { color: #c60 !important; }
+button-right-menu-box:hover, button-left-menu-box:hover { color: #c60 !important; }
 close-left-menu-box:hover, close-right-menu-box:hover  { opacity: 0.3; }
 
 .left-menu                    { padding-left: 15px; }
@@ -292,3 +269,6 @@ close-left-menu-box:hover, close-right-menu-box:hover  { opacity: 0.3; }
 .results-pictures + p {
 	margin: 3px 0px 0px 0px;
 }
+
+input[type="submit"], button             { margin:0px 2px 0px 0px; user-select: none; background-color: #aaa; color: #333; border: 1px solid #555; padding: 4px; cursor: pointer; font-size: 11px; }
+input[type="submit"]:hover, button:hover { opacity:0.7; }

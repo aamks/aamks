@@ -298,7 +298,7 @@ function form($variant) { /*{{{*/
 
 	echo "<form method=post>";
 	echo "<input autocomplete=off type=submit name=$update_var value='Save'><br><br>";
-	echo "<table>";
+	echo "<table id=table-form>";
 	form_fields_iterator($json,$variant);
 	echo "</table></form>";
 }
@@ -338,7 +338,7 @@ function editors() {/*{{{*/
 	$xx='';
 	foreach(array('easy','advanced','text') as $k=>$v) { 
 		$sty='';
-		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #616;'"; }
+		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #616; color: #fff'"; }
 		$xx.="<input autocomplete=off $sty type=submit name=e".($k+1)." value='$v'>";
 	}
 	echo "
@@ -367,7 +367,7 @@ function form_delete() { #{{{
 
 	if($_SESSION['main']['scenario_name']=='simple' && $_SESSION['main']['project_name']=='demo') { return; }
 	echo "<form method=post>";
-	echo "<input autocomplete=off class=srlink style='float:right; margin: 0px 50px 400px 0px' type=submit name=delete_scenario value='delete this scenario'>";
+	echo "<input autocomplete=off style='float:right; margin: 0px 50px 400px 0px' type=submit name=delete_scenario value='delete this scenario'>";
 	echo "</form>";
 }
 /*}}}*/
