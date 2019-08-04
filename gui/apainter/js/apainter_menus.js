@@ -65,7 +65,7 @@ function cad_jsons_db() { //{{{
 function cad_json_textarea_close() {//{{{
 	$("#div-cad-json-textarea").remove();
 	if(fire_model=='FDS') { return; }
-	$("view2d").css("visibility", "visible");
+	$("view2d").css("display", "block");
 	$("#apainter-svg").css("display", "block");
 }
 //}}}
@@ -76,7 +76,7 @@ function cad_json_textarea_save() {//{{{
 }
 //}}}
 function textarea_edit_cad_json(pretty_json="") {//{{{
-	$("view2d").css("visibility", "hidden");
+	$("view2d").css("display", "none");
 	$("#apainter-svg").css("display", "none");
 	if(fire_model=='CFAST') { cancel="<button class=blink id=btn-cad-json-cancel>Cancel</button><br>"; } else { cancel='<br>'; }
 	if(pretty_json=="") { var pretty_json=db2cadjson(); }
@@ -194,20 +194,13 @@ function import_cadjson() { //{{{
 	});
 }
 //}}}
-function legend_static() {//{{{
-	$('body').prepend("<button-left-menu-box>A</button-left-menu-box>");
-	$('apainter-legend-static').prepend("<open3dview>3D</open3dview> &nbsp;");
-	$('apainter-legend-static').prepend("<write>SAVE</write> &nbsp;");
-
-}
-//}}}
 function legend() { //{{{
-	$('legend').html('');
+	$('legend1').html('');
 
 	for(var letter in gg) {
 		if(gg[letter].legendary==1) { 
 			var x=db({"letter": letter}).select("name");
-			$('legend').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+"</div>");
+			$('legend1').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+"</div>");
 		}
 	}
 

@@ -67,6 +67,7 @@ class Aamks {/*{{{*/
 	public function rawMenu() { #{{{
 		$r=$_SESSION['nn']->query("SELECT s.* FROM scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id']));
 		$menu='';
+		$menu.="<close-left-menu-box><img src=/aamks/css/close.svg></close-left-menu-box><br>";
 		$menu.="<img width=100 src=/aamks/logo.svg><br><br>";
 		$menu.="<a id=menu-active-scenario-label href=/aamks/form.php?edit class=bblink>".$_SESSION['main']['scenario_name']."</a><br>";
 		$menu.="<a class=blink href=/aamks/projects.php?projects_list>Projects</a><br>";
@@ -74,7 +75,6 @@ class Aamks {/*{{{*/
 		$menu.="<a class=blink href=/aamks/animator/index.php>Animator</a><br>";
 		$menu.="<a class=blink href=/aamks/simulations.php>Simulations</a><br>";
 		$menu.="<a class=blink id=launch_simulation>Launch</a><br>";
-		$menu.="<a class=blink href=/aamks/projects.php?session_dump>Vars</a><br>";
 		$menu.="<br>";
 		$menu.="Scenario<br><select id='choose_scenario'>\n";
 		$menu.="<option value=".$_SESSION['main']['scenario_id'].">".$_SESSION['main']['scenario_name']."</option>\n";
@@ -82,17 +82,14 @@ class Aamks {/*{{{*/
 			$menu.="<option value='$v[id]'>$v[scenario_name]</option>\n";
 		}
 		$menu.="</select>\n";
-		$menu.='</left-menu-box>';
 		return $menu;
 	}
 /*}}}*/
-	public function menu($title) { /*{{{*/
+	public function menu($title='') { /*{{{*/
 		$this->logoutButton();
 		$menu=$this->rawMenu();
-		echo "<div>
-			<left-menu-box><br>$menu</left-menu-box>
-			<div style='margin-bottom:400px; position:absolute; top: 10px; left: 200px; min-width:700px'>";
-		echo "<tt>$title</tt>";
+		echo "<left-menu-box> $menu </left-menu-box> <div style='height: 95vh; margin-left: 140px; padding: 0px;'>";
+		if(!empty($title)) { echo "<tt>$title</tt>"; }
 	}
 	/*}}}*/
 public function me(){/*{{{*/
@@ -141,7 +138,7 @@ public function me(){/*{{{*/
 			<script src='/aamks/js/jquery.js'></script>
 			<script src='/aamks/js/form.js'></script>
 			<script src='/aamks/js/utils.js'></script>
-			<script type='module' src='/aamks/js/lodash.min.js'></script>
+			<script src='/aamks/js/lodash.min.js'></script>
 			<script src='/aamks/js/taffy-min.js'></script>
 			<script src='https://apis.google.com/js/platform.js' async defer></script>
 			<div id='hidden_form_container' style='display:none;'></div> 
@@ -175,7 +172,7 @@ public function me(){/*{{{*/
 			$setup_user="<a href=/aamks/users.php?edit_user class=blink>$name</a>";
 		}
 		echo "
-		<div style='position:fixed; top: 20px; right: 10px; text-align:right'>
+		<div style='position:fixed; top: 0px; right: 10px; text-align:right'>
 		<a href=?logout=1 class=blink >Logout</a><br>
 		$setup_user
 		</div>

@@ -84,8 +84,7 @@ function ajaxMenuContent() { /*{{{*/
 	# psql aamks -c "select * from scenarios"
 	# psql aamks -c "select * from projects"
 	$menu=$_SESSION['nn']->rawMenu();
-	$close_button="<close-left-menu-box><img src=/aamks/css/close.svg></close-left-menu-box><br>";
-	echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $close_button.$menu));
+	echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $menu));
 }
 /*}}}*/
 function ajaxAnimsList() { /*{{{*/

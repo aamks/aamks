@@ -28,7 +28,6 @@ window.onload = function() {
 	var tool=new Tool;
 	makeAnimationControls();
 	resizeAndRedrawCanvas();
-	left_menu_box();
 	right_menu_box();
 	listenEvents();
 

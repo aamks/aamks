@@ -1,3 +1,29 @@
+$(function()  {//{{{
+	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
+		if($('left-menu-box').length==0) { 
+			$("body").append("<left-menu-box>");
+			$("left-menu-box").html(json.data);
+		}
+
+		$("body").on("click", "#menu-dropdown", function() {
+			$("left-menu-box").remove();
+			$("body").append("<left-menu-box>");
+			$("left-menu-box").html(json.data);
+		});
+
+		$("body").on("click", "close-left-menu-box", function() {
+			$('left-menu-box').css({"background-color": "#444"}).animate({'width': $('left-menu-box').css("width"), "border-width": 0, 'height': 12, 'top':0, 'left':0 }).html("<input type=submit id='menu-dropdown' value=MENU>");
+		});
+	});
+});
+//}}}
+function make_legend0(module) {//{{{
+	if (module=='apainter') {
+		$('legend0').prepend("<open3dview>3D</open3dview>");
+		$('legend0').prepend("<write>SAVE</write>");
+	}
+}
+//}}}
 function ajax_msg(r) {//{{{
 	if(r['err']==1) { 
 		$('#ajax_msg').clearQueue();
@@ -42,21 +68,6 @@ function launch_simulation() {//{{{
 		});
 	});
 
-}
-//}}}
-function left_menu_box() {//{{{
-	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
-		$("left-menu-box").html(json.data);
-
-		$('button-left-menu-box').click(function() {
-			$('left-menu-box').toggle();
-		});
-
-		$('close-left-menu-box').click(function() {
-			$('left-menu-box').fadeOut();
-		});
-
-	});
 }
 //}}}
 dd = function() { //{{{

@@ -30,7 +30,6 @@ $(function()  {
 		ggx=x['aamksGeomsMap'];
 		evacueeRadius=x['evacueeRadius'];
 		canvas_builder();
-		left_menu_box();
 		import_cadjson();
 		register_listeners();
 		register_underlay_listeners();
@@ -533,9 +532,9 @@ function canvas_builder() { //{{{
 	d3.select('body').append('view2d');
 	d3.select('view2d').append('button-right-menu-box').attr("id", "button-help").html("HELP").style("padding-right", "50px");
 	d3.select('view2d').append('button-right-menu-box').attr("id", "button-setup").html("SETUP");
-	d3.select('view2d').append('apainter-legend-static');
-	d3.select('view2d').append('legend');
-	d3.select('body').append('left-menu-box');
+	d3.select('view2d').append('legend0');
+	d3.select('view2d').append('legend1');
+	make_legend0("apainter");
 	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
 	tt=svg.append("g").attr("id", "texts");
@@ -549,7 +548,6 @@ function canvas_builder() { //{{{
 	building.append("g").attr("id", "floor0").attr("class", "floor").attr('fill-opacity',0.4);
 	snapLines = svg.append("g").attr("id", "snapLines");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
-	legend_static();
 	legend();
 	d3.select('view2d').append('right-menu-box');
 	zoomInit();

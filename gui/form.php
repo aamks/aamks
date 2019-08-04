@@ -297,27 +297,22 @@ function form($variant) { /*{{{*/
 	}
 
 	echo "<form method=post>";
+	echo "<input autocomplete=off type=submit name=$update_var value='Save'><br><br>";
 	echo "<table>";
 	form_fields_iterator($json,$variant);
-	echo "</table>";
-	echo "<center><br><input autocomplete=off type=submit name=$update_var value='submit'></center></form>";
+	echo "</table></form>";
 }
 /*}}}*/
 function form_text() { /*{{{*/
-	echo "
-	<br><wheat>
-	You can directly manipulate conf.json. Aamks will not forgive any errors here.
-	</wheat><br><br>";
-	
 	$help=$_SESSION['help'];
 	$json=json_encode(read_aamks_conf_json(), JSON_PRETTY_PRINT);
 	echo "<form method=post>";
-	echo "<textarea name=json cols=80 rows=25>\n\n$json\n\n\n</textarea><br>";
-	echo "<br><center><input autocomplete=off type=submit name=update_form_text value='submit'></center></form>";
+	echo "<input autocomplete=off type=submit name=update_form_text value='Save'><br>";
+	echo "<textarea name=json style='height:90vh; width:700px'>\n\n$json\n\n\n</textarea><br>";
+	echo "</form>";
 }
 /*}}}*/
 function form4() { /*{{{*/
-	echo "<br><br><wheat> Browser of the building profiles </wheat><br><br>";
 	$v=array();
 	if(isset($_POST['post']['building_profile'])) { 
 		$v=$_POST['post']['building_profile'];
@@ -346,20 +341,14 @@ function editors() {/*{{{*/
 		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #616;'"; }
 		$xx.="<input autocomplete=off $sty type=submit name=e".($k+1)." value='$v'>";
 	}
-	echo "<div style=float:right>
-	Editor: 
+	echo "
+	<div style='position:absolute; left:600px; top:0px; white-space:nowrap'>Editor: 
 	<form style='display: inline' method=post>
 		<input autocomplete=off type=hidden name=change_editor>
 		$xx
 		<withHelp>?<help>$editors_help</help></withHelp>
 	</form>
-	<br><br> <br><br> <br><br>
-	<br><br> <br><br> <br><br>
-	<br><br> <br><br> <br><br>
-	<br><br> <br><br> <br><br>
-	<a style='opacity:0.1' class=blink href=/aamks/form.php?bprofiles>building profiles</a>
-	<br>
-	";
+	</div>";
 }
 /*}}}*/
 function change_editor() {/*{{{*/
@@ -378,7 +367,7 @@ function form_delete() { #{{{
 
 	if($_SESSION['main']['scenario_name']=='simple' && $_SESSION['main']['project_name']=='demo') { return; }
 	echo "<form method=post>";
-	echo "<input autocomplete=off style='float:right' class=srlink type=submit name=delete_scenario value='delete this scenario'>";
+	echo "<input autocomplete=off class=srlink style='float:right; margin: 0px 50px 400px 0px' type=submit name=delete_scenario value='delete this scenario'>";
 	echo "</form>";
 }
 /*}}}*/
@@ -404,20 +393,20 @@ function delete_scenario() {/*{{{*/
 function main() {/*{{{*/
 	// 1: easy, 2: advanced, 3: text
 	$_SESSION['nn']->htmlHead("Scenario properties");
-	$_SESSION['nn']->menu("Scenario: ".$_SESSION['main']['scenario_name']);
+	$_SESSION['nn']->menu();
 	change_editor();
 	delete_scenario();
 	make_help();
 
 	if(isset($_GET['edit'])) { 
-		form_delete();
 		$e=$_SESSION['main']['active_editor'];
 		if($e==1) { update_form_easy(); form("easy"); }
 		if($e==2) { update_form_advanced(); form("advanced"); }
 		if($e==3) { update_form_text(); form_text(); }
+		form_delete();
 	}
 
-	if(isset($_GET['bprofiles'])) { form4(); update_form4(); }
+	if(isset($_GET['bprofiles'])) { $_SESSION['nn']->menu('Building profiles'); form4(); update_form4(); exit(); }
 	editors();
 }
 /*}}}*/

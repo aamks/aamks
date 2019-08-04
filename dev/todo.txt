@@ -8,6 +8,7 @@ Bylo: { "x":10, "y":20 }. Jest: [10,20]
 -	AK: nav wysokopoziomowe:
 	* zachowanie stada, zawroc, ...
 
+-	KK: menu A w projects
 -	KK: Highlight geoms
 -	KK: room labels
 

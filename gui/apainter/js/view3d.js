@@ -7,10 +7,9 @@ function init() {//{{{
 }
 //}}}
 function visible3D() {//{{{
-	$("view2d").css("visibility", "hidden");
-	$("button-left-menu-box").css("visibility", "hidden");
+	$("view2d").css("display", "none");
 	$("#apainter-svg").css("display", "none");
-	$("view3d").css("visibility", "visible");
+	$("view3d").css("display", "block");
 }
 //}}}
 function colorHexDecode(hex) {//{{{
@@ -23,9 +22,8 @@ function colorHexDecode(hex) {//{{{
 }
 //}}}
 function close3dview() {//{{{
-	$("view3d").css("visibility", "hidden");
-	$("view2d").css("visibility", "visible");
-	$("button-left-menu-box").css("visibility", "visible");
+	$("view3d").css("display", "none");
+	$("view2d").css("display", "block");
 	$("#apainter-svg").css("display", "block");
 }
 //}}}
