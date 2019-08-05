@@ -5,6 +5,7 @@ function init() {//{{{
 }
 //}}}
 function visible3D() {//{{{
+	$('#canvas3d').attr('width', canvas[0]).attr('height', canvas[1]);
 	$("view2d").css("display", "none");
 	$("#apainter-svg").css("display", "none");
 	$("view3d").css("display", "block");

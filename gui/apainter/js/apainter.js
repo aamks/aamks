@@ -214,9 +214,11 @@ function next_view() {//{{{
 
 	// For devel we have this 3 view cycles
 	if(fire_model=='FDS') { return; }
-	if(currentView==0) { currentView=1; view3d(); }
+
+	if(currentView==0)      { currentView=1; view3d(); }
 	else if(currentView==1) { currentView=2; close3dview(); textarea_edit_cad_json(); }
 	else if(currentView==2) { currentView=0; cad_json_textarea_close(); }
+
 	//console.log(currentView);
 	//console.log("===========");
 }
@@ -457,7 +459,7 @@ function create_self_props(self) {//{{{
 function new_geom() {//{{{
 	// After a letter is clicked we react to mouse events
 	// The most tricky scenario is when first mouse click happens before mousemove.
-	// geom.rr.x0 & friends are temporary -- we don't want to recalculate min, max, width, heigh on every mouse drag
+	// geom.rr.x0 & friends are temporary -- we don't want to recalculate min, max, width, height on every mouse drag
 	// geom.x0 & friends are for db and some svg operations
 	var mouse;
 	var after_click=0;
@@ -531,10 +533,10 @@ function canvas_builder() { //{{{
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
 	d3.select('body').append('legend0');
-	d3.select('view2d').append('button-right-menu-box').attr("id", "button-help").html("HELP").style("padding-right", "50px");
-	d3.select('view2d').append('button-right-menu-box').attr("id", "button-setup").html("SETUP");
+	d3.select('body').append('legend2');
 	d3.select('view2d').append('legend1');
 	make_legend0("apainter");
+	make_legend2("apainter");
 	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
 	tt=svg.append("g").attr("id", "texts");

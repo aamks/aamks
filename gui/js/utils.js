@@ -17,13 +17,21 @@ $(function()  {//{{{
 	});
 });
 //}}}
+
 function make_legend0(module) {//{{{
 	$('legend0').html("");
 	if (module=='apainter') {
-		//$('legend0').prepend("<open3dview>x</open3dview>");
-		$('legend0').prepend("<button id=apainter-next-view>View</button>");
-		$('legend0').prepend("<button id=apainter-save>Save</button>");
-	}
+		$('legend0').append("<button id=apainter-save>Save</button>");
+		$('legend0').append("<button id=apainter-next-view>View</button>");
+	} 
+}
+//}}}
+function make_legend2(module) {//{{{
+	$('legend2').html("");
+	if (module=='apainter') {
+		$('legend2').append("<button id=button-help>Help</button>");
+		$('legend2').append("<button id=button-setup>Setup</button>");
+	} 
 }
 //}}}
 function ajax_msg(r) {//{{{

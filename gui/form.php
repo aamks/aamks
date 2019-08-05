@@ -362,10 +362,10 @@ function change_editor() {/*{{{*/
 }
 /*}}}*/
 function form_delete() { #{{{
-	// demo/simple is the built-in scenario which must never be deleted
+	// There are demo/* built-in scenarios which must never be deleted
 	// This way we make sure there will always be a fallback in $_SESSION['main']
 
-	if($_SESSION['main']['scenario_name']=='simple' && $_SESSION['main']['project_name']=='demo') { return; }
+	if($_SESSION['main']['project_name']=='demo' && in_array($_SESSION['main']['scenario_name'], array("simple", "navmesh", "three", "fds"))) { return; }
 	echo "<form method=post>";
 	echo "<input autocomplete=off style='float:right; margin: 0px 50px 400px 0px' type=submit name=delete_scenario value='delete this scenario'>";
 	echo "</form>";

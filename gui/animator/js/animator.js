@@ -117,9 +117,7 @@ function right_menu_box() {//{{{
 		project.layers.highlight.removeChildren();
 	});
 
-	$('button-right-menu-box').click(function() {
-		$('right-menu-box').fadeIn();
-	});
+	$("body").on("click", '#button-setup', function() { $('right-menu-box').fadeIn(); });
 }
 //}}}
 function setColors(mode) {//{{{
@@ -303,12 +301,17 @@ function resetCanvas() {//{{{
 //}}}
 function makeAnimationControls() {//{{{
 	var items = [];
-	items.push("<svg id=animator-time-svg height='20px'>");
+	var ww=7;
+	items.push("<div id=animator-time-svg-container style='width: 100%; position: absolute; top: 31px; text-align: center; vertical-align: middle'>");
+	items.push("<animator-time style='display: inline-block; user-select: none'></animator-time> &nbsp; ");
+	items.push("<svg id=animator-time-svg width='"+ww+"00px' height='20px' style='fill: #333; border: 1px solid #555'>");
+
 	items.push("<rect id=animator-time-scroller x='0px' y='0px' height='20px'></rect>");
 	for (var i=0; i<100; i++) {
-		items.push("<rect class=canvas_slider_rect data-id='"+i+"' id='slider_"+i+"' x='"+(i*16+1)+"' y='1' width='16px' height='18px'></rect>");
+		items.push("<rect class=canvas_slider_rect data-id='"+i+"' id='slider_"+i+"' x='"+(i*ww+1)+"' y='1' width='"+ww+"px' height='18px'></rect>");
 	}
 	items.push("</svg>");
+	items.push("</div>");
 	$("svg-slider").html(items.join( "" ));
 }
 //}}}
@@ -701,7 +704,6 @@ function resizeAndRedrawCanvas() {//{{{
 	wWidth = $(window).width()-20;
 	wHeight = $(window).height()-70;
 	$("#animator-canvas").width(wWidth).height(wHeight);
-	$("#animator-time-svg").width(wWidth);
 	$("#animator-time-scroller").width(wWidth);
 	view.viewSize = new Size(wWidth, wHeight);
 	view.draw();

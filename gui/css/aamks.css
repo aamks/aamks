@@ -243,9 +243,9 @@ dd {
 	z-index: 1001;
 }
 
-right-menu-box, left-menu-box { cursor: default; user-select: none; background-color: #555; z-index:100; padding: 10px; border: 1px solid #888; position: absolute; top:0px; display: none; opacity:0.9; }
-left-menu-box                 { display: block; left: 0px; text-align: center; padding-top: 0px; }
-right-menu-box                { right: 0px; }
+right-menu-box, left-menu-box { cursor: default; user-select: none; background-color: #555; z-index:100; padding: 10px; border: 1px solid #888; position: absolute; display: none; opacity:0.9; }
+left-menu-box                 { display: block; left: 0px; text-align: center; padding-top: 0px; top:0px;  }
+right-menu-box                { right: 0px; top: 30px; }
 
 button-right-menu-box, button-left-menu-box { user-select: none; text-decoration: none; color:#6af; padding: 1px; cursor: pointer; position: absolute; top:6px; z-index:500; }
 close-left-menu-box, close-right-menu-box   { font-size: 18px; color: #6af; float: right; cursor:pointer; }

@@ -14,32 +14,35 @@ function site() {/*{{{*/
 	</div>
 	";
 	echo "
+
 	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
 	<script type='text/javascript' src='js/paper-full.min.js'></script>
 	<script type='text/javascript' src='js/animator.js'></script>
-	<div>
-		<animator-time></animator-time>
-		<animator-title></animator-title> 
-		<animator-floor-links></animator-floor-links> 
-		<button-right-menu-box>SETUP</button-right-menu-box>
+	<legend0>
+		<animator-title style='display: inline-block; margin: 4px 5px 0px 0px; user-select: none'></animator-title> 
+	</legend0>
+	<legend2>
+		<animator-floor-links style='padding-right: 100px'></animator-floor-links> 
+		<button id='button-setup'>Setup</button>
+	</legend2>
 		
-		<right-menu-box>
-			<close-right-menu-box><img src=/aamks/css/close.svg></close-right-menu-box><br>
-			<table>
-				<tr><td><letter>Space</letter><td>pause/unpause animation
-				<tr><td>Animation           <td><choose-vis></choose-vis> 
-				<tr><td>Highlight           <td><highlight-geoms></highlight-geoms> 
-				<tr><td>Style               <td><change-style></change-style> 
-				<tr><td>Labels size         <td><size-labels></size-labels> 
-				<tr><td>Walls size          <td><size-walls></size-walls> 
-				<tr><td>Doors size          <td><size-doors></size-doors> 
-				<tr><td>Evacuee&nbsp;radius <td><radius-evacuee></radius-evacuee> 
-				<tr><td>Vectors&nbsp;size   <td><size-velocities></size-velocities> 
-				<tr><td>Speed               <td><animation-speed></animation-speed>
-				<tr><td colspan=2>$doses
-			</table>
-		</right-menu-box>
-	</div>
+	<right-menu-box>
+		<close-right-menu-box><img src=/aamks/css/close.svg></close-right-menu-box><br>
+		<table>
+			<tr><td><letter>Space</letter><td>pause/unpause animation
+			<tr><td>Animation           <td><choose-vis></choose-vis> 
+			<tr><td>Highlight           <td><highlight-geoms></highlight-geoms> 
+			<tr><td>Style               <td><change-style></change-style> 
+			<tr><td>Labels size         <td><size-labels></size-labels> 
+			<tr><td>Walls size          <td><size-walls></size-walls> 
+			<tr><td>Doors size          <td><size-doors></size-doors> 
+			<tr><td>Evacuee&nbsp;radius <td><radius-evacuee></radius-evacuee> 
+			<tr><td>Vectors&nbsp;size   <td><size-velocities></size-velocities> 
+			<tr><td>Speed               <td><animation-speed></animation-speed>
+			<tr><td colspan=2>$doses
+		</table>
+	</right-menu-box>
+
 	<canvas-mouse-coords></canvas-mouse-coords>
 	<svg-slider></svg-slider>
 	<canvas id='animator-canvas' resize hidpi='off' />
