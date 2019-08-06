@@ -76,12 +76,9 @@ function cad_json_textarea_save() {//{{{
 function textarea_edit_cad_json(pretty_json="") {//{{{
 	$("view2d").css("display", "none");
 	$("#apainter-svg").css("display", "none");
-	if(fire_model=='CFAST') { cancel="<button id=apainter-next-view>View</button><br>"; } else { cancel='<br>'; }
 	if(pretty_json=="") { var pretty_json=db2cadjson(); }
 	$("body").append(
-		"<div id=div-cad-json-textarea>"+
-		"<button id=apainter-save>Save</button>"+
-		cancel + 
+		"<div id=div-cad-json-textarea><br><br>"+
 		"<textarea id=cad-json-textarea>"+pretty_json+"</textarea>"+
 		"</div>"
 	);

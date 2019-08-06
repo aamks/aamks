@@ -13,13 +13,13 @@ body { overflow: hidden; }
 
 legend0 { position: absolute ; left: 130px ; top: 0px ; user-select: none ; }
 legend1 { position: fixed    ; left: 240px ; top: 0px ; user-select: none ; }
-legend2 { position: absolute ; right: 20px ; top: 0px ; user-select: none ; }
+legend2 { position: absolute ; right: 2px ; top: 0px ; user-select: none ; }
 .legend { display: inline-block; padding: 4px;  cursor: pointer; }
 
 status { cursor: default; float: right; }
 
 #apainter-svg      { position: fixed; left: 10px; top: 30px; border: 1px solid #555; font: 10px; }
-#animator-canvas   { position: fixed; left: 10px; top: 55px; border: 1px solid #555; width:100%; height:100%}
+#animator-canvas   { position: fixed; left: 10px; top: 30px; border: 1px solid #555; width:100%; height:100%}
 
 text { fill: #888; font-size: 11px; user-select: none; }
 

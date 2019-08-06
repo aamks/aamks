@@ -18,13 +18,6 @@ function site() {/*{{{*/
 	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
 	<script type='text/javascript' src='js/paper-full.min.js'></script>
 	<script type='text/javascript' src='js/animator.js'></script>
-	<legend0>
-		<animator-title style='display: inline-block; margin: 4px 5px 0px 0px; user-select: none'></animator-title> 
-	</legend0>
-	<legend2>
-		<animator-floor-links style='padding-right: 100px'></animator-floor-links> 
-		<button id='button-setup'>Setup</button>
-	</legend2>
 		
 	<right-menu-box>
 		<close-right-menu-box><img src=/aamks/css/close.svg></close-right-menu-box><br>
@@ -44,7 +37,6 @@ function site() {/*{{{*/
 	</right-menu-box>
 
 	<canvas-mouse-coords></canvas-mouse-coords>
-	<svg-slider></svg-slider>
 	<canvas id='animator-canvas' resize hidpi='off' />
 	";
 }

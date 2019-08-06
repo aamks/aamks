@@ -76,7 +76,6 @@ a.blink, a.bblink, .blink, .bblink {
 	user-select: none;
 	text-decoration: none;
 	margin: 3px;
-    padding:4px 8px; 
 	color: #fff;
     background:#579;
     border:0 none;
@@ -243,7 +242,7 @@ dd {
 	z-index: 1001;
 }
 
-right-menu-box, left-menu-box { cursor: default; user-select: none; background-color: #555; z-index:100; padding: 10px; border: 1px solid #888; position: absolute; display: none; opacity:0.9; }
+right-menu-box, left-menu-box { cursor: default; user-select: none; background-color: #555; z-index:100; padding: 10px; border: 1px solid #888; position: absolute; display: none; }
 left-menu-box                 { display: block; left: 0px; text-align: center; padding-top: 0px; top:0px;  }
 right-menu-box                { right: 0px; top: 30px; }
 

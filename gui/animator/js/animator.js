@@ -221,7 +221,7 @@ function showStaticImage() {//{{{
 		dstaticAllFloors=response['data'];
 		rescaleCanvas('world2d');
 
-		$("animator-title").html(currentAnimMeta['title']);
+		$("animator-title").html(currentAnimMeta['title'].substr(0,24));
 		$("animator-time").html(currentAnimMeta['time']);
 
 		floorLinks();
@@ -300,19 +300,21 @@ function resetCanvas() {//{{{
 }
 //}}}
 function makeAnimationControls() {//{{{
+	$('body').append("<legend0/>").append("<legend1/>").append("<legend2/>");
+	make_legend0("animator");
+	make_legend2("animator");
+	$('legend0').css({'width': '710px', 'top': '3px', 'display': 'flex', 'align-items': 'center'});
 	var items = [];
-	var ww=7;
-	items.push("<div id=animator-time-svg-container style='width: 100%; position: absolute; top: 31px; text-align: center; vertical-align: middle'>");
-	items.push("<animator-time style='display: inline-block; user-select: none'></animator-time> &nbsp; ");
+	var ww=3;
+	items.push("<animator-title style='width:200px' />");
 	items.push("<svg id=animator-time-svg width='"+ww+"00px' height='20px' style='fill: #333; border: 1px solid #555'>");
-
 	items.push("<rect id=animator-time-scroller x='0px' y='0px' height='20px'></rect>");
 	for (var i=0; i<100; i++) {
 		items.push("<rect class=canvas_slider_rect data-id='"+i+"' id='slider_"+i+"' x='"+(i*ww+1)+"' y='1' width='"+ww+"px' height='18px'></rect>");
 	}
 	items.push("</svg>");
-	items.push("</div>");
-	$("svg-slider").html(items.join( "" ));
+	items.push(" &nbsp; <animator-time style='user-select: none'></animator-time>");
+	$("legend0").append(items.join(""));
 }
 //}}}
 function makeSetupBoxInputs() {//{{{

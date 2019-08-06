@@ -22,7 +22,7 @@ function make_legend0(module) {//{{{
 	$('legend0').html("");
 	if (module=='apainter') {
 		$('legend0').append("<button id=apainter-save>Save</button>");
-		$('legend0').append("<button id=apainter-next-view>View</button>");
+		$('legend0').append("<button id=apainter-next-view>Views</button>");
 	} 
 }
 //}}}
@@ -32,6 +32,11 @@ function make_legend2(module) {//{{{
 		$('legend2').append("<button id=button-help>Help</button>");
 		$('legend2').append("<button id=button-setup>Setup</button>");
 	} 
+	if (module=='animator') {
+		$('legend2').append("<animator-floor-links style='padding-right: 100px'></animator-floor-links> ");
+		$('legend2').append("<button id=button-setup>Setup</button>");
+	}
+
 }
 //}}}
 function ajax_msg(r) {//{{{
