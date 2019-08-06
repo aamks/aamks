@@ -75,7 +75,7 @@ a:link, a:visited {
 a.blink, a.bblink, .blink, .bblink {
 	user-select: none;
 	text-decoration: none;
-	margin: 3px;
+	margin: 1px;
 	color: #fff;
     background:#579;
     border:0 none;

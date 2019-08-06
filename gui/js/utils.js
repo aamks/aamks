@@ -33,7 +33,7 @@ function make_legend2(module) {//{{{
 		$('legend2').append("<button id=button-setup>Setup</button>");
 	} 
 	if (module=='animator') {
-		$('legend2').append("<animator-floor-links style='padding-right: 100px'></animator-floor-links> ");
+		$('legend2').append("<animator-floor-links style='padding-right: 10px'></animator-floor-links> ");
 		$('legend2').append("<button id=button-setup>Setup</button>");
 	}
 
