@@ -1,7 +1,7 @@
 body {
 	font-size: 13px;
 	background: #444;
-	margin:10px;
+	margin:0px;
 	font-family: "Roboto";
 	color: #ddd;
 	margin-bottom: 400px;
@@ -75,8 +75,7 @@ a:link, a:visited {
 a.blink, a.bblink, .blink, .bblink {
 	user-select: none;
 	text-decoration: none;
-	margin: 3px;
-    padding:4px 8px; 
+	margin: 1px;
 	color: #fff;
     background:#579;
     border:0 none;
@@ -85,20 +84,6 @@ a.blink, a.bblink, .blink, .bblink {
     padding: 5px 8px;
 }
 a.bblink, .bblink { background: #616; } 
-.sblink, .srlink { 
-	user-select: none !important;
-	background: none !important;
-	color: #6af !important;
-	padding:2px !important;
-} 
-
-.srlink { 
-	color: #f66 !important;
-	text-decoration: none !important;
-} 
-
-.sblink:hover { color: #c60 !important; }
-.srlink:hover { color: #c60 !important; }
 	
 a.rlink {
 	user-select: none;
@@ -134,9 +119,12 @@ nocolor, .nocolor { background:none;  border: 1px solid #555; }
 
 textarea {
     padding:5px;
-	color: #0aa;
+	color: #fff;
 	background: #333;
-	border: 1px solid #555;
+	border: none;
+	width: 95%;
+	height: 90%;
+	white-space: nowrap;
 }
 
 total_logins {
@@ -153,7 +141,7 @@ fatal, cannot {
     background-repeat: no-repeat; 
 }
 
-textarea, input, select {
+input, select {
 	padding: 2px;
 	margin: 4px;
 	color: #fff;
@@ -170,14 +158,6 @@ input  {
 	color: #666;
 }
 
-input[type="submit"] {
-    padding: 4px 6px 4px 6px;
-	margin:1px;
-	color: #fff;
-    background:#579;
-	border: none;
-    cursor:pointer;
-}
 
 .nowrap {
 	white-space: nowrap;
@@ -262,17 +242,16 @@ dd {
 	z-index: 1001;
 }
 
-right-menu-box, left-menu-box { cursor: default; user-select: none; background-color: #555; z-index:100; padding: 10px; border: 1px solid #888; position: absolute; top:60px; display: none; }
-left-menu-box                 { display: block; left: 0px; text-align: center; }
-right-menu-box                { right: 0px; }
+right-menu-box, left-menu-box { cursor: default; user-select: none; background-color: #555; z-index:100; padding: 10px; border: 1px solid #888; position: absolute; display: none; }
+left-menu-box                 { display: block; left: 0px; text-align: center; padding-top: 0px; top:0px;  }
+right-menu-box                { right: 0px; top: 30px; }
 
 button-right-menu-box, button-left-menu-box { user-select: none; text-decoration: none; color:#6af; padding: 1px; cursor: pointer; position: absolute; top:6px; z-index:500; }
-write, open3dview                           { user-select: none; text-decoration: none; color:#6af; padding: 1px; cursor: pointer; font-size: 11px; }
 close-left-menu-box, close-right-menu-box   { font-size: 18px; color: #6af; float: right; cursor:pointer; }
 button-left-menu-box                        { left:4px; font-size: 16px; font-weight: bold; cursor: pointer; }
 button-right-menu-box                       { right:4px; cursor: pointer; }
 
-button-right-menu-box:hover, button-left-menu-box:hover, write:hover, open3dview:hover { color: #c60 !important; }
+button-right-menu-box:hover, button-left-menu-box:hover { color: #c60 !important; }
 close-left-menu-box:hover, close-right-menu-box:hover  { opacity: 0.3; }
 
 .left-menu                    { padding-left: 15px; }
@@ -289,3 +268,6 @@ close-left-menu-box:hover, close-right-menu-box:hover  { opacity: 0.3; }
 .results-pictures + p {
 	margin: 3px 0px 0px 0px;
 }
+
+input[type="submit"], button             { margin:0px 2px 0px 0px; user-select: none; background-color: #aaa; color: #333; border: 1px solid #555; padding: 4px; cursor: pointer; font-size: 11px; }
+input[type="submit"]:hover, button:hover { opacity:0.7; }

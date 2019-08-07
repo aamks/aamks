@@ -4,12 +4,10 @@ function register_listeners() {//{{{
 	$("right-menu-box").on("click"     , '#setup_underlay'          , function() { underlay_form(); });
 	$("right-menu-box").on("mouseover" , ".properties_type_listing" , function() { selected_geom=$(this).attr('id'); blink_selected(); });
 	$("right-menu-box").on("click"     , '.properties_type_listing' , function() { selected_geom=$(this).attr('id'); apainter_properties_box(); blink_selected(); });
-	$("body").on("click"               , '#btn-cad-json-save'       , function() { cad_json_textarea_save(); });
-	$("body").on("click"               , '#btn-cad-json-cancel'     , function() { cad_json_textarea_close(); });
+	$("body").on("click"               , '#apainter-save'           , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { cad_json_textarea_save(); } });
+	$("body").on("click"               , '#apainter-next-view'      , function() { next_view(); });
 	$("body").on("click"               , '#button-help'             , function() { apainter_help_box(); $('right-menu-box').fadeIn(); });
 	$("body").on("click"               , '#button-setup'            , function() { apainter_setup_box(); $('right-menu-box').fadeIn(); });
-	$("body").on("click"               , 'write'                    , function() { db2cadjson();  });
-	$("body").on("click"               , 'open3dview'               , function() { view3d();  });
 	$("body").on("click"               , '.legend'                  , function() { active_letter=$(this).attr('letter'); properties_type_listing(); });
 	$("body").on("mouseleave"          , 'right-menu-box'           , function() { save_setup_box(); });
 
@@ -65,7 +63,7 @@ function cad_jsons_db() { //{{{
 function cad_json_textarea_close() {//{{{
 	$("#div-cad-json-textarea").remove();
 	if(fire_model=='FDS') { return; }
-	$("view2d").css("visibility", "visible");
+	$("view2d").css("display", "block");
 	$("#apainter-svg").css("display", "block");
 }
 //}}}
@@ -76,14 +74,11 @@ function cad_json_textarea_save() {//{{{
 }
 //}}}
 function textarea_edit_cad_json(pretty_json="") {//{{{
-	$("view2d").css("visibility", "hidden");
+	$("view2d").css("display", "none");
 	$("#apainter-svg").css("display", "none");
-	if(fire_model=='CFAST') { cancel="<button class=blink id=btn-cad-json-cancel>Cancel</button><br>"; } else { cancel='<br>'; }
 	if(pretty_json=="") { var pretty_json=db2cadjson(); }
 	$("body").append(
-		"<div id=div-cad-json-textarea>"+
-		"<button style='margin-left:10px' class=blink id=btn-cad-json-save>Save</button>"+
-		cancel + 
+		"<div id=div-cad-json-textarea><br><br>"+
 		"<textarea id=cad-json-textarea>"+pretty_json+"</textarea>"+
 		"</div>"
 	);
@@ -194,20 +189,13 @@ function import_cadjson() { //{{{
 	});
 }
 //}}}
-function legend_static() {//{{{
-	$('body').prepend("<button-left-menu-box>A</button-left-menu-box>");
-	$('apainter-legend-static').prepend("<open3dview>3D</open3dview> &nbsp;");
-	$('apainter-legend-static').prepend("<write>SAVE</write> &nbsp;");
-
-}
-//}}}
 function legend() { //{{{
-	$('legend').html('');
+	$('legend1').html('');
 
 	for(var letter in gg) {
 		if(gg[letter].legendary==1) { 
 			var x=db({"letter": letter}).select("name");
-			$('legend').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+"</div>");
+			$('legend1').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+"</div>");
 		}
 	}
 
@@ -556,7 +544,7 @@ function apainter_setup_box() {//{{{
 	d3.select('right-menu-box').html(
 		"<table class=nobreak>"+
 		"<input id=general_setup type=hidden value=1>"+
-		"<tr><td colspan=2 style='text-align: center'><br>since now"+
+		"<tr><td colspan=2 style='text-align: center'>since now"+
 		"<tr><td>floor<td><input id=floor type=text name=floor size=4 value="+floor+">"+ 
 		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
 		"<tr><td>door's width <td><input id=default_door_width type=text size=4   name=default_door_width  value="+defaults.door_width+">"+

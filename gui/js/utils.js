@@ -1,3 +1,44 @@
+$(function()  {//{{{
+	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
+		if($('left-menu-box').length==0) { 
+			$("body").append("<left-menu-box>");
+			$("left-menu-box").html(json.data);
+		}
+
+		$("body").on("click", "#menu-dropdown", function() {
+			$("left-menu-box").remove();
+			$("body").append("<left-menu-box>");
+			$("left-menu-box").html(json.data);
+		});
+
+		$("body").on("click", "close-left-menu-box", function() {
+			$('left-menu-box').css({"background-color": "transparent"}).animate({'width': $('left-menu-box').css("width"), "border-width": 0, 'height': 12, 'top':0, 'left':0 }).html("<input type=submit id='menu-dropdown' value=Menu>");
+		});
+	});
+});
+//}}}
+
+function make_legend0(module) {//{{{
+	$('legend0').html("");
+	if (module=='apainter') {
+		$('legend0').append("<button id=apainter-save>Save</button>");
+		$('legend0').append("<button id=apainter-next-view>Views</button>");
+	} 
+}
+//}}}
+function make_legend2(module) {//{{{
+	$('legend2').html("");
+	if (module=='apainter') {
+		$('legend2').append("<button id=button-help>Help</button>");
+		$('legend2').append("<button id=button-setup>Setup</button>");
+	} 
+	if (module=='animator') {
+		$('legend2').append("<animator-floor-links style='padding-right: 10px'></animator-floor-links> ");
+		$('legend2').append("<button id=button-setup>Setup</button>");
+	}
+
+}
+//}}}
 function ajax_msg(r) {//{{{
 	if(r['err']==1) { 
 		$('#ajax_msg').clearQueue();
@@ -42,21 +83,6 @@ function launch_simulation() {//{{{
 		});
 	});
 
-}
-//}}}
-function left_menu_box() {//{{{
-	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
-		$("left-menu-box").html(json.data);
-
-		$('button-left-menu-box').click(function() {
-			$('left-menu-box').toggle();
-		});
-
-		$('close-left-menu-box').click(function() {
-			$('left-menu-box').fadeOut();
-		});
-
-	});
 }
 //}}}
 dd = function() { //{{{

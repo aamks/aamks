@@ -28,7 +28,6 @@ window.onload = function() {
 	var tool=new Tool;
 	makeAnimationControls();
 	resizeAndRedrawCanvas();
-	left_menu_box();
 	right_menu_box();
 	listenEvents();
 
@@ -118,9 +117,7 @@ function right_menu_box() {//{{{
 		project.layers.highlight.removeChildren();
 	});
 
-	$('button-right-menu-box').click(function() {
-		$('right-menu-box').fadeIn();
-	});
+	$("body").on("click", '#button-setup', function() { $('right-menu-box').fadeIn(); });
 }
 //}}}
 function setColors(mode) {//{{{
@@ -224,7 +221,7 @@ function showStaticImage() {//{{{
 		dstaticAllFloors=response['data'];
 		rescaleCanvas('world2d');
 
-		$("animator-title").html(currentAnimMeta['title']);
+		$("animator-title").html(currentAnimMeta['title'].substr(0,24));
 		$("animator-time").html(currentAnimMeta['time']);
 
 		floorLinks();
@@ -303,14 +300,21 @@ function resetCanvas() {//{{{
 }
 //}}}
 function makeAnimationControls() {//{{{
+	$('body').append("<legend0/>").append("<legend1/>").append("<legend2/>");
+	make_legend0("animator");
+	make_legend2("animator");
+	$('legend0').css({'width': '710px', 'top': '3px', 'display': 'flex', 'align-items': 'center'});
 	var items = [];
-	items.push("<svg id=animator-time-svg height='20px'>");
+	var ww=3;
+	items.push("<animator-title style='width:200px' />");
+	items.push("<svg id=animator-time-svg width='"+ww+"00px' height='20px' style='fill: #333; border: 1px solid #555'>");
 	items.push("<rect id=animator-time-scroller x='0px' y='0px' height='20px'></rect>");
 	for (var i=0; i<100; i++) {
-		items.push("<rect class=canvas_slider_rect data-id='"+i+"' id='slider_"+i+"' x='"+(i*16+1)+"' y='1' width='16px' height='18px'></rect>");
+		items.push("<rect class=canvas_slider_rect data-id='"+i+"' id='slider_"+i+"' x='"+(i*ww+1)+"' y='1' width='"+ww+"px' height='18px'></rect>");
 	}
 	items.push("</svg>");
-	$("svg-slider").html(items.join( "" ));
+	items.push(" &nbsp; <animator-time style='user-select: none'></animator-time>");
+	$("legend0").append(items.join(""));
 }
 //}}}
 function makeSetupBoxInputs() {//{{{
@@ -702,7 +706,6 @@ function resizeAndRedrawCanvas() {//{{{
 	wWidth = $(window).width()-20;
 	wHeight = $(window).height()-70;
 	$("#animator-canvas").width(wWidth).height(wHeight);
-	$("#animator-time-svg").width(wWidth);
 	$("#animator-time-scroller").width(wWidth);
 	view.viewSize = new Size(wWidth, wHeight);
 	view.draw();

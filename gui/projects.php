@@ -12,12 +12,12 @@ function projects_list(){/*{{{*/
 		$rr=$_SESSION['nn']->query("SELECT *, modified::date AS date FROM scenarios WHERE project_id=$1 ORDER BY id", array($projects['id']));
 		if(empty($rr[0]['date'])) { $date=''; } else { $date=$rr[0]['date']; }
 		echo "<tr><td>$projects[project_name]<td style='opacity:0.2'>$date<td>";
-		echo "<form method=post><input autocomplete=off type=hidden name=project_name value='$projects[project_name]'><input autocomplete=off type=hidden name=project_id value='$projects[id]'><input autocomplete=off size=12 type=text placeholder='new scenario' name=new_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'><input autocomplete=off type=submit class=sblink value='add'></form><td>";
+		echo "<form method=post><input autocomplete=off type=hidden name=project_name value='$projects[project_name]'><input autocomplete=off type=hidden name=project_id value='$projects[id]'><input autocomplete=off size=12 type=text placeholder='new scenario' name=new_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'><input autocomplete=off type=submit value='add'></form><td>";
 		foreach($rr as $scenarios) { 
 			echo "<a class=blink href=?ch_scenario=$scenarios[id]>$scenarios[scenario_name]</a>"; 
 		}
 		if($projects['project_name']!='demo') { 
-			echo "<td><a class=srlink href=?delete_project=$projects[id]>delete</a>";
+			echo "<td><a href=?delete_project=$projects[id]>delete</a>";
 		}
 
 	}
@@ -26,7 +26,7 @@ function projects_list(){/*{{{*/
 	echo "<br><br><br>
 	<form method=POST>
 		<input autocomplete=off type=text placeholder='new project name' name=new_project required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
-		<input autocomplete=off type=submit name=submit class=sblink value='add'>
+		<input autocomplete=off type=submit name=submit value='add'>
 	</form>
 	";
 	exit();

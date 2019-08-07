@@ -267,6 +267,7 @@ function form_fields_advanced() { #{{{
 	$json=read_aamks_conf_json();
 	extract($json);
 	echo "<form method=post>";
+	echo "<input autocomplete=off type=submit name=update_form_advanced value='Save'><br><br>";
 	echo "<table>";
 	echo "<tr><td>".get_help('project_id')."<td>$project_id <input autocomplete=off type=hidden name=post[project_id] value='$project_id'>"; 
 	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
@@ -300,13 +301,14 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('pre_evac')."<td>".form_assoc('pre_evac',$pre_evac); 
 	echo "<tr><td>".get_help('pre_evac_fire_origin')."<td>".form_assoc('pre_evac_fire_origin',$pre_evac_fire_origin); 
 	echo "</table>";
-	echo "<center><br><input autocomplete=off type=submit name='update_form_advanced' value='submit'></center></form>";
+	echo "</form>";
 }
 /*}}}*/
 function form_fields_easy() { #{{{
 	$json=read_aamks_conf_json();
 	extract($json);
 	echo "<form method=post>";
+	echo "<input autocomplete=off type=submit name=update_form_easy value='Save'><br><br>";
 	echo "<table>";
 	echo "<tr><td>".get_help('project_id')."<td>$project_id <input autocomplete=off type=hidden name=post[project_id] value='$project_id'>"; 
 	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
@@ -321,20 +323,19 @@ function form_fields_easy() { #{{{
 	echo "<tr><td><a class='rlink switch' id='sprinklers'>sprinklers</a><td>".form_plain_arr_switchable('sprinklers',$sprinklers); 
 	echo "<tr><td><a class='rlink switch' id='NSHEVS'>NSHEVS</a><td>".form_plain_arr_switchable('NSHEVS',$NSHEVS); 
 	echo "</table>";
-	echo "<center><br><input autocomplete=off type=submit name='update_form_easy' value='submit'></center></form>";
+	echo "</form>";
 }
 /*}}}*/
 function form_text() { /*{{{*/
-	
 	$help=$_SESSION['help'];
 	$json=json_encode(read_aamks_conf_json(), JSON_PRETTY_PRINT);
 	echo "<form method=post>";
-	echo "<textarea style='min-width: 600px; height:600px; white-space: nowrap;' name=json>\n\n$json\n\n\n</textarea><br>";
-	echo "<br><center><input autocomplete=off type=submit name=update_form_text value='submit'></center></form>";
+	echo "<input autocomplete=off type=submit name=update_form_text value='Save'><br>";
+	echo "<textarea name=json style='height:90vh; width:700px'>\n\n$json\n\n\n</textarea><br>";
+	echo "</form>";
 }
 /*}}}*/
 function form_bprofiles() { /*{{{*/
-	echo "<br><br><wheat> Browser of the building profiles </wheat><br><br>";
 	$v=array();
 	if(isset($_POST['post']['building_profile'])) { 
 		$v=$_POST['post']['building_profile'];
@@ -344,7 +345,7 @@ function form_bprofiles() { /*{{{*/
 	echo "<table>";
 	echo building_fields($v);
 	echo "</table>";
-	echo "<input autocomplete=off type=submit name=update_form_bprofiles value='submit'></form>";
+	echo "<input autocomplete=off type=submit name=update_form_bprofiles value='check'></form>";
 }
 /*}}}*/
 
@@ -360,23 +361,17 @@ function editors() {/*{{{*/
 	$xx='';
 	foreach(array('easy','advanced','text') as $k=>$v) { 
 		$sty='';
-		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #616;'"; }
+		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #616; color: #fff'"; }
 		$xx.="<input autocomplete=off $sty type=submit name=e".($k+1)." value='$v'>";
 	}
-	echo "<div style=float:right>
-	Editor: 
+	echo "
+	<div style='position:absolute; left:600px; top:0px; white-space:nowrap'>Editor: 
 	<form style='display: inline' method=post>
 		<input autocomplete=off type=hidden name=change_editor>
 		$xx
 		<withHelp>?<help>$editors_help</help></withHelp>
 	</form>
-	<br><br> <br><br> <br><br>
-	<br><br> <br><br> <br><br>
-	<br><br> <br><br> <br><br>
-	<br><br> <br><br> <br><br>
-	<a style='opacity:0.1' class=blink href=/aamks/form.php?bprofiles>building profiles</a>
-	<br>
-	";
+	</div>";
 }
 /*}}}*/
 function change_editor() {/*{{{*/
@@ -390,12 +385,12 @@ function change_editor() {/*{{{*/
 }
 /*}}}*/
 function form_delete() { #{{{
-	// demo/simple is the built-in scenario which must never be deleted
+	// There are demo/* built-in scenarios which must never be deleted
 	// This way we make sure there will always be a fallback in $_SESSION['main']
 
-	if($_SESSION['main']['scenario_name']=='simple' && $_SESSION['main']['project_name']=='demo') { return; }
+	if($_SESSION['main']['project_name']=='demo' && in_array($_SESSION['main']['scenario_name'], array("simple", "navmesh", "three", "fds"))) { return; }
 	echo "<form method=post>";
-	echo "<input autocomplete=off style='float:right' class=srlink type=submit name=delete_scenario value='delete this scenario'>";
+	echo "<input autocomplete=off style='float:right; margin: 0px 50px 400px 0px' type=submit name=delete_scenario value='delete this scenario'>";
 	echo "</form>";
 }
 /*}}}*/
@@ -421,20 +416,21 @@ function delete_scenario() {/*{{{*/
 function main() {/*{{{*/
 	// 1: easy, 2: advanced, 3: text
 	$_SESSION['nn']->htmlHead("Scenario properties");
-	$_SESSION['nn']->menu("Scenario: ".$_SESSION['main']['scenario_name']);
+	$_SESSION['nn']->menu();
 	change_editor();
 	delete_scenario();
 	make_help();
 
 	if(isset($_GET['edit'])) { 
-		form_delete();
 		$e=$_SESSION['main']['active_editor'];
 		if($e==1) { update_form_easy(); form_fields_easy(); }
 		if($e==2) { update_form_advanced(); form_fields_advanced(); }
 		if($e==3) { update_form_text(); form_text(); }
+		form_delete();
 	}
 
-	if(isset($_GET['bprofiles'])) { form_bprofiles(); update_form_bprofiles(); }
+	if(isset($_GET['bprofiles'])) { $_SESSION['nn']->menu('Building profiles'); form_bprofiles(); update_form_bprofiles(); exit(); }
+
 	editors();
 }
 /*}}}*/
