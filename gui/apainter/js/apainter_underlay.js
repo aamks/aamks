@@ -8,8 +8,8 @@ function register_underlay_listeners() {//{{{
 	$("body").on("keyup"  , "#uimg_invert"  , function() { uimg_single_attrib(floor  , 'invert'  , $("#uimg_invert").val())  ; }) ;
 	$("body").on("click"  , "#submit_scale" , function() { uimg_scale(floor); });
 
-	$(this).keydown((e) =>  { if (e.key == 'Shift') { $("#apainter-svg").css("pointer-events", "none"); $('#uimg'+floor).css("pointer-events", "auto"); underlay_form();  }});
-	$(this).keyup((e) =>    { if (e.key == 'Shift') { $("#apainter-svg").css("pointer-events", "auto"); $('#uimg'+floor).css("pointer-events", "none"); underlay_form(); }});
+	$(this).keydown((e) =>  { if (e.ctrlKey && e.altKey) {  $("#apainter-svg").css("pointer-events", "none"); $('#uimg'+floor).css("pointer-events", "auto"); underlay_form();  }});
+	$(this).keyup((e) =>    { if (e.key == 'Alt') { $("#apainter-svg").css("pointer-events", "auto"); $('#uimg'+floor).css("pointer-events", "none"); underlay_form(); }});
 }
 //}}}
 function import_underlay(data,f,reload_form=0) {//{{{
@@ -72,19 +72,14 @@ function underlay_zoomer(floor) {//{{{
 }
 //}}}
 function underlay_form() {//{{{
-	$('right-menu-box').fadeIn(); 
 	if($("#p1").length>0) { submit="<input id=submit_scale class=blink type=button value=set>"; } else { submit='<letter>p</letter>+drag'; }
- 	d3.select('right-menu-box').html(
-		"You can load an underlay<br>png/jpg/svg/pdf.<br><br>"+
-		"<letter>shift</letter> invokes the underlay setup <br>"+
-		"<letter>shift</letter> + mouse drags the underlay<br><br>"+ 
-		"You can only alter the width of the<br>"+ 
-		"underlay and the height will<br>"+
-		"change accordingly.<br><br><br>"+
+ 	right_menu_box_show(
+		"Supported: png jpg svg pdf<br><br>"+
 		"<input id=underlay"+floor+"_form type=hidden value=1>"+
 		"<input type=file id=uimg_add    style='display:none'><label class=blink for='uimg_add'>add</label>"+
 		"<div class=blink id=uimg_remove>remove</div>"+
-		"<a href=underlay_example.svg target=_blank class=blink>scaling help</a>"+
+		"<a href=underlay_example.svg target=_blank class=blink>scaling help</a><br><br>"+
+		"<letter>ctrl</letter> + <letter>alt</letter> + <letter>leftMouse</letter> drags"+ 
 		"<br><br><table>"+
 		"<tr><td>scaler width <td><input autocomplete=off id=uimg_scale   type=text style='width:60px' >"+submit+
 		"<tr><td>opacity      <td><input autocomplete=off id=uimg_opacity type=text value="+$("#uimg"+floor).css("opacity")+" style='width:30px' >"+

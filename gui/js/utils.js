@@ -10,6 +10,9 @@ $(function()  {//{{{
 			$("body").append("<left-menu-box>");
 			$("left-menu-box").html(json.data);
 		});
+		$("body").on("click", "close-right-menu-box", function() {
+			$('right-menu-box').fadeOut();
+		});
 
 		$("body").on("click", "close-left-menu-box", function() {
 			$('left-menu-box').css({"background-color": "transparent"}).animate({'width': $('left-menu-box').css("width"), "border-width": 0, 'height': 12, 'top':0, 'left':0 }).html("<input type=submit id='menu-dropdown' value=Menu>");

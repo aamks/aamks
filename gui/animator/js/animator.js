@@ -112,8 +112,7 @@ function listenEvents() {//{{{
 }
 //}}}
 function right_menu_box() {//{{{
-	$('close-right-menu-box').click(function() {
-		$('right-menu-box').fadeOut();
+	$("body").on("click", "close-right-menu-box", function() {
 		project.layers.highlight.removeChildren();
 	});
 

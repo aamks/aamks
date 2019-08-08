@@ -36,6 +36,7 @@ $(function()  {
 		$('right-menu-box').fadeOut();
 
 		//dd($('#building')[0]);
+		dd("self??");
 	});
 });
 //}}}
@@ -55,32 +56,39 @@ function ddd() {//{{{
 function rrRecalculate(geom) {//{{{
 	// real x,y are calculated as minimum/maximum values from rr
 	// z needs separate calculations here.
+	dd('recalc', geom.name);
 
 	geom.x0 = Math.min(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
 	geom.x1 = Math.max(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
 	geom.y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
 	geom.y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
 	if(geom.type=='evacuee') {
-		geom.z0=floor_zorig;
-		geom.z1=floor_zorig + 50;
+		if(geom.z0===undefined) { geom.z0=floor_zorig; }
+		geom.z1=geom.z0 + 50;
 	} else if(geom.type=='door') {
-		geom.z0=floor_zorig;
-		geom.z1=floor_zorig + geom.dimz;
+		if(geom.z0===undefined) { geom.z0=floor_zorig; }
+		geom.z1=geom.z0  + geom.dimz;
 	} else if(geom.type=='obst') {
-		geom.z0=floor_zorig;
-		geom.z1=floor_zorig + 100;
+		if(geom.z0===undefined) { geom.z0=floor_zorig; }
+		geom.z1=geom.z0 + 100;
 	} else if(geom.type=='vvent') {
-		geom.z0=floor_zorig + defaults.floor_dimz - 4;
+		//dd('start zolty', geom.z0, "floor_zorig", floor_zorig);
+		if(geom.z0===undefined) { geom.z0=floor_zorig + defaults.floor_dimz - 4; }
 		geom.z1=geom.z0 + 8;
+		//dd('end zolty', geom.z0, "floor_zorig", floor_zorig);
+		//dd("===");
 	} else if(geom.type=='mvent') {
-		geom.z0=floor_zorig + geom.mvent_offsetz;
-		geom.z1=floor_zorig + geom.dimz + geom.mvent_offsetz;
+		//dd('start zielony', geom.z0, "floor_zorig", floor_zorig);
+		if(geom.z0===undefined) { geom.z0=floor_zorig; }
+		geom.z1=geom.z0 + geom.dimz;
+		//dd('end zielony', geom.z0, "floor_zorig", floor_zorig);
+		//dd("===");
 	} else if(geom.type=='window') {
-		geom.z0=floor_zorig + geom.window_offsetz;
-		geom.z1=floor_zorig + geom.dimz + geom.window_offsetz;
+		if(geom.z0===undefined) { geom.z0=floor_zorig + defaults.window_offsetz; }
+		geom.z1=geom.z0 + geom.dimz;
 	} else {
-		geom.z0=floor_zorig;
-		geom.z1=floor_zorig + geom.dimz;
+		if(geom.z0===undefined) { geom.z0=floor_zorig; }
+		geom.z1=geom.z0 + geom.dimz;
 	}
 
 	return geom;
@@ -143,7 +151,7 @@ function dbInsert(geom, relax=0) { //{{{
 	selected_geom=geom.name;
     if (['fire'].includes(geom.type)) { geom.room_enter="no"; }
 	if(geom.type!='underlay_scaler') {
-		db.insert({ "name": geom.name, "idx": geom.idx, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "window_offsetz": geom.window_offsetz, "mvent_offsetz": geom.mvent_offsetz, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type, "room_enter": geom.room_enter });
+		db.insert({ "name": geom.name, "idx": geom.idx, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type, "room_enter": geom.room_enter });
 		if(relax==0) { apainter_properties_box(); updateSnapLines(); }
 	} 
 }
@@ -213,6 +221,8 @@ function next_view() {//{{{
 	// else if(currentView==1) { currentView=0; close3dview(); }
 
 	// For devel we have this 3 view cycles
+
+	$("right-menu-box").css("display", "none");
 	if(fire_model=='FDS') { return; }
 
 	if(currentView==0)      { currentView=1; view3d(); }
@@ -227,6 +237,7 @@ function remove_geom(geom) {//{{{
 	$("#"+geom).remove();
 	db({"name":geom}).remove();
 	updateSnapLines();
+	if($("#gg_listing").length==0) { $("right-menu-box").css("display", "none"); }
 }
 //}}}
 
@@ -435,7 +446,6 @@ function create_self_props(self) {//{{{
 	self.type=gg[active_letter].t;
 	self.name=active_letter+counter;
 	self.idx=counter;
-	self.mvent_offsetz=0;
 	self.mvent_throughput=0;
 	self.exit_type='';
 	if (self.type=='door') {
@@ -448,7 +458,6 @@ function create_self_props(self) {//{{{
 		self.dimz=50;
 	} else if (self.type=='window') {
 		self.dimz=defaults.window_dimz;
-		self.window_offsetz=defaults.window_offsetz;
 	} else if (self.type=='fire') {
 		self.dimz=100
 	} else { 
@@ -542,7 +551,7 @@ function canvas_builder() { //{{{
 	tt=svg.append("g").attr("id", "texts");
 	tt.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
 	tt.append("text").attr("x",130).attr("y",140).attr("id", "shortcuts_help1").text("n: next floor");
-	tt.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: 3d view");
+	tt.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: next view");
 	tt.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floors_count);
 
 	axes();

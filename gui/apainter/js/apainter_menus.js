@@ -6,8 +6,8 @@ function register_listeners() {//{{{
 	$("right-menu-box").on("click"     , '.properties_type_listing' , function() { selected_geom=$(this).attr('id'); apainter_properties_box(); blink_selected(); });
 	$("body").on("click"               , '#apainter-save'           , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { cad_json_textarea_save(); } });
 	$("body").on("click"               , '#apainter-next-view'      , function() { next_view(); });
-	$("body").on("click"               , '#button-help'             , function() { apainter_help_box(); $('right-menu-box').fadeIn(); });
-	$("body").on("click"               , '#button-setup'            , function() { apainter_setup_box(); $('right-menu-box').fadeIn(); });
+	$("body").on("click"               , '#button-help'             , function() { apainter_help_box(); });
+	$("body").on("click"               , '#button-setup'            , function() { apainter_setup_box(); });
 	$("body").on("click"               , '.legend'                  , function() { active_letter=$(this).attr('letter'); properties_type_listing(); });
 	$("body").on("mouseleave"          , 'right-menu-box'           , function() { save_setup_box(); });
 
@@ -24,16 +24,14 @@ function register_listeners() {//{{{
 }
 //}}}
 function keyboard_events() {//{{{
-	$(this).keypress((e) => { 
-		if (e.key == 'g')     { properties_type_listing(); }
-		else if (e.key in gg) { active_letter=e.key; new_geom(); }
-	});
+	$(this).keypress((e) => { if (e.key in gg)  { active_letter=e.key; new_geom(); } });
 	$(this).keydown((e) =>  { if (e.key == 'h') { next_view(); } });
 	$(this).keydown((e) =>  { if (e.key == 'p') { $("#p1").remove() ; } });
 	$(this).keydown((e) =>  { if (e.key == 'n') { change_floor(calc_next_floor()); } });
 	$(this).keydown((e) =>  { if (e.key == '=') { resetView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
-	$(this).keypress((e) => { if (e.key == 'x' && selected_geom != "") { remove_geom(selected_geom); properties_type_listing(); } });
+	$(this).keypress((e) => { if (e.key == 'x' && selected_geom != "") { remove_geom(selected_geom); if($("#gg_listing").length>0) { properties_type_listing(); }}});
+	$(this).keypress((e) => { if (e.key == 'g') { properties_type_listing(); } });
 
 }
 //}}}
@@ -50,9 +48,7 @@ function cad_jsons_db() { //{{{
 		} else if(i.type=='fire') {
 			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "room_enter": "no"} ]`; 
 		} else if(i.type=='mvent') {
-			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "mvent_throughput": ${i.mvent_throughput}, "offset": ${i.mvent_offsetz}} ]`; 
-		} else if(i.type=='window') {
-			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "offset": ${i.window_offsetz}} ]`; 
+			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "mvent_throughput": ${i.mvent_throughput}} ]`; 
 		} else {
 			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx} } ]`; 
 		}
@@ -137,7 +133,6 @@ function read_record(floor,letter,arr) { //{{{
 		exit_type: '',
 		room_enter: '',
 		dimz: z1-z0,
-		mvent_offsetz: 0,
 		mvent_throughput: 0,
 		x0: x0,
 		y0: y0,
@@ -155,7 +150,6 @@ function read_record(floor,letter,arr) { //{{{
 	}
 
 	if(gg[letter].t == 'mvent') { 
-		record.mvent_offsetz=arr[2]['offset'];
 		record.mvent_throughput=arr[2]['mvent_throughput'];
 	}
 
@@ -300,8 +294,6 @@ function copy_to_floor() {	//{{{
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
 function save_setup_box() {//{{{
-	// There's a single box for multiple forms
-	// so we need to find out which form is submitted
 
 	if ($("#general_setup").val() != null) { 
         if (floor != $("#floor").val()) { change_floor(parseInt($("#floor").val())); }
@@ -326,18 +318,17 @@ function save_setup_box() {//{{{
 			room_enter: $("#alter_room_enter").val(),
 			exit_type: $("#alter_exit_type").val(),
 			dimz: parseInt($("#alter_dimz").val()),
-			window_offsetz: parseInt($("#alter_window_offsetz").val()),
-			mvent_offsetz: parseInt($("#alter_mvent_offsetz").val()),
+			z0: parseInt($("#alter_z0").val()),
 			mvent_throughput: parseInt($("#alter_mvent_throughput").val()),
 			rr:{
 				x0: parseInt($("#alter_x0").val()),
 				y0: parseInt($("#alter_y0").val()),
 				x1: parseInt($("#alter_x0").val())+parseInt($("#alter_dimx").val()),
-				y1: parseInt($("#alter_y0").val())+parseInt($("#alter_dimy").val())
+				y1: parseInt($("#alter_y0").val())+parseInt($("#alter_dimy").val()),
 			}
 		};
 
-		if(geom.floor != floor) { return; } // Just to be sure, there were (fixed) issues
+		if(geom.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
 
 		db({"name": geom.name}).remove();
 		updateSvgElem(geom);
@@ -366,7 +357,7 @@ function properties_type_listing_plain() {//{{{
 //}}}
 function properties_type_listing_mvent() {//{{{
 	var tbody='';
-	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>z-offset<td>throughput";
+	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>throughput";
 	var items=db({'letter': active_letter, 'floor': floor}).get();
 	for (var i in items) { 
 		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
@@ -375,7 +366,6 @@ function properties_type_listing_mvent() {//{{{
 			"<td>"+items[i]['dimx']+
 			"<td>"+items[i]['dimy']+
 			"<td>"+items[i]['dimz']+
-			"<td>"+items[i]['mvent_offsetz']+
 			"<td>"+items[i]['mvent_throughput'];
 	}
 	return tbody;
@@ -383,7 +373,7 @@ function properties_type_listing_mvent() {//{{{
 //}}}
 function properties_type_listing_window() {//{{{
 	var tbody='';
-	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>z-offset";
+	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim";
 	var items=db({'letter': active_letter, 'floor': floor}).get();
 	for (var i in items) { 
 		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
@@ -391,8 +381,7 @@ function properties_type_listing_window() {//{{{
 			"<td>"+items[i]['y0']+
 			"<td>"+items[i]['dimx']+
 			"<td>"+items[i]['dimy']+
-			"<td>"+items[i]['dimz']+
-			"<td>"+items[i]['window_offsetz'];
+			"<td>"+items[i]['dimz']
 	}
 	return tbody;
 }
@@ -443,29 +432,27 @@ function properties_type_listing_evacuee() {//{{{
 }
 //}}}
 function properties_type_listing() {//{{{
-	var names='';
-	names+='<div style="overflow-y: scroll; height: '+(canvas[1]-100)+'px">';
-	names+='<wheat>Hover name, then <letter>x</letter> to delete</wheat>';
-	names+='<table id=droplist_names_table style="margin-right:20px">';
+	var html='';
+	html+='<div style="overflow-y: scroll; height: '+(canvas[1]-100)+'px">';
+	html+='<wheat>Hover name, then <letter>x</letter> to delete</wheat>';
+	html+='<table id=gg_listing style="margin-right:20px">';
 	if (gg[active_letter].t=='mvent') { 
-		names+=properties_type_listing_mvent();
+		html+=properties_type_listing_mvent();
 	} else if (gg[active_letter].t=='window') { 
-		names+=properties_type_listing_window();
+		html+=properties_type_listing_window();
 	} else if (gg[active_letter].t=='door') { 
-		names+=properties_type_listing_door();
+		html+=properties_type_listing_door();
 	} else if (gg[active_letter].t=='evacuee') { 
-		names+=properties_type_listing_evacuee();
+		html+=properties_type_listing_evacuee();
 	} else if (gg[active_letter].t=='room') { 
-		names+=properties_type_listing_room();
+		html+=properties_type_listing_room();
 	} else {
-		names+=properties_type_listing_plain();
+		html+=properties_type_listing_plain();
 	}
-	names+="</table>";
-	names+="</div>";
+	html+="</table>";
+	html+="</div>";
 
-	$('right-menu-box').html(names);
-	$('right-menu-box').css('display','block');
-
+	right_menu_box_show(html, 0);
 }
 //}}}
 
@@ -503,23 +490,11 @@ function make_room_properties() {//{{{
 function make_mvent_properties() {//{{{
 	var mvent='';
 	if(gg[active_letter].t=='mvent') {
-		mvent+="<tr><td>z-offset<td>  <input id=alter_mvent_offsetz type=text size=3 value="+db({'name':selected_geom}).select("mvent_offsetz")[0]+">";
 		mvent+="<tr><td>throughput<td>  <input id=alter_mvent_throughput type=text size=3 value="+db({'name':selected_geom}).select("mvent_throughput")[0]+">";
 	} else {
-		mvent+="<input id=alter_mvent_offsetz type=hidden value=0>";
 		mvent+="<input id=alter_mvent_throughput type=hidden value=0>";
 	}
 	return mvent;
-}
-//}}}
-function make_window_properties() {//{{{
-	var win='';
-	if(gg[active_letter].t=='window') {
-		win+="<tr><td>z-offset<td>  <input id=alter_window_offsetz type=text size=3 value="+db({'name':selected_geom}).select("window_offsetz")[0]+">";
-	} else {
-		win+="<input id=alter_window_offsetz type=hidden value=0>";
-	}
-	return win;
 }
 //}}}
 function make_door_properties() {//{{{
@@ -540,8 +515,16 @@ function make_door_properties() {//{{{
 }
 //}}}
 
+function right_menu_box_show(html, close_button=1) {//{{{
+	$('right-menu-box').html("");
+	if(close_button==1) { $('right-menu-box').append("<close-right-menu-box><img src=/aamks/css/close.svg></close-right-menu-box><br>"); }
+	$('right-menu-box').append(html);
+	$('right-menu-box').fadeIn(); 
+}
+//}}}
+
 function apainter_setup_box() {//{{{
-	d3.select('right-menu-box').html(
+	right_menu_box_show(
 		"<table class=nobreak>"+
 		"<input id=general_setup type=hidden value=1>"+
 		"<tr><td colspan=2 style='text-align: center'>since now"+
@@ -554,49 +537,42 @@ function apainter_setup_box() {//{{{
 		"<tr><td>window's z-offset <td><input id=default_window_offsetz type=text size=4 name=default_window_offsetz value="+defaults.window_offsetz+">"+
 		"<tr><td colspan=2><button id=btn_copy_to_floor class=blink>copy</button> floor"+floor+" to floor <input id=copy_to_floor type=text style='width:20px' value=''>"+ 
 		"</table>"
-		);
-
+	);
 }
 //}}}
 function apainter_help_box() {//{{{
-	d3.select('right-menu-box').html(
+	right_menu_box_show(
 		"<table class=nobreak>"+
 		"<tr><td><letter>letter</letter> + <letter>leftMouse</letter><td> create element"+
 		"<tr><td>double <letter>leftMouse</letter><td> element properties"+
-		"<tr><td>hold <letter>ctrl</letter>		<td> disable snapping"+ 
+		"<tr><td>hold <letter>ctrl</letter> <td> disable snapping"+ 
 		"<tr><td><letter>h</letter>	<td> loop views"+ 
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
 		"<tr><td><letter>x</letter>	<td> delete active"+
 		"<tr><td><letter>g</letter>	<td> list all of active type"+
-		"<tr><td><letter>shift</letter>	<td> underlays"+
+		"<tr><td><letter>ctrl</letter> + <letter>alt</letter>	<td> underlays"+
 		"<tr><td><letter>=</letter>	<td> original zoom"+
 		"</table>"
-		);
-
+	);
 }
 //}}}
 function apainter_properties_box() {//{{{
 	active_letter=db({'name':selected_geom}).select("letter")[0];
-	var room_properties=make_room_properties();
-	var mvent_properties=make_mvent_properties();
-	var window_properties=make_window_properties();
-	var door_properties=make_door_properties();
-	var dim_properties=make_dim_properties();
-	d3.select('right-menu-box').html(
+	dd("show form", selected_geom);
+	right_menu_box_show(
 	    "<input id=geom_properties type=hidden value=1>"+
 		"<wheat><letter>x</letter> to delete, <letter>g</letter> for listing</wheat>"+
 		"<table>"+
 	    "<tr><td>name <td>"+db({'name':selected_geom}).select("name")[0]+
 		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_geom}).select("x0")[0]+"> cm"+
 		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_geom}).select("y0")[0]+"> cm"+
-		dim_properties+
-		room_properties+
-		mvent_properties+
-		window_properties+
-		door_properties+
-		"</table>"
-		);
-	$('right-menu-box').fadeIn();
+		"<tr><td>z0	<td>	<input id=alter_z0 type=text size=3 value="+db({'name':selected_geom}).select("z0")[0]+"> cma"+
+		make_dim_properties()+
+		make_room_properties()+
+		make_mvent_properties()+
+		make_door_properties()+
+		"</table>", 0
+	);
 
 }
 //}}}
