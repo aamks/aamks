@@ -22,8 +22,8 @@ from collections import OrderedDict
 from subprocess import Popen
 import zipfile
 
-SIMULATION_TYPE = 'NO_CFAST'
-#SIMULATION_TYPE = 1
+#SIMULATION_TYPE = 'NO_CFAST'
+SIMULATION_TYPE = 1
 
 class Worker:
 
