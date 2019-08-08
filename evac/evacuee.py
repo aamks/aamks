@@ -58,7 +58,10 @@ class Evacuee:
             self.finished = 0
             self.goal = [int(goal[0][0]), int(goal[0][1])]
         else:
-            self.goal = [int(goal[1][0]), int(goal[1][1])]
+            try:
+                self.goal = [int(goal[1][0]), int(goal[1][1])]
+            except:
+                self.goal = [int(goal[0][0]), int(goal[0][1])]
 
 
     def calculate_velocity(self, current_time):
