@@ -2,21 +2,21 @@
 var canvas=[screen.width-30,screen.height-190];
 var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
+var cg={}; // current geom, the one that is currently selected, created, removed, etc.
 var gg;
 var ggx;
 var zoom;
 var fire_model='CFAST';
 var currentView=0;
-var selected_geom='';
 var active_letter='r';
 var svg;
 var floor=0;
 var floors_count=1;
 var floor_zorig=0;
 var building;
-var snapLines;
 var ax={};
 var snap_dist=50;
+var snapLinesSvg;
 var snap_lines={};
 var defaults={'door_dimz': 200, 'door_width': 90, 'floor_dimz': 350, 'window_dimz': 150, 'window_offsetz': 100 };
 var vh_snap=[];
@@ -36,7 +36,6 @@ $(function()  {
 		$('right-menu-box').fadeOut();
 
 		//dd($('#building')[0]);
-		dd("self??");
 	});
 });
 //}}}
@@ -53,107 +52,112 @@ function ddd() {//{{{
 	dd(db().get());
 }
 //}}}
-function rrRecalculate(geom) {//{{{
+function rrRecalculate() {//{{{
 	// real x,y are calculated as minimum/maximum values from rr
 	// z needs separate calculations here.
-	dd('recalc', geom.name);
+	dd('recalc', cg);
 
-	geom.x0 = Math.min(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
-	geom.x1 = Math.max(Math.round(geom.rr.x0), Math.round(geom.rr.x1));
-	geom.y0 = Math.min(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
-	geom.y1 = Math.max(Math.round(geom.rr.y0), Math.round(geom.rr.y1));
-	if(geom.type=='evacuee') {
-		if(geom.z0===undefined) { geom.z0=floor_zorig; }
-		geom.z1=geom.z0 + 50;
-	} else if(geom.type=='door') {
-		if(geom.z0===undefined) { geom.z0=floor_zorig; }
-		geom.z1=geom.z0  + geom.dimz;
-	} else if(geom.type=='obst') {
-		if(geom.z0===undefined) { geom.z0=floor_zorig; }
-		geom.z1=geom.z0 + 100;
-	} else if(geom.type=='vvent') {
-		//dd('start zolty', geom.z0, "floor_zorig", floor_zorig);
-		if(geom.z0===undefined) { geom.z0=floor_zorig + defaults.floor_dimz - 4; }
-		geom.z1=geom.z0 + 8;
-		//dd('end zolty', geom.z0, "floor_zorig", floor_zorig);
+	cg.x0 = Math.min(Math.round(cg.x0), Math.round(cg.x1));
+	cg.x1 = Math.max(Math.round(cg.x0), Math.round(cg.x1));
+	cg.y0 = Math.min(Math.round(cg.y0), Math.round(cg.y1));
+	cg.y1 = Math.max(Math.round(cg.y0), Math.round(cg.y1));
+	if(cg.type=='evacuee') {
+		if(cg.z0===undefined) { cg.z0=floor_zorig; }
+		cg.z1=cg.z0 + 50;
+	} else if(cg.type=='door') {
+		if(cg.z0===undefined) { cg.z0=floor_zorig; }
+		cg.z1=cg.z0  + cg.dimz;
+	} else if(cg.type=='obst') {
+		if(cg.z0===undefined) { cg.z0=floor_zorig; }
+		cg.z1=cg.z0 + 100;
+	} else if(cg.type=='vvent') {
+		//dd('start zolty', cg.z0, "floor_zorig", floor_zorig);
+		if(cg.z0===undefined) { cg.z0=floor_zorig + defaults.floor_dimz - 4; }
+		cg.z1=cg.z0 + 8;
+		//dd('end zolty', cg.z0, "floor_zorig", floor_zorig);
 		//dd("===");
-	} else if(geom.type=='mvent') {
-		//dd('start zielony', geom.z0, "floor_zorig", floor_zorig);
-		if(geom.z0===undefined) { geom.z0=floor_zorig; }
-		geom.z1=geom.z0 + geom.dimz;
-		//dd('end zielony', geom.z0, "floor_zorig", floor_zorig);
+	} else if(cg.type=='mvent') {
+		//dd('start zielony', cg.z0, "floor_zorig", floor_zorig);
+		if(cg.z0===undefined) { cg.z0=floor_zorig; }
+		cg.z1=cg.z0 + cg.dimz;
+		//dd('end zielony', cg.z0, "floor_zorig", floor_zorig);
 		//dd("===");
-	} else if(geom.type=='window') {
-		if(geom.z0===undefined) { geom.z0=floor_zorig + defaults.window_offsetz; }
-		geom.z1=geom.z0 + geom.dimz;
+	} else if(cg.type=='window') {
+		if(cg.z0===undefined) { cg.z0=floor_zorig + defaults.window_offsetz; }
+		cg.z1=cg.z0 + cg.dimz;
 	} else {
-		if(geom.z0===undefined) { geom.z0=floor_zorig; }
-		geom.z1=geom.z0 + geom.dimz;
+		if(cg.z0===undefined) { cg.z0=floor_zorig; }
+		cg.z1=cg.z0 + cg.dimz;
 	}
-
-	return geom;
 }
 //}}}
-function createSvg(geom) { //{{{
-	if (gg[geom.letter].t == 'evacuee') { 
+function createSvg() { //{{{
+	if (gg[cg.letter].t == 'evacuee') { 
 		var elem='circle';
 	} else {
 		var elem='rect';
 	}
-	d3.select("#floor"+geom.floor)
+	d3.select("#floor"+cg.floor)
 		.append(elem)
-		.attr('id', geom.name)
+		.attr('id', cg.name)
 		.attr('r', evacueeRadius)
-		.attr('fill', gg[geom.letter].c)
-		.attr('class', gg[geom.letter].t)
-		.style('stroke', gg[geom.letter].stroke)
-		.style('stroke-width', gg[geom.letter].strokeWidth)
+		.attr('fill', gg[cg.letter].c)
+		.attr('class', gg[cg.letter].t)
+		.style('stroke', gg[cg.letter].stroke)
+		.style('stroke-width', gg[cg.letter].strokeWidth)
 
-	$("#"+geom.name)
-		.attr('x', geom.x0)
-		.attr('y', geom.y0)
-		.attr('cx', geom.x0)
-		.attr('cy', geom.y0)
-		.attr('width', geom.x1 - geom.x0)
-		.attr('height', geom.y1 - geom.y0)
+	$("#"+cg.name)
+		.attr('x', cg.x0)
+		.attr('y', cg.y0)
+		.attr('cx', cg.x0)
+		.attr('cy', cg.y0)
+		.attr('width', cg.x1 - cg.x0)
+		.attr('height', cg.y1 - cg.y0)
 }
 //}}}
-function updateVis(geom) {//{{{
-	if(geom.type=='door') { 
-		if(geom.exit_type=='secondary') { 
-			$("#"+geom.name).css({ stroke: "#000" });   
-		} else if(geom.exit_type=='primary') { 
-			$("#"+geom.name).css({ stroke: "#f0f" });   
-		} else if(geom.exit_type=='auto') { 
-			$("#"+geom.name).css({ stroke: gg[geom.letter].stroke });   
+function updateVis() {//{{{
+	if(cg.type=='door') { 
+		if(cg.exit_type=='secondary') { 
+			$("#"+cg.name).css({ stroke: "#000" });   
+		} else if(cg.exit_type=='primary') { 
+			$("#"+cg.name).css({ stroke: "#f0f" });   
+		} else if(cg.exit_type=='auto') { 
+			$("#"+cg.name).css({ stroke: gg[cg.letter].stroke });   
 		}
-	} else if (geom.type=='room') { 
-		if(geom.room_enter=='no') { 
-			$("#"+geom.name).attr('fill', "#000");
-		} else if(geom.room_enter=='yes') { 
-			$("#"+geom.name).attr('fill', gg[geom.letter].c);
+	} else if (cg.type=='room') { 
+		if(cg.room_enter=='no') { 
+			$("#"+cg.name).attr('fill', "#000");
+		} else if(cg.room_enter=='yes') { 
+			$("#"+cg.name).attr('fill', gg[cg.letter].c);
 		}
 	}
 }
 //}}}
-function dbInsert(geom, relax=0) { //{{{
+function dbInsert(relax=0) { //{{{
 	// On the occassions we are massively called from import_cadjson() and alike
 	// we don't want to auto call the heavy updateSnapLines() each time -- it is sufficient 
 	// that import_cadjson() makes a single updateSnapLines() call after hundreds
 	// of geoms are DbInserted().
 
 	var lines=[];
-	if(geom.type=='room') {
-		lines.push([geom.x0, geom.y0], [geom.x1, geom.y0], [geom.x1, geom.y1], [geom.x0, geom.y1]);
+	if(cg.type=='room') {
+		lines.push([cg.x0, cg.y0], [cg.x1, cg.y0], [cg.x1, cg.y1], [cg.x0, cg.y1]);
 	} else {
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
-	selected_geom=geom.name;
-    if (['fire'].includes(geom.type)) { geom.room_enter="no"; }
-	if(geom.type!='underlay_scaler') {
-		db.insert({ "name": geom.name, "idx": geom.idx, "cad_json": geom.cad_json, "letter": geom.letter, "type": geom.type, "lines": lines, "x0": geom.x0, "y0": geom.y0, "z0": geom.z0, "x1": geom.x1, "y1": geom.y1, "z1": geom.z1, "dimx": geom.x1-geom.x0, "dimy": geom.y1-geom.y0, "dimz": geom.dimz, "floor": geom.floor, "mvent_throughput": geom.mvent_throughput, "exit_type": geom.exit_type, "room_enter": geom.room_enter });
+    if (['fire'].includes(cg.type)) { cg.room_enter="no"; }
+	if(cg.type!='underlay_scaler') {
+		db.insert({ "name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "dimx": cg.x1-cg.x0, "dimy": cg.y1-cg.y0, "dimz": cg.dimz, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
 		if(relax==0) { apainter_properties_box(); updateSnapLines(); }
 	} 
+}
+//}}}
+function change_cg(name, show_properties=0) {//{{{
+	cg.name=name;
+	blink_selected();
+	cg=db({'name':name}).get()[0];
+	if(show_properties==1) { apainter_properties_box(); }
+
 }
 //}}}
 function nextId() {//{{{
@@ -194,7 +198,7 @@ function zoomInit() { //{{{
 function zoomed_canvas() {//{{{
 	zt=d3.event.transform;
 	building.attr("transform", zt);
-	snapLines.attr("transform", zt);
+	snapLinesSvg.attr("transform", zt);
 	$("#snapper").attr("transform", zt);
 	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)))
 	ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
@@ -209,8 +213,8 @@ function calc_next_floor() {//{{{
 }
 //}}}
 function blink_selected() {//{{{
-	$("#"+selected_geom).css('stroke-width', '100px');
-	$("#"+selected_geom).animate({ 'stroke-width': gg[active_letter].strokeWidth}, 400);
+	$("#"+cg.name).css('stroke-width', '100px');
+	$("#"+cg.name).animate({ 'stroke-width': gg[active_letter].strokeWidth}, 400);
 }
 //}}}
 function next_view() {//{{{
@@ -233,17 +237,21 @@ function next_view() {//{{{
 	//console.log("===========");
 }
 //}}}
-function remove_geom(geom) {//{{{
-	$("#"+geom).remove();
-	db({"name":geom}).remove();
+function remove_cg() {//{{{
+	$("#"+cg.name).remove();
+	db({"name":cg.name}).remove();
 	updateSnapLines();
-	if($("#gg_listing").length==0) { $("right-menu-box").css("display", "none"); }
+	if($("#gg_listing").length==0) { 
+		$("right-menu-box").css("display", "none"); 
+	} else {
+		properties_type_listing(); 
+	}
 }
 //}}}
 
 function updateSnapLines() { //{{{
 	// snap lines
-	d3.select("#snapLines").selectAll("line").remove();
+	d3.select("#snapLinesSvg").selectAll("line").remove();
 	var lines=db({'floor': floor}).select("lines");
 	snap_lines['horiz']=[];
 	snap_lines['vert']=[];
@@ -260,10 +268,10 @@ function updateSnapLines() { //{{{
 		snap_lines['vert'].push(right);
 		snap_lines['vert'].push(left);
 
-		snapLines.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
-		snapLines.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
-		snapLines.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , 0).attr('y2' , 100000).attr("visibility", "hidden");
-		snapLines.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , 0).attr('y2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
 
 	}
 	snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
@@ -343,48 +351,45 @@ function change_floor(requested_floor) {//{{{
 	$("#floor_text").css("opacity",1).animate({"opacity": 0.05}, 1000);
 }
 //}}}
-function fix_hole_offset(rect) { //{{{
+function fix_hole_offset() { //{{{
 	// Detect orientation and fix hole offset. Other types, like windows, don't
 	// need fixes.
 
-	if(rect.type != 'hole') {
-		return rect;
-	}
+	if(cg.type != 'hole') { return; }
 
-	if(Math.abs(rect.rr.x1-rect.rr.x0) < Math.abs(rect.rr.y1-rect.rr.y0)) {
-		rect.rr.y0-=16;
-		rect.rr.y1+=16;
+	if(Math.abs(cg.x1-cg.x0) < Math.abs(cg.y1-cg.y0)) {
+		cg.y0-=16;
+		cg.y1+=16;
 	} else {
-		rect.rr.x0+=16;
-		rect.rr.x1-=16;
+		cg.x0+=16;
+		cg.x1-=16;
 	}
-	return rect;
 }
 //}}}
-function snap_vertical(m,rect,after_click) {//{{{
+function snap_vertical(m,after_click) {//{{{
 	for(var point in snap_lines['vert']) {
 		p=snap_lines['vert'][point];
 		if ((m[0]-zt.x)/zt.k > p - snap_dist && (m[0]-zt.x)/zt.k < p + snap_dist) { 
 			$("#sv_"+p).attr("visibility", "visible");
 			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: (m[1]-zt.y)/zt.k, cx: p });
 			vh_snap.push(p);
-			if (rect.type=='door') {
-				rect.rr.x0=p-16;
-				rect.rr.x1=p+16;
-				rect.rr.y0=(m[1]-zt.y)/zt.k;
-				rect.rr.y1=(m[1]-zt.y)/zt.k-defaults.door_width;
+			if (cg.type=='door') {
+				cg.x0=p-16;
+				cg.x1=p+16;
+				cg.y0=(m[1]-zt.y)/zt.k;
+				cg.y1=(m[1]-zt.y)/zt.k-defaults.door_width;
 				return;
-			} else if (rect.type=='room') { 
+			} else if (cg.type=='room') { 
 				if(after_click==1) { 
-					rect.rr.x1=p;
+					cg.x1=p;
 				} else {
-					rect.rr.x0=p;
+					cg.x0=p;
 				}
 			} else {
 				if(after_click==1) { 
-					rect.rr.x1=p+16;
+					cg.x1=p+16;
 				} else {
-					rect.rr.x0=p-16;
+					cg.x0=p-16;
 				}
 			}
 			break;
@@ -392,30 +397,30 @@ function snap_vertical(m,rect,after_click) {//{{{
 	}
 }
 //}}}
-function snap_horizontal(m,rect,after_click) {//{{{
+function snap_horizontal(m,after_click) {//{{{
 	for(var point in snap_lines['horiz']) {
 		p=snap_lines['horiz'][point];
 		if ((m[1]-zt.y)/zt.k > p - snap_dist && (m[1]-zt.y)/zt.k < p + snap_dist) { 
 			$("#sh_"+p).attr("visibility", "visible");
 			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: (m[0]-zt.x)/zt.k, cy: p });
 			vh_snap.push(p);
-			if(rect.type=='door') {
-				rect.rr.y0=p-16;
-				rect.rr.y1=p+16;
-				rect.rr.x0=(m[0]-zt.x)/zt.k;
-				rect.rr.x1=(m[0]-zt.x)/zt.k+defaults.door_width;
+			if(cg.type=='door') {
+				cg.y0=p-16;
+				cg.y1=p+16;
+				cg.x0=(m[0]-zt.x)/zt.k;
+				cg.x1=(m[0]-zt.x)/zt.k+defaults.door_width;
 				return;
-			} else if (rect.type=='room') { 
+			} else if (cg.type=='room') { 
 				if(after_click==1) { 
-					rect.rr.y1=p;
+					cg.y1=p;
 				} else {
-					rect.rr.y0=p;
+					cg.y0=p;
 				}
 			} else {
 				if(after_click==1) { 
-					rect.rr.y1=p-16;
+					cg.y1=p-16;
 				} else {
-					rect.rr.y0=p+16;
+					cg.y0=p+16;
 				}
 			}
 			break;
@@ -423,58 +428,56 @@ function snap_horizontal(m,rect,after_click) {//{{{
 	}
 }
 //}}}
-function snap(m,rect,after_click) {//{{{
+function snap(m,after_click) {//{{{
 	d3.selectAll('.snap_v').attr('visibility', 'hidden');
 	d3.selectAll('.snap_h').attr('visibility', 'hidden');
 	$('#snapper').attr('fill-opacity', 0);
 	if (event.ctrlKey) { return; } 
 	vh_snap=[];
-	snap_vertical(m,rect,after_click);
-	snap_horizontal(m,rect,after_click);
+	snap_vertical(m,after_click);
+	snap_horizontal(m,after_click);
 
-	if(rect.type!='door' && vh_snap.length==2) { 
+	if(cg.type!='door' && vh_snap.length==2) { 
 		$('#snapper').attr({ r: 30, cx: vh_snap[0], cy: vh_snap[1]});
 	}
 }
 
 //}}}
-function create_self_props(self) {//{{{
+function new_cg() {//{{{
 	var counter=nextId();
-	self.rr={};
-	self.floor=floor;
-	self.letter=active_letter;
-	self.type=gg[active_letter].t;
-	self.name=active_letter+counter;
-	self.idx=counter;
-	self.mvent_throughput=0;
-	self.exit_type='';
-	if (self.type=='door') {
-		self.dimz=defaults.door_dimz;
-		self.exit_type='auto';
-	} else if (self.type=='room') {
-		self.dimz=defaults.floor_dimz;
-		self.room_enter='yes';
-	} else if (self.type=='mvent') {
-		self.dimz=50;
-	} else if (self.type=='window') {
-		self.dimz=defaults.window_dimz;
-	} else if (self.type=='fire') {
-		self.dimz=100
+	cg.floor=floor;
+	cg.letter=active_letter;
+	cg.type=gg[active_letter].t;
+	cg.name=active_letter+counter;
+	cg.idx=counter;
+	cg.mvent_throughput=0;
+	cg.exit_type='';
+	if (cg.type=='door') {
+		cg.dimz=defaults.door_dimz;
+		cg.exit_type='auto';
+	} else if (cg.type=='room') {
+		cg.dimz=defaults.floor_dimz;
+		cg.room_enter='yes';
+	} else if (cg.type=='mvent') {
+		cg.dimz=50;
+	} else if (cg.type=='window') {
+		cg.dimz=defaults.window_dimz;
+	} else if (cg.type=='fire') {
+		cg.dimz=100
 	} else { 
-		self.dimz=defaults.floor_dimz;
+		cg.dimz=defaults.floor_dimz;
 	}
 }
 //}}}
 function new_geom() {//{{{
 	// After a letter is clicked we react to mouse events
 	// The most tricky scenario is when first mouse click happens before mousemove.
-	// geom.rr.x0 & friends are temporary -- we don't want to recalculate min, max, width, height on every mouse drag
+	// geom.x0 & friends are temporary -- we don't want to recalculate min, max, width, height on every mouse drag
 	// geom.x0 & friends are for db and some svg operations
 	var mouse;
 	var after_click=0;
 	var mx, my;
-	var self = this;
-	create_self_props(self);
+	new_cg();
 	$('right-menu-box').fadeOut(0);
 	buildingDetachZoomer();
 	svg.on('mousedown', function() {
@@ -482,44 +485,42 @@ function new_geom() {//{{{
 		mouse=d3.mouse(this);
 		mx=Math.round((mouse[0]-zt.x)/zt.k);
 		my=Math.round((mouse[1]-zt.y)/zt.k);
-		self.x0=mx;
-		self.x1=mx;
-		self.y0=my;
-		self.y1=my;
-		createSvg(self);
+		cg.x0=mx;
+		cg.x1=mx;
+		cg.y0=my;
+		cg.y1=my;
+		createSvg();
 	});
 	svg.on('mousemove', function() {
 		mouse=d3.mouse(this);
 		mx=Math.round((mouse[0]-zt.x)/zt.k);
 		my=Math.round((mouse[1]-zt.y)/zt.k);
 		if (after_click==0) { 
-			self.rr = { 'x0': mx, 'y0': my, 'x1': mx, 'y1': my, 'cx': mx, 'cy': my };
+			Object.assign(cg, { 'x0': mx, 'y0': my, 'x1': mx, 'y1': my, 'cx': mx, 'cy': my });
 		}
-		else if (after_click==1 && self.rr.x0 == null) { 
-			self.rr = { 'x0': mx, 'y0': my, 'cx': mx, 'cy': my };
+		else if (after_click==1 && cg.x0 == null) { 
+			Object.assign(cg, { 'x0': mx, 'y0': my, 'cx': mx, 'cy': my });
 		}
-		self.rr.x1=mx;
-		self.rr.y1=my;
-		self.rr.cx=mx;
-		self.rr.cy=my;
-		if(['room', 'hole', 'window', 'door'].includes(self.type)) { snap(mouse,self,after_click); }
-		if(after_click==1) { updateSvgElem(self); } 
+		Object.assign(cg, { x1: mx, y1: my, cx: mx, cy: my });
+
+		if(['room', 'hole', 'window', 'door'].includes(cg.type)) { snap(mouse,after_click); }
+		if(after_click==1) { updateSvgElem(); } 
 	});  
 	svg.on('mouseup', function() {
-		if(['underlay_scaler'].includes(self.type))  { underlay_form(); }
+		if(['underlay_scaler'].includes(cg.type))  { underlay_form(); }
 		svg.on('mousedown', null);
 		svg.on('mousemove', null);
 		svg.on('mouseup', null);
-		if(self.type=='evacuee') { 
-			self.rr = { 'x0': self.x0, 'x1': self.x0+1, 'y0': self.y0, 'y1': self.y0+1 };
+		if(cg.type=='evacuee') { 
+			Object.assign(cg, { 'x0': cg.x0, 'x1': cg.x0+1, 'y0': cg.y0, 'y1': cg.y0+1 });
 		}
-		if(self.rr.x0 == self.rr.x1 || self.rr.y0 == self.rr.y1 || self.rr.x0 == null) { 
-			$("#"+self.name).remove();
+		if(cg.x0 == cg.x1 || cg.y0 == cg.y1 || cg.x0 == null) { 
+			$("#"+cg.name).remove();
 		} else {
-			if (['hole', 'window'].includes(self.type)) { self=fix_hole_offset(self); }
-			updateSvgElem(self);
-			self=rrRecalculate(self);
-			dbInsert(self);
+			if (['hole', 'window'].includes(cg.type)) { fix_hole_offset(); }
+			updateSvgElem();
+			rrRecalculate();
+			dbInsert();
 		}
 		after_click=0;
 		$('#snapper').attr('fill-opacity', 0);
@@ -527,14 +528,14 @@ function new_geom() {//{{{
 	});
 }
 //}}}
-function updateSvgElem(geom) {  //{{{
-	$("#"+geom.name).attr({
-		x: Math.min(geom.rr.x0   , geom.rr.x1) ,
-		y: Math.min(geom.rr.y0   , geom.rr.y1) ,
-		cx: Math.min(geom.rr.x0   , geom.rr.x1) ,
-		cy: Math.min(geom.rr.y0   , geom.rr.y1) ,
-		width: Math.abs(geom.rr.x1 - geom.rr.x0) ,
-		height: Math.abs(geom.rr.y1 - geom.rr.y0)
+function updateSvgElem() {  //{{{
+	$("#"+cg.name).attr({
+		x: Math.min(cg.x0   , cg.x1) ,
+		y: Math.min(cg.y0   , cg.y1) ,
+		cx: Math.min(cg.x0   , cg.x1) ,
+		cy: Math.min(cg.y0   , cg.y1) ,
+		width: Math.abs(cg.x1 - cg.x0) ,
+		height: Math.abs(cg.y1 - cg.y0)
 	});   
 }
 //}}}
@@ -557,7 +558,7 @@ function canvas_builder() { //{{{
 	axes();
 	building = svg.append("g").attr("id", "building");
 	building.append("g").attr("id", "floor0").attr("class", "floor").attr('fill-opacity',0.4);
-	snapLines = svg.append("g").attr("id", "snapLines");
+	snapLinesSvg = svg.append("g").attr("id", "snapLinesSvg");
 	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend();
 	d3.select('view2d').append('right-menu-box');

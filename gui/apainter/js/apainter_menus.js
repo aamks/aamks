@@ -2,8 +2,8 @@ function register_listeners() {//{{{
 	$("right-menu-box").on("click"     , "#btn_copy_to_floor"       , function() { copy_to_floor() });
 	$("right-menu-box").on("click"     , "#btn_submit_cad_json"     , function() { textarea_edit_cad_json() });
 	$("right-menu-box").on("click"     , '#setup_underlay'          , function() { underlay_form(); });
-	$("right-menu-box").on("mouseover" , ".properties_type_listing" , function() { selected_geom=$(this).attr('id'); blink_selected(); });
-	$("right-menu-box").on("click"     , '.properties_type_listing' , function() { selected_geom=$(this).attr('id'); apainter_properties_box(); blink_selected(); });
+	$("right-menu-box").on("mouseover" , ".properties_type_listing" , function() { change_cg($(this).attr('id')); });
+	$("right-menu-box").on("click"     , '.properties_type_listing' , function() { change_cg($(this).attr('id'), 1);  });
 	$("body").on("click"               , '#apainter-save'           , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { cad_json_textarea_save(); } });
 	$("body").on("click"               , '#apainter-next-view'      , function() { next_view(); });
 	$("body").on("click"               , '#button-help'             , function() { apainter_help_box(); });
@@ -13,11 +13,9 @@ function register_listeners() {//{{{
 
 	$("body").on("dblclick"        , "#apainter-svg"        , function(){
 		if (['rect', 'circle'].includes(event.target.tagName)) { 
-			selected_geom=event.target.id;
-			apainter_properties_box();
-			blink_selected();
+			change_cg(event.target.id, 1);
 		} else {
-			selected_geom=''
+			cg={};
 		}
 	});
 
@@ -30,7 +28,7 @@ function keyboard_events() {//{{{
 	$(this).keydown((e) =>  { if (e.key == 'n') { change_floor(calc_next_floor()); } });
 	$(this).keydown((e) =>  { if (e.key == '=') { resetView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
-	$(this).keypress((e) => { if (e.key == 'x' && selected_geom != "") { remove_geom(selected_geom); if($("#gg_listing").length>0) { properties_type_listing(); }}});
+	$(this).keypress((e) => { if (e.key == 'x' && ! isEmpty(cg)) { remove_cg(); }});
 	$(this).keypress((e) => { if (e.key == 'g') { properties_type_listing(); } });
 
 }
@@ -106,10 +104,10 @@ function into_db(json) { //{{{
 			for (var geometry in json[floor][elems[i]]) {
 				letter=ggx[elems[i]];
 				arr=json[floor][elems[i]][geometry];
-				geom=read_record(parseInt(floor),letter,arr);
-				dbInsert(geom, 1);
-				createSvg(geom);
-				updateVis(geom);
+				cg=read_record(parseInt(floor),letter,arr);
+				dbInsert(1);
+				createSvg();
+				updateVis();
 			}
 		}
 	}
@@ -165,8 +163,8 @@ function ajax_save_cadjson(json_data, fire_model) { //{{{
 //}}}
 function import_cadjson() { //{{{
 	$.post('/aamks/ajax.php?ajaxApainterImport', { }, function (json) { 
-		// We loop thru dbInsert() here which updates the selected_geom
-		// At the end the last elem in the loop would be the selected_geom
+		// We loop thru dbInsert() here which updates the cg
+		// At the end the last elem in the loop would be the cg
 		// which may run into this-elem-doesnt-belong-to-this-floor problem.
 		ajax_msg(json); 
 		if(json.err=='FDS') {
@@ -177,7 +175,7 @@ function import_cadjson() { //{{{
 			init_svg_groups(json.data);
 			_.each(json.data, function(data,floor) { import_underlay(data['UNDERLAY'],floor); });
 			into_db(json.data);
-			selected_geom='';
+			cg={};
 			d3.select('#floor_text').text("floor "+floor+"/"+floors_count);
 		}
 	});
@@ -278,18 +276,18 @@ function copy_to_floor() {	//{{{
 	for (var i in src) {
 		counter=nextId();
 		if (src[i]['letter'] == 's') { continue; }
-		var geom = $.extend({}, src[i]);
-		geom['floor']=c2f;
-		geom['name']=gg[geom['letter']].x+counter;
-		geom['z1']=z0 + geom['z1']-geom['z0'];
-		geom['z0']=z0;
-		var letter=geom['letter'];
-		dbInsert(geom);
-		createSvg(geom);
+		cg= $.extend({}, src[i]);
+		cg.floor=c2f;
+		cg.name=gg[cg['letter']].x+counter;
+		cg.z1=z0 + cg['z1']-cg['z0'];
+		cg.z0=z0;
+		//var letter=cg['letter'];
+		dbInsert();
+		createSvg();
 	}
 	$("#floor"+c2f).attr({"class": "floor", "fill-opacity": 0.4, "visibility": "hidden"});
 
-	var selected_geom='';
+	cg={};
 	apainter_setup_box();
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
@@ -307,34 +305,25 @@ function save_setup_box() {//{{{
 	} 
 
 	if ($("#geom_properties").val() != null) { 
-		var x=db({'name':selected_geom}).get();
-		if (x.length==0) { return; }
-		var geom={
-			idx: x[0]['idx'],
-			name: x[0]['name'],
-			floor: x[0]['floor'],
-			letter: x[0]['letter'],
-			type: x[0]['type'],
-			room_enter: $("#alter_room_enter").val(),
-			exit_type: $("#alter_exit_type").val(),
-			dimz: parseInt($("#alter_dimz").val()),
-			z0: parseInt($("#alter_z0").val()),
-			mvent_throughput: parseInt($("#alter_mvent_throughput").val()),
-			rr:{
-				x0: parseInt($("#alter_x0").val()),
-				y0: parseInt($("#alter_y0").val()),
-				x1: parseInt($("#alter_x0").val())+parseInt($("#alter_dimx").val()),
-				y1: parseInt($("#alter_y0").val())+parseInt($("#alter_dimy").val()),
-			}
+		if(isEmpty(cg)) { return; } // TODO: can we ever reach this condition?
+		cg.room_enter=$("#alter_room_enter").val(),
+		cg.exit_type=$("#alter_exit_type").val(),
+		cg.dimz=parseInt($("#alter_dimz").val()),
+		cg.z0=parseInt($("#alter_z0").val()),
+		cg.mvent_throughput=parseInt($("#alter_mvent_throughput").val()),
+		cg.rr={
+			x0: parseInt($("#alter_x0").val()),
+			y0: parseInt($("#alter_y0").val()),
+			x1: parseInt($("#alter_x0").val())+parseInt($("#alter_dimx").val()),
+			y1: parseInt($("#alter_y0").val())+parseInt($("#alter_dimy").val()),
 		};
 
-		if(geom.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
+		if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
 
-		db({"name": geom.name}).remove();
-		updateSvgElem(geom);
-		updateVis(geom);
-		geom=rrRecalculate(geom);
-		dbInsert(geom);
+		updateSvgElem();
+		updateVis();
+		rrRecalculate();
+		dbInsert();
 	} 
 
 }
@@ -459,10 +448,10 @@ function properties_type_listing() {//{{{
 function make_dim_properties() {//{{{
 	var prop='';
 	if(gg[active_letter].t!='evacuee') {
-		//var selected=db({'name':selected_geom}).select("exit_type")[0]; // TODO: some garbage line?
-		prop+="<tr><td>x-dim<td><input id=alter_dimx type=text size=3 value="+db({'name':selected_geom}).select("dimx")[0]+"> cm";
-		prop+="<tr><td>y-dim<td><input id=alter_dimy type=text size=3 value="+db({'name':selected_geom}).select("dimy")[0]+"> cm";
-		prop+="<tr><td>z-dim<td><input id=alter_dimz type=text size=3 value="+db({'name':selected_geom}).select("dimz")[0]+"> cm";
+		//var selected=db({'name':cg}).select("exit_type")[0]; // TODO: some garbage line?
+		prop+="<tr><td>x-dim<td><input id=alter_dimx type=text size=3 value="+db({'name':cg.name}).select("dimx")[0]+"> cm";
+		prop+="<tr><td>y-dim<td><input id=alter_dimy type=text size=3 value="+db({'name':cg.name}).select("dimy")[0]+"> cm";
+		prop+="<tr><td>z-dim<td><input id=alter_dimz type=text size=3 value="+db({'name':cg.name}).select("dimz")[0]+"> cm";
 	} else {
 		prop+="<input id=alter_dimx type=hidden value=0> cm";
 		prop+="<input id=alter_dimy type=hidden value=0> cm";
@@ -474,7 +463,7 @@ function make_dim_properties() {//{{{
 function make_room_properties() {//{{{
 	var prop='';
 	if(gg[active_letter].t=='room') {
-		var selected=db({'name':selected_geom}).select("room_enter")[0];
+		var selected=db({'name':cg.name}).select("room_enter")[0];
 		prop+="<tr><td>enter <withHelp>?<help><orange>yes</orange> agents can evacuate via this room<br><hr><orange>no</orange> agents can not evacuate via this room</help></withHelp>";
 		prop+="<td><select id=alter_room_enter>";
 		prop+="<option value="+selected+">"+selected+"</option>";
@@ -490,7 +479,7 @@ function make_room_properties() {//{{{
 function make_mvent_properties() {//{{{
 	var mvent='';
 	if(gg[active_letter].t=='mvent') {
-		mvent+="<tr><td>throughput<td>  <input id=alter_mvent_throughput type=text size=3 value="+db({'name':selected_geom}).select("mvent_throughput")[0]+">";
+		mvent+="<tr><td>throughput<td>  <input id=alter_mvent_throughput type=text size=3 value="+db({'name':cg.name}).select("mvent_throughput")[0]+">";
 	} else {
 		mvent+="<input id=alter_mvent_throughput type=hidden value=0>";
 	}
@@ -500,7 +489,7 @@ function make_mvent_properties() {//{{{
 function make_door_properties() {//{{{
 	var prop='';
 	if(gg[active_letter].t=='door') {
-		var selected=db({'name':selected_geom}).select("exit_type")[0];
+		var selected=db({'name':cg.name}).select("exit_type")[0];
 		prop+="<tr><td>exit <withHelp>?<help><orange>auto</orange> any evacuee can use this door<br><hr><orange>primary</orange> many evacuees have had used this door to get in and will use it to get out<br><hr><orange>secondary</orange> extra door known to the personel</help></withHelp>";
 		prop+="<td><select id=alter_exit_type>";
 		prop+="<option value="+selected+">"+selected+"</option>";
@@ -557,16 +546,16 @@ function apainter_help_box() {//{{{
 }
 //}}}
 function apainter_properties_box() {//{{{
-	active_letter=db({'name':selected_geom}).select("letter")[0];
-	dd("show form", selected_geom);
+	active_letter=db({'name':cg.name}).select("letter")[0];
+	dd(cg);
 	right_menu_box_show(
 	    "<input id=geom_properties type=hidden value=1>"+
 		"<wheat><letter>x</letter> to delete, <letter>g</letter> for listing</wheat>"+
 		"<table>"+
-	    "<tr><td>name <td>"+db({'name':selected_geom}).select("name")[0]+
-		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':selected_geom}).select("x0")[0]+"> cm"+
-		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':selected_geom}).select("y0")[0]+"> cm"+
-		"<tr><td>z0	<td>	<input id=alter_z0 type=text size=3 value="+db({'name':selected_geom}).select("z0")[0]+"> cma"+
+	    "<tr><td>name <td>"+db({'name':cg.name}).select("name")[0]+
+		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':cg.name}).select("x0")[0]+"> cm"+
+		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':cg.name}).select("y0")[0]+"> cm"+
+		"<tr><td>z0	<td>	<input id=alter_z0 type=text size=3 value="+db({'name':cg.name}).select("z0")[0]+"> cma"+
 		make_dim_properties()+
 		make_room_properties()+
 		make_mvent_properties()+

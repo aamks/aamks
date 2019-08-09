@@ -88,6 +88,11 @@ function launch_simulation() {//{{{
 
 }
 //}}}
+function isEmpty(obj) {//{{{
+	// Check if dict empty
+	return Object.keys(obj).length === 0;
+}
+//}}}
 dd = function() { //{{{
 	return console.log.apply(console, arguments); 
 };
