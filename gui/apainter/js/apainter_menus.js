@@ -6,8 +6,8 @@ function registerListeners() {//{{{
 	$("right-menu-box").on("click"     , '.bulkProps' , function() { cgSelectNew($(this).attr('id'), 1);  });
 	$("body").on("click"               , '#apainter-save'           , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
 	$("body").on("click"               , '#apainter-next-view'      , function() { nextView(); });
-	$("body").on("click"               , '#button-help'             , function() { helpBox(); });
-	$("body").on("click"               , '#button-setup'            , function() { setupBox(); });
+	$("body").on("click"               , '#button-help'             , function() { showHelpBox(); });
+	$("body").on("click"               , '#button-setup'            , function() { showGeneralBox(); });
 	$("body").on("click"               , '.legend'                  , function() { activeLetter=$(this).attr('letter'); bulkProps(); });
 	$("body").on("mouseleave"          , 'right-menu-box'           , function() { saveRightBox(); });
 
@@ -22,7 +22,9 @@ function registerListeners() {//{{{
 }
 //}}}
 function keyboardEvents() {//{{{
-	$(this).keypress((e) => { if (e.key in gg)  { activeLetter=e.key; cgCreate(); } });
+
+	$(this).keypress((e) => { if (e.key in gg)  { activeLetter=e.key; $('right-menu-box').fadeOut(0); cgCreate(); } });
+	$(this).keydown((e) =>  { if (e.key == 'Escape') { svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); } });
 	$(this).keydown((e) =>  { if (e.key == 'h') { nextView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'p') { $("#p1").remove() ; } });
 	$(this).keydown((e) =>  { if (e.key == 'n') { changeFloor(calcNextFloor()); } });
@@ -111,7 +113,7 @@ function json2db(json) { //{{{
 				letter=ggx[elems[i]];
 				cgMake(Number(floor),letter,json[floor][elems[i]][geometry]);
 				cgDb();
-				createSvg();
+				cgSvg();
 				cgCss();
 			}
 		}
@@ -160,7 +162,7 @@ function importCadJson() { //{{{
 		} else {
 			fire_model='CFAST';
 			svgGroupsInit(json.data);
-			_.each(json.data, function(data,floor) { import_underlay(data['UNDERLAY'],floor); });
+			_.each(json.data, function(data,floor) { importUnderlay(data['UNDERLAY'],floor); });
 			json2db(json.data);
 			cg={};
 			d3.select('#floor_text').text("floor "+floor+"/"+floorsCount);
@@ -259,61 +261,24 @@ function floorCopy() {	//{{{
 	floorsCount++;
 	building.append("g").attr("id", "floor"+c2f).attr({"class": "floor", "opacity": 0, "visibility": "hidden"});
 	var src=db({'floor': floor}).get();
-	var counter;
 	for (var i in src) {
-		counter=nextId();
+		cgIdUpdate();
 		if (src[i]['letter'] == 's') { continue; }
 		cg= $.extend({}, src[i]);
 		cg.floor=c2f;
-		cg.name=gg[cg['letter']].x+counter;
+		cg.name=gg[cg['letter']].x+cgID;
 		cg.z1=z0 + cg['z1']-cg['z0'];
 		cg.z0=z0;
 		cgDb();
-		createSvg();
+		cgSvg();
 	}
 	$("#floor"+c2f).attr({"class": "floor", "fill-opacity": 0.4, "visibility": "hidden"});
 
 	cg={};
 	updateSnapLines();
-	setupBox();
+	showGeneralBox();
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
-function saveRightBox() {//{{{
-
-	if ($("#general_setup").val() != null) { 
-        if (floor != $("#floor").val()) { changeFloor(Number($("#floor").val())); }
-		floorZ0=Number($("#floorZ0").val());
-		defaults.door_dimz=Number($("#default_door_dimz").val());
-		defaults.door_width=Number($("#default_door_width").val());
-		defaults.floor_dimz=Number($("#default_floor_dimz").val());
-		defaults.window_dimz=Number($("#default_window_dimz").val());
-		defaults.window_offsetz=Number($("#default_window_offsetz").val());
-		legend();
-	} 
-
-	if ($("#geom_properties").val() != null) { 
-		//if(isEmpty(cg)) { return; } // TODO: can we ever reach this condition?
-		cg.room_enter=$("#alter_room_enter").val();
-		cg.exit_type=$("#alter_exit_type").val();
-		cg.dimz=Number($("#alter_dimz").val());
-		cg.z0=Number($("#alter_z0").val());
-		cg.mvent_throughput=Number($("#alter_mvent_throughput").val());
-		cg.x0=Number($("#alter_x0").val());
-		cg.y0=Number($("#alter_y0").val());
-		cg.x1=Number($("#alter_x0").val())+Number($("#alter_dimx").val());
-		cg.y1=Number($("#alter_y0").val())+Number($("#alter_dimy").val());
-
-		if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
-		cgUpdateSvg();
-		cgCss();
-		cgPolish();
-		cgDb();
-		cgShowBox(); 
-		updateSnapLines();
-	} 
-
-}
-//}}}
 
 function bulkPlainProps() {//{{{
 	var tbody='';
@@ -497,8 +462,7 @@ function rightBoxShow(html, close_button=1) {//{{{
 	$('right-menu-box').fadeIn(); 
 }
 //}}}
-
-function setupBox() {//{{{
+function showGeneralBox() {//{{{
 	rightBoxShow(
 		"<table class=nobreak>"+
 		"<input id=general_setup type=hidden value=1>"+
@@ -515,7 +479,7 @@ function setupBox() {//{{{
 	);
 }
 //}}}
-function helpBox() {//{{{
+function showHelpBox() {//{{{
 	rightBoxShow(
 		"<table class=nobreak>"+
 		"<tr><td><letter>letter</letter> + <letter>leftMouse</letter><td> create element"+
@@ -531,7 +495,7 @@ function helpBox() {//{{{
 	);
 }
 //}}}
-function cgShowBox() {//{{{
+function showCgPropsBox() {//{{{
 	activeLetter=db({'name':cg.name}).select("letter")[0];
 	//dd(cg);
 	rightBoxShow(
@@ -551,3 +515,42 @@ function cgShowBox() {//{{{
 
 }
 //}}}
+
+function saveRightBoxGeneral() {//{{{
+	if (floor != $("#floor").val()) { changeFloor(Number($("#floor").val())); }
+	floorZ0=Number($("#floorZ0").val());
+	defaults.door_dimz=Number($("#default_door_dimz").val());
+	defaults.door_width=Number($("#default_door_width").val());
+	defaults.floor_dimz=Number($("#default_floor_dimz").val());
+	defaults.window_dimz=Number($("#default_window_dimz").val());
+	defaults.window_offsetz=Number($("#default_window_offsetz").val());
+	legend();
+}
+//}}}
+function saveRightBoxCgProps() {//{{{
+	//if(isEmpty(cg)) { return; } // TODO: can we ever reach this condition?
+	cg.room_enter=$("#alter_room_enter").val();
+	cg.exit_type=$("#alter_exit_type").val();
+	cg.dimz=Number($("#alter_dimz").val());
+	cg.z0=Number($("#alter_z0").val());
+	cg.mvent_throughput=Number($("#alter_mvent_throughput").val());
+	cg.x0=Number($("#alter_x0").val());
+	cg.y0=Number($("#alter_y0").val());
+	cg.x1=Number($("#alter_x0").val())+Number($("#alter_dimx").val());
+	cg.y1=Number($("#alter_y0").val())+Number($("#alter_dimy").val());
+
+	if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
+	cgUpdateSvg();
+	cgCss();
+	cgPolish();
+	cgDb();
+	showCgPropsBox(); 
+	updateSnapLines();
+} 
+//}}}
+function saveRightBox() {//{{{
+	if ($("#general_setup").val() != null)   { saveRightBoxGeneral(); }
+	if ($("#geom_properties").val() != null) { saveRightBoxCgProps(); }
+}
+//}}}
+

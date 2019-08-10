@@ -3,6 +3,7 @@ var canvas=[screen.width-30,screen.height-190];
 var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var cg={}; // current geom, the one that is currently selected, created, removed, etc.
+var cgID;
 var gg;
 var ggx;
 var zoom;
@@ -19,7 +20,7 @@ var snapForce=50;
 var snapLinesSvg;
 var snapLinesArr={};
 var defaults={'door_dimz': 200, 'door_width': 90, 'floor_dimz': 350, 'window_dimz': 150, 'window_offsetz': 100 };
-var vh_snap=[];
+var activeSnap={};
 var evacueeRadius;
 //}}}
 // on start{{{
@@ -44,7 +45,7 @@ function tempChrome() {//{{{
 	// At some point chrome will enable separate css transformations and this call will be removed
 	d3.select('body').append('temp_checker').attr("id", "temp_checker").style("scale", 1);
 	if(d3.select('#temp_checker').style("scale")=='') {
-		$("body").html("Aamks requires the experimental web features of Google Chrome.<br>You can paste the orange text to the address bar and enable them<br><span style='color: orange'>chrome://flags/#enable-experimental-web-platform-features</span>"); 
+		$("body").html("<br><br><br><center>Aamks requires the experimental web features of Google Chrome.<br>You can paste the orange text to the address bar and enable them<br><span style='color: orange'>chrome://flags/#enable-experimental-web-platform-features</span>"); 
 		throw new Error("");
 	}
 } //}}}
@@ -91,7 +92,7 @@ function cgPolish() {//{{{
 	}
 }
 //}}}
-function createSvg() { //{{{
+function cgSvg() { //{{{
 	if (gg[cg.letter].t == 'evacuee') { 
 		var elem='circle';
 	} else {
@@ -103,16 +104,15 @@ function createSvg() { //{{{
 		.attr('r', evacueeRadius)
 		.attr('fill', gg[cg.letter].c)
 		.attr('class', gg[cg.letter].t)
-		.style('stroke', gg[cg.letter].stroke)
-		.style('stroke-width', gg[cg.letter].strokeWidth)
-
-	$("#"+cg.name)
 		.attr('x', cg.x0)
 		.attr('y', cg.y0)
 		.attr('cx', cg.x0)
 		.attr('cy', cg.y0)
 		.attr('width', cg.x1 - cg.x0)
 		.attr('height', cg.y1 - cg.y0)
+		.style('stroke', gg[cg.letter].stroke)
+		.style('stroke-width', gg[cg.letter].strokeWidth)
+
 }
 //}}}
 function cgCss() {//{{{
@@ -156,19 +156,12 @@ function cgSelectNew(name, show_properties=0) {//{{{
 	cg.name=name;
 	cgBlink();
 	cg=db({'name':name}).get()[0];
-	if(show_properties==1) { cgShowBox(); }
+	if(show_properties==1) { showCgPropsBox(); }
 
 }
 //}}}
-function nextId() {//{{{
-	var next=db({"type": gg[activeLetter].t}).max("idx");
-	if(next == undefined) { 
-		next=1;
-	} else {
-		next+=1;
-	}
-	
-	return next;
+function cgIdUpdate() {//{{{
+	cgID=db({"type": gg[activeLetter].t}).max("idx")+1;
 }
 //}}}
 function buildingDetachZoomer() {//{{{
@@ -176,11 +169,15 @@ function buildingDetachZoomer() {//{{{
 }
 //}}}
 function buildingAttachZoomer() {//{{{
+	// d3 is mysterious. They talk about event.button which is always 0 in chrome/linux
+	// event which works for me: 0: wheelScroll, 1: mouseLeft, 2: wheelPress
+
 	d3.select("#apainter-svg")
 		.call(d3.zoom()
 			.scaleExtent([1 / 30, 4])
 			.translateExtent([[-1200, -1200], [1000000 , 1000000]])
 			.on("zoom", zoomedCanvas)
+			.filter(function(){ return (event.which === 0 || event.which === 2 ); })
 		)
 		.on("dblclick.zoom", null);
 }
@@ -250,10 +247,8 @@ function cgRemove() {//{{{
 //}}}
 
 function updateSnapLines() { //{{{
-	// snap lines
 	d3.select("#snapLinesSvg").selectAll("line").remove();
 	var lines=db({'floor': floor}).select("lines");
-	dd(lines);
 	snapLinesArr['horiz']=[];
 	snapLinesArr['vert']=[];
 	var below, above, right, left;
@@ -352,7 +347,7 @@ function changeFloor(requested_floor) {//{{{
 	$("#floor_text").css("opacity",1).animate({"opacity": 0.05}, 1000);
 }
 //}}}
-function fixHoleOffset() { //{{{
+function cgFixOffset() { //{{{
 	// Detect orientation and fix hole offset. Other types, like windows, don't
 	// need fixes.
 
@@ -367,90 +362,92 @@ function fixHoleOffset() { //{{{
 	}
 }
 //}}}
-function snapVertical(m,after_click) {//{{{
+function snapVertical(mx,my) {//{{{
 	for(var point in snapLinesArr['vert']) {
 		p=snapLinesArr['vert'][point];
-		if ((m[0]-zt.x)/zt.k > p - snapForce && (m[0]-zt.x)/zt.k < p + snapForce) { 
+		if (mx > p - snapForce && mx < p + snapForce) { 
 			$("#sv_"+p).attr("visibility", "visible");
-			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: (m[1]-zt.y)/zt.k, cx: p });
-			vh_snap.push(p);
+			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: my, cx: p });
+			activeSnap.x=p;
 			if (cg.type=='door') {
 				cg.x0=p-16;
 				cg.x1=p+16;
-				cg.y0=(m[1]-zt.y)/zt.k;
-				cg.y1=(m[1]-zt.y)/zt.k-defaults.door_width;
+				cg.y0=my
+				cg.y1=my-defaults.door_width;
 				return;
 			} else if (cg.type=='room') { 
-				if(after_click==1) { 
-					cg.x1=p;
-				} else {
-					cg.x0=p;
-				}
+				//if(cg.forming==1) { 
+				//	cg.x1=p;
+				//} else {
+				//	cg.x0=p;
+				//}
 			} else {
-				if(after_click==1) { 
-					cg.x1=p+16;
-				} else {
-					cg.x0=p-16;
-				}
+				//if(cg.forming==1) { 
+				//	cg.x1=p+16;
+				//} else {
+				//	cg.x0=p-16;
+				//}
 			}
 			break;
 		}
 	}
 }
 //}}}
-function snapHorizontal(m,after_click) {//{{{
+function snapHorizontal(mx,my) {//{{{
 	for(var point in snapLinesArr['horiz']) {
 		p=snapLinesArr['horiz'][point];
-		if ((m[1]-zt.y)/zt.k > p - snapForce && (m[1]-zt.y)/zt.k < p + snapForce) { 
+		if (my > p - snapForce && my < p + snapForce) { 
 			$("#sh_"+p).attr("visibility", "visible");
-			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: (m[0]-zt.x)/zt.k, cy: p });
-			vh_snap.push(p);
+			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: mx, cy: p });
+			activeSnap.y=p;
 			if(cg.type=='door') {
 				cg.y0=p-16;
 				cg.y1=p+16;
-				cg.x0=(m[0]-zt.x)/zt.k;
-				cg.x1=(m[0]-zt.x)/zt.k+defaults.door_width;
+				cg.x0=mx
+				cg.x1=mx+defaults.door_width;
 				return;
 			} else if (cg.type=='room') { 
-				if(after_click==1) { 
-					cg.y1=p;
-				} else {
-					cg.y0=p;
-				}
+				//if(cg.forming==1) { 
+				//	cg.y1=p;
+				//} else {
+				//	cg.y0=p;
+				//}
 			} else {
-				if(after_click==1) { 
-					cg.y1=p-16;
-				} else {
-					cg.y0=p+16;
-				}
+				//if(cg.forming==1) { 
+				//	cg.y1=p-16;
+				//} else {
+				//	cg.y0=p+16;
+				//}
 			}
 			break;
 		}
 	}
 }
 //}}}
-function snap(m,after_click) {//{{{
+function snap(mx,my) {//{{{
+	if(!['room', 'hole', 'window', 'door'].includes(cg.type)) { return; }
 	d3.selectAll('.snap_v').attr('visibility', 'hidden');
 	d3.selectAll('.snap_h').attr('visibility', 'hidden');
 	$('#snapper').attr('fill-opacity', 0);
 	if (event.ctrlKey) { return; } 
-	vh_snap=[];
-	snapVertical(m,after_click);
-	snapHorizontal(m,after_click);
+	activeSnap={};
+	snapVertical(mx,my);
+	snapHorizontal(mx,my);
 
-	if(cg.type!='door' && vh_snap.length==2) { 
-		$('#snapper').attr({ r: 30, cx: vh_snap[0], cy: vh_snap[1]});
+	if(cg.type!='door' && "x" in activeSnap && "y" in activeSnap) { 
+		$('#snapper').attr({ r: 30, cx: activeSnap.x, cy: activeSnap.y});
 	}
 }
 
 //}}}
 function cgInit() {//{{{
-	var counter=nextId();
+	cgIdUpdate();
+	cg.early=1;
 	cg.floor=floor;
 	cg.letter=activeLetter;
 	cg.type=gg[activeLetter].t;
-	cg.name=activeLetter+counter;
-	cg.idx=counter;
+	cg.name=activeLetter+cgID;
+	cg.idx=cgID;
 	cg.mvent_throughput=0;
 	cg.exit_type='';
 	if (cg.type=='door') {
@@ -470,73 +467,72 @@ function cgInit() {//{{{
 	}
 }
 //}}}
+function scaleMouse(pos) {//{{{
+	return {'x': Math.round((pos[0]-zt.x)/zt.k), 'y': Math.round((pos[1]-zt.y)/zt.k) };
+} //}}}
 function cgCreate() {//{{{
-	// After a letter is clicked we react to mouse events
-	// The most tricky scenario is when first mouse click happens before mousemove.
-	// geom.x0 & friends are temporary -- we don't want to recalculate min, max, width, height on every mouse drag
-	// geom.x0 & friends are for db and some svg operations
-	var mouse;
-	var after_click=0;
-	var mx, my;
-	cgInit();
-	$('right-menu-box').fadeOut(0);
 	buildingDetachZoomer();
 	svg.on('mousedown', function() {
-		after_click=1;
-		mouse=d3.mouse(this);
-		mx=Math.round((mouse[0]-zt.x)/zt.k);
-		my=Math.round((mouse[1]-zt.y)/zt.k);
-		cg.x0=mx;
-		cg.x1=mx;
-		cg.y0=my;
-		cg.y1=my;
-		createSvg();
+		cgInit();
+		m=scaleMouse(d3.mouse(this));
+		cgDecidePoints(m.x, m.y);
+		cgSvg();
+		delete cg.early;
 	});
 	svg.on('mousemove', function() {
-		mouse=d3.mouse(this);
-		mx=Math.round((mouse[0]-zt.x)/zt.k);
-		my=Math.round((mouse[1]-zt.y)/zt.k);
-		if (after_click==0) { 
-			Object.assign(cg, { 'x0': mx, 'y0': my, 'x1': mx, 'y1': my, 'cx': mx, 'cy': my });
-		}
-		else if (after_click==1 && cg.x0 == null) { 
-			Object.assign(cg, { 'x0': mx, 'y0': my, 'cx': mx, 'cy': my });
-		}
-		Object.assign(cg, { x1: mx, y1: my, cx: mx, cy: my });
-
-		if(['room', 'hole', 'window', 'door'].includes(cg.type)) { snap(mouse,after_click); }
-		if(after_click==1) { cgUpdateSvg(); } 
+		m=scaleMouse(d3.mouse(this));
+		snap(m.x, m.y);
+		cgDecidePoints(m.x, m.y);
+		cgUpdateSvg(); 
 	});  
 	svg.on('mouseup', function() {
-		if(['underlay_scaler'].includes(cg.type))  { underlay_form(); }
-		svg.on('mousedown', null);
-		svg.on('mousemove', null);
-		svg.on('mouseup', null);
-		if(cg.type=='evacuee') { 
-			Object.assign(cg, { 'x0': cg.x0, 'x1': cg.x0+1, 'y0': cg.y0, 'y1': cg.y0+1 });
-		}
-		if(cg.x0 == cg.x1 || cg.y0 == cg.y1 || cg.x0 == null) { 
-			$("#"+cg.name).remove();
-		} else {
-			if (['hole', 'window'].includes(cg.type)) { fixHoleOffset(); }
+		if(assertCgReady()) {
+			cgFixOffset();
 			cgUpdateSvg();
 			cgPolish();
 			cgDb();
-			cgShowBox(); 
+			showCgPropsBox(); 
 			updateSnapLines();
 		}
-		after_click=0;
 		$('#snapper').attr('fill-opacity', 0);
 		buildingAttachZoomer();
+		cgInit();
+
 	});
+}
+//}}}
+function cgDecidePoints(mx,my) {//{{{
+	if("x" in activeSnap) {  
+		if("early" in cg) { cg.x0=cg.x1=activeSnap.x; } else { cg.x1=activeSnap.x; }
+	} else {
+		if("early" in cg) { cg.x0=cg.x1=mx } else { cg.x1=mx; }
+	}
+	if("y" in activeSnap) {  
+		if("early" in cg) { cg.y0=cg.y1=activeSnap.y; } else { cg.y1=activeSnap.y; }
+	} else {
+		if("early" in cg) { cg.y0=cg.y1=my } else { cg.y1=my; }
+	}
+}
+//}}}
+function assertCgReady() {//{{{
+	if(cg.x0 == cg.x1 || cg.y0 == cg.y1 || cg.x0 == null) { 
+		$("#"+cg.name).remove();
+		return false;
+	}
+
+	if(cg.type=='underlay_scaler') { 
+		underlayForm();
+		return false;
+	}
+	return true;
 }
 //}}}
 function cgUpdateSvg() {  //{{{
 	$("#"+cg.name).attr({
-		x: Math.min(cg.x0   , cg.x1) ,
-		y: Math.min(cg.y0   , cg.y1) ,
-		cx: Math.min(cg.x0   , cg.x1) ,
-		cy: Math.min(cg.y0   , cg.y1) ,
+		x: Math.min(cg.x0, cg.x1) ,
+		y: Math.min(cg.y0, cg.y1) ,
+		cx: Math.min(cg.x0, cg.x1) ,
+		cy: Math.min(cg.y0, cg.y1) ,
 		width: Math.abs(cg.x1 - cg.x0) ,
 		height: Math.abs(cg.y1 - cg.y0)
 	});   

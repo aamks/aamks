@@ -8,8 +8,8 @@ function registerListenersUnderlay() {//{{{
 	$("body").on("keyup"  , "#uimg_invert"  , function() { uimgSingleAttrib(floor  , 'invert'  , $("#uimg_invert").val())  ; }) ;
 	$("body").on("click"  , "#submit_scale" , function() { uimgScale(floor); });
 
-	$(this).keydown((e) =>  { if (e.ctrlKey && e.altKey) {  $("#apainter-svg").css("pointer-events", "none"); $('#uimg'+floor).css("pointer-events", "auto"); underlay_form();  }});
-	$(this).keyup((e) =>    { if (e.key == 'Alt') { $("#apainter-svg").css("pointer-events", "auto"); $('#uimg'+floor).css("pointer-events", "none"); underlay_form(); }});
+	$(this).keydown((e) =>  { if (e.ctrlKey && e.altKey) {  $("#apainter-svg").css("pointer-events", "none"); $('#uimg'+floor).css("pointer-events", "auto"); underlayForm();  }});
+	$(this).keyup((e) =>    { if (e.key == 'Alt') { $("#apainter-svg").css("pointer-events", "auto"); $('#uimg'+floor).css("pointer-events", "none"); underlayForm(); }});
 }
 //}}}
 function importUnderlay(data,f,reload_form=0) {//{{{
@@ -25,7 +25,7 @@ function importUnderlay(data,f,reload_form=0) {//{{{
 			if(f==floor) { visibility='visible'; } else { visibility='hidden'; }
 			d3.select('#underlay'+f).attr("visibility", visibility).append("image").attr("id", "uimg"+f).attr("pointer-events", "none").attr("width", 8000).attr("xlink:href", json.data);
 			underlay_attribs(f, data);
-			if(reload_form==1) { underlay_form(); }
+			if(reload_form==1) { underlayForm(); }
 		});
 	} else {
 		d3.select('#underlay'+f).attr("visibility", 'hidden').append("image").attr("id", "uimg"+f).attr("width", 8000);
@@ -71,9 +71,9 @@ function underlay_zoomer(floor) {//{{{
 		)
 }
 //}}}
-function underlay_form() {//{{{
+function underlayForm() {//{{{
 	if($("#p1").length>0) { submit="<input id=submit_scale class=blink type=button value=set>"; } else { submit='<letter>p</letter>+drag'; }
- 	right_menu_box_show(
+ 	rightBoxShow(
 		"Supported: png jpg svg pdf<br><br>"+
 		"<input id=underlay"+floor+"_form type=hidden value=1>"+
 		"<input type=file id=uimg_add    style='display:none'><label class=blink for='uimg_add'>add</label>"+
