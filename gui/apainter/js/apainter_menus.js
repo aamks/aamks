@@ -1,19 +1,19 @@
-function register_listeners() {//{{{
-	$("right-menu-box").on("click"     , "#btn_copy_to_floor"       , function() { copy_to_floor() });
-	$("right-menu-box").on("click"     , "#btn_submit_cad_json"     , function() { textarea_edit_cad_json() });
+function registerListeners() {//{{{
+	$("right-menu-box").on("click"     , "#btn_copy_to_floor"       , function() { floorCopy() });
+	$("right-menu-box").on("click"     , "#btn_submit_cad_json"     , function() { txtEditCadJson() });
 	$("right-menu-box").on("click"     , '#setup_underlay'          , function() { underlay_form(); });
-	$("right-menu-box").on("mouseover" , ".properties_type_listing" , function() { change_cg($(this).attr('id')); });
-	$("right-menu-box").on("click"     , '.properties_type_listing' , function() { change_cg($(this).attr('id'), 1);  });
-	$("body").on("click"               , '#apainter-save'           , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { cad_json_textarea_save(); } });
-	$("body").on("click"               , '#apainter-next-view'      , function() { next_view(); });
-	$("body").on("click"               , '#button-help'             , function() { apainter_help_box(); });
-	$("body").on("click"               , '#button-setup'            , function() { apainter_setup_box(); });
-	$("body").on("click"               , '.legend'                  , function() { active_letter=$(this).attr('letter'); properties_type_listing(); });
-	$("body").on("mouseleave"          , 'right-menu-box'           , function() { save_setup_box(); });
+	$("right-menu-box").on("mouseover" , ".bulkProps" , function() { cgSelectNew($(this).attr('id')); });
+	$("right-menu-box").on("click"     , '.bulkProps' , function() { cgSelectNew($(this).attr('id'), 1);  });
+	$("body").on("click"               , '#apainter-save'           , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
+	$("body").on("click"               , '#apainter-next-view'      , function() { nextView(); });
+	$("body").on("click"               , '#button-help'             , function() { helpBox(); });
+	$("body").on("click"               , '#button-setup'            , function() { setupBox(); });
+	$("body").on("click"               , '.legend'                  , function() { activeLetter=$(this).attr('letter'); bulkProps(); });
+	$("body").on("mouseleave"          , 'right-menu-box'           , function() { saveRightBox(); });
 
 	$("body").on("dblclick"        , "#apainter-svg"        , function(){
 		if (['rect', 'circle'].includes(event.target.tagName)) { 
-			change_cg(event.target.id, 1);
+			cgSelectNew(event.target.id, 1);
 		} else {
 			cg={};
 		}
@@ -21,19 +21,25 @@ function register_listeners() {//{{{
 
 }
 //}}}
-function keyboard_events() {//{{{
-	$(this).keypress((e) => { if (e.key in gg)  { active_letter=e.key; new_geom(); } });
-	$(this).keydown((e) =>  { if (e.key == 'h') { next_view(); } });
+function keyboardEvents() {//{{{
+	$(this).keypress((e) => { if (e.key in gg)  { activeLetter=e.key; cgCreate(); } });
+	$(this).keydown((e) =>  { if (e.key == 'h') { nextView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'p') { $("#p1").remove() ; } });
-	$(this).keydown((e) =>  { if (e.key == 'n') { change_floor(calc_next_floor()); } });
+	$(this).keydown((e) =>  { if (e.key == 'n') { changeFloor(calcNextFloor()); } });
 	$(this).keydown((e) =>  { if (e.key == '=') { resetView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
-	$(this).keypress((e) => { if (e.key == 'x' && ! isEmpty(cg)) { remove_cg(); }});
-	$(this).keypress((e) => { if (e.key == 'g') { properties_type_listing(); } });
+	$(this).keypress((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgRemove(); }});
+	$(this).keypress((e) => { if (e.key == 'g') { bulkProps(); } });
+	// debug
+	//$(this).keypress((e) => { if (e.key == ']') { (snap_lines); } });
+	$(this).keypress((e) => { if (e.key == ']') { 
+		dd(db({'floor': floor}).get());
+	}});
+
 
 }
 //}}}
-function cad_jsons_db() { //{{{
+function dbUpdateCadJsonStr() { //{{{
 	// Create cad_json attribute for the DB
 	var cad_json;
 	var r=db().get();
@@ -54,20 +60,20 @@ function cad_jsons_db() { //{{{
 	}
 }
 //}}}
-function cad_json_textarea_close() {//{{{
+function closeTxtCadJson() {//{{{
 	$("#div-cad-json-textarea").remove();
 	if(fire_model=='FDS') { return; }
 	$("view2d").css("display", "block");
 	$("#apainter-svg").css("display", "block");
 }
 //}}}
-function cad_json_textarea_save() {//{{{
+function saveTxtCadJson() {//{{{
 	var json_data=$("#cad-json-textarea").val();
-	ajax_save_cadjson(json_data, fire_model); 
-	cad_json_textarea_close();
+	ajaxSaveCadJson(json_data, fire_model); 
+	closeTxtCadJson();
 }
 //}}}
-function textarea_edit_cad_json(pretty_json="") {//{{{
+function txtEditCadJson(pretty_json="") {//{{{
 	$("view2d").css("display", "none");
 	$("#apainter-svg").css("display", "none");
 	if(pretty_json=="") { var pretty_json=db2cadjson(); }
@@ -78,20 +84,20 @@ function textarea_edit_cad_json(pretty_json="") {//{{{
 	);
 }
 //}}}
-function init_svg_groups(json) {//{{{
+function svgGroupsInit(json) {//{{{
 	$(".floor").remove();
 	$(".snap_v").remove();
 	$(".snap_h").remove();
 
-	floors_count=0;
+	floorsCount=0;
 	for (var _floor in json) { 
 		d3.select("#building").append("g").attr("id", "floor"+_floor).attr("class", "floor").attr("fill-opacity", 0.4).attr('visibility',"hidden");
-		floors_count++;
+		floorsCount++;
 	}
 	$("#floor"+floor).attr('visibility',"visible").css("opacity", 1);
 }
 //}}}
-function into_db(json) { //{{{
+function json2db(json) { //{{{
 	// Geoms must come in order, otherwise we could see DOOR under ROOM if geoms were created in that order.
 	db().remove();
 	var letter;
@@ -103,80 +109,61 @@ function into_db(json) { //{{{
 		for (var i in elems) {
 			for (var geometry in json[floor][elems[i]]) {
 				letter=ggx[elems[i]];
-				arr=json[floor][elems[i]][geometry];
-				cg=read_record(parseInt(floor),letter,arr);
-				dbInsert(1);
+				cgMake(Number(floor),letter,json[floor][elems[i]][geometry]);
+				cgDb();
 				createSvg();
-				updateVis();
+				cgCss();
 			}
 		}
 	}
-	updateSnapLines(); // This is a heavy call, which shouldn't be called for each dbInsert()
+	updateSnapLines(); // This is a heavy call, which shouldn't be called for each cgDb()
 }
 //}}}
-function read_record(floor,letter,arr) { //{{{
-	var x0=arr[0][0];
-	var y0=arr[0][1];
-	var z0=arr[0][2];
-	var x1=arr[1][0];
-	var y1=arr[1][1];
-	var z1=arr[1][2];
+function cgMake(floor,letter,arr) { //{{{
+	cg.x0=arr[0][0];
+	cg.y0=arr[0][1];
+	cg.z0=arr[0][2];
+	cg.x1=arr[1][0];
+	cg.y1=arr[1][1];
+	cg.z1=arr[1][2];
+	cg.idx= arr[2]['idx'];
+	cg.name= letter+arr[2]['idx'];
+	cg.letter= letter;
+	cg.type= gg[letter].t;
+	cg.floor= floor;
+	cg.exit_type= '';
+	cg.room_enter= '';
+	cg.dimz= cg.z1-cg.z0;
+	cg.mvent_throughput=0;
 
-	var record={
-		idx: arr[2]['idx'],
-		name: letter+arr[2]['idx'],
-		letter: letter,
-		type: gg[letter].t,
-		floor: floor,
-		exit_type: '',
-		room_enter: '',
-		dimz: z1-z0,
-		mvent_throughput: 0,
-		x0: x0,
-		y0: y0,
-		z0: z0,
-		x1: x1,
-		y1: y1,
-		z1: z1
-	};
-
-	if(gg[letter].t == 'door') { 
-		record.exit_type=arr[2]['exit_type'];
-	}
-	if(gg[letter].t == 'room') { 
-		record.room_enter=arr[2]['room_enter'];
-	}
-
-	if(gg[letter].t == 'mvent') { 
-		record.mvent_throughput=arr[2]['mvent_throughput'];
-	}
-
-	return record;
+	if(gg[letter].t == 'door')  { cg.exit_type=arr[2]['exit_type']; }
+	if(gg[letter].t == 'room')  { cg.room_enter=arr[2]['room_enter']; }
+	if(gg[letter].t == 'mvent') { cg.mvent_throughput=arr[2]['mvent_throughput']; }
 }
 //}}}
-function ajax_save_cadjson(json_data, fire_model) { //{{{
+function ajaxSaveCadJson(json_data, fire_model) { //{{{
 	$.post('/aamks/ajax.php?ajaxApainterExport', { 'data': json_data, 'fire_model': fire_model }, function (json) { 
 		ajax_msg(json); 
-		import_cadjson();
+		importCadJson();
 	});
 }
 //}}}
-function import_cadjson() { //{{{
+function importCadJson() { //{{{
 	$.post('/aamks/ajax.php?ajaxApainterImport', { }, function (json) { 
-		// We loop thru dbInsert() here which updates the cg
+		// We loop thru cgDb() here which updates the cg
 		// At the end the last elem in the loop would be the cg
 		// which may run into this-elem-doesnt-belong-to-this-floor problem.
 		ajax_msg(json); 
 		if(json.err=='FDS') {
 			fire_model='FDS';
-			textarea_edit_cad_json(json.data);
+			txtEditCadJson(json.data);
 		} else {
 			fire_model='CFAST';
-			init_svg_groups(json.data);
+			svgGroupsInit(json.data);
 			_.each(json.data, function(data,floor) { import_underlay(data['UNDERLAY'],floor); });
-			into_db(json.data);
+			json2db(json.data);
 			cg={};
-			d3.select('#floor_text').text("floor "+floor+"/"+floors_count);
+			d3.select('#floor_text').text("floor "+floor+"/"+floorsCount);
 		}
 	});
 }
@@ -193,7 +180,7 @@ function legend() { //{{{
 
 }
 //}}}
-function reorder_db() {//{{{
+function dbReorder() {//{{{
 	// Re-enumerate all elems in this fashion: r1, r2, r3, ..., d1, d2, d3, ...
 	// CFAST expects elems to be numbered as above
 	// Evacuees will be in original order for navmesh testing pairing: e1 > e2, e3 > e4, ...
@@ -222,15 +209,15 @@ function reorder_db() {//{{{
 		db.insert(ee[i]);
 		idx++;
 	}
-	cad_jsons_db();
+	dbUpdateCadJsonStr();
 }
 //}}}
 function db2cadjson() {//{{{
 	// Instead of JSON.stringify we prefer our own pretty formatting.
 	// Since names appear in SVG and we are reordering we need to write and reread 
-	reorder_db();
+	dbReorder();
 	var json=[];
-	for(var f=0; f<floors_count; f++) { 
+	for(var f=0; f<floorsCount; f++) { 
 		var geoms=[];
 		for(var letter in gg) {
 			if (gg[letter]['legendary'] == 0) { continue; }
@@ -252,24 +239,24 @@ function db2cadjson() {//{{{
 		var ff='';
 		ff+='\t"'+f+'": {\n';
 		ff+=geoms.join(",\n");
-		ff+=underlay_save_cad(f);
+		ff+=underlaySaveCad(f);
 		ff+='\n\t}';
 		json.push(ff);
 	}
 	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
-	ajax_save_cadjson(pretty_json, fire_model);
+	ajaxSaveCadJson(pretty_json, fire_model);
 	return pretty_json;
 }
 //}}}
-function copy_to_floor() {	//{{{
-	c2f=parseInt($("#copy_to_floor").val());
+function floorCopy() {	//{{{
+	c2f=Number($("#copy_to_floor").val());
 	var guess=db({"floor": floor, 'letter': 'r'}).select("dimz");
 	if(guess[0] != undefined) {
 		var z0=guess[0] * c2f;
 	} else {
 		var z0=defaults.floor_dimz * c2f;
 	}
-	floors_count++;
+	floorsCount++;
 	building.append("g").attr("id", "floor"+c2f).attr({"class": "floor", "opacity": 0, "visibility": "hidden"});
 	var src=db({'floor': floor}).get();
 	var counter;
@@ -281,60 +268,59 @@ function copy_to_floor() {	//{{{
 		cg.name=gg[cg['letter']].x+counter;
 		cg.z1=z0 + cg['z1']-cg['z0'];
 		cg.z0=z0;
-		//var letter=cg['letter'];
-		dbInsert();
+		cgDb();
 		createSvg();
 	}
 	$("#floor"+c2f).attr({"class": "floor", "fill-opacity": 0.4, "visibility": "hidden"});
 
 	cg={};
-	apainter_setup_box();
+	updateSnapLines();
+	setupBox();
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
-function save_setup_box() {//{{{
+function saveRightBox() {//{{{
 
 	if ($("#general_setup").val() != null) { 
-        if (floor != $("#floor").val()) { change_floor(parseInt($("#floor").val())); }
-		floor_zorig=parseInt($("#floor_zorig").val());
-		defaults.door_dimz=parseInt($("#default_door_dimz").val());
-		defaults.door_width=parseInt($("#default_door_width").val());
-		defaults.floor_dimz=parseInt($("#default_floor_dimz").val());
-		defaults.window_dimz=parseInt($("#default_window_dimz").val());
-		defaults.window_offsetz=parseInt($("#default_window_offsetz").val());
+        if (floor != $("#floor").val()) { changeFloor(Number($("#floor").val())); }
+		floorZ0=Number($("#floorZ0").val());
+		defaults.door_dimz=Number($("#default_door_dimz").val());
+		defaults.door_width=Number($("#default_door_width").val());
+		defaults.floor_dimz=Number($("#default_floor_dimz").val());
+		defaults.window_dimz=Number($("#default_window_dimz").val());
+		defaults.window_offsetz=Number($("#default_window_offsetz").val());
 		legend();
 	} 
 
 	if ($("#geom_properties").val() != null) { 
-		if(isEmpty(cg)) { return; } // TODO: can we ever reach this condition?
-		cg.room_enter=$("#alter_room_enter").val(),
-		cg.exit_type=$("#alter_exit_type").val(),
-		cg.dimz=parseInt($("#alter_dimz").val()),
-		cg.z0=parseInt($("#alter_z0").val()),
-		cg.mvent_throughput=parseInt($("#alter_mvent_throughput").val()),
-		cg.rr={
-			x0: parseInt($("#alter_x0").val()),
-			y0: parseInt($("#alter_y0").val()),
-			x1: parseInt($("#alter_x0").val())+parseInt($("#alter_dimx").val()),
-			y1: parseInt($("#alter_y0").val())+parseInt($("#alter_dimy").val()),
-		};
+		//if(isEmpty(cg)) { return; } // TODO: can we ever reach this condition?
+		cg.room_enter=$("#alter_room_enter").val();
+		cg.exit_type=$("#alter_exit_type").val();
+		cg.dimz=Number($("#alter_dimz").val());
+		cg.z0=Number($("#alter_z0").val());
+		cg.mvent_throughput=Number($("#alter_mvent_throughput").val());
+		cg.x0=Number($("#alter_x0").val());
+		cg.y0=Number($("#alter_y0").val());
+		cg.x1=Number($("#alter_x0").val())+Number($("#alter_dimx").val());
+		cg.y1=Number($("#alter_y0").val())+Number($("#alter_dimy").val());
 
 		if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
-
-		updateSvgElem();
-		updateVis();
-		rrRecalculate();
-		dbInsert();
+		cgUpdateSvg();
+		cgCss();
+		cgPolish();
+		cgDb();
+		cgShowBox(); 
+		updateSnapLines();
 	} 
 
 }
 //}}}
 
-function properties_type_listing_plain() {//{{{
+function bulkPlainProps() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim";
-	var items=db({'letter': active_letter, 'floor': floor}).get();
+	var items=db({'letter': activeLetter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
 			"<td>"+items[i]['x0']+
 			"<td>"+items[i]['y0']+
 			"<td>"+items[i]['dimx']+
@@ -344,12 +330,12 @@ function properties_type_listing_plain() {//{{{
 	return tbody;
 }
 //}}}
-function properties_type_listing_mvent() {//{{{
+function bulkMventProps() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>throughput";
-	var items=db({'letter': active_letter, 'floor': floor}).get();
+	var items=db({'letter': activeLetter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
 			"<td>"+items[i]['x0']+
 			"<td>"+items[i]['y0']+
 			"<td>"+items[i]['dimx']+
@@ -360,12 +346,12 @@ function properties_type_listing_mvent() {//{{{
 	return tbody;
 }
 //}}}
-function properties_type_listing_window() {//{{{
+function bulkWinProps() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim";
-	var items=db({'letter': active_letter, 'floor': floor}).get();
+	var items=db({'letter': activeLetter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
 			"<td>"+items[i]['x0']+
 			"<td>"+items[i]['y0']+
 			"<td>"+items[i]['dimx']+
@@ -375,12 +361,12 @@ function properties_type_listing_window() {//{{{
 	return tbody;
 }
 //}}}
-function properties_type_listing_door() {//{{{
+function bulkDoorProps() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>exit_type";
-	var items=db({'letter': active_letter, 'floor': floor}).get();
+	var items=db({'letter': activeLetter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
 			"<td>"+items[i]['x0']+
 			"<td>"+items[i]['y0']+
 			"<td>"+items[i]['dimx']+
@@ -391,12 +377,12 @@ function properties_type_listing_door() {//{{{
 	return tbody;
 }
 //}}}
-function properties_type_listing_room() {//{{{
+function bulkRoomProps() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>enter";
-	var items=db({'letter': active_letter, 'floor': floor}).get();
+	var items=db({'letter': activeLetter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
 			"<td>"+items[i]['x0']+
 			"<td>"+items[i]['y0']+
 			"<td>"+items[i]['dimx']+
@@ -407,47 +393,47 @@ function properties_type_listing_room() {//{{{
 	return tbody;
 }
 //}}}
-function properties_type_listing_evacuee() {//{{{
+function bulkEvacueeProps() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x0<td>y0";
 
-	var items=db({'letter': active_letter, 'floor': floor}).get();
+	var items=db({'letter': activeLetter, 'floor': floor}).get();
 	for (var i in items) { 
-		tbody+="<tr><td class=properties_type_listing id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
+		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
 			"<td>"+items[i]['x0']+
 			"<td>"+items[i]['y0'];
 	}
 	return tbody;
 }
 //}}}
-function properties_type_listing() {//{{{
+function bulkProps() {//{{{
 	var html='';
 	html+='<div style="overflow-y: scroll; height: '+(canvas[1]-100)+'px">';
 	html+='<wheat>Hover name, then <letter>x</letter> to delete</wheat>';
 	html+='<table id=gg_listing style="margin-right:20px">';
-	if (gg[active_letter].t=='mvent') { 
-		html+=properties_type_listing_mvent();
-	} else if (gg[active_letter].t=='window') { 
-		html+=properties_type_listing_window();
-	} else if (gg[active_letter].t=='door') { 
-		html+=properties_type_listing_door();
-	} else if (gg[active_letter].t=='evacuee') { 
-		html+=properties_type_listing_evacuee();
-	} else if (gg[active_letter].t=='room') { 
-		html+=properties_type_listing_room();
+	if (gg[activeLetter].t=='mvent') { 
+		html+=bulkMventProps();
+	} else if (gg[activeLetter].t=='window') { 
+		html+=bulkWinProps();
+	} else if (gg[activeLetter].t=='door') { 
+		html+=bulkDoorProps();
+	} else if (gg[activeLetter].t=='evacuee') { 
+		html+=bulkEvacueeProps();
+	} else if (gg[activeLetter].t=='room') { 
+		html+=bulkRoomProps();
 	} else {
-		html+=properties_type_listing_plain();
+		html+=bulkPlainProps();
 	}
 	html+="</table>";
 	html+="</div>";
 
-	right_menu_box_show(html, 0);
+	rightBoxShow(html, 0);
 }
 //}}}
 
-function make_dim_properties() {//{{{
+function dimProps() {//{{{
 	var prop='';
-	if(gg[active_letter].t!='evacuee') {
+	if(gg[activeLetter].t!='evacuee') {
 		//var selected=db({'name':cg}).select("exit_type")[0]; // TODO: some garbage line?
 		prop+="<tr><td>x-dim<td><input id=alter_dimx type=text size=3 value="+db({'name':cg.name}).select("dimx")[0]+"> cm";
 		prop+="<tr><td>y-dim<td><input id=alter_dimy type=text size=3 value="+db({'name':cg.name}).select("dimy")[0]+"> cm";
@@ -460,9 +446,9 @@ function make_dim_properties() {//{{{
 	return prop;
 }
 //}}}
-function make_room_properties() {//{{{
+function roomProps() {//{{{
 	var prop='';
-	if(gg[active_letter].t=='room') {
+	if(gg[activeLetter].t=='room') {
 		var selected=db({'name':cg.name}).select("room_enter")[0];
 		prop+="<tr><td>enter <withHelp>?<help><orange>yes</orange> agents can evacuate via this room<br><hr><orange>no</orange> agents can not evacuate via this room</help></withHelp>";
 		prop+="<td><select id=alter_room_enter>";
@@ -476,9 +462,9 @@ function make_room_properties() {//{{{
 	return prop;
 }
 //}}}
-function make_mvent_properties() {//{{{
+function mventProps() {//{{{
 	var mvent='';
-	if(gg[active_letter].t=='mvent') {
+	if(gg[activeLetter].t=='mvent') {
 		mvent+="<tr><td>throughput<td>  <input id=alter_mvent_throughput type=text size=3 value="+db({'name':cg.name}).select("mvent_throughput")[0]+">";
 	} else {
 		mvent+="<input id=alter_mvent_throughput type=hidden value=0>";
@@ -486,9 +472,9 @@ function make_mvent_properties() {//{{{
 	return mvent;
 }
 //}}}
-function make_door_properties() {//{{{
+function doorProps() {//{{{
 	var prop='';
-	if(gg[active_letter].t=='door') {
+	if(gg[activeLetter].t=='door') {
 		var selected=db({'name':cg.name}).select("exit_type")[0];
 		prop+="<tr><td>exit <withHelp>?<help><orange>auto</orange> any evacuee can use this door<br><hr><orange>primary</orange> many evacuees have had used this door to get in and will use it to get out<br><hr><orange>secondary</orange> extra door known to the personel</help></withHelp>";
 		prop+="<td><select id=alter_exit_type>";
@@ -504,7 +490,7 @@ function make_door_properties() {//{{{
 }
 //}}}
 
-function right_menu_box_show(html, close_button=1) {//{{{
+function rightBoxShow(html, close_button=1) {//{{{
 	$('right-menu-box').html("");
 	if(close_button==1) { $('right-menu-box').append("<close-right-menu-box><img src=/aamks/css/close.svg></close-right-menu-box><br>"); }
 	$('right-menu-box').append(html);
@@ -512,13 +498,13 @@ function right_menu_box_show(html, close_button=1) {//{{{
 }
 //}}}
 
-function apainter_setup_box() {//{{{
-	right_menu_box_show(
+function setupBox() {//{{{
+	rightBoxShow(
 		"<table class=nobreak>"+
 		"<input id=general_setup type=hidden value=1>"+
 		"<tr><td colspan=2 style='text-align: center'>since now"+
 		"<tr><td>floor<td><input id=floor type=text name=floor size=4 value="+floor+">"+ 
-		"<tr><td>floor's z-origin <td><input id=floor_zorig type=text size=4   name=floor_zorig value="+floor_zorig+">"+
+		"<tr><td>floor's z-origin <td><input id=floorZ0 type=text size=4   name=floorZ0 value="+floorZ0+">"+
 		"<tr><td>door's width <td><input id=default_door_width type=text size=4   name=default_door_width  value="+defaults.door_width+">"+
 		"<tr><td>door's z-dim <td><input id=default_door_dimz type=text size=4	name=default_door_dimz value="+defaults.door_dimz+">"+
 		"<tr><td>room's z-dim <td><input id=default_floor_dimz type=text size=4 name=default_floor_dimz value="+defaults.floor_dimz+">"+
@@ -529,8 +515,8 @@ function apainter_setup_box() {//{{{
 	);
 }
 //}}}
-function apainter_help_box() {//{{{
-	right_menu_box_show(
+function helpBox() {//{{{
+	rightBoxShow(
 		"<table class=nobreak>"+
 		"<tr><td><letter>letter</letter> + <letter>leftMouse</letter><td> create element"+
 		"<tr><td>double <letter>leftMouse</letter><td> element properties"+
@@ -545,10 +531,10 @@ function apainter_help_box() {//{{{
 	);
 }
 //}}}
-function apainter_properties_box() {//{{{
-	active_letter=db({'name':cg.name}).select("letter")[0];
-	dd(cg);
-	right_menu_box_show(
+function cgShowBox() {//{{{
+	activeLetter=db({'name':cg.name}).select("letter")[0];
+	//dd(cg);
+	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
 		"<wheat><letter>x</letter> to delete, <letter>g</letter> for listing</wheat>"+
 		"<table>"+
@@ -556,10 +542,10 @@ function apainter_properties_box() {//{{{
 		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':cg.name}).select("x0")[0]+"> cm"+
 		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':cg.name}).select("y0")[0]+"> cm"+
 		"<tr><td>z0	<td>	<input id=alter_z0 type=text size=3 value="+db({'name':cg.name}).select("z0")[0]+"> cma"+
-		make_dim_properties()+
-		make_room_properties()+
-		make_mvent_properties()+
-		make_door_properties()+
+		dimProps()+
+		roomProps()+
+		mventProps()+
+		doorProps()+
 		"</table>", 0
 	);
 

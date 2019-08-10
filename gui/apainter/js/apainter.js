@@ -8,31 +8,31 @@ var ggx;
 var zoom;
 var fire_model='CFAST';
 var currentView=0;
-var active_letter='r';
+var activeLetter='r';
 var svg;
 var floor=0;
-var floors_count=1;
-var floor_zorig=0;
+var floorsCount=1;
+var floorZ0=0;
 var building;
 var ax={};
-var snap_dist=50;
+var snapForce=50;
 var snapLinesSvg;
-var snap_lines={};
+var snapLinesArr={};
 var defaults={'door_dimz': 200, 'door_width': 90, 'floor_dimz': 350, 'window_dimz': 150, 'window_offsetz': 100 };
 var vh_snap=[];
 var evacueeRadius;
 //}}}
 // on start{{{
 $(function()  { 
-	temp_chrome_transforms();
+	tempChrome();
 	$.getJSON("inc.json", function(x) {
 		gg=x['aamksGeoms'];
 		ggx=x['aamksGeomsMap'];
 		evacueeRadius=x['evacueeRadius'];
-		canvas_builder();
-		import_cadjson();
-		register_listeners();
-		register_underlay_listeners();
+		canvasBuilder();
+		importCadJson();
+		registerListeners();
+		registerListenersUnderlay();
 		$('right-menu-box').fadeOut();
 
 		//dd($('#building')[0]);
@@ -40,7 +40,7 @@ $(function()  {
 });
 //}}}
 
-function temp_chrome_transforms() {//{{{
+function tempChrome() {//{{{
 	// At some point chrome will enable separate css transformations and this call will be removed
 	d3.select('body').append('temp_checker').attr("id", "temp_checker").style("scale", 1);
 	if(d3.select('#temp_checker').style("scale")=='') {
@@ -52,41 +52,41 @@ function ddd() {//{{{
 	dd(db().get());
 }
 //}}}
-function rrRecalculate() {//{{{
+function cgPolish() {//{{{
 	// real x,y are calculated as minimum/maximum values from rr
 	// z needs separate calculations here.
-	dd('recalc', cg);
+	//dd('recalc', cg);
 
 	cg.x0 = Math.min(Math.round(cg.x0), Math.round(cg.x1));
 	cg.x1 = Math.max(Math.round(cg.x0), Math.round(cg.x1));
 	cg.y0 = Math.min(Math.round(cg.y0), Math.round(cg.y1));
 	cg.y1 = Math.max(Math.round(cg.y0), Math.round(cg.y1));
 	if(cg.type=='evacuee') {
-		if(cg.z0===undefined) { cg.z0=floor_zorig; }
+		if(cg.z0===undefined) { cg.z0=floorZ0; }
 		cg.z1=cg.z0 + 50;
 	} else if(cg.type=='door') {
-		if(cg.z0===undefined) { cg.z0=floor_zorig; }
+		if(cg.z0===undefined) { cg.z0=floorZ0; }
 		cg.z1=cg.z0  + cg.dimz;
 	} else if(cg.type=='obst') {
-		if(cg.z0===undefined) { cg.z0=floor_zorig; }
+		if(cg.z0===undefined) { cg.z0=floorZ0; }
 		cg.z1=cg.z0 + 100;
 	} else if(cg.type=='vvent') {
-		//dd('start zolty', cg.z0, "floor_zorig", floor_zorig);
-		if(cg.z0===undefined) { cg.z0=floor_zorig + defaults.floor_dimz - 4; }
+		//dd('start zolty', cg.z0, "floorZ0", floorZ0);
+		if(cg.z0===undefined) { cg.z0=floorZ0 + defaults.floor_dimz - 4; }
 		cg.z1=cg.z0 + 8;
-		//dd('end zolty', cg.z0, "floor_zorig", floor_zorig);
+		//dd('end zolty', cg.z0, "floorZ0", floorZ0);
 		//dd("===");
 	} else if(cg.type=='mvent') {
-		//dd('start zielony', cg.z0, "floor_zorig", floor_zorig);
-		if(cg.z0===undefined) { cg.z0=floor_zorig; }
+		//dd('start zielony', cg.z0, "floorZ0", floorZ0);
+		if(cg.z0===undefined) { cg.z0=floorZ0; }
 		cg.z1=cg.z0 + cg.dimz;
-		//dd('end zielony', cg.z0, "floor_zorig", floor_zorig);
+		//dd('end zielony', cg.z0, "floorZ0", floorZ0);
 		//dd("===");
 	} else if(cg.type=='window') {
-		if(cg.z0===undefined) { cg.z0=floor_zorig + defaults.window_offsetz; }
+		if(cg.z0===undefined) { cg.z0=floorZ0 + defaults.window_offsetz; }
 		cg.z1=cg.z0 + cg.dimz;
 	} else {
-		if(cg.z0===undefined) { cg.z0=floor_zorig; }
+		if(cg.z0===undefined) { cg.z0=floorZ0; }
 		cg.z1=cg.z0 + cg.dimz;
 	}
 }
@@ -115,7 +115,7 @@ function createSvg() { //{{{
 		.attr('height', cg.y1 - cg.y0)
 }
 //}}}
-function updateVis() {//{{{
+function cgCss() {//{{{
 	if(cg.type=='door') { 
 		if(cg.exit_type=='secondary') { 
 			$("#"+cg.name).css({ stroke: "#000" });   
@@ -133,10 +133,10 @@ function updateVis() {//{{{
 	}
 }
 //}}}
-function dbInsert(relax=0) { //{{{
-	// On the occassions we are massively called from import_cadjson() and alike
+function cgDb() { //{{{
+	// On the occassions we are massively called from importCadJson() and alike
 	// we don't want to auto call the heavy updateSnapLines() each time -- it is sufficient 
-	// that import_cadjson() makes a single updateSnapLines() call after hundreds
+	// that importCadJson() makes a single updateSnapLines() call after hundreds
 	// of geoms are DbInserted().
 
 	var lines=[];
@@ -148,20 +148,20 @@ function dbInsert(relax=0) { //{{{
     if (['fire'].includes(cg.type)) { cg.room_enter="no"; }
 	if(cg.type!='underlay_scaler') {
 		db.insert({ "name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "dimx": cg.x1-cg.x0, "dimy": cg.y1-cg.y0, "dimz": cg.dimz, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
-		if(relax==0) { apainter_properties_box(); updateSnapLines(); }
 	} 
+	
 }
 //}}}
-function change_cg(name, show_properties=0) {//{{{
+function cgSelectNew(name, show_properties=0) {//{{{
 	cg.name=name;
-	blink_selected();
+	cgBlink();
 	cg=db({'name':name}).get()[0];
-	if(show_properties==1) { apainter_properties_box(); }
+	if(show_properties==1) { cgShowBox(); }
 
 }
 //}}}
 function nextId() {//{{{
-	var next=db({"type": gg[active_letter].t}).max("idx");
+	var next=db({"type": gg[activeLetter].t}).max("idx");
 	if(next == undefined) { 
 		next=1;
 	} else {
@@ -180,7 +180,7 @@ function buildingAttachZoomer() {//{{{
 		.call(d3.zoom()
 			.scaleExtent([1 / 30, 4])
 			.translateExtent([[-1200, -1200], [1000000 , 1000000]])
-			.on("zoom", zoomed_canvas)
+			.on("zoom", zoomedCanvas)
 		)
 		.on("dblclick.zoom", null);
 }
@@ -190,12 +190,12 @@ function resetView(){//{{{
 }
 //}}}
 function zoomInit() { //{{{
-	zoom = d3.zoom().on("zoom", zoomed_canvas);
+	zoom = d3.zoom().on("zoom", zoomedCanvas);
 	resetView();
 	buildingAttachZoomer(); 
 }
 //}}}
-function zoomed_canvas() {//{{{
+function zoomedCanvas() {//{{{
 	zt=d3.event.transform;
 	building.attr("transform", zt);
 	snapLinesSvg.attr("transform", zt);
@@ -204,20 +204,20 @@ function zoomed_canvas() {//{{{
 	ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
 }
 //}}}
-function calc_next_floor() {//{{{
-	if (floor == floors_count - 1) {
+function calcNextFloor() {//{{{
+	if (floor == floorsCount - 1) {
 		return 0;
 	} else {
 		return floor+1;
 	}
 }
 //}}}
-function blink_selected() {//{{{
+function cgBlink() {//{{{
 	$("#"+cg.name).css('stroke-width', '100px');
-	$("#"+cg.name).animate({ 'stroke-width': gg[active_letter].strokeWidth}, 400);
+	$("#"+cg.name).animate({ 'stroke-width': gg[activeLetter].strokeWidth}, 400);
 }
 //}}}
-function next_view() {//{{{
+function nextView() {//{{{
 	//console.log(currentView);
 
 	// For production
@@ -230,14 +230,14 @@ function next_view() {//{{{
 	if(fire_model=='FDS') { return; }
 
 	if(currentView==0)      { currentView=1; view3d(); }
-	else if(currentView==1) { currentView=2; close3dview(); textarea_edit_cad_json(); }
-	else if(currentView==2) { currentView=0; cad_json_textarea_close(); }
+	else if(currentView==1) { currentView=2; close3dview(); txtEditCadJson(); }
+	else if(currentView==2) { currentView=0; closeTxtCadJson(); }
 
 	//console.log(currentView);
 	//console.log("===========");
 }
 //}}}
-function remove_cg() {//{{{
+function cgRemove() {//{{{
 	$("#"+cg.name).remove();
 	db({"name":cg.name}).remove();
 	updateSnapLines();
@@ -253,8 +253,9 @@ function updateSnapLines() { //{{{
 	// snap lines
 	d3.select("#snapLinesSvg").selectAll("line").remove();
 	var lines=db({'floor': floor}).select("lines");
-	snap_lines['horiz']=[];
-	snap_lines['vert']=[];
+	dd(lines);
+	snapLinesArr['horiz']=[];
+	snapLinesArr['vert']=[];
 	var below, above, right, left;
 
 	for(var points in lines) { 
@@ -263,10 +264,10 @@ function updateSnapLines() { //{{{
 		right = Math.round(lines[points][0][0]);
 		left  = Math.round(lines[points][1][0]);
 
-		snap_lines['horiz'].push(below);
-		snap_lines['horiz'].push(above);
-		snap_lines['vert'].push(right);
-		snap_lines['vert'].push(left);
+		snapLinesArr['horiz'].push(below);
+		snapLinesArr['horiz'].push(above);
+		snapLinesArr['vert'].push(right);
+		snapLinesArr['vert'].push(left);
 
 		snapLinesSvg.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
 		snapLinesSvg.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
@@ -274,8 +275,8 @@ function updateSnapLines() { //{{{
 		snapLinesSvg.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
 
 	}
-	snap_lines['horiz']=Array.from(new Set(snap_lines['horiz']));
-	snap_lines['vert']=Array.from(new Set(snap_lines['vert']));
+	snapLinesArr['horiz']=Array.from(new Set(snapLinesArr['horiz']));
+	snapLinesArr['vert']=Array.from(new Set(snapLinesArr['vert']));
 }
 //}}}
 function axes() { //{{{
@@ -307,35 +308,35 @@ function axes() { //{{{
 		.call(ax.yAxis);
 }
 //}}}
-function guess_floors_z_origin() {//{{{
+function guessFloorZ0() {//{{{
     // This is just a guess, user may overwrite via a form
 	// Guess 1: Perhaps user has set the z-origin for this floor -- we will then find it in db()
 	// Guess 2: If we are the first time on floor 5, then multiply floor0's dimz * 5
 	// Guess 3: If there's no floor0 even or any other occassion z-origin=0
 	var guess=db({"floor": floor, 'letter': 'r'}).select("z0");
 	if(guess[0] != undefined) {
-		$("#floor_zorig").val(guess[0]);
-		floor_zorig=guess[0];
+		$("#floorZ0").val(guess[0]);
+		floorZ0=guess[0];
 		return;
 	}
 
 	var guess=db({"floor": 0, 'letter': 'r'}).select("dimz");
 	if(guess[0] != undefined) {
-		$("#floor_zorig").val(guess[0]*floor);
-		floor_zorig=guess[0]*floor;
+		$("#floorZ0").val(guess[0]*floor);
+		floorZ0=guess[0]*floor;
 		return;
 	}
 
-	$("#floor_zorig").val(0);
+	$("#floorZ0").val(0);
 }
 //}}}
-function change_floor(requested_floor) {//{{{
+function changeFloor(requested_floor) {//{{{
 	$("#p1").remove();
 	$('right-menu-box').fadeOut(0);
 	floor=requested_floor;
-	guess_floors_z_origin();
-	if(floor > floors_count-1) { 
-		floors_count++;
+	guessFloorZ0();
+	if(floor > floorsCount-1) { 
+		floorsCount++;
 		building.append("g").attr("id", "floor"+floor).attr("class", "floor").attr('fill-opacity',0.4);
 	}
 
@@ -346,12 +347,12 @@ function change_floor(requested_floor) {//{{{
 	$("#underlay"+floor).attr("visibility","visible");
 
 	updateSnapLines();
-	d3.select("#floor_text").text("floor "+floor+"/"+floors_count);
+	d3.select("#floor_text").text("floor "+floor+"/"+floorsCount);
 	$("#floor_text").clearQueue().finish();
 	$("#floor_text").css("opacity",1).animate({"opacity": 0.05}, 1000);
 }
 //}}}
-function fix_hole_offset() { //{{{
+function fixHoleOffset() { //{{{
 	// Detect orientation and fix hole offset. Other types, like windows, don't
 	// need fixes.
 
@@ -366,10 +367,10 @@ function fix_hole_offset() { //{{{
 	}
 }
 //}}}
-function snap_vertical(m,after_click) {//{{{
-	for(var point in snap_lines['vert']) {
-		p=snap_lines['vert'][point];
-		if ((m[0]-zt.x)/zt.k > p - snap_dist && (m[0]-zt.x)/zt.k < p + snap_dist) { 
+function snapVertical(m,after_click) {//{{{
+	for(var point in snapLinesArr['vert']) {
+		p=snapLinesArr['vert'][point];
+		if ((m[0]-zt.x)/zt.k > p - snapForce && (m[0]-zt.x)/zt.k < p + snapForce) { 
 			$("#sv_"+p).attr("visibility", "visible");
 			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: (m[1]-zt.y)/zt.k, cx: p });
 			vh_snap.push(p);
@@ -397,10 +398,10 @@ function snap_vertical(m,after_click) {//{{{
 	}
 }
 //}}}
-function snap_horizontal(m,after_click) {//{{{
-	for(var point in snap_lines['horiz']) {
-		p=snap_lines['horiz'][point];
-		if ((m[1]-zt.y)/zt.k > p - snap_dist && (m[1]-zt.y)/zt.k < p + snap_dist) { 
+function snapHorizontal(m,after_click) {//{{{
+	for(var point in snapLinesArr['horiz']) {
+		p=snapLinesArr['horiz'][point];
+		if ((m[1]-zt.y)/zt.k > p - snapForce && (m[1]-zt.y)/zt.k < p + snapForce) { 
 			$("#sh_"+p).attr("visibility", "visible");
 			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: (m[0]-zt.x)/zt.k, cy: p });
 			vh_snap.push(p);
@@ -434,8 +435,8 @@ function snap(m,after_click) {//{{{
 	$('#snapper').attr('fill-opacity', 0);
 	if (event.ctrlKey) { return; } 
 	vh_snap=[];
-	snap_vertical(m,after_click);
-	snap_horizontal(m,after_click);
+	snapVertical(m,after_click);
+	snapHorizontal(m,after_click);
 
 	if(cg.type!='door' && vh_snap.length==2) { 
 		$('#snapper').attr({ r: 30, cx: vh_snap[0], cy: vh_snap[1]});
@@ -443,12 +444,12 @@ function snap(m,after_click) {//{{{
 }
 
 //}}}
-function new_cg() {//{{{
+function cgInit() {//{{{
 	var counter=nextId();
 	cg.floor=floor;
-	cg.letter=active_letter;
-	cg.type=gg[active_letter].t;
-	cg.name=active_letter+counter;
+	cg.letter=activeLetter;
+	cg.type=gg[activeLetter].t;
+	cg.name=activeLetter+counter;
 	cg.idx=counter;
 	cg.mvent_throughput=0;
 	cg.exit_type='';
@@ -469,7 +470,7 @@ function new_cg() {//{{{
 	}
 }
 //}}}
-function new_geom() {//{{{
+function cgCreate() {//{{{
 	// After a letter is clicked we react to mouse events
 	// The most tricky scenario is when first mouse click happens before mousemove.
 	// geom.x0 & friends are temporary -- we don't want to recalculate min, max, width, height on every mouse drag
@@ -477,7 +478,7 @@ function new_geom() {//{{{
 	var mouse;
 	var after_click=0;
 	var mx, my;
-	new_cg();
+	cgInit();
 	$('right-menu-box').fadeOut(0);
 	buildingDetachZoomer();
 	svg.on('mousedown', function() {
@@ -504,7 +505,7 @@ function new_geom() {//{{{
 		Object.assign(cg, { x1: mx, y1: my, cx: mx, cy: my });
 
 		if(['room', 'hole', 'window', 'door'].includes(cg.type)) { snap(mouse,after_click); }
-		if(after_click==1) { updateSvgElem(); } 
+		if(after_click==1) { cgUpdateSvg(); } 
 	});  
 	svg.on('mouseup', function() {
 		if(['underlay_scaler'].includes(cg.type))  { underlay_form(); }
@@ -517,10 +518,12 @@ function new_geom() {//{{{
 		if(cg.x0 == cg.x1 || cg.y0 == cg.y1 || cg.x0 == null) { 
 			$("#"+cg.name).remove();
 		} else {
-			if (['hole', 'window'].includes(cg.type)) { fix_hole_offset(); }
-			updateSvgElem();
-			rrRecalculate();
-			dbInsert();
+			if (['hole', 'window'].includes(cg.type)) { fixHoleOffset(); }
+			cgUpdateSvg();
+			cgPolish();
+			cgDb();
+			cgShowBox(); 
+			updateSnapLines();
 		}
 		after_click=0;
 		$('#snapper').attr('fill-opacity', 0);
@@ -528,7 +531,7 @@ function new_geom() {//{{{
 	});
 }
 //}}}
-function updateSvgElem() {  //{{{
+function cgUpdateSvg() {  //{{{
 	$("#"+cg.name).attr({
 		x: Math.min(cg.x0   , cg.x1) ,
 		y: Math.min(cg.y0   , cg.y1) ,
@@ -539,7 +542,7 @@ function updateSvgElem() {  //{{{
 	});   
 }
 //}}}
-function canvas_builder() { //{{{
+function canvasBuilder() { //{{{
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
 	d3.select('body').append('legend0');
@@ -553,7 +556,7 @@ function canvas_builder() { //{{{
 	tt.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
 	tt.append("text").attr("x",130).attr("y",140).attr("id", "shortcuts_help1").text("n: next floor");
 	tt.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: next view");
-	tt.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floors_count);
+	tt.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floorsCount);
 
 	axes();
 	building = svg.append("g").attr("id", "building");
@@ -563,7 +566,7 @@ function canvas_builder() { //{{{
 	legend();
 	d3.select('view2d').append('right-menu-box');
 	zoomInit();
-	keyboard_events();
+	keyboardEvents();
 
 
 }
