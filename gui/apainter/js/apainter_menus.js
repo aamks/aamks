@@ -43,7 +43,7 @@ function keyboardEvents() {//{{{
 //}}}
 function escapePressed() {//{{{
 	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
-	if("beforeMouseUp" in cg) { cgRemove(); }
+	if("mature" in cg) { cgRemove(); }
 }
 //}}}
 function dbUpdateCadJsonStr() { //{{{

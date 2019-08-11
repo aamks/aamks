@@ -411,7 +411,7 @@ function snapperCss(mx,my) {//{{{
 //}}}
 function cgInit() {//{{{
 	cgIdUpdate();
-	cg.beforeMouseDown=1;
+	cg.infant=1;
 	cg.floor=floor;
 	cg.letter=activeLetter;
 	cg.type=gg[activeLetter].t;
@@ -443,12 +443,11 @@ function cgCreate() {//{{{
 	buildingDetachZoomer();
 	cgInit();
 	svg.on('mousedown', function() {
-		cgInit();
 		m=scaleMouse(d3.mouse(this));
 		cgDecidePoints(m.x, m.y);
 		cgSvg();
-		cg.beforeMouseUp=1;
-		delete cg.beforeMouseDown;
+		cg.mature=1;
+		delete cg.infant;
 	});
 	svg.on('mousemove', function() {
 		m=scaleMouse(d3.mouse(this));
@@ -467,7 +466,7 @@ function cgCreate() {//{{{
 		}
 		$('#snapper').attr('fill-opacity', 0);
 		buildingAttachZoomer();
-		delete cg.beforeMouseUp;
+		delete cg.mature;
 		cgInit();
 	});
 }
@@ -478,23 +477,34 @@ function dumpCgPos() {//{{{
 }
 //}}}
 function cgDecidePoints(mx,my) {//{{{
+
 	if("x" in activeSnap) { px=activeSnap.x; } else { px=mx; }
 	if("y" in activeSnap) { py=activeSnap.y; } else { py=my; }
+	if("infant" in cg) { cg.x0=px; cg.y0=py; }
+	cg.x1=px; cg.y1=py; 
+	if (event.ctrlKey) { return; }
+
 	switch (cg.type) {
-		case 'room':
-			if("beforeMouseDown" in cg) { cg.x0=px; cg.y0=py; }
-			cg.x1=px; cg.y1=py; 
-			break;
 		case 'door':
-			if (event.ctrlKey) { 
-				if("beforeMouseDown" in cg) { cg.x0=px; cg.y0=py; }
-				cg.x1=px; cg.y1=py; 
-			} else if("x" in activeSnap) { 
+			if("x" in activeSnap) { 
 				cg.x0=px-16; cg.x1=px+16; cg.y1=py; cg.y0=py-defaults.door_width;
-			} else if("y" in activeSnap) { 
+			} else {
 				cg.y0=py-16; cg.y1=py+16; cg.x0=px; cg.x1=px+defaults.door_width;
 			}
 			break;
+		case 'window':
+			if("x" in activeSnap) { 
+				if("infant" in cg) { cg.x0=px-16; }
+				cg.x1=px+16;
+				dd('snapx', cg.x1);
+			}
+			if("y" in activeSnap) { 
+				if("infant" in cg) { cg.y0=py-16; }
+				cg.y1=py+16; 
+				dd('snapy', cg.x1);
+			}
+			break;
+ 
 	}
 	//dumpCgPos();
 }
