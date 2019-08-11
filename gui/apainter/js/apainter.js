@@ -264,10 +264,10 @@ function updateSnapLines() { //{{{
 		snapLinesArr['vert'].push(right);
 		snapLinesArr['vert'].push(left);
 
-		snapLinesSvg.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
-		snapLinesSvg.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , 0).attr('x2' , 100000).attr("visibility", "hidden");
-		snapLinesSvg.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , 0).attr('y2' , 100000).attr("visibility", "hidden");
-		snapLinesSvg.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , 0).attr('y2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , -10000).attr('x2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , -10000).attr('x2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , -10000).attr('y2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , -10000).attr('y2' , 100000).attr("visibility", "hidden");
 
 	}
 	snapLinesArr['horiz']=Array.from(new Set(snapLinesArr['horiz']));
@@ -362,87 +362,56 @@ function cgFixOffset() { //{{{
 	}
 }
 //}}}
-function snapVertical(mx,my) {//{{{
+function activeSnapX(mx,my) {//{{{
 	for(var point in snapLinesArr['vert']) {
 		p=snapLinesArr['vert'][point];
 		if (mx > p - snapForce && mx < p + snapForce) { 
-			$("#sv_"+p).attr("visibility", "visible");
-			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cy: my, cx: p });
 			activeSnap.x=p;
-			if (cg.type=='door') {
-				cg.x0=p-16;
-				cg.x1=p+16;
-				cg.y0=my
-				cg.y1=my-defaults.door_width;
-				return;
-			} else if (cg.type=='room') { 
-				//if(cg.forming==1) { 
-				//	cg.x1=p;
-				//} else {
-				//	cg.x0=p;
-				//}
-			} else {
-				//if(cg.forming==1) { 
-				//	cg.x1=p+16;
-				//} else {
-				//	cg.x0=p-16;
-				//}
-			}
 			break;
 		}
 	}
 }
 //}}}
-function snapHorizontal(mx,my) {//{{{
+function activeSnapY(mx,my) {//{{{
 	for(var point in snapLinesArr['horiz']) {
 		p=snapLinesArr['horiz'][point];
 		if (my > p - snapForce && my < p + snapForce) { 
-			$("#sh_"+p).attr("visibility", "visible");
-			$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: mx, cy: p });
 			activeSnap.y=p;
-			if(cg.type=='door') {
-				cg.y0=p-16;
-				cg.y1=p+16;
-				cg.x0=mx
-				cg.x1=mx+defaults.door_width;
-				return;
-			} else if (cg.type=='room') { 
-				//if(cg.forming==1) { 
-				//	cg.y1=p;
-				//} else {
-				//	cg.y0=p;
-				//}
-			} else {
-				//if(cg.forming==1) { 
-				//	cg.y1=p-16;
-				//} else {
-				//	cg.y0=p+16;
-				//}
-			}
 			break;
 		}
 	}
 }
 //}}}
 function snap(mx,my) {//{{{
+	activeSnap={};
 	if(!['room', 'hole', 'window', 'door'].includes(cg.type)) { return; }
 	d3.selectAll('.snap_v').attr('visibility', 'hidden');
 	d3.selectAll('.snap_h').attr('visibility', 'hidden');
-	$('#snapper').attr('fill-opacity', 0);
-	if (event.ctrlKey) { return; } 
-	activeSnap={};
-	snapVertical(mx,my);
-	snapHorizontal(mx,my);
+	if (event.ctrlKey) { $('#snapper').attr('fill-opacity', 0); return; } 
 
-	if(cg.type!='door' && "x" in activeSnap && "y" in activeSnap) { 
-		$('#snapper').attr({ r: 30, cx: activeSnap.x, cy: activeSnap.y});
-	}
+	activeSnapX(mx,my);
+	activeSnapY(mx,my);
+	if(isEmpty(activeSnap)) { $('#snapper').attr('fill-opacity', 0); } else { snapperCss(mx,my); }
 }
 
 //}}}
+function snapperCss(mx,my) {//{{{
+	$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: mx, cy: my}); 
+	if("x" in activeSnap) { 
+		$("#sv_"+activeSnap.x).attr("visibility", "visible"); 
+		$('#snapper').attr({ cx: activeSnap.x}); 
+	}
+	if("y" in activeSnap) { 
+		$("#sh_"+activeSnap.y).attr("visibility", "visible"); 
+		$('#snapper').attr({ cy: activeSnap.y});
+	}
+
+	if("x" in activeSnap && "y" in activeSnap) { $('#snapper').attr({ r: 30}); }
+}
+//}}}
 function cgInit() {//{{{
 	cgIdUpdate();
-	cg.early=1;
+	cg.beforeMouseDown=1;
 	cg.floor=floor;
 	cg.letter=activeLetter;
 	cg.type=gg[activeLetter].t;
@@ -472,12 +441,14 @@ function scaleMouse(pos) {//{{{
 } //}}}
 function cgCreate() {//{{{
 	buildingDetachZoomer();
+	cgInit();
 	svg.on('mousedown', function() {
 		cgInit();
 		m=scaleMouse(d3.mouse(this));
 		cgDecidePoints(m.x, m.y);
 		cgSvg();
-		delete cg.early;
+		cg.beforeMouseUp=1;
+		delete cg.beforeMouseDown;
 	});
 	svg.on('mousemove', function() {
 		m=scaleMouse(d3.mouse(this));
@@ -496,22 +467,36 @@ function cgCreate() {//{{{
 		}
 		$('#snapper').attr('fill-opacity', 0);
 		buildingAttachZoomer();
+		delete cg.beforeMouseUp;
 		cgInit();
-
 	});
 }
 //}}}
+function dumpCgPos() {//{{{
+	// func not really needed
+	dd(cg.name, { x0: cg.x0, y0: cg.y0, x1: cg.x1, y1: cg.y1 });
+}
+//}}}
 function cgDecidePoints(mx,my) {//{{{
-	if("x" in activeSnap) {  
-		if("early" in cg) { cg.x0=cg.x1=activeSnap.x; } else { cg.x1=activeSnap.x; }
-	} else {
-		if("early" in cg) { cg.x0=cg.x1=mx } else { cg.x1=mx; }
+	if("x" in activeSnap) { px=activeSnap.x; } else { px=mx; }
+	if("y" in activeSnap) { py=activeSnap.y; } else { py=my; }
+	switch (cg.type) {
+		case 'room':
+			if("beforeMouseDown" in cg) { cg.x0=px; cg.y0=py; }
+			cg.x1=px; cg.y1=py; 
+			break;
+		case 'door':
+			if (event.ctrlKey) { 
+				if("beforeMouseDown" in cg) { cg.x0=px; cg.y0=py; }
+				cg.x1=px; cg.y1=py; 
+			} else if("x" in activeSnap) { 
+				cg.x0=px-16; cg.x1=px+16; cg.y1=py; cg.y0=py-defaults.door_width;
+			} else if("y" in activeSnap) { 
+				cg.y0=py-16; cg.y1=py+16; cg.x0=px; cg.x1=px+defaults.door_width;
+			}
+			break;
 	}
-	if("y" in activeSnap) {  
-		if("early" in cg) { cg.y0=cg.y1=activeSnap.y; } else { cg.y1=activeSnap.y; }
-	} else {
-		if("early" in cg) { cg.y0=cg.y1=my } else { cg.y1=my; }
-	}
+	//dumpCgPos();
 }
 //}}}
 function assertCgReady() {//{{{

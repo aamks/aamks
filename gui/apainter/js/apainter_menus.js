@@ -24,7 +24,7 @@ function registerListeners() {//{{{
 function keyboardEvents() {//{{{
 
 	$(this).keypress((e) => { if (e.key in gg)  { activeLetter=e.key; $('right-menu-box').fadeOut(0); cgCreate(); } });
-	$(this).keydown((e) =>  { if (e.key == 'Escape') { svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); } });
+	$(this).keydown((e) =>  { if (e.key == 'Escape') { escapePressed(); } });
 	$(this).keydown((e) =>  { if (e.key == 'h') { nextView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'p') { $("#p1").remove() ; } });
 	$(this).keydown((e) =>  { if (e.key == 'n') { changeFloor(calcNextFloor()); } });
@@ -39,6 +39,11 @@ function keyboardEvents() {//{{{
 	}});
 
 
+}
+//}}}
+function escapePressed() {//{{{
+	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
+	if("beforeMouseUp" in cg) { cgRemove(); }
 }
 //}}}
 function dbUpdateCadJsonStr() { //{{{
