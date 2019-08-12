@@ -21,6 +21,7 @@ var snapLinesSvg;
 var snapLinesArr={};
 var defaults={'door_dimz': 200, 'door_width': 90, 'floor_dimz': 350, 'window_dimz': 150, 'window_offsetz': 100 };
 var activeSnap={};
+var preferredSnap='x';
 var evacueeRadius;
 //}}}
 // on start{{{
@@ -348,14 +349,13 @@ function changeFloor(requested_floor) {//{{{
 }
 //}}}
 function cgFixOffset() { //{{{
-	// Detect orientation and fix hole offset. Other types, like windows, don't
-	// need fixes.
+	// Detect orientation and fix hole offset. 
 
 	if(cg.type != 'hole') { return; }
 
 	if(Math.abs(cg.x1-cg.x0) < Math.abs(cg.y1-cg.y0)) {
-		cg.y0-=16;
-		cg.y1+=16;
+		cg.y0+=16;
+		cg.y1-=16;
 	} else {
 		cg.x0+=16;
 		cg.x1-=16;
@@ -389,11 +389,25 @@ function snap(mx,my) {//{{{
 	d3.selectAll('.snap_h').attr('visibility', 'hidden');
 	if (event.ctrlKey) { $('#snapper').attr('fill-opacity', 0); return; } 
 
-	activeSnapX(mx,my);
-	activeSnapY(mx,my);
+	activeSnapX(mx,my); 
+	activeSnapY(mx,my); 
+
+    if (['window', 'door'].includes(cg.type)) { snapKeepDirection(mx,my); }
 	if(isEmpty(activeSnap)) { $('#snapper').attr('fill-opacity', 0); } else { snapperCss(mx,my); }
 }
 
+//}}}
+function snapKeepDirection(mx,my) {//{{{
+	// Prevent ortho-changing snapping 
+	if (!('y' in activeSnap) && 'x' in activeSnap) { preferredSnap='x'; }
+	if (!('x' in activeSnap) && 'y' in activeSnap) { preferredSnap='y'; }
+	activeSnap={};
+	if(preferredSnap=='x') { 
+		activeSnapX(mx,my); 
+	} else {
+		activeSnapY(mx,my); 
+	}
+}
 //}}}
 function snapperCss(mx,my) {//{{{
 	$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: mx, cy: my}); 
@@ -492,21 +506,17 @@ function cgDecidePoints(mx,my) {//{{{
 				cg.y0=py-16; cg.y1=py+16; cg.x0=px; cg.x1=px+defaults.door_width;
 			}
 			break;
-		case 'window':
+		case 'window': case 'hole':
 			if("x" in activeSnap) { 
 				if("infant" in cg) { cg.x0=px-16; }
 				cg.x1=px+16;
-				dd('snapx', cg.x1);
 			}
 			if("y" in activeSnap) { 
 				if("infant" in cg) { cg.y0=py-16; }
 				cg.y1=py+16; 
-				dd('snapy', cg.x1);
 			}
 			break;
- 
 	}
-	//dumpCgPos();
 }
 //}}}
 function assertCgReady() {//{{{
