@@ -11,6 +11,7 @@ body { overflow: hidden; }
 .axis path, .axis line { fill: none; stroke: #383838; } 
 .axis { font-family: 'Roboto'; }
 .snap_v, .snap_h { stroke : #fff; stroke-width : 5; stroke-dasharray : 10; stroke-opacity : 0.7; }
+#snapper { pointer-events: none; }
 
 legend0 { position: absolute ; left: 130px ; top: 0px ; user-select: none ; }
 legend1 { position: fixed    ; left: 240px ; top: 0px ; user-select: none ; }

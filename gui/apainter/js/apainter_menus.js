@@ -1,17 +1,18 @@
 function registerListeners() {//{{{
-	$("right-menu-box").on("click"     , "#btn_copy_to_floor"       , function() { floorCopy() });
-	$("right-menu-box").on("click"     , "#btn_submit_cad_json"     , function() { txtEditCadJson() });
-	$("right-menu-box").on("click"     , '#setup_underlay'          , function() { underlay_form(); });
-	$("right-menu-box").on("mouseover" , ".bulkProps" , function() { cgSelectNew($(this).attr('id')); });
-	$("right-menu-box").on("click"     , '.bulkProps' , function() { cgSelectNew($(this).attr('id'), 1);  });
-	$("body").on("click"               , '#apainter-save'           , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
-	$("body").on("click"               , '#apainter-next-view'      , function() { nextView(); });
-	$("body").on("click"               , '#button-help'             , function() { showHelpBox(); });
-	$("body").on("click"               , '#button-setup'            , function() { showGeneralBox(); });
-	$("body").on("click"               , '.legend'                  , function() { activeLetter=$(this).attr('letter'); bulkProps(); });
-	$("body").on("mouseleave"          , 'right-menu-box'           , function() { saveRightBox(); });
+	$("right-menu-box").on("click"     , "#btn_copy_to_floor"   , function() { floorCopy() });
+	$("right-menu-box").on("click"     , "#btn_submit_cad_json" , function() { txtEditCadJson() });
+	$("right-menu-box").on("click"     , '#setup_underlay'      , function() { underlay_form(); });
+	$("right-menu-box").on("mouseover" , ".bulkProps"           , function() { cgSelectNew($(this).attr('id')); });
+	$("right-menu-box").on("click"     , '.bulkProps'           , function() { cgSelectNew($(this).attr('id')                                                                 , 1);  });
+	$("body").on("click"               , '#apainter-save'       , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
+	$("body").on("click"               , '#apainter-next-view'  , function() { nextView(); });
+	$("body").on("click"               , '#button-help'         , function() { showHelpBox(); });
+	$("body").on("click"               , '#button-setup'        , function() { showGeneralBox(); });
+	$("body").on("click"               , '.legend'              , function() { activeLetter=$(this).attr('letter'); cgChoose(); });
+	$("body").on("mouseleave"          , 'right-menu-box'       , function() { saveRightBox(); });
 
-	$("body").on("dblclick"        , "#apainter-svg"        , function(){
+	$("body").on("dblclick", "#apainter-svg", function(){
+		cgEscapeCreate();
 		if (['rect', 'circle'].includes(event.target.tagName)) { 
 			cgSelectNew(event.target.id, 1);
 		} else {
@@ -23,8 +24,8 @@ function registerListeners() {//{{{
 //}}}
 function keyboardEvents() {//{{{
 
-	$(this).keypress((e) => { if (e.key in gg)  { activeLetter=e.key; $('right-menu-box').fadeOut(0); cgCreate(); } });
-	$(this).keydown((e) =>  { if (e.key == 'Escape') { escapePressed(); } });
+	$(this).keypress((e) => { if (e.key in gg)  { activeLetter=e.key; cgChoose(); } });
+	$(this).keydown((e) =>  { if (e.key == 'Escape') { cgEscapeCreate(); } });
 	$(this).keydown((e) =>  { if (e.key == 'h') { nextView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'p') { $("#p1").remove() ; } });
 	$(this).keydown((e) =>  { if (e.key == 'n') { changeFloor(calcNextFloor()); } });
@@ -38,12 +39,20 @@ function keyboardEvents() {//{{{
 		dd(db({'floor': floor}).get());
 	}});
 
-
 }
 //}}}
-function escapePressed() {//{{{
+function cgChoose() {//{{{
+	$('right-menu-box').fadeOut(0); 
+	legend();
+	$('#legend_'+activeLetter).css({'color': '#fff', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
+	cgCreate(); 
+}
+//}}}
+function cgEscapeCreate() {//{{{
+	if("growing" in cg) { cgRemove(); } 
 	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
-	if("mature" in cg) { cgRemove(); }
+	snappingHide();
+	legend();
 }
 //}}}
 function dbUpdateCadJsonStr() { //{{{
@@ -284,6 +293,15 @@ function floorCopy() {	//{{{
 	showGeneralBox();
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
+function cgSelectNew(name, show_properties=0) {//{{{
+	dd(name);
+	cg.name=name;
+	cgBlink();
+	cg=db({'name':name}).get()[0];
+	if(show_properties==1) { showCgPropsBox(); }
+
+}
+//}}}
 
 function bulkPlainProps() {//{{{
 	var tbody='';

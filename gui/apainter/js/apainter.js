@@ -153,25 +153,20 @@ function cgDb() { //{{{
 	
 }
 //}}}
-function cgSelectNew(name, show_properties=0) {//{{{
-	cg.name=name;
-	cgBlink();
-	cg=db({'name':name}).get()[0];
-	if(show_properties==1) { showCgPropsBox(); }
-
-}
-//}}}
 function cgIdUpdate() {//{{{
 	cgID=db({"type": gg[activeLetter].t}).max("idx")+1;
 }
 //}}}
-function buildingDetachZoomer() {//{{{
-	d3.select("#apainter-svg").call(d3.zoom().on("zoom", null)).on("mousedown.zoom", null);
+function resetView(){//{{{
+	zoom.transform(svg, d3.zoomIdentity.translate(100,100).scale(0.2));
 }
 //}}}
-function buildingAttachZoomer() {//{{{
+function zoomInit() { //{{{
 	// d3 is mysterious. They talk about event.button which is always 0 in chrome/linux
 	// event which works for me: 0: wheelScroll, 1: mouseLeft, 2: wheelPress
+
+	zoom = d3.zoom().on("zoom", zoomedCanvas);
+	resetView();
 
 	d3.select("#apainter-svg")
 		.call(d3.zoom()
@@ -181,16 +176,6 @@ function buildingAttachZoomer() {//{{{
 			.filter(function(){ return (event.which === 0 || event.which === 2 ); })
 		)
 		.on("dblclick.zoom", null);
-}
-//}}}
-function resetView(){//{{{
-	zoom.transform(svg, d3.zoomIdentity.translate(100,100).scale(0.2));
-}
-//}}}
-function zoomInit() { //{{{
-	zoom = d3.zoom().on("zoom", zoomedCanvas);
-	resetView();
-	buildingAttachZoomer(); 
 }
 //}}}
 function zoomedCanvas() {//{{{
@@ -382,18 +367,23 @@ function activeSnapY(mx,my) {//{{{
 	}
 }
 //}}}
+function snappingHide(hideDot=1) {//{{{
+	d3.selectAll('.snap_v').attr('visibility', 'hidden');
+	d3.selectAll('.snap_h').attr('visibility', 'hidden');
+	if(hideDot==1) { $('#snapper').attr('fill-opacity', 0); }
+}
+//}}}
 function snap(mx,my) {//{{{
 	activeSnap={};
 	if(!['room', 'hole', 'window', 'door'].includes(cg.type)) { return; }
-	d3.selectAll('.snap_v').attr('visibility', 'hidden');
-	d3.selectAll('.snap_h').attr('visibility', 'hidden');
+	snappingHide(0);
 	if (event.ctrlKey) { $('#snapper').attr('fill-opacity', 0); return; } 
 
 	activeSnapX(mx,my); 
 	activeSnapY(mx,my); 
 
     if (['window', 'door'].includes(cg.type)) { snapKeepDirection(mx,my); }
-	if(isEmpty(activeSnap)) { $('#snapper').attr('fill-opacity', 0); } else { snapperCss(mx,my); }
+	if(isEmpty(activeSnap)) { snappingHide();  } else { snappingShow(mx,my); }
 }
 
 //}}}
@@ -409,7 +399,7 @@ function snapKeepDirection(mx,my) {//{{{
 	}
 }
 //}}}
-function snapperCss(mx,my) {//{{{
+function snappingShow(mx,my) {//{{{
 	$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: mx, cy: my}); 
 	if("x" in activeSnap) { 
 		$("#sv_"+activeSnap.x).attr("visibility", "visible"); 
@@ -454,13 +444,12 @@ function scaleMouse(pos) {//{{{
 	return {'x': Math.round((pos[0]-zt.x)/zt.k), 'y': Math.round((pos[1]-zt.y)/zt.k) };
 } //}}}
 function cgCreate() {//{{{
-	buildingDetachZoomer();
 	cgInit();
 	svg.on('mousedown', function() {
 		m=scaleMouse(d3.mouse(this));
 		cgDecidePoints(m.x, m.y);
 		cgSvg();
-		cg.mature=1;
+		cg.growing=1;
 		delete cg.infant;
 	});
 	svg.on('mousemove', function() {
@@ -478,9 +467,8 @@ function cgCreate() {//{{{
 			showCgPropsBox(); 
 			updateSnapLines();
 		}
-		$('#snapper').attr('fill-opacity', 0);
-		buildingAttachZoomer();
-		delete cg.mature;
+		snappingHide();
+		delete cg.growing;
 		cgInit();
 	});
 }
