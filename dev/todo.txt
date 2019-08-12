@@ -17,11 +17,10 @@ AK
 mimooh
 =======
 
-* apainter: cg.remove() and friends need checking
-* apainter: gg.type pressed in legend
+* apainter: box: xyz0, xyz1
+* nav: room_leave(): use navmesh, vis dest points, leave in obst-free place
 * apainter: staircase slice
 * apainter: poly obsts
-* nav: room_leave(): use navmesh, vis dest points, leave in obst-free place
 * animator: Highlight poly geoms 
 * animator: labels poly rooms
 

@@ -94,7 +94,7 @@ function cgPolish() {//{{{
 }
 //}}}
 function cgSvg() { //{{{
-	if (gg[cg.letter].t == 'evacuee') { 
+	if (cg.type == 'evacuee') { 
 		var elem='circle';
 	} else {
 		var elem='rect';
@@ -148,7 +148,7 @@ function cgDb() { //{{{
 	}
     if (['fire'].includes(cg.type)) { cg.room_enter="no"; }
 	if(cg.type!='underlay_scaler') {
-		db.insert({ "name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "dimx": cg.x1-cg.x0, "dimy": cg.y1-cg.y0, "dimz": cg.dimz, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
+		db.insert({ "name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "dimx": cg.x1-cg.x0, "dimy": cg.y1-cg.y0, "dimz": cg.z1-cg.z0, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
 	} 
 	
 }
@@ -508,6 +508,10 @@ function cgDecidePoints(mx,my) {//{{{
 }
 //}}}
 function assertCgReady() {//{{{
+	if(cg.type=='evacuee') { 
+		return true;
+	}
+
 	if(cg.x0 == cg.x1 || cg.y0 == cg.y1 || cg.x0 == null) { 
 		$("#"+cg.name).remove();
 		return false;
@@ -517,6 +521,7 @@ function assertCgReady() {//{{{
 		underlayForm();
 		return false;
 	}
+
 	return true;
 }
 //}}}

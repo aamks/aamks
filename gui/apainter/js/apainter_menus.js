@@ -3,7 +3,7 @@ function registerListeners() {//{{{
 	$("right-menu-box").on("click"     , "#btn_submit_cad_json" , function() { txtEditCadJson() });
 	$("right-menu-box").on("click"     , '#setup_underlay'      , function() { underlay_form(); });
 	$("right-menu-box").on("mouseover" , ".bulkProps"           , function() { cgSelectNew($(this).attr('id')); });
-	$("right-menu-box").on("click"     , '.bulkProps'           , function() { cgSelectNew($(this).attr('id')                                                                 , 1);  });
+	$("right-menu-box").on("click"     , '.bulkProps'           , function() { cgSelectNew($(this).attr('id'), 1);  });
 	$("body").on("click"               , '#apainter-save'       , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
 	$("body").on("click"               , '#apainter-next-view'  , function() { nextView(); });
 	$("body").on("click"               , '#button-help'         , function() { showHelpBox(); });
@@ -32,7 +32,7 @@ function keyboardEvents() {//{{{
 	$(this).keydown((e) =>  { if (e.key == '=') { resetView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
 	$(this).keypress((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgRemove(); }});
-	$(this).keypress((e) => { if (e.key == 'g') { bulkProps(); } });
+	$(this).keypress((e) => { if (e.key == 'l') { bulkProps(); } });
 	// debug
 	//$(this).keypress((e) => { if (e.key == ']') { (snap_lines); } });
 	$(this).keypress((e) => { if (e.key == ']') { 
@@ -41,11 +41,11 @@ function keyboardEvents() {//{{{
 
 }
 //}}}
-function cgChoose() {//{{{
+function cgChoose(create=1) {//{{{
 	$('right-menu-box').fadeOut(0); 
 	legend();
 	$('#legend_'+activeLetter).css({'color': '#fff', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
-	cgCreate(); 
+	if(create==1) { cgCreate(); }
 }
 //}}}
 function cgEscapeCreate() {//{{{
@@ -152,9 +152,9 @@ function cgMake(floor,letter,arr) { //{{{
 	cg.dimz= cg.z1-cg.z0;
 	cg.mvent_throughput=0;
 
-	if(gg[letter].t == 'door')  { cg.exit_type=arr[2]['exit_type']; }
-	if(gg[letter].t == 'room')  { cg.room_enter=arr[2]['room_enter']; }
-	if(gg[letter].t == 'mvent') { cg.mvent_throughput=arr[2]['mvent_throughput']; }
+	if(cg.type == 'door')  { cg.exit_type=arr[2]['exit_type']; }
+	if(cg.type == 'room')  { cg.room_enter=arr[2]['room_enter']; }
+	if(cg.type == 'mvent') { cg.mvent_throughput=arr[2]['mvent_throughput']; }
 }
 //}}}
 function ajaxSaveCadJson(json_data, fire_model) { //{{{
@@ -294,12 +294,9 @@ function floorCopy() {	//{{{
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
 function cgSelectNew(name, show_properties=0) {//{{{
-	dd(name);
-	cg.name=name;
-	cgBlink();
 	cg=db({'name':name}).get()[0];
+	cgBlink();
 	if(show_properties==1) { showCgPropsBox(); }
-
 }
 //}}}
 
@@ -419,62 +416,44 @@ function bulkProps() {//{{{
 }
 //}}}
 
-function dimProps() {//{{{
-	var prop='';
-	if(gg[activeLetter].t!='evacuee') {
-		//var selected=db({'name':cg}).select("exit_type")[0]; // TODO: some garbage line?
-		prop+="<tr><td>x-dim<td><input id=alter_dimx type=text size=3 value="+db({'name':cg.name}).select("dimx")[0]+"> cm";
-		prop+="<tr><td>y-dim<td><input id=alter_dimy type=text size=3 value="+db({'name':cg.name}).select("dimy")[0]+"> cm";
-		prop+="<tr><td>z-dim<td><input id=alter_dimz type=text size=3 value="+db({'name':cg.name}).select("dimz")[0]+"> cm";
-	} else {
-		prop+="<input id=alter_dimx type=hidden value=0> cm";
-		prop+="<input id=alter_dimy type=hidden value=0> cm";
-		prop+="<input id=alter_dimz type=hidden value=0> cm";
-	}
-	return prop;
-}
-//}}}
 function roomProps() {//{{{
-	var prop='';
-	if(gg[activeLetter].t=='room') {
-		var selected=db({'name':cg.name}).select("room_enter")[0];
-		prop+="<tr><td>enter <withHelp>?<help><orange>yes</orange> agents can evacuate via this room<br><hr><orange>no</orange> agents can not evacuate via this room</help></withHelp>";
-		prop+="<td><select id=alter_room_enter>";
-		prop+="<option value="+selected+">"+selected+"</option>";
-		prop+="<option value='yes'>yes</option>";
-		prop+="<option value='no'>no</option>";
-		prop+="</select>";
-	} else {
-		prop+="<input id=alter_room_enter type=hidden value=0>";
+	pp="<input id=alter_room_enter type=hidden value=0>";
+	if(cg.type=='room') {
+		v=db({'name':cg.name}).get()[0];
+		pp='';
+		pp+="<tr><td>enter <withHelp>?<help><orange>yes</orange> agents can evacuate via this room<br><hr><orange>no</orange> agents can not evacuate via this room</help></withHelp>";
+		pp+="<td><select id=alter_room_enter>";
+		pp+="<option value="+v.room_enter+">"+v.room_enter+"</option>";
+		pp+="<option value='yes'>yes</option>";
+		pp+="<option value='no'>no</option>";
+		pp+="</select>";
 	}
-	return prop;
+	return pp;
 }
 //}}}
 function mventProps() {//{{{
-	var mvent='';
-	if(gg[activeLetter].t=='mvent') {
-		mvent+="<tr><td>throughput<td>  <input id=alter_mvent_throughput type=text size=3 value="+db({'name':cg.name}).select("mvent_throughput")[0]+">";
-	} else {
-		mvent+="<input id=alter_mvent_throughput type=hidden value=0>";
-	}
-	return mvent;
+	pp="<input id=alter_mvent_throughput type=hidden value=0>";
+	if(cg.type=='mvent') {
+		v=db({'name':cg.name}).get()[0];
+		pp="<tr><td>throughput<td>  <input id=alter_mvent_throughput type=text size=3 value="+v.mvent_throughput+">";
+	} 
+	return pp;
 }
 //}}}
 function doorProps() {//{{{
-	var prop='';
-	if(gg[activeLetter].t=='door') {
-		var selected=db({'name':cg.name}).select("exit_type")[0];
-		prop+="<tr><td>exit <withHelp>?<help><orange>auto</orange> any evacuee can use this door<br><hr><orange>primary</orange> many evacuees have had used this door to get in and will use it to get out<br><hr><orange>secondary</orange> extra door known to the personel</help></withHelp>";
-		prop+="<td><select id=alter_exit_type>";
-		prop+="<option value="+selected+">"+selected+"</option>";
-		prop+="<option value='auto'>auto</option>";
-		prop+="<option value='primary'>primary</option>";
-		prop+="<option value='secondary'>secondary</option>";
-		prop+="</select>";
-	} else {
-		prop+="<input id=alter_exit_type type=hidden value=0>";
+	pp="<input id=alter_exit_type type=hidden value=0>";
+	if(cg.type=='door') {
+		v=db({'name':cg.name}).get()[0];
+		pp='';
+		pp+="<tr><td>exit <withHelp>?<help><orange>auto</orange> any evacuee can use this door<br><hr><orange>primary</orange> many evacuees have had used this door to get in and will use it to get out<br><hr><orange>secondary</orange> extra door known to the personel</help></withHelp>";
+		pp+="<td><select id=alter_exit_type>";
+		pp+="<option value="+v.exit_type+">"+v.exit_type+"</option>";
+		pp+="<option value='auto'>auto</option>";
+		pp+="<option value='primary'>primary</option>";
+		pp+="<option value='secondary'>secondary</option>";
+		pp+="</select>";
 	}
-	return prop;
+	return pp;
 }
 //}}}
 
@@ -511,7 +490,7 @@ function showHelpBox() {//{{{
 		"<tr><td><letter>h</letter>	<td> loop views"+ 
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
 		"<tr><td><letter>x</letter>	<td> delete active"+
-		"<tr><td><letter>g</letter>	<td> list all of active type"+
+		"<tr><td><letter>l</letter>	<td> list all of active type"+
 		"<tr><td><letter>ctrl</letter> + <letter>alt</letter>	<td> underlays"+
 		"<tr><td><letter>=</letter>	<td> original zoom"+
 		"</table>"
@@ -520,20 +499,22 @@ function showHelpBox() {//{{{
 //}}}
 function showCgPropsBox() {//{{{
 	activeLetter=db({'name':cg.name}).select("letter")[0];
-	//dd(cg);
+	sty=" style='width: 40px' ";
+	v=db({'name':cg.name}).get()[0];
+	
 	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
-		"<wheat><letter>x</letter> to delete, <letter>g</letter> for listing</wheat>"+
+	    "<h2><red>&nbsp; "+v.name+" &nbsp; </red> </h2>"+
+		"X <input id=alter_x0 value="+v.x0 + sty+"><input id=alter_x1 value="+v.x1 + sty+"> ("+(v.x1-v.x0)+" cm)<br>"+
+		"Y <input id=alter_y0 value="+v.y0 + sty+"><input id=alter_y1 value="+v.y1 + sty+"> ("+(v.y1-v.y0)+" cm)<br>"+
+		"Z <input id=alter_z0 value="+v.z0 + sty+"><input id=alter_z1 value="+v.z1 + sty+"> ("+(v.z1-v.z0)+" cm)<br>"+
 		"<table>"+
-	    "<tr><td>name <td>"+db({'name':cg.name}).select("name")[0]+
-		"<tr><td>x0	<td>	<input id=alter_x0 type=text size=3 value="+db({'name':cg.name}).select("x0")[0]+"> cm"+
-		"<tr><td>y0	<td>	<input id=alter_y0 type=text size=3 value="+db({'name':cg.name}).select("y0")[0]+"> cm"+
-		"<tr><td>z0	<td>	<input id=alter_z0 type=text size=3 value="+db({'name':cg.name}).select("z0")[0]+"> cma"+
-		dimProps()+
 		roomProps()+
 		mventProps()+
 		doorProps()+
-		"</table>", 0
+		"</table>"+
+		"<br><wheat><letter>x</letter> delete, <letter>l</letter> list</wheat>"+
+		"", 0
 	);
 
 }
@@ -554,13 +535,13 @@ function saveRightBoxCgProps() {//{{{
 	//if(isEmpty(cg)) { return; } // TODO: can we ever reach this condition?
 	cg.room_enter=$("#alter_room_enter").val();
 	cg.exit_type=$("#alter_exit_type").val();
-	cg.dimz=Number($("#alter_dimz").val());
-	cg.z0=Number($("#alter_z0").val());
-	cg.mvent_throughput=Number($("#alter_mvent_throughput").val());
 	cg.x0=Number($("#alter_x0").val());
 	cg.y0=Number($("#alter_y0").val());
-	cg.x1=Number($("#alter_x0").val())+Number($("#alter_dimx").val());
-	cg.y1=Number($("#alter_y0").val())+Number($("#alter_dimy").val());
+	cg.x1=Number($("#alter_x1").val());
+	cg.y1=Number($("#alter_y1").val());
+	cg.z0=Number($("#alter_z0").val());
+	cg.z1=Number($("#alter_z1").val());
+	cg.mvent_throughput=Number($("#alter_mvent_throughput").val());
 
 	if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
 	cgUpdateSvg();
