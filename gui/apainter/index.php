@@ -6,9 +6,9 @@ function site() {/*{{{*/
 	echo "
 	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
 	<script src='js/d3.v4.min.js'></script>
+	<script src='js/polygon_tools.js'></script>
 	<script src='js/apainter.js'></script>
 	<script src='js/apainter_underlay.js'></script>
-	<script src='js/apainter_menus.js'></script>
 	<script src='js/view3d.js'></script>
 	";
 }
