@@ -55,12 +55,16 @@ function registerListeners() {//{{{
 	$("body").on("click"               , '.legend'              , function() { activeLetter=$(this).attr('letter'); cgChoose(); });
 	$("body").on("mouseleave"          , 'right-menu-box'       , function() { saveRightBox(); });
 
-	$("body").on("dblclick", "#apainter-svg", function(){
-		cgEscapeCreate();
-		if (['rect', 'circle'].includes(event.target.tagName)) { 
-			//dd(event.target);
-			cgSelectNew(event.target.id, 1);
-		} 
+	$("body").on("mousedown", "#apainter-svg", function(e){
+		if(e.which==3) {
+			cgEscapeCreate();
+			if (['rect', 'circle'].includes(event.target.tagName)) { 
+				//dd(event.target);
+				cgSelectNew(event.target.id, 1);
+			} else { 
+				cg={};
+			}
+		}
 	});
 
 }
@@ -237,11 +241,6 @@ function calcNextFloor() {//{{{
 	} else {
 		return floor+1;
 	}
-}
-//}}}
-function cgBlink() {//{{{
-	$("#"+cg.name).css('stroke-width', '100px');
-	$("#"+cg.name).animate({ 'stroke-width': gg[activeLetter].strokeWidth}, 400);
 }
 //}}}
 function nextView() {//{{{
@@ -489,12 +488,18 @@ function scaleMouse(pos) {//{{{
 } //}}}
 function cgCreate() {//{{{
 	cgInit();
+
 	svg.on('mousedown', function() {
-		m=scaleMouse(d3.mouse(this));
-		cgDecidePoints(m.x, m.y);
-		cgSvg();
-		cg.growing=1;
-		delete cg.infant;
+		if(d3.event.which==1) {
+			m=scaleMouse(d3.mouse(this));
+			cgDecidePoints(m.x, m.y);
+			cgSvg();
+			cg.growing=1;
+			delete cg.infant;
+		} else if(d3.event.which==3) {
+			cgEscapeCreate();
+		}
+		dd(cg.name);
 	});
 	svg.on('mousemove', function() {
 		m=scaleMouse(d3.mouse(this));
@@ -617,12 +622,15 @@ function cgChoose(create=1) {//{{{
 	if(create==1) { cgCreate(); }
 }
 //}}}
+window.oncontextmenu = function ()
+{
+    return false;     // cancel default menu
+}
 function cgEscapeCreate() {//{{{
 	if(!isEmpty(cg) && "growing" in cg) { cgRemove(); } 
 	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
 	snappingHide();
 	legend();
-	cg={};
 }
 //}}}
 function dbUpdateCadJsonStr() { //{{{
@@ -866,11 +874,13 @@ function floorCopy() {	//{{{
 	showGeneralBox();
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
-function cgSelectNew(name, show_properties=0) {//{{{
+function cgSelectNew(name, showProperties=0) {//{{{
+	dd(cg.name);
+	if(cg.name != undefined) { $("#"+cg.name).css({'fill-opacity': 0.4, 'stroke-width': gg[cg.letter].strokeWidth }) }; 
 	cg=db({'name':name}).get()[0];
 	//dd(cg.name);
-	cgBlink();
-	if(show_properties==1) { showCgPropsBox(); }
+	if(showProperties==1) { showCgPropsBox(); }
+	$("#"+cg.name).css({'fill-opacity': 0.2, 'stroke-width': "20px"}); 
 }
 //}}}
 
@@ -1142,10 +1152,10 @@ function verifyIntersections() {//{{{
 			poly1=[ [p1.x0, p1.y0], [p1.x1, p1.y0], [p1.x1, p1.y1], [p1.x0, p1.y1]];
 			_.each(db({'floor': f, 'type': 'room'}).get(), function(p2) { 
 				poly2=[ [p2.x0, p2.y0], [p2.x1, p2.y0], [p2.x1, p2.y1], [p2.x0, p2.y1]];
-				dd(p1.name, poly1, p2.name, poly2);
 				if(p1.name!=p2.name && pp.intersection(poly1,poly2).length>0) { 
-					ajax_msg({'err':1, 'msg':"Overlaping rooms: <black>"+p1.name+"</black> "+"<black>"+p2.name+"</black>"}); 
 					cgSelectNew(p1.name,1);
+					cgSelectNew(p2.name,1);
+					ajax_msg({'err':1, 'msg':"Overlaping rooms:<br>"+p1.name+"<br>"+p2.name}); 
 				}
 			});
 		});

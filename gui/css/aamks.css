@@ -271,3 +271,34 @@ close-left-menu-box:hover, close-right-menu-box:hover  { opacity: 0.3; }
 
 input[type="submit"], button             { margin:0px 2px 0px 0px; user-select: none; background-color: #324; color: #ccc; border: 1px solid #555; padding: 4px; cursor: pointer; font-size: 13px; }
 input[type="submit"]:hover, button:hover { opacity:0.7; }
+
+
+.properties_type_listing       , .more_properties       { user-select: none !important; background: none !important; padding:2px !important; color: #6af !important; text-decoration: none !important; }
+.properties_type_listing:hover , .more_properties:hover {  color: #c60 !important; cursor: pointer;  }
+
+
+#floor_text, #scenario_text        { fill: #fff; opacity: 0.05; font-size: 50px; font-family: 'Sans'; }
+#shortcuts_help1, #shortcuts_help2 { fill: #fff; opacity: 0.08; font-size: 12px; font-weight: bold; font-family: 'Sans';  }
+
+#scenario { visibility: hidden; position: absolute; }
+.axis path, .axis line { fill: none; stroke: #383838; } 
+.axis { font-family: 'Roboto'; }
+.snap_v, .snap_h { stroke : #fff; stroke-width : 5; stroke-dasharray : 10; stroke-opacity : 0.7; }
+#snapper { pointer-events: none; }
+
+legend0 { position: absolute ; left: 130px ; top: 0px ; user-select: none ; }
+legend1 { position: fixed    ; left: 240px ; top: 0px ; user-select: none ; }
+legend2 { position: absolute ; right: 2px ; top: 0px ; user-select: none ; }
+.legend { display: inline-block; padding: 4px;  cursor: pointer; }
+
+status { cursor: default; float: right; }
+
+#apainter-svg      { position: fixed; left: 10px; top: 30px; border: 1px solid #555; font: 10px; }
+#animator-canvas   { position: fixed; left: 10px; top: 30px; border: 1px solid #555; width:100%; height:100%}
+
+text { fill: #888; font-size: 11px; user-select: none; }
+
+canvas-mouse-coords { pointer-events: none; z-index:20; display: none; background-color: #600; font-size: 12px; padding: 4px; color: #fff; border: 1px solid #a77; position: absolute; }
+#div-cad-json-textarea { height:90vh; margin-left:130px }
+#cad-json-textarea { height: 100%; }
+letter { display: inline; padding: 0px 4px 1px 4px; background-color: #960; color: #fff;  }
