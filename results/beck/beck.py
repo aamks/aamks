@@ -138,7 +138,7 @@ class processDists:
     def calculate_ccdf(self):
         losses={'dead': list(), 'heavy': list(), 'light': list(), 'neglegible': list()}
 
-        query = "SELECT fed, id FROM simulations where project = {} " \
+        query = "SELECT fed, id FROM simulations where project = {} and scenario_id = {} " \
                 "and dcbe_time IS NOT NULL".format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
         self.total = len(results)
