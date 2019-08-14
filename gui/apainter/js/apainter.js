@@ -23,10 +23,10 @@ var defaults={'door_dimz': 200, 'door_width': 90, 'floor_dimz': 350, 'window_dim
 var activeSnap={};
 var preferredSnap='x';
 var evacueeRadius;
-var ppoly;
 //}}}
 // on start{{{
 $(function()  { 
+	window.oncontextmenu = function () { return false; }    // cancel default menu  
 	tempChrome();
 	$.getJSON("inc.json", function(x) {
 		gg=x['aamksGeoms'];
@@ -46,8 +46,8 @@ function registerListeners() {//{{{
 	$("right-menu-box").on("click"     , "#btn_copy_to_floor"   , function() { floorCopy() });
 	$("right-menu-box").on("click"     , "#btn_submit_cad_json" , function() { txtEditCadJson() });
 	$("right-menu-box").on("click"     , '#setup_underlay'      , function() { underlay_form(); });
-	$("right-menu-box").on("mouseover" , ".bulkProps"           , function() { cgSelectNew($(this).attr('id')); });
-	$("right-menu-box").on("click"     , '.bulkProps'           , function() { cgSelectNew($(this).attr('id'), 1);  });
+	$("right-menu-box").on("mouseover" , ".bulkProps"           , function() { cgSelect($(this).attr('id')); });
+	$("right-menu-box").on("click"     , '.bulkProps'           , function() { cgSelect($(this).attr('id'), 1);  });
 	$("body").on("click"               , '#apainter-save'       , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
 	$("body").on("click"               , '#apainter-next-view'  , function() { nextView(); });
 	$("body").on("click"               , '#button-help'         , function() { showHelpBox(); });
@@ -60,7 +60,7 @@ function registerListeners() {//{{{
 			cgEscapeCreate();
 			if (['rect', 'circle'].includes(event.target.tagName)) { 
 				//dd(event.target);
-				cgSelectNew(event.target.id, 1);
+				cgSelect(event.target.id, 1);
 			} else { 
 				cg={};
 			}
@@ -458,12 +458,12 @@ function snappingShow(mx,my) {//{{{
 //}}}
 function cgInit() {//{{{
 	cgIdUpdate();
+	cg.name=activeLetter+cgID;
+	cg.idx=cgID;
 	cg.infant=1;
 	cg.floor=floor;
 	cg.letter=activeLetter;
 	cg.type=gg[activeLetter].t;
-	cg.name=activeLetter+cgID;
-	cg.idx=cgID;
 	cg.mvent_throughput=0;
 	cg.exit_type='';
 	if (cg.type=='door') {
@@ -481,6 +481,7 @@ function cgInit() {//{{{
 	} else { 
 		cg.dimz=defaults.floor_dimz;
 	}
+	dd('init', cg.name);
 }
 //}}}
 function scaleMouse(pos) {//{{{
@@ -491,6 +492,8 @@ function cgCreate() {//{{{
 
 	svg.on('mousedown', function() {
 		if(d3.event.which==1) {
+			//cgEscapeCreate();
+			//cgInit();
 			m=scaleMouse(d3.mouse(this));
 			cgDecidePoints(m.x, m.y);
 			cgSvg();
@@ -499,7 +502,6 @@ function cgCreate() {//{{{
 		} else if(d3.event.which==3) {
 			cgEscapeCreate();
 		}
-		dd(cg.name);
 	});
 	svg.on('mousemove', function() {
 		m=scaleMouse(d3.mouse(this));
@@ -562,6 +564,7 @@ function assertCgReady() {//{{{
 	}
 
 	if(cg.x0 == cg.x1 || cg.y0 == cg.y1 || cg.x0 == null) { 
+		dd("remove "+cg.name);
 		$("#"+cg.name).remove();
 		return false;
 	}
@@ -622,10 +625,6 @@ function cgChoose(create=1) {//{{{
 	if(create==1) { cgCreate(); }
 }
 //}}}
-window.oncontextmenu = function ()
-{
-    return false;     // cancel default menu
-}
 function cgEscapeCreate() {//{{{
 	if(!isEmpty(cg) && "growing" in cg) { cgRemove(); } 
 	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
@@ -874,13 +873,13 @@ function floorCopy() {	//{{{
 	showGeneralBox();
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
-function cgSelectNew(name, showProperties=0) {//{{{
-	dd(cg.name);
-	if(cg.name != undefined) { $("#"+cg.name).css({'fill-opacity': 0.4, 'stroke-width': gg[cg.letter].strokeWidth }) }; 
+function cgSelect(name, showProperties=0) {//{{{
+	//dd(cg.name);
+	if(cg.name != undefined) { $("#"+cg.name).css({'fill': gg[cg.letter].c, 'stroke': gg[cg.letter].stroke}) }; 
 	cg=db({'name':name}).get()[0];
 	//dd(cg.name);
 	if(showProperties==1) { showCgPropsBox(); }
-	$("#"+cg.name).css({'fill-opacity': 0.2, 'stroke-width': "20px"}); 
+	$("#"+cg.name).css({'stroke-width': '100px', 'fill': "#ff8", 'stroke': "#ff0"}).animate({'stroke-width': gg[cg.letter].strokeWidth}, 400); 
 }
 //}}}
 
@@ -1153,8 +1152,7 @@ function verifyIntersections() {//{{{
 			_.each(db({'floor': f, 'type': 'room'}).get(), function(p2) { 
 				poly2=[ [p2.x0, p2.y0], [p2.x1, p2.y0], [p2.x1, p2.y1], [p2.x0, p2.y1]];
 				if(p1.name!=p2.name && pp.intersection(poly1,poly2).length>0) { 
-					cgSelectNew(p1.name,1);
-					cgSelectNew(p2.name,1);
+					cgSelect(p1.name,1);
 					ajax_msg({'err':1, 'msg':"Overlaping rooms:<br>"+p1.name+"<br>"+p2.name}); 
 				}
 			});

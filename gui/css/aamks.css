@@ -273,8 +273,8 @@ input[type="submit"], button             { margin:0px 2px 0px 0px; user-select: 
 input[type="submit"]:hover, button:hover { opacity:0.7; }
 
 
-.properties_type_listing       , .more_properties       { user-select: none !important; background: none !important; padding:2px !important; color: #6af !important; text-decoration: none !important; }
-.properties_type_listing:hover , .more_properties:hover {  color: #c60 !important; cursor: pointer;  }
+.bulkProps       { user-select: none !important; background: none !important; padding:2px !important; color: #6af !important; text-decoration: none !important; }
+.bulkProps:hover {  color: #c60 !important; cursor: pointer;  }
 
 
 #floor_text, #scenario_text        { fill: #fff; opacity: 0.05; font-size: 50px; font-family: 'Sans'; }
