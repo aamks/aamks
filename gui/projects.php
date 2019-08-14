@@ -49,7 +49,7 @@ function ch_scenario(){/*{{{*/
 	#psql aamks -c 'select * from users'
 	if(!isset($_GET['ch_scenario'])) { return; }
 	#$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2 LIMIT 1",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
-	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
 	if(empty($r[0])) { die("scenario_id=$_GET[ch_scenario]?"); }
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	header("Location: form.php?edit");
@@ -74,15 +74,6 @@ function new_project() { # {{{
 	header("Location: projects.php?projects_list");
 }
 /*}}}*/
-function session_dump() { # {{{
-	if(!isset($_GET['session_dump'])) { return; }
-	dd($_SESSION['main']);
-	$z=shell_exec("env | grep AAMKS | grep -v PASS | grep -v SALT");
-	echo "<tt>/etc/apache2/envvars conf</tt>";
-	dd($z);
-	exit();
-}
-/*}}}*/
 function assert_session_complete() { #{{{
 }
 /*}}}*/
@@ -95,7 +86,6 @@ function main() { #{{{
 	ch_scenario();
 	delete_project();
 	$_SESSION['nn']->menu('Manage projects');
-	session_dump();
 	if(isset($_GET['projects_list'])) { projects_list(); }
 }
 /*}}}*/

@@ -1,3 +1,5 @@
+var aamksUserPrefs;
+
 $(function()  {//{{{
 	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
 		if($('left-menu-box').length==0) { 
@@ -18,6 +20,7 @@ $(function()  {//{{{
 			$('left-menu-box').css({"background-color": "transparent"}).animate({'width': $('left-menu-box').css("width"), "border-width": 0, 'height': 12, 'top':0, 'left':0 }).html("<input type=submit id='menu-dropdown' value=Menu>");
 		});
 	});
+	ajaxUserPreferences();
 });
 //}}}
 
@@ -73,6 +76,13 @@ function scenario_changer() {//{{{
 	});
 }
 //}}}
+function ajaxUserPreferences() {//{{{
+	$.post('/aamks/ajax.php?ajaxUserPreferences', {}, function (json) { 
+		aamksUserPrefs=json.data;
+		dd(aamksUserPrefs);
+	});
+}
+//}}}
 function launch_simulation() {//{{{
 	$("body").on("click", "#launch_simulation", function() {
 		ajax_msg({"msg": "Trying to launch...", "err":0, "duration": 20000 }); 
@@ -97,6 +107,17 @@ dd = function() { //{{{
 	return console.log.apply(console, arguments); 
 };
 //}}}
+deepcopy=function(x) {//{{{
+	// https://medium.com/@gamshan001/javascript-deep-copy-for-array-and-object-97e3d4bc401a:
+	// Finally I find JSON.parse and JSON.stringify is the best and simple way
+	// to Deep copy. The JSON.stringify() method converts a JavaScript value to
+	// a JSON string.The JSON.parse() method parses a JSON string, constructing
+	// the JavaScript value or object described by the string.
+	
+	return JSON.parse(JSON.stringify(x));
+}
+//}}}
+
 $(function() { 
 	scenario_changer();
 	launch_simulation();

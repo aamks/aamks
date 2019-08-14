@@ -33,11 +33,10 @@ function init_main_vars() { #{{{
 	#psql aamks -c 'select * from projects'
 	if(isset($_SESSION['main']['project_id'])) { return; }
 	$_SESSION['main']['user_id']=1;
-	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 }
 /*}}}*/
-
 class Aamks {/*{{{*/
 	public function __construct($site){
 		if($site!="ajax") { $this->htmlHead($site); } 
@@ -48,6 +47,34 @@ class Aamks {/*{{{*/
 	}
 
 /*}}}*/
+	public function set_user_variables($r){/*{{{*/
+		$_SESSION['main']['user_id']=$r['id'];
+		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
+		$_SESSION['main']['user_name']=$r['user_name']; # zmiany nazw
+		$_SESSION['main']['user_photo']=$r['picture']; # zmiany nazw 
+		$_SESSION['main']['user_email']=$r['email'];
+		$_SESSION['main']['email']=$r['email']; //TODO - usunać?
+		//can not put header location in here
+	}/*}}}*/
+	public function ch_main_vars($r) { #{{{
+		$prefs=json_decode($r['preferences'],1);
+		ksort($prefs);
+		unset($r['preferences']);
+		$_SESSION['main']['project_id']=$r['project_id'];
+		$_SESSION['main']['user_name']=$r['user_name'];
+		$_SESSION['main']['user_photo']=$r['user_photo'];
+		$_SESSION['main']['project_name']=$r['project_name'];
+		$_SESSION['main']['scenario_id']=$r['scenario_id'];
+		$_SESSION['main']['scenario_name']=$r['scenario_name'];
+		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
+		$_SESSION['main']['working_home']="/home/aamks_users/$r[email]/$r[project_name]/$r[scenario_name]";
+		$_SESSION['prefs']=[];
+		foreach($prefs as $k=>$v) { 
+			$_SESSION['prefs'][$k]=$v;
+		}
+		$this->query("UPDATE users SET active_scenario=$1 WHERE id=$2", array($r['scenario_id'], $_SESSION['main']['user_id']));
+	}
+	/*}}}*/
 	private function reportbug($details) {/*{{{*/
 		$home="<a href=".$_SESSION['home_url']."><img id=home src=/aamks/css/home.svg></a>";
 		$reportquery=join("\n\n" , array(date("G:i:s"), $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REQUEST_URI'], $details, "\n\n"));
@@ -95,20 +122,6 @@ class Aamks {/*{{{*/
 public function me(){/*{{{*/
 	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
 }/*}}}*/
-	public function ch_main_vars($r) { #{{{
-		$_SESSION['main']['project_id']=$r['project_id'];
-		$_SESSION['main']['user_name']=$r['user_name'];
-		$_SESSION['main']['user_photo']=$r['user_photo'];
-		$_SESSION['main']['active_editor']=$r['active_editor'];
-		$_SESSION['main']['project_name']=$r['project_name'];
-		$_SESSION['main']['scenario_id']=$r['scenario_id'];
-		$_SESSION['main']['scenario_name']=$r['scenario_name'];
-		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
-		$_SESSION['main']['working_home']="/home/aamks_users/$r[email]/$r[project_name]/$r[scenario_name]";
-		$this->query("UPDATE users SET active_scenario=$1 WHERE id=$2", array($r['scenario_id'], $_SESSION['main']['user_id']));
-		$this->query("UPDATE users SET active_editor=$1 WHERE id=$2", array($r['active_editor'], $_SESSION['main']['user_id']));
-	}
-	/*}}}*/
 	public function isChecked($val) {/*{{{*/
 		if($val==1) { return 'div-yes'; }
 			return 'div-no'; 
@@ -166,7 +179,7 @@ public function me(){/*{{{*/
 		}
 
 		if(!empty($_SESSION['main']['user_photo'])){
-			$setup_user="<a href=/aamks/users.php?edit_user><img src=".$_SESSION['main']['user_photo']." style='width:50px; height:50px; padding-right:4px;'></a>";
+			$setup_user="<a href=/aamks/users.php?edit_prefs><img src=".$_SESSION['main']['user_photo']." style='width:50px; height:50px; padding-right:4px;'></a>";
 		}else{
 			$name=explode(" ", $_SESSION['main']['user_name'])[0];
 			$setup_user="<a href=/aamks/users.php?edit_user class=blink>$name</a>";
@@ -257,14 +270,13 @@ public function do_google_login(){/*{{{*/
 	unset($_SESSION['google_data']);
 	return $ret[0];
 }/*}}}*/
-	public function set_user_variables($r){/*{{{*/
-		$_SESSION['main']['user_id']=$r['id'];
-		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
-		$_SESSION['main']['user_name']=$r['user_name']; # zmiany nazw
-		$_SESSION['main']['user_photo']=$r['picture']; # zmiany nazw 
-		$_SESSION['main']['user_email']=$r['email'];
-		$_SESSION['main']['email']=$r['email']; //TODO - usunać?
-		//can not put header location in here
+	public function preferences_update_param($key,$val){/*{{{*/
+		$r=$this->query("SELECT preferences FROM users WHERE id=$1", array($_SESSION['main']['user_id']));
+		$z=json_decode($r[0]['preferences'], 1);
+		$z[$key]=$val;
+		$r=$this->query("UPDATE users SET preferences=$1 WHERE id=$2", array(json_encode($z), $_SESSION['main']['user_id']));
+		$_SESSION['prefs'][$key]=$val;
+
 	}/*}}}*/
 	public function querydd($qq,$arr=[]){ /*{{{*/
 		# query debugger

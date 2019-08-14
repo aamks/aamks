@@ -359,15 +359,14 @@ function editors() {/*{{{*/
 	<orange>text</orange> direct access to even more, possibly not documented params 
 	";
 	$xx='';
-	foreach(array('easy','advanced','text') as $k=>$v) { 
+	foreach(array('easy','advanced','text') as $v) { 
 		$sty='';
-		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #616; color: #fff'"; }
-		$xx.="<input autocomplete=off $sty type=submit name=e".($k+1)." value='$v'>";
+		if($_SESSION['prefs']['apainter_editor']!=$v) { $sty="style='background: #555; color: #aaa'"; }
+		$xx.="<input autocomplete=off $sty type=submit name='change_editor' value='$v'>";
 	}
 	echo "
 	<div style='position:absolute; left:600px; top:0px; white-space:nowrap'>Editor: 
 	<form style='display: inline' method=post>
-		<input autocomplete=off type=hidden name=change_editor>
 		$xx
 		<withHelp>?<help>$editors_help</help></withHelp>
 	</form>
@@ -376,10 +375,7 @@ function editors() {/*{{{*/
 /*}}}*/
 function change_editor() {/*{{{*/
 	if(!isset($_POST['change_editor'])) { return; }
-	if(isset($_POST['e1'])) { $_SESSION['main']['active_editor']=1; }
-	if(isset($_POST['e2'])) { $_SESSION['main']['active_editor']=2; }
-	if(isset($_POST['e3'])) { $_SESSION['main']['active_editor']=3; }
-	$_SESSION['nn']->query("UPDATE users SET active_editor=$1 WHERE id=$2", array($_SESSION['main']['active_editor'], $_SESSION['main']['user_id']));
+	$_SESSION['nn']->preferences_update_param("apainter_editor", $_POST['change_editor']);
 	header("Location: ?edit");
 	exit();
 }
@@ -399,13 +395,14 @@ function delete_scenario() {/*{{{*/
 	// TODO: assert there is at least one scenario always 
 
 	# psql aamks -c 'select * from scenarios'
-	# psql aamks -c "SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=1 AND s.id IS NOT NULL  ORDER BY s.modified DESC "
+	# psql aamks -c 'select * from users'
+	# psql aamks -c "SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=1 AND s.id IS NOT NULL  ORDER BY s.modified DESC "
 	if(!isset($_POST['delete_scenario'])) { return; }
 	$_SESSION['nn']->query("DELETE FROM scenarios WHERE id=$1", array($_SESSION['main']['scenario_id']));
 	$disk_delete=implode("/", array($_SESSION['main']['user_home'], $_SESSION['main']['project_name'], $_SESSION['main']['scenario_name']));
 	system("rm -rf $disk_delete");
 	unset($_SESSION['main']['scenario_id']);
-	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=$1 AND s.id IS NOT NULL ORDER BY s.modified DESC LIMIT 1",array($_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=$1 AND s.id IS NOT NULL ORDER BY s.modified DESC LIMIT 1",array($_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	header("Location: projects.php?projects_list");
 	# TODO: remove from db?
@@ -422,10 +419,10 @@ function main() {/*{{{*/
 	make_help();
 
 	if(isset($_GET['edit'])) { 
-		$e=$_SESSION['main']['active_editor'];
-		if($e==1) { update_form_easy(); form_fields_easy(); }
-		if($e==2) { update_form_advanced(); form_fields_advanced(); }
-		if($e==3) { update_form_text(); form_text(); }
+		$e=$_SESSION['prefs']['apainter_editor'];
+		if($e=='easy')     { update_form_easy(); form_fields_easy(); }
+		if($e=='advanced') { update_form_advanced(); form_fields_advanced(); }
+		if($e=='text')     { update_form_text(); form_text(); }
 		form_delete();
 	}
 

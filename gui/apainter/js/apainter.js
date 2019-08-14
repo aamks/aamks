@@ -15,6 +15,7 @@ var floor=0;
 var floorsCount=1;
 var floorZ0=0;
 var building;
+var buildingLabels;
 var ax={};
 var snapForce=50;
 var snapLinesSvg;
@@ -24,10 +25,18 @@ var activeSnap={};
 var preferredSnap='x';
 var evacueeRadius;
 //}}}
+function tempChrome() {//{{{
+	// At some point chrome will enable separate css transformations and this call will be removed
+	d3.select('body').append('temp_checker').attr("id", "temp_checker").style("scale", 1);
+	if(d3.select('#temp_checker').style("scale")=='') {
+		$("body").html("<br><br><br><center>Aamks requires the experimental web features of Google Chrome.<br>You can paste the orange text to the address bar and enable them<br><span style='color: orange'>chrome://flags/#enable-experimental-web-platform-features</span>"); 
+		throw new Error("");
+	}
+} //}}}
 // on start{{{
 $(function()  { 
 	window.oncontextmenu = function () { return false; }    // cancel default menu  
-	tempChrome();
+	//tempChrome();
 	$.getJSON("inc.json", function(x) {
 		gg=x['aamksGeoms'];
 		ggx=x['aamksGeomsMap'];
@@ -37,6 +46,8 @@ $(function()  {
 		registerListeners();
 		registerListenersUnderlay();
 		$('right-menu-box').fadeOut();
+
+		dd("fix sort x0 vs x1");
 
 		//dd($('#building')[0]);
 	});
@@ -71,46 +82,50 @@ function registerListeners() {//{{{
 //}}}
 function keyboardEvents() {//{{{
 
-	$(this).keypress((e) => { if (e.key in gg)  { activeLetter=e.key; cgChoose(); } });
-	$(this).keydown((e) =>  { if (e.key == 'Escape') { cgEscapeCreate(); } });
-	$(this).keydown((e) =>  { if (e.key == 'h') { nextView(); } });
+	$(this).keypress((e) => { if (e.key in gg)  { cgEscapeCreate(); activeLetter=e.key; cgChoose(); } });
+	$(this).keydown((e) =>  { if (e.key == 'Escape') { cgEscapeCreate(); $("#buildingLabels").html(""); } });
+	$(this).keydown((e) =>  { if (e.key == 'h') { cgEscapeCreate(); nextView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'p') { $("#p1").remove() ; } });
-	$(this).keydown((e) =>  { if (e.key == 'n') { changeFloor(calcNextFloor()); } });
-	$(this).keydown((e) =>  { if (e.key == '=') { resetView(); } });
+	$(this).keydown((e) =>  { if (e.key == 'n') { cgEscapeCreate(); changeFloor(calcNextFloor()); } });
+	$(this).keydown((e) =>  { if (e.key == '=') { cgEscapeCreate(); resetView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
-	$(this).keydown((e) =>  { if (e.key == 's' && e.ctrlKey) { e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
-	$(this).keypress((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgRemove(); }});
-	$(this).keypress((e) => { if (e.key == 'l') { bulkProps(); } });
+	$(this).keydown((e) =>  { if (e.key == 's' && e.ctrlKey) { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
+	$(this).keypress((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgEscapeCreate(); cgRemove(); }});
+	$(this).keypress((e) => { if (e.key == 'l') { cgEscapeCreate(); bulkProps(); } });
 	// debug
-	//$(this).keypress((e) => { if (e.key == ']') { (snap_lines); } });
-	$(this).keypress((e) => { if (e.key == ']') { 
-		dd(db({'floor': floor}).get());
-	}});
-
+	$(this).keypress((e) => { if (e.key == ']') { debug(); }});
 }
 //}}}
-
-function tempChrome() {//{{{
-	// At some point chrome will enable separate css transformations and this call will be removed
-	d3.select('body').append('temp_checker').attr("id", "temp_checker").style("scale", 1);
-	if(d3.select('#temp_checker').style("scale")=='') {
-		$("body").html("<br><br><br><center>Aamks requires the experimental web features of Google Chrome.<br>You can paste the orange text to the address bar and enable them<br><span style='color: orange'>chrome://flags/#enable-experimental-web-platform-features</span>"); 
-		throw new Error("");
-	}
-} //}}}
+function dddx() {//{{{
+	// func not really needed
+	dd(cg.name, { x0: cg.x0, y0: cg.y0, x1: cg.x1, y1: cg.y1 });
+}
+//}}}
+function debug() {//{{{
+	dd("db:", db({'floor': floor, 'letter':activeLetter}).select('name'), "cgid:", cgID); 
+	
+}
+//}}}
 function ddd() {//{{{
 	dd(db().get());
 }
 //}}}
+function dddX() {//{{{
+	_.each(db().get(), function(v) {
+		dd(v.name, { 'x0': v.x0, 'y0': v.y0, 'x1': v.x1, 'y1': v.y1} );
+	});
+}
+//}}}
 function cgPolish() {//{{{
-	// real x,y are calculated as minimum/maximum values from rr
+	// real x,y are calculated as minimum/maximum values 
 	// z needs separate calculations here.
-	//dd('recalc', cg);
 
-	cg.x0 = Math.min(Math.round(cg.x0), Math.round(cg.x1));
-	cg.x1 = Math.max(Math.round(cg.x0), Math.round(cg.x1));
-	cg.y0 = Math.min(Math.round(cg.y0), Math.round(cg.y1));
-	cg.y1 = Math.max(Math.round(cg.y0), Math.round(cg.y1));
+	var mm={};
+	mm.x0 = Math.min(Math.round(cg.x0), Math.round(cg.x1));
+	mm.y0 = Math.min(Math.round(cg.y0), Math.round(cg.y1));
+	mm.x1 = Math.max(Math.round(cg.x0), Math.round(cg.x1));
+	mm.y1 = Math.max(Math.round(cg.y0), Math.round(cg.y1));
+	Object.assign(cg, mm);
 	if(cg.type=='evacuee') {
 		if(cg.z0===undefined) { cg.z0=floorZ0; }
 		cg.z1=cg.z0 + 50;
@@ -150,21 +165,20 @@ function cgSvg() { //{{{
 	d3.select("#floor"+cg.floor)
 		.append(elem)
 		.attr('id', cg.name)
-		.attr('r', evacueeRadius)
-		.attr('fill', gg[cg.letter].c)
-		.attr('class', gg[cg.letter].t)
+		.attr('class', gg[cg.letter].t + " " +gg[cg.letter].x)
 		.attr('x', cg.x0)
 		.attr('y', cg.y0)
 		.attr('cx', cg.x0)
 		.attr('cy', cg.y0)
 		.attr('width', cg.x1 - cg.x0)
 		.attr('height', cg.y1 - cg.y0)
-		.style('stroke', gg[cg.letter].stroke)
-		.style('stroke-width', gg[cg.letter].strokeWidth)
+		.attr('r', evacueeRadius)
+
 
 }
 //}}}
 function cgCss() {//{{{
+	//dd("TODO: fix cgCss");
 	if(cg.type=='door') { 
 		if(cg.exit_type=='secondary') { 
 			$("#"+cg.name).css({ stroke: "#000" });   
@@ -176,8 +190,6 @@ function cgCss() {//{{{
 	} else if (cg.type=='room') { 
 		if(cg.room_enter=='no') { 
 			$("#"+cg.name).attr('fill', "#000");
-		} else if(cg.room_enter=='yes') { 
-			$("#"+cg.name).attr('fill', gg[cg.letter].c);
 		}
 	}
 }
@@ -187,8 +199,8 @@ function cgDb() { //{{{
 	// we don't want to auto call the heavy updateSnapLines() each time -- it is sufficient 
 	// that importCadJson() makes a single updateSnapLines() call after hundreds
 	// of geoms are DbInserted().
-
 	var lines=[];
+
 	if(cg.type=='room') {
 		lines.push([cg.x0, cg.y0], [cg.x1, cg.y0], [cg.x1, cg.y1], [cg.x0, cg.y1]);
 	} else {
@@ -229,6 +241,7 @@ function zoomInit() { //{{{
 function zoomedCanvas() {//{{{
 	zt=d3.event.transform;
 	building.attr("transform", zt);
+	buildingLabels.attr("transform", zt);
 	snapLinesSvg.attr("transform", zt);
 	$("#snapper").attr("transform", zt);
 	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)))
@@ -481,7 +494,7 @@ function cgInit() {//{{{
 	} else { 
 		cg.dimz=defaults.floor_dimz;
 	}
-	dd('init', cg.name);
+	//dd('init', cg.name);
 }
 //}}}
 function scaleMouse(pos) {//{{{
@@ -492,8 +505,6 @@ function cgCreate() {//{{{
 
 	svg.on('mousedown', function() {
 		if(d3.event.which==1) {
-			//cgEscapeCreate();
-			//cgInit();
 			m=scaleMouse(d3.mouse(this));
 			cgDecidePoints(m.x, m.y);
 			cgSvg();
@@ -521,12 +532,8 @@ function cgCreate() {//{{{
 		snappingHide();
 		delete cg.growing;
 		cgInit();
+		if(aamksUserPrefs.apainter_labels==1) { showBuildingLabels(); }
 	});
-}
-//}}}
-function dumpCgPos() {//{{{
-	// func not really needed
-	dd(cg.name, { x0: cg.x0, y0: cg.y0, x1: cg.x1, y1: cg.y1 });
 }
 //}}}
 function cgDecidePoints(mx,my) {//{{{
@@ -588,35 +595,6 @@ function cgUpdateSvg() {  //{{{
 	});   
 }
 //}}}
-function canvasBuilder() { //{{{
-	d3.select('body').append('view3d');
-	d3.select('body').append('view2d');
-	d3.select('body').append('legend0');
-	d3.select('body').append('legend2');
-	d3.select('view2d').append('legend1');
-	make_legend0("apainter");
-	make_legend2("apainter");
-	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
-	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
-	tt=svg.append("g").attr("id", "texts");
-	tt.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
-	tt.append("text").attr("x",130).attr("y",140).attr("id", "shortcuts_help1").text("n: next floor");
-	tt.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: next view");
-	tt.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floorsCount);
-
-	axes();
-	building = svg.append("g").attr("id", "building");
-	building.append("g").attr("id", "floor0").attr("class", "floor").attr('fill-opacity',0.4);
-	snapLinesSvg = svg.append("g").attr("id", "snapLinesSvg");
-	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
-	legend();
-	d3.select('view2d').append('right-menu-box');
-	zoomInit();
-	keyboardEvents();
-
-
-}
-//}}}
 
 function cgChoose(create=1) {//{{{
 	$('right-menu-box').fadeOut(0); 
@@ -627,6 +605,7 @@ function cgChoose(create=1) {//{{{
 //}}}
 function cgEscapeCreate() {//{{{
 	if(!isEmpty(cg) && "growing" in cg) { cgRemove(); } 
+	$(".cg-selected").removeClass('cg-selected'); 
 	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
 	snappingHide();
 	legend();
@@ -742,6 +721,7 @@ function ajaxSaveCadJson(json_data, fire_model) { //{{{
 }
 //}}}
 function importCadJson() { //{{{
+	$("#buildingLabels").html(""); 
 	cgEscapeCreate(); 
 	$.post('/aamks/ajax.php?ajaxApainterImport', { }, function (json) { 
 		// We loop thru cgDb() here which updates the cg
@@ -858,7 +838,8 @@ function floorCopy() {	//{{{
 	for (var i in src) {
 		cgIdUpdate();
 		if (src[i]['letter'] == 's') { continue; }
-		cg= $.extend({}, src[i]);
+		//cg=$.extend({}, src[i]); TODO: OK to switch to deepcopy?
+		cg=deepcopy(src[1]);
 		cg.floor=c2f;
 		cg.name=gg[cg['letter']].x+cgID;
 		cg.z1=z0 + cg['z1']-cg['z0'];
@@ -873,13 +854,20 @@ function floorCopy() {	//{{{
 	showGeneralBox();
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
-function cgSelect(name, showProperties=0) {//{{{
-	//dd(cg.name);
-	if(cg.name != undefined) { $("#"+cg.name).css({'fill': gg[cg.letter].c, 'stroke': gg[cg.letter].stroke}) }; 
-	cg=db({'name':name}).get()[0];
-	//dd(cg.name);
-	if(showProperties==1) { showCgPropsBox(); }
-	$("#"+cg.name).css({'stroke-width': '100px', 'fill': "#ff8", 'stroke': "#ff0"}).animate({'stroke-width': gg[cg.letter].strokeWidth}, 400); 
+function cgSelect(elems, showProperties=0) {//{{{
+	$(".cg-selected").removeClass('cg-selected'); 
+	if(typeof(elems)=="string") {
+		arr=[elems];
+	} else {
+		arr=elems;
+	}
+	_.each(arr, function(v) { 
+		cg=deepcopy(db({'name':v}).get()[0]);
+		if(showProperties==1) { showCgPropsBox(); }
+		$("#"+cg.name).addClass('cg-selected').css({'stroke-width': '100px'}).animate({'stroke-width': 0}, 400, function() { $(this).removeAttr('style'); }); 
+	});
+
+	if(aamksUserPrefs.apainter_labels==1) { showBuildingLabels([cg.name]); }
 }
 //}}}
 
@@ -974,7 +962,26 @@ function bulkEvacueeProps() {//{{{
 	return tbody;
 }
 //}}}
+function showBuildingLabels(show=[]) {//{{{
+	$("#buildingLabels").html("");
+	var mm=d3.select("#buildingLabels");
+	if(show.length>0) {
+		_.each(show, function(vv) { 
+			_.each(db({'name': vv}).get(), function(v) { 
+				if (['d', 'q', 'e'].includes(activeLetter)) { x=v.x0; y=v.y0-30 } else { x=v.x0+15; y=v.y0+50; }
+				mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
+			});
+		});
+	} else {
+		_.each(db({'floor': floor, 'letter': activeLetter}).get(), function(v) { 
+			if (['d', 'q', 'e'].includes(activeLetter)) { x=v.x0; y=v.y0-30 } else { x=v.x0+15; y=v.y0+50; }
+			mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
+		});
+	}
+}
+//}}}
 function bulkProps() {//{{{
+	showBuildingLabels();
 	var html='';
 	html+='<div style="overflow-y: scroll; height: '+(canvas[1]-100)+'px">';
 	html+='<wheat>Hover name, then <letter>x</letter> to delete</wheat>';
@@ -1145,6 +1152,7 @@ function saveRightBox() {//{{{
 //}}}
 
 function verifyIntersections() {//{{{
+	dddx();
 	var pp=PolygonTools.polygon;
 	for(var f=0; f<floorsCount; f++) {
 		_.each(db({'floor': f, 'type': 'room'}).get(), function(p1) { 
@@ -1152,11 +1160,44 @@ function verifyIntersections() {//{{{
 			_.each(db({'floor': f, 'type': 'room'}).get(), function(p2) { 
 				poly2=[ [p2.x0, p2.y0], [p2.x1, p2.y0], [p2.x1, p2.y1], [p2.x0, p2.y1]];
 				if(p1.name!=p2.name && pp.intersection(poly1,poly2).length>0) { 
-					cgSelect(p1.name,1);
+					cgSelect([p1.name, p2.name],1);
+					activeLetter=p1.letter;
+					bulkProps();
 					ajax_msg({'err':1, 'msg':"Overlaping rooms:<br>"+p1.name+"<br>"+p2.name}); 
 				}
 			});
 		});
 	}
+}
+//}}}
+
+function canvasBuilder() { //{{{
+	d3.select('body').append('view3d');
+	d3.select('body').append('view2d');
+	d3.select('body').append('legend0');
+	d3.select('body').append('legend2');
+	d3.select('view2d').append('legend1');
+	make_legend0("apainter");
+	make_legend2("apainter");
+	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
+	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
+	tt=svg.append("g").attr("id", "texts");
+	tt.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
+	tt.append("text").attr("x",130).attr("y",140).attr("id", "shortcuts_help1").text("n: next floor");
+	tt.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: next view");
+	tt.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floorsCount);
+
+	axes();
+	building = svg.append("g").attr("id", "building");
+	buildingLabels=svg.append("g").attr("id", "buildingLabels");
+	building.append("g").attr("id", "floor0").attr("class", "floor").attr('fill-opacity',0.4);
+	snapLinesSvg = svg.append("g").attr("id", "snapLinesSvg");
+	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
+	legend();
+	d3.select('view2d').append('right-menu-box');
+	zoomInit();
+	keyboardEvents();
+
+
 }
 //}}}

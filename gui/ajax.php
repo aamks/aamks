@@ -48,9 +48,14 @@ function ajaxGetUnderlay() { #{{{
 }
 /*}}}*/
 function ajaxChangeActiveScenario() { #{{{
-	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$_SESSION['main']['scenario_name']));
+}
+/*}}}*/
+function ajaxUserPreferences() { #{{{
+	$r=$_SESSION['nn']->query("SELECT preferences FROM users WHERE id=$1",array($_SESSION['main']['user_id']));
+	echo json_encode(array("msg"=>"", "err"=>0, "data"=>json_decode($r[0]['preferences'],1)));
 }
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{
@@ -260,9 +265,10 @@ function main() { /*{{{*/
 		if(isset($_GET['ajaxSingleAnim']))              { ini_set('display_errors', 0) ; ajaxSingleAnim()           ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxMenuContent']))             { ini_set('display_errors', 0) ; ajaxMenuContent()          ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxUserPreferences']))         { ini_set('display_errors', 0) ; ajaxUserPreferences()      ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
-		if(isset($_GET['ajaxGetUnderlay']))          { ini_set('display_errors', 0) ; ajaxGetUnderlay()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxGetUnderlay']))             { ini_set('display_errors', 0) ; ajaxGetUnderlay()          ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxAddUnderlay']))             { ini_set('display_errors', 0) ; ajaxAddUnderlay()          ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxRemoveUnderlay']))          { ini_set('display_errors', 0) ; ajaxRemoveUnderlay()       ; ini_set('display_errors', 1) ; }
 	}

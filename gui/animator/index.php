@@ -15,7 +15,6 @@ function site() {/*{{{*/
 	";
 	echo "
 
-	<LINK rel='stylesheet' type='text/css' href='../css/painters.css'>
 	<script type='text/javascript' src='js/paper-full.min.js'></script>
 	<script type='text/javascript' src='js/animator.js'></script>
 		
