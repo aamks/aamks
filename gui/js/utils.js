@@ -77,9 +77,8 @@ function scenario_changer() {//{{{
 }
 //}}}
 function ajaxUserPreferences() {//{{{
-	$.post('/aamks/ajax.php?ajaxUserPreferences', {}, function (json) { 
+	$.post('/aamks/ajax.php?ajaxUserPreferences', function (json) { 
 		aamksUserPrefs=json.data;
-		dd(aamksUserPrefs);
 	});
 }
 //}}}

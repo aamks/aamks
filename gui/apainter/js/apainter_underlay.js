@@ -1,12 +1,12 @@
 function registerListenersUnderlay() {//{{{
 
-	$("body").on("blur"   , "#p1"           , function() { $("#p1").remove(); });
+	//$("body").on("blur"   , "#p1"           , function() { $("#p1").remove(); });
 	$("body").on("click"  , "#uimg_remove"  , function() { uimgRemove(); });
 	$("body").on("change" , "#uimg_add"     , function() { uimgAdd(this); });
 	$("body").on("keyup"  , "#uimg_rotate"  , function() { uimgRotate(); }); 
 	$("body").on("keyup"  , "#uimg_opacity" , function() { uimgSingleAttrib(floor  , 'opacity' , $("#uimg_opacity").val()) ; }) ;
 	$("body").on("keyup"  , "#uimg_invert"  , function() { uimgSingleAttrib(floor  , 'invert'  , $("#uimg_invert").val())  ; }) ;
-	$("body").on("click"  , "#submit_scale" , function() { uimgScale(floor); });
+	$("body").on("click"  , "#submit_scale" , function() { uimgScale(floor, Number($(this).attr('data-underlay-width'))); });
 
 	$(this).keydown((e) =>  { if (e.ctrlKey && e.altKey) {  $("#apainter-svg").css("pointer-events", "none"); $('#uimg'+floor).css("pointer-events", "auto"); underlayForm();  }});
 	$(this).keyup((e) =>    { if (e.key == 'Alt') { $("#apainter-svg").css("pointer-events", "auto"); $('#uimg'+floor).css("pointer-events", "none"); underlayForm(); }});
@@ -38,8 +38,8 @@ function uimgRotate() {//{{{
 	d3.select("#uimg"+floor).style("rotate", $("#uimg_rotate").val()+'deg');
 }
 //}}}
-function uimgScale(floor) {//{{{
-	ss=Number($("#uimg"+floor).css("scale").split(" ")[0]) * Number($("#uimg_scale").val()) / Number($("#p1").attr('width'));
+function uimgScale(floor, underlay_width) {//{{{
+	ss=Number($("#uimg"+floor).css("scale").split(" ")[0]) * Number($("#uimg_scale").val()) / underlay_width;
 	d3.select("#uimg"+floor).style("scale", ss);
 	$("#p1").remove();
 }
@@ -71,8 +71,8 @@ function underlay_zoomer(floor) {//{{{
 		)
 }
 //}}}
-function underlayForm() {//{{{
-	if($("#p1").length>0) { submit="<input id=submit_scale class=blink type=button value=set>"; } else { submit='<letter>p</letter>+drag'; }
+function underlayForm(width=0) {//{{{
+	if(width>0) { submit="<input id=submit_scale data-underlay-width='"+width+"' class=blink type=button value=set>"; } else { submit='<letter>p</letter>+drag'; }
  	rightBoxShow(
 		"Supported: png jpg svg pdf<br><br>"+
 		"<input id=underlay"+floor+"_form type=hidden value=1>"+

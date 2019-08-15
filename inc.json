@@ -44,8 +44,8 @@
 	"aamksGeomsAttribs": {
 
 		"room_enter_no":       { "fill": "#000" },
-		"door_exit_primary":   { "stroke": "#f0f" },
-		"door_exit_secondary": { "stroke": "#000" }
+		"exit_type_primary":   { "stroke": "#f0f" },
+		"exit_type_secondary": { "stroke": "#000" }
 	},
 
 	"evacueeRadius": 25 

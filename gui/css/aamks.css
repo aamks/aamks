@@ -212,13 +212,10 @@ withHelp:hover help {
 }
 table { border-collapse: collapse; }
 
-table.noborder td, table.noborder tr {
-	border-bottom: none;
-	text-align: center;
-}
-table.nobreak td, table.nobreak tr {
-	white-space: nowrap;
-}
+table.noborder td, table.noborder tr { border-bottom: none; text-align: center; }
+table.nobreak td, table.nobreak tr { white-space: nowrap; }
+table#gg_listing, table#gg_listing tr, table#gg_listing td { border-right: 1px solid #888; white-space: nowrap; text-align: center; margin-right:20px; }
+
 .grey {
 	opacity: 0.3;
 }

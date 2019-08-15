@@ -9,7 +9,7 @@ function css() { #{{{
 	$css.="body { overflow: hidden; }\n";
 
 	foreach($json['aamksGeoms'] as $v) {
-		if(!empty($v['legendary'])) { $css.=".$v[x] { fill: $v[c]; stroke: $v[stroke]; stroke-width: $v[strokeWidth]; }\n"; }
+		if(!empty($v['legendary']) || $v['x']=='UNDERLAY_SCALER') { $css.=".$v[x] { fill: $v[c]; stroke: $v[stroke]; stroke-width: $v[strokeWidth]; }\n"; }
 	}
 	foreach($json['aamksGeomsAttribs'] as $k=>$v) {
 		if(isset($v['fill']))   { $css.=".$k { fill: $v[fill] !important; }\n"; }

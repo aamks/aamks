@@ -47,8 +47,6 @@ $(function()  {
 		registerListenersUnderlay();
 		$('right-menu-box').fadeOut();
 
-		dd("fix sort x0 vs x1");
-
 		//dd($('#building')[0]);
 	});
 });
@@ -70,7 +68,6 @@ function registerListeners() {//{{{
 		if(e.which==3) {
 			cgEscapeCreate();
 			if (['rect', 'circle'].includes(event.target.tagName)) { 
-				//dd(event.target);
 				cgSelect(event.target.id, 1);
 			} else { 
 				cg={};
@@ -97,8 +94,7 @@ function keyboardEvents() {//{{{
 }
 //}}}
 function dddx() {//{{{
-	// func not really needed
-	dd(cg.name, { x0: cg.x0, y0: cg.y0, x1: cg.x1, y1: cg.y1 });
+	dd(cg.name, { x0: cg.x0, y0: cg.y0, x1: cg.x1, y1: cg.y1});
 }
 //}}}
 function debug() {//{{{
@@ -106,8 +102,12 @@ function debug() {//{{{
 	
 }
 //}}}
-function ddd() {//{{{
-	dd(db().get());
+function ddd(single=0) {//{{{
+	if(single!=0) { 
+		dd(db({'name': cg.name}).get());
+	} else {
+		dd(db().get());
+	}
 }
 //}}}
 function dddX() {//{{{
@@ -178,20 +178,10 @@ function cgSvg() { //{{{
 }
 //}}}
 function cgCss() {//{{{
-	//dd("TODO: fix cgCss");
-	if(cg.type=='door') { 
-		if(cg.exit_type=='secondary') { 
-			$("#"+cg.name).css({ stroke: "#000" });   
-		} else if(cg.exit_type=='primary') { 
-			$("#"+cg.name).css({ stroke: "#f0f" });   
-		} else if(cg.exit_type=='auto') { 
-			$("#"+cg.name).css({ stroke: gg[cg.letter].stroke });   
-		}
-	} else if (cg.type=='room') { 
-		if(cg.room_enter=='no') { 
-			$("#"+cg.name).attr('fill', "#000");
-		}
-	}
+	$("#"+cg.name).removeClass('room_enter_no').removeClass('exit_type_primary').removeClass('exit_type_secondary');
+	if(cg.room_enter=='no')       { $("#"+cg.name).addClass('room_enter_no'); }
+	if(cg.exit_type=='primary')   { $("#"+cg.name).addClass('exit_type_primary'); }
+	if(cg.exit_type=='secondary') { $("#"+cg.name).addClass('exit_type_secondary');}
 }
 //}}}
 function cgDb() { //{{{
@@ -199,6 +189,8 @@ function cgDb() { //{{{
 	// we don't want to auto call the heavy updateSnapLines() each time -- it is sufficient 
 	// that importCadJson() makes a single updateSnapLines() call after hundreds
 	// of geoms are DbInserted().
+	
+	if(cg.type=='underlay_scaler') { return; }
 	var lines=[];
 
 	if(cg.type=='room') {
@@ -206,10 +198,8 @@ function cgDb() { //{{{
 	} else {
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
-    if (['fire'].includes(cg.type)) { cg.room_enter="no"; }
-	if(cg.type!='underlay_scaler') {
-		db.insert({ "name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "dimx": cg.x1-cg.x0, "dimy": cg.y1-cg.y0, "dimz": cg.z1-cg.z0, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
-	} 
+	db({"name": cg.name}).remove();
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "dimx": cg.x1-cg.x0, "dimy": cg.y1-cg.y0, "dimz": cg.z1-cg.z0, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
 	
 }
 //}}}
@@ -285,6 +275,7 @@ function cgRemove() {//{{{
 	} else {
 		bulkProps(); 
 	}
+	showBuildingLabels();
 }
 //}}}
 
@@ -389,7 +380,7 @@ function changeFloor(requested_floor) {//{{{
 	$("#floor_text").css("opacity",1).animate({"opacity": 0.05}, 1000);
 }
 //}}}
-function cgFixOffset() { //{{{
+function holeFixOffset() { //{{{
 	// Detect orientation and fix hole offset. 
 
 	if(cg.type != 'hole') { return; }
@@ -494,7 +485,6 @@ function cgInit() {//{{{
 	} else { 
 		cg.dimz=defaults.floor_dimz;
 	}
-	//dd('init', cg.name);
 }
 //}}}
 function scaleMouse(pos) {//{{{
@@ -522,7 +512,7 @@ function cgCreate() {//{{{
 	});  
 	svg.on('mouseup', function() {
 		if(assertCgReady()) {
-			cgFixOffset();
+			holeFixOffset();
 			cgUpdateSvg();
 			cgPolish();
 			cgDb();
@@ -532,7 +522,7 @@ function cgCreate() {//{{{
 		snappingHide();
 		delete cg.growing;
 		cgInit();
-		if(aamksUserPrefs.apainter_labels==1) { showBuildingLabels(); }
+		showBuildingLabels();
 	});
 }
 //}}}
@@ -571,13 +561,12 @@ function assertCgReady() {//{{{
 	}
 
 	if(cg.x0 == cg.x1 || cg.y0 == cg.y1 || cg.x0 == null) { 
-		dd("remove "+cg.name);
 		$("#"+cg.name).remove();
 		return false;
 	}
 
 	if(cg.type=='underlay_scaler') { 
-		underlayForm();
+		underlayForm(cg.x1-cg.x0);
 		return false;
 	}
 
@@ -604,6 +593,7 @@ function cgChoose(create=1) {//{{{
 }
 //}}}
 function cgEscapeCreate() {//{{{
+	$("right-menu-box").css("display", "none"); 
 	if(!isEmpty(cg) && "growing" in cg) { cgRemove(); } 
 	$(".cg-selected").removeClass('cg-selected'); 
 	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
@@ -867,138 +857,29 @@ function cgSelect(elems, showProperties=0) {//{{{
 		$("#"+cg.name).addClass('cg-selected').css({'stroke-width': '100px'}).animate({'stroke-width': 0}, 400, function() { $(this).removeAttr('style'); }); 
 	});
 
-	if(aamksUserPrefs.apainter_labels==1) { showBuildingLabels([cg.name]); }
+	showBuildingLabels(1,[cg.name]);
 }
 //}}}
 
 function bulkPlainProps() {//{{{
 	var tbody='';
-	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim";
-	var items=db({'letter': activeLetter, 'floor': floor}).get();
-	for (var i in items) { 
-		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
-			"<td>"+items[i]['x0']+
-			"<td>"+items[i]['y0']+
-			"<td>"+items[i]['dimx']+
-			"<td>"+items[i]['dimy']+
-			"<td>"+items[i]['dimz'];
-	}
+	tbody+="<tr><td>name<td>x<td>y<td>z";
+	_.each(db({'letter': activeLetter, 'floor': floor}).get(), function (m) {
+		tbody+="<tr><td class=bulkProps id="+ m.name + ">"+ m.name +"</td>"+
+			"<td>"+m.x0+ " "+m.x1+
+			"<td>"+m.y0+ " "+m.y1+
+			"<td>"+m.z0+ " "+m.z1;
+	});
 	return tbody;
-}
-//}}}
-function bulkMventProps() {//{{{
-	var tbody='';
-	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>throughput";
-	var items=db({'letter': activeLetter, 'floor': floor}).get();
-	for (var i in items) { 
-		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
-			"<td>"+items[i]['x0']+
-			"<td>"+items[i]['y0']+
-			"<td>"+items[i]['dimx']+
-			"<td>"+items[i]['dimy']+
-			"<td>"+items[i]['dimz']+
-			"<td>"+items[i]['mvent_throughput'];
-	}
-	return tbody;
-}
-//}}}
-function bulkWinProps() {//{{{
-	var tbody='';
-	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim";
-	var items=db({'letter': activeLetter, 'floor': floor}).get();
-	for (var i in items) { 
-		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
-			"<td>"+items[i]['x0']+
-			"<td>"+items[i]['y0']+
-			"<td>"+items[i]['dimx']+
-			"<td>"+items[i]['dimy']+
-			"<td>"+items[i]['dimz']
-	}
-	return tbody;
-}
-//}}}
-function bulkDoorProps() {//{{{
-	var tbody='';
-	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>exit_type";
-	var items=db({'letter': activeLetter, 'floor': floor}).get();
-	for (var i in items) { 
-		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
-			"<td>"+items[i]['x0']+
-			"<td>"+items[i]['y0']+
-			"<td>"+items[i]['dimx']+
-			"<td>"+items[i]['dimy']+
-			"<td>"+items[i]['dimz']+
-			"<td>"+items[i]['exit_type'];
-	}
-	return tbody;
-}
-//}}}
-function bulkRoomProps() {//{{{
-	var tbody='';
-	tbody+="<tr><td>name<td>x0<td>y0<td>x-dim<td>y-dim<td>z-dim<td>enter";
-	var items=db({'letter': activeLetter, 'floor': floor}).get();
-	for (var i in items) { 
-		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
-			"<td>"+items[i]['x0']+
-			"<td>"+items[i]['y0']+
-			"<td>"+items[i]['dimx']+
-			"<td>"+items[i]['dimy']+
-			"<td>"+items[i]['dimz']+
-			"<td>"+items[i]['room_enter'];
-	}
-	return tbody;
-}
-//}}}
-function bulkEvacueeProps() {//{{{
-	var tbody='';
-	tbody+="<tr><td>name<td>x0<td>y0";
-
-	var items=db({'letter': activeLetter, 'floor': floor}).get();
-	for (var i in items) { 
-		tbody+="<tr><td class=bulkProps id="+ items[i]['name']+ ">"+ items[i]['name']+"</td>"+
-			"<td>"+items[i]['x0']+
-			"<td>"+items[i]['y0'];
-	}
-	return tbody;
-}
-//}}}
-function showBuildingLabels(show=[]) {//{{{
-	$("#buildingLabels").html("");
-	var mm=d3.select("#buildingLabels");
-	if(show.length>0) {
-		_.each(show, function(vv) { 
-			_.each(db({'name': vv}).get(), function(v) { 
-				if (['d', 'q', 'e'].includes(activeLetter)) { x=v.x0; y=v.y0-30 } else { x=v.x0+15; y=v.y0+50; }
-				mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
-			});
-		});
-	} else {
-		_.each(db({'floor': floor, 'letter': activeLetter}).get(), function(v) { 
-			if (['d', 'q', 'e'].includes(activeLetter)) { x=v.x0; y=v.y0-30 } else { x=v.x0+15; y=v.y0+50; }
-			mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
-		});
-	}
 }
 //}}}
 function bulkProps() {//{{{
-	showBuildingLabels();
+	showBuildingLabels(1);
 	var html='';
 	html+='<div style="overflow-y: scroll; height: '+(canvas[1]-100)+'px">';
 	html+='<wheat>Hover name, then <letter>x</letter> to delete</wheat>';
-	html+='<table id=gg_listing style="margin-right:20px">';
-	if (gg[activeLetter].t=='mvent') { 
-		html+=bulkMventProps();
-	} else if (gg[activeLetter].t=='window') { 
-		html+=bulkWinProps();
-	} else if (gg[activeLetter].t=='door') { 
-		html+=bulkDoorProps();
-	} else if (gg[activeLetter].t=='evacuee') { 
-		html+=bulkEvacueeProps();
-	} else if (gg[activeLetter].t=='room') { 
-		html+=bulkRoomProps();
-	} else {
-		html+=bulkPlainProps();
-	}
+	html+='<table id=gg_listing>';
+	html+=bulkPlainProps();
 	html+="</table>";
 	html+="</div>";
 
@@ -1075,7 +956,7 @@ function showHelpBox() {//{{{
 	rightBoxShow(
 		"<table class=nobreak>"+
 		"<tr><td><letter>letter</letter> + <letter>leftMouse</letter><td> create element"+
-		"<tr><td>double <letter>leftMouse</letter><td> element properties"+
+		"<tr><td><letter>rightMouse</letter><td> element properties"+
 		"<tr><td>hold <letter>ctrl</letter> <td> disable snapping"+ 
 		"<tr><td><letter>h</letter>	<td> loop views"+ 
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
@@ -1084,14 +965,16 @@ function showHelpBox() {//{{{
 		"<tr><td><letter>ctrl</letter> + <letter>alt</letter>	<td> underlays"+
 		"<tr><td><letter>ctrl</letter> + <letter>s</letter>	<td> save and read"+
 		"<tr><td><letter>=</letter>	<td> original zoom"+
+		"<tr><td><letter>escape</letter><td> cancel create"+
 		"</table>"
 	);
 }
 //}}}
 function showCgPropsBox() {//{{{
-	activeLetter=db({'name':cg.name}).select("letter")[0];
+	showBuildingLabels(1);
+	v=deepcopy(db({'name':cg.name}).get()[0]);
+	activeLetter=cg.letter;
 	sty=" style='width: 40px' ";
-	v=db({'name':cg.name}).get()[0];
 	
 	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
@@ -1151,8 +1034,27 @@ function saveRightBox() {//{{{
 }
 //}}}
 
+function showBuildingLabels(aggressive=0, elems=[]) {//{{{
+	$("#buildingLabels").html("");
+	if(aggressive==1 || aamksUserPrefs.apainter_labels==1) { 
+		var mm=d3.select("#buildingLabels");
+		if(elems.length>0) {
+			_.each(elems, function(vv) { 
+				_.each(db({'name': vv}).get(), function(v) { 
+					if (['d', 'q', 'e'].includes(activeLetter)) { x=v.x0; y=v.y0-30 } else { x=v.x0+15; y=v.y0+50; }
+					mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
+				});
+			});
+		} else {
+			_.each(db({'floor': floor, 'letter': activeLetter}).get(), function(v) { 
+				if (['d', 'q', 'e'].includes(activeLetter)) { x=v.x0; y=v.y0-30 } else { x=v.x0+15; y=v.y0+50; }
+				mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
+			});
+		}
+	}
+}
+//}}}
 function verifyIntersections() {//{{{
-	dddx();
 	var pp=PolygonTools.polygon;
 	for(var f=0; f<floorsCount; f++) {
 		_.each(db({'floor': f, 'type': 'room'}).get(), function(p1) { 
