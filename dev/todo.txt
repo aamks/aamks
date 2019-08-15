@@ -17,7 +17,6 @@ AK
 mimooh
 =======
 
-* apainter: box: xyz0, xyz1
 * nav: room_leave(): use navmesh, vis dest points, leave in obst-free place
 * apainter: staircase slice
 * apainter: poly obsts

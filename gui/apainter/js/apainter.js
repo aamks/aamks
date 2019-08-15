@@ -116,46 +116,6 @@ function dddX() {//{{{
 	});
 }
 //}}}
-function cgPolish() {//{{{
-	// real x,y are calculated as minimum/maximum values 
-	// z needs separate calculations here.
-
-	var mm={};
-	mm.x0 = Math.min(Math.round(cg.x0), Math.round(cg.x1));
-	mm.y0 = Math.min(Math.round(cg.y0), Math.round(cg.y1));
-	mm.x1 = Math.max(Math.round(cg.x0), Math.round(cg.x1));
-	mm.y1 = Math.max(Math.round(cg.y0), Math.round(cg.y1));
-	Object.assign(cg, mm);
-	if(cg.type=='evacuee') {
-		if(cg.z0===undefined) { cg.z0=floorZ0; }
-		cg.z1=cg.z0 + 50;
-	} else if(cg.type=='door') {
-		if(cg.z0===undefined) { cg.z0=floorZ0; }
-		cg.z1=cg.z0  + cg.dimz;
-	} else if(cg.type=='obst') {
-		if(cg.z0===undefined) { cg.z0=floorZ0; }
-		cg.z1=cg.z0 + 100;
-	} else if(cg.type=='vvent') {
-		//dd('start zolty', cg.z0, "floorZ0", floorZ0);
-		if(cg.z0===undefined) { cg.z0=floorZ0 + defaults.floor_dimz - 4; }
-		cg.z1=cg.z0 + 8;
-		//dd('end zolty', cg.z0, "floorZ0", floorZ0);
-		//dd("===");
-	} else if(cg.type=='mvent') {
-		//dd('start zielony', cg.z0, "floorZ0", floorZ0);
-		if(cg.z0===undefined) { cg.z0=floorZ0; }
-		cg.z1=cg.z0 + cg.dimz;
-		//dd('end zielony', cg.z0, "floorZ0", floorZ0);
-		//dd("===");
-	} else if(cg.type=='window') {
-		if(cg.z0===undefined) { cg.z0=floorZ0 + defaults.window_offsetz; }
-		cg.z1=cg.z0 + cg.dimz;
-	} else {
-		if(cg.z0===undefined) { cg.z0=floorZ0; }
-		cg.z1=cg.z0 + cg.dimz;
-	}
-}
-//}}}
 function cgSvg() { //{{{
 	if (cg.type == 'evacuee') { 
 		var elem='circle';
@@ -199,7 +159,7 @@ function cgDb() { //{{{
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
 	db({"name": cg.name}).remove();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "dimx": cg.x1-cg.x0, "dimy": cg.y1-cg.y0, "dimz": cg.z1-cg.z0, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
 	
 }
 //}}}
@@ -348,7 +308,7 @@ function guessFloorZ0() {//{{{
 		return;
 	}
 
-	var guess=db({"floor": 0, 'letter': 'r'}).select("dimz");
+	var guess=db({"floor": 0, 'letter': 'r'}).select("z1") - db({"floor": 0, 'letter': 'r'}).select("z0");
 	if(guess[0] != undefined) {
 		$("#floorZ0").val(guess[0]*floor);
 		floorZ0=guess[0]*floor;
@@ -470,21 +430,40 @@ function cgInit() {//{{{
 	cg.type=gg[activeLetter].t;
 	cg.mvent_throughput=0;
 	cg.exit_type='';
-	if (cg.type=='door') {
-		cg.dimz=defaults.door_dimz;
+	cg.z0=floorZ0;
+	if (cg.type=='fire') {
+		cg.z1=cg.z0 + 50;
+	} else if (cg.type=='evacuee') {
+		cg.z1=cg.z0 + 50;
+	} else if (cg.type=='obst') {
+		cg.z1=cg.z0 + 100;
+	} else if (cg.type=='mvent') {
+		cg.z1=cg.z0 + 50;
+	} else if (cg.type=='vvent') {
+		cg.z0=floorZ0 + defaults.floor_dimz - 4;
+		cg.z1=cg.z0 + 8;
+	} else if (cg.type=='window') {
+		cg.z0=floorZ0 + defaults.window_offsetz; 
+		cg.z1=cg.z0 + defaults.window_dimz;
+	} else if (cg.type=='door') {
+		cg.z1=cg.z0 + defaults.door_dimz; 
 		cg.exit_type='auto';
 	} else if (cg.type=='room') {
-		cg.dimz=defaults.floor_dimz;
+		cg.z1=cg.z0 + defaults.floor_dimz;
 		cg.room_enter='yes';
-	} else if (cg.type=='mvent') {
-		cg.dimz=50;
-	} else if (cg.type=='window') {
-		cg.dimz=defaults.window_dimz;
-	} else if (cg.type=='fire') {
-		cg.dimz=100
-	} else { 
-		cg.dimz=defaults.floor_dimz;
 	}
+}
+//}}}
+function cgPolish() {//{{{
+	// real x,y are calculated as minimum/maximum values 
+	// z needs separate calculations here.
+
+	var mm={};
+	mm.x0 = Math.min(Math.round(cg.x0), Math.round(cg.x1));
+	mm.y0 = Math.min(Math.round(cg.y0), Math.round(cg.y1));
+	mm.x1 = Math.max(Math.round(cg.x0), Math.round(cg.x1));
+	mm.y1 = Math.max(Math.round(cg.y0), Math.round(cg.y1));
+	Object.assign(cg, mm);
 }
 //}}}
 function scaleMouse(pos) {//{{{
@@ -593,7 +572,7 @@ function cgChoose(create=1) {//{{{
 }
 //}}}
 function cgEscapeCreate() {//{{{
-	$("right-menu-box").css("display", "none"); 
+	if($("#gg_listing").length==0) { $("right-menu-box").css("display", "none");  }
 	if(!isEmpty(cg) && "growing" in cg) { cgRemove(); } 
 	$(".cg-selected").removeClass('cg-selected'); 
 	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
@@ -695,7 +674,6 @@ function cgMake(floor,letter,arr) { //{{{
 	cg.floor= floor;
 	cg.exit_type= '';
 	cg.room_enter= '';
-	cg.dimz= cg.z1-cg.z0;
 	cg.mvent_throughput=0;
 
 	if(cg.type == 'door')  { cg.exit_type=arr[2]['exit_type']; }
@@ -816,7 +794,7 @@ function db2cadjson() {//{{{
 //}}}
 function floorCopy() {	//{{{
 	c2f=Number($("#copy_to_floor").val());
-	var guess=db({"floor": floor, 'letter': 'r'}).select("dimz");
+	var guess=db({"floor": floor, 'letter': 'r'}).select("z1") - db({"floor": floor, 'letter': 'r'}).select("z0");
 	if(guess[0] != undefined) {
 		var z0=guess[0] * c2f;
 	} else {
@@ -824,19 +802,19 @@ function floorCopy() {	//{{{
 	}
 	floorsCount++;
 	building.append("g").attr("id", "floor"+c2f).attr({"class": "floor", "opacity": 0, "visibility": "hidden"});
-	var src=db({'floor': floor}).get();
-	for (var i in src) {
+	_.each(db({'floor': floor}).get(), function(m) {
+		if (m.letter == 's') { return; }
+		activeLetter=m.letter;
 		cgIdUpdate();
-		if (src[i]['letter'] == 's') { continue; }
-		//cg=$.extend({}, src[i]); TODO: OK to switch to deepcopy?
-		cg=deepcopy(src[1]);
+		cg=deepcopy(m);
 		cg.floor=c2f;
-		cg.name=gg[cg['letter']].x+cgID;
-		cg.z1=z0 + cg['z1']-cg['z0'];
+		cg.idx=cgID;
+		cg.name=cg.letter + cgID;
 		cg.z0=z0;
+		cg.z1=z0 + m.z1 - m.z0;
 		cgDb();
 		cgSvg();
-	}
+	});
 	$("#floor"+c2f).attr({"class": "floor", "fill-opacity": 0.4, "visibility": "hidden"});
 
 	cg={};
@@ -941,9 +919,9 @@ function showGeneralBox() {//{{{
 		"<input id=general_setup type=hidden value=1>"+
 		"<tr><td colspan=2 style='text-align: center'>since now"+
 		"<tr><td>floor<td><input id=floor type=text name=floor size=4 value="+floor+">"+ 
-		"<tr><td>floor's z-origin <td><input id=floorZ0 type=text size=4   name=floorZ0 value="+floorZ0+">"+
-		"<tr><td>door's width <td><input id=default_door_width type=text size=4   name=default_door_width  value="+defaults.door_width+">"+
-		"<tr><td>door's z-dim <td><input id=default_door_dimz type=text size=4	name=default_door_dimz value="+defaults.door_dimz+">"+
+		"<tr><td>floor's z-origin <td><input id=floorZ0 type=text size=4 name=floorZ0 value="+floorZ0+">"+
+		"<tr><td>door's width <td><input id=default_door_width type=text size=4 name=default_door_width  value="+defaults.door_width+">"+
+		"<tr><td>door's z-dim <td><input id=default_door_dimz type=text size=4name=default_door_dimz value="+defaults.door_dimz+">"+
 		"<tr><td>room's z-dim <td><input id=default_floor_dimz type=text size=4 name=default_floor_dimz value="+defaults.floor_dimz+">"+
 		"<tr><td>window's z-dim <td><input id=default_window_dimz type=text size=4 name=default_window_dimz value="+defaults.window_dimz+">"+
 		"<tr><td>window's z-offset <td><input id=default_window_offsetz type=text size=4 name=default_window_offsetz value="+defaults.window_offsetz+">"+
@@ -970,24 +948,32 @@ function showHelpBox() {//{{{
 	);
 }
 //}}}
+function propsXYZ() {//{{{
+	//v=deepcopy(db({'name':cg.name}).get()[0]);
+	sty=" style='width: 40px' ";
+	if(cg.type=='evacuee') { 
+		return "X <input id=alter_x0 value="+cg.x0 + sty+"><br>"+
+		"Y <input id=alter_y0 value="+cg.y0 + sty+"><br>";
+	} else {
+		return "X <input id=alter_x0 value="+cg.x0 + sty+"><input id=alter_x1 value="+cg.x1 + sty+"><br>"+
+		"Y <input id=alter_y0 value="+cg.y0 + sty+"><input id=alter_y1 value="+cg.y1 + sty+"><br>"+
+		"Z <input id=alter_z0 value="+cg.z0 + sty+"><input id=alter_z1 value="+cg.z1 + sty+"><br>"+
+		"<center>" + (cg.x1-cg.x0) + " x " + (cg.y1-cg.y0)+ " x " + (cg.z1-cg.z0)+" cm</center><br>";
+	}
+}
+//}}}
 function showCgPropsBox() {//{{{
 	showBuildingLabels(1);
-	v=deepcopy(db({'name':cg.name}).get()[0]);
 	activeLetter=cg.letter;
-	sty=" style='width: 40px' ";
 	
 	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
-	    "<center><red>&nbsp; "+v.name+" &nbsp; </red></center><br>"+
-		"X <input id=alter_x0 value="+v.x0 + sty+"><input id=alter_x1 value="+v.x1 + sty+"><br>"+
-		"Y <input id=alter_y0 value="+v.y0 + sty+"><input id=alter_y1 value="+v.y1 + sty+"><br>"+
-		"Z <input id=alter_z0 value="+v.z0 + sty+"><input id=alter_z1 value="+v.z1 + sty+"><br>"+
-		"<center>" + (v.x1-v.x0) + " x " + (v.y1-v.y0)+ " x " + (v.z1-v.z0)+" cm</center><br>"+
-
+	    "<center><red>&nbsp; "+cg.name+" &nbsp; </red></center><br>"+
+		propsXYZ()+
 		"<table>"+
 		roomProps()+
-		mventProps()+
 		doorProps()+
+		mventProps()+
 		"</table>"+
 		"<br><wheat><letter>x</letter> delete, <letter>l</letter> list</wheat>"+
 		"", 0
@@ -1009,14 +995,21 @@ function saveRightBoxGeneral() {//{{{
 //}}}
 function saveRightBoxCgProps() {//{{{
 	//if(isEmpty(cg)) { return; } // TODO: can we ever reach this condition?
+	if(cg.type=='evacuee') {
+		cg.x0=cg.x1=Number($("#alter_x0").val());
+		cg.y0=cg.y1=Number($("#alter_y0").val());
+		cg.z0=cg.z1=50;
+	} else {
+		cg.x0=Number($("#alter_x0").val());
+		cg.y0=Number($("#alter_y0").val());
+		cg.x1=Number($("#alter_x1").val());
+		cg.y1=Number($("#alter_y1").val());
+		cg.z0=Number($("#alter_z0").val());
+		cg.z1=Number($("#alter_z1").val());
+	}
+
 	cg.room_enter=$("#alter_room_enter").val();
 	cg.exit_type=$("#alter_exit_type").val();
-	cg.x0=Number($("#alter_x0").val());
-	cg.y0=Number($("#alter_y0").val());
-	cg.x1=Number($("#alter_x1").val());
-	cg.y1=Number($("#alter_y1").val());
-	cg.z0=Number($("#alter_z0").val());
-	cg.z1=Number($("#alter_z1").val());
 	cg.mvent_throughput=Number($("#alter_mvent_throughput").val());
 
 	if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
