@@ -3,6 +3,7 @@ from subprocess import Popen,PIPE
 import time
 import sys
 import os
+import json
 import shutil
 from distutils.dir_util import copy_tree
 from include import Json
@@ -11,14 +12,15 @@ from include import Sqlite
 from include import Dump as dd
 from include import SimIterations
 from include import Vis
+from include import GetUserPrefs
 from geom.nav import Navmesh
 
 class OnInit():
     def __init__(self):# {{{
         ''' Stuff that happens at the beggining of the project '''
 
-        if len(sys.argv) > 1:
-            os.environ["AAMKS_PROJECT"]=sys.argv[1]
+        if len(sys.argv) > 1: os.environ["AAMKS_PROJECT"]=sys.argv[1]
+        if len(sys.argv) > 2: os.environ["AAMKS_USER_ID"]=sys.argv[2]
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']
@@ -26,7 +28,9 @@ class OnInit():
         self.p=Psql()
         self._clear_srv_anims()
         self._clear_sqlite()
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self._setup_simulations()
+        self._create_sqlite_tables()
 # }}}
     def _clear_srv_anims(self):# {{{
         ''' 
@@ -92,21 +96,27 @@ class OnInit():
             self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
 
 # }}}
+    def _create_sqlite_tables(self): # {{{
+        ''' At least some tables must be create early for Vis() etc. '''
+
+        self.s.query("CREATE TABLE dispatched_evacuees(json)")
+# }}}
+
 class OnEnd():
     def __init__(self):# {{{
         ''' Stuff that happens at the end of the project '''
         self.json=Json()
+        self.uprefs=GetUserPrefs()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']
         self.scenario_id=self.conf['scenario_id']
-        self.p=Psql()
-        if self.conf['navmesh_debug']==1:
-            self._navmeshes_for_floors()
+        if self.uprefs.get_var('navmesh_debug')==1:
+            self._test_navmesh()
         Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
         self._gearman_register_works()
 # }}}
-    def _navmeshes_for_floors(self):# {{{
+    def _test_navmesh(self):# {{{
         navs={}
         for floor in self.json.readdb('floors_meta').keys():
             z=self.s.query("SELECT name FROM aamks_geom WHERE floor=? AND room_enter='no'", (floor,))

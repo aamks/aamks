@@ -4,6 +4,10 @@ AK
 	Bylo: fire_origin w [m]. Jest: [cm]
 	Bylo: obstacles jako 4 punkty. Jest: obstacles jako N punktow. Ostatni punkt jest powtorzonym pierwszym punktem.
 	Bylo: { "x":10, "y":20 }. Jest: [10,20]
+	Bylo: SmokeQuery. Jest PartitionQuery
+	Bylo: return conditions {'TIME': 0}, 'r1'. Jest: return conditions {'TIME': 0, 'compa': 'r1'}
+	Bylo: navmesh_debug per project (conf.json). Jest: per user w user preferences
+	Bylo: fire_model per project (conf.json). Jest dodatkowo: use_fire_model 0|1 w user preferences
 
 * Lokalny worker: w install.sh AAMKS_LOCAL_WORKER=1. Nie mozna bazowac na localhost, bo chcialbym workera na s.szach.in.
 * use_cfast=0 jako opcja w conf.json { "project_id": 1, "scenario_id": 10, "navmesh_debug": 1, "use_cfast": 0, }

@@ -7,21 +7,20 @@ from geom.fds_importer import FDSimporter
 from geom.world2d import World2d
 from geom.obstacles import Obstacles
 from fire.cfast_partition import CfastPartition
-from fire.smoke_query import SmokeQuery
+from fire.partition_query import PartitionQuery
 from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SendMessage
 
-#os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/three'
+#os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/simple'
 #print("In aamks.py:", os.environ['AAMKS_PROJECT'])
 OnInit()
 CFASTimporter()
 FDSimporter()
 World2d()
 Obstacles()
-CfastPartition(0) # 1 enabled debugging
+CfastPartition() 
 CfastMcarlo()
 EvacMcarlo()
-#z=SmokeQuery("0")
-#z.get_final_vars() 
+#z=PartitionQuery("0")
 OnEnd()

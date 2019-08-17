@@ -220,7 +220,6 @@ class EvacMcarlo():
         m={}
         for floor in self.floors:
             m[floor]=self.dispatched_evacuees[floor]
-        self.s.query("CREATE TABLE dispatched_evacuees(json)")
         self.s.query('INSERT INTO dispatched_evacuees VALUES (?)', (json.dumps(m),))
         
 # }}}

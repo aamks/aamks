@@ -3,9 +3,11 @@
 session_name('aamks');
 require_once("inc.php"); 
 
+# echo "SELECT preferences FROM users WHERE id=1" | psql aamks
 function update_prefs() { #{{{
 	if(!isset($_POST['update_prefs'])) { return; }
 	foreach($_POST['update_prefs'] as $k=>$v) {
+		if(is_numeric($v)) { $v=intval($v); }
 		$_SESSION['nn']->preferences_update_param($k, $v);
 	}
 }
@@ -18,7 +20,7 @@ function prefs_form() { # {{{
 			echo "<input type=hidden>";
 			echo "<table>";
 			foreach($_SESSION['prefs'] as $k=>$v) {
-				echo "<tr><td>$k<td><input name=update_prefs[$k] value='$v'>";
+				echo "<tr><td>$k<td><input autocomplete=off name=update_prefs[$k] value=$v>";
 			}
 			echo "</table><br><center><input type=submit></center></form><br><br>";
 		echo "</div>";

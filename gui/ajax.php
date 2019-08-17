@@ -61,6 +61,7 @@ function ajaxUserPreferences() { #{{{
 function ajaxLaunchSimulation() { #{{{
 	$aamks=getenv("AAMKS_PATH");
 	$working_home=$_SESSION['main']['working_home'];
+	$user_id=$_SESSION['main']['user_id'];
 	if(!is_file("$working_home/cad.json") && !is_file("$working_home/cadfds.json")) { 
 		echo json_encode(array("msg"=>"You need to draw and save the project in <a class=blink href=/aamks/apainter>Apainter</a> first", "err"=>1, "data"=>''));
 		return;
@@ -74,7 +75,7 @@ function ajaxLaunchSimulation() { #{{{
 		echo json_encode(array("msg"=>"Problem with the number of simulations. <a class=blink href=/aamks/form.php?edit>Setup scenario</a>", "err"=>1, "data"=>''));
 		return;
 	}
-	$cmd="cd $aamks; python3 aamks.py $working_home 2>&1"; 
+	$cmd="cd $aamks; python3 aamks.py $working_home $user_id  2>&1"; 
 
 	$z=shell_exec("$cmd");
 	if(empty($z)) { 

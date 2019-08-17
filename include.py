@@ -223,6 +223,15 @@ class Json: # {{{
 
 
 # }}}
+class GetUserPrefs:# {{{
+    def __init__(self):# {{{
+        self.p=Psql()
+        self.pconf=json.loads(self.p.query("SELECT preferences FROM users WHERE id=%s", (os.environ['AAMKS_USER_ID'],))[0][0])
+    def get_var(self, var):
+        return self.pconf[var]
+
+# }}}
+# }}}
 class Vis:# {{{
     def __init__(self,params):# {{{
         ''' 
@@ -236,11 +245,14 @@ class Vis:# {{{
         srv: 0 | 1 comes from the server, not worker; serves the purposes:
             * previous server visuals are obsolete and need to be removed
             * initial Apainter's evacuees will be displayed
+        skip_evacuees: optional; good for cfast_partition.py calls before evacuees are ready
+        skip_fire_origin: optional; good for cfast_partition.py calls before fire_origin is ready
         '''
 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.params=params
 
         self._static_floors=OrderedDict()
         self._js_make_floors_and_meta()
@@ -249,12 +261,8 @@ class Vis:# {{{
         self._js_make_obstacles()
         self._js_make_dd_geoms()
         self._js_make_srv_evacuees()
-
-
-        if 'fire_origin' not in params:
-            params['fire_origin']=self._js_vis_fire_origin()
-
-        self._save(params)
+        self._js_vis_fire_origin()
+        self._save()
 # }}}
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''
@@ -295,10 +303,14 @@ class Vis:# {{{
     def _js_make_srv_evacuees(self):# {{{
         ''' Draw srv, non-animated evacuees '''
 
-        for floor,evacuees in JSON.readdb("dispatched_evacuees").items():
-            self._static_floors[floor]['evacuees']=[]
-            for i in evacuees:
-                self._static_floors[floor]['evacuees'].append(json.dumps(i))
+        if "skip_evacuees" in self.params:
+            for floor,meta in self.json.readdb("floors_meta").items(): 
+                self._static_floors[floor]['evacuees']=[]
+        else:
+            for floor,evacuees in JSON.readdb("dispatched_evacuees").items():
+                self._static_floors[floor]['evacuees']=[]
+                for i in evacuees:
+                    self._static_floors[floor]['evacuees'].append(json.dumps(i))
 # }}}
     def _js_make_dd_geoms(self):# {{{
         ''' 
@@ -313,8 +325,12 @@ class Vis:# {{{
 # }}}
 
     def _js_vis_fire_origin(self):# {{{
-        z=self.s.query("SELECT floor, x, y FROM fire_origin")
-        return {'floor': z[0]['floor'], 'x': z[0]['x'], 'y': z[0]['y'] }
+
+        if "skip_fire_origin" in self.params:
+            self.params['fire_origin']=None
+        else:
+            z=self.s.query("SELECT floor, x, y FROM fire_origin")
+            self.params['fire_origin']={'floor': z[0]['floor'], 'x': z[0]['x'], 'y': z[0]['y'] }
 # }}}
     def _reorder_anims(self, z):# {{{
         '''
@@ -335,7 +351,7 @@ class Vis:# {{{
         return (sorted_anims, lowest_id - 1)
 
 # }}}
-    def _save(self,params):# {{{
+    def _save(self):# {{{
         ''' 
         Static.json is written each time, because obstacles may be available /
         non-available, so it is not constans. Except from static.json we update
@@ -357,12 +373,12 @@ class Vis:# {{{
         anim_record=OrderedDict()
         anim_record['sort_id']=lowest_id
         lowest_id-=1
-        anim_record['title']=params['title']
+        anim_record['title']=self.params['title']
         anim_record['time']=datetime.now().strftime('%H:%M')
-        anim_record['fire_origin']=params['fire_origin']
-        anim_record['highlight_geom']=params['highlight_geom']
-        anim_record['srv']=params['srv']
-        anim_record['anim']=params['anim']
+        anim_record['fire_origin']=self.params['fire_origin']
+        anim_record['highlight_geom']=self.params['highlight_geom']
+        anim_record['srv']=self.params['srv']
+        anim_record['anim']=self.params['anim']
         records={}
         records[anim_record['title']] = anim_record
 

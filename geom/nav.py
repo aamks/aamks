@@ -13,6 +13,7 @@ import subprocess
 from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
+from fire.partition_query import PartitionQuery
 from shapely.ops import polygonize
 from numpy.random import uniform
 from math import sqrt
@@ -148,14 +149,33 @@ class Navmesh:
         self.nav_name="{}{}.nav".format(floor,brooms)
 
 # }}}
+    def _closest_room_escape_test(self,evacuees):# {{{
+
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        #self.s.dump()
+
+        pp=PartitionQuery(self.floor)
+        for e in evacuees:
+            room=pp.xy2room([e['x0'], e['y0']])
+            for vv in self.s.query("SELECT name, x0, y0, x1, y1, center_x, center_y FROM aamks_geom WHERE type_sec='DOOR' AND is_vertical=1 AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
+                dest_y=vv['y0'] if abs(vv['y0']-e['y0']) < abs(vv['y1']-e['y0']) else vv['y1']
+                dest_x=vv['center_x'] + 50 if e['x0'] <= vv['x0']  else vv['center_x'] - 50
+                z[self.floor]['circles'].append({ "xy": (dest_x, dest_y), "radius": 30, "fillColor": '#ff0' , "opacity": 1 } )
+            for vv in self.s.query("SELECT name, x0, y0, x1, y1, center_x, center_y  FROM aamks_geom WHERE type_sec='DOOR' AND is_vertical=0 AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
+                dest_x=vv['x0'] if abs(vv['x0']-e['x0']) < abs(vv['x1']-e['x0']) else vv['x1']
+                dest_y=vv['center_y'] + 50 if e['y0'] <= vv['y0'] else vv['center_y'] - 50
+                z[self.floor]['circles'].append({ "xy": (dest_x, dest_y), "radius": 30, "fillColor": '#ff0' , "opacity": 1 } )
+            self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+# }}}
 
     def test(self):# {{{
         agents_pairs=6
         colors=[ "#f80", "#f00", "#8f0", "#08f", "#f0f", "#f8f", "#0ff", "#ff0" ]
         navmesh_paths=[]
+        evacuees=self.s.query("SELECT x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
+        self._closest_room_escape_test(evacuees)
 
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        evacuees=self.s.query("SELECT x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
         for x,i in enumerate(self._chunks(evacuees,2)):
             p0=(i[0]['x0'], i[0]['y0'])
             p1=(i[1]['x0'], i[1]['y0'])
@@ -283,6 +303,7 @@ class Navmesh:
         '''
 
         r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE (vent_from_name=? OR vent_to_name=?) AND floor=?", (room,room,self.floor))
+        #dd(r)
         m={}
         closest={ 'len': 999999999, 'name': None, 'x': None, 'y': None }
         for i in r:

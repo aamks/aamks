@@ -10,13 +10,14 @@ from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from numpy.random import randint
 from include import Sqlite
 from include import Json
+from include import GetUserPrefs
 from include import Dump as dd
 from include import Vis
 
 # }}}
 
 class CfastPartition():
-    def __init__(self, verbose=0): # {{{
+    def __init__(self): # {{{
         ''' 
         Divide space into cells for smoke conditions queries asked by evacuees.
         A cell may be a square or a rectangle. First divide space into squares
@@ -40,6 +41,10 @@ class CfastPartition():
 
         self._square_side=300
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.uprefs=GetUserPrefs()
+        verbose=0
+        if self.uprefs.get_var('partitioning_debug')==1: verbose=1
+
         try:
             self.s.query("DROP TABLE cell2compa")
             self.s.query("DROP TABLE query_vertices")
@@ -60,7 +65,8 @@ class CfastPartition():
             if(verbose==1):
                 self._plot_space(floor)  # debug
         if(verbose==1):
-            Vis(None, 'image', 'partition') # debug
+            Vis({'highlight_geom': None, 'anim': None, 'title': 'partitioning', 'srv': 1, 'skip_fire_origin': 1, 'skip_evacuees': 1}) # debug
+
         self._dbsave()
 # }}}
     def _init_space(self,floor):# {{{
@@ -168,10 +174,10 @@ class CfastPartition():
         for k,v in self.rectangles.items():
             z[floor]['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 2 , "opacity": 0.2 } )
             z[floor]['circles'].append(    { "xy": k, "radius": radius , "fillColor": "#fff", "opacity": 0.3 } )
-            z[floor]['texts'].append(      { "xy": k, "content": k, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
+            z[floor]['texts'].append(      { "xy": k, "content": k, "fontSize": 12, "fillColor":"#ff0", "opacity":0.7 })
             for mm in v:
                 z[floor]['circles'].append( { "xy": mm, "radius": radius, "fillColor": "#fff", "opacity": 0.3 } )
-                z[floor]['texts'].append(   { "xy": mm, "content": mm, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
+                z[floor]['texts'].append(   { "xy": mm, "content": mm, "fontSize": 12, "fillColor":"#ff0", "opacity":0.7 })
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
 
