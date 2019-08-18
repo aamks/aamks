@@ -9,6 +9,7 @@ import codecs
 import itertools
 import _recast as dt
 import subprocess
+import copy
 
 from pprint import pprint
 from collections import OrderedDict
@@ -296,6 +297,45 @@ class Navmesh:
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         self._test_pairs_lines(navmesh_paths)
 # }}}
+    def _hole_connected_rooms(self): # {{{
+        ''' 
+        room A may be hole-connected to room B which may be hole-connnected to
+        room C and so on -- recursion
+        '''
+
+        if self._hole_count == len(self._hole_rooms):
+            return 
+        else:
+            self._hole_count=len(self._hole_rooms)
+            tt=copy.deepcopy(self._hole_rooms)
+            for room in self._hole_rooms.keys():
+                for i in self.s.query("SELECT vent_from_name,vent_to_name FROM aamks_geom WHERE type_sec='HOLE' AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
+                    tt[i['vent_from_name']]=1
+                    tt[i['vent_to_name']]=1
+            self._hole_rooms=copy.deepcopy(tt)
+            return self._hole_connected_rooms()
+# }}}
+    def _room_exit_doors(self,room): # {{{
+        ''' 
+        An agents is found in room A. If room A is connected to room B via a
+        hole, then we are looking for way out via doors in the "merged" AB
+        room. 
+
+        room A may be hole-connected to room B which may be hole-connnected to
+        room C and so on, hence recursive _hole_connected_rooms() need to
+        calculate _hole_rooms
+        '''
+
+        self._hole_rooms={room: 1}
+        self._hole_count=0
+        self._hole_connected_rooms()
+        doors={}
+        for rr in self._hole_rooms.keys():
+            z=self.s.query("SELECT name, type_sec, x0, y0, x1, y1, center_x, center_y FROM aamks_geom WHERE type_sec='DOOR' AND (vent_from_name=? OR vent_to_name=?)", (rr, rr))
+            for d in z:
+                doors[d['name']]=d
+        return list(doors.values())
+# }}}
     def _test_closest_room_escape(self,evacuees):# {{{
 
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
@@ -304,14 +344,9 @@ class Navmesh:
         for i,pairs in enumerate(evacuees):
             e=pairs[0]
             room=pp.xy2room([e['x0'], e['y0']])
-            for vv in self.s.query("SELECT name, x0, y0, x1, y1, center_x, center_y FROM aamks_geom WHERE type_sec='DOOR' AND is_vertical=1 AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
-                dest_y=vv['y0'] + self.evacuee_radius*1.2  if abs(vv['y0']-e['y0']) < abs(vv['y1']-e['y0']) else vv['y1'] - self.evacuee_radius*1.2
-                dest_x=vv['center_x'] + self.evacuee_radius*1.2 if e['x0'] <= vv['x0']  else vv['center_x'] - self.evacuee_radius*1.2
-                z[self.floor]['circles'].append({ "xy": (dest_x, dest_y), "radius": self.evacuee_radius*0.8, "fillColor": "#000", "strokeColor": self._test_colors[i], "strokeWidth": 8,  "opacity": 1 } )
-            for vv in self.s.query("SELECT name, x0, y0, x1, y1, center_x, center_y  FROM aamks_geom WHERE type_sec='DOOR' AND is_vertical=0 AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
-                dest_x=vv['x0'] + self.evacuee_radius*1.2 if abs(vv['x0']-e['x0']) < abs(vv['x1']-e['x0']) else vv['x1'] - self.evacuee_radius*1.2
-                dest_y=vv['center_y'] + self.evacuee_radius*1.2 if e['y0'] <= vv['y0'] else vv['center_y'] - self.evacuee_radius*1.2
-                z[self.floor]['circles'].append({ "xy": (dest_x, dest_y), "radius": self.evacuee_radius*0.8, "fillColor": "#000", "strokeColor": self._test_colors[i], "strokeWidth": 8,  "opacity": 1 } )
+
+            for vv in self._room_exit_doors(room):
+                z[self.floor]['circles'].append({ "xy": (vv['center_x'], vv['center_y']), "radius": self.evacuee_radius*0.8, "fillColor": "#000", "strokeColor": self._test_colors[i], "strokeWidth": 8,  "opacity": 1 } )
 
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}

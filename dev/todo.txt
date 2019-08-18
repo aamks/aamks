@@ -21,7 +21,7 @@ AK
 mimooh
 =======
 
-* nav: room_leave(): use navmesh, vis dest points, leave in obst-free place
+* nav: room_leave(): it will be solved by extending the navmesh to navigate via intermediate way points
 * apainter: staircase slice
 * apainter: poly obsts
 * animator: Highlight poly geoms 
