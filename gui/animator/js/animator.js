@@ -482,7 +482,11 @@ function drawDDGeoms(data,tx,ty) { //{{{
 	});
 
 	_.each(data.circles, function(pp) {
-		new Path.Circle({ center: new Point(pp.xy[0]+tx, pp.xy[1]+ty), radius:pp.radius, fillColor:pp.fillColor, opacity:pp.opacity });
+        if ('strokeWidth' in pp && 'strokeWidth' in pp) { 
+            new Path.Circle({ center: new Point(pp.xy[0]+tx, pp.xy[1]+ty), radius:pp.radius, fillColor:pp.fillColor, strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, opacity:pp.opacity });
+        } else {
+            new Path.Circle({ center: new Point(pp.xy[0]+tx, pp.xy[1]+ty), radius:pp.radius, fillColor:pp.fillColor, opacity:pp.opacity });
+        }
 	});
 
 	_.each(data.texts, function(pp) {

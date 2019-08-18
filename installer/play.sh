@@ -1,7 +1,7 @@
 # Not for production
 
 psql -f sql.sql
-preferences='{"apainter_editor": "text", "navmesh_debug": 1, "apainter_labels": 1, "partitioning_debug": 1, "use_fire_model": 0}';
+preferences='{"apainter_editor": "text", "navmesh_debug": 1, "apainter_labels": 1, "partitioning_debug": 0, "use_fire_model": 0}';
 psql aamks -c "
 DELETE FROM users;
 INSERT INTO users(active_scenario, preferences, user_photo , user_name , email) values(3 , '$preferences', '/aamks/logo.svg' , 'Karol Kreński'    , 'mimoohowy@gmail.com');

@@ -54,7 +54,9 @@ class Navmesh:
 
         self.json=Json()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self._test_colors=[ "#f80", "#f00", "#8f0", "#08f" ]
         self.navmesh=OrderedDict()
+        self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
 # }}}
     def _bricked_wall(self, floor, bypass_rooms=[]):# {{{
         '''
@@ -125,18 +127,6 @@ class Navmesh:
         return path
 
 # }}}
-    def _navmesh_vis(self,navmesh_paths,colors):# {{{
-        j=Json()
-        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for cc,path in enumerate(navmesh_paths):
-            for i,p in enumerate(path):
-                try:
-                    z[self.floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": colors[cc], "strokeWidth": 14  , "opacity": 0.5 } )
-                except:
-                    pass
-
-        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-# }}}
     def _chunks(self,l, n):# {{{
         """Yield successive n-sized chunks from l."""
         for i in range(0, len(l), n):
@@ -149,43 +139,7 @@ class Navmesh:
         self.nav_name="{}{}.nav".format(floor,brooms)
 
 # }}}
-    def _closest_room_escape_test(self,evacuees):# {{{
 
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        #self.s.dump()
-
-        pp=PartitionQuery(self.floor)
-        for e in evacuees:
-            room=pp.xy2room([e['x0'], e['y0']])
-            for vv in self.s.query("SELECT name, x0, y0, x1, y1, center_x, center_y FROM aamks_geom WHERE type_sec='DOOR' AND is_vertical=1 AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
-                dest_y=vv['y0'] if abs(vv['y0']-e['y0']) < abs(vv['y1']-e['y0']) else vv['y1']
-                dest_x=vv['center_x'] + 50 if e['x0'] <= vv['x0']  else vv['center_x'] - 50
-                z[self.floor]['circles'].append({ "xy": (dest_x, dest_y), "radius": 30, "fillColor": '#ff0' , "opacity": 1 } )
-            for vv in self.s.query("SELECT name, x0, y0, x1, y1, center_x, center_y  FROM aamks_geom WHERE type_sec='DOOR' AND is_vertical=0 AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
-                dest_x=vv['x0'] if abs(vv['x0']-e['x0']) < abs(vv['x1']-e['x0']) else vv['x1']
-                dest_y=vv['center_y'] + 50 if e['y0'] <= vv['y0'] else vv['center_y'] - 50
-                z[self.floor]['circles'].append({ "xy": (dest_x, dest_y), "radius": 30, "fillColor": '#ff0' , "opacity": 1 } )
-            self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-# }}}
-
-    def test(self):# {{{
-        agents_pairs=6
-        colors=[ "#f80", "#f00", "#8f0", "#08f", "#f0f", "#f8f", "#0ff", "#ff0" ]
-        navmesh_paths=[]
-        evacuees=self.s.query("SELECT x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
-        self._closest_room_escape_test(evacuees)
-
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for x,i in enumerate(self._chunks(evacuees,2)):
-            p0=(i[0]['x0'], i[0]['y0'])
-            p1=(i[1]['x0'], i[1]['y0'])
-            z[self.floor]['circles'].append({ "xy": p0, "radius": 30, "fillColor": colors[x] , "opacity": 1 } )
-            z[self.floor]['circles'].append({ "xy": p1, "radius": 30, "fillColor": colors[x] , "opacity": 1 } )
-            navmesh_paths.append(self.query((p0,p1),300))
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        self._navmesh_vis(navmesh_paths,colors)
-        Vis({'highlight_geom': None, 'anim': None, 'title': 'Nav {} test'.format(self.nav_name), 'srv': 1})
-# }}}
     def build(self,floor,bypass_rooms=[]):# {{{
         self.floor=floor
         self.bypass_rooms=bypass_rooms
@@ -317,3 +271,56 @@ class Navmesh:
             
 # }}}
 
+    def _test_pairs_lines(self,navmesh_paths):# {{{
+        j=Json()
+        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        for cc,path in enumerate(navmesh_paths):
+            for i,p in enumerate(path):
+                try:
+                    z[self.floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": self._test_colors[cc], "strokeWidth": 14  , "opacity": 0.5 } )
+                except:
+                    pass
+
+        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+# }}}
+    def _test_evacuees_pairs(self,evacuees):# {{{
+
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        navmesh_paths=[]
+        for x,i in enumerate(evacuees):
+            p0=(i[0]['x0'], i[0]['y0'])
+            p1=(i[1]['x0'], i[1]['y0'])
+            z[self.floor]['circles'].append({ "xy": p0, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 } )
+            z[self.floor]['circles'].append({ "xy": p1, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 } )
+            navmesh_paths.append(self.query((p0,p1),300))
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        self._test_pairs_lines(navmesh_paths)
+# }}}
+    def _test_closest_room_escape(self,evacuees):# {{{
+
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
+        pp=PartitionQuery(self.floor)
+        for i,pairs in enumerate(evacuees):
+            e=pairs[0]
+            room=pp.xy2room([e['x0'], e['y0']])
+            for vv in self.s.query("SELECT name, x0, y0, x1, y1, center_x, center_y FROM aamks_geom WHERE type_sec='DOOR' AND is_vertical=1 AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
+                dest_y=vv['y0'] + self.evacuee_radius*1.2  if abs(vv['y0']-e['y0']) < abs(vv['y1']-e['y0']) else vv['y1'] - self.evacuee_radius*1.2
+                dest_x=vv['center_x'] + self.evacuee_radius*1.2 if e['x0'] <= vv['x0']  else vv['center_x'] - self.evacuee_radius*1.2
+                z[self.floor]['circles'].append({ "xy": (dest_x, dest_y), "radius": self.evacuee_radius*0.8, "fillColor": "#000", "strokeColor": self._test_colors[i], "strokeWidth": 8,  "opacity": 1 } )
+            for vv in self.s.query("SELECT name, x0, y0, x1, y1, center_x, center_y  FROM aamks_geom WHERE type_sec='DOOR' AND is_vertical=0 AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
+                dest_x=vv['x0'] + self.evacuee_radius*1.2 if abs(vv['x0']-e['x0']) < abs(vv['x1']-e['x0']) else vv['x1'] - self.evacuee_radius*1.2
+                dest_y=vv['center_y'] + self.evacuee_radius*1.2 if e['y0'] <= vv['y0'] else vv['center_y'] - self.evacuee_radius*1.2
+                z[self.floor]['circles'].append({ "xy": (dest_x, dest_y), "radius": self.evacuee_radius*0.8, "fillColor": "#000", "strokeColor": self._test_colors[i], "strokeWidth": 8,  "opacity": 1 } )
+
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+# }}}
+    def test(self):# {{{
+        agents_pairs=4
+        ee=self.s.query("SELECT name,x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
+        evacuees=list(self._chunks(ee,2))
+        self._test_evacuees_pairs(evacuees)
+        self._test_closest_room_escape(evacuees)
+        Vis({'highlight_geom': None, 'anim': None, 'title': 'Nav {} test'.format(self.nav_name), 'srv': 1})
+
+# }}}
