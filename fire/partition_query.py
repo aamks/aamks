@@ -86,7 +86,7 @@ class PartitionQuery:
         self._compa_conditions['outside']=OrderedDict() is more for debugging.
         '''
 
-        self.relevant_params = ('CEILT', 'DJET', 'FLHGT', 'FLOORT', 'HGT',
+        self.relevant_params = ('COMPA', 'CEILT', 'DJET', 'FLHGT', 'FLOORT', 'HGT',
         'HRR', 'HRRL', 'HRRU', 'IGN', 'LLCO', 'LLCO2', 'LLH2O', 'LLHCL',
         'LLHCN', 'LLN2', 'LLO2', 'LLOD', 'LLT', 'LLTS', 'LLTUHC', 'LWALLT',
         'PLUM', 'PRS', 'PYROL', 'TRACE', 'ULCO', 'ULCO2', 'ULH2O', 'ULHCL',
@@ -98,7 +98,7 @@ class PartitionQuery:
         self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
             self.compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME'] + list(self.relevant_params)])
-            self.compa_conditions[compa]['compa']=compa
+            self.compa_conditions[compa]['COMPA']=compa
         self.compa_conditions['outside']=OrderedDict([('TIME', None)])
 # }}}
     def _cfast_headers(self):# {{{
@@ -178,13 +178,13 @@ class PartitionQuery:
 
         if (x,y) in self._cell2compa:
             if len(self._query_vertices[x,y]['x'])==1:
-                return self._cell2compa[(x,y)]
+                return self._cell2compa[(x,y)] if (x,y) in self._cell2compa else "outside"
             else:
                 for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
                     if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
                         rx=self._query_vertices[(x,y)]['x'][i-1]
                         ry=self._query_vertices[(x,y)]['y'][i-1]
-                        return self._cell2compa[(rx,ry)]
+                        return self._cell2compa[(rx,ry)] if (rx,ry) in self._cell2compa else "outside"
         else:
             return "outside"
 # }}}
@@ -198,15 +198,15 @@ class PartitionQuery:
 
         if (x,y) in self._cell2compa:
             if len(self._query_vertices[x,y]['x'])==1:
-                return self.compa_conditions[self._cell2compa[(x,y)]]
+                return self.compa_conditions[self._cell2compa[(x,y)]] if (x,y) in self._cell2compa else {'COMPA': 'outside'} 
             else:
                 for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
                     if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
                         rx=self._query_vertices[(x,y)]['x'][i-1]
                         ry=self._query_vertices[(x,y)]['y'][i-1]
-                        return self.compa_conditions[self._cell2compa[(rx,ry)]]
+                        return self.compa_conditions[self._cell2compa[(rx,ry)]] if (rx,ry) in self._cell2compa else {'COMPA': 'outside'} 
         else:
-            return {'compa': 'outside'} 
+            return {'COMPA': 'outside'} 
 # }}}
     def get_visibility(self, position, time, floor):# {{{
         query = self.get_conditions(position, floor)

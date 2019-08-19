@@ -57,9 +57,10 @@ class Navmesh:
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self._test_colors=[ "#f80", "#f00", "#8f0", "#08f" ]
         self.navmesh=OrderedDict()
+        self.partition_query={}
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
 # }}}
-    def _bricked_wall(self, floor, bypass_rooms=[]):# {{{
+    def _bricked_wall(self, bypass_rooms=[]):# {{{
         '''
         For navmesh we may wish to turn some doors into bricks.
         '''
@@ -68,7 +69,7 @@ class Navmesh:
 
         if len(bypass_rooms) > 0 :
             floors_meta=json.loads(self.s.query("SELECT json FROM floors_meta")[0]['json'])
-            elevation=floors_meta[floor]['minz_abs']
+            elevation=floors_meta[self.floor]['minz_abs']
             where=" WHERE "
             where+=" vent_from_name="+" OR vent_from_name=".join([ "'{}'".format(i) for i in bypass_rooms])
             where+=" OR vent_to_name="+" OR vent_to_name=".join([ "'{}'".format(i) for i in bypass_rooms])
@@ -77,17 +78,17 @@ class Navmesh:
             for i in bypass_doors:
                 bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
 
-        bricked_wall+=self.json.readdb("obstacles")['obstacles'][floor]
+        bricked_wall+=self.json.readdb("obstacles")['obstacles'][self.floor]
         try:
-            bricked_wall.append(self.json.readdb("obstacles")['fire'][floor])
+            bricked_wall.append(self.json.readdb("obstacles")['fire'][self.floor])
         except:
             pass
 
         return bricked_wall
 
 # }}}
-    def _obj_platform(self,floor):# {{{
-        z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,))
+    def _obj_platform(self):# {{{
+        z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (self.floor,))
         platforms=[]
         for i in z:
             platforms.append([ (i['x1'], i['y1']), (i['x1'], i['y0']), (i['x0'], i['y0']), (i['x0'], i['y1']) ])
@@ -103,7 +104,7 @@ class Navmesh:
         self._obj_num+=1
         return elem
 # }}}
-    def _obj_make(self,floor,bypass_rooms):# {{{
+    def _obj_make(self,bypass_rooms):# {{{
         ''' 
         1. Create obj file from aamks geometries.
         2. Build navmesh with golang, obj is input
@@ -114,12 +115,12 @@ class Navmesh:
 
         '''
 
-        z=self._bricked_wall(floor,bypass_rooms)
+        z=self._bricked_wall(bypass_rooms)
         obj='';
         self._obj_num=0;
         for face in z:
             obj+=self._obj_elem(face,99)
-        for face in self._obj_platform(floor):
+        for face in self._obj_platform():
             obj+=self._obj_elem(face,0)
         
         path="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], self.nav_name)
@@ -133,19 +134,19 @@ class Navmesh:
         for i in range(0, len(l), n):
             yield l[i:i + n]
 # }}}
-    def _get_name(self,floor,bypass_rooms=[]):# {{{
+    def _get_name(self,bypass_rooms=[]):# {{{
         brooms=''
         if len(bypass_rooms)>0:
             brooms="-"+"-".join(bypass_rooms)
-        self.nav_name="{}{}.nav".format(floor,brooms)
+        self.nav_name="{}{}.nav".format(self.floor,brooms)
 
 # }}}
 
     def build(self,floor,bypass_rooms=[]):# {{{
         self.floor=floor
         self.bypass_rooms=bypass_rooms
-        self._get_name(floor,bypass_rooms)
-        file_obj=self._obj_make(floor,bypass_rooms)
+        self._get_name(bypass_rooms)
+        file_obj=self._obj_make(bypass_rooms)
         file_nav="{}/{}".format(os.environ['AAMKS_PROJECT'], self.nav_name)
         file_conf="{}/recast.yml".format(os.environ['AAMKS_PROJECT'])
         with open(file_conf, "w") as f: 
@@ -331,22 +332,42 @@ class Navmesh:
         self._hole_connected_rooms()
         doors={}
         for rr in self._hole_rooms.keys():
-            z=self.s.query("SELECT name, type_sec, x0, y0, x1, y1, center_x, center_y FROM aamks_geom WHERE type_sec='DOOR' AND (vent_from_name=? OR vent_to_name=?)", (rr, rr))
+            z=self.s.query("SELECT name, type_sec, x0, y0, x1, y1, center_x, center_y, is_vertical FROM aamks_geom WHERE type_sec='DOOR' AND (vent_from_name=? OR vent_to_name=?)", (rr, rr))
             for d in z:
                 doors[d['name']]=d
         return list(doors.values())
 # }}}
+    def _move_dest_around_door(self,data):# {{{
+        '''
+        For the hole-connnected rooms the dest point must be calculated
+        relative to the ROOM (inside, outside). It won't do relative to the
+        EVACUEE position (left, right, above, below). 
+        '''
+        #return (data['door']['x1'], data['door']['y1'])
+        dd("nav.py todo")
+
+        if self.partition_query[self.floor].xy2room([data['door']['x1'], data['door']['y1']]) == data['room']:
+            dd(1)
+        #if data['door']['is_vertical']==1:
+        #    dest=(door['x1'] + self.evacuee_radius*2 if e['x0'] < door['x0'] else door['center_x'] - self.evacuee_radius,  door['center_y'])
+        #else:
+        #    dest=(door['center_y'] + self.evacuee_radius*2 if e['y0'] < door['y0'] else door['center_y'] - self.evacuee_radius,  door['center_x'])
+        #dd(door, dest)
+        exit()
+        return dest
+# }}}
     def _test_closest_room_escape(self,evacuees):# {{{
+        self.partition_query[self.floor]=PartitionQuery(self.floor)
 
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 
-        pp=PartitionQuery(self.floor)
         for i,pairs in enumerate(evacuees):
             e=pairs[0]
-            room=pp.xy2room([e['x0'], e['y0']])
+            room=self.partition_query[self.floor].xy2room([e['x0'], e['y0']])
 
-            for vv in self._room_exit_doors(room):
-                z[self.floor]['circles'].append({ "xy": (vv['center_x'], vv['center_y']), "radius": self.evacuee_radius*0.8, "fillColor": "#000", "strokeColor": self._test_colors[i], "strokeWidth": 8,  "opacity": 1 } )
+            for door in self._room_exit_doors(room):
+                dest=self._move_dest_around_door({'e': e, 'door': door, 'room': room})
+                z[self.floor]['circles'].append({ "xy": dest, "radius": self.evacuee_radius*0.8, "fillColor": "#000", "strokeColor": self._test_colors[i], "strokeWidth": 8,  "opacity": 1 } )
 
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
