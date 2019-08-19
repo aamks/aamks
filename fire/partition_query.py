@@ -176,17 +176,15 @@ class PartitionQuery:
         x=self.floors_meta[self.floor]['minx'] + self._square_side * int((q[0]-self.floors_meta[self.floor]['minx'])/self._square_side) 
         y=self.floors_meta[self.floor]['miny'] + self._square_side * int((q[1]-self.floors_meta[self.floor]['miny'])/self._square_side)
 
-        if (x,y) in self._cell2compa:
-            if len(self._query_vertices[x,y]['x'])==1:
-                return self._cell2compa[(x,y)] if (x,y) in self._cell2compa else "outside"
-            else:
-                for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
-                    if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
-                        rx=self._query_vertices[(x,y)]['x'][i-1]
-                        ry=self._query_vertices[(x,y)]['y'][i-1]
-                        return self._cell2compa[(rx,ry)] if (rx,ry) in self._cell2compa else "outside"
+        if len(self._query_vertices[x,y]['x'])==1:
+            return self._cell2compa[(x,y)] if (x,y) in self._cell2compa else "outside"
         else:
-            return "outside"
+            for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
+                if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
+                    rx=self._query_vertices[(x,y)]['x'][i-1]
+                    ry=self._query_vertices[(x,y)]['y'][i-1]
+                    return self._cell2compa[(rx,ry)] if (rx,ry) in self._cell2compa else "outside"
+        return "outside"
 # }}}
     def get_conditions(self,q):# {{{
         ''' 
@@ -196,17 +194,15 @@ class PartitionQuery:
         x=self.floors_meta[self.floor]['minx'] + self._square_side * int((q[0]-self.floors_meta[self.floor]['minx'])/self._square_side) 
         y=self.floors_meta[self.floor]['miny'] + self._square_side * int((q[1]-self.floors_meta[self.floor]['miny'])/self._square_side)
 
-        if (x,y) in self._cell2compa:
-            if len(self._query_vertices[x,y]['x'])==1:
-                return self.compa_conditions[self._cell2compa[(x,y)]] if (x,y) in self._cell2compa else {'COMPA': 'outside'} 
-            else:
-                for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
-                    if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
-                        rx=self._query_vertices[(x,y)]['x'][i-1]
-                        ry=self._query_vertices[(x,y)]['y'][i-1]
-                        return self.compa_conditions[self._cell2compa[(rx,ry)]] if (rx,ry) in self._cell2compa else {'COMPA': 'outside'} 
+        if len(self._query_vertices[x,y]['x'])==1:
+            return self.compa_conditions[self._cell2compa[(x,y)]] if (x,y) in self._cell2compa else {'COMPA': 'outside'} 
         else:
-            return {'COMPA': 'outside'} 
+            for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
+                if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
+                    rx=self._query_vertices[(x,y)]['x'][i-1]
+                    ry=self._query_vertices[(x,y)]['y'][i-1]
+                    return self.compa_conditions[self._cell2compa[(rx,ry)]] if (rx,ry) in self._cell2compa else {'COMPA': 'outside'} 
+        return {'COMPA': 'outside'} 
 # }}}
     def get_visibility(self, position, time, floor):# {{{
         query = self.get_conditions(position, floor)

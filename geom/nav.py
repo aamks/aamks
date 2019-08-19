@@ -259,7 +259,6 @@ class Navmesh:
         '''
 
         r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE (vent_from_name=? OR vent_to_name=?) AND floor=?", (room,room,self.floor))
-        #dd(r)
         m={}
         closest={ 'len': 999999999, 'name': None, 'x': None, 'y': None }
         for i in r:
@@ -273,31 +272,6 @@ class Navmesh:
             
 # }}}
 
-    def _test_pairs_lines(self,navmesh_paths):# {{{
-        j=Json()
-        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        for cc,path in enumerate(navmesh_paths):
-            for i,p in enumerate(path):
-                try:
-                    z[self.floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": self._test_colors[cc], "strokeWidth": 14  , "opacity": 0.5 } )
-                except:
-                    pass
-
-        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-# }}}
-    def _test_evacuees_pairs(self,evacuees):# {{{
-
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        navmesh_paths=[]
-        for x,i in enumerate(evacuees):
-            p0=(i[0]['x0'], i[0]['y0'])
-            p1=(i[1]['x0'], i[1]['y0'])
-            z[self.floor]['circles'].append({ "xy": p0, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 } )
-            z[self.floor]['circles'].append({ "xy": p1, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 } )
-            navmesh_paths.append(self.query((p0,p1),300))
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        self._test_pairs_lines(navmesh_paths)
-# }}}
     def _hole_connected_rooms(self): # {{{
         ''' 
         room A may be hole-connected to room B which may be hole-connnected to
@@ -343,18 +317,47 @@ class Navmesh:
         relative to the ROOM (inside, outside). It won't do relative to the
         EVACUEE position (left, right, above, below). 
         '''
-        #return (data['door']['x1'], data['door']['y1'])
-        dd("nav.py todo")
+        top_right=self.partition_query[self.floor].xy2room([data['door']['x1'], data['door']['y0']])
 
-        if self.partition_query[self.floor].xy2room([data['door']['x1'], data['door']['y1']]) == data['room']:
-            dd(1)
-        #if data['door']['is_vertical']==1:
-        #    dest=(door['x1'] + self.evacuee_radius*2 if e['x0'] < door['x0'] else door['center_x'] - self.evacuee_radius,  door['center_y'])
-        #else:
-        #    dest=(door['center_y'] + self.evacuee_radius*2 if e['y0'] < door['y0'] else door['center_y'] - self.evacuee_radius,  door['center_x'])
-        #dd(door, dest)
-        exit()
+        #print(data['door']['name'], top_right, [data['door']['x1'], data['door']['y0']])
+        if data['door']['is_vertical']==1:
+            if top_right in self._hole_rooms.keys():
+                dest=(data['door']['center_x'] - self.evacuee_radius*4, data['door']['center_y'])
+            else:
+                dest=(data['door']['center_x'] + self.evacuee_radius*4, data['door']['center_y'])
+        else:
+            if top_right in self._hole_rooms.keys():
+                dest=(data['door']['center_x'], data['door']['center_y'] + self.evacuee_radius*4)
+            else:
+                dest=(data['door']['center_x'], data['door']['center_y'] - self.evacuee_radius*4)
+
         return dest
+# }}}
+
+    def _test_pairs_lines(self,navmesh_paths):# {{{
+        j=Json()
+        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        for cc,path in enumerate(navmesh_paths):
+            for i,p in enumerate(path):
+                try:
+                    z[self.floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": self._test_colors[cc], "strokeWidth": 14  , "opacity": 0.5 } )
+                except:
+                    pass
+
+        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+# }}}
+    def _test_evacuees_pairs(self,evacuees):# {{{
+
+        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        navmesh_paths=[]
+        for x,i in enumerate(evacuees):
+            p0=(i[0]['x0'], i[0]['y0'])
+            p1=(i[1]['x0'], i[1]['y0'])
+            z[self.floor]['circles'].append({ "xy": p0, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 } )
+            z[self.floor]['circles'].append({ "xy": p1, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 } )
+            navmesh_paths.append(self.query((p0,p1),300))
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        self._test_pairs_lines(navmesh_paths)
 # }}}
     def _test_closest_room_escape(self,evacuees):# {{{
         self.partition_query[self.floor]=PartitionQuery(self.floor)
@@ -367,7 +370,8 @@ class Navmesh:
 
             for door in self._room_exit_doors(room):
                 dest=self._move_dest_around_door({'e': e, 'door': door, 'room': room})
-                z[self.floor]['circles'].append({ "xy": dest, "radius": self.evacuee_radius*0.8, "fillColor": "#000", "strokeColor": self._test_colors[i], "strokeWidth": 8,  "opacity": 1 } )
+                z[self.floor]['circles'].append({ "xy": dest, "radius": self.evacuee_radius*0.5, "fillColor": "#000", "strokeColor": self._test_colors[i], "strokeWidth": 8,  "opacity": 1 } )
+                z[self.floor]['circles'].append({ "xy": dest, "radius": self.evacuee_radius*3.5, "fillColor": "#0f0", "opacity": 0.3 } )
 
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
