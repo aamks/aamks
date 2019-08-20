@@ -38,7 +38,7 @@ function login_form(){/*{{{*/
 		if(!empty($ret)){//password and email match
 			if($salted==$ret[0]['password']){
 				$_SESSION['nn']->set_user_variables($ret[0]);
-				header("location:".me()); 
+				#header("location:".me()); 
 			}
 		}else{
 			$_SESSION['reset_email']=$_POST['email'];
@@ -91,7 +91,7 @@ function do_register(){/*{{{*/
 	}
 	$salted=salt($password);
 	$token=md5(time());
-	$ret=$_SESSION['nn']->query("insert into users (username, email, password, activation_token) values ($1,$2,$3,$4) returning id", array($name, $email, $salted,$token));
+	$ret=$_SESSION['nn']->query("insert into users (user_name, email, password, activation_token) values ($1,$2,$3,$4) returning id", array($name, $email, $salted,$token));
 
 	nice_mail($email,"Welcome to AAMKS","Confirm your email address and activate your AAMKS account <br> 
 		<a href=https://$_SERVER[SERVER_NAME]/aamks/index.php?activation_token=$token>Click here</a>");
@@ -182,21 +182,23 @@ function edit_user(){/*{{{*/
 		}
 	edit_user_form();	
 }/*}}}*/
-
 function main() { /*{{{*/
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	echo '<script src="js/google_sign.js"></script>';
 	$_SESSION['nn']->htmlHead("Aamks");
-	$_SESSION['nn']->logoutButton();
+	if(isset($_SESSION['main']['user_id'])){ $_SESSION['nn']->logoutButton();}
 	if(isset($_GET['edit_user'])) { edit_user();}
 
 	# TODO: moved from inc.php:logoutbutton();
-	# if(isset($_GET['register'])) { register_form();}
-	# if(isset($_GET['reset'])) { reset_password();}
-	# if(isset($_GET['activation_token'])) { activate_user();}
-	# login_form();
+	 if(isset($_GET['register'])) { register_form();}
+	 if(isset($_GET['reset'])) { reset_password();}
+	 if(isset($_GET['activation_token'])) { activate_user();}
+		  login_form();
+	 if(!isset($_SESSION['main']['user_id'])){
+	 }else{
+#		header("Location: projects.php?projects_list");
+	}
 }
 /*}}}*/
-
 main();
 ?>

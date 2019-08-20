@@ -30,11 +30,14 @@ function dd3($arr) {
 /*}}}*/
 function init_main_vars() { #{{{
 	#psql aamks -c 'select * from users'
+	#psql aamks -c "delete from users where email='stanislaw.lazowy@gmail.com' "
 	#psql aamks -c 'select * from projects'
+	echo "Foo";
+	dd(1,$_SESSION);
 	if(isset($_SESSION['main']['project_id'])) { return; }
-	$_SESSION['main']['user_id']=1;
-	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
-	$_SESSION['nn']->ch_main_vars($r[0]);
+	#$_SESSION['main']['user_id']=1;
+	#$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
+	#$_SESSION['nn']->ch_main_vars($r[0]);
 }
 /*}}}*/
 class Aamks {/*{{{*/
@@ -51,7 +54,7 @@ class Aamks {/*{{{*/
 		$_SESSION['main']['user_id']=$r['id'];
 		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
 		$_SESSION['main']['user_name']=$r['user_name']; # zmiany nazw
-		$_SESSION['main']['user_photo']=$r['picture']; # zmiany nazw 
+		$_SESSION['main']['user_photo']=$r['user_photo']; # zmiany nazw 
 		$_SESSION['main']['user_email']=$r['email'];
 		$_SESSION['main']['email']=$r['email']; //TODO - usunać?
 		//can not put header location in here
@@ -113,7 +116,9 @@ class Aamks {/*{{{*/
 	}
 /*}}}*/
 	public function menu($title='') { /*{{{*/
-		$this->logoutButton();
+		if(isset($_SESSION['main']['user_id'])){
+			$this->logoutButton();
+		}
 		$menu=$this->rawMenu();
 		echo "<left-menu-box> $menu </left-menu-box> <div id=content-main style='height: 95vh; margin-left: 150px; padding: 0px;'>";
 		if(!empty($title)) { echo "<tt>$title</tt>"; }
@@ -132,10 +137,10 @@ public function me(){/*{{{*/
 		# moze powinno byc w index.php:main() wiecej tych rzeczy?
 
 		# TODO: looks like a good place to control whether the user is logged in
-		# if(empty($_SESSION['main']['user_id'])) { 
-		# 	header("Location: /aamks/index.php");
-		# 	exit();
-		# }
+		 #if(empty($_SESSION['main']['user_id'])) { 
+		if($_SERVER['SCRIPT_NAME'] !="/aamks/login.php" and !isset($_SESSION['main']['user_id']) ){
+			 header("Location: /aamks/login.php?logi");
+		}
 
 		$header="<!DOCTYPE html>
 		<html> 
@@ -174,14 +179,19 @@ public function me(){/*{{{*/
 			session_destroy();
 			ob_flush();
 			flush();
-			sleep(2);
+			sleep(3);
 			echo "<script type='text/javascript'> signOut(); </script> <meta http-equiv='Refresh' content='0; url=index.php' />	";
+			echo "Logout";
+			exit;
 		}
 
 		if(!empty($_SESSION['main']['user_photo'])){
 			$setup_user="<a href=/aamks/users.php?edit_prefs><img src=".$_SESSION['main']['user_photo']." style='width:50px; height:50px; padding-right:4px;'></a>";
 		}else{
-			$name=explode(" ", $_SESSION['main']['user_name'])[0];
+
+			#$name=explode(" ", $_SESSION['main']['user_name'])[0];
+			if(empty($name)){$name="empty_name";}
+
 			$setup_user="<a href=/aamks/users.php?edit_user class=blink>$name</a>";
 		}
 		echo "
@@ -254,13 +264,13 @@ public function do_google_login(){/*{{{*/
 	if (!empty($ret[0])){ //alredy there is a user with that email. -need to Join it
 		if(empty($ret[0]['google_id'])){ //if user already has a google_id
 			$_SESSION['nn']->query("UPDATE users SET 
-			google_id = $1, picture = $2 ,activation_token ='already activated' where email = $3 ", array($_SESSION['g_user_id'], $_SESSION['g_picture'],$_SESSION['g_email'] )); //
+			google_id = $1, user_photo = $2 ,activation_token ='already activated' where email = $3 ", array($_SESSION['g_user_id'], $_SESSION['g_picture'],$_SESSION['g_email'] )); //
 			$_SESSION['header_ok'][]="Email already used in Aamks! - merging accounts";
-			$ret[0]['picture']=$_SESSION['g_picture'];
+			$ret[0]['user_photo']=$_SESSION['g_picture'];
 		}
 	}else { //there is no user with that email in AAMKS - we need to create it
-		$ret1=$_SESSION['nn']->query("insert into users (username, email, google_id,picture, password, activation_token) values ($1,$2,$3,$4,$5,$6) returning id", array( $_SESSION['g_name'], $_SESSION['g_email'], $_SESSION['g_user_id'], $_SESSION['g_picture'], "no password yet", "already activated"));
-		$ret[0]=array("id"=>$ret1[0]['id'],"username"=>$_SESSION['g_name'],"email"=>$_SESSION['g_email'], "picture"=>$_SESSION['g_picture']);
+		$ret1=$_SESSION['nn']->query("insert into users (user_name, email, google_id,user_photo, password, activation_token) values ($1,$2,$3,$4,$5,$6) returning id", array( $_SESSION['g_name'], $_SESSION['g_email'], $_SESSION['g_user_id'], $_SESSION['g_picture'], "no password yet", "already activated"));
+		$ret[0]=array("id"=>$ret1[0]['id'],"username"=>$_SESSION['g_name'],"email"=>$_SESSION['g_email'], "user_photo"=>$_SESSION['g_picture']);
 		$_SESSION['header_ok'][]="Created google aamks account";
 	}
 	unset($_SESSION['g_name']);
