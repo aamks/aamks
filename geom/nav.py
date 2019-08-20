@@ -42,14 +42,14 @@ class Navmesh:
 
         nav=Navmesh()
         nav.build(floor)
-        nav.query([(1300,600), (3100,1800)])
+        nav.nav_query({'src': (1300,600), 'dst': (3100,1800)})
 
             or if you want to block r1 and r2 and have the navmeshes named
 
         navs=dict()
         navs[('r1','r2')]=Navmesh()
         navs[('r1','r2')].build(floor,('r1','r2'))
-        navs[('r1','r2')].query([(1300,600), (3100,1800)])
+        navs[('r1','r2')].nav_query({'src': (1300,600), 'dst': (3100,1800)})
 
         '''
 
@@ -60,6 +60,153 @@ class Navmesh:
         self.partition_query={}
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
 # }}}
+
+    def build(self,floor,bypass_rooms=[]):# {{{
+        self.floor=floor
+        self.bypass_rooms=bypass_rooms
+        self._get_name(bypass_rooms)
+        file_obj=self._obj_make(bypass_rooms)
+        file_nav="{}/{}".format(os.environ['AAMKS_PROJECT'], self.nav_name)
+        file_conf="{}/recast.yml".format(os.environ['AAMKS_PROJECT'])
+        with open(file_conf, "w") as f: 
+            f.write('''\
+            cellsize: 0.10
+            cellheight: 0.2
+            agentheight: 2
+            agentradius: 0.30
+            agentmaxclimb: 0.1
+            agentmaxslope: 45
+            regionminsize: 8
+            regionmergesize: 20
+            edgemaxlen: 12
+            edgemaxerror: 1.3
+            vertsperpoly: 6
+            detailsampledist: 6
+            detailsamplemaxerror: 1
+            partitiontype: 1
+            tilesize: 0
+            ''')
+        subprocess.call("rm -rf {}; recast --config {} --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_conf, file_obj, file_nav), shell=True)
+
+        try:
+            self.NAV = dt.dtLoadSampleTileMesh(file_nav)
+        except:
+            raise SystemExit("Navmesh: cannot create {}".format(file_nav))
+# }}}
+    def nav_query(self,params):# {{{
+        '''
+        ./Detour/Include/DetourNavMeshQuery.h: maxStraightPath: The maximum number of points the straight path arrays can hold.  [Limit: > 0]
+        We set maxStraightPath to a default low value which stops calculations early
+        If one needs to get the full path to the destination one must call us with any high value, e.g. 999999999
+
+        params=
+        { 
+            'src': (x0,y0),
+            'dst': (x1,y1),
+            'maxStraightPath': default 16,
+            
+            'wayPoints': [ pA, pB, ... ] (optional)
+            'id': e.g. 'f0'
+        }
+
+        '''
+        dd("Continue with the wayPoints and updatedWayPoints idea") 
+        exit()
+
+        if 'maxStraightPath' not in params: params['maxStraightPath']=16 
+        if 'wayPoints' in params:
+            self.updatedWayPoints[params['id']]=self.updatedWayPoints[params['id']] if params['id'] in self.updatedWayPoints else params['wayPoints']
+
+        filtr = dt.dtQueryFilter()
+        query = dt.dtNavMeshQuery()
+
+        status = query.init(self.NAV, 2048)
+        if dt.dtStatusFailed(status):
+            return "err", -1, status
+
+        polyPickExt = dt.dtVec3(2.0, 4.0, 2.0)
+        startPos = dt.dtVec3(params['src'][0]/100, 1, params['src'][1]/100)
+        endPos = dt.dtVec3(params['dst'][0]/100, 1, params['dst'][1]/100)
+
+        status, out = query.findNearestPoly(startPos, polyPickExt, filtr)
+        if dt.dtStatusFailed(status):
+            return "err", -2, status
+        startRef = out["nearestRef"]
+        _startPt = out["nearestPt"]
+
+        status, out = query.findNearestPoly(endPos, polyPickExt, filtr)
+        if dt.dtStatusFailed(status):
+            return "err", -3, status
+        endRef = out["nearestRef"]
+        _endPt = out["nearestPt"]
+
+        status, out = query.findPath(startRef, endRef, startPos, endPos, filtr, params['maxStraightPath'])
+        if dt.dtStatusFailed(status):
+            return "err", -4, status
+        pathRefs = out["path"]
+
+        status, fixEndPos = query.closestPointOnPoly(pathRefs[-1], endPos)
+        if dt.dtStatusFailed(status):
+            return "err", -5, status
+
+        status, out = query.findStraightPath(startPos, fixEndPos, pathRefs, params['maxStraightPath'], 0)
+        if dt.dtStatusFailed(status):
+            return "err", -6, status
+        straightPath = out["straightPath"]
+        straightPathFlags = out["straightPathFlags"]
+        straightPathRefs = out["straightPathRefs"]
+        
+        path=[]
+        for i in straightPath:
+            path.append((i[0]*100, i[2]*100))
+
+        if path[0]=="err":
+            return None
+        else :
+            return path
+# }}}
+    def closest_terminal(self,p0,exit_type):# {{{
+        '''
+        The shortest polyline defines the closest exit from the floor. 
+        dist < 10 test asserts the polyline has min 2 distinct points.
+
+        exit_type: primary | secondary | any
+        '''
+
+        if exit_type in ['primary', 'secondary']:
+            r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE terminal_door=? AND floor=?", (exit_type, self.floor))
+        else:
+            r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
+        m={}
+        closest={ 'len': 999999999, 'name': None, 'x': None, 'y': None }
+        for i in r:
+            if abs(i['center_x']-p0[0]) < 10 and abs(i['center_y']-p0[1]) < 10: 
+                closest={ 'name': i['name'],  'x': i['center_x'], 'y': i['center_y'],'len': 0  }
+                return closest
+            ll=self.path_length((p0,(i['center_x'],i['center_y'])))
+            if ll < closest['len']:
+                closest={ 'name': i['name'], 'x': i['center_x'], 'y': i['center_y'], 'len': int(ll) }
+        return closest
+            
+# }}}
+    def room_leaves(self,ee):# {{{
+        self.partition_query[self.floor]=PartitionQuery(self.floor)
+        room=self.partition_query[self.floor].xy2room(ee)
+        closest={ 'len': 999999999, 'name': None, 'x': None, 'y': None }
+
+        leaves={}
+        for door in self._room_exit_doors(room):
+            dest=self._move_dest_around_door({'e': ee, 'door': door, 'room': room})
+            ll=self.path_length((ee,dest))
+            leaves[ll]=(dest, door['name'])
+        candidates={'best': leaves[min(leaves.keys())], 'all': list(leaves.values())}
+        return candidates
+
+# }}}
+    def path_length(self, q):# {{{
+        return LineString(self.nav_query({'src': q[0], 'dst': q[1], 'maxStraightPath': 300})).length 
+# }}}
+
     def _bricked_wall(self, bypass_rooms=[]):# {{{
         '''
         For navmesh we may wish to turn some doors into bricks.
@@ -140,136 +287,6 @@ class Navmesh:
             brooms="-"+"-".join(bypass_rooms)
         self.nav_name="{}{}.nav".format(self.floor,brooms)
 
-# }}}
-
-    def build(self,floor,bypass_rooms=[]):# {{{
-        self.floor=floor
-        self.bypass_rooms=bypass_rooms
-        self._get_name(bypass_rooms)
-        file_obj=self._obj_make(bypass_rooms)
-        file_nav="{}/{}".format(os.environ['AAMKS_PROJECT'], self.nav_name)
-        file_conf="{}/recast.yml".format(os.environ['AAMKS_PROJECT'])
-        with open(file_conf, "w") as f: 
-            f.write('''\
-            cellsize: 0.10
-            cellheight: 0.2
-            agentheight: 2
-            agentradius: 0.30
-            agentmaxclimb: 0.1
-            agentmaxslope: 45
-            regionminsize: 8
-            regionmergesize: 20
-            edgemaxlen: 12
-            edgemaxerror: 1.3
-            vertsperpoly: 6
-            detailsampledist: 6
-            detailsamplemaxerror: 1
-            partitiontype: 1
-            tilesize: 0
-            ''')
-        subprocess.call("rm -rf {}; recast --config {} --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_conf, file_obj, file_nav), shell=True)
-
-        try:
-            self.NAV = dt.dtLoadSampleTileMesh(file_nav)
-        except:
-            raise SystemExit("Navmesh: cannot create {}".format(file_nav))
-# }}}
-    def query(self,q,maxStraightPath=16):# {{{
-        '''
-        ./Detour/Include/DetourNavMeshQuery.h: maxStraightPath: The maximum number of points the straight path arrays can hold.  [Limit: > 0]
-        We set maxStraightPath to a default low value which stops calculations early
-        If one needs to get the full path to the destination one must call us with any high value, e.g. 999999999
-        '''
-
-        filtr = dt.dtQueryFilter()
-        query = dt.dtNavMeshQuery()
-
-        status = query.init(self.NAV, 2048)
-        if dt.dtStatusFailed(status):
-            return "err", -1, status
-
-        polyPickExt = dt.dtVec3(2.0, 4.0, 2.0)
-        startPos = dt.dtVec3(q[0][0]/100, 1, q[0][1]/100)
-        endPos = dt.dtVec3(q[1][0]/100, 1, q[1][1]/100)
-
-        status, out = query.findNearestPoly(startPos, polyPickExt, filtr)
-        if dt.dtStatusFailed(status):
-            return "err", -2, status
-        startRef = out["nearestRef"]
-        _startPt = out["nearestPt"]
-
-        status, out = query.findNearestPoly(endPos, polyPickExt, filtr)
-        if dt.dtStatusFailed(status):
-            return "err", -3, status
-        endRef = out["nearestRef"]
-        _endPt = out["nearestPt"]
-
-        status, out = query.findPath(startRef, endRef, startPos, endPos, filtr, maxStraightPath)
-        if dt.dtStatusFailed(status):
-            return "err", -4, status
-        pathRefs = out["path"]
-
-        status, fixEndPos = query.closestPointOnPoly(pathRefs[-1], endPos)
-        if dt.dtStatusFailed(status):
-            return "err", -5, status
-
-        status, out = query.findStraightPath(startPos, fixEndPos, pathRefs, maxStraightPath, 0)
-        if dt.dtStatusFailed(status):
-            return "err", -6, status
-        straightPath = out["straightPath"]
-        straightPathFlags = out["straightPathFlags"]
-        straightPathRefs = out["straightPathRefs"]
-        
-        path=[]
-        for i in straightPath:
-            path.append((i[0]*100, i[2]*100))
-
-        if path[0]=="err":
-            return None
-        else :
-            return path
-# }}}
-    def closest_terminal(self,p0,exit_type):# {{{
-        '''
-        The shortest polyline defines the closest exit from the floor. 
-        dist < 10 test asserts the polyline has min 2 distinct points.
-
-        exit_type: primary | secondary | any
-        '''
-
-        if exit_type in ['primary', 'secondary']:
-            r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE terminal_door=? AND floor=?", (exit_type, self.floor))
-        else:
-            r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
-        m={}
-        closest={ 'len': 999999999, 'name': None, 'x': None, 'y': None }
-        for i in r:
-            if abs(i['center_x']-p0[0]) < 10 and abs(i['center_y']-p0[1]) < 10: 
-                closest={ 'name': i['name'],  'x': i['center_x'], 'y': i['center_y'],'len': 0  }
-                return closest
-            ll=LineString(self.query((p0,(i['center_x'],i['center_y'])),300)).length 
-            if ll < closest['len']:
-                closest={ 'name': i['name'], 'x': i['center_x'], 'y': i['center_y'], 'len': int(ll) }
-        return closest
-            
-# }}}
-    def closest_room_escape(self,p0,room):# {{{
-        '''
-        Evacuee finds himself in a room with smoke and needs to leave urgently
-        '''
-
-        r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE (vent_from_name=? OR vent_to_name=?) AND floor=?", (room,room,self.floor))
-        m={}
-        closest={ 'len': 999999999, 'name': None, 'x': None, 'y': None }
-        for i in r:
-            if abs(i['center_x']-p0[0]) < 10 and abs(i['center_y']-p0[1]) < 10: 
-                closest={ 'name': i['name'],  'x': i['center_x'], 'y': i['center_y'],'len': 0  }
-                return closest
-            ll=sqrt((i['center_x']-p0[0])**2 + (i['center_y']-p0[1])**2)
-            if ll < closest['len']:
-                closest={ 'name': i['name'], 'x': i['center_x'], 'y': i['center_y'], 'len': int(ll) }
-        return closest
-            
 # }}}
 
     def _hole_connected_rooms(self): # {{{
@@ -355,24 +372,19 @@ class Navmesh:
             p1=(i[1]['x0'], i[1]['y0'])
             z[self.floor]['circles'].append({ "xy": p0, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 } )
             z[self.floor]['circles'].append({ "xy": p1, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 } )
-            navmesh_paths.append(self.query((p0,p1),300))
+            navmesh_paths.append(self.nav_query({'src': p0, 'dst': p1, 'maxStraightPath': 300}))
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         self._test_pairs_lines(navmesh_paths)
 # }}}
-    def _test_closest_room_escape(self,evacuees):# {{{
-        self.partition_query[self.floor]=PartitionQuery(self.floor)
+    def _test_room_leaves(self,ee):# {{{
+        ''' 
+        radius=3.5 is the condition for the agent to reach the behind-doors target 
+        '''
 
         z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-
-        for i,pairs in enumerate(evacuees):
-            e=pairs[0]
-            room=self.partition_query[self.floor].xy2room([e['x0'], e['y0']])
-
-            for door in self._room_exit_doors(room):
-                dest=self._move_dest_around_door({'e': e, 'door': door, 'room': room})
-                z[self.floor]['circles'].append({ "xy": dest, "radius": self.evacuee_radius*0.5, "fillColor": "#000", "strokeColor": self._test_colors[i], "strokeWidth": 8,  "opacity": 1 } )
-                z[self.floor]['circles'].append({ "xy": dest, "radius": self.evacuee_radius*3.5, "fillColor": "#0f0", "opacity": 0.3 } )
-
+        for dest in self.room_leaves(ee)['all']:
+            z[self.floor]['circles'].append({ "xy": dest[0], "radius": self.evacuee_radius*0.5, "fillColor": "#000", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 1 } )
+            z[self.floor]['circles'].append({ "xy": dest[0], "radius": self.evacuee_radius*3.5, "fillColor": "#0f0", "opacity": 0.3 } )
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
     def test(self):# {{{
@@ -380,7 +392,7 @@ class Navmesh:
         ee=self.s.query("SELECT name,x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
         evacuees=list(self._chunks(ee,2))
         self._test_evacuees_pairs(evacuees)
-        self._test_closest_room_escape(evacuees)
+        self._test_room_leaves((ee[0]['x0'], ee[0]['y0']))
         Vis({'highlight_geom': None, 'anim': None, 'title': 'Nav {} test'.format(self.nav_name), 'srv': 1})
 
 # }}}
