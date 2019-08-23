@@ -13,7 +13,6 @@ from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SendMessage
 
 #os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/simple'
-#print("In aamks.py:", os.environ['AAMKS_PROJECT'])
 OnInit()
 CFASTimporter()
 FDSimporter()
@@ -22,5 +21,4 @@ Obstacles()
 CfastPartition() 
 CfastMcarlo()
 EvacMcarlo()
-#z=PartitionQuery("0")
 OnEnd()

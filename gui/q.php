@@ -8,6 +8,7 @@ init_main_vars();
 $_SESSION['main']['scenario_name']=$_GET['s'];
 $_SESSION['main']['project_name']=$_GET['p'];
 $_SESSION['main']['working_home']="/home/aamks_users/mimoohowy@gmail.com/demo/$_GET[s]";
+$_SESSION['main']['user_id']=1;
 
 if(isset($_GET['apainter'])) { 
 	header("Location: /aamks/apainter/index.php"); 
