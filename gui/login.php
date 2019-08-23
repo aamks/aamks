@@ -38,7 +38,6 @@ function login_form(){/*{{{*/
 		if(!empty($ret)){//password and email match
 			if($salted==$ret[0]['password']){
 				$_SESSION['nn']->set_user_variables($ret[0]);
-				#header("location:".me()); 
 			}
 		}else{
 			$_SESSION['reset_email']=$_POST['email'];
@@ -59,6 +58,7 @@ function login_form(){/*{{{*/
 	 $password_input="<input type=password size=32 autocomplete=off $req name=$name placeholder='password' pattern='(?=^.{8,}$)(?=.*[!@#$%^&*])(?=.*\d)(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$' title='at least 8 chars - lowecase, uppercase, digit, character from (!@#$%^&*)'>";
 	 return $password_input;
 # psql aamks -c "select * from users";
+# psql aamks -c "delete  from users where id =7";
 }/*}}}*/
 function register_form(){/*{{{*/
    $form = "<br><br>
@@ -95,7 +95,7 @@ function do_register(){/*{{{*/
 
 	nice_mail($email,"Welcome to AAMKS","Confirm your email address and activate your AAMKS account <br> 
 		<a href=https://$_SERVER[SERVER_NAME]/aamks/index.php?activation_token=$token>Click here</a>");
-	echo "Email sent to $email";
+	echo "Email sent to $email $token , $salted";
 }/*}}}*/
 function activate_user(){/*{{{*/
 	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE activation_token= $1 AND activation_token !='already activated'", array($_GET['activation_token'] ));
@@ -186,7 +186,10 @@ function main() { /*{{{*/
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	echo '<script src="js/google_sign.js"></script>';
 	$_SESSION['nn']->htmlHead("Aamks");
-	if(isset($_SESSION['main']['user_id'])){ $_SESSION['nn']->logoutButton();}
+	if(isset($_SESSION['main']['user_id'])){ 
+		$_SESSION['nn']->logoutButton();
+	#	header("Location: projects.php?projects_list");
+		}
 	if(isset($_GET['edit_user'])) { edit_user();}
 
 	# TODO: moved from inc.php:logoutbutton();
@@ -194,10 +197,6 @@ function main() { /*{{{*/
 	 if(isset($_GET['reset'])) { reset_password();}
 	 if(isset($_GET['activation_token'])) { activate_user();}
 		  login_form();
-	 if(!isset($_SESSION['main']['user_id'])){
-	 }else{
-#		header("Location: projects.php?projects_list");
-	}
 }
 /*}}}*/
 main();

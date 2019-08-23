@@ -32,8 +32,7 @@ function init_main_vars() { #{{{
 	#psql aamks -c 'select * from users'
 	#psql aamks -c "delete from users where email='stanislaw.lazowy@gmail.com' "
 	#psql aamks -c 'select * from projects'
-	echo "Foo";
-	dd(1,$_SESSION);
+	echo "Init Main vars";
 	if(isset($_SESSION['main']['project_id'])) { return; }
 	#$_SESSION['main']['user_id']=1;
 	#$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
@@ -174,13 +173,14 @@ public function me(){/*{{{*/
 /*}}}*/
 	public function logoutButton() {/*{{{*/
 		if(isset($_REQUEST['logout'])) { 
-			echo "<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google 
 			unset($_SESSION['main']['user_id']);
+			echo "<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google 
 			session_destroy();
 			ob_flush();
 			flush();
-			sleep(3);
-			echo "<script type='text/javascript'> signOut(); </script> <meta http-equiv='Refresh' content='0; url=index.php' />	";
+			sleep(2);
+			echo "<script type='text/javascript'> signOut(); </script> ";
+			echo"			<meta http-equiv='Refresh' content='0; url=index.php' />	";
 			echo "Logout";
 			exit;
 		}
