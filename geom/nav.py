@@ -21,6 +21,7 @@ from math import sqrt
 from include import Sqlite
 from include import Json
 from include import Dump as dd
+from include import DDgeoms as ddgeoms
 from include import Vis
 
 # }}}
@@ -195,17 +196,12 @@ class Navmesh:
         return LineString(self.nav_query(src, dst, 300)).length 
 # }}}
     def nav_plot_line(self,points):# {{{
-        j=Json()
-        z=j.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         for cc,path in enumerate(points):
             for i,p in enumerate(path):
-                #dd(i,p)
                 try:
-                    z[self.floor]['lines'].append({"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": self._test_colors[cc], "strokeWidth": 14  , "opacity": 0.5 } )
+                    ddgeoms({'floor': self.floor, 'geom': 'line', 'data': {"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": self._test_colors[cc], "strokeWidth": 14  , "opacity": 0.5 }} )
                 except:
                     pass
-
-        j.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 # }}}
     def test(self):# {{{
         agents_pairs=4
@@ -364,15 +360,13 @@ class Navmesh:
 
     def _test_evacuees_pairs(self,evacuees):# {{{
 
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         navmesh_paths=[]
         for x,i in enumerate(evacuees):
             src=(i[0]['x0'], i[0]['y0'])
             dst=(i[1]['x0'], i[1]['y0'])
-            z[self.floor]['circles'].append({ "xy": src, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 } )
-            z[self.floor]['circles'].append({ "xy": dst, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 } )
+            ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": src, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 }})
+            ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": dst, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 }})
             navmesh_paths.append(self.nav_query(src, dst, 300))
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         self.nav_plot_line(navmesh_paths)
 # }}}
     def _test_room_leaves(self,ee):# {{{
@@ -381,14 +375,12 @@ class Navmesh:
         '''
 
         mm=self.room_leaves(ee)
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         for dest in mm['all']:
-            z[self.floor]['circles'].append({ "xy": dest[0], "radius": self.evacuee_radius*3.5, "fillColor": "#ff0", "opacity": 0.3 } )
-            z[self.floor]['circles'].append({ "xy": dest[0], "radius": self.evacuee_radius*0.5, "fillColor": "#000", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 } )
+            ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": dest[0], "radius": self.evacuee_radius*3.5, "fillColor": "#ff0", "opacity": 0.3 }} )
+            ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": dest[0], "radius": self.evacuee_radius*0.5, "fillColor": "#000", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 }} )
 
-        z[self.floor]['circles'].append({ "xy": mm['best_point'], "radius": self.evacuee_radius*3.5, "fillColor": "#0f0", "opacity": 0.3 } )
-        z[self.floor]['circles'].append({ "xy": mm['best_point'], "radius": self.evacuee_radius*0.5, "fillColor": "#f00", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 } )
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": mm['best_point'], "radius": self.evacuee_radius*3.5, "fillColor": "#0f0", "opacity": 0.3 }} )
+        ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": mm['best_point'], "radius": self.evacuee_radius*0.5, "fillColor": "#f00", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 }} )
 
         self.nav_plot_line([mm['best_path']])
 # }}}

@@ -53,6 +53,11 @@ class OnInit():
             self.json.write(new_anims, "{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
         except:
             pass
+
+        try:
+            os.remove("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
+        except:
+            pass
 # }}}
     def _clear_sqlite(self):# {{{
         try:

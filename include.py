@@ -232,6 +232,37 @@ class GetUserPrefs:# {{{
 
 # }}}
 # }}}
+class DDgeoms:# {{{
+    def __init__(self,params):
+        '''
+        dd_geoms are some optional extra rectangles, points, lines and
+        circles that are written on top of our geoms. Useful for developing
+        and debugging features. 
+
+        style (common) data params: 'fillColor': "#0f0" , 'strokeColor': "#f00" , 'strokeWidth': 10 , 'opacity': 0.5
+
+        non-style params:
+
+            ddgeoms({'floor': '0' , 'geom': 'circle'    , 'data': {'xy': (0, 0) , 'radius': 10}})
+            ddgeoms({'floor': '0' , 'geom': 'line'      , 'data': {'xy': (0, 0) , 'x1': 100, 'y1': 200}})
+            ddgeoms({'floor': '0' , 'geom': 'rectangle' , 'data': {'xy': (0, 0) , 'width': 100, 'depth': 200}})
+            ddgeoms({'floor': '0' , 'geom': 'text'      , 'data': {'xy': (0, 0) , 'content': "Hello!", 'fontSize': 400}})
+
+        '''
+
+        self.json=Json()
+        try:
+            z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        except:
+            z={}
+
+        floor=params['floor']
+        if floor not in z:
+            z[floor]={ 'rectangle': [], 'line': [], 'circle': [], 'text': [] }
+        z[floor][params['geom']].append(params['data'])
+        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+
+# }}}
 class Vis:# {{{
     def __init__(self,params):# {{{
         ''' 
@@ -313,15 +344,16 @@ class Vis:# {{{
                     self._static_floors[floor]['evacuees'].append(json.dumps(i))
 # }}}
     def _js_make_dd_geoms(self):# {{{
-        ''' 
-        dd_geoms are initialized in geom.py. Those are optional extra
-        rectangles, points, lines and circles that are written to on top of our
-        geoms. Useful for debugging.
-        '''
+        try:
+            f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
+        except:
+            pass
 
-        f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
         for floor in self._static_floors.keys():
-            self._static_floors[floor]['dd_geoms']=f[floor]
+            try:
+                self._static_floors[floor]['dd_geoms']=f[floor]
+            except:
+                self._static_floors[floor]['dd_geoms']={ 'rectangle': [], 'line': [], 'circle': [], 'text': [] }
 # }}}
 
     def _js_vis_fire_origin(self):# {{{

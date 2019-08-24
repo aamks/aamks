@@ -473,15 +473,16 @@ function drawStaticEvacuees(data,tx,ty) {//{{{
 }
 //}}}
 function drawDDGeoms(data,tx,ty) { //{{{
-	_.each(data.rectangles, function(pp) {
+    dd("todo: dd_geoms style");
+	_.each(data.rectangle, function(pp) {
 		new Path.Rectangle({point: new Point(pp.xy[0]+tx, pp.xy[1]+ty), size: new Size(pp.width,pp.depth), strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, fillColor:pp.fillColor, opacity:pp.opacity });
 	});
 
-	_.each(data.lines, function(pp) {
+	_.each(data.line, function(pp) {
 		new Path.Line({from: new Point(pp.xy[0]+tx, pp.xy[1]+ty), to: new Point(pp.x1+tx,pp.y1+ty), strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, opacity:pp.opacity });
 	});
 
-	_.each(data.circles, function(pp) {
+	_.each(data.circle, function(pp) {
         if ('strokeWidth' in pp && 'strokeWidth' in pp) { 
             new Path.Circle({ center: new Point(pp.xy[0]+tx, pp.xy[1]+ty), radius:pp.radius, fillColor:pp.fillColor, strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, opacity:pp.opacity });
         } else {
@@ -489,7 +490,7 @@ function drawDDGeoms(data,tx,ty) { //{{{
         }
 	});
 
-	_.each(data.texts, function(pp) {
+	_.each(data.text, function(pp) {
 		new PointText({ point: new Point(pp.xy[0]+tx, pp.xy[1]+ty), content: pp.content, fontFamily: 'Roboto', fontSize: pp.fontSize, fillColor:pp.fillColor, opacity:pp.opacity });
 	});
 }
@@ -509,7 +510,7 @@ function initStaticGeoms() {//{{{
 		_.each(ffloor.doors     , function(d) { drawLabel('DOOR' , d , tx , ty); });
 
 		drawStaticEvacuees(ffloor.evacuees, tx, ty);
-        drawDDGeoms(ffloor.dd_geoms, tx, ty); 
+        drawDDGeoms(ffloor.dd_geoms, tx, ty);
 		project.layers.info.activate();
         drawMeta(ffloor['floor_meta']['name'],tx,ty); 
     });
