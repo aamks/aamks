@@ -473,25 +473,33 @@ function drawStaticEvacuees(data,tx,ty) {//{{{
 }
 //}}}
 function drawDDGeoms(data,tx,ty) { //{{{
-    dd("todo: dd_geoms style");
+    var d;
 	_.each(data.rectangle, function(pp) {
-		new Path.Rectangle({point: new Point(pp.xy[0]+tx, pp.xy[1]+ty), size: new Size(pp.width,pp.depth), strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, fillColor:pp.fillColor, opacity:pp.opacity });
+        d=pp['style'];
+        d['point']=new Point(pp['g']['p0'][0]+tx, pp['g']['p0'][1]+ty);
+        d['size']=new Size(pp['g']['width'],pp['g']['depth']);
+		new Path.Rectangle(d);
 	});
 
 	_.each(data.line, function(pp) {
-		new Path.Line({from: new Point(pp.xy[0]+tx, pp.xy[1]+ty), to: new Point(pp.x1+tx,pp.y1+ty), strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, opacity:pp.opacity });
+        d=pp['style'];
+        d['from']=new Point(pp['g']['p0'][0]+tx, pp['g']['p0'][1]+ty);
+        d['to']=new Point(pp['g']['p1'][0]+tx, pp['g']['p1'][1]+ty);
+		new Path.Line(d);
 	});
 
 	_.each(data.circle, function(pp) {
-        if ('strokeWidth' in pp && 'strokeWidth' in pp) { 
-            new Path.Circle({ center: new Point(pp.xy[0]+tx, pp.xy[1]+ty), radius:pp.radius, fillColor:pp.fillColor, strokeColor:pp.strokeColor, strokeWidth:pp.strokeWidth, opacity:pp.opacity });
-        } else {
-            new Path.Circle({ center: new Point(pp.xy[0]+tx, pp.xy[1]+ty), radius:pp.radius, fillColor:pp.fillColor, opacity:pp.opacity });
-        }
+        d=pp['style'];
+        d['center']=new Point(pp['g']['p0'][0]+tx, pp['g']['p0'][1]+ty);
+        d['radius']=pp['g']['radius'];
+        new Path.Circle(d);
 	});
 
 	_.each(data.text, function(pp) {
-		new PointText({ point: new Point(pp.xy[0]+tx, pp.xy[1]+ty), content: pp.content, fontFamily: 'Roboto', fontSize: pp.fontSize, fillColor:pp.fillColor, opacity:pp.opacity });
+        d=pp['style'];
+        d['point']=new Point(pp['g']['p0'][0]+tx, pp['g']['p0'][1]+ty);
+        d['content']=pp['g']['content'];
+		new PointText(d);
 	});
 }
 

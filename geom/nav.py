@@ -199,17 +199,19 @@ class Navmesh:
         for cc,path in enumerate(points):
             for i,p in enumerate(path):
                 try:
-                    ddgeoms({'floor': self.floor, 'geom': 'line', 'data': {"xy":(path[i][0], path[i][1]), "x1": path[i+1][0], "y1": path[i+1][1] , "strokeColor": self._test_colors[cc], "strokeWidth": 14  , "opacity": 0.5 }} )
+                    ddgeoms({'floor': self.floor, 'type': 'line', "g": { "p0": (path[i][0], path[i][1]), "p1": (path[i+1][0], path[i+1][1]) } , 'style': { "strokeColor": self._test_colors[cc], "strokeWidth": 14  , "opacity": 0.5 }} )
                 except:
                     pass
 # }}}
     def test(self):# {{{
+        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         agents_pairs=4
         ee=self.s.query("SELECT name,x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
         if len(ee) == 0: return
         evacuees=list(self._chunks(ee,2))
         self._test_evacuees_pairs(evacuees)
-        self._test_room_leaves((ee[0]['x0'], ee[0]['y0']))
+        if self.conf['fire_model'] != 'FDS':
+            self._test_room_leaves((ee[0]['x0'], ee[0]['y0']))
         Vis({'highlight_geom': None, 'anim': None, 'title': 'Nav {} test'.format(self.nav_name), 'srv': 1})
 
 # }}}
@@ -364,8 +366,8 @@ class Navmesh:
         for x,i in enumerate(evacuees):
             src=(i[0]['x0'], i[0]['y0'])
             dst=(i[1]['x0'], i[1]['y0'])
-            ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": src, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 }})
-            ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": dst, "radius": 30, "fillColor": self._test_colors[x] , "opacity": 1 }})
+            ddgeoms({'floor': self.floor, 'type': 'circle', "g": { 'p0': src, "radius": 30 }, "style": { "fillColor": self._test_colors[x] , "opacity": 1 }})
+            ddgeoms({'floor': self.floor, 'type': 'circle', "g": { 'p0': dst, "radius": 30 }, "style": { "fillColor": self._test_colors[x] , "opacity": 1 }})
             navmesh_paths.append(self.nav_query(src, dst, 300))
         self.nav_plot_line(navmesh_paths)
 # }}}
@@ -376,11 +378,11 @@ class Navmesh:
 
         mm=self.room_leaves(ee)
         for dest in mm['all']:
-            ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": dest[0], "radius": self.evacuee_radius*3.5, "fillColor": "#ff0", "opacity": 0.3 }} )
-            ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": dest[0], "radius": self.evacuee_radius*0.5, "fillColor": "#000", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 }} )
+            ddgeoms({'floor': self.floor, 'type': 'circle', "g": { "p0": dest[0], "radius": self.evacuee_radius*3.5 }, "style": { "fillColor": "#ff0", "opacity": 0.3 }} )
+            ddgeoms({'floor': self.floor, 'type': 'circle', "g": { "p0": dest[0], "radius": self.evacuee_radius*0.5 }, "style": { "fillColor": "#000", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 }} )
 
-        ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": mm['best_point'], "radius": self.evacuee_radius*3.5, "fillColor": "#0f0", "opacity": 0.3 }} )
-        ddgeoms({'floor': self.floor, 'geom': 'circle', 'data': { "xy": mm['best_point'], "radius": self.evacuee_radius*0.5, "fillColor": "#f00", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 }} )
+        ddgeoms({'floor': self.floor, 'type': 'circle', "g": { "p0": mm['best_point'], "radius": self.evacuee_radius*3.5 }, "style": { "fillColor": "#0f0", "opacity": 0.3 }} )
+        ddgeoms({'floor': self.floor, 'type': 'circle', "g": { "p0": mm['best_point'], "radius": self.evacuee_radius*0.5 }, "style": { "fillColor": "#f00", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 }} )
 
         self.nav_plot_line([mm['best_path']])
 # }}}

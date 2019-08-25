@@ -239,14 +239,15 @@ class DDgeoms:# {{{
         circles that are written on top of our geoms. Useful for developing
         and debugging features. 
 
-        style (common) data params: 'fillColor': "#0f0" , 'strokeColor': "#f00" , 'strokeWidth': 10 , 'opacity': 0.5
+        styles: 'fillColor', 'strokeColor', 'strokeWidth', 'opacity', 'fontSize', 'dashArray': [10,20] 
 
-        non-style params:
 
-            ddgeoms({'floor': '0' , 'geom': 'circle'    , 'data': {'xy': (0, 0) , 'radius': 10}})
-            ddgeoms({'floor': '0' , 'geom': 'line'      , 'data': {'xy': (0, 0) , 'x1': 100, 'y1': 200}})
-            ddgeoms({'floor': '0' , 'geom': 'rectangle' , 'data': {'xy': (0, 0) , 'width': 100, 'depth': 200}})
-            ddgeoms({'floor': '0' , 'geom': 'text'      , 'data': {'xy': (0, 0) , 'content': "Hello!", 'fontSize': 400}})
+        params:
+
+            ddgeoms({'type': 'circle'   , 'g': {'p0': (0, 0) , 'radius': 10        }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
+            ddgeoms({'type': 'line'     , 'g': {'p0': (0, 0) , 'p1': (100, 200)    }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
+            ddgeoms({'type': 'rectangle', 'g': {'p0': (0, 0) , 'size': (100, 200)  }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
+            ddgeoms({'type': 'text'     , 'g': {'p0': (0, 0) , 'content': "Hello!" }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
 
         '''
 
@@ -257,9 +258,14 @@ class DDgeoms:# {{{
             z={}
 
         floor=params['floor']
+        type=params['type']
+        del params['floor']
+        del params['type']
         if floor not in z:
             z[floor]={ 'rectangle': [], 'line': [], 'circle': [], 'text': [] }
-        z[floor][params['geom']].append(params['data'])
+        params['g']['p0']=( int(params['g']['p0'][0]), int(params['g']['p0'][1]) )
+        if "p1" in params['g']: params['g']['p1']=( int(params['g']['p1'][0]), int(params['g']['p1'][1]) )
+        z[floor][type].append(params)
         self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
 
 # }}}

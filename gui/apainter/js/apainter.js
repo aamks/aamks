@@ -451,6 +451,8 @@ function cgInit() {//{{{
 	} else if (cg.type=='room') {
 		cg.z1=cg.z0 + defaults.floor_dimz;
 		cg.room_enter='yes';
+	} else {
+		cg.z1=cg.z0 + defaults.floor_dimz;
 	}
 }
 //}}}
