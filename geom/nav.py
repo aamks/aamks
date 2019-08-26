@@ -21,7 +21,7 @@ from math import sqrt
 from include import Sqlite
 from include import Json
 from include import Dump as dd
-from include import DDgeoms as ddgeoms
+from include import DDgeoms 
 from include import Vis
 
 # }}}
@@ -195,13 +195,14 @@ class Navmesh:
     def path_length(self, src, dst):# {{{
         return LineString(self.nav_query(src, dst, 300)).length 
 # }}}
-    def nav_plot_line(self,points):# {{{
+    def nav_plot_line(self,points,ddgeoms):# {{{
         for cc,path in enumerate(points):
             for i,p in enumerate(path):
                 try:
-                    ddgeoms({'floor': self.floor, 'type': 'line', "g": { "p0": (path[i][0], path[i][1]), "p1": (path[i+1][0], path[i+1][1]) } , 'style': { "strokeColor": self._test_colors[cc], "strokeWidth": 14  , "opacity": 0.5 }} )
+                    ddgeoms.add({'floor': self.floor, 'type': 'line', "g": { "p0": (path[i][0], path[i][1]), "p1": (path[i+1][0], path[i+1][1]) } , 'style': { "strokeColor": self._test_colors[cc], "strokeWidth": 14  , "opacity": 0.5 }} )
                 except:
                     pass
+
 # }}}
     def test(self):# {{{
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -361,28 +362,34 @@ class Navmesh:
 # }}}
 
     def _test_evacuees_pairs(self,evacuees):# {{{
-
+        ddgeoms=DDgeoms()
+        ddgeoms.open()
         navmesh_paths=[]
         for x,i in enumerate(evacuees):
             src=(i[0]['x0'], i[0]['y0'])
             dst=(i[1]['x0'], i[1]['y0'])
-            ddgeoms({'floor': self.floor, 'type': 'circle', "g": { 'p0': src, "radius": 30 }, "style": { "fillColor": self._test_colors[x] , "opacity": 1 }})
-            ddgeoms({'floor': self.floor, 'type': 'circle', "g": { 'p0': dst, "radius": 30 }, "style": { "fillColor": self._test_colors[x] , "opacity": 1 }})
+            ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { 'p0': src, "radius": 30 }, "style": { "fillColor": self._test_colors[x] , "opacity": 1 }})
+            ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { 'p0': dst, "radius": 30 }, "style": { "fillColor": self._test_colors[x] , "opacity": 1 }})
             navmesh_paths.append(self.nav_query(src, dst, 300))
-        self.nav_plot_line(navmesh_paths)
+        self.nav_plot_line(navmesh_paths,ddgeoms)
+        ddgeoms.write()
 # }}}
     def _test_room_leaves(self,ee):# {{{
         ''' 
         radius=3.5 is the condition for the agent to reach the behind-doors target 
         '''
 
+        ddgeoms=DDgeoms()
+        ddgeoms.open()
+
         mm=self.room_leaves(ee)
         for dest in mm['all']:
-            ddgeoms({'floor': self.floor, 'type': 'circle', "g": { "p0": dest[0], "radius": self.evacuee_radius*3.5 }, "style": { "fillColor": "#ff0", "opacity": 0.3 }} )
-            ddgeoms({'floor': self.floor, 'type': 'circle', "g": { "p0": dest[0], "radius": self.evacuee_radius*0.5 }, "style": { "fillColor": "#000", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 }} )
+            ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": dest[0], "radius": self.evacuee_radius*3.5 }, "style": { "fillColor": "#ff0", "opacity": 0.3 }} )
+            ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": dest[0], "radius": self.evacuee_radius*0.5 }, "style": { "fillColor": "#000", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 }} )
 
-        ddgeoms({'floor': self.floor, 'type': 'circle', "g": { "p0": mm['best_point'], "radius": self.evacuee_radius*3.5 }, "style": { "fillColor": "#0f0", "opacity": 0.3 }} )
-        ddgeoms({'floor': self.floor, 'type': 'circle', "g": { "p0": mm['best_point'], "radius": self.evacuee_radius*0.5 }, "style": { "fillColor": "#f00", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 }} )
+        ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": mm['best_point'], "radius": self.evacuee_radius*3.5 }, "style": { "fillColor": "#0f0", "opacity": 0.3 }} )
+        ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": mm['best_point'], "radius": self.evacuee_radius*0.5 }, "style": { "fillColor": "#f00", "strokeColor": self._test_colors[0], "strokeWidth": 8,  "opacity": 0.3 }} )
 
-        self.nav_plot_line([mm['best_path']])
+        self.nav_plot_line([mm['best_path']], ddgeoms)
+        ddgeoms.write()
 # }}}

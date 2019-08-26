@@ -477,7 +477,7 @@ function drawDDGeoms(data,tx,ty) { //{{{
 	_.each(data.rectangle, function(pp) {
         d=pp['style'];
         d['point']=new Point(pp['g']['p0'][0]+tx, pp['g']['p0'][1]+ty);
-        d['size']=new Size(pp['g']['width'],pp['g']['depth']);
+        d['size']=new Size(pp['g']['size']);
 		new Path.Rectangle(d);
 	});
 

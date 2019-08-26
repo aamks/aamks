@@ -233,41 +233,44 @@ class GetUserPrefs:# {{{
 # }}}
 # }}}
 class DDgeoms:# {{{
-    def __init__(self,params):
-        '''
-        dd_geoms are some optional extra rectangles, points, lines and
-        circles that are written on top of our geoms. Useful for developing
-        and debugging features. 
+    '''
+    dd_geoms are some optional extra rectangles, points, lines and
+    circles that are written on top of our geoms. Useful for developing
+    and debugging features. 
 
-        styles: 'fillColor', 'strokeColor', 'strokeWidth', 'opacity', 'fontSize', 'dashArray': [10,20] 
+    styles: 'fillColor', 'strokeColor', 'strokeWidth', 'opacity', 'fontSize', 'dashArray': [10,20] 
 
 
-        params:
+    params:
 
-            ddgeoms({'type': 'circle'   , 'g': {'p0': (0, 0) , 'radius': 10        }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
-            ddgeoms({'type': 'line'     , 'g': {'p0': (0, 0) , 'p1': (100, 200)    }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
-            ddgeoms({'type': 'rectangle', 'g': {'p0': (0, 0) , 'size': (100, 200)  }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
-            ddgeoms({'type': 'text'     , 'g': {'p0': (0, 0) , 'content': "Hello!" }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
+        ddgeoms({'type': 'circle'   , 'g': {'p0': (0, 0) , 'radius': 10        }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
+        ddgeoms({'type': 'line'     , 'g': {'p0': (0, 0) , 'p1': (100, 200)    }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
+        ddgeoms({'type': 'rectangle', 'g': {'p0': (0, 0) , 'size': (100, 200)  }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
+        ddgeoms({'type': 'text'     , 'g': {'p0': (0, 0) , 'content': "Hello!" }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
 
-        '''
+    '''
 
+    def open(self):# {{{
         self.json=Json()
         try:
-            z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+            self.zz=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
         except:
-            z={}
-
+            self.zz={}
+# }}}
+    def add(self,params):# {{{
         floor=params['floor']
         type=params['type']
         del params['floor']
         del params['type']
-        if floor not in z:
-            z[floor]={ 'rectangle': [], 'line': [], 'circle': [], 'text': [] }
+        if floor not in self.zz:
+            self.zz[floor]={ 'rectangle': [], 'line': [], 'circle': [], 'text': [] }
         params['g']['p0']=( int(params['g']['p0'][0]), int(params['g']['p0'][1]) )
         if "p1" in params['g']: params['g']['p1']=( int(params['g']['p1'][0]), int(params['g']['p1'][1]) )
-        z[floor][type].append(params)
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-
+        self.zz[floor][type].append(params)
+# }}}
+    def write(self):# {{{
+        self.json.write(self.zz, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+# }}}
 # }}}
 class Vis:# {{{
     def __init__(self,params):# {{{

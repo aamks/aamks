@@ -13,6 +13,7 @@ from include import Json
 from include import GetUserPrefs
 from include import Dump as dd
 from include import Vis
+from include import DDgeoms
 
 # }}}
 
@@ -167,18 +168,20 @@ class CfastPartition():
         Plots the partition on top of the rooms. 
         '''
 
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-
         radius=5
         a=self._square_side
+
+        ddgeoms=DDgeoms()
+        ddgeoms.open()
         for k,v in self.rectangles.items():
-            z[floor]['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 2 , "opacity": 0.2 } )
-            z[floor]['circles'].append(    { "xy": k, "radius": radius , "fillColor": "#fff", "opacity": 0.3 } )
-            z[floor]['texts'].append(      { "xy": k, "content": k, "fontSize": 12, "fillColor":"#ff0", "opacity":0.7 })
+            ddgeoms.add({'type': 'rectangle', 'g': {'p0': k, 'size': (a,a)  },   'floor': floor, 'style': { "strokeColor": "#f80" , "strokeWidth": 2 , "opacity": 0.2 }})
+            ddgeoms.add({'type': 'circle'   , 'g': {'p0': k, 'radius': radius }, 'floor': floor, 'style': { "fillColor": "#fff", "opacity": 0.3 }})
+            ddgeoms.add({'type': 'text'     , 'g': {'p0': k, 'content': k },     'floor': floor, 'style': { "fontSize": 12, "fillColor":"#ff0", "opacity":0.7 }})
+            
             for mm in v:
-                z[floor]['circles'].append( { "xy": mm, "radius": radius, "fillColor": "#fff", "opacity": 0.3 } )
-                z[floor]['texts'].append(   { "xy": mm, "content": mm, "fontSize": 12, "fillColor":"#ff0", "opacity":0.7 })
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+                ddgeoms.add({'type': 'circle'   , 'g': {'p0': mm, 'radius': radius }, 'floor': floor, 'style': { "fillColor": "#fff", "opacity": 0.3 }})
+                ddgeoms.add({'type': 'text'     , 'g': {'p0': mm, 'content': mm },    'floor': floor, 'style': { "fontSize": 12, "fillColor":"#ff0", "opacity":0.7 }})
+        ddgeoms.write()
 # }}}
 
     def _make_cell2compa_record(self,cell,floor):# {{{
