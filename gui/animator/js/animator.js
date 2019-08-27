@@ -475,20 +475,21 @@ function drawStaticEvacuees(data,tx,ty) {//{{{
 function drawDDGeoms(data,tx,ty) { //{{{
     var d;
 	_.each(data.rectangle, function(pp) {
+		pp['g']=JSON.parse(pp['g']);
         d=pp['style'];
         d['point']=new Point(pp['g']['p0'][0]+tx, pp['g']['p0'][1]+ty);
         d['size']=new Size(pp['g']['size']);
 		new Path.Rectangle(d);
 	});
 
-	_.each(data.line, function(pp) {
-        d=pp['style'];
-        d['from']=new Point(pp['g']['p0'][0]+tx, pp['g']['p0'][1]+ty);
-        d['to']=new Point(pp['g']['p1'][0]+tx, pp['g']['p1'][1]+ty);
-		new Path.Line(d);
+	_.each(data.path, function(pp) {
+		pp['g']=JSON.parse(pp['g']);
+		var path=new Path(pp['style']);
+		_.each(pp['g']['points'], function(point) { path.add(new Point(point[0]+tx, point[1]+ty)); });
 	});
 
 	_.each(data.circle, function(pp) {
+		pp['g']=JSON.parse(pp['g']);
         d=pp['style'];
         d['center']=new Point(pp['g']['p0'][0]+tx, pp['g']['p0'][1]+ty);
         d['radius']=pp['g']['radius'];
@@ -496,6 +497,7 @@ function drawDDGeoms(data,tx,ty) { //{{{
 	});
 
 	_.each(data.text, function(pp) {
+		pp['g']=JSON.parse(pp['g']);
         d=pp['style'];
         d['point']=new Point(pp['g']['p0'][0]+tx, pp['g']['p0'][1]+ty);
         d['content']=pp['g']['content'];

@@ -234,7 +234,7 @@ class GetUserPrefs:# {{{
 # }}}
 class DDgeoms:# {{{
     '''
-    dd_geoms are some optional extra rectangles, points, lines and
+    dd_geoms are some optional extra rectangles, points, paths and
     circles that are written on top of our geoms. Useful for developing
     and debugging features. 
 
@@ -243,10 +243,10 @@ class DDgeoms:# {{{
 
     params:
 
-        ddgeoms({'type': 'circle'   , 'g': {'p0': (0, 0) , 'radius': 10        }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
-        ddgeoms({'type': 'line'     , 'g': {'p0': (0, 0) , 'p1': (100, 200)    }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
-        ddgeoms({'type': 'rectangle', 'g': {'p0': (0, 0) , 'size': (100, 200)  }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
-        ddgeoms({'type': 'text'     , 'g': {'p0': (0, 0) , 'content': "Hello!" }, 'floor': '0' , 'style': {'fillColor': "#f00" }})
+        ddgeoms({"type": "circle"   , "g": {"p0": (0, 0) , "radius": 10        },               "floor": "0" , "style": {"fillColor": "#f00" }})
+        ddgeoms({"type": "rectangle", "g": {"p0": (0, 0) , "size": (100, 200)  },               "floor": "0" , "style": {"fillColor": "#f00" }})
+        ddgeoms({"type": "text"     , "g": {"p0": (0, 0) , "content": "Hello!" },               "floor": "0" , "style": {"fillColor": "#f00" }})
+        ddgeoms({"type": "path"     , "g": {"p0": (0, 0) , "points": [(100, 200), (200,200)]},  "floor": "0" , "style": {"fillColor": "#f00" }})
 
     '''
 
@@ -259,14 +259,16 @@ class DDgeoms:# {{{
 # }}}
     def add(self,params):# {{{
         floor=params['floor']
-        type=params['type']
+        tt=params['type']
         del params['floor']
         del params['type']
         if floor not in self.zz:
-            self.zz[floor]={ 'rectangle': [], 'line': [], 'circle': [], 'text': [] }
-        params['g']['p0']=( int(params['g']['p0'][0]), int(params['g']['p0'][1]) )
-        if "p1" in params['g']: params['g']['p1']=( int(params['g']['p1'][0]), int(params['g']['p1'][1]) )
-        self.zz[floor][type].append(params)
+            self.zz[floor]={ 'rectangle': [], 'path': [], 'circle': [], 'text': [] }
+        if "p0" in params['g']: params['g']["p0"]=[ int(params['g']['p0'][0]), int(params['g']['p0'][1]) ]
+        if "p1" in params['g']: params['g']["p1"]=[ int(params['g']['p1'][0]), int(params['g']['p1'][1]) ]
+        if "points" in params['g']: params['g']["points"]=[ [int(i), int(j)] for i,j in params['g']['points'] ]
+        params['g']=json.dumps(params['g'])
+        self.zz[floor][tt].append(params)
 # }}}
     def write(self):# {{{
         self.json.write(self.zz, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
@@ -362,7 +364,7 @@ class Vis:# {{{
             try:
                 self._static_floors[floor]['dd_geoms']=f[floor]
             except:
-                self._static_floors[floor]['dd_geoms']={ 'rectangle': [], 'line': [], 'circle': [], 'text': [] }
+                self._static_floors[floor]['dd_geoms']={ 'rectangle': [], 'path': [], 'circle': [], 'text': [] }
 # }}}
 
     def _js_vis_fire_origin(self):# {{{
