@@ -380,12 +380,12 @@ class Navmesh:
 
         mm=self.room_leaves(ee)
         for dest in mm['all']:
-            ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": dest[0], "radius": self.evacuee_radius*3.5 }, "style": { "fillColor": "#222", "opacity": 0.3 }} )
-            ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": dest[0], "radius": self.evacuee_radius*0.5 }, "style": { "fillColor": "#000", "opacity": 0.5 }} )
+            ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": dest[0], "radius": self.evacuee_radius*3.5 }, "style": { "fillColor": "#f80", "opacity": 0.3 }} )
+            ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": dest[0], "radius": self.evacuee_radius*0.5 }, "style": { "fillColor": "#f80", "opacity": 0.5 }} )
 
-        ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": mm['best_point'], "radius": self.evacuee_radius*3.5 }, "style": { "fillColor": "#0f0", "opacity": 0.3 }} )
-        ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": mm['best_point'], "radius": self.evacuee_radius*0.5 }, "style": { "fillColor": "#000", "opacity": 0.5 }} )
+        ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": mm['best_point'], "radius": self.evacuee_radius*3.5 }, "style": { "fillColor": "#f80", "opacity": 0.3 }} )
+        ddgeoms.add({'floor': self.floor, 'type': 'circle', "g": { "p0": mm['best_point'], "radius": self.evacuee_radius*0.5 }, "style": { "fillColor": "#f80", "opacity": 0.5 }} )
 
-        self.nav_plot_path(mm['best_path'], ddgeoms, style={ "strokeColor": "#0f0", "strokeWidth": 20 } )
+        self.nav_plot_path(mm['best_path'], ddgeoms, style={ "strokeColor": "#f80", "strokeWidth": 6 } )
         ddgeoms.write()
 # }}}

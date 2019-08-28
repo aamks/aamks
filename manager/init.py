@@ -55,6 +55,7 @@ class OnInit():
             pass
 
         try:
+            os.remove("{}/workers/static.json".format(os.environ['AAMKS_PROJECT']))
             os.remove("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
         except:
             pass
