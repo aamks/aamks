@@ -80,7 +80,7 @@ function registerListeners() {//{{{
 function keyboardEvents() {//{{{
 
 	$(this).keypress((e) => { if (e.key in gg)  { cgEscapeCreate(); activeLetter=e.key; cgChoose(); } });
-	$(this).keydown((e) =>  { if (e.key == 'Escape') { cgEscapeCreate(); $("#buildingLabels").html(""); } });
+	$(this).keydown((e) =>  { if (e.key == 'Escape') { cgEscapeCreate(); $("#buildingLabels").html(""); $("#apainter-texts-pos").html(''); } });
 	$(this).keydown((e) =>  { if (e.key == 'h') { cgEscapeCreate(); nextView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'p') { $("#p1").remove() ; } });
 	$(this).keydown((e) =>  { if (e.key == 'n') { cgEscapeCreate(); changeFloor(calcNextFloor()); } });
@@ -277,12 +277,12 @@ function axes() { //{{{
 		.range([-1, canvas[1] + 1]);
 
 	ax.xAxis = d3.axisBottom(ax.x)
-		.ticks(screen.width/200)
+		.ticks(screen.width/800)
 		.tickSize(canvas[1])
 		.tickPadding(2 - canvas[1]);
 
 	ax.yAxis = d3.axisRight(ax.y)
-		.ticks(screen.height/200)
+		.ticks(screen.height/800)
 		.tickSize(canvas[0])
 		.tickPadding(2 - canvas[0]);
 	svg.append("g").attr("id", "axes");
@@ -335,9 +335,9 @@ function changeFloor(requested_floor) {//{{{
 	$("#underlay"+floor).attr("visibility","visible");
 
 	updateSnapLines();
-	d3.select("#floor_text").text("floor "+floor+"/"+floorsCount);
-	$("#floor_text").clearQueue().finish();
-	$("#floor_text").css("opacity",1).animate({"opacity": 0.05}, 1000);
+	$("#apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
+	$("#apainter-texts-floor").clearQueue().finish();
+	$("#apainter-texts-floor").css("opacity",1).animate({"opacity": 0.1}, 1000);
 }
 //}}}
 function holeFixOffset() { //{{{
@@ -490,6 +490,7 @@ function cgCreate() {//{{{
 		snap(m.x, m.y);
 		cgDecidePoints(m.x, m.y);
 		cgUpdateSvg(); 
+		updatePosInfo();
 	});  
 	svg.on('mouseup', function() {
 		if(assertCgReady()) {
@@ -505,6 +506,10 @@ function cgCreate() {//{{{
 		cgInit();
 		showBuildingLabels();
 	});
+}
+//}}}
+function updatePosInfo() {//{{{
+	$("#apainter-texts-pos").html(cg.x1+" "+cg.y1+" "+cg.z0+" &nbsp; &nbsp;  size: "+Math.abs(cg.x1-cg.x0)+" "+Math.abs(cg.y1-cg.y0) +" "+(cg.z1-cg.z0));
 }
 //}}}
 function cgDecidePoints(mx,my) {//{{{
@@ -1074,15 +1079,13 @@ function canvasBuilder() { //{{{
 	d3.select('body').append('legend0');
 	d3.select('body').append('legend2');
 	d3.select('view2d').append('legend1');
+	d3.select('view2d').append("div").attr("id", "apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
+	d3.select('view2d').append("div").attr("id", "apainter-texts-keys").html("n: next floor<br>h: next view");
+	d3.select('view2d').append("div").attr("id", "apainter-texts-pos");
 	make_legend0("apainter");
 	make_legend2("apainter");
 	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
-	tt=svg.append("g").attr("id", "texts");
-	tt.append("text").attr("x",130).attr("y",60).attr("id", "scenario_text").text(session_scenario);
-	tt.append("text").attr("x",130).attr("y",140).attr("id", "shortcuts_help1").text("n: next floor");
-	tt.append("text").attr("x",130).attr("y",155).attr("id", "shortcuts_help2").text("h: next view");
-	tt.append("text").attr("x",130).attr("y",120).attr("id", "floor_text").text("floor "+floor+"/"+floorsCount);
 
 	axes();
 	building = svg.append("g").attr("id", "building");

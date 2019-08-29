@@ -274,11 +274,12 @@ input[type="submit"]:hover, button:hover { opacity:0.7; }
 .bulkProps:hover {  color: #c60 !important; cursor: pointer;  }
 
 
-#floor_text, #scenario_text        { fill: #fff; opacity: 0.05; font-size: 50px; font-family: 'Sans'; }
-#shortcuts_help1, #shortcuts_help2 { fill: #fff; opacity: 0.08; font-size: 12px; font-weight: bold; font-family: 'Sans';  }
+#apainter-texts-floor { user-select: none; position: absolute; left: 140px; top: 40px; color: #fff; opacity: 0.1; font-size: 16px; font-family: 'Sans'; }
+#apainter-texts-keys  { user-select: none; position: absolute; left: 140px; top: 60px; color: #fff; opacity: 0.1; font-size: 13px; font-family: 'Sans'; }
+#apainter-texts-pos   { user-select: none; position: absolute; left: 340px; top: 50px; color: #fff; opacity: 0.4; font-size: 12px; font-family: 'Sans'; }
 
 #scenario { visibility: hidden; position: absolute; }
-.axis path, .axis line { fill: none; stroke: #383838; } 
+.axis path, .axis line { fill: none; stroke: #3e3e3e; } 
 .axis { font-family: 'Roboto'; }
 .snap_v, .snap_h { stroke : #fff; stroke-width : 5; stroke-dasharray : 10; stroke-opacity : 0.7; }
 #snapper { pointer-events: none; }
