@@ -36,7 +36,7 @@ function tempChrome() {//{{{
 // on start{{{
 $(function()  { 
 	window.oncontextmenu = function () { return false; }    // cancel default menu  
-	//tempChrome();
+	tempChrome();
 	$.getJSON("inc.json", function(x) {
 		gg=x['aamksGeoms'];
 		ggx=x['aamksGeomsMap'];
@@ -98,13 +98,12 @@ function dddx() {//{{{
 }
 //}}}
 function debug() {//{{{
-	dd("db:", db({'floor': floor, 'letter':activeLetter}).select('name'), "cgid:", cgID); 
-	
+	ddd();
 }
 //}}}
-function ddd(single=0) {//{{{
-	if(single!=0) { 
-		dd(db({'name': cg.name}).get());
+function ddd(current=0) {//{{{
+	if(current!=0) { 
+		dd(db({'name': cg.name}).get()[0]);
 	} else {
 		dd(db().get());
 	}
@@ -116,13 +115,14 @@ function dddX() {//{{{
 	});
 }
 //}}}
-function cgSvg() { //{{{
+function cgSvg(pparent='auto') { //{{{
+	if(pparent=='auto') { pparent="#floor"+cg.floor; }
 	if (cg.type == 'evacuee') { 
 		var elem='circle';
 	} else {
 		var elem='rect';
 	}
-	d3.select("#floor"+cg.floor)
+	d3.select(pparent)
 		.append(elem)
 		.attr('id', cg.name)
 		.attr('class', gg[cg.letter].t + " " +gg[cg.letter].x)
@@ -133,8 +133,6 @@ function cgSvg() { //{{{
 		.attr('width', cg.x1 - cg.x0)
 		.attr('height', cg.y1 - cg.y0)
 		.attr('r', evacueeRadius)
-
-
 }
 //}}}
 function cgCss() {//{{{
@@ -145,10 +143,6 @@ function cgCss() {//{{{
 }
 //}}}
 function cgDb() { //{{{
-	// On the occassions we are massively called from importCadJson() and alike
-	// we don't want to auto call the heavy updateSnapLines() each time -- it is sufficient 
-	// that importCadJson() makes a single updateSnapLines() call after hundreds
-	// of geoms are DbInserted().
 	
 	if(cg.type=='underlay_scaler') { return; }
 	var lines=[];
@@ -160,7 +154,6 @@ function cgDb() { //{{{
 	}
 	db({"name": cg.name}).remove();
 	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
-	
 }
 //}}}
 function cgIdUpdate() {//{{{

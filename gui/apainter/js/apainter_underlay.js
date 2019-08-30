@@ -3,13 +3,14 @@ function registerListenersUnderlay() {//{{{
 	//$("body").on("blur"   , "#p1"           , function() { $("#p1").remove(); });
 	$("body").on("click"  , "#uimg_remove"  , function() { uimgRemove(); });
 	$("body").on("change" , "#uimg_add"     , function() { uimgAdd(this); });
+	$("body").on("keyup"  , "#ufloor"       , function() { ufloorAdd(); });
 	$("body").on("keyup"  , "#uimg_rotate"  , function() { uimgRotate(); }); 
 	$("body").on("keyup"  , "#uimg_opacity" , function() { uimgSingleAttrib(floor  , 'opacity' , $("#uimg_opacity").val()) ; }) ;
 	$("body").on("keyup"  , "#uimg_invert"  , function() { uimgSingleAttrib(floor  , 'invert'  , $("#uimg_invert").val())  ; }) ;
 	$("body").on("click"  , "#submit_scale" , function() { uimgScale(floor, Number($(this).attr('data-underlay-width'))); });
 
-	$(this).keydown((e) =>  { if (e.ctrlKey && e.altKey) {  $("#apainter-svg").css("pointer-events", "none"); $('#uimg'+floor).css("pointer-events", "auto"); underlayForm();  }});
-	$(this).keyup((e) =>    { if (e.key == 'Alt') { $("#apainter-svg").css("pointer-events", "auto"); $('#uimg'+floor).css("pointer-events", "none"); underlayForm(); }});
+	$(this).keydown((e) =>  { if (e.ctrlKey && e.altKey) {  $("#apainter-svg").css("pointer-events", "none"); $('#uimg'+floor).css("pointer-events", "auto"); underlayForm(); }});
+	$(this).keyup((e) =>    { if (e.key == 'Alt')		 {  $("#apainter-svg").css("pointer-events", "auto"); $('#uimg'+floor).css("pointer-events", "none"); underlayForm(); }});
 }
 //}}}
 function importUnderlay(data,f,reload_form=0) {//{{{
@@ -48,11 +49,15 @@ function uimgSingleAttrib(floor,key,val) { // {{{
 	if(key=='opacity')          { d3.select("#uimg"+floor).style(key, val)                                               ; }
 	if(key=='invert' && val==1) { d3.select("#uimg"+floor).attr('invert' , 1).attr('filter', "url(#invertColorsFilter)") ; }
 	if(key=='invert' && val==0) { d3.select("#uimg"+floor).attr('invert' , 0).attr('filter', null)                       ; }
+
+	if(key=='opacity')          { d3.select("#ufloor"+floor).style(key, val)                                               ; }
+	if(key=='invert' && val==1) { d3.select("#ufloor"+floor).attr('invert' , 1).attr('filter', "url(#invertColorsFilter)") ; }
+	if(key=='invert' && val==0) { d3.select("#ufloor"+floor).attr('invert' , 0).attr('filter', null)                       ; }
 }
 //}}}
 function underlay_attribs(floor,aa=0) {//{{{
 	if (aa==0) {
-		d3.select("#uimg"+floor).style("opacity", 0).attr("invert",0).attr("type", 'none');
+		d3.select("#uimg"+floor).style("opacity", 0.3).attr("invert",0).attr("type", 'none');
 	} else {
 		d3.select("#uimg"+floor).style("opacity", aa.opacity).attr('filter', null).attr("invert", 0).attr("type", aa.type).style("scale", aa.scale).style("rotate", aa.rotate).style("translate", aa.translate)
 		if(aa.invert==1) { uimgSingleAttrib(floor , 'invert' , 1); }
@@ -73,6 +78,7 @@ function underlay_zoomer(floor) {//{{{
 //}}}
 function underlayForm(width=0) {//{{{
 	if(width>0) { submit="<input id=submit_scale data-underlay-width='"+width+"' class=blink type=button value=set>"; } else { submit='<letter>p</letter>+drag'; }
+	
  	rightBoxShow(
 		"Supported: png jpg svg pdf<br><br>"+
 		"<input id=underlay"+floor+"_form type=hidden value=1>"+
@@ -85,6 +91,7 @@ function underlayForm(width=0) {//{{{
 		"<tr><td>opacity      <td><input autocomplete=off id=uimg_opacity type=text value="+$("#uimg"+floor).css("opacity")+" style='width:30px' >"+
 		"<tr><td>rotate		  <td><input autocomplete=off id=uimg_rotate  type=text style='width:30px' >"+
 		"<tr><td>invert colors<td><input autocomplete=off id=uimg_invert  type=text value="+$("#uimg"+floor).attr("invert")+" style='width:30px' >"+
+		"<tr><td>floor        <td><input autocomplete=off id=ufloor       type=text style='width:30px'> as underlay"+
 		"</table>"
 	);
 
@@ -117,6 +124,17 @@ function uimgAdd(e) {//{{{
 			ajax_msg({'msg': "Aamks only supports png/jpg/svg/pdf underlays", 'err':1});
 		}
 	}
+}
+//}}}
+function ufloorAdd() {//{{{
+	var ufloor=Number($("#ufloor").val());
+	mm=d3.select('#underlay'+floor).append('g').attr("id", "ufloor"+floor).style("opacity", $("#uimg_opacity").val());
+	_.each(db({'floor': ufloor}).get(), function(m) {
+		cgSelect(m.name);
+		cgSvg('#ufloor'+floor);
+	});
+	cgEscapeCreate(); $("#buildingLabels").html(""); $("#apainter-texts-pos").html(''); 
+	dd($('#ufloor'+floor)[0]);
 }
 //}}}
 function underlaySaveCad(floor) {//{{{
