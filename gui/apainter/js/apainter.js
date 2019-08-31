@@ -23,6 +23,7 @@ var snapLinesArr={};
 var defaults={'door_dimz': 200, 'door_width': 90, 'floor_dimz': 350, 'window_dimz': 150, 'window_offsetz': 100 };
 var activeSnap={};
 var preferredSnap='x';
+var undoBuffer=[];
 var evacueeRadius;
 //}}}
 function tempChrome() {//{{{
@@ -46,7 +47,6 @@ $(function()  {
 		registerListeners();
 		registerListenersUnderlay();
 		$('right-menu-box').fadeOut();
-
 		//dd($('#building')[0]);
 	});
 });
@@ -79,16 +79,17 @@ function registerListeners() {//{{{
 //}}}
 function keyboardEvents() {//{{{
 
-	$(this).keypress((e) => { if (e.key in gg)  { cgEscapeCreate(); activeLetter=e.key; cgChoose(); } });
-	$(this).keydown((e) =>  { if (e.key == 'Escape') { escapeAll(); } });
-	$(this).keydown((e) =>  { if (e.key == 'h') { cgEscapeCreate(); nextView(); } });
-	$(this).keydown((e) =>  { if (e.key == 'p') { $("#p1").remove() ; } });
-	$(this).keydown((e) =>  { if (e.key == 'n') { cgEscapeCreate(); changeFloor(calcNextFloor()); } });
-	$(this).keydown((e) =>  { if (e.key == '=') { cgEscapeCreate(); resetView(); } });
-	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey) { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
-	$(this).keydown((e) =>  { if (e.key == 's' && e.ctrlKey) { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
+	$(this).keypress((e) => { if (e.key in gg)                   { cgEscapeCreate(); activeLetter=e.key; cgChoose(); } });
+	$(this).keydown((e) =>  { if (e.key == 'Escape')             { escapeAll(); } });
+	$(this).keydown((e) =>  { if (e.key == 'h')                  { cgEscapeCreate(); nextView(); } });
+	$(this).keydown((e) =>  { if (e.key == 'p')                  { $("#p1").remove() ; } });
+	$(this).keydown((e) =>  { if (e.key == 'n')                  { cgEscapeCreate(); changeFloor(calcNextFloor()); } });
+	$(this).keydown((e) =>  { if (e.key == '=')                  { cgEscapeCreate(); resetView(); } });
+	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey)     { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
+	$(this).keydown((e) =>  { if (e.key == 's' && e.ctrlKey)     { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
+	$(this).keyup((e) =>    { if (e.key == 'z' && e.ctrlKey)     { undoLast(); } }) ;
 	$(this).keypress((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgEscapeCreate(); cgRemove(); }});
-	$(this).keypress((e) => { if (e.key == 'l') { cgEscapeCreate(); bulkProps(); } });
+	$(this).keypress((e) => { if (e.key == 'l')                  { cgEscapeCreate(); bulkProps(); } });
 	// debug
 	$(this).keypress((e) => { if (e.key == ']') { debug(); }});
 }
@@ -98,7 +99,7 @@ function dddx() {//{{{
 }
 //}}}
 function debug() {//{{{
-	dd($('#building')[0]);
+	dd(undoBuffer);
 }
 //}}}
 function ddd(current=0) {//{{{
@@ -116,7 +117,7 @@ function dddX() {//{{{
 }
 //}}}
 function escapeAll() {//{{{
-	cgEscapeCreate(); $("#buildingLabels").html(""); $("#apainter-texts-pos").html(''); 
+	cgEscapeCreate(); $("#buildingLabels").html(""); $("#apainter-texts-pos").html(''); legend(); 
 }
 //}}}
 function cgSvg(pparent='auto') { //{{{
@@ -147,7 +148,6 @@ function cgCss() {//{{{
 }
 //}}}
 function cgDb() { //{{{
-	
 	if(cg.type=='underlay_scaler') { return; }
 	var lines=[];
 
@@ -156,8 +156,31 @@ function cgDb() { //{{{
 	} else {
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
+	undoBufferRegister(deepcopy(cg));
 	db({"name": cg.name}).remove();
 	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
+}
+//}}}
+function undoLast() {//{{{
+	dd("todo: manage the undoBuffer");
+	cg=undoBuffer.shift();
+	if(cg.op=='insert') { 
+		cgRemove();
+	} else {
+		$("#"+cg.name).remove(); cgDb(); cgSvg(); cgCss(); updateSnapLines();
+	}
+	escapeAll();
+}
+//}}}
+function undoBufferRegister(mm) {//{{{
+	data=db({"name": mm.name}).get()[0]; // modify or remove
+	if(data==undefined) { // insert
+		data=mm;
+		data.op='insert';
+	} else {
+		data.op='modify';
+	}
+	undoBuffer.unshift(data);
 }
 //}}}
 function cgIdUpdate() {//{{{
@@ -224,6 +247,7 @@ function nextView() {//{{{
 }
 //}}}
 function cgRemove() {//{{{
+	undoBuffer.unshift(cg);
 	$("#"+cg.name).remove();
 	db({"name":cg.name}).remove();
 	updateSnapLines();
@@ -568,7 +592,7 @@ function cgUpdateSvg() {  //{{{
 function cgChoose(create=1) {//{{{
 	$('right-menu-box').fadeOut(0); 
 	legend();
-	$('#legend_'+activeLetter).css({'color': '#fff', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
+	$('#legend_'+activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
 	if(create==1) { cgCreate(); }
 }
 //}}}
@@ -659,6 +683,7 @@ function json2db(json) { //{{{
 		}
 	}
 	updateSnapLines(); // This is a heavy call, which shouldn't be called for each cgDb()
+	undoBuffer=[];
 }
 //}}}
 function cgMake(floor,letter,arr) { //{{{
@@ -946,6 +971,7 @@ function showHelpBox() {//{{{
 		"<tr><td><letter>l</letter>	<td> list all of active type"+
 		"<tr><td><letter>ctrl</letter> + <letter>alt</letter>	<td> underlays"+
 		"<tr><td><letter>ctrl</letter> + <letter>s</letter>	<td> save and read"+
+		"<tr><td><letter>ctrl</letter> + <letter>z</letter> <td> undo"+ 
 		"<tr><td><letter>=</letter>	<td> original zoom"+
 		"<tr><td><letter>escape</letter><td> cancel create"+
 		"</table>"
