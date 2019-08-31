@@ -132,7 +132,7 @@ class CFASTimporter():
         data=[]
         for floor,gg in self.raw_geometry.items():
             for k,arr in gg.items():
-                if k in ('UNDERLAY'):
+                if k in ('UNDERLAY_IMG', 'UNDERLAY_FLOOR'):
                     continue
                 for v in arr:
                     rr={'x0': int(v[0][0]), 'y0': int(v[0][1]), 'x1': int(v[1][0]), 'y1': int(v[1][1]), 'z0': int(v[0][2]), 'z1': int(v[1][2])}

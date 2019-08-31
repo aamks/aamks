@@ -5,34 +5,49 @@ function registerListenersUnderlay() {//{{{
 	$("body").on("change" , "#uimg_add"     , function() { uimgAdd(this); });
 	$("body").on("keyup"  , "#ufloor"       , function() { ufloorAdd(); });
 	$("body").on("keyup"  , "#uimg_rotate"  , function() { uimgRotate(); }); 
-	$("body").on("keyup"  , "#uimg_opacity" , function() { uimgSingleAttrib(floor  , 'opacity' , $("#uimg_opacity").val()) ; }) ;
-	$("body").on("keyup"  , "#uimg_invert"  , function() { uimgSingleAttrib(floor  , 'invert'  , $("#uimg_invert").val())  ; }) ;
+	$("body").on("keyup"  , "#uimg_opacity" , function() { uChangeAttrib(floor  , 'opacity' , $("#uimg_opacity").val()) ; }) ;
+	$("body").on("keyup"  , "#uimg_invert"  , function() { uChangeAttrib(floor  , 'invert'  , $("#uimg_invert").val())  ; }) ;
 	$("body").on("click"  , "#submit_scale" , function() { uimgScale(floor, Number($(this).attr('data-underlay-width'))); });
 
 	$(this).keydown((e) =>  { if (e.ctrlKey && e.altKey) {  $("#apainter-svg").css("pointer-events", "none"); $('#uimg'+floor).css("pointer-events", "auto"); underlayForm(); }});
 	$(this).keyup((e) =>    { if (e.key == 'Alt')		 {  $("#apainter-svg").css("pointer-events", "auto"); $('#uimg'+floor).css("pointer-events", "none"); underlayForm(); }});
 }
 //}}}
-function importUnderlay(data,f,reload_form=0) {//{{{
-	// By convention underlayX and uimgX always exist but may contain zeroes
+function importImgUnderlay(data,f,reload_form=0) {//{{{
+	// By convention for each floor there always exist: 
+	// underlayX: the group
+	// uimgX: the underlay image 
+	// ufloorX: the underlay floor group
 
 	$("#underlay"+f).remove();
-	d3.select('#building').insert("g", "g").attr("id", "underlay"+f).attr("class", "underlay");
+	d3.select('#floor'+f).insert("g",":first-child").attr("id", "underlay"+f).attr("class", "underlay");
+	d3.select('#underlay'+f).append("image").attr("id", "uimg"+f).attr("width", 8000);
+	d3.select('#underlay'+f).append("g").attr("id", "ufloor"+f).style("pointer-events", "none");
+
 	if(data != undefined) {
-		data['floor']=f;
+		data.floor=f;
 		$.post('/aamks/ajax.php?ajaxGetUnderlay', data, function (json) { 
 			ajax_msg(json);
 			//dd(f,json);
-			if(f==floor) { visibility='visible'; } else { visibility='hidden'; }
-			d3.select('#underlay'+f).attr("visibility", visibility).append("image").attr("id", "uimg"+f).attr("pointer-events", "none").attr("width", 8000).attr("xlink:href", json.data);
-			underlay_attribs(f, data);
+			//d3.select('#underlay'+f).append("image").attr("id", "uimg"+f).style("pointer-events", "none").attr("width", 8000).attr("xlink:href", json.data);
+			d3.select("#uimg"+f).attr("xlink:href", json.data);
+			underlayImgAttribs(f, data);
 			if(reload_form==1) { underlayForm(); }
 		});
 	} else {
-		d3.select('#underlay'+f).attr("visibility", 'hidden').append("image").attr("id", "uimg"+f).attr("width", 8000);
-		underlay_attribs(f);
+		underlayImgAttribs(f);
 	}
 	underlay_zoomer(f);
+}
+//}}}
+function importFloorUnderlay(data,f,reload_form=0) {//{{{
+	if(data != undefined) {
+		underlayFloorAttribs(f, data);
+		ufloorAdd(f, Number(data.floor));
+		if(reload_form==1) { underlayForm(); }
+	} else {
+		underlayFloorAttribs(f);
+	}
 }
 //}}}
 function uimgRotate() {//{{{
@@ -45,7 +60,7 @@ function uimgScale(floor, underlay_width) {//{{{
 	$("#p1").remove();
 }
 //}}}
-function uimgSingleAttrib(floor,key,val) { // {{{
+function uChangeAttrib(floor,key,val) { // {{{
 	if(key=='opacity')          { d3.select("#uimg"+floor).style(key, val)                                               ; }
 	if(key=='invert' && val==1) { d3.select("#uimg"+floor).attr('invert' , 1).attr('filter', "url(#invertColorsFilter)") ; }
 	if(key=='invert' && val==0) { d3.select("#uimg"+floor).attr('invert' , 0).attr('filter', null)                       ; }
@@ -55,12 +70,22 @@ function uimgSingleAttrib(floor,key,val) { // {{{
 	if(key=='invert' && val==0) { d3.select("#ufloor"+floor).attr('invert' , 0).attr('filter', null)                       ; }
 }
 //}}}
-function underlay_attribs(floor,aa=0) {//{{{
+function underlayImgAttribs(floor,aa=0) {//{{{
 	if (aa==0) {
 		d3.select("#uimg"+floor).style("opacity", 0.3).attr("invert",0).attr("type", 'none');
 	} else {
-		d3.select("#uimg"+floor).style("opacity", aa.opacity).attr('filter', null).attr("invert", 0).attr("type", aa.type).style("scale", aa.scale).style("rotate", aa.rotate).style("translate", aa.translate)
-		if(aa.invert==1) { uimgSingleAttrib(floor , 'invert' , 1); }
+		d3.select("#uimg"+floor).style("opacity", aa.opacity).attr('filter', null).attr("invert", 0).attr("type", aa.type).style("scale", aa.scale).style("rotate", aa.rotate).style("translate", aa.translate);
+		if(aa.invert==1) { uChangeAttrib(floor , 'invert' , 1); }
+	}
+}
+//}}}
+function underlayFloorAttribs(floor,aa=0) {//{{{
+	if (aa==0) {
+		d3.select("#ufloor"+floor).style("opacity", 0.1).attr("invert",0).attr("active", 0);
+	} else {
+		dd(floor,aa);
+		d3.select("#ufloor"+floor).style("opacity", aa.opacity).attr("invert", 0).attr("active", 1);
+		if(aa.invert==1) { uChangeAttrib(floor , 'invert' , 1); }
 	}
 }
 //}}}
@@ -101,7 +126,7 @@ function uimgRemove() {//{{{
 	$.post('/aamks/ajax.php?ajaxRemoveUnderlay', {'floor': floor}, function (json) {});
 	$("#uimg"+floor).remove(); 
 	d3.select('#underlay'+floor).append("image").attr("id", "uimg"+floor);
-	underlay_attribs(floor);
+	underlayImgAttribs(floor);
 	db2cadjson();
 }
 //}}}
@@ -118,7 +143,7 @@ function uimgAdd(e) {//{{{
 			uSetup={ 'floor': floor, 'type': type, 'base64': base64, 'opacity': 0.5, "scale": 1, "rotate": "0deg", "translate": '0px 0px' };
 			$.post('/aamks/ajax.php?ajaxAddUnderlay', uSetup, function (json) { 
 				ajax_msg(json);
-				importUnderlay(uSetup, floor,1);
+				importImgUnderlay(uSetup, floor,1);
 			});
 		} else {
 			ajax_msg({'msg': "Aamks only supports png/jpg/svg/pdf underlays", 'err':1});
@@ -126,18 +151,19 @@ function uimgAdd(e) {//{{{
 	}
 }
 //}}}
-function ufloorAdd() {//{{{
-	var ufloor=Number($("#ufloor").val());
-	mm=d3.select('#underlay'+floor).append('g').attr("id", "ufloor"+floor).style("opacity", $("#uimg_opacity").val());
+function ufloorAdd(floor=floor, ufloor=Number($("#ufloor").val())) {//{{{
+	//dd("for:"+floor+" add:"+ufloor);
+	mm=d3.select('#ufloor'+floor);
 	_.each(db({'floor': ufloor}).get(), function(m) {
 		cgSelect(m.name);
+		cg.name=cg.name+"_underfloor";
 		cgSvg('#ufloor'+floor);
 	});
-	cgEscapeCreate(); $("#buildingLabels").html(""); $("#apainter-texts-pos").html(''); 
-	dd($('#ufloor'+floor)[0]);
+	escapeAll();
+	//dd($('#ufloor'+floor)[0]);
 }
 //}}}
-function underlaySaveCad(floor) {//{{{
+function underlayImgSaveCad(floor) {//{{{
 	if($("#uimg"+floor).attr('type') == 'none') { 
 		return "";
 	}
@@ -149,7 +175,23 @@ function underlaySaveCad(floor) {//{{{
 	json.rotate=$("#uimg"+floor).css('rotate');
 	json.translate=$("#uimg"+floor).css('translate');
 	if(json.type=='pdf') { json.type='svg'; }
-	return ',\n\t\t"UNDERLAY": '+JSON.stringify(json)+"\n";
+	return ',\n\t\t"UNDERLAY_IMG": '+JSON.stringify(json)+"\n";
+}
+//}}}
+function underlayFloorSaveCad(floor) {//{{{
+	return '';
+	if($("#uimg"+floor).attr('type') == 'none') { 
+		return "";
+	}
+	json={}
+	json.type=$("#uimg"+floor).attr('type');
+	json.opacity=$("#uimg"+floor).css('opacity');
+	json.invert=$("#uimg"+floor).attr('invert');
+	json.scale=$("#uimg"+floor).css('scale');
+	json.rotate=$("#uimg"+floor).css('rotate');
+	json.translate=$("#uimg"+floor).css('translate');
+	if(json.type=='pdf') { json.type='svg'; }
+	return ',\n\t\t"UNDERLAY_IMG": '+JSON.stringify(json)+"\n";
 }
 //}}}
 

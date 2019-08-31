@@ -1,5 +1,5 @@
 // globals//{{{
-var canvas=[screen.width-30,screen.height-190];
+var win=[screen.width-30,screen.height-190];
 var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var cg={}; // current geom, the one that is currently selected, created, removed, etc.
@@ -41,7 +41,7 @@ $(function()  {
 		gg=x['aamksGeoms'];
 		ggx=x['aamksGeomsMap'];
 		evacueeRadius=x['evacueeRadius'];
-		canvasBuilder();
+		sceneBuilder();
 		importCadJson();
 		registerListeners();
 		registerListenersUnderlay();
@@ -80,7 +80,7 @@ function registerListeners() {//{{{
 function keyboardEvents() {//{{{
 
 	$(this).keypress((e) => { if (e.key in gg)  { cgEscapeCreate(); activeLetter=e.key; cgChoose(); } });
-	$(this).keydown((e) =>  { if (e.key == 'Escape') { cgEscapeCreate(); $("#buildingLabels").html(""); $("#apainter-texts-pos").html(''); } });
+	$(this).keydown((e) =>  { if (e.key == 'Escape') { escapeAll(); } });
 	$(this).keydown((e) =>  { if (e.key == 'h') { cgEscapeCreate(); nextView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'p') { $("#p1").remove() ; } });
 	$(this).keydown((e) =>  { if (e.key == 'n') { cgEscapeCreate(); changeFloor(calcNextFloor()); } });
@@ -98,7 +98,7 @@ function dddx() {//{{{
 }
 //}}}
 function debug() {//{{{
-	ddd();
+	dd($('#building')[0]);
 }
 //}}}
 function ddd(current=0) {//{{{
@@ -113,6 +113,10 @@ function dddX() {//{{{
 	_.each(db().get(), function(v) {
 		dd(v.name, { 'x0': v.x0, 'y0': v.y0, 'x1': v.x1, 'y1': v.y1} );
 	});
+}
+//}}}
+function escapeAll() {//{{{
+	cgEscapeCreate(); $("#buildingLabels").html(""); $("#apainter-texts-pos").html(''); 
 }
 //}}}
 function cgSvg(pparent='auto') { //{{{
@@ -168,20 +172,20 @@ function zoomInit() { //{{{
 	// d3 is mysterious. They talk about event.button which is always 0 in chrome/linux
 	// event which works for me: 0: wheelScroll, 1: mouseLeft, 2: wheelPress
 
-	zoom = d3.zoom().on("zoom", zoomedCanvas);
+	zoom = d3.zoom().on("zoom", zoomedwin);
 	resetView();
 
 	d3.select("#apainter-svg")
 		.call(d3.zoom()
 			.scaleExtent([1 / 30, 4])
 			.translateExtent([[-1200, -1200], [1000000 , 1000000]])
-			.on("zoom", zoomedCanvas)
+			.on("zoom", zoomedwin)
 			.filter(function(){ return (event.which === 0 || event.which === 2 ); })
 		)
 		.on("dblclick.zoom", null);
 }
 //}}}
-function zoomedCanvas() {//{{{
+function zoomedwin() {//{{{
 	zt=d3.event.transform;
 	building.attr("transform", zt);
 	buildingLabels.attr("transform", zt);
@@ -262,22 +266,22 @@ function updateSnapLines() { //{{{
 //}}}
 function axes() { //{{{
 	ax.x = d3.scaleLinear()
-		.domain([-1, canvas[0]+ 1])
-		.range([-1, canvas[0]+ 1 ]);
+		.domain([-1, win[0]+ 1])
+		.range([-1, win[0]+ 1 ]);
 
 	ax.y = d3.scaleLinear()
-		.domain([-1, canvas[1] + 1])
-		.range([-1, canvas[1] + 1]);
+		.domain([-1, win[1] + 1])
+		.range([-1, win[1] + 1]);
 
 	ax.xAxis = d3.axisBottom(ax.x)
 		.ticks(screen.width/800)
-		.tickSize(canvas[1])
-		.tickPadding(2 - canvas[1]);
+		.tickSize(win[1])
+		.tickPadding(2 - win[1]);
 
 	ax.yAxis = d3.axisRight(ax.y)
 		.ticks(screen.height/800)
-		.tickSize(canvas[0])
-		.tickPadding(2 - canvas[0]);
+		.tickSize(win[0])
+		.tickPadding(2 - win[0]);
 	svg.append("g").attr("id", "axes");
 
 	ax.gX = d3.select("#axes").append("g")
@@ -312,8 +316,8 @@ function guessFloorZ0() {//{{{
 }
 //}}}
 function changeFloor(requested_floor) {//{{{
+	escapeAll();
 	$("#p1").remove();
-	$('right-menu-box').fadeOut(0);
 	floor=requested_floor;
 	guessFloorZ0();
 	if(floor > floorsCount-1) { 
@@ -323,9 +327,6 @@ function changeFloor(requested_floor) {//{{{
 
 	$(".floor").attr("visibility","hidden");
 	$("#floor"+floor).attr("visibility","visible");
-
-	$(".underlay").attr("visibility","hidden");
-	$("#underlay"+floor).attr("visibility","visible");
 
 	updateSnapLines();
 	$("#apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
@@ -702,8 +703,11 @@ function importCadJson() { //{{{
 		} else {
 			fire_model='CFAST';
 			svgGroupsInit(json.data);
-			_.each(json.data, function(data,floor) { importUnderlay(data['UNDERLAY'],floor); });
 			json2db(json.data);
+			_.each(json.data, function(data,floor) { 
+				importImgUnderlay(data['UNDERLAY_IMG'],floor); 
+				importFloorUnderlay(data['UNDERLAY_FLOOR'],floor); 
+			});
 			cg={};
 			d3.select('#floor_text').text("floor "+floor+"/"+floorsCount);
 		}
@@ -783,7 +787,8 @@ function db2cadjson() {//{{{
 		var ff='';
 		ff+='\t"'+f+'": {\n';
 		ff+=geoms.join(",\n");
-		ff+=underlaySaveCad(f);
+		ff+=underlayImgSaveCad(f);
+		ff+=underlayFloorSaveCad(f);
 		ff+='\n\t}';
 		json.push(ff);
 	}
@@ -838,7 +843,6 @@ function cgSelect(elems, showProperties=0) {//{{{
 	showBuildingLabels(1,[cg.name]);
 }
 //}}}
-
 function bulkPlainProps() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x<td>y<td>z";
@@ -854,7 +858,7 @@ function bulkPlainProps() {//{{{
 function bulkProps() {//{{{
 	showBuildingLabels(1);
 	var html='';
-	html+='<div style="overflow-y: scroll; height: '+(canvas[1]-100)+'px">';
+	html+='<div style="overflow-y: scroll; height: '+(win[1]-100)+'px">';
 	html+='<wheat>Hover name, then <letter>x</letter> to delete</wheat>';
 	html+='<table id=gg_listing>';
 	html+=bulkPlainProps();
@@ -1066,7 +1070,7 @@ function verifyIntersections() {//{{{
 }
 //}}}
 
-function canvasBuilder() { //{{{
+function sceneBuilder() { //{{{
 	d3.select('body').append('view3d');
 	d3.select('body').append('view2d');
 	d3.select('body').append('legend0');
@@ -1077,7 +1081,7 @@ function canvasBuilder() { //{{{
 	d3.select('view2d').append("div").attr("id", "apainter-texts-pos");
 	make_legend0("apainter");
 	make_legend2("apainter");
-	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", canvas[0]).attr("height", canvas[1]);
+	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", win[0]).attr("height", win[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
 
 	axes();
