@@ -25,7 +25,7 @@ are moving across the building and are affected by fire and smoke.
 /*}}}*/
 $nodes['devel']=array("Development version", /*{{{*/
 "
-Here you can play with the up-to-date <a href=https://student.szach.in/aamks/>development version</a>.
+Here you can play with the up-to-date <a href=https://student.szach.in/aamks/q.php?p=demo&s=simple&apainter=1>development version</a>.
 <br><br>
 
 Aamks is not production ready (we haven't yet released a stable version). This
@@ -117,7 +117,8 @@ echo "
 
 <menu>$menu</menu>
 <page> <h1>$title<br><br></h1>$content</page>
-<a target=_blank href=https://student.szach.in/aamks/> <header><img src=logo.svg></header></a>
+<a target=_blank href=https://student.szach.in/aamks/q.php?p=demo&s=simple&apainter=1> <header><img src=logo.svg></header></a>
+
 
 ";
 /*}}}*/

@@ -275,7 +275,6 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('simulation_time')."<td><input autocomplete=off type=text automplete=off size=10 name=post[simulation_time] value='$simulation_time'>"; 
 	echo "<tr><td>".get_help('fire_model')."<td>".droplist_fire_model($fire_model); 
 	echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($dispatch_evacuees); 
-	echo "<tr><td>".get_help('navmesh_debug')."<td><input autocomplete=off type=text automplete=off size=10 name=post[navmesh_debug] value='$navmesh_debug'>"; 
 	echo "<tr><td>".get_help('indoor_temperature')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_temperature] value='$indoor_temperature'>"; 
 	echo "<tr><td>".get_help('outdoor_temperature')."<td>".form_assoc('outdoor_temperature',$outdoor_temperature); 
 	echo "<tr><td>".get_help('indoor_pressure')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_pressure] value='$indoor_pressure'>"; 
