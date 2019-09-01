@@ -61,7 +61,7 @@ function registerListeners() {//{{{
 	$("body").on("click"               , '#apainter-next-view'  , function() { nextView(); });
 	$("body").on("click"               , '#button-help'         , function() { showHelpBox(); });
 	$("body").on("click"               , '#button-setup'        , function() { showGeneralBox(); });
-	$("body").on("click"               , '.legend'              , function() { activeLetter=$(this).attr('letter'); cgChoose(); });
+	$("body").on("click"               , '.legend'              , function() { activeLetter=$(this).attr('letter'); cgStartDrawing(); });
 	$("body").on("mouseleave"          , 'right-menu-box'       , function() { saveRightBox(); });
 
 	$("body").on("mousedown", "#apainter-svg", function(e){
@@ -79,7 +79,7 @@ function registerListeners() {//{{{
 //}}}
 function keyboardEvents() {//{{{
 
-	$(this).keypress((e) => { if (e.key in gg)                   { cgEscapeCreate(); activeLetter=e.key; cgChoose(); } });
+	$(this).keypress((e) => { if (e.key in gg && ! e.ctrlKey)    { cgEscapeCreate(); activeLetter=e.key; cgStartDrawing(); } });
 	$(this).keydown((e) =>  { if (e.key == 'Escape')             { escapeAll(); } });
 	$(this).keydown((e) =>  { if (e.key == 'h')                  { cgEscapeCreate(); nextView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'p')                  { $("#p1").remove() ; } });
@@ -87,7 +87,7 @@ function keyboardEvents() {//{{{
 	$(this).keydown((e) =>  { if (e.key == '=')                  { cgEscapeCreate(); resetView(); } });
 	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey)     { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
 	$(this).keydown((e) =>  { if (e.key == 's' && e.ctrlKey)     { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
-	$(this).keyup((e) =>    { if (e.key == 'z' && e.ctrlKey)     { undoLast(); } }) ;
+	$(this).keyup((e) =>    { if (e.key == 'z' && e.ctrlKey)     { undoPop(); } }) ;
 	$(this).keypress((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgEscapeCreate(); cgRemove(); }});
 	$(this).keypress((e) => { if (e.key == 'l')                  { cgEscapeCreate(); bulkProps(); } });
 	// debug
@@ -99,6 +99,7 @@ function dddx() {//{{{
 }
 //}}}
 function debug() {//{{{
+	console.clear();
 	dd(undoBuffer);
 }
 //}}}
@@ -156,23 +157,25 @@ function cgDb() { //{{{
 	} else {
 		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
 	}
-	undoBufferRegister(deepcopy(cg));
+	undoPush(deepcopy(cg));
 	db({"name": cg.name}).remove();
 	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
 }
 //}}}
-function undoLast() {//{{{
-	dd("todo: manage the undoBuffer");
-	cg=undoBuffer.shift();
+function undoPop() {//{{{
+	if (undoBuffer.length==0) { return; }
+	cg=undoBuffer.pop();
 	if(cg.op=='insert') { 
 		cgRemove();
 	} else {
 		$("#"+cg.name).remove(); cgDb(); cgSvg(); cgCss(); updateSnapLines();
 	}
+	undoBuffer.pop();
 	escapeAll();
 }
 //}}}
-function undoBufferRegister(mm) {//{{{
+function undoPush(mm) {//{{{
+	delete mm.growing;
 	data=db({"name": mm.name}).get()[0]; // modify or remove
 	if(data==undefined) { // insert
 		data=mm;
@@ -180,7 +183,7 @@ function undoBufferRegister(mm) {//{{{
 	} else {
 		data.op='modify';
 	}
-	undoBuffer.unshift(data);
+	undoBuffer.push(data);
 }
 //}}}
 function cgIdUpdate() {//{{{
@@ -247,7 +250,8 @@ function nextView() {//{{{
 }
 //}}}
 function cgRemove() {//{{{
-	undoBuffer.unshift(cg);
+	dd("cgRemove()");
+	undoBuffer.push(cg);
 	$("#"+cg.name).remove();
 	db({"name":cg.name}).remove();
 	updateSnapLines();
@@ -340,6 +344,7 @@ function guessFloorZ0() {//{{{
 }
 //}}}
 function changeFloor(requested_floor) {//{{{
+	undoBuffer=[];
 	escapeAll();
 	$("#p1").remove();
 	floor=requested_floor;
@@ -516,7 +521,6 @@ function cgCreate() {//{{{
 			cgUpdateSvg();
 			cgPolish();
 			cgDb();
-			showCgPropsBox(); 
 			updateSnapLines();
 		}
 		snappingHide();
@@ -589,11 +593,11 @@ function cgUpdateSvg() {  //{{{
 }
 //}}}
 
-function cgChoose(create=1) {//{{{
+function cgStartDrawing() {//{{{
 	$('right-menu-box').fadeOut(0); 
 	legend();
 	$('#legend_'+activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
-	if(create==1) { cgCreate(); }
+	cgCreate();
 }
 //}}}
 function cgEscapeCreate() {//{{{
