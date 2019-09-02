@@ -4,13 +4,6 @@ function init() {//{{{
 	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
 }
 //}}}
-function visible3D() {//{{{
-	$('#canvas3d').attr('width', win[0]).attr('height', win[1]);
-	$("view2d").css("display", "none");
-	$("#apainter-svg").css("display", "none");
-	$("view3d").css("display", "block");
-}
-//}}}
 function colorHexDecode(hex) {//{{{
 	if(hex.length == 7) { 
 		var RGB=[ parseInt(hex.substring(1,3),16)/255, parseInt(hex.substring(3,5),16)/255, parseInt(hex.substring(5,7),16)/255 ];
@@ -18,12 +11,6 @@ function colorHexDecode(hex) {//{{{
 		var RGB=[ parseInt(hex.substring(1,2)+"0",16)/255, parseInt(hex.substring(2,3)+"0",16)/255, parseInt(hex.substring(3,4)+"0",16)/255 ];
 	}
 	return RGB;
-}
-//}}}
-function close3dview() {//{{{
-	$("view3d").css("display", "none");
-	$("view2d").css("display", "block");
-	$("#apainter-svg").css("display", "block");
 }
 //}}}
 function removeMeshes() { //{{{
@@ -125,11 +112,9 @@ function view3d() {//{{{
 			init();
 			createScene();
 			createMeshes(); 
-			visible3D();
 		});
 	} else {
 		removeMeshes();
 		createMeshes(); 
-		visible3D();
 	}
 }

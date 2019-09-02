@@ -32,8 +32,7 @@
 		"MVENT": [ ],
 		"EVACUEE": [ ],
 		"FIRE": [ ],
-		"UNDERLAY_IMG":   { "type":"png","opacity":"0.7","invert":"0","scale":"0.4 0.4","rotate":"45deg","translate":"6287px 1446px"},
-		"UNDERLAY_FLOOR": { "opacity":"0.1","invert":"0", "floor": "2" }
+		"UNDERLAY_IMG":   { "type":"png","opacity":"0.7","invert":"0","scale":"0.4 0.4","rotate":"45deg","translate":"6287px 1446px"}
 
 	},
 	"1": {
@@ -66,7 +65,8 @@
 		"MVENT": [ ],
 		"EVACUEE": [ ],
 		"FIRE": [ ],
-		"UNDERLAY_IMG": {"type":"jpeg","opacity":"0.3","invert":"1","scale":"1 1","rotate":"0deg","translate":"-2929px 2637px"}
+		"UNDERLAY_IMG": {"type":"jpeg","opacity":"0.3","invert":"1","scale":"1 1","rotate":"0deg","translate":"-2929px 2637px"},
+		"UNDERLAY_FLOOR": { "opacity":"0.1","invert":"0", "uses_floor": "0" }
 
 	},
 	"2": {
@@ -93,6 +93,6 @@
 		"MVENT": [ ],
 		"EVACUEE": [ ],
 		"FIRE": [ ],
-		"UNDERLAY_FLOOR": { "opacity":"0.1","invert":"0", "floor": "0" }
+		"UNDERLAY_FLOOR": { "opacity":"0.1","invert":"0", "uses_floor": "0" }
 	}
 }

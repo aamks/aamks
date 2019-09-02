@@ -3,7 +3,7 @@ function registerListenersUnderlay() {//{{{
 	//$("body").on("blur"   , "#p1"           , function() { $("#p1").remove(); });
 	$("body").on("click"  , "#uimg_remove"  , function() { uimgRemove(); });
 	$("body").on("change" , "#uimg_add"     , function() { uimgAdd(this); });
-	$("body").on("keyup"  , "#ufloor"       , function() { ufloorAdd(); });
+	$("body").on("keyup"  , "#ufloor"       , function() { ufloorAdd(floor); });
 	$("body").on("keyup"  , "#uimg_rotate"  , function() { uimgRotate(); }); 
 	$("body").on("keyup"  , "#uimg_opacity" , function() { uChangeAttrib(floor  , 'opacity' , $("#uimg_opacity").val()) ; }) ;
 	$("body").on("keyup"  , "#uimg_invert"  , function() { uChangeAttrib(floor  , 'invert'  , $("#uimg_invert").val())  ; }) ;
@@ -28,8 +28,6 @@ function importImgUnderlay(data,f,reload_form=0) {//{{{
 		data.floor=f;
 		$.post('/aamks/ajax.php?ajaxGetUnderlay', data, function (json) { 
 			ajax_msg(json);
-			//dd(f,json);
-			//d3.select('#underlay'+f).append("image").attr("id", "uimg"+f).style("pointer-events", "none").attr("width", 8000).attr("xlink:href", json.data);
 			d3.select("#uimg"+f).attr("xlink:href", json.data);
 			underlayImgAttribs(f, data);
 			if(reload_form==1) { underlayForm(); }
@@ -41,12 +39,12 @@ function importImgUnderlay(data,f,reload_form=0) {//{{{
 }
 //}}}
 function importFloorUnderlay(data,f,reload_form=0) {//{{{
-	if(data != undefined) {
-		underlayFloorAttribs(f, data);
-		ufloorAdd(f, Number(data.floor));
-		if(reload_form==1) { underlayForm(); }
-	} else {
+	if(data == undefined || isEmpty(data)) {
 		underlayFloorAttribs(f);
+	} else {
+		underlayFloorAttribs(f, data);
+		ufloorAdd(f, data.uses_floor);
+		if(reload_form==1) { underlayForm(); }
 	}
 }
 //}}}
@@ -70,8 +68,8 @@ function uChangeAttrib(floor,key,val) { // {{{
 	if(key=='invert' && val==0) { d3.select("#ufloor"+floor).attr('invert' , 0).attr('filter', null)                       ; }
 }
 //}}}
-function underlayImgAttribs(floor,aa=0) {//{{{
-	if (aa==0) {
+function underlayImgAttribs(floor,aa={}) {//{{{
+	if (isEmpty(aa)) {
 		d3.select("#uimg"+floor).style("opacity", 0.3).attr("invert",0).attr("type", 'none');
 	} else {
 		d3.select("#uimg"+floor).style("opacity", aa.opacity).attr('filter', null).attr("invert", 0).attr("type", aa.type).style("scale", aa.scale).style("rotate", aa.rotate).style("translate", aa.translate);
@@ -79,12 +77,11 @@ function underlayImgAttribs(floor,aa=0) {//{{{
 	}
 }
 //}}}
-function underlayFloorAttribs(floor,aa=0) {//{{{
-	if (aa==0) {
-		d3.select("#ufloor"+floor).style("opacity", 0.1).attr("invert",0).attr("active", 0);
+function underlayFloorAttribs(floor,aa={}) {//{{{
+	if (isEmpty(aa)) {
+		d3.select("#ufloor"+floor).attr("uses_floor", "").style("opacity", 0.1).attr("invert",0);
 	} else {
-		dd(floor,aa);
-		d3.select("#ufloor"+floor).style("opacity", aa.opacity).attr("invert", 0).attr("active", 1);
+		d3.select("#ufloor"+floor).attr("uses_floor", aa.uses_floor).style("opacity", aa.opacity).attr("invert", aa.invert);
 		if(aa.invert==1) { uChangeAttrib(floor , 'invert' , 1); }
 	}
 }
@@ -116,7 +113,7 @@ function underlayForm(width=0) {//{{{
 		"<tr><td>opacity      <td><input autocomplete=off id=uimg_opacity type=text value="+$("#uimg"+floor).css("opacity")+" style='width:30px' >"+
 		"<tr><td>rotate		  <td><input autocomplete=off id=uimg_rotate  type=text style='width:30px' >"+
 		"<tr><td>invert colors<td><input autocomplete=off id=uimg_invert  type=text value="+$("#uimg"+floor).attr("invert")+" style='width:30px' >"+
-		"<tr><td>floor        <td><input autocomplete=off id=ufloor       type=text style='width:30px'> as underlay"+
+		"<tr><td>floor        <td><input autocomplete=off id=ufloor       type=text value='"+$("#ufloor"+floor).attr("uses_floor")+"' style='width:30px'> as underlay"+
 		"</table>"
 	);
 
@@ -151,22 +148,22 @@ function uimgAdd(e) {//{{{
 	}
 }
 //}}}
-function ufloorAdd(floor=floor, ufloor=Number($("#ufloor").val())) {//{{{
-	//dd("for:"+floor+" add:"+ufloor);
+function ufloorAdd(floor, ufloor=$("#ufloor").val()) {//{{{
+	if(ufloor=="") { return; }
+	ufloor=Number(ufloor);
 	mm=d3.select('#ufloor'+floor);
+	mm.attr("uses_floor", ufloor);
 	_.each(db({'floor': ufloor}).get(), function(m) {
-		cgSelect(m.name);
+		cgSelect(m.name,0,0);
 		cg.name=cg.name+"_underfloor";
 		cgSvg('#ufloor'+floor);
 	});
-	escapeAll();
-	//dd($('#ufloor'+floor)[0]);
+	escapeAll(0);
 }
 //}}}
 function underlayImgSaveCad(floor) {//{{{
-	if($("#uimg"+floor).attr('type') == 'none') { 
-		return "";
-	}
+	if($("#uimg"+floor).attr('type') == 'none') { return ',\n\t\t"UNDERLAY_IMG": {}'; }
+
 	json={}
 	json.type=$("#uimg"+floor).attr('type');
 	json.opacity=$("#uimg"+floor).css('opacity');
@@ -175,23 +172,16 @@ function underlayImgSaveCad(floor) {//{{{
 	json.rotate=$("#uimg"+floor).css('rotate');
 	json.translate=$("#uimg"+floor).css('translate');
 	if(json.type=='pdf') { json.type='svg'; }
-	return ',\n\t\t"UNDERLAY_IMG": '+JSON.stringify(json)+"\n";
+	return ',\n\t\t"UNDERLAY_IMG": '+JSON.stringify(json);
 }
 //}}}
 function underlayFloorSaveCad(floor) {//{{{
-	return '';
-	if($("#uimg"+floor).attr('type') == 'none') { 
-		return "";
-	}
+	if($('#ufloor'+floor).attr('uses_floor')=="" ) { return ',\n\t\t"UNDERLAY_FLOOR": {}\n'; }
 	json={}
-	json.type=$("#uimg"+floor).attr('type');
+	json.uses_floor=$('#ufloor'+floor).attr('uses_floor');
 	json.opacity=$("#uimg"+floor).css('opacity');
 	json.invert=$("#uimg"+floor).attr('invert');
-	json.scale=$("#uimg"+floor).css('scale');
-	json.rotate=$("#uimg"+floor).css('rotate');
-	json.translate=$("#uimg"+floor).css('translate');
-	if(json.type=='pdf') { json.type='svg'; }
-	return ',\n\t\t"UNDERLAY_IMG": '+JSON.stringify(json)+"\n";
+	return ',\n\t\t"UNDERLAY_FLOOR": '+JSON.stringify(json)+"\n";
 }
 //}}}
 

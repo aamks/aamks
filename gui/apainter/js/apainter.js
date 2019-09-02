@@ -8,11 +8,11 @@ var gg;
 var ggx;
 var zoom;
 var fire_model='CFAST';
-var currentView=0;
+var currentView='2d';
 var activeLetter='r';
 var svg;
 var floor=0;
-var floorsCount=1;
+var floorsCount=0;
 var floorZ0=0;
 var building;
 var buildingLabels;
@@ -53,10 +53,9 @@ $(function()  {
 //}}}
 function registerListeners() {//{{{
 	$("right-menu-box").on("click"     , "#btn_copy_to_floor"   , function() { floorCopy() });
-	$("right-menu-box").on("click"     , "#btn_submit_cad_json" , function() { txtEditCadJson() });
 	$("right-menu-box").on("click"     , '#setup_underlay'      , function() { underlay_form(); });
-	$("right-menu-box").on("mouseover" , ".bulkProps"           , function() { cgSelect($(this).attr('id')); });
-	$("right-menu-box").on("click"     , '.bulkProps'           , function() { cgSelect($(this).attr('id'), 1);  });
+	$("right-menu-box").on("mouseover" , ".bulkProps"           , function() { cgSelect($(this).attr('id'),1,0); });
+	$("right-menu-box").on("click"     , '.bulkProps'           , function() { cgSelect($(this).attr('id'));  });
 	$("body").on("click"               , '#apainter-save'       , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
 	$("body").on("click"               , '#apainter-next-view'  , function() { nextView(); });
 	$("body").on("click"               , '#button-help'         , function() { showHelpBox(); });
@@ -68,7 +67,7 @@ function registerListeners() {//{{{
 		if(e.which==3) {
 			cgEscapeCreate();
 			if (['rect', 'circle'].includes(event.target.tagName)) { 
-				cgSelect(event.target.id, 1);
+				cgSelect(event.target.id);
 			} else { 
 				cg={};
 			}
@@ -88,7 +87,9 @@ function keyboardEvents() {//{{{
 	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey)     { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
 	$(this).keydown((e) =>  { if (e.key == 's' && e.ctrlKey)     { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
 	$(this).keyup((e) =>    { if (e.key == 'z' && e.ctrlKey)     { undoPop(); } }) ;
+	$(this).keyup((e) =>    { if (e.key == 'F1' && e.ctrlKey)    { startTxtView(); } }) ;
 	$(this).keypress((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgEscapeCreate(); cgRemove(); }});
+	
 	$(this).keypress((e) => { if (e.key == 'l')                  { cgEscapeCreate(); bulkProps(); } });
 	// debug
 	$(this).keypress((e) => { if (e.key == ']') { debug(); }});
@@ -100,7 +101,8 @@ function dddx() {//{{{
 //}}}
 function debug() {//{{{
 	console.clear();
-	dd(undoBuffer);
+	dd($('#building')[0]);
+	//dd("f2", $('#ufloor2')[0]);
 }
 //}}}
 function ddd(current=0) {//{{{
@@ -117,8 +119,12 @@ function dddX() {//{{{
 	});
 }
 //}}}
-function escapeAll() {//{{{
-	cgEscapeCreate(); $("#buildingLabels").html(""); $("#apainter-texts-pos").html(''); legend(); 
+function escapeAll(rmbClose=1) {//{{{
+	cgEscapeCreate(); 
+	legend(); 
+	$("#buildingLabels").html(""); 
+	$("#apainter-texts-pos").html(''); 
+	if(rmbClose==1) { $("right-menu-box").css("display", "none"); }
 }
 //}}}
 function cgSvg(pparent='auto') { //{{{
@@ -175,7 +181,6 @@ function undoPop() {//{{{
 }
 //}}}
 function undoPush(mm) {//{{{
-	delete mm.growing;
 	data=db({"name": mm.name}).get()[0]; // modify or remove
 	if(data==undefined) { // insert
 		data=mm;
@@ -229,28 +234,62 @@ function calcNextFloor() {//{{{
 	}
 }
 //}}}
+
+function close2dView() {//{{{
+	$("view2d").css("display", "none");
+	$("#apainter-svg").css("display", "none");
+}
+//}}}
+function close3dView() {//{{{
+	$("view3d").css("display", "none");
+}
+//}}}
+function closeTxtView() {//{{{
+	$("#div-cad-json-textarea").remove();
+}
+//}}}
+function start2dView() {//{{{
+	if(fire_model=='FDS') { return; }
+	currentView='2d'; 
+	close3dView();
+	$("view2d").css("display", "block");
+	$("#apainter-svg").css("display", "block");
+}
+//}}}
+function start3dView() {//{{{
+	if(fire_model=='FDS') { return; }
+	currentView='3d'; 
+	close2dView();
+	view3d();
+	$('#canvas3d').attr('width', win[0]).attr('height', win[1]);
+	$("view3d").css("display", "block");
+}
+//}}}
+function startTxtView(pretty_json="") {//{{{
+	close2dView();
+	close3dView();
+	closeTxtView();
+	currentView='txt'; 
+	if(pretty_json=="") { var pretty_json=db2cadjson(); }
+	$("body").append(
+		"<div id=div-cad-json-textarea><br><br>"+
+		"<textarea id=cad-json-textarea>"+pretty_json+"</textarea>"+
+		"</div>"
+	);
+}
+//}}}
+
 function nextView() {//{{{
-	//console.log(currentView);
-
-	// For production
-	// if(currentView==0) { currentView=1; view3d(); }
-	// else if(currentView==1) { currentView=0; close3dview(); }
-
-	// For devel we have this 3 view cycles
-
 	$("right-menu-box").css("display", "none");
 	if(fire_model=='FDS') { return; }
+	closeTxtView();
 
-	if(currentView==0)      { currentView=1; view3d(); }
-	else if(currentView==1) { currentView=2; close3dview(); txtEditCadJson(); }
-	else if(currentView==2) { currentView=0; closeTxtCadJson(); }
-
-	//console.log(currentView);
-	//console.log("===========");
+	if(currentView=='2d')       { start3dView(); }
+	else if(currentView=='3d')  { start2dView(); }
+	else if(currentView=='txt') { start2dView(); }
 }
 //}}}
 function cgRemove() {//{{{
-	dd("cgRemove()");
 	undoBuffer.push(cg);
 	$("#"+cg.name).remove();
 	db({"name":cg.name}).remove();
@@ -516,6 +555,7 @@ function cgCreate() {//{{{
 		updatePosInfo();
 	});  
 	svg.on('mouseup', function() {
+		delete cg.growing;
 		if(assertCgReady()) {
 			holeFixOffset();
 			cgUpdateSvg();
@@ -524,7 +564,6 @@ function cgCreate() {//{{{
 			updateSnapLines();
 		}
 		snappingHide();
-		delete cg.growing;
 		cgInit();
 		showBuildingLabels();
 	});
@@ -601,12 +640,14 @@ function cgStartDrawing() {//{{{
 }
 //}}}
 function cgEscapeCreate() {//{{{
-	if($("#gg_listing").length==0) { $("right-menu-box").css("display", "none");  }
 	if(!isEmpty(cg) && "growing" in cg) { cgRemove(); } 
 	$(".cg-selected").removeClass('cg-selected'); 
 	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
 	snappingHide();
 	legend();
+	if($("#gg_listing").length>0) { return; }
+	if($("input#ufloor").length>0) { return; }
+	$("right-menu-box").css("display", "none"); 
 }
 //}}}
 function dbUpdateCadJsonStr() { //{{{
@@ -630,28 +671,9 @@ function dbUpdateCadJsonStr() { //{{{
 	}
 }
 //}}}
-function closeTxtCadJson() {//{{{
-	$("#div-cad-json-textarea").remove();
-	if(fire_model=='FDS') { return; }
-	$("view2d").css("display", "block");
-	$("#apainter-svg").css("display", "block");
-}
-//}}}
 function saveTxtCadJson() {//{{{
 	var json_data=$("#cad-json-textarea").val();
 	ajaxSaveCadJson(json_data, fire_model); 
-	closeTxtCadJson();
-}
-//}}}
-function txtEditCadJson(pretty_json="") {//{{{
-	$("view2d").css("display", "none");
-	$("#apainter-svg").css("display", "none");
-	if(pretty_json=="") { var pretty_json=db2cadjson(); }
-	$("body").append(
-		"<div id=div-cad-json-textarea><br><br>"+
-		"<textarea id=cad-json-textarea>"+pretty_json+"</textarea>"+
-		"</div>"
-	);
 }
 //}}}
 function svgGroupsInit(json) {//{{{
@@ -665,6 +687,7 @@ function svgGroupsInit(json) {//{{{
 		floorsCount++;
 	}
 	$("#floor"+floor).attr('visibility',"visible").css("opacity", 1);
+	$("#apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
 }
 //}}}
 function json2db(json) { //{{{
@@ -728,7 +751,7 @@ function importCadJson() { //{{{
 		ajax_msg(json); 
 		if(json.err=='FDS') {
 			fire_model='FDS';
-			txtEditCadJson(json.data);
+			startTxtView(json.data);
 		} else {
 			fire_model='CFAST';
 			svgGroupsInit(json.data);
@@ -856,7 +879,8 @@ function floorCopy() {	//{{{
 	showGeneralBox();
 	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
-function cgSelect(elems, showProperties=0) {//{{{
+function cgSelect(elems, blink=1, showProps=1) {//{{{
+
 	$(".cg-selected").removeClass('cg-selected'); 
 	if(typeof(elems)=="string") {
 		arr=[elems];
@@ -865,8 +889,8 @@ function cgSelect(elems, showProperties=0) {//{{{
 	}
 	_.each(arr, function(v) { 
 		cg=deepcopy(db({'name':v}).get()[0]);
-		if(showProperties==1) { showCgPropsBox(); }
-		$("#"+cg.name).addClass('cg-selected').css({'stroke-width': '100px'}).animate({'stroke-width': 0}, 400, function() { $(this).removeAttr('style'); }); 
+		if(blink==1)     { $("#"+cg.name).addClass('cg-selected').css( { 'stroke-width': '100px'}).animate( { 'stroke-width': 0}, 400, function() { $(this).removeAttr('style'); }); }
+		if(showProps==1) { showCgPropsBox(); }
 	});
 
 	showBuildingLabels(1,[cg.name]);
@@ -969,13 +993,14 @@ function showHelpBox() {//{{{
 		"<tr><td><letter>letter</letter> + <letter>leftMouse</letter><td> create element"+
 		"<tr><td><letter>rightMouse</letter><td> element properties"+
 		"<tr><td>hold <letter>ctrl</letter> <td> disable snapping"+ 
-		"<tr><td><letter>h</letter>	<td> loop views"+ 
+		"<tr><td><letter>h</letter>	<td> 2D/3D views"+ 
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
 		"<tr><td><letter>x</letter>	<td> delete active"+
 		"<tr><td><letter>l</letter>	<td> list all of active type"+
 		"<tr><td><letter>ctrl</letter> + <letter>alt</letter>	<td> underlays"+
 		"<tr><td><letter>ctrl</letter> + <letter>s</letter>	<td> save and read"+
 		"<tr><td><letter>ctrl</letter> + <letter>z</letter> <td> undo"+ 
+		"<tr><td><letter>ctrl</letter> + <letter>F1</letter> <td> geometry as text"+ 
 		"<tr><td><letter>=</letter>	<td> original zoom"+
 		"<tr><td><letter>escape</letter><td> cancel create"+
 		"</table>"
@@ -1089,7 +1114,7 @@ function verifyIntersections() {//{{{
 			_.each(db({'floor': f, 'type': 'room'}).get(), function(p2) { 
 				poly2=[ [p2.x0, p2.y0], [p2.x1, p2.y0], [p2.x1, p2.y1], [p2.x0, p2.y1]];
 				if(p1.name!=p2.name && pp.intersection(poly1,poly2).length>0) { 
-					cgSelect([p1.name, p2.name],1);
+					cgSelect([p1.name, p2.name]);
 					activeLetter=p1.letter;
 					bulkProps();
 					ajax_msg({'err':1, 'msg':"Overlaping rooms:<br>"+p1.name+"<br>"+p2.name}); 
@@ -1106,8 +1131,8 @@ function sceneBuilder() { //{{{
 	d3.select('body').append('legend0');
 	d3.select('body').append('legend2');
 	d3.select('view2d').append('legend1');
-	d3.select('view2d').append("div").attr("id", "apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
-	d3.select('view2d').append("div").attr("id", "apainter-texts-keys").html("n: next floor<br>h: next view");
+	d3.select('view2d').append("div").attr("id", "apainter-texts-floor");
+	d3.select('view2d').append("div").attr("id", "apainter-texts-keys").html("n: next floor<br>h: 2D/3D view");
 	d3.select('view2d').append("div").attr("id", "apainter-texts-pos");
 	make_legend0("apainter");
 	make_legend2("apainter");

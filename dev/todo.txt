@@ -21,8 +21,6 @@ AK
 mimooh
 =======
 
-* apainter: textarea in view loop is awkard and breaks undo(), need to move out
-* apainter: continue with floor underlay
 * apainter: staircase slice
 * apainter: poly obsts
 * animator: Highlight poly geoms 
