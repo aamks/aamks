@@ -103,6 +103,9 @@ function debug() {//{{{
 	console.clear();
 	dd($('#building')[0]);
 	//dd("f2", $('#ufloor2')[0]);
+	_.each(db({'letter':'s'}).get(), function(v) {
+		dd(v.name, 'p0', v.x0, v.y0, v.z0, 'p1', v.x1, v.y1, v.z1);
+	});
 }
 //}}}
 function ddd(current=0) {//{{{

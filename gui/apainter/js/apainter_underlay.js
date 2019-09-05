@@ -149,7 +149,7 @@ function uimgAdd(e) {//{{{
 }
 //}}}
 function ufloorAdd(floor, ufloor=$("#ufloor").val()) {//{{{
-	if(ufloor=="") { return; }
+	if(ufloor=="") { $("#ufloor"+floor).attr("uses_floor", ""); $("#ufloor"+floor).empty(); return; }
 	ufloor=Number(ufloor);
 	mm=d3.select('#ufloor'+floor);
 	mm.attr("uses_floor", ufloor);
@@ -184,4 +184,3 @@ function underlayFloorSaveCad(floor) {//{{{
 	return ',\n\t\t"UNDERLAY_FLOOR": '+JSON.stringify(json)+"\n";
 }
 //}}}
-
