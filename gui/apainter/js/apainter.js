@@ -101,11 +101,14 @@ function dddx() {//{{{
 //}}}
 function debug() {//{{{
 	console.clear();
-	dd($('#building')[0]);
+	//cgPolySvg();
+	//return;
+	//dd($('#building')[0]);
+	dd($('#floor0')[0]);
 	//dd("f2", $('#ufloor2')[0]);
-	_.each(db({'letter':'s'}).get(), function(v) {
-		dd(v.name, 'p0', v.x0, v.y0, v.z0, 'p1', v.x1, v.y1, v.z1);
-	});
+	//_.each(db({'letter':'s'}).get(), function(v) {
+	//	dd(v.name, 'p0', v.x0, v.y0, v.z0, 'p1', v.x1, v.y1, v.z1);
+	//});
 }
 //}}}
 function ddd(current=0) {//{{{
@@ -131,7 +134,9 @@ function escapeAll(rmbClose=1) {//{{{
 }
 //}}}
 function cgSvg(pparent='auto') { //{{{
-	if(pparent=='auto') { pparent="#floor"+cg.floor; }
+	if(cg.type=='obstp') { cgPolySvg(pparent); return; }
+	dd("pass");
+	if(pparent=='auto')  { pparent="#floor"+cg.floor; }
 	if (cg.type == 'evacuee') { 
 		var elem='circle';
 	} else {
@@ -148,6 +153,19 @@ function cgSvg(pparent='auto') { //{{{
 		.attr('width', cg.x1 - cg.x0)
 		.attr('height', cg.y1 - cg.y0)
 		.attr('r', evacueeRadius)
+}
+//}}}
+function cgPolySvg(pparent='auto') { //{{{
+	if(pparent=='auto') { pparent="#floor"+cg.floor; }
+	$("#"+cg.name).remove();
+	d3.select(pparent)
+		.append('polyline')
+		.attr('id', cg.name)
+		//.attr('class', gg[cg.letter].t + " " +gg[cg.letter].x)
+		.attr('points', cg.polypoints.join(" "))
+		.attr('fill', 'none')
+		.attr('stroke', '#f80')
+		.attr('stroke-width', '4px')
 }
 //}}}
 function cgCss() {//{{{
@@ -502,6 +520,8 @@ function cgInit() {//{{{
 		cg.z1=cg.z0 + 50;
 	} else if (cg.type=='obst') {
 		cg.z1=cg.z0 + 100;
+	} else if (cg.type=='obstp') {
+		cg.z1=cg.z0 + 100;
 	} else if (cg.type=='mvent') {
 		cg.z1=cg.z0 + 50;
 	} else if (cg.type=='vvent') {
@@ -538,6 +558,7 @@ function scaleMouse(pos) {//{{{
 } //}}}
 function cgCreate() {//{{{
 	cgInit();
+	if(cg.type=='obstp') { cgPolyCreate(); return; }
 
 	svg.on('mousedown', function() {
 		if(d3.event.which==1) {
@@ -572,8 +593,33 @@ function cgCreate() {//{{{
 	});
 }
 //}}}
+function cgPolyCreate() {//{{{
+	cg.polypoints=[];
+
+	svg.on('mousedown', function() {
+		if(d3.event.which==1) {
+			m=scaleMouse(d3.mouse(this));
+			cg.polypoints.push([m.x, m.y].join(","));
+			dd(cg.polypoints);
+			cgPolySvg();
+		} else if(d3.event.which==3) {
+			cgEscapeCreate();
+		}
+	});
+	svg.on('mousemove', function() {
+		m=scaleMouse(d3.mouse(this));
+		cg.x1=m.x;
+		cg.y1=m.y;
+		updatePosInfo();
+	});  
+}
+//}}}
 function updatePosInfo() {//{{{
-	$("#apainter-texts-pos").html(cg.x1+" "+cg.y1+" "+cg.z0+" &nbsp; &nbsp;  size: "+Math.abs(cg.x1-cg.x0)+" "+Math.abs(cg.y1-cg.y0) +" "+(cg.z1-cg.z0));
+	if(cg.type=='obstp') { 
+		$("#apainter-texts-pos").html(cg.x1+" "+cg.y1+" "+cg.z0);
+	} else {
+		$("#apainter-texts-pos").html(cg.x1+" "+cg.y1+" "+cg.z0+" &nbsp; &nbsp;  size: "+Math.abs(cg.x1-cg.x0)+" "+Math.abs(cg.y1-cg.y0) +" "+(cg.z1-cg.z0));
+	}
 }
 //}}}
 function cgDecidePoints(mx,my) {//{{{
@@ -699,7 +745,7 @@ function json2db(json) { //{{{
 	var letter;
 	var arr;
 	var geom;
-	var elems=["ROOM","COR","STAI","HALL","OBST","VVENT","MVENT","HOLE","WIN","DOOR","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
+	var elems=["ROOM","COR","STAI","HALL","OBST","OBSTP", "VVENT","MVENT","HOLE","WIN","DOOR","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
 
 	for (var floor in json) { 
 		for (var i in elems) {
@@ -791,7 +837,7 @@ function dbReorder() {//{{{
 	var ee=db({"type": 'evacuee'}).get();
 	db({"type": 'evacuee'}).remove();
 
-	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst'] ];
+	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst'], ['obstp'] ];
 	db.sort("floor,x0,y0");
 	for (var i in types) {
 		var idx=1;
