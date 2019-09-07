@@ -21,8 +21,8 @@ AK
 mimooh
 =======
 
+* apainter: poly obsts, add z-dim
 * apainter: staircase slice
-* apainter: poly obsts
 * animator: Highlight poly geoms 
 * animator: labels poly rooms
 

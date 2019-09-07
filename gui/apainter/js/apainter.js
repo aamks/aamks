@@ -101,7 +101,6 @@ function dddx() {//{{{
 //}}}
 function debug() {//{{{
 	console.clear();
-	//cgPolySvg();
 	//return;
 	//dd($('#building')[0]);
 	dd($('#floor0')[0]);
@@ -135,7 +134,6 @@ function escapeAll(rmbClose=1) {//{{{
 //}}}
 function cgSvg(pparent='auto') { //{{{
 	if(cg.type=='obstp') { cgPolySvg(pparent); return; }
-	dd("pass");
 	if(pparent=='auto')  { pparent="#floor"+cg.floor; }
 	if (cg.type == 'evacuee') { 
 		var elem='circle';
@@ -156,16 +154,34 @@ function cgSvg(pparent='auto') { //{{{
 }
 //}}}
 function cgPolySvg(pparent='auto') { //{{{
+	cg.polypoints.push([cg.x1, cg.y1].join(","));
+
 	if(pparent=='auto') { pparent="#floor"+cg.floor; }
 	$("#"+cg.name).remove();
 	d3.select(pparent)
+		.append('circle')
+		.attr('class', 'temp-poly').attr('cx', cg.x1).attr('cy', cg.y1).attr('r',20).attr('fill', "#00ffff")
+	d3.select(pparent)
 		.append('polyline')
 		.attr('id', cg.name)
-		//.attr('class', gg[cg.letter].t + " " +gg[cg.letter].x)
 		.attr('points', cg.polypoints.join(" "))
-		.attr('fill', 'none')
-		.attr('stroke', '#f80')
-		.attr('stroke-width', '4px')
+		.attr('fill-opacity', 0)
+		.attr('stroke', '#088')
+		.attr('stroke-width', '6px')
+	d3.select(pparent)
+		.append('polyline')
+		.attr('id', 'last-segment')
+		.attr('class', 'temp-poly')
+		.attr('fill-opacity', 0)
+		.attr('stroke', '#088')
+		.attr('stroke-width', '2px')
+}
+//}}}
+function cgUpdateTempPoly() {//{{{
+	//if(!('polySegmentOrigin') in cg) { return; }
+	points=[cg.polySegmentOrigin.join(","), [cg.x1, cg.y1].join(",")].join(" ");
+	dd(points);
+	d3.select("#last-segment").attr('points', points) 
 }
 //}}}
 function cgCss() {//{{{
@@ -186,7 +202,7 @@ function cgDb() { //{{{
 	}
 	undoPush(deepcopy(cg));
 	db({"name": cg.name}).remove();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "polypoints": cg.polypoints });
 }
 //}}}
 function undoPop() {//{{{
@@ -505,6 +521,7 @@ function snappingShow(mx,my) {//{{{
 //}}}
 function cgInit() {//{{{
 	cgIdUpdate();
+	delete cg.polyOrigin;
 	cg.name=activeLetter+cgID;
 	cg.idx=cgID;
 	cg.infant=1;
@@ -514,6 +531,7 @@ function cgInit() {//{{{
 	cg.mvent_throughput=0;
 	cg.exit_type='';
 	cg.z0=floorZ0;
+	cg.polypoints=[];
 	if (cg.type=='fire') {
 		cg.z1=cg.z0 + 50;
 	} else if (cg.type=='evacuee') {
@@ -594,24 +612,73 @@ function cgCreate() {//{{{
 }
 //}}}
 function cgPolyCreate() {//{{{
-	cg.polypoints=[];
-
 	svg.on('mousedown', function() {
 		if(d3.event.which==1) {
+			cg.growing=1;
+			$(".temp-poly").remove();
 			m=scaleMouse(d3.mouse(this));
-			cg.polypoints.push([m.x, m.y].join(","));
-			dd(cg.polypoints);
+			if(!('polyOrigin' in cg)) { cg.polyOrigin=m; }
+			polySnap(m.x,m.y);
+			cg.polySegmentOrigin=[cg.x1, cg.y1];
 			cgPolySvg();
 		} else if(d3.event.which==3) {
 			cgEscapeCreate();
 		}
 	});
 	svg.on('mousemove', function() {
-		m=scaleMouse(d3.mouse(this));
-		cg.x1=m.x;
-		cg.y1=m.y;
-		updatePosInfo();
+		if('growing' in cg) { 
+			m=scaleMouse(d3.mouse(this));
+			polySnap(m.x,m.y);
+			cgUpdateTempPoly();
+			updatePosInfo();
+		}
 	});  
+
+	svg.on('mouseup', function() {
+		if(cg.polypoints.length>1 && cg.polypoints[0]==cg.polypoints.slice(-1)[0]) { 
+			$("#"+cg.name).attr('class', gg[cg.letter].t + " " +gg[cg.letter].x).attr('fill-opacity', 0.4).attr('stroke', '#088');
+			delete cg.growing;
+			cg.x0=cg.x1;
+			cg.y0=cg.y1;
+			cgDb();
+			cgInit(); 
+			showBuildingLabels(); 
+		}
+	});
+}
+//}}}
+function polySnap(mx,my) {//{{{
+	//if(!('polyOrigin' in cg)) { return; }
+
+	if ('polySegmentOrigin' in cg && !(event.ctrlKey)) { 
+		if(Math.abs(mx-cg.polySegmentOrigin[0]) > Math.abs(my-cg.polySegmentOrigin[1])) {
+			my=cg.polySegmentOrigin[1];
+		} else {
+			mx=cg.polySegmentOrigin[0];
+		}
+	}
+
+	if(Math.abs(mx-cg.polyOrigin.x) <= snapForce && Math.abs(my-cg.polyOrigin.y) <= snapForce) { 
+		cg.x1=cg.polyOrigin.x;
+		cg.y1=cg.polyOrigin.y;
+		snappingShow(cg.x1,cg.y1); 
+		$('#snapper').attr({ r: 30});
+	} else if(Math.abs(mx-cg.polyOrigin.x) <= snapForce) { 
+		cg.x1=cg.polyOrigin.x;
+		cg.y1=my;
+		snappingShow(cg.x1,cg.y1); 
+		$('#snapper').attr({ r: 15});
+	} else if(Math.abs(my-cg.polyOrigin.y) <= snapForce) { 
+		cg.x1=mx;
+		cg.y1=cg.polyOrigin.y;
+		snappingShow(cg.x1,cg.y1); 
+		$('#snapper').attr({ r: 15});
+	} else { 
+		cg.x1=mx;
+		cg.y1=my;
+		snappingHide(); 
+	}
+
 }
 //}}}
 function updatePosInfo() {//{{{
@@ -689,7 +756,9 @@ function cgStartDrawing() {//{{{
 }
 //}}}
 function cgEscapeCreate() {//{{{
+	dd(cg);
 	if(!isEmpty(cg) && "growing" in cg) { cgRemove(); } 
+	$(".temp-poly").remove();
 	$(".cg-selected").removeClass('cg-selected'); 
 	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
 	snappingHide();
