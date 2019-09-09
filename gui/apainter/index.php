@@ -26,7 +26,8 @@ function site() {/*{{{*/
 	<script src='js/d3.v4.min.js'></script>
 	<script src='js/polygon_tools.js'></script>
 	<script src='js/apainter.js'></script>
-	<script src='js/apainter_underlay.js'></script>
+	<script src='js/aunderlay.js'></script>
+	<script src='js/apoly.js'></script>
 	<script src='js/view3d.js'></script>
 	";
 	echo css();

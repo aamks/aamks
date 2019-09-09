@@ -66,7 +66,7 @@ function registerListeners() {//{{{
 	$("body").on("mousedown", "#apainter-svg", function(e){
 		if(e.which==3) {
 			cgEscapeCreate();
-			if (['rect', 'circle'].includes(event.target.tagName)) { 
+			if (['rect', 'circle', 'polyline'].includes(event.target.tagName)) { 
 				cgSelect(event.target.id);
 			} else { 
 				cg={};
@@ -101,9 +101,10 @@ function dddx() {//{{{
 //}}}
 function debug() {//{{{
 	console.clear();
+	ddd();
 	//return;
 	//dd($('#building')[0]);
-	dd($('#floor0')[0]);
+	//dd($('#floor0')[0]);
 	//dd("f2", $('#ufloor2')[0]);
 	//_.each(db({'letter':'s'}).get(), function(v) {
 	//	dd(v.name, 'p0', v.x0, v.y0, v.z0, 'p1', v.x1, v.y1, v.z1);
@@ -133,7 +134,7 @@ function escapeAll(rmbClose=1) {//{{{
 }
 //}}}
 function cgSvg(pparent='auto') { //{{{
-	if(cg.type=='obstp') { cgPolySvg(pparent); return; }
+	if(cg.type=='obstp') { cgSvgPoly(pparent); return; }
 	if(pparent=='auto')  { pparent="#floor"+cg.floor; }
 	if (cg.type == 'evacuee') { 
 		var elem='circle';
@@ -153,37 +154,6 @@ function cgSvg(pparent='auto') { //{{{
 		.attr('r', evacueeRadius)
 }
 //}}}
-function cgPolySvg(pparent='auto') { //{{{
-	cg.polypoints.push([cg.x1, cg.y1].join(","));
-
-	if(pparent=='auto') { pparent="#floor"+cg.floor; }
-	$("#"+cg.name).remove();
-	d3.select(pparent)
-		.append('circle')
-		.attr('class', 'temp-poly').attr('cx', cg.x1).attr('cy', cg.y1).attr('r',20).attr('fill', "#00ffff")
-	d3.select(pparent)
-		.append('polyline')
-		.attr('id', cg.name)
-		.attr('points', cg.polypoints.join(" "))
-		.attr('fill-opacity', 0)
-		.attr('stroke', '#088')
-		.attr('stroke-width', '6px')
-	d3.select(pparent)
-		.append('polyline')
-		.attr('id', 'last-segment')
-		.attr('class', 'temp-poly')
-		.attr('fill-opacity', 0)
-		.attr('stroke', '#088')
-		.attr('stroke-width', '2px')
-}
-//}}}
-function cgUpdateTempPoly() {//{{{
-	//if(!('polySegmentOrigin') in cg) { return; }
-	points=[cg.polySegmentOrigin.join(","), [cg.x1, cg.y1].join(",")].join(" ");
-	dd(points);
-	d3.select("#last-segment").attr('points', points) 
-}
-//}}}
 function cgCss() {//{{{
 	$("#"+cg.name).removeClass('room_enter_no').removeClass('exit_type_primary').removeClass('exit_type_secondary');
 	if(cg.room_enter=='no')       { $("#"+cg.name).addClass('room_enter_no'); }
@@ -198,7 +168,7 @@ function cgDb() { //{{{
 	if(cg.type=='room') {
 		lines.push([cg.x0, cg.y0], [cg.x1, cg.y0], [cg.x1, cg.y1], [cg.x0, cg.y1]);
 	} else {
-		lines.push([-10000, -10000], [-10000, -10000], [-10000, -10000], [-10000, -10000]);
+		lines.push([-100000, -100000], [-100000, -100000], [-100000, -100000], [-100000, -100000]);
 	}
 	undoPush(deepcopy(cg));
 	db({"name": cg.name}).remove();
@@ -341,27 +311,27 @@ function cgRemove() {//{{{
 //}}}
 
 function updateSnapLines() { //{{{
-	d3.select("#snapLinesSvg").selectAll("line").remove();
 	var lines=db({'floor': floor}).select("lines");
+	d3.select("#snapLinesSvg").selectAll("line").remove();
 	snapLinesArr['horiz']=[];
 	snapLinesArr['vert']=[];
 	var below, above, right, left;
 
 	for(var points in lines) { 
-		below = Math.round(lines[points][0][1]);
-		above = Math.round(lines[points][2][1]);
-		right = Math.round(lines[points][0][0]);
-		left  = Math.round(lines[points][1][0]);
+		below = lines[points][0][1];
+		above = lines[points][2][1];
+		right = lines[points][0][0];
+		left  = lines[points][1][0];
 
 		snapLinesArr['horiz'].push(below);
 		snapLinesArr['horiz'].push(above);
 		snapLinesArr['vert'].push(right);
 		snapLinesArr['vert'].push(left);
 
-		snapLinesSvg.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , -10000).attr('x2' , 100000).attr("visibility", "hidden");
-		snapLinesSvg.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , -10000).attr('x2' , 100000).attr("visibility", "hidden");
-		snapLinesSvg.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , -10000).attr('y2' , 100000).attr("visibility", "hidden");
-		snapLinesSvg.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , -10000).attr('y2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , -100000).attr('x2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , -100000).attr('x2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , -100000).attr('y2' , 100000).attr("visibility", "hidden");
+		snapLinesSvg.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , -100000).attr('y2' , 100000).attr("visibility", "hidden");
 
 	}
 	snapLinesArr['horiz']=Array.from(new Set(snapLinesArr['horiz']));
@@ -453,20 +423,20 @@ function holeFixOffset() { //{{{
 	}
 }
 //}}}
-function activeSnapX(mx,my) {//{{{
+function activeSnapX(m) {//{{{
 	for(var point in snapLinesArr['vert']) {
 		p=snapLinesArr['vert'][point];
-		if (mx > p - snapForce && mx < p + snapForce) { 
+		if (m.x > p - snapForce && m.x < p + snapForce) { 
 			activeSnap.x=p;
 			break;
 		}
 	}
 }
 //}}}
-function activeSnapY(mx,my) {//{{{
+function activeSnapY(m) {//{{{
 	for(var point in snapLinesArr['horiz']) {
 		p=snapLinesArr['horiz'][point];
-		if (my > p - snapForce && my < p + snapForce) { 
+		if (m.y > p - snapForce && m.y < p + snapForce) { 
 			activeSnap.y=p;
 			break;
 		}
@@ -479,34 +449,34 @@ function snappingHide(hideDot=1) {//{{{
 	if(hideDot==1) { $('#snapper').attr('fill-opacity', 0); }
 }
 //}}}
-function snap(mx,my) {//{{{
+function snap(m) {//{{{
 	activeSnap={};
 	if(!['room', 'hole', 'window', 'door'].includes(cg.type)) { return; }
 	snappingHide(0);
 	if (event.ctrlKey) { $('#snapper').attr('fill-opacity', 0); return; } 
 
-	activeSnapX(mx,my); 
-	activeSnapY(mx,my); 
+	activeSnapX(m); 
+	activeSnapY(m); 
 
-    if (['window', 'door'].includes(cg.type)) { snapKeepDirection(mx,my); }
-	if(isEmpty(activeSnap)) { snappingHide();  } else { snappingShow(mx,my); }
+    if (['window', 'door'].includes(cg.type)) { snapKeepDirection(m); }
+	if(isEmpty(activeSnap)) { snappingHide();  } else { snappingShow(m); }
 }
 
 //}}}
-function snapKeepDirection(mx,my) {//{{{
+function snapKeepDirection(m) {//{{{
 	// Prevent ortho-changing snapping 
 	if (!('y' in activeSnap) && 'x' in activeSnap) { preferredSnap='x'; }
 	if (!('x' in activeSnap) && 'y' in activeSnap) { preferredSnap='y'; }
 	activeSnap={};
 	if(preferredSnap=='x') { 
-		activeSnapX(mx,my); 
+		activeSnapX(m); 
 	} else {
-		activeSnapY(mx,my); 
+		activeSnapY(m); 
 	}
 }
 //}}}
-function snappingShow(mx,my) {//{{{
-	$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: mx, cy: my}); 
+function snappingShow(m) {//{{{
+	$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: m.x, cy: m.y}); 
 	if("x" in activeSnap) { 
 		$("#sv_"+activeSnap.x).attr("visibility", "visible"); 
 		$('#snapper').attr({ cx: activeSnap.x}); 
@@ -520,8 +490,8 @@ function snappingShow(mx,my) {//{{{
 }
 //}}}
 function cgInit() {//{{{
+	delete cg.growing;
 	cgIdUpdate();
-	delete cg.polyOrigin;
 	cg.name=activeLetter+cgID;
 	cg.idx=cgID;
 	cg.infant=1;
@@ -576,14 +546,12 @@ function scaleMouse(pos) {//{{{
 } //}}}
 function cgCreate() {//{{{
 	cgInit();
-	if(cg.type=='obstp') { cgPolyCreate(); return; }
-
 	svg.on('mousedown', function() {
 		if(d3.event.which==1) {
 			m=scaleMouse(d3.mouse(this));
-			cgDecidePoints(m.x, m.y);
-			cgSvg();
 			cg.growing=1;
+			cgDecidePoints(m);
+			cgSvg();
 			delete cg.infant;
 		} else if(d3.event.which==3) {
 			cgEscapeCreate();
@@ -591,13 +559,12 @@ function cgCreate() {//{{{
 	});
 	svg.on('mousemove', function() {
 		m=scaleMouse(d3.mouse(this));
-		snap(m.x, m.y);
-		cgDecidePoints(m.x, m.y);
+		snap(m);
+		cgDecidePoints(m);
 		cgUpdateSvg(); 
 		updatePosInfo();
 	});  
 	svg.on('mouseup', function() {
-		delete cg.growing;
 		if(assertCgReady()) {
 			holeFixOffset();
 			cgUpdateSvg();
@@ -611,76 +578,7 @@ function cgCreate() {//{{{
 	});
 }
 //}}}
-function cgPolyCreate() {//{{{
-	svg.on('mousedown', function() {
-		if(d3.event.which==1) {
-			cg.growing=1;
-			$(".temp-poly").remove();
-			m=scaleMouse(d3.mouse(this));
-			if(!('polyOrigin' in cg)) { cg.polyOrigin=m; }
-			polySnap(m.x,m.y);
-			cg.polySegmentOrigin=[cg.x1, cg.y1];
-			cgPolySvg();
-		} else if(d3.event.which==3) {
-			cgEscapeCreate();
-		}
-	});
-	svg.on('mousemove', function() {
-		if('growing' in cg) { 
-			m=scaleMouse(d3.mouse(this));
-			polySnap(m.x,m.y);
-			cgUpdateTempPoly();
-			updatePosInfo();
-		}
-	});  
 
-	svg.on('mouseup', function() {
-		if(cg.polypoints.length>1 && cg.polypoints[0]==cg.polypoints.slice(-1)[0]) { 
-			$("#"+cg.name).attr('class', gg[cg.letter].t + " " +gg[cg.letter].x).attr('fill-opacity', 0.4).attr('stroke', '#088');
-			delete cg.growing;
-			cg.x0=cg.x1;
-			cg.y0=cg.y1;
-			cgDb();
-			cgInit(); 
-			showBuildingLabels(); 
-		}
-	});
-}
-//}}}
-function polySnap(mx,my) {//{{{
-	//if(!('polyOrigin' in cg)) { return; }
-
-	if ('polySegmentOrigin' in cg && !(event.ctrlKey)) { 
-		if(Math.abs(mx-cg.polySegmentOrigin[0]) > Math.abs(my-cg.polySegmentOrigin[1])) {
-			my=cg.polySegmentOrigin[1];
-		} else {
-			mx=cg.polySegmentOrigin[0];
-		}
-	}
-
-	if(Math.abs(mx-cg.polyOrigin.x) <= snapForce && Math.abs(my-cg.polyOrigin.y) <= snapForce) { 
-		cg.x1=cg.polyOrigin.x;
-		cg.y1=cg.polyOrigin.y;
-		snappingShow(cg.x1,cg.y1); 
-		$('#snapper').attr({ r: 30});
-	} else if(Math.abs(mx-cg.polyOrigin.x) <= snapForce) { 
-		cg.x1=cg.polyOrigin.x;
-		cg.y1=my;
-		snappingShow(cg.x1,cg.y1); 
-		$('#snapper').attr({ r: 15});
-	} else if(Math.abs(my-cg.polyOrigin.y) <= snapForce) { 
-		cg.x1=mx;
-		cg.y1=cg.polyOrigin.y;
-		snappingShow(cg.x1,cg.y1); 
-		$('#snapper').attr({ r: 15});
-	} else { 
-		cg.x1=mx;
-		cg.y1=my;
-		snappingHide(); 
-	}
-
-}
-//}}}
 function updatePosInfo() {//{{{
 	if(cg.type=='obstp') { 
 		$("#apainter-texts-pos").html(cg.x1+" "+cg.y1+" "+cg.z0);
@@ -689,10 +587,10 @@ function updatePosInfo() {//{{{
 	}
 }
 //}}}
-function cgDecidePoints(mx,my) {//{{{
+function cgDecidePoints(m) {//{{{
 
-	if("x" in activeSnap) { px=activeSnap.x; } else { px=mx; }
-	if("y" in activeSnap) { py=activeSnap.y; } else { py=my; }
+	if("x" in activeSnap) { px=activeSnap.x; } else { px=m.x; }
+	if("y" in activeSnap) { py=activeSnap.y; } else { py=m.y; }
 	if("infant" in cg) { cg.x0=px; cg.y0=py; }
 	cg.x1=px; cg.y1=py; 
 	if (event.ctrlKey) { return; }
@@ -752,11 +650,14 @@ function cgStartDrawing() {//{{{
 	$('right-menu-box').fadeOut(0); 
 	legend();
 	$('#legend_'+activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
-	cgCreate();
+	if(activeLetter=='m') { 
+		cgPolyCreate();
+	} else {
+		cgCreate();
+	}
 }
 //}}}
 function cgEscapeCreate() {//{{{
-	dd(cg);
 	if(!isEmpty(cg) && "growing" in cg) { cgRemove(); } 
 	$(".temp-poly").remove();
 	$(".cg-selected").removeClass('cg-selected'); 
@@ -782,6 +683,8 @@ function dbUpdateCadJsonStr() { //{{{
 			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "room_enter": "no"} ]`; 
 		} else if(i.type=='mvent') {
 			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "mvent_throughput": ${i.mvent_throughput}} ]`; 
+		} else if(i.type=='obstp') {
+			cad_json=JSON.stringify({ "points": i.polypoints, "idx": i.idx }); 
 		} else {
 			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx} } ]`; 
 		}
@@ -818,13 +721,15 @@ function json2db(json) { //{{{
 
 	for (var floor in json) { 
 		for (var i in elems) {
-			for (var geometry in json[floor][elems[i]]) {
+			//for (var geometry in json[floor][elems[i]]) {
+			_.each(json[floor][elems[i]], function(arr) { 
+				//dd(geometry);
 				letter=ggx[elems[i]];
-				cgMake(Number(floor),letter,json[floor][elems[i]][geometry]);
+				cgMake(Number(floor),letter,arr);
 				cgDb();
 				cgSvg();
 				cgCss();
-			}
+			});
 		}
 	}
 	updateSnapLines(); // This is a heavy call, which shouldn't be called for each cgDb()
@@ -832,14 +737,25 @@ function json2db(json) { //{{{
 }
 //}}}
 function cgMake(floor,letter,arr) { //{{{
-	cg.x0=arr[0][0];
-	cg.y0=arr[0][1];
-	cg.z0=arr[0][2];
-	cg.x1=arr[1][0];
-	cg.y1=arr[1][1];
-	cg.z1=arr[1][2];
-	cg.idx= arr[2]['idx'];
-	cg.name= letter+arr[2]['idx'];
+	//dd(arr);
+	//dd(gg[letter]);
+	dd("WIP");
+	if('points' in arr) { 
+		cg.x0=cg.x1=arr['points'][0][0];
+		cg.y0=cg.y1=arr['points'][0][1];
+		cg.z0=cg.z1=0;
+		cg.idx= arr['idx'];
+		cg.name= letter+['idx'];
+	} else {
+		cg.x0=arr[0][0];
+		cg.y0=arr[0][1];
+		cg.z0=arr[0][2];
+		cg.x1=arr[1][0];
+		cg.y1=arr[1][1];
+		cg.z1=arr[1][2];
+		cg.idx= arr[2]['idx'];
+		cg.name= letter+arr[2]['idx'];
+	}
 	cg.letter= letter;
 	cg.type= gg[letter].t;
 	cg.floor= floor;
@@ -1270,4 +1186,5 @@ function sceneBuilder() { //{{{
 
 
 }
+
 //}}}

@@ -38,6 +38,7 @@
 		"VVENT"   : "v" ,
 		"MVENT"   : "b" ,
 		"OBST"    : "t" ,
+		"OBSTP"   : "m" ,
 		"EVACUEE" : "f" ,
 		"FIRE"	  : "y"
 	}, 
