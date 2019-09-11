@@ -719,19 +719,19 @@ function json2db(json) { //{{{
 	var geom;
 	var elems=["ROOM","COR","STAI","HALL","OBST","OBSTP", "VVENT","MVENT","HOLE","WIN","DOOR","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
 
-	for (var floor in json) { 
-		for (var i in elems) {
-			//for (var geometry in json[floor][elems[i]]) {
-			_.each(json[floor][elems[i]], function(arr) { 
-				//dd(geometry);
-				letter=ggx[elems[i]];
+	_.each(json, function(floor,floor_data) { 
+		_.each(elems, function(elem) { 
+			dd("Apainter WIP");
+			_.each(floor_data[elem], function(arr) { 
+				dd(JSON.parse(arr.points));
+				letter=ggx[elem];
 				cgMake(Number(floor),letter,arr);
 				cgDb();
 				cgSvg();
 				cgCss();
-			});
-		}
-	}
+			})
+		})
+	});
 	updateSnapLines(); // This is a heavy call, which shouldn't be called for each cgDb()
 	undoBuffer=[];
 }
@@ -739,7 +739,6 @@ function json2db(json) { //{{{
 function cgMake(floor,letter,arr) { //{{{
 	//dd(arr);
 	//dd(gg[letter]);
-	dd("WIP");
 	if('points' in arr) { 
 		cg.x0=cg.x1=arr['points'][0][0];
 		cg.y0=cg.y1=arr['points'][0][1];
