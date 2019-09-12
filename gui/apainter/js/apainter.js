@@ -121,7 +121,7 @@ function ddd(current=0) {//{{{
 //}}}
 function dddX() {//{{{
 	_.each(db().get(), function(v) {
-		dd(v.name, { 'x0': v.x0, 'y0': v.y0, 'x1': v.x1, 'y1': v.y1} );
+		dd(v.name, JSON.stringify(v.polypoints));
 	});
 }
 //}}}
@@ -139,19 +139,17 @@ function cgSvg(pparent='auto') { //{{{
 	if (cg.type == 'evacuee') { 
 		var elem='circle';
 	} else {
-		var elem='rect';
+		var elem='polyline';
 	}
 	d3.select(pparent)
 		.append(elem)
 		.attr('id', cg.name)
 		.attr('class', gg[cg.letter].t + " " +gg[cg.letter].x)
-		.attr('x', cg.x0)
-		.attr('y', cg.y0)
-		.attr('cx', cg.x0)
-		.attr('cy', cg.y0)
-		.attr('width', cg.x1 - cg.x0)
-		.attr('height', cg.y1 - cg.y0)
+		.attr('points', cg.polypoints.join(" "))
+		.attr('cx', cg.polypoints[0][0])
+		.attr('cy', cg.polypoints[0][1])
 		.attr('r', evacueeRadius)
+		.attr('stroke-linecap', 'square')
 }
 //}}}
 function cgCss() {//{{{
@@ -166,13 +164,15 @@ function cgDb() { //{{{
 	var lines=[];
 
 	if(cg.type=='room') {
-		lines.push([cg.x0, cg.y0], [cg.x1, cg.y0], [cg.x1, cg.y1], [cg.x0, cg.y1]);
+		_.each(cg.polypoints, function(point) { 
+			lines.push(point);
+		});
 	} else {
 		lines.push([-100000, -100000], [-100000, -100000], [-100000, -100000], [-100000, -100000]);
 	}
 	undoPush(deepcopy(cg));
 	db({"name": cg.name}).remove();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "x0": cg.x0, "y0": cg.y0, "z0": cg.z0, "x1": cg.x1, "y1": cg.y1, "z1": cg.z1, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "polypoints": cg.polypoints });
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
 }
 //}}}
 function undoPop() {//{{{
@@ -719,52 +719,43 @@ function json2db(json) { //{{{
 	var geom;
 	var elems=["ROOM","COR","STAI","HALL","OBST","OBSTP", "VVENT","MVENT","HOLE","WIN","DOOR","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
 
-	_.each(json, function(floor,floor_data) { 
+	_.each(json, function(floor_data,floor) { 
 		_.each(elems, function(elem) { 
-			dd("Apainter WIP");
-			_.each(floor_data[elem], function(arr) { 
-				dd(JSON.parse(arr.points));
+			_.each(floor_data[elem], function(record) { 
 				letter=ggx[elem];
-				cgMake(Number(floor),letter,arr);
+				cgMake(Number(floor),letter,record);
 				cgDb();
 				cgSvg();
 				cgCss();
 			})
 		})
 	});
+	dddX();
 	updateSnapLines(); // This is a heavy call, which shouldn't be called for each cgDb()
 	undoBuffer=[];
 }
 //}}}
-function cgMake(floor,letter,arr) { //{{{
-	//dd(arr);
-	//dd(gg[letter]);
-	if('points' in arr) { 
-		cg.x0=cg.x1=arr['points'][0][0];
-		cg.y0=cg.y1=arr['points'][0][1];
-		cg.z0=cg.z1=0;
-		cg.idx= arr['idx'];
-		cg.name= letter+['idx'];
-	} else {
-		cg.x0=arr[0][0];
-		cg.y0=arr[0][1];
-		cg.z0=arr[0][2];
-		cg.x1=arr[1][0];
-		cg.y1=arr[1][1];
-		cg.z1=arr[1][2];
-		cg.idx= arr[2]['idx'];
-		cg.name= letter+arr[2]['idx'];
-	}
-	cg.letter= letter;
-	cg.type= gg[letter].t;
-	cg.floor= floor;
-	cg.exit_type= '';
-	cg.room_enter= '';
+function cgMake(floor,letter,record) { //{{{
+	cg.polypoints=JSON.parse(record.points);
+	cg.z=JSON.parse(record.z);
+	//cg.x0=record[0][0];
+	//cg.y0=record[0][1];
+	//cg.z0=record[0][2];
+	//cg.x1=record[1][0];
+	//cg.y1=record[1][1];
+	//cg.z1=record[1][2];
+	cg.idx=record.idx;
+	cg.name=letter+cg.idx;
+	cg.letter=letter;
+	cg.type=gg[letter].t;
+	cg.floor=floor;
+	cg.exit_type='';
+	cg.room_enter='';
 	cg.mvent_throughput=0;
 
-	if(cg.type == 'door')  { cg.exit_type=arr[2]['exit_type']; }
-	if(cg.type == 'room')  { cg.room_enter=arr[2]['room_enter']; }
-	if(cg.type == 'mvent') { cg.mvent_throughput=arr[2]['mvent_throughput']; }
+	if('exit_type' in record)        { cg.exit_type=record.exit_type; }
+	if('room_enter' in record)       { cg.exit_type=record.room_enter; }
+	if('mvent_throughput' in record) { cg.exit_type=record.mvent_throughput; }
 }
 //}}}
 function ajaxSaveCadJson(json_data, fire_model) { //{{{
@@ -933,10 +924,7 @@ function bulkPlainProps() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>x<td>y<td>z";
 	_.each(db({'letter': activeLetter, 'floor': floor}).get(), function (m) {
-		tbody+="<tr><td class=bulkProps id="+ m.name + ">"+ m.name +"</td>"+
-			"<td>"+m.x0+ " "+m.x1+
-			"<td>"+m.y0+ " "+m.y1+
-			"<td>"+m.z0+ " "+m.z1;
+		tbody+="<tr><td class=bulkProps id="+ m.name + ">"+ m.name +"</td><textarea>"+m.polypoints;
 	});
 	return tbody;
 }
@@ -1042,15 +1030,25 @@ function showHelpBox() {//{{{
 //}}}
 function propsXYZ() {//{{{
 	//v=deepcopy(db({'name':cg.name}).get()[0]);
+	dd(cg);
 	sty=" style='width: 40px' ";
 	if(cg.type=='evacuee') { 
 		return "X <input id=alter_x0 value="+cg.x0 + sty+"><br>"+
 		"Y <input id=alter_y0 value="+cg.y0 + sty+"><br>";
 	} else {
-		return "X <input id=alter_x0 value="+cg.x0 + sty+"><input id=alter_x1 value="+cg.x1 + sty+"><br>"+
-		"Y <input id=alter_y0 value="+cg.y0 + sty+"><input id=alter_y1 value="+cg.y1 + sty+"><br>"+
-		"Z <input id=alter_z0 value="+cg.z0 + sty+"><input id=alter_z1 value="+cg.z1 + sty+"><br>"+
-		"<center>" + (cg.x1-cg.x0) + " x " + (cg.y1-cg.y0)+ " x " + (cg.z1-cg.z0)+" cm</center><br>";
+
+		p0=[1000000,0], p1=[-1000000,0];
+		_.each(cg.polypoints, function(point) { 
+			if(point[0] < p0[0]) { p0=point; }
+			if(point[1] > p1[1]) { p1=point; }
+		});
+		dx=p1[0]-p0[0];
+		dy=p1[1]-p0[1];
+		dz=cg.z[1]-cg.z[0];
+
+		return "points:<br><textarea id=alter_polypoints>"+cg.polypoints.join("\n")+"</textarea><br>"+
+		"z:<br><textarea id=alter_z>"+cg.z.join(",")+"</textarea>"+
+		"<br><center>" + dx + " x " + dy + " x " +  dz +" cm</center><br>";
 	}
 }
 //}}}

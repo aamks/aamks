@@ -301,3 +301,5 @@ canvas-mouse-coords { pointer-events: none; z-index:20; display: none; backgroun
 #div-cad-json-textarea { height:90vh; margin-left:130px }
 #cad-json-textarea { height: 100%; }
 letter { display: inline; padding: 0px 4px 1px 4px; background-color: #960; color: #fff;  }
+#alter_polypoints { height: 140px; width: 120px }
+#alter_z { height: 20px; width: 120px }
