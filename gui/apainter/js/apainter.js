@@ -96,7 +96,7 @@ function keyboardEvents() {//{{{
 }
 //}}}
 function dddx() {//{{{
-	dd(cg.name, { x0: cg.x0, y0: cg.y0, x1: cg.x1, y1: cg.y1});
+	dd(cg.name, JSON.stringify(cg.polypoints));
 }
 //}}}
 function debug() {//{{{
@@ -108,7 +108,6 @@ function debug() {//{{{
 	//dd($('#floor0')[0]);
 	//dd("f2", $('#ufloor2')[0]);
 	//_.each(db({'letter':'s'}).get(), function(v) {
-	//	dd(v.name, 'p0', v.x0, v.y0, v.z0, 'p1', v.x1, v.y1, v.z1);
 	//});
 }
 //}}}
@@ -134,6 +133,15 @@ function escapeAll(rmbClose=1) {//{{{
 	if(rmbClose==1) { $("right-menu-box").css("display", "none"); }
 }
 //}}}
+function getBbox() {//{{{
+	p0=[1000000,0], p1=[-1000000,0];
+	_.each(cg.polypoints, function(point) { 
+		if(point[0] < p0[0]) { p0=point; }
+		if(point[1] > p1[1]) { p1=point; }
+	});
+	return {'min': { 'x': p0[0], 'y': p0[1] }, 'max': {'x': p1[0], 'y': p1[1] } };
+}
+//}}}
 function cgSvg(pparent='auto') { //{{{
 	if(cg.type=='obstp') { cgSvgPoly(pparent); return; }
 	if(pparent=='auto')  { pparent="#floor"+cg.floor; }
@@ -146,6 +154,7 @@ function cgSvg(pparent='auto') { //{{{
 		.append(elem)
 		.attr('id', cg.name)
 		.attr('class', gg[cg.letter].t + " " +gg[cg.letter].x)
+		.attr('bbox', getBbox())
 		.attr('points', cg.polypoints.join(" "))
 		.attr('cx', cg.polypoints[0][0])
 		.attr('cy', cg.polypoints[0][1])
@@ -173,7 +182,7 @@ function cgDb() { //{{{
 	}
 	undoPush(deepcopy(cg));
 	db({"name": cg.name}).remove();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "bbox": getBbox(), "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
 }
 //}}}
 function undoPop() {//{{{
@@ -415,12 +424,12 @@ function holeFixOffset() { //{{{
 
 	if(cg.type != 'hole') { return; }
 
-	if(Math.abs(cg.x1-cg.x0) < Math.abs(cg.y1-cg.y0)) {
-		cg.y0+=16;
-		cg.y1-=16;
+	if(Math.abs(cg.bbox.max.x-cg.bbox.min.x) < Math.abs(cg.bbox.max.y-cg.bbox.min.y)) {
+		cg.bbox.min.y+=16;
+		cg.bbox.max.y-=16;
 	} else {
-		cg.x0+=16;
-		cg.x1-=16;
+		cg.bbox.min.x+=16;
+		cg.bbox.max.x-=16;
 	}
 }
 //}}}
@@ -501,45 +510,33 @@ function cgInit() {//{{{
 	cg.type=gg[activeLetter].t;
 	cg.mvent_throughput=0;
 	cg.exit_type='';
-	cg.z0=floorZ0;
+	cg.z=[floorZ0];
 	cg.polypoints=[];
 	if (cg.type=='fire') {
-		cg.z1=cg.z0 + 50;
+		cg.z.push(cg.z[0] + 50);
 	} else if (cg.type=='evacuee') {
-		cg.z1=cg.z0 + 50;
+		cg.z.push(cg.z[0] + 50);
 	} else if (cg.type=='obst') {
-		cg.z1=cg.z0 + 100;
+		cg.z.push(cg.z[0] + 100);
 	} else if (cg.type=='obstp') {
-		cg.z1=cg.z0 + 100;
+		cg.z.push(cg.z[0] + 100);
 	} else if (cg.type=='mvent') {
-		cg.z1=cg.z0 + 50;
+		cg.z.push(cg.z[0] + 50);
 	} else if (cg.type=='vvent') {
-		cg.z0=floorZ0 + defaults.floor_dimz - 4;
-		cg.z1=cg.z0 + 8;
+		cg.z=[floorZ0 + defaults.floor_dimz - 4];
+		cg.z.push(cg.z[0] + 8);
 	} else if (cg.type=='window') {
-		cg.z0=floorZ0 + defaults.window_offsetz; 
-		cg.z1=cg.z0 + defaults.window_dimz;
+		cg.z=[floorZ0 + defaults.window_offsetz]; 
+		cg.z.push(cg.z[0] + defaults.window_dimz);
 	} else if (cg.type=='door') {
-		cg.z1=cg.z0 + defaults.door_dimz; 
+		cg.z.push(cg.z[0] + defaults.door_dimz); 
 		cg.exit_type='auto';
 	} else if (cg.type=='room') {
-		cg.z1=cg.z0 + defaults.floor_dimz;
+		cg.z.push(cg.z[0] + defaults.floor_dimz);
 		cg.room_enter='yes';
 	} else {
-		cg.z1=cg.z0 + defaults.floor_dimz;
+		cg.z.push(cg.z[0] + defaults.floor_dimz);
 	}
-}
-//}}}
-function cgPolish() {//{{{
-	// real x,y are calculated as minimum/maximum values 
-	// z needs separate calculations here.
-
-	var mm={};
-	mm.x0 = Math.min(Math.round(cg.x0), Math.round(cg.x1));
-	mm.y0 = Math.min(Math.round(cg.y0), Math.round(cg.y1));
-	mm.x1 = Math.max(Math.round(cg.x0), Math.round(cg.x1));
-	mm.y1 = Math.max(Math.round(cg.y0), Math.round(cg.y1));
-	Object.assign(cg, mm);
 }
 //}}}
 function scaleMouse(pos) {//{{{
@@ -553,6 +550,8 @@ function cgCreate() {//{{{
 			cg.growing=1;
 			cgDecidePoints(m);
 			cgSvg();
+			cg.bbox=getBbox();
+			dd(cg);
 			delete cg.infant;
 		} else if(d3.event.which==3) {
 			cgEscapeCreate();
@@ -563,13 +562,12 @@ function cgCreate() {//{{{
 		snap(m);
 		cgDecidePoints(m);
 		cgUpdateSvg(); 
-		updatePosInfo();
+		updatePosInfo(m);
 	});  
 	svg.on('mouseup', function() {
 		if(assertCgReady()) {
 			holeFixOffset();
 			cgUpdateSvg();
-			cgPolish();
 			cgDb();
 			updateSnapLines();
 		}
@@ -580,11 +578,15 @@ function cgCreate() {//{{{
 }
 //}}}
 
-function updatePosInfo() {//{{{
-	if(cg.type=='obstp') { 
-		$("#apainter-texts-pos").html(cg.x1+" "+cg.y1+" "+cg.z0);
+function updatePosInfo(m) {//{{{
+	if('bbox' in cg) { 
+		if(cg.type=='obstp') { 
+			$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]);
+		} else {
+			$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]+" &nbsp; &nbsp;  size: "+Math.abs(m.x-cg.bbox.min.x)+" "+Math.abs(m.y-cg.bbox.min.y) +" "+(cg.z[1]-cg.z[0]));
+		}
 	} else {
-		$("#apainter-texts-pos").html(cg.x1+" "+cg.y1+" "+cg.z0+" &nbsp; &nbsp;  size: "+Math.abs(cg.x1-cg.x0)+" "+Math.abs(cg.y1-cg.y0) +" "+(cg.z1-cg.z0));
+		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]);
 	}
 }
 //}}}
@@ -592,7 +594,8 @@ function cgDecidePoints(m) {//{{{
 
 	if("x" in activeSnap) { px=activeSnap.x; } else { px=m.x; }
 	if("y" in activeSnap) { py=activeSnap.y; } else { py=m.y; }
-	if("infant" in cg) { cg.polypoints.push([px,py]); }
+	if("growing" in cg) { cg.polypoints.push([px,py]); }
+	if(cg.polypoints.length==0) { return; }
 	if (event.ctrlKey) { return; }
 
 	switch (cg.type) {
@@ -637,7 +640,7 @@ function assertCgReady() {//{{{
 		return true;
 	}
 
-	if(cg.x0 == cg.x1 || cg.y0 == cg.y1 || cg.x0 == null) { 
+	if(cg.polypoints.length==0) { 
 		$("#"+cg.name).remove();
 		return false;
 	}
@@ -651,11 +654,7 @@ function assertCgReady() {//{{{
 }
 //}}}
 function cgUpdateSvg() {  //{{{
-	$("#"+cg.name).attr({
-		points: cg.polypoints.join(" "),
-		cx: Math.min(cg.x0, cg.x1) ,
-		cy: Math.min(cg.y0, cg.y1) ,
-	});   
+	$("#"+cg.name).attr({ points: cg.polypoints.join(" ") });   
 }
 //}}}
 
@@ -1047,18 +1046,10 @@ function propsXYZ() {//{{{
 		return "X <input id=alter_x0 value="+cg.x0 + sty+"><br>"+
 		"Y <input id=alter_y0 value="+cg.y0 + sty+"><br>";
 	} else {
-		p0=[1000000,0], p1=[-1000000,0];
-		_.each(cg.polypoints, function(point) { 
-			if(point[0] < p0[0]) { p0=point; }
-			if(point[1] > p1[1]) { p1=point; }
-		});
-		dx=p1[0]-p0[0];
-		dy=p1[1]-p0[1];
-		dz=cg.z[1]-cg.z[0];
-
-		return "points:<br><textarea id=alter_polypoints>"+cg.polypoints.join("\n")+"</textarea><br>"+
+		b=cg.bbox;
+		return "points:<br><textarea id=alter_polypoints>"+cg.polypoints.slice(0,-1).join("\n")+"</textarea><br>"+
 		"z:<br><input style='width:110px' id=alter_z value='"+cg.z.join(",")+"'>"+
-		"<br><center>" + dx + " x " + dy + " x " +  dz +" cm</center><br>";
+		"<br><center>" + (b.max.x - b.min.x) + " x " + (b.max.y - b.min.y) + " x " + (cg.z[1]-cg.z[0]) +" cm</center><br>";
 	}
 }
 //}}}
@@ -1115,7 +1106,6 @@ function saveRightBoxCgProps() {//{{{
 	if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
 	cgUpdateSvg();
 	cgCss();
-	cgPolish();
 	cgDb();
 	showCgPropsBox(); 
 	updateSnapLines();
@@ -1134,13 +1124,13 @@ function showBuildingLabels(aggressive=0, elems=[]) {//{{{
 		if(elems.length>0) {
 			_.each(elems, function(vv) { 
 				_.each(db({'name': vv}).get(), function(v) { 
-					if (['d', 'q', 'e'].includes(activeLetter)) { x=v.x0; y=v.y0-30 } else { x=v.x0+15; y=v.y0+50; }
+					if (['d', 'q', 'e'].includes(activeLetter)) { x=v.bbox.min.x; y=v.bbox.min.y-30 } else { x=v.bbox.min.x+15; y=v.bbox.min.y+50; }
 					mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
 				});
 			});
 		} else {
 			_.each(db({'floor': floor, 'letter': activeLetter}).get(), function(v) { 
-				if (['d', 'q', 'e'].includes(activeLetter)) { x=v.x0; y=v.y0-30 } else { x=v.x0+15; y=v.y0+50; }
+				if (['d', 'q', 'e'].includes(activeLetter)) { x=v.bbox.min.x; y=v.bbox.min.y-30 } else { x=v.bbox.min.x+15; y=v.bbox.min.y+50; }
 				mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
 			});
 		}
@@ -1151,10 +1141,8 @@ function verifyIntersections() {//{{{
 	var pp=PolygonTools.polygon;
 	for(var f=0; f<floorsCount; f++) {
 		_.each(db({'floor': f, 'type': 'room'}).get(), function(p1) { 
-			poly1=[ [p1.x0, p1.y0], [p1.x1, p1.y0], [p1.x1, p1.y1], [p1.x0, p1.y1]];
 			_.each(db({'floor': f, 'type': 'room'}).get(), function(p2) { 
-				poly2=[ [p2.x0, p2.y0], [p2.x1, p2.y0], [p2.x1, p2.y1], [p2.x0, p2.y1]];
-				if(p1.name!=p2.name && pp.intersection(poly1,poly2).length>0) { 
+				if(p1.name!=p2.name && pp.intersection(p1.polypoints,p2.polypoints).length>0) { 
 					cgSelect([p1.name, p2.name]);
 					activeLetter=p1.letter;
 					bulkProps();
