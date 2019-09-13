@@ -101,9 +101,10 @@ function dddx() {//{{{
 //}}}
 function debug() {//{{{
 	console.clear();
-	ddd();
+	//ddd();
 	//return;
 	//dd($('#building')[0]);
+	dd($('#floor0')[0]);
 	//dd($('#floor0')[0]);
 	//dd("f2", $('#ufloor2')[0]);
 	//_.each(db({'letter':'s'}).get(), function(v) {
@@ -591,16 +592,29 @@ function cgDecidePoints(m) {//{{{
 
 	if("x" in activeSnap) { px=activeSnap.x; } else { px=m.x; }
 	if("y" in activeSnap) { py=activeSnap.y; } else { py=m.y; }
-	if("infant" in cg) { cg.x0=px; cg.y0=py; }
-	cg.x1=px; cg.y1=py; 
+	if("infant" in cg) { cg.polypoints.push([px,py]); }
 	if (event.ctrlKey) { return; }
 
 	switch (cg.type) {
+		case 'room':
+			p0=[cg.polypoints[0][0], cg.polypoints[0][1]];
+			p1=[px, cg.polypoints[0][1]];
+			p2=[px, py];
+			p3=[cg.polypoints[0][0], py];
+			break;
 		case 'door':
 			if("x" in activeSnap) { 
-				cg.x0=px-16; cg.x1=px+16; cg.y1=py; cg.y0=py-defaults.door_width;
+				//cg.x0=px-16; cg.x1=px+16; cg.y1=py; cg.y0=py-defaults.door_width;
+				p0=[px-16, py-defaults.door_width];
+				p1=[px+16, py-defaults.door_width];
+				p2=[px+16, py];
+				p3=[px-16, py];
 			} else {
-				cg.y0=py-16; cg.y1=py+16; cg.x0=px; cg.x1=px+defaults.door_width;
+				//cg.y0=py-16; cg.y1=py+16; cg.x0=px; cg.x1=px+defaults.door_width;
+				p0=[px,py-16];
+				p1=[px+defaults.door_width,py-16];
+				p2=[px+defaults.door_width,py+16];
+				p3=[px,py+16];
 			}
 			break;
 		case 'window': case 'hole':
@@ -614,6 +628,8 @@ function cgDecidePoints(m) {//{{{
 			}
 			break;
 	}
+
+	cg.polypoints=[p0,p1,p2,p3,p0];
 }
 //}}}
 function assertCgReady() {//{{{
@@ -636,12 +652,9 @@ function assertCgReady() {//{{{
 //}}}
 function cgUpdateSvg() {  //{{{
 	$("#"+cg.name).attr({
-		x: Math.min(cg.x0, cg.x1) ,
-		y: Math.min(cg.y0, cg.y1) ,
+		points: cg.polypoints.join(" "),
 		cx: Math.min(cg.x0, cg.x1) ,
 		cy: Math.min(cg.y0, cg.y1) ,
-		width: Math.abs(cg.x1 - cg.x0) ,
-		height: Math.abs(cg.y1 - cg.y0)
 	});   
 }
 //}}}
@@ -730,7 +743,7 @@ function json2db(json) { //{{{
 			})
 		})
 	});
-	dddX();
+	//dddX();
 	updateSnapLines(); // This is a heavy call, which shouldn't be called for each cgDb()
 	undoBuffer=[];
 }
@@ -1029,14 +1042,11 @@ function showHelpBox() {//{{{
 }
 //}}}
 function propsXYZ() {//{{{
-	//v=deepcopy(db({'name':cg.name}).get()[0]);
-	dd(cg);
 	sty=" style='width: 40px' ";
 	if(cg.type=='evacuee') { 
 		return "X <input id=alter_x0 value="+cg.x0 + sty+"><br>"+
 		"Y <input id=alter_y0 value="+cg.y0 + sty+"><br>";
 	} else {
-
 		p0=[1000000,0], p1=[-1000000,0];
 		_.each(cg.polypoints, function(point) { 
 			if(point[0] < p0[0]) { p0=point; }
@@ -1047,7 +1057,7 @@ function propsXYZ() {//{{{
 		dz=cg.z[1]-cg.z[0];
 
 		return "points:<br><textarea id=alter_polypoints>"+cg.polypoints.join("\n")+"</textarea><br>"+
-		"z:<br><textarea id=alter_z>"+cg.z.join(",")+"</textarea>"+
+		"z:<br><input style='width:110px' id=alter_z value='"+cg.z.join(",")+"'>"+
 		"<br><center>" + dx + " x " + dy + " x " +  dz +" cm</center><br>";
 	}
 }
