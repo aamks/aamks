@@ -17,12 +17,10 @@ var floorZ0=0;
 var building;
 var buildingLabels;
 var ax={};
-var snapForce=50;
 var snapLinesSvg;
 var snapLinesArr={};
 var defaults={'door_dimz': 200, 'door_width': 90, 'floor_dimz': 350, 'window_dimz': 150, 'window_offsetz': 100 };
 var activeSnap={};
-var preferredSnap='x';
 var undoBuffer=[];
 var evacueeRadius;
 //}}}
@@ -134,10 +132,12 @@ function escapeAll(rmbClose=1) {//{{{
 }
 //}}}
 function getBbox() {//{{{
-	p0=[1000000,0], p1=[-1000000,0];
+	p0=[1000000,null], p1=[null,-1000000];
 	_.each(cg.polypoints, function(point) { 
 		if(point[0] < p0[0]) { p0=point; }
+		if(point[0] == p0[0] && point[1] < p0[1] ) { p0=point; }
 		if(point[1] > p1[1]) { p1=point; }
+		if(point[1] == p1[1] && point[0] > p1[0] ) { p1=point; }
 	});
 	return {'min': { 'x': p0[0], 'y': p0[1] }, 'max': {'x': p1[0], 'y': p1[1] } };
 }
@@ -419,24 +419,10 @@ function changeFloor(requested_floor) {//{{{
 	$("#apainter-texts-floor").css("opacity",1).animate({"opacity": 0.1}, 1000);
 }
 //}}}
-function holeFixOffset() { //{{{
-	// Detect orientation and fix hole offset. 
-
-	if(cg.type != 'hole') { return; }
-
-	if(Math.abs(cg.bbox.max.x-cg.bbox.min.x) < Math.abs(cg.bbox.max.y-cg.bbox.min.y)) {
-		cg.bbox.min.y+=16;
-		cg.bbox.max.y-=16;
-	} else {
-		cg.bbox.min.x+=16;
-		cg.bbox.max.x-=16;
-	}
-}
-//}}}
 function activeSnapX(m) {//{{{
 	for(var point in snapLinesArr['vert']) {
 		p=snapLinesArr['vert'][point];
-		if (m.x > p - snapForce && m.x < p + snapForce) { 
+		if (m.x > p - cg.snapForce && m.x < p + cg.snapForce) { 
 			activeSnap.x=p;
 			break;
 		}
@@ -446,7 +432,7 @@ function activeSnapX(m) {//{{{
 function activeSnapY(m) {//{{{
 	for(var point in snapLinesArr['horiz']) {
 		p=snapLinesArr['horiz'][point];
-		if (m.y > p - snapForce && m.y < p + snapForce) { 
+		if (m.y > p - cg.snapForce && m.y < p + cg.snapForce) { 
 			activeSnap.y=p;
 			break;
 		}
@@ -475,10 +461,10 @@ function snap(m) {//{{{
 //}}}
 function snapKeepDirection(m) {//{{{
 	// Prevent ortho-changing snapping 
-	if (!('y' in activeSnap) && 'x' in activeSnap) { preferredSnap='x'; }
-	if (!('x' in activeSnap) && 'y' in activeSnap) { preferredSnap='y'; }
+	if (!('y' in activeSnap) && 'x' in activeSnap) { cg.preferredSnap='x'; }
+	if (!('x' in activeSnap) && 'y' in activeSnap) { cg.preferredSnap='y'; }
 	activeSnap={};
-	if(preferredSnap=='x') { 
+	if(cg.preferredSnap=='x') { 
 		activeSnapX(m); 
 	} else {
 		activeSnapY(m); 
@@ -512,6 +498,8 @@ function cgInit() {//{{{
 	cg.exit_type='';
 	cg.z=[floorZ0];
 	cg.polypoints=[];
+	cg.preferredSnap=null;
+	if(cg.type=='hole') { cg.snapForce=100; } else { cg.snapForce=50; }
 	if (cg.type=='fire') {
 		cg.z.push(cg.z[0] + 50);
 	} else if (cg.type=='evacuee') {
@@ -551,7 +539,7 @@ function cgCreate() {//{{{
 			cgDecidePoints(m);
 			cgSvg();
 			cg.bbox=getBbox();
-			dd(cg);
+			//dd(cg);
 			delete cg.infant;
 		} else if(d3.event.which==3) {
 			cgEscapeCreate();
@@ -566,7 +554,6 @@ function cgCreate() {//{{{
 	});  
 	svg.on('mouseup', function() {
 		if(assertCgReady()) {
-			holeFixOffset();
 			cgUpdateSvg();
 			cgDb();
 			updateSnapLines();
@@ -592,11 +579,11 @@ function updatePosInfo(m) {//{{{
 //}}}
 function cgDecidePoints(m) {//{{{
 
+	if (event.ctrlKey) { return; }
 	if("x" in activeSnap) { px=activeSnap.x; } else { px=m.x; }
 	if("y" in activeSnap) { py=activeSnap.y; } else { py=m.y; }
 	if("growing" in cg) { cg.polypoints.push([px,py]); }
 	if(cg.polypoints.length==0) { return; }
-	if (event.ctrlKey) { return; }
 
 	switch (cg.type) {
 		case 'room':
@@ -607,13 +594,11 @@ function cgDecidePoints(m) {//{{{
 			break;
 		case 'door':
 			if("x" in activeSnap) { 
-				//cg.x0=px-16; cg.x1=px+16; cg.y1=py; cg.y0=py-defaults.door_width;
 				p0=[px-16, py-defaults.door_width];
 				p1=[px+16, py-defaults.door_width];
 				p2=[px+16, py];
 				p3=[px-16, py];
 			} else {
-				//cg.y0=py-16; cg.y1=py+16; cg.x0=px; cg.x1=px+defaults.door_width;
 				p0=[px,py-16];
 				p1=[px+defaults.door_width,py-16];
 				p2=[px+defaults.door_width,py+16];
@@ -621,18 +606,31 @@ function cgDecidePoints(m) {//{{{
 			}
 			break;
 		case 'window': case 'hole':
-			if("x" in activeSnap) { 
-				if("infant" in cg) { cg.x0=px-16; }
-				cg.x1=px+16;
+			if(isEmpty(activeSnap)) { cg.polypoints=cg.polypoints.slice(0,5); return; }
+			if(cg.preferredSnap==null) { 
+				b=getBbox(); 
+				if(b.max.x-b.min.x > 32)       { cg.preferredSnap='y'; }
+				else if(b.max.y-b.min.y > 32 ) { cg.preferredSnap='x'; }
 			}
-			if("y" in activeSnap) { 
-				if("infant" in cg) { cg.y0=py-16; }
-				cg.y1=py+16; 
-			}
+			if(cg.preferredSnap==null) { return; }
+			dd(cg.preferredSnap);
+
+			if(cg.preferredSnap=='y') { 
+				p0=[cg.polypoints[0][0], py+16];
+				p1=[px, py+16];
+				p2=[px, py-16];
+				p3=[cg.polypoints[0][0], py-16];
+			} else {
+				p0=[px-16, cg.polypoints[0][1]];
+				p1=[px+16, cg.polypoints[0][1]];
+				p2=[px+16, py];
+				p3=[px-16, py]; 
+			} 
 			break;
 	}
 
 	cg.polypoints=[p0,p1,p2,p3,p0];
+	//dd(cg.polypoints);
 }
 //}}}
 function assertCgReady() {//{{{
