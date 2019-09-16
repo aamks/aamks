@@ -103,6 +103,7 @@ function debug() {//{{{
 	//return;
 	//dd($('#building')[0]);
 	dd($('#floor0')[0]);
+	dd(db2cadjson());
 	//dd($('#floor0')[0]);
 	//dd("f2", $('#ufloor2')[0]);
 	//_.each(db({'letter':'s'}).get(), function(v) {
@@ -613,7 +614,6 @@ function cgDecidePoints(m) {//{{{
 				else if(b.max.y-b.min.y > 32 ) { cg.preferredSnap='x'; }
 			}
 			if(cg.preferredSnap==null) { return; }
-			dd(cg.preferredSnap);
 
 			if(cg.preferredSnap=='y') { 
 				p0=[cg.polypoints[0][0], py+16];
@@ -630,7 +630,6 @@ function cgDecidePoints(m) {//{{{
 	}
 
 	cg.polypoints=[p0,p1,p2,p3,p0];
-	//dd(cg.polypoints);
 }
 //}}}
 function assertCgReady() {//{{{
@@ -685,19 +684,21 @@ function dbUpdateCadJsonStr() { //{{{
 	var r=db().get();
 	for (var rr in r) {	
 		i=r[rr];
+		cad_json={};
+		cad_json['points']=JSON.stringify(i.polypoints.slice(0,-1));
+		cad_json['idx']=i.idx;
+		cad_json['z']=JSON.stringify(i.z);
+
 		if(i.type=='door') {
-			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "exit_type": "${i.exit_type}"} ]`; 
+			cad_json["exit_type"]=i.exit_type;
 		} else if(i.type=='room') {
-			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "room_enter": "${i.room_enter}"} ]`; 
+			cad_json["room_enter"]=i.room_enter; 
 		} else if(i.type=='fire') {
-			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "room_enter": "no"} ]`; 
+			cad_json["room_enter"]="no";
 		} else if(i.type=='mvent') {
-			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx}, "mvent_throughput": ${i.mvent_throughput}} ]`; 
-		} else if(i.type=='obstp') {
-			cad_json=JSON.stringify({ "points": i.polypoints, "idx": i.idx }); 
-		} else {
-			cad_json=`[[ ${i.x0}, ${i.y0}, ${i.z0} ], [ ${i.x1}, ${i.y1}, ${i.z1} ], { "idx": ${i.idx} } ]`; 
+			cad_json["mvent_throughput"]=i.mvent_throughput;
 		}
+
 		db({'name': i.name}).update({'cad_json': cad_json});
 	}
 }
@@ -707,7 +708,7 @@ function saveTxtCadJson() {//{{{
 	ajaxSaveCadJson(json_data, fire_model); 
 }
 //}}}
-function svgGroupsInit(json) {//{{{
+function svgGroupsInit(json) { //{{{
 	$(".floor").remove();
 	$(".snap_v").remove();
 	$(".snap_h").remove();
@@ -747,13 +748,8 @@ function json2db(json) { //{{{
 //}}}
 function cgMake(floor,letter,record) { //{{{
 	cg.polypoints=JSON.parse(record.points);
+	cg.polypoints.push(cg.polypoints[0]);
 	cg.z=JSON.parse(record.z);
-	//cg.x0=record[0][0];
-	//cg.y0=record[0][1];
-	//cg.z0=record[0][2];
-	//cg.x1=record[1][0];
-	//cg.y1=record[1][1];
-	//cg.z1=record[1][2];
 	cg.idx=record.idx;
 	cg.name=letter+cg.idx;
 	cg.letter=letter;
@@ -816,14 +812,14 @@ function dbReorder() {//{{{
 	// Re-enumerate all elems in this fashion: r1, r2, r3, ..., d1, d2, d3, ...
 	// CFAST expects elems to be numbered as above
 	// Evacuees will be in original order for navmesh testing pairing: e1 > e2, e3 > e4, ...
-	if(db({"type": 'fire'}).get().length > 1) { ajax_msg({'err':1, 'msg':"Aamks allows for max one fire"}); }
+	if(db({"type": 'fire'}).get().length > 1) { ajax_msg({ 'err': 1, 'msg': "Aamks allows for max one fire" }); }
 
 	db.sort("idx");
 	var ee=db({"type": 'evacuee'}).get();
 	db({"type": 'evacuee'}).remove();
 
 	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst'], ['obstp'] ];
-	db.sort("floor,x0,y0");
+	db.sort("floor,bbox");
 	for (var i in types) {
 		var idx=1;
 		var r=db({"type": types[i]}).get();
@@ -845,42 +841,29 @@ function dbReorder() {//{{{
 }
 //}}}
 function db2cadjson() {//{{{
-	// Instead of JSON.stringify we prefer our own pretty formatting.
-	// Since names appear in SVG and we are reordering we need to write and reread 
 	cgEscapeCreate();
 	verifyIntersections();
 	dbReorder();
-	var json=[];
-	for(var f=0; f<floorsCount; f++) { 
+	cadjson={};
+
+	for(var floor=0; floor<floorsCount; floor++) { 
 		var geoms=[];
+		cadjson[floor]={};
 		for(var letter in gg) {
 			if (gg[letter]['legendary'] == 0) { continue; }
-			var x=db({"floor": f, "letter": letter}).select("cad_json");
-			var num_data=[];
-			for (var r in x) { 
-				num_data.push("\t\t\t"+x[r]);
-			}
-			var geom='';
-			geom+='\t\t"'+gg[letter].x+'": [';
-			if(num_data.length>0) { 
-				geom+="\n"+num_data.join(",\n");
-				geom+='\n\t\t]';
-			} else {
-				geom+=' ]';
-			}
-			geoms.push(geom);
+			tt=gg[letter]['x'];
+			cadjson[floor][tt]=[];
+			_.each(db({"floor": floor, "letter": letter}).select("cad_json"), function(m) {
+				cadjson[floor][tt].push(m);
+			});
 		}
-		var ff='';
-		ff+='\t"'+f+'": {\n';
-		ff+=geoms.join(",\n");
-		ff+=underlayImgSaveCad(f);
-		ff+=underlayFloorSaveCad(f);
-		ff+='\n\t}';
-		json.push(ff);
+
+		cadjson[floor]['UNDERLAY_IMG']=underlayImgSaveCad(floor);
+		cadjson[floor]['UNDERLAY_FLOOR']=underlayFloorSaveCad(floor);
 	}
-	var pretty_json="{\n"+json.join(",\n")+"\n}\n";
-	ajaxSaveCadJson(pretty_json, fire_model);
-	return pretty_json;
+	pretty=JSON.stringify(cadjson,null,2);
+	ajaxSaveCadJson(pretty, fire_model);
+	return pretty;
 }
 //}}}
 function floorCopy() {	//{{{

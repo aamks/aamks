@@ -162,7 +162,7 @@ function ufloorAdd(floor, ufloor=$("#ufloor").val()) {//{{{
 }
 //}}}
 function underlayImgSaveCad(floor) {//{{{
-	if($("#uimg"+floor).attr('type') == 'none') { return ',\n\t\t"UNDERLAY_IMG": {}'; }
+	if($("#uimg"+floor).attr('type') == 'none') { return {}; }
 
 	json={}
 	json.type=$("#uimg"+floor).attr('type');
@@ -172,15 +172,15 @@ function underlayImgSaveCad(floor) {//{{{
 	json.rotate=$("#uimg"+floor).css('rotate');
 	json.translate=$("#uimg"+floor).css('translate');
 	if(json.type=='pdf') { json.type='svg'; }
-	return ',\n\t\t"UNDERLAY_IMG": '+JSON.stringify(json);
+	return json;
 }
 //}}}
 function underlayFloorSaveCad(floor) {//{{{
-	if($('#ufloor'+floor).attr('uses_floor')=="" ) { return ',\n\t\t"UNDERLAY_FLOOR": {}\n'; }
+	if($('#ufloor'+floor).attr('uses_floor')=="" ) { return {}; }
 	json={}
 	json.uses_floor=$('#ufloor'+floor).attr('uses_floor');
 	json.opacity=$("#uimg"+floor).css('opacity');
 	json.invert=$("#uimg"+floor).attr('invert');
-	return ',\n\t\t"UNDERLAY_FLOOR": '+JSON.stringify(json)+"\n";
+	return json;
 }
 //}}}
