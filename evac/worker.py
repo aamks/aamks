@@ -370,8 +370,5 @@ w = Worker()
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()
-elif os.environ['AAMKS_LOCAL_WORKER'] == '1':
-    print('Working in local mode')
-    w.local_worker()
 else:
     w.main()
