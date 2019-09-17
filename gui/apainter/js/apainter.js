@@ -50,16 +50,20 @@ $(function()  {
 });
 //}}}
 function registerListeners() {//{{{
-	$("right-menu-box").on("click"     , "#btn_copy_to_floor"   , function() { floorCopy() });
-	$("right-menu-box").on("click"     , '#setup_underlay'      , function() { underlay_form(); });
-	$("right-menu-box").on("mouseover" , ".bulkProps"           , function() { cgSelect($(this).attr('id'),1,0); });
-	$("right-menu-box").on("click"     , '.bulkProps'           , function() { cgSelect($(this).attr('id'));  });
-	$("body").on("click"               , '#apainter-save'       , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
-	$("body").on("click"               , '#apainter-next-view'  , function() { nextView(); });
-	$("body").on("click"               , '#button-help'         , function() { showHelpBox(); });
-	$("body").on("click"               , '#button-setup'        , function() { showGeneralBox(); });
-	$("body").on("click"               , '.legend'              , function() { activeLetter=$(this).attr('letter'); cgStartDrawing(); });
-	$("body").on("mouseleave"          , 'right-menu-box'       , function() { saveRightBox(); });
+	$("right-menu-box").on("click"     , "#btn_copy_to_floor"      , function() { floorCopy() });
+	$("right-menu-box").on("click"     , '#setup_underlay'         , function() { underlay_form(); });
+	$("right-menu-box").on("mouseover" , ".bulkProps"              , function() { cgSelect($(this).attr('id')                                                                    , 1 , 0); });
+	$("right-menu-box").on("click"     , '.bulkProps'              , function() { cgSelect($(this).attr('id'));  });
+	$("body").on("click"               , '#apainter-save'          , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
+	$("body").on("click"               , '#apainter-next-view'     , function() { nextView(); });
+	$("body").on("click"               , '#button-help'            , function() { showHelpBox(); });
+	$("body").on("click"               , '#button-setup'           , function() { showGeneralBox(); });
+	$("body").on("click"               , '.legend'                 , function() { activeLetter=$(this).attr('letter'); cgStartDrawing(); });
+	$("body").on("keyup"               , '#alter-polypoints'       , function() { saveRightBox(); });
+	$("body").on("change"              , '#alter-room-enter'       , function() { saveRightBox(); });
+	$("body").on("change"              , '#alter-exit-type'        , function() { saveRightBox(); });
+	$("body").on("change"              , '#alter-mvent-throuthput' , function() { saveRightBox(); });
+	$("body").on("mouseleave"          , 'right-menu-box'          , function() { saveRightBox(); showCgPropsBox(); });
 
 	$("body").on("mousedown", "#apainter-svg", function(e){
 		if(e.which==3) {
@@ -103,7 +107,7 @@ function debug() {//{{{
 	//return;
 	//dd($('#building')[0]);
 	dd($('#floor0')[0]);
-	dd(db2cadjson());
+	//dd(db2cadjson());
 	//dd($('#floor0')[0]);
 	//dd("f2", $('#ufloor2')[0]);
 	//_.each(db({'letter':'s'}).get(), function(v) {
@@ -155,12 +159,11 @@ function cgSvg(pparent='auto') { //{{{
 		.append(elem)
 		.attr('id', cg.name)
 		.attr('class', gg[cg.letter].t + " " +gg[cg.letter].x)
-		.attr('bbox', getBbox())
 		.attr('points', cg.polypoints.join(" "))
 		.attr('cx', cg.polypoints[0][0])
 		.attr('cy', cg.polypoints[0][1])
 		.attr('r', evacueeRadius)
-		.attr('stroke-linecap', 'square')
+		//.attr('stroke-linecap', 'square')
 }
 //}}}
 function cgCss() {//{{{
@@ -183,7 +186,8 @@ function cgDb() { //{{{
 	}
 	undoPush(deepcopy(cg));
 	db({"name": cg.name}).remove();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "bbox": getBbox(), "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter });
+	b=getBbox();
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y });
 }
 //}}}
 function undoPop() {//{{{
@@ -496,7 +500,6 @@ function cgInit() {//{{{
 	cg.letter=activeLetter;
 	cg.type=gg[activeLetter].t;
 	cg.mvent_throughput=0;
-	cg.exit_type='';
 	cg.z=[floorZ0];
 	cg.polypoints=[];
 	cg.preferredSnap=null;
@@ -587,12 +590,6 @@ function cgDecidePoints(m) {//{{{
 	if(cg.polypoints.length==0) { return; }
 
 	switch (cg.type) {
-		case 'room':
-			p0=[cg.polypoints[0][0], cg.polypoints[0][1]];
-			p1=[px, cg.polypoints[0][1]];
-			p2=[px, py];
-			p3=[cg.polypoints[0][0], py];
-			break;
 		case 'door':
 			if("x" in activeSnap) { 
 				p0=[px-16, py-defaults.door_width];
@@ -627,6 +624,12 @@ function cgDecidePoints(m) {//{{{
 				p3=[px-16, py]; 
 			} 
 			break;
+		default:
+			p0=[cg.polypoints[0][0], cg.polypoints[0][1]];
+			p1=[px, cg.polypoints[0][1]];
+			p2=[px, py];
+			p3=[cg.polypoints[0][0], py];
+			break;
 	}
 
 	cg.polypoints=[p0,p1,p2,p3,p0];
@@ -637,7 +640,7 @@ function assertCgReady() {//{{{
 		return true;
 	}
 
-	if(cg.polypoints.length==0) { 
+	if(cg.polypoints.length<2) { 
 		$("#"+cg.name).remove();
 		return false;
 	}
@@ -741,7 +744,6 @@ function json2db(json) { //{{{
 			})
 		})
 	});
-	//dddX();
 	updateSnapLines(); // This is a heavy call, which shouldn't be called for each cgDb()
 	undoBuffer=[];
 }
@@ -755,13 +757,10 @@ function cgMake(floor,letter,record) { //{{{
 	cg.letter=letter;
 	cg.type=gg[letter].t;
 	cg.floor=floor;
-	cg.exit_type='';
-	cg.room_enter='';
-	cg.mvent_throughput=0;
 
 	if('exit_type' in record)        { cg.exit_type=record.exit_type; }
-	if('room_enter' in record)       { cg.exit_type=record.room_enter; }
-	if('mvent_throughput' in record) { cg.exit_type=record.mvent_throughput; }
+	if('room_enter' in record)       { cg.room_enter=record.room_enter; }
+	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
 }
 //}}}
 function ajaxSaveCadJson(json_data, fire_model) { //{{{
@@ -819,7 +818,7 @@ function dbReorder() {//{{{
 	db({"type": 'evacuee'}).remove();
 
 	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst'], ['obstp'] ];
-	db.sort("floor,bbox");
+	db.sort("floor,minx,miny");
 	for (var i in types) {
 		var idx=1;
 		var r=db({"type": types[i]}).get();
@@ -915,9 +914,9 @@ function cgSelect(elems, blink=1, showProps=1) {//{{{
 //}}}
 function bulkPlainProps() {//{{{
 	var tbody='';
-	tbody+="<tr><td>name<td>x<td>y<td>z";
+	tbody+="<tr><td>name<td>z";
 	_.each(db({'letter': activeLetter, 'floor': floor}).get(), function (m) {
-		tbody+="<tr><td class=bulkProps id="+ m.name + ">"+ m.name +"</td><textarea>"+m.polypoints;
+		tbody+="<tr><td class=bulkProps id="+ m.name + ">"+ m.name +"</td><td>"+m.z;
 	});
 	return tbody;
 }
@@ -926,7 +925,7 @@ function bulkProps() {//{{{
 	showBuildingLabels(1);
 	var html='';
 	html+='<div style="overflow-y: scroll; height: '+(win[1]-100)+'px">';
-	html+='<wheat>Hover name, then <letter>x</letter> to delete</wheat>';
+	html+='<wheat>Hover name,<br>then <letter>x</letter> to delete</wheat>';
 	html+='<table id=gg_listing>';
 	html+=bulkPlainProps();
 	html+="</table>";
@@ -937,12 +936,12 @@ function bulkProps() {//{{{
 //}}}
 
 function roomProps() {//{{{
-	pp="<input id=alter_room_enter type=hidden value=0>";
+	pp="<input id=alter-room-enter type=hidden value=0>";
 	if(cg.type=='room') {
 		v=db({'name':cg.name}).get()[0];
 		pp='';
 		pp+="<tr><td>enter <withHelp>?<help><orange>yes</orange> agents can evacuate via this room<br><hr><orange>no</orange> agents can not evacuate via this room</help></withHelp>";
-		pp+="<td><select id=alter_room_enter>";
+		pp+="<td><select id=alter-room-enter>";
 		pp+="<option value="+v.room_enter+">"+v.room_enter+"</option>";
 		pp+="<option value='yes'>yes</option>";
 		pp+="<option value='no'>no</option>";
@@ -952,21 +951,21 @@ function roomProps() {//{{{
 }
 //}}}
 function mventProps() {//{{{
-	pp="<input id=alter_mvent_throughput type=hidden value=0>";
+	pp="<input id=alter-mvent-throuthput type=hidden value=0>";
 	if(cg.type=='mvent') {
 		v=db({'name':cg.name}).get()[0];
-		pp="<tr><td>throughput<td>  <input id=alter_mvent_throughput type=text size=3 value="+v.mvent_throughput+">";
+		pp="<tr><td>throughput<td>  <input id=alter-mvent-throuthput type=text size=3 value="+v.mvent_throughput+">";
 	} 
 	return pp;
 }
 //}}}
 function doorProps() {//{{{
-	pp="<input id=alter_exit_type type=hidden value=0>";
+	pp="<input id=alter-exit-type type=hidden value=0>";
 	if(cg.type=='door') {
 		v=db({'name':cg.name}).get()[0];
 		pp='';
 		pp+="<tr><td>exit <withHelp>?<help><orange>auto</orange> any evacuee can use this door<br><hr><orange>primary</orange> many evacuees have had used this door to get in and will use it to get out<br><hr><orange>secondary</orange> extra door known to the personel</help></withHelp>";
-		pp+="<td><select id=alter_exit_type>";
+		pp+="<td><select id=alter-exit-type>";
 		pp+="<option value="+v.exit_type+">"+v.exit_type+"</option>";
 		pp+="<option value='auto'>auto</option>";
 		pp+="<option value='primary'>primary</option>";
@@ -1027,10 +1026,10 @@ function propsXYZ() {//{{{
 		return "X <input id=alter_x0 value="+cg.x0 + sty+"><br>"+
 		"Y <input id=alter_y0 value="+cg.y0 + sty+"><br>";
 	} else {
-		b=cg.bbox;
-		return "points:<br><textarea id=alter_polypoints>"+cg.polypoints.slice(0,-1).join("\n")+"</textarea><br>"+
-		"z:<br><input style='width:110px' id=alter_z value='"+cg.z.join(",")+"'>"+
-		"<br><center>" + (b.max.x - b.min.x) + " x " + (b.max.y - b.min.y) + " x " + (cg.z[1]-cg.z[0]) +" cm</center><br>";
+		b=getBbox();
+		return "points:<br><textarea id=alter-polypoints>"+cg.polypoints.slice(0,-1).join("\n")+"</textarea><br>"+
+		"z:<br><input id=alter-z value='"+cg.z.join(",")+"'>"+
+		"<br>" + (b.max.x - b.min.x) + " x " + (b.max.y - b.min.y) + " x " + (cg.z[1]-cg.z[0]) +" cm<br>";
 	}
 }
 //}}}
@@ -1040,7 +1039,7 @@ function showCgPropsBox() {//{{{
 	
 	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
-	    "<center><red>&nbsp; "+cg.name+" &nbsp; </red></center><br>"+
+	    "<center><red>&nbsp; "+cg.name+" &nbsp; "+gg[cg.letter]['x']+"</red><br>"+
 		propsXYZ()+
 		"<table>"+
 		roomProps()+
@@ -1066,35 +1065,34 @@ function saveRightBoxGeneral() {//{{{
 }
 //}}}
 function saveRightBoxCgProps() {//{{{
-	//if(isEmpty(cg)) { return; } // TODO: can we ever reach this condition?
 	if(cg.type=='evacuee') {
 		cg.x0=cg.x1=Number($("#alter_x0").val());
 		cg.y0=cg.y1=Number($("#alter_y0").val());
 		cg.z0=cg.z1=50;
 	} else {
-		cg.x0=Number($("#alter_x0").val());
-		cg.y0=Number($("#alter_y0").val());
-		cg.x1=Number($("#alter_x1").val());
-		cg.y1=Number($("#alter_y1").val());
-		cg.z0=Number($("#alter_z0").val());
-		cg.z1=Number($("#alter_z1").val());
+		cg.polypoints=[];
+		_.each($("#alter-polypoints").val().split("\n"), function(m) { 
+			arr=m.split(",");
+			if(arr.length==2 && $.isNumeric(arr[0]) && $.isNumeric(arr[1])) { cg.polypoints.push([Number(arr[0]), Number(arr[1])]); }
+		});
+		cg.polypoints.push(cg.polypoints[0]);
 	}
 
-	cg.room_enter=$("#alter_room_enter").val();
-	cg.exit_type=$("#alter_exit_type").val();
-	cg.mvent_throughput=Number($("#alter_mvent_throughput").val());
+	cg.room_enter=$("#alter-room-enter").val();
+	cg.exit_type=$("#alter-exit-type").val();
+	cg.mvent_throughput=Number($("#alter-mvent-throuthput").val());
 
 	if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
 	cgUpdateSvg();
 	cgCss();
 	cgDb();
-	showCgPropsBox(); 
 	updateSnapLines();
 } 
 //}}}
 function saveRightBox() {//{{{
 	if ($("#general_setup").val() != null)   { saveRightBoxGeneral(); }
 	if ($("#geom_properties").val() != null) { saveRightBoxCgProps(); }
+	
 }
 //}}}
 
@@ -1105,13 +1103,13 @@ function showBuildingLabels(aggressive=0, elems=[]) {//{{{
 		if(elems.length>0) {
 			_.each(elems, function(vv) { 
 				_.each(db({'name': vv}).get(), function(v) { 
-					if (['d', 'q', 'e'].includes(activeLetter)) { x=v.bbox.min.x; y=v.bbox.min.y-30 } else { x=v.bbox.min.x+15; y=v.bbox.min.y+50; }
+					if (['d', 'q', 'e'].includes(activeLetter)) { x=v.minx; y=v.miny-30 } else { x=v.minx+15; y=v.miny+50; }
 					mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
 				});
 			});
 		} else {
 			_.each(db({'floor': floor, 'letter': activeLetter}).get(), function(v) { 
-				if (['d', 'q', 'e'].includes(activeLetter)) { x=v.bbox.min.x; y=v.bbox.min.y-30 } else { x=v.bbox.min.x+15; y=v.bbox.min.y+50; }
+				if (['d', 'q', 'e'].includes(activeLetter)) { x=v.minx; y=v.miny-30 } else { x=v.minx+15; y=v.miny+50; }
 				mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
 			});
 		}
