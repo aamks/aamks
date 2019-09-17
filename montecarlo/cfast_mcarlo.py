@@ -94,7 +94,7 @@ class CfastMcarlo():
 
         self.fire_origin = fire_origin
 
-        collect=('FIRE', compa['global_type_id'], round(compa['width']/(2.0*100),2), round(compa['depth']/(2.0*100),2), z, 1, 'TIME' ,'0','0','0','0','medium')
+        collect=('FIRE', compa['global_type_id'], round(compa['width']/(2.0*100),2), round(compa['depth']/(2.0*100),2), z/100, 1, 'TIME' ,'0','0','0','0','medium')
         return (','.join(str(i) for i in collect))
 
 # }}}
@@ -509,7 +509,7 @@ class CfastMcarlo():
         fire_origin=self._fire_origin()
         times, hrrs=self._draw_fire_development()
         fire_properties = self._draw_fire_properties(len(times))
-        self._fire_obstacle()
+        #self._fire_obstacle()
         area = nround(npa(hrrs)/(self.hrrpua * 1000) + 0.1, decimals=1)
         fire_origin=self._fire_origin()
 
