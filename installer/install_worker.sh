@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 #This is the instalator of for worker. Currently it works only on Linux nodes.
 USER='mimooh'
-AAMKS_LOCAL_WORKER=0
 
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
@@ -78,3 +77,5 @@ cd recastlib
 cp -rf ./Recast\(Patched\)/Detour/ ./Recast/
 python3 setup.py install
 
+S mkdir /home/aamks_users
+S chmod 777 /home/aamks_users
