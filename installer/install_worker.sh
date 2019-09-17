@@ -77,5 +77,5 @@ cd recastlib
 cp -rf ./Recast\(Patched\)/Detour/ ./Recast/
 python3 setup.py install
 
-S mkdir /home/aamks_users
-S chmod 777 /home/aamks_users
+sudo mkdir /home/aamks_users
+sudo chmod 777 /home/aamks_users
