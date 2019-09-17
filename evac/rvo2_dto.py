@@ -59,8 +59,12 @@ class EvacEnv:
         paths, paths_free_of_smoke = list(), list()
 
         for door in self.general['doors']:
+            if door['floor'] != str(self.floor):
+                continue
             x, y = door['center_x'], door['center_y']
-            path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (x, y)], maxStraightPath=100)
+            path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (x, y)], maxStraightPath=200)
+            if path[0] == 'err':
+                continue
             if self._next_room_in_smoke(evacuee, path) is not True:
                 try:
                     paths_free_of_smoke.append([x, y, LineString(path).length])
@@ -156,7 +160,7 @@ class EvacEnv:
                 position = self.evacuees.get_position_of_pedestrian(e)
                 goal = self.nav.query([position, self._find_closest_exit(e)], maxStraightPath=32)
                 try:
-                    vis = self.sim.queryVisibility(position, goal[2])
+                    vis = self.sim.queryVisibility(position, goal[2], 15)
                     if vis:
                         self.evacuees.set_goal(ped_no=e, goal=goal[1:])
                     else:
@@ -170,6 +174,8 @@ class EvacEnv:
 
     def update_speed(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
+            self.elog.debug('Number of neigbouring agents: {}'.format(self.sim.getAgentNumAgentNeighbors(i)))
+            self.elog.debug('Neigbouring distance: {}'.format(self.sim.getAgentNeighborDist(i)))
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
@@ -232,6 +238,7 @@ class EvacEnv:
             elif hgt <= self.config['LAYER_HEIGHT']:
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['ULOD'])
             else:
+                od = self.smoke_query.compa_conditions[str(room)]['LLOD']
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['LLOD'])
             if opacity > 0.0 and room not in self.rooms_in_smoke:
                 self.rooms_in_smoke.append(room)
@@ -241,7 +248,7 @@ class EvacEnv:
 
     def _OD_to_VIS(self, OD):
         self.elog.debug('TIME: {}, optical density: {}'.format(self.current_time, OD))
-        if OD == 0:
+        if OD <= 1:
             return 0.0
         else:
             vis = self.general['c_const'] / log(OD)
@@ -283,4 +290,5 @@ class EvacEnv:
         self.elog.info(self.current_time)
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
             self.update_fed()
-        self.get_rset_time()
+        if self.rset == 0:
+            self.get_rset_time()

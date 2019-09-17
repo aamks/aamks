@@ -143,7 +143,7 @@ class Worker:
 
         self.s = Sqlite("aamks.sqlite")
         #self.report_log_issue(message=self.s.dumpall(), mode='DEBUG')
-        doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom where type_pri="HVENT" AND vent_to_name="outside"')
+        doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom WHERE terminal_door IS NOT NULL')
         self.vars['conf']['doors']=doors
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         self.wlogger.info('SQLite load successfully')
@@ -169,30 +169,33 @@ class Worker:
         return e
 
     def prepare_simulations(self):
-        obstacles = []
-        eenv = None
 
-        for i in self.obstacles['obstacles'].keys():
+        for floor in sorted(self.obstacles['obstacles'].keys()):
+            eenv = None
+            obstacles = []
             try:
                 eenv = EvacEnv(self.vars['conf'])
-                eenv.floor = i
+                eenv.floor = floor
             except Exception as e:
                 self.wlogger.error(e)
             else:
-                self.wlogger.info('rvo2_dto ready on {} floors'.format(i))
+                self.wlogger.info('rvo2_dto ready on {} floors'.format(floor))
 
-            for obst in self.obstacles['obstacles'][str(i)]:
+            for obst in self.obstacles['obstacles'][str(floor)]:
                 obstacles.append([tuple(x) for x in array(obst)[[0,1,2,3,4,1]]])
+            if str(floor) in self.obstacles['fire']:
+                obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0,1,2,3,4,1]]])
+
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
             eenv.generate_nav_mesh()
             self.wlogger.debug('Added obstacles on floor: {}, number of vercites: {}'.format(1, num_of_vertices))
 
-            e = self._create_evacuees(i)
-            self.wlogger.info('Evacuees placed on floor: {}'.format(i))
+            e = self._create_evacuees(floor)
+            self.wlogger.info('Evacuees placed on floor: {}'.format(floor))
             eenv.place_evacuees(e)
             eenv.prepare_rooms_list()
-            self.wlogger.info('Room list prepared on floor: {}'.format(i))
+            self.wlogger.info('Room list prepared on floor: {}'.format(floor))
             self.floors.append(eenv)
 
 

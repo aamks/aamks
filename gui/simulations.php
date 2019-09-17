@@ -10,9 +10,9 @@ function listing() {/*{{{*/
 /*}}}*/
 function status() {/*{{{*/
 	extract($_SESSION['main']);
-	$r=$_SESSION['nn']->query("SELECT count(*) AS finished FROM simulations WHERE project = $project_id and dcbe_time is not null");
+	$r=$_SESSION['nn']->query("SELECT count(*) AS finished FROM simulations WHERE project = $project_id and scenario_id = $scenario_id and dcbe_time is not null");
 	$finished=$r[0]['finished'];
-	$r=$_SESSION['nn']->query("SELECT count(*) AS total FROM simulations WHERE project = $project_id");
+	$r=$_SESSION['nn']->query("SELECT count(*) AS total FROM simulations WHERE project = $project_id and scenario_id = $scenario_id");
 	$total=$r[0]['total'];
 	echo "<br>Complete: $finished of $total &nbsp; &nbsp; <wheat>ctrl+r to refresh</wheat>";
 }
@@ -30,7 +30,7 @@ function show_pictures() {/*{{{*/
 
 	echo "<br>$z";
 	$counter = 1;
-	$pictures_list = array(array('pie_fault','title'), array('lossesdead','title'), array('lossesheavy','title'), array('losseslight','title'), array('lossesneglegible','title'), array('ccdf','title'), array('dcbe','title'), array('wcbe','title'), array('height','title'), array('hgt_cor','title'), array('temp','title'), array('vis','title'), array('vis_cor','title'), array('tree','title'), array('tree_steel','title'));
+	$pictures_list = array(array('pie_fault','The share of scenario with failure of safety systems'), array('lossesdead','Number of scenarios with fatalities with respect to number of peaople affected'), array('lossesheavy','Number of scenarios with heavy injured with respect to number of peaople affected'), array('losseslight','Number of scenarios with heavy injured with respect to number of peaople affected'), array('lossesneglegible','title'), array('ccdf','FN curve'), array('dcbe','Cumulative distribution function of ASET'), array('wcbe','Cumulative distribution function of RSET'), array('height','Cumulative distribution function of minimal hot layer height'), array('hgt_cor','Cumulative distribution function of minimal hot layer heigh on the evacuation routes'), array('temp','Cumulative distribution function of maximal temperature'), array('vis','Cumulative distribution function of the minimal visibility'), array('vis_cor','Cumulative distribution function of the minimal visibility on the evacuation routes'), array('tree','Event tree for FED of toxic gases'), array('tree_steel','Event for construction stability'));
 	foreach($pictures_list as $picture) {
 		$file=$f."/picts/".$picture[0].".png";
 		$size_info=getimagesize($file);
