@@ -24,6 +24,19 @@ var activeSnap={};
 var undoBuffer=[];
 var evacueeRadius;
 //}}}
+function debug() {//{{{
+	console.clear();
+	//ddd();
+	//return;
+	//dd($('#building')[0]);
+	dd($('#floor0')[0]);
+	//dd(db2cadjson());
+	//dd($('#floor0')[0]);
+	//dd("f2", $('#ufloor2')[0]);
+	//_.each(db({'letter':'s'}).get(), function(v) {
+	//});
+}
+//}}}
 function tempChrome() {//{{{
 	// At some point chrome will enable separate css transformations and this call will be removed
 	d3.select('body').append('temp_checker').attr("id", "temp_checker").style("scale", 1);
@@ -101,19 +114,6 @@ function dddx() {//{{{
 	dd(cg.name, JSON.stringify(cg.polypoints));
 }
 //}}}
-function debug() {//{{{
-	console.clear();
-	//ddd();
-	//return;
-	//dd($('#building')[0]);
-	dd($('#floor0')[0]);
-	//dd(db2cadjson());
-	//dd($('#floor0')[0]);
-	//dd("f2", $('#ufloor2')[0]);
-	//_.each(db({'letter':'s'}).get(), function(v) {
-	//});
-}
-//}}}
 function ddd(current=0) {//{{{
 	if(current!=0) { 
 		dd(db({'name': cg.name}).get()[0]);
@@ -159,11 +159,10 @@ function cgSvg(pparent='auto') { //{{{
 		.append(elem)
 		.attr('id', cg.name)
 		.attr('class', gg[cg.letter].t + " " +gg[cg.letter].x)
-		.attr('points', cg.polypoints.join(" "))
+		.attr('points', svgPolyline())
 		.attr('cx', cg.polypoints[0][0])
 		.attr('cy', cg.polypoints[0][1])
 		.attr('r', evacueeRadius)
-		//.attr('stroke-linecap', 'square')
 }
 //}}}
 function cgCss() {//{{{
@@ -543,7 +542,6 @@ function cgCreate() {//{{{
 			cgDecidePoints(m);
 			cgSvg();
 			cg.bbox=getBbox();
-			//dd(cg);
 			delete cg.infant;
 		} else if(d3.event.which==3) {
 			cgEscapeCreate();
@@ -604,7 +602,7 @@ function cgDecidePoints(m) {//{{{
 			}
 			break;
 		case 'window': case 'hole':
-			if(isEmpty(activeSnap)) { cg.polypoints=cg.polypoints.slice(0,5); return; }
+			if(isEmpty(activeSnap)) { cg.polypoints=cg.polypoints.slice(0,3); return; }
 			if(cg.preferredSnap==null) { 
 				b=getBbox(); 
 				if(b.max.x-b.min.x > 32)       { cg.preferredSnap='y'; }
@@ -632,29 +630,32 @@ function cgDecidePoints(m) {//{{{
 			break;
 	}
 
-	cg.polypoints=[p0,p1,p2,p3,p0];
+	cg.polypoints=[p0,p1,p2,p3];
 }
 //}}}
 function assertCgReady() {//{{{
-	if(cg.type=='evacuee') { 
-		return true;
-	}
-
-	if(cg.polypoints.length<2) { 
-		$("#"+cg.name).remove();
-		return false;
-	}
+	if(cg.type=='evacuee') { cg.polypoints=[cg.polypoints[0]]; return true; }
+	if(cg.polypoints.length<2) { $("#"+cg.name).remove(); return false; }
+	if(cg.polypoints[0][0]==cg.polypoints[1][0] && cg.polypoints[0][1]==cg.polypoints[1][1]) { $("#"+cg.name).remove(); return false; }
 
 	if(cg.type=='underlay_scaler') { 
-		underlayForm(cg.x1-cg.x0);
+		b=getBbox();
+		underlayForm(b.maxx-b.minx);
 		return false;
 	}
 
 	return true;
 }
 //}}}
+function svgPolyline() {//{{{
+	points=deepcopy(cg.polypoints);
+	points.push(points[0]);
+	points.push(points[1]);
+	return points.join(" ");
+}
+//}}}
 function cgUpdateSvg() {  //{{{
-	$("#"+cg.name).attr({ points: cg.polypoints.join(" ") });   
+	$("#"+cg.name).attr({ 'points': svgPolyline() });   
 }
 //}}}
 
@@ -688,7 +689,7 @@ function dbUpdateCadJsonStr() { //{{{
 	for (var rr in r) {	
 		i=r[rr];
 		cad_json={};
-		cad_json['points']=JSON.stringify(i.polypoints.slice(0,-1));
+		cad_json['points']=JSON.stringify(i.polypoints);
 		cad_json['idx']=i.idx;
 		cad_json['z']=JSON.stringify(i.z);
 
@@ -750,7 +751,6 @@ function json2db(json) { //{{{
 //}}}
 function cgMake(floor,letter,record) { //{{{
 	cg.polypoints=JSON.parse(record.points);
-	cg.polypoints.push(cg.polypoints[0]);
 	cg.z=JSON.parse(record.z);
 	cg.idx=record.idx;
 	cg.name=letter+cg.idx;
@@ -1023,11 +1023,11 @@ function showHelpBox() {//{{{
 function propsXYZ() {//{{{
 	sty=" style='width: 40px' ";
 	if(cg.type=='evacuee') { 
-		return "X <input id=alter_x0 value="+cg.x0 + sty+"><br>"+
-		"Y <input id=alter_y0 value="+cg.y0 + sty+"><br>";
+		return "X <input id=alter-px value="+cg.polypoints[0][0]+ sty+"><br>"+
+		"Y <input id=alter-py value="+cg.polypoints[0][1]+ sty+"><br>";
 	} else {
 		b=getBbox();
-		return "points:<br><textarea id=alter-polypoints>"+cg.polypoints.slice(0,-1).join("\n")+"</textarea><br>"+
+		return "points:<br><textarea id=alter-polypoints>"+cg.polypoints.join("\n")+"</textarea><br>"+
 		"z:<br><input id=alter-z value='"+cg.z.join(",")+"'>"+
 		"<br>" + (b.max.x - b.min.x) + " x " + (b.max.y - b.min.y) + " x " + (cg.z[1]-cg.z[0]) +" cm<br>";
 	}
@@ -1066,27 +1066,27 @@ function saveRightBoxGeneral() {//{{{
 //}}}
 function saveRightBoxCgProps() {//{{{
 	if(cg.type=='evacuee') {
-		cg.x0=cg.x1=Number($("#alter_x0").val());
-		cg.y0=cg.y1=Number($("#alter_y0").val());
-		cg.z0=cg.z1=50;
+		cg.polypoints=[Number($("#alter-px").val()), Number($("#alter-py").val())];
+		cg.z=[50,50];
+		$("#"+cg.name).attr('cx', cg.polypoints[0][0]).attr('cy', cg.polypoints[0][1]);   
+		cgDb();
 	} else {
 		cg.polypoints=[];
 		_.each($("#alter-polypoints").val().split("\n"), function(m) { 
 			arr=m.split(",");
 			if(arr.length==2 && $.isNumeric(arr[0]) && $.isNumeric(arr[1])) { cg.polypoints.push([Number(arr[0]), Number(arr[1])]); }
 		});
-		cg.polypoints.push(cg.polypoints[0]);
+		cg.room_enter=$("#alter-room-enter").val();
+		cg.exit_type=$("#alter-exit-type").val();
+		cg.mvent_throughput=Number($("#alter-mvent-throuthput").val());
+
+		if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
+		cgUpdateSvg();
+		cgCss();
+		cgDb();
+		updateSnapLines();
 	}
 
-	cg.room_enter=$("#alter-room-enter").val();
-	cg.exit_type=$("#alter-exit-type").val();
-	cg.mvent_throughput=Number($("#alter-mvent-throuthput").val());
-
-	if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
-	cgUpdateSvg();
-	cgCss();
-	cgDb();
-	updateSnapLines();
 } 
 //}}}
 function saveRightBox() {//{{{

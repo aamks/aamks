@@ -1,4 +1,4 @@
-AK
+K
 ==
 * master vs stable:
 	Bylo: fire_origin w [m]. Jest: [cm]
@@ -21,7 +21,7 @@ AK
 mimooh
 =======
 
-* apainter: poly obsts, add z-dim
+* apainter: poly: test all, then evacuees, view3D, geom.py
 * apainter: staircase slice
 * animator: Highlight poly geoms 
 * animator: labels poly rooms
