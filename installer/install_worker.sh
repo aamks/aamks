@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #This is the instalator of for worker. Currently it works only on Linux nodes.
-USER='krasus'
+USER='mimooh'
 AAMKS_LOCAL_WORKER=0
 
 sudo locale-gen en_US.UTF-8

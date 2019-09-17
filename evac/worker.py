@@ -16,6 +16,7 @@ import time
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from urllib.request import urlopen, urlretrieve
+import ssl
 from include import Json
 import json
 from collections import OrderedDict
@@ -51,6 +52,8 @@ class Worker:
         self.animation_data = []
         self.smoke_opacity = []
         self.rooms_in_smoke = dict()
+        ssl._create_default_https_context = ssl._create_unverified_context
+
 
     def get_logger(self, logger_name):
         FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
