@@ -169,7 +169,6 @@ class Psql: # {{{
         import psycopg2
         import psycopg2.extras
 
-        self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
         try:
             self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host={} password='{}'".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_PG_PASS']))
             self.psqldb=self.PSQL.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -189,6 +188,7 @@ class Psql: # {{{
         print(data)
 
     def dump(self):
+        self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
