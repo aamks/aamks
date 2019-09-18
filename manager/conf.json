@@ -6,9 +6,9 @@
         "network_208": 0,
         "network_003": 0,
         "network_tsz": 0,
-        "network_cr": 4,
+        "network_cr": 0,
         "network_zil": 0,
-        "network_wilkors": 0
+        "network_wilkors": 4
     },
 
     "networks": {
@@ -20,7 +20,7 @@
 
         "network_zil": [ 
 
-            [ "c8:60:00:60:43:c5" , "192.168.100.51"  , "192.168.100.255" ] 
+			[ "d4:3d:7e:e3:2a:6c" , "192.168.100.101" , "192.168.100.255" ] 
         ],
 
         "network_cr": [ 
