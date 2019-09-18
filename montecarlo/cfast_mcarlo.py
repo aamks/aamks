@@ -505,11 +505,34 @@ class CfastMcarlo():
 
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
+    def _fire_obstacle(self):# {{{
+        ''' 
+        Fire Obstacle prevents humans to walk right through the fire. Currently
+        we build the rectangle xx * yy around x,y. Perhaps this size could be
+        some function of fire properties.
+        '''
+
+        xx=150
+        yy=150
+
+        z=self.s.query("SELECT * FROM fire_origin") 
+        i=z[0]
+        i['x']=int(i['x'] * 100)
+        i['y']=int(i['y'] * 100)
+        i['z']=int(i['z'] * 100)
+
+        points=[ [i['x']-xx, i['y']-yy, 0], [i['x']+xx, i['y']-yy, 0], [i['x']+xx, i['y']+yy, 0], [i['x']-xx, i['y']+yy, 0], [i['x']-xx, i['y']-yy, 0] ]
+
+        obstacles=self.json.readdb("obstacles")
+        obstacles['fire']={ i['floor']: points }
+        self.s.query("UPDATE obstacles SET json=?", (json.dumps(obstacles),))
+
+#}}}
     def _section_fire(self):# {{{
         fire_origin=self._fire_origin()
         times, hrrs=self._draw_fire_development()
         fire_properties = self._draw_fire_properties(len(times))
-        #self._fire_obstacle()
+        self._fire_obstacle()
         area = nround(npa(hrrs)/(self.hrrpua * 1000) + 0.1, decimals=1)
         fire_origin=self._fire_origin()
 
