@@ -328,13 +328,11 @@ class CFASTimporter():
 # }}}
     def _terminal_doors(self):# {{{
         ''' 
-        Doors that lead to outside or lead to staircases are terminal
+        Doors that lead to outside or lead to staircases ('s%') are terminal
         '''
-        terminal_rooms=self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_sec='STAI'")
-
         update=[]
-        for i in terminal_rooms:
-            z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE type_pri='HVENT' AND (vent_from=? OR vent_to=? OR vent_to_name='outside')", (i['global_type_id'], i['global_type_id']))
+        z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE type_pri='HVENT' AND (vent_from_name LIKE 's%' OR vent_to_name LIKE 's%' OR vent_to_name='outside')")
+        for i in z:
             for ii in z:
                 update.append((ii['exit_type'], ii['name']))
         self.s.executemany("UPDATE aamks_geom SET terminal_door=? WHERE name=?", update)
@@ -604,6 +602,7 @@ class CFASTimporter():
         #dd(self.s.query("select * from world2d"))
         #exit()
         #self.s.dump()
+        #dd(self.s.query("select name,terminal_door  from aamks_geom where terminal_door is not NULL"))
         pass
         
 # }}}

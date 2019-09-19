@@ -310,6 +310,7 @@ function get_defaults($q) {/*{{{*/
 	{
 		"outdoor_temperature": { "mean": 20, "sd": 2 },
 		"navmesh_debug": 0,
+		"fire_model": "CFAST",
 		"indoor_pressure": 101325,
 		"windows": [ 
 			{ "min": -99999 , "max": -5    , "quarter": -5 , "full": 0.11 } ,
