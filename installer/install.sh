@@ -30,6 +30,8 @@ AAMKS_PATH='/usr/local/aamks'
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
 AAMKS_SALT='aamksisthebest'
+AAMKS_GMAIL_PASSWORD='my_password'
+AAMKS_GMAIL_USERNAME='my_username'
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 
 echo "This is the default Aamks configuration. You can change it in install.sh. "
@@ -42,6 +44,8 @@ echo "AAMKS_PATH: $AAMKS_PATH"
 echo "AAMKS_PROJECT: $AAMKS_PROJECT"
 echo "AAMKS_PG_PASS: $AAMKS_PG_PASS"
 echo "AAMKS_SALT: $AAMKS_SALT"
+echo "AAMKS_GMAIL_USERNAME: $AAMKS_GMAIL_USERNAME"
+echo "AAMKS_GMAIL_PASSWORD: $AAMKS_GMAIL_PASSWORD"
 echo; echo;
 echo "<Enter> accepts, <ctrl+c> cancels"
 read
@@ -126,7 +130,7 @@ USER=`id -ru`
 
 sudo locale-gen en_US.UTF-8
 sudo apt-get update 
-sudo apt-get --yes install postgresql subversion python3-pip python3-psycopg2 sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php
+sudo apt-get --yes install postgresql subversion python3-pip python3-psycopg2 sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php composer
 sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx sns seaborn statsmodels PyQt5 ete3
 
 
@@ -141,6 +145,8 @@ echo "export AAMKS_TESTING='$AAMKS_TESTING'" >> $temp
 echo "export AAMKS_USE_GEARMAN=$AAMKS_USE_GEARMAN" >> $temp
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> $temp
+echo "export AAMKS_GMAIL_USERNAME='$AAMKS_GMAIL_USERNAME'" >> $temp
+echo "export AAMKS_GMAIL_PASSWORD='$AAMKS_GMAIL_PASSWORD'" >> $temp
 sudo cp $temp /etc/apache2/envvars
 
 echo "umask 0002" >> $temp
@@ -152,6 +158,9 @@ rm $temp
 
 sudo mkdir -p "$AAMKS_PROJECT"
 sudo cp -r $AAMKS_PATH/installer/demo /home/aamks_users/demo@aamks/
+# TODO - instructables for sending mail via Gmail
+composer require phpmailer/phpmailer
+mv vendor $AAMKS_PATH/gui
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.
 # Solves the problem of shell users vs www-data user permissions of new files.

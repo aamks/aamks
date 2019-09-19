@@ -32,7 +32,7 @@ function init_main_vars() { #{{{
 	#psql aamks -c 'select * from users'
 	#psql aamks -c 'select * from projects'
 	if(isset($_SESSION['main']['project_id'])) { return; }
-	$_SESSION['main']['user_id']=1;
+	#$_SESSION['main']['user_id']=1;
 	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 }
@@ -171,7 +171,8 @@ public function me(){/*{{{*/
 		if(!empty($_SESSION['main']['user_photo'])){
 			$setup_user="<a href=/aamks/users.php?edit_user><img src=".$_SESSION['main']['user_photo']." style='width:50px; height:50px; padding-right:4px;'></a>";
 		}else{
-			$name=explode(" ", $_SESSION['main']['user_name'])[0];
+			#$name=explode(" ", $_SESSION['main']['user_name'])[0];
+			$name='foo';
 			$setup_user="<a href=/aamks/users.php?edit_user class=blink>$name</a>";
 		}
 		echo "

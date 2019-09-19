@@ -22,14 +22,16 @@ function login_form(){/*{{{*/
     </table><br>
     <input type=submit name=logMeIn value='Sign in'>
 	</div>
-	<br>or<br><br>
-	<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' ></div>
-	<br><br> <br><br> <br><br> <br><br>
 	New to Aamks?
 	<a href=?register>Register</a>
     </form>
     </center>
 	";
+	#<br>or<br><br>
+	#<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' ></div>
+	#<br><br> <br><br> <br><br> <br><br>
+	//taken from $form for now (Finland)
+
 	if(!isset($_POST['logMeIn'])){
 		echo $form;
 	}else{
@@ -194,7 +196,7 @@ function main() { /*{{{*/
 	# if(isset($_GET['register'])) { register_form();}
 	# if(isset($_GET['reset'])) { reset_password();}
 	# if(isset($_GET['activation_token'])) { activate_user();}
-	# login_form();
+	 login_form();
 }
 /*}}}*/
 
