@@ -1,4 +1,5 @@
 <?php
+session_name('aamks');
 session_start();
 ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
@@ -32,9 +33,9 @@ function init_main_vars() { #{{{
 	#psql aamks -c 'select * from users'
 	#psql aamks -c 'select * from projects'
 	if(isset($_SESSION['main']['project_id'])) { return; }
-	#$_SESSION['main']['user_id']=1;
 	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
+	//dd($_SESSION);
 }
 /*}}}*/
 
@@ -95,10 +96,8 @@ class Aamks {/*{{{*/
 		echo "<tt>$title</tt>";
 	}
 	/*}}}*/
-public function me(){/*{{{*/
-	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
-}/*}}}*/
 	public function ch_main_vars($r) { #{{{
+		$_SESSION['main']['user_id']=$r['user_id'];
 		$_SESSION['main']['project_id']=$r['project_id'];
 		$_SESSION['main']['user_name']=$r['user_name'];
 		$_SESSION['main']['user_photo']=$r['user_photo'];
@@ -158,26 +157,13 @@ public function me(){/*{{{*/
 	}
 /*}}}*/
 	public function logoutButton() {/*{{{*/
-		if(isset($_REQUEST['logout'])) { 
-			echo "<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google 
-			unset($_SESSION['main']['user_id']);
-			session_destroy();
-			ob_flush();
-			flush();
-			sleep(2);
-			echo "<script type='text/javascript'> signOut(); </script> <meta http-equiv='Refresh' content='0; url=index.php' />	";
-		}
+		if(!isset($_SESSION['main']['user_id'])) { header("Location: login.php"); }
 
-		if(!empty($_SESSION['main']['user_photo'])){
-			$setup_user="<a href=/aamks/users.php?edit_user><img src=".$_SESSION['main']['user_photo']." style='width:50px; height:50px; padding-right:4px;'></a>";
-		}else{
-			#$name=explode(" ", $_SESSION['main']['user_name'])[0];
-			$name='foo';
-			$setup_user="<a href=/aamks/users.php?edit_user class=blink>$name</a>";
-		}
+		//$setup_user="<a href=/aamks/users.php?edit_user><img src=".$_SESSION['main']['user_photo']." style='width:50px; height:50px; padding-right:4px;'></a>";
+		$setup_user="<a href=/aamks/users.php?edit_user class=blink>".$_SESSION['main']['user_name']."</a>";
 		echo "
 		<div style='position:fixed; top: 20px; right: 10px; text-align:right'>
-		<a href=?logout=1 class=blink >Logout</a><br>
+		<a href=login.php?logout=1 class=blink >Logout</a><br>
 		$setup_user
 		</div>
 		";
@@ -261,15 +247,6 @@ public function do_google_login(){/*{{{*/
 	unset($_SESSION['google_data']);
 	return $ret[0];
 }/*}}}*/
-	public function set_user_variables($r){/*{{{*/
-		$_SESSION['main']['user_id']=$r['id'];
-		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
-		$_SESSION['main']['user_name']=$r['user_name']; # zmiany nazw
-		$_SESSION['main']['user_photo']=$r['picture']; # zmiany nazw 
-		$_SESSION['main']['user_email']=$r['email'];
-		$_SESSION['main']['email']=$r['email']; //TODO - usunać?
-		//can not put header location in here
-	}/*}}}*/
 	public function querydd($qq,$arr=[]){ /*{{{*/
 		# query debugger
 		echo "<pre>";
