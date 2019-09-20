@@ -33,7 +33,7 @@ function init_main_vars() { #{{{
 	#psql aamks -c 'select * from users'
 	#psql aamks -c 'select * from projects'
 	if(isset($_SESSION['main']['project_id'])) { return; }
-	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.id AS user_id, u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	//dd($_SESSION);
 }
@@ -97,11 +97,13 @@ class Aamks {/*{{{*/
 	}
 	/*}}}*/
 	public function ch_main_vars($r) { #{{{
+		if(!array_key_exists('user_id', $r) || !array_key_exists('user_name', $r) || !array_key_exists('user_photo', $r) || !array_key_exists('active_editor', $r) || !array_key_exists('project_id', $r) || !array_key_exists('project_name', $r) || !array_key_exists('scenario_id', $r) || !array_key_exists('scenario_name', $r)) { dd($r); die("ch_main_vars() bug"); }
+
 		$_SESSION['main']['user_id']=$r['user_id'];
-		$_SESSION['main']['project_id']=$r['project_id'];
 		$_SESSION['main']['user_name']=$r['user_name'];
 		$_SESSION['main']['user_photo']=$r['user_photo'];
 		$_SESSION['main']['active_editor']=$r['active_editor'];
+		$_SESSION['main']['project_id']=$r['project_id'];
 		$_SESSION['main']['project_name']=$r['project_name'];
 		$_SESSION['main']['scenario_id']=$r['scenario_id'];
 		$_SESSION['main']['scenario_name']=$r['scenario_name'];

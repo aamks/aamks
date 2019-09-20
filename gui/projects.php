@@ -48,8 +48,7 @@ function ch_scenario(){/*{{{*/
 	#psql aamks -c 'select * from scenarios'
 	#psql aamks -c 'select * from users'
 	if(!isset($_GET['ch_scenario'])) { return; }
-	#$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2 LIMIT 1",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
-	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.id as user_id, u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND u.id=$2",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
 	if(empty($r[0])) { die("scenario_id=$_GET[ch_scenario]?"); }
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	header("Location: form.php?edit");
@@ -89,7 +88,6 @@ function assert_session_complete() { #{{{
 function main() { #{{{
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; } # TODO: index.php should handle this
 	$_SESSION['nn']->htmlHead("Manage projects");
-	init_main_vars();
 	new_scenario();
 	new_project();
 	ch_scenario();

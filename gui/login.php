@@ -35,8 +35,6 @@ function gmail($to, $subject, $msg) { #{{{
 	}
 }
 /*}}}*/
-#gmail("stanislaw.lazowy@gmail.com", "aamks Registration", "To jest message");
-
 function loginphp(){/*{{{*/
 	return("$_SERVER[SCRIPT_NAME]");
 }/*}}}*/
@@ -70,8 +68,7 @@ function login_form(){/*{{{*/
 	#<br><br> <br><br> <br><br> <br><br>
 	//taken from $form for now (Finland)
 } #}}}
-
-function do_login() {
+function do_login() { #{{{
 	$salted=salt($_POST['password']);
 	#echo "SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.email='stanislaw.lazowy@gmail.com'  AND u.password='cf87b610767de89e73f6'" | psql aamks
 	#echo "SELECT * FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.email='stanislaw.lazowy@gmail.com'  AND u.password='cf87b610767de89e73f6'" | psql aamks
@@ -83,7 +80,6 @@ function do_login() {
 	# echo 'update  users set active_scenario=1, active_editor=1' | psql aamks
 	# echo "insert into scenarios(project_id,id,scenario_name) values(1,1,'zupa')" | psql aamks
 	# echo "insert into projects(id,user_id,project_name) values(1,1,'project_zupa')" | psql aamks
-
 	if(!empty($ret)){//password and email match
 		if($salted==$ret[0]['password']){
 			$_SESSION['nn']->ch_main_vars($ret[0]);
@@ -99,8 +95,37 @@ function do_login() {
 	if(isset($_POST['register'])){
 		echo"Register";
 	}
-	
+}
+/*}}}*/
+function do_register(){/*{{{*/
+	extract($_POST);
+	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE email = $1 ", array($_POST['email'] ));
+	if (!empty($ret[0])){
+		$_SESSION['nn']->fatal("Email address already used in AAMKS!");
+	}
+	$salted=salt($password);
+	$token=md5(time());
+	$_SESSION['nn']->query("insert into users (user_name, email, password, activation_token,active_scenario, active_editor) values ($1,$2,$3,$4,$5,$6)", array($name, $email, $salted,$token,1,1));
+
+	// TODO: enable for production!
+	// gmail($email,"Welcome to AAMKS","Confirm your email address and activate your AAMKS account <br> 
+	//	<a href=http://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token>Click here</a>");
+	//echo "<br> or click here <a href=login.php?activation_token=$token>Click here</a>";  
+	header("Location: login.php?activation_token=$token"); // Finland only
 }/*}}}*/
+function do_logout() { #{{{
+
+	#echo "<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google 
+	#TODO FINLAND
+	$_SESSION=[];
+	session_destroy();
+	header("Location: login.php");
+	//ob_flush();
+	//flush();
+	//sleep(2);
+	//echo "<script type='text/javascript'> signOut(); </script> <meta http-equiv='Refresh' content='0; url=index.php' />	";
+}
+/*}}}*/
  function password_input($name,$required){/*{{{*/
 	if(!empty($required)){$req=" required ";}else{ $req="";}
 	 $password_input="<input type=password size=32 autocomplete=off $req name=$name placeholder='password' pattern='.{8,}' title='at least 8 chars - lowecase, uppercase, digit, character from (!@#$%^&*)'>";//finland ONLY
@@ -109,7 +134,7 @@ function do_login() {
 # psql aamks -c "delete  from users";
 }/*}}}*/
 function register_form(){/*{{{*/
-   $form = "<br><br>
+   echo "<br><br>
 		<form method=POST>
 		<center>
 		<img src=logo.svg>
@@ -119,57 +144,37 @@ function register_form(){/*{{{*/
 		<tr><td>password<td>".password_input("password",1)."
 		<tr><td>repeat password<td>".password_input("rpassword",1)."
 		</table><br>
-		<input type=submit name=register value='Register'>
+		<input type=submit name=do_register value='Register'>
 		<br><br>
 		</form>
 		</center>
 		";
-	if(!isset($_POST['register'])){
-			echo $form;
-	}else{
-		do_register();
-	}
 	exit();
 }/*}}}*/
-function do_register(){/*{{{*/
-	extract($_POST);
-	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE email = $1 ", array($_POST['email'] ));
-	if (!empty($ret[0])){
-		$_SESSION['nn']->fatal("Email address already used in AAMKS!");
-	}
-	$salted=salt($password);
-	$token=md5(time());
-	$ret=$_SESSION['nn']->query("insert into users (user_name, email, password, activation_token,active_scenario, active_editor) values ($1,$2,$3,$4,$5,$6) returning id", array($name, $email, $salted,$token,1,1));
-	$pid=$_SESSION['nn']->query("insert into projects (user_id, project_name) values ($1,$2) RETURNING id", array($ret[0]['id'], 'p1'));
-	$sid=$_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 's1'));
-	$sid=$_SESSION['nn']->query("update users set active_scenario = $1 where id=$2", array($sid[0]['id'], $ret[0]['id']));
-
-	$AAMKS_PATH=getenv("AAMKS_PATH"); 
-	$user_dir="/home/aamks_users/".$_SESSION['main']['user_email'];
-	system("
-		mkdir -p $user_dir
-		cp -r $AAMKS_PATH/installer/demo/ $user_dir
-	");
-
-	# echo 'delete from users' | psql aamks
-	# echo 'select * from scenarios' | psql aamks
-	# echo 'select * from users' | psql aamks
-	# echo 'select * from projects' | psql aamks
-
-	gmail($email,"Welcome to AAMKS","Confirm your email address and activate your AAMKS account <br> 
-		<a href=http://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token>Click here</a>");
-	echo "<br> or click here <a href=http://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token>Click here</a>";
-}/*}}}*/
 function activate_user(){/*{{{*/
-	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE activation_token= $1 AND activation_token !='already activated'", array($_GET['activation_token'] ));
-	if (empty($ret[0])){
+	$r=$_SESSION['nn']->query("SELECT * FROM users WHERE activation_token= $1 AND activation_token !='already activated'", array($_GET['activation_token'] ));
+	if (empty($r[0])){
 		$_SESSION['nn']->fatal("Activation token not valid");
-	}else{
-		$_SESSION['nn']->query("UPDATE users SET activation_token ='already activated' WHERE id= $1", array($ret[0]['id'])) ;
-#TODO ret
+	} else {
+		$_SESSION['nn']->query("UPDATE users SET activation_token='already activated' WHERE id=$1", array($r[0]['id'])) ;
+		$pid=$_SESSION['nn']->query("insert into projects (user_id, project_name) values ($1,$2) RETURNING id", array($r[0]['id'], 'demo'));
+		$_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'three'));
+		$_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'navmesh'));
+		$sid=$_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'simple'));
+		$_SESSION['nn']->query("update users set active_scenario = $1 where id=$2", array($sid[0]['id'], $r[0]['id']));
+		$ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.id=$1", array($r[0]['id']));
+
+		$AAMKS_PATH=getenv("AAMKS_PATH"); 
+		$user_dir="/home/aamks_users/".$ret[0]['email'];
+
+		system("
+			mkdir -p $user_dir
+			cp -r $AAMKS_PATH/installer/demo/ $user_dir
+		");
 		$_SESSION['nn']->ch_main_vars($ret[0]);
-		header("location:/aamks/projects.php"); //go to projects
+		header("location:/aamks/projects.php"); 
 	}
+
 	# psql aamks -c 'select * from users';
 	# psql aamks -c 'select * from scenarios';
 	# psql aamks -c "delete from users ";
@@ -202,11 +207,14 @@ function reset_password(){/*{{{*/
 		</form>
 		</center> ";/*}}}*/
 		if(!isset($_POST['reset'])){//show reset form
+	# echo 'select * from users' | psql aamks
 		echo $form;
 		}else{//do the reseting
 			if($ret=$_SESSION['nn']->query("UPDATE users SET password = $1, reset_token = NULL where email = $2 AND reset_token = $3 returning *", array(salt($_POST['password']), $_SESSION['reset_email'], $_GET['reset']))){
 				$_SESSION['header_ok'][]="DONE!";
+				$ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.id=$1", array($ret[0]['id']));
 				$_SESSION['nn']->ch_main_vars($ret[0]);
+				header("Location: projects.php");
 			}else{
 				$_SESSION['nn']->fatal("Did not change the password!!");
 			}
@@ -219,7 +227,7 @@ function edit_user_form(){/*{{{*/
 		<form method=POST>
 		<table>
 		<tr><td>name<td><input name=name placeholder='name' size=32 required autocomplete='off' value='".$_SESSION['main']['user_name']."' >
-		<tr style='display:none'><td>email-readonly<td><input id='username' readonly name='username'  size=32 value='".$_SESSION['main']['user_email']."' >
+		<tr style='display:none'><td>email-readonly<td><input id='username' readonly name='username' size=32 value='".$_SESSION['main']['email']."' >
 		<tr><td>password<td>".password_input("password",0)."
 		</table><br>
 		<input type=submit name=save value='Save'>
@@ -245,29 +253,17 @@ function edit_user(){/*{{{*/
 	edit_user_form();	
 }/*}}}*/
 
-function do_logout() { #{{{
-
-	#echo "<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google 
-	#TODO FINLAND
-	$_SESSION=[];
-	session_destroy();
-	header("Location: login.php");
-	//ob_flush();
-	//flush();
-	//sleep(2);
-	//echo "<script type='text/javascript'> signOut(); </script> <meta http-equiv='Refresh' content='0; url=index.php' />	";
-}
-/*}}}*/
 function main() { /*{{{*/
 	require_once("inc.php"); 
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	$_SESSION['nn']->htmlHead("Aamks");
 	if(isset($_GET['edit_user'])) { edit_user();}
 
-	if(isset($_GET['logout'])) { do_logout(); }
-	if(isset($_POST['logMeIn'])) { do_login(); }
-	if(isset($_GET['register'])) { register_form();}
-	if(isset($_GET['reset'])) { reset_password();}
+	if(isset($_GET['logout']))           { do_logout(); }
+	if(isset($_POST['logMeIn']))         { do_login(); }
+	if(isset($_POST['do_register']))     { do_register(); }
+	if(isset($_GET['register']))         { register_form();}
+	if(isset($_GET['reset']))            { reset_password();}
 	if(isset($_GET['activation_token'])) { activate_user();}
 
 	login_form();
@@ -276,7 +272,5 @@ function main() { /*{{{*/
 /*}}}*/
 
 main();
-if(isset($_GET['r'])) { $_SESSION=[]; session_destroy(); exit(); }
-
 
 ?>
