@@ -72,16 +72,18 @@ function registerListeners() {//{{{
 	$("body").on("click"               , '#button-help'            , function() { showHelpBox(); });
 	$("body").on("click"               , '#button-setup'           , function() { showGeneralBox(); });
 	$("body").on("click"               , '.legend'                 , function() { activeLetter=$(this).attr('letter'); cgStartDrawing(); });
-	$("body").on("keyup"               , '#alter-polypoints'       , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-room-enter'       , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-exit-type'        , function() { saveRightBox(); });
-	$("body").on("change"              , '#alter-mvent-throuthput' , function() { saveRightBox(); });
+	$("body").on("change"              , '#alter-mvent-throughput' , function() { saveRightBox(); });
+	$("body").on("keyup"               , '#alter-polypoints'       , function() { saveRightBox(); });
+	$("body").on("keyup"               , '#alter-px'               , function() { saveRightBox(); });
+	$("body").on("keyup"               , '#alter-py'               , function() { saveRightBox(); });
 	$("body").on("mouseleave"          , 'right-menu-box'          , function() { saveRightBox(); showCgPropsBox(); });
 
 	$("body").on("mousedown", "#apainter-svg", function(e){
 		if(e.which==3) {
 			cgEscapeCreate();
-			if (['rect', 'circle', 'polyline'].includes(event.target.tagName)) { 
+			if (['circle', 'polyline'].includes(event.target.tagName)) { 
 				cgSelect(event.target.id);
 			} else { 
 				cg={};
@@ -148,7 +150,6 @@ function getBbox() {//{{{
 }
 //}}}
 function cgSvg(pparent='auto') { //{{{
-	if(cg.type=='obstp') { cgSvgPoly(pparent); return; }
 	if(pparent=='auto')  { pparent="#floor"+cg.floor; }
 	if (cg.type == 'evacuee') { 
 		var elem='circle';
@@ -509,8 +510,6 @@ function cgInit() {//{{{
 		cg.z.push(cg.z[0] + 50);
 	} else if (cg.type=='obst') {
 		cg.z.push(cg.z[0] + 100);
-	} else if (cg.type=='obstp') {
-		cg.z.push(cg.z[0] + 100);
 	} else if (cg.type=='mvent') {
 		cg.z.push(cg.z[0] + 50);
 	} else if (cg.type=='vvent') {
@@ -568,12 +567,8 @@ function cgCreate() {//{{{
 //}}}
 
 function updatePosInfo(m) {//{{{
-	if('bbox' in cg) { 
-		if(cg.type=='obstp') { 
-			$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]);
-		} else {
-			$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]+" &nbsp; &nbsp;  size: "+Math.abs(m.x-cg.bbox.min.x)+" "+Math.abs(m.y-cg.bbox.min.y) +" "+(cg.z[1]-cg.z[0]));
-		}
+	if('minx' in cg) { 
+		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]+" &nbsp; &nbsp;  size: "+Math.abs(cg.maxx-m.x)+" "+Math.abs(cg.maxy-m.y) +" "+(cg.z[1]-cg.z[0]));
 	} else {
 		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]);
 	}
@@ -629,8 +624,8 @@ function cgDecidePoints(m) {//{{{
 			p3=[cg.polypoints[0][0], py];
 			break;
 	}
-
 	cg.polypoints=[p0,p1,p2,p3];
+
 }
 //}}}
 function assertCgReady() {//{{{
@@ -732,7 +727,7 @@ function json2db(json) { //{{{
 	var letter;
 	var arr;
 	var geom;
-	var elems=["ROOM","COR","STAI","HALL","OBST","OBSTP", "VVENT","MVENT","HOLE","WIN","DOOR","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
+	var elems=["ROOM","COR","STAI","HALL","OBST","VVENT","MVENT","HOLE","WIN","DOOR","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
 
 	_.each(json, function(floor_data,floor) { 
 		_.each(elems, function(elem) { 
@@ -817,7 +812,7 @@ function dbReorder() {//{{{
 	var ee=db({"type": 'evacuee'}).get();
 	db({"type": 'evacuee'}).remove();
 
-	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst'], ['obstp'] ];
+	var types=[ ['room'], ['door', 'hole', 'window'], ['vvent'], ['mvent'], ['obst']];
 	db.sort("floor,minx,miny");
 	for (var i in types) {
 		var idx=1;
@@ -908,7 +903,8 @@ function cgSelect(elems, blink=1, showProps=1) {//{{{
 		if(blink==1)     { $("#"+cg.name).addClass('cg-selected').css( { 'stroke-width': '100px'}).animate( { 'stroke-width': 0}, 400, function() { $(this).removeAttr('style'); }); }
 		if(showProps==1) { showCgPropsBox(); }
 	});
-
+	m={'x': cg.minx, 'y': cg.miny};
+	updatePosInfo(m);
 	showBuildingLabels(1,[cg.name]);
 }
 //}}}
@@ -951,10 +947,10 @@ function roomProps() {//{{{
 }
 //}}}
 function mventProps() {//{{{
-	pp="<input id=alter-mvent-throuthput type=hidden value=0>";
+	pp="<input id=alter-mvent-throughput type=hidden value=0>";
 	if(cg.type=='mvent') {
 		v=db({'name':cg.name}).get()[0];
-		pp="<tr><td>throughput<td>  <input id=alter-mvent-throuthput type=text size=3 value="+v.mvent_throughput+">";
+		pp="<tr><td>throughput<td>  <input id=alter-mvent-throughput type=text size=3 value="+v.mvent_throughput+">";
 	} 
 	return pp;
 }
@@ -1028,8 +1024,7 @@ function propsXYZ() {//{{{
 	} else {
 		b=getBbox();
 		return "points:<br><textarea id=alter-polypoints>"+cg.polypoints.join("\n")+"</textarea><br>"+
-		"z:<br><input id=alter-z value='"+cg.z.join(",")+"'>"+
-		"<br>" + (b.max.x - b.min.x) + " x " + (b.max.y - b.min.y) + " x " + (cg.z[1]-cg.z[0]) +" cm<br>";
+		"z:<br><input id=alter-z value='"+cg.z.join(",")+"'>";
 	}
 }
 //}}}
@@ -1066,9 +1061,10 @@ function saveRightBoxGeneral() {//{{{
 //}}}
 function saveRightBoxCgProps() {//{{{
 	if(cg.type=='evacuee') {
-		cg.polypoints=[Number($("#alter-px").val()), Number($("#alter-py").val())];
+		cg.polypoints=[[Number($("#alter-px").val()), Number($("#alter-py").val())]];
 		cg.z=[50,50];
 		$("#"+cg.name).attr('cx', cg.polypoints[0][0]).attr('cy', cg.polypoints[0][1]);   
+		cgUpdateSvg();
 		cgDb();
 	} else {
 		cg.polypoints=[];
@@ -1078,7 +1074,7 @@ function saveRightBoxCgProps() {//{{{
 		});
 		cg.room_enter=$("#alter-room-enter").val();
 		cg.exit_type=$("#alter-exit-type").val();
-		cg.mvent_throughput=Number($("#alter-mvent-throuthput").val());
+		cg.mvent_throughput=Number($("#alter-mvent-throughput").val());
 
 		if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
 		cgUpdateSvg();

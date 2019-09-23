@@ -27,7 +27,6 @@ function site() {/*{{{*/
 	<script src='js/polygon_tools.js'></script>
 	<script src='js/apainter.js'></script>
 	<script src='js/aunderlay.js'></script>
-	<script src='js/apoly.js'></script>
 	<script src='js/view3d.js'></script>
 	";
 	echo css();

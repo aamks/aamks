@@ -22,11 +22,12 @@ function removeMeshes() { //{{{
 //}}}
 function createMeshes() {//{{{
 	// random prevents z-fighting
-	var geoms=db().select("letter", "mvent_offsetz", "x0", "x1", "y0", "y1", "z0", "z1");
+	var geoms=db().get()
 	var half_x, half_y, half_z;
-	for (var i in geoms) {
-		var bb=[];
-		var random=Math.random()/40;
+	_.each(geoms, function(i) {
+		dd(i);
+		bb=[];
+		random=Math.random()/40;
 		bb.push(geoms[i][2]/100+random);
 		bb.push(geoms[i][3]/100+random);
 		bb.push(geoms[i][4]/100+random);
@@ -48,7 +49,7 @@ function createMeshes() {//{{{
 			size:   [ half_x, half_z, half_y], 
 			color:  gg[geoms[i][0]].c
 		});
-	}
+	});
 }
 //}}}
 function createMesh(d) {//{{{

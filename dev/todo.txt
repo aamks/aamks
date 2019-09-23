@@ -21,7 +21,8 @@ K
 mimooh
 =======
 
-* apainter: poly: test all, then evacuees, view3D, geom.py
+* apainter view3d: https://github.com/pissang/geometry-extrude
+* apainter: poly: geom.py
 * apainter: staircase slice
 * animator: Highlight poly geoms 
 * animator: labels poly rooms
