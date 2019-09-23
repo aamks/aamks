@@ -534,7 +534,6 @@ class CfastMcarlo():
         fire_properties = self._draw_fire_properties(len(times))
         self._fire_obstacle()
         area = nround(npa(hrrs)/(self.hrrpua * 1000) + 0.1, decimals=1)
-        fire_origin=self._fire_origin()
 
         txt=(
             '!! FIRE,compa,x,y,z,fire_number,ignition_type,ignition_criterion,ignition_target,?,?,name',
