@@ -692,8 +692,6 @@ function dbUpdateCadJsonStr() { //{{{
 			cad_json["exit_type"]=i.exit_type;
 		} else if(i.type=='room') {
 			cad_json["room_enter"]=i.room_enter; 
-		} else if(i.type=='fire') {
-			cad_json["room_enter"]="no";
 		} else if(i.type=='mvent') {
 			cad_json["mvent_throughput"]=i.mvent_throughput;
 		}
