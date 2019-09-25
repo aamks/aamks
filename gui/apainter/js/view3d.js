@@ -107,12 +107,32 @@ function createScene() { //{{{
     new xeogl.CameraControl();
 }
 //}}}
+function polyExtrude() {//{{{
+
+	//var geoms=db().get();
+	var geoms=[db().get()[0]];
+	_.each(geoms, function(i) {
+		dd(i.polypoints);
+		const polygons = [ [ i.polypoints.reverse(), ] ];
+		const result = geometryExtrude.extrudePolygon(polygons, { depth: i.z[1]-i.z[0] });
+		dd(result.position);
+		dd(result.boundingRect);
+
+		var mesh=new xeogl.Mesh({
+			geometry: new
+		});
+	});
+}
+//}}}
 function view3d() {//{{{
 	if(scene === undefined) {
-		$.getScript("js/xeogl.min.js", function(){
-			init();
-			createScene();
-			createMeshes(); 
+		$.getScript("js/geometry-extrude.min.js" , function(){
+			$.getScript("js/xeogl.min.js"        , function(){
+				init();
+				polyExtrude();
+				createScene();
+				//createMeshes(); 
+			});
 		});
 	} else {
 		removeMeshes();
