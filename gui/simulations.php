@@ -10,11 +10,14 @@ function listing() {/*{{{*/
 /*}}}*/
 function status() {/*{{{*/
 	extract($_SESSION['main']);
+	$f=$_SESSION['main']['working_home'];
+	$f = substr($f, strpos($f, '/', 1));
 	$r=$_SESSION['nn']->query("SELECT count(*) AS finished FROM simulations WHERE project = $project_id and scenario_id = $scenario_id and dcbe_time is not null");
 	$finished=$r[0]['finished'];
 	$r=$_SESSION['nn']->query("SELECT count(*) AS total FROM simulations WHERE project = $project_id and scenario_id = $scenario_id");
 	$total=$r[0]['total'];
 	echo "<br>Complete: $finished of $total &nbsp; &nbsp; <wheat>ctrl+r to refresh</wheat>";
+	echo "&nbsp; &nbsp; Get your detailed data: <a href=$f/picts/data.csv><wheat>Data</wheat></a>";
 }
 /*}}}*/
 
