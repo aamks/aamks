@@ -182,6 +182,11 @@ class Psql: # {{{
         if query[:6] in("select", "SELECT"):
             return self.psqldb.fetchall() 
 
+    def copy_expert(self, sql, csv_file):
+        cursor = self.PSQL.cursor()
+        with open(csv_file, "w") as f:
+            cursor.copy_expert(sql, f)
+
     def querydd(self,query,data=tuple()):
         ''' Debug query. Instead of connecting shows the exact query and params. '''
         print(query)

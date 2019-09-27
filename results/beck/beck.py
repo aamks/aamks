@@ -38,7 +38,7 @@ class processDists:
         if os.path.exists('{}/picts'.format(self.dir)):
             shutil.rmtree('{}/picts'.format(self.dir))
         os.makedirs('{}/picts'.format(self.dir))
-        self.horisontal_time=dict({'0': 0, '1': 36, '2': 72, '3': 112})
+        self.horisontal_time=dict({'0': 3, '1': 36, '2': 72, '3': 112})
 
     def plot_dcbe_dist(self):
 #        plt.clf()
@@ -209,19 +209,6 @@ class processDists:
         f.close()
         return dump
 
-    def plot_event_tree(self):
-        t = Tree("((1:0.001, 0.1:0.23, 0.001, >0.001), NIE);")
-        t = Tree("((D: 0.723274, F: 0.567784)1.000000: 0.067192, (B: 0.279326, H: 0.756049)1.000000: 0.807788);")
-        t.support = 0.1
-        ts = TreeStyle()
-        ts.show_leaf_name = True
-        ts.show_branch_length = True
-        ts.show_branch_support = True
-
-        t.add_face(TextFace(" hola "), column=0, position = 'branch-right')
-        t.show(tree_style=ts)
-
-
     def plot_losses_hist(self):
         labels = ['Death', 'Heavy injury', 'Light injury', 'Neglegible']
 
@@ -316,6 +303,10 @@ class processDists:
         mean = results[0][0]
         return [lower, mean]
 
+    def copy_data(self):
+        query = "COPY (SELECT * FROM simulations where project = {} AND scenario_id = {}) TO STDOUT WITH CSV DELIMITER ';' HEADER".format(self.configs['project_id'], self.configs['scenario_id'])
+        self.p.copy_expert(sql=query, csv_file='{}/picts/data.csv'.format(p.dir))
+
     def calculate_building_area(self):
         s=Sqlite("{}/aamks.sqlite".format(self.dir))
         result = s.query("SELECT sum(room_area) as total FROM aamks_geom");
@@ -335,6 +326,7 @@ p.plot_ccdf()
 #p.plot_ccdf_percentage()
 p.plot_losses_hist()
 p.plot_pie_fault()
+p.copy_data()
 #print(p.total)
 
 bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
@@ -347,7 +339,7 @@ fed_f = float('%.3f' % (len(p.losses['dead'])/p.total))
 fed_m = float('%.3f' % (len(p.losses['heavy'])/p.total))
 fed_l = float('%.3f' % (len(p.losses['light'])/p.total))
 fed_n = float('%.3f' % (len(p.losses['neglegible'])/p.total))
-t_kryt = float('%.3f' % (len(p.losses['dead'])/p.total))
+t_kryt = float('%.3f' % ((len(p.losses['neglegible']) - len(p.losses['dead']))/p.total))
 p_ext = float('%.3f' % 0.17)
 p_tk = float('%.3f' % (p.t_k/p.total))
 
@@ -371,6 +363,5 @@ t.draw_tree()
 
 s = EventTreeSteel(building=p.dir, p_general=bar, p_develop=p_ext, p_Tk=p_tk, p_time_less=0.001)
 s.draw_tree()
-#p.plot_event_tree()
 
 print('Charts are ready to display')
