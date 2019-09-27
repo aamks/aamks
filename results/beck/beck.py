@@ -339,7 +339,7 @@ fed_f = float('%.3f' % (len(p.losses['dead'])/p.total))
 fed_m = float('%.3f' % (len(p.losses['heavy'])/p.total))
 fed_l = float('%.3f' % (len(p.losses['light'])/p.total))
 fed_n = float('%.3f' % (len(p.losses['neglegible'])/p.total))
-t_kryt = float('%.3f' % ((len(p.losses['neglegible']) - len(p.losses['dead']))/p.total))
+t_kryt = float('%.3f' % ((len(p.losses['dead']))/p.total))
 p_ext = float('%.3f' % 0.17)
 p_tk = float('%.3f' % (p.t_k/p.total))
 
