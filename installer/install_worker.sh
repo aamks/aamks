@@ -4,7 +4,7 @@ USER='mimooh'
 
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
-sudo apt-get --yes install subversion python3-pip sendxmpp xdg-utils unzip cmake libgfortran3
+sudo apt-get --yes install subversion python3-pip sendxmpp xdg-utils unzip cmake libgfortran3 gearman
 sudo -H pip3 install --upgrade pip
 sudo -H pip3 install webcolors colour shapely scipy numpy
 

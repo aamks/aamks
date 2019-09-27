@@ -257,7 +257,7 @@ class processDists:
         educational = [0.003, 3e-6, -1.26, -0.05]
         building = {'other_building': other_building, 'office': office, 'warehouse': warehouse, 'commercial': commercial,
                     'nursing': nursing, 'educational': educational}
-        b_type = 'other_building'
+        b_type = 'educational'
         ignition = building[b_type][0]*(area) ** (building[b_type][2]) + \
                    building[b_type][1] * (area) ** (building[b_type][3])
         return ignition
@@ -319,8 +319,7 @@ class processDists:
     def calculate_building_area(self):
         s=Sqlite("{}/aamks.sqlite".format(self.dir))
         result = s.query("SELECT sum(room_area) as total FROM aamks_geom");
-        #return result[0]['total']/10000
-        return 7800
+        return result[0]['total']/10000
 
 p = processDists()
 p.plot_dcbe_dist()

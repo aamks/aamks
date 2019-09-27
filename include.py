@@ -170,7 +170,7 @@ class Psql: # {{{
         import psycopg2.extras
 
         try:
-            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host={} password='{}'".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_PG_PASS']))
+            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host='127.0.0.1' password='{}'".format(os.environ['AAMKS_PG_PASS']))
             self.psqldb=self.PSQL.cursor(cursor_factory=psycopg2.extras.DictCursor)
         except:
             raise SystemExit("Fatal: Cannot connect to postresql.")

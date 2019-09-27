@@ -212,7 +212,7 @@ class Aamks {/*{{{*/
 		} else {
 			$caller="None";
 		}
-		$connect=pg_connect("dbname=aamks host=".getenv("AAMKS_SERVER")." user=aamks password=".getenv("AAMKS_PG_PASS"));
+		$connect=pg_connect("dbname=aamks host=127.0.0.1 user=aamks password=".getenv("AAMKS_PG_PASS"));
 		$arr_str=implode(",", $arr);
 		($result=pg_query_params($connect, $qq, $arr)) || $this->reportBug(implode("\n\n", array("caller: $caller()", "$qq", "params: [$arr_str]", pg_last_error($connect))));
 
