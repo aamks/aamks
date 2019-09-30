@@ -464,7 +464,7 @@ function drawStaticEvacuees(data,tx,ty) {//{{{
 	if(currentAnimMeta["anim"] == undefined) { 
 		radius=evacueeRadius;
 		strokeWidth=0; 
-		fillColor: colors['doseN']['c'];
+		fillColor: colors['color_N']['c'];
 
 		_.each(points, function(point) { 
 			new Path.Circle({ center: new Point(point[0]+tx, point[1]+ty), radius: radius, strokeWidth:strokeWidth , fillColor: fillColor });
@@ -556,7 +556,7 @@ function evacueesInFrame() {//{{{
 	_.each(evacueesGroup, function(data,ffloor) {
 		if(ffloor in dstatic.floors) { 
 			_.each(data.children, function(e,i) {
-				e.fillColor=colors['dose'+eData[frame][ffloor][i][4]]['c']; 
+				e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c']; 
 				e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps; 
 				e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
 			})

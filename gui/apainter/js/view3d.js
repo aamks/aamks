@@ -118,9 +118,8 @@ function polyExtrude() {//{{{
 		dd(result.position);
 		dd(result.boundingRect);
 
-		var mesh=new xeogl.Mesh({
-			geometry: new
-		});
+		//var mesh=new xeogl.Mesh({
+		//	geometry: new
 	});
 }
 //}}}

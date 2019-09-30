@@ -110,6 +110,20 @@ class CFASTimporter():
         self.s.query('INSERT INTO world_meta(json) VALUES (?)', (json.dumps(self.world_meta),))
 
 # }}}
+    def _bbox(self,points,z):# {{{
+        ''' 
+        Not really a bounding box for just any polygon, but this name is a good hint
+        '''
+
+        xy=list(map(list, zip(*points)))
+        bbox=OrderedDict( [ ('x0', (min(xy[0]))) , ('y0', (min(xy[1]))) , ('x1', (max(xy[0]))) , ('y1', (max(xy[1]))) , ])
+        bbox['z0']=z[0]
+        bbox['z1']=z[1]
+        bbox['width']=bbox['x1']-bbox['x0']
+        bbox['depth']=bbox['y1']-bbox['y0']
+        bbox['height']=z[1]-z[0]
+        return bbox
+# }}}
     def _geometry2sqlite(self):# {{{
         ''' 
         Parse geometry and place geoms in sqlite. The lowest floor is always 0.
@@ -117,10 +131,12 @@ class CFASTimporter():
 
             "0": [
                 "ROOM": [
-                    [ [ 3.0 , 4.8 , 0.0 ] , [ 4.8 , 6.5 , 3.0 ] ] ,
-                    [ [ 3.0 , 6.5 , 0.0 ] , [ 6.8 , 7.4 , 3.0 ] ] 
-                ]
+                    { "idx": 1 , "points": "[[ 495  , 415 ] , [1000 , 415] , [ 1000 , 2000 ] , [495  , 2000] ]" , "z": "[0 , 350]" , "room_enter": "yes" }
+                    { "idx": 2 , "points": "[[ 1000 , 415 ] , [2235 , 415] , [ 2235 , 1000 ] , [1000 , 1000] ]" , "z": "[0 , 350]" , "room_enter": "yes" }
+                ],
             ]
+
+        Current file format should always be available here: https://github.com/aamks/aamks/tree/master/installer/demo
 
         Some columns in db are left empty for now. 
 
@@ -135,74 +151,74 @@ class CFASTimporter():
                 if k in ('UNDERLAY_IMG', 'UNDERLAY_FLOOR'):
                     continue
                 for v in arr:
-                    rr={'x0': int(v[0][0]), 'y0': int(v[0][1]), 'x1': int(v[1][0]), 'y1': int(v[1][1]), 'z0': int(v[0][2]), 'z1': int(v[1][2])}
-                    points=((rr['x0'], rr['y0']), (rr['x1'], rr['y0']), (rr['x1'], rr['y1']), (rr['x0'], rr['y1']), (rr['x0'], rr['y0']))
-                    width= rr['x1']-rr['x0']
-                    depth= rr['y1']-rr['y0']
-                    height=rr['z1']-rr['z0']
-                    attrs=self._prepare_attrs(v[2])
-                    record=self._prepare_geom_record(k,rr,points,width,depth,height,floor,attrs)
+                    v['type']=k
+                    v['floor']=floor
+                    v['points']=json.loads(v['points'])
+                    v['z']=json.loads(v['z'])
+                    v['bbox']=self._bbox(v['points'],v['z'])
+                    v['attrs']=self._prepare_attrs(v)
+                    record=self._prepare_geom_record(v)
                     if record != False:
                         data.append(record)
         self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, exit_type, room_enter, terminal_door, points, origin_room)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
         #dd(self.s.dump())
 #}}}
-    def _prepare_attrs(self,attrs):# {{{
-        aa={"mvent_throughput": None, "exit_type": None, "room_enter": None }
-        for k,v in attrs.items():
-            aa[k]=v
+    def _prepare_attrs(self,v):# {{{
+        aa={}
+        aa['mvent_throughput']=v['mvent_throughput']    if 'mvent_throughput' in v else None
+        aa['room_enter']=v['room_enter']                if 'room_enter' in v else None
+        aa['exit_type']=v['exit_type']                  if 'exit_type' in v else None
         return aa
 # }}}
-    def _prepare_geom_record(self,k,rect,points,width,depth,height,floor,attrs):# {{{
+    def _prepare_geom_record(self,v):# {{{
         ''' Format a record for sqlite. Hvents get fixed width self.doors_width cm '''
         # OBST
-        if k in ('OBST',):
+        if v['type'] in ('OBST',):
             type_pri='OBST'
             type_tri=''
 
         # EVACUEE
-        elif k in ('EVACUEE',):                  
+        elif v['type'] in ('EVACUEE',):                  
             type_pri='EVACUEE'
             type_tri=''
 
         # FIRE
-        elif k in ('FIRE',):                  
+        elif v['type'] in ('FIRE',):                  
             type_pri='FIRE'
             type_tri=''
 
         # MVENT      
-        elif k in ('MVENT',):                  
+        elif v['type'] in ('MVENT',):                  
             type_pri='MVENT'
             type_tri=''
 
         # VVENT      
-        elif k in ('VVENT',):                  
+        elif v['type'] in ('VVENT',):                  
             type_pri='VVENT'
-            height=10 
             type_tri=''
 
         # COMPA
-        elif k in ('ROOM', 'COR', 'HALL', 'STAI'):      
+        elif v['type'] in ('ROOM', 'COR', 'HALL', 'STAI'):      
             type_pri='COMPA'
             type_tri=''
         
         
         # HVENT  
-        elif k in ('DOOR', 'DCLOSER', 'DELECTR', 'HOLE', 'WIN'): 
-            width=max(width,self.doors_width)
-            depth=max(depth,self.doors_width)
+        elif v['type'] in ('DOOR', 'DCLOSER', 'DELECTR', 'HOLE', 'WIN'): 
+            v['bbox']['width']=max(v['bbox']['width'],self.doors_width)
+            v['bbox']['depth']=max(v['bbox']['depth'],self.doors_width)
             type_pri='HVENT'
-            if k in ('DOOR', 'DCLOSER', 'DELECTR', 'HOLE'): 
+            if v['type']  in ('DOOR', 'DCLOSER', 'DELECTR', 'HOLE'): 
                 type_tri='DOOR'
-            elif k in ('WIN'):
+            elif v['type'] in ('WIN'):
                 type_tri='WIN'
 
-        global_type_id=attrs['idx'];
-        name='{}{}'.format(self.geomsMap[k], global_type_id)
+        global_type_id=v['idx'];
+        name='{}{}'.format(self.geomsMap[v['type']], global_type_id)
 
-        #self.s.query("CREATE TABLE aamks_geom(name , floor , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec , type_tri , x0         , y0         , z0         , width , depth , height , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput          , exit_type          , room_enter          , terminal_door , points, origin_room)")
-        return (name                                , floor , global_type_id , None           , None           , type_pri , k        , type_tri , rect['x0'] , rect['y0'] , rect['z0'] , width , depth , height , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , attrs['mvent_throughput'] , attrs['exit_type'] , attrs['room_enter'] , None          , json.dumps(points), None)
+        #self.s.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               , exit_type               , room_enter               , terminal_door , points                  , origin_room)")
+        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] , v['attrs']['exit_type'] , v['attrs']['room_enter'] , None          , json.dumps(v['points']) , None)
 
 # }}}
     def _enhancements(self):# {{{

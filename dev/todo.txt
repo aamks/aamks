@@ -16,6 +16,8 @@ K
 * RVO2: detect the clash
 * RVO2: right hand side counterflow 
 * RVO2: transfer leader state to another leader to avoid the clash
+* mapa śmierci, zapisywnie współrzędnych FED=1
+* klatka schodowa jako 2 spoczniki + 2 biegi rozciągnięte
 
 
 mimooh

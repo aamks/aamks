@@ -1,28 +1,38 @@
 {
 	"aamksGeoms": {
 
-		"r":      { "legendary": 1 , "x": "ROOM"            , "t": "room"            , "c": "#729fcf" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
-		"c":      { "legendary": 1 , "x": "COR"             , "t": "room"            , "c": "#3465a4" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
-		"d":      { "legendary": 1 , "x": "DOOR"            , "t": "door"            , "c": "#73d216" , "stroke": "#73d216" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
-		"z":      { "legendary": 1 , "x": "HOLE"            , "t": "hole"            , "c": "#c4a000" , "stroke": "#c4a000" , "lightc": "#000000" , "font": "#222244" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
-		"w":      { "legendary": 1 , "x": "WIN"             , "t": "window"          , "c": "#ffffff" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#444444" , "animOpacity": 0.4, "strokeWidth": 4 }   ,
-		"s":      { "legendary": 1 , "x": "STAI"            , "t": "room"            , "c": "#5c3566" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
-		"a":      { "legendary": 1 , "x": "HALL"            , "t": "room"            , "c": "#e9b96e" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#000000" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
-		"q":      { "legendary": 1 , "x": "DCLOSER"         , "t": "door"            , "c": "#cc0000" , "stroke": "#cc0000" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
-		"e":      { "legendary": 1 , "x": "DELECTR"         , "t": "door"            , "c": "#443366" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 5 }   ,
-		"t":      { "legendary": 1 , "x": "OBST"            , "t": "obst"            , "c": "#eeeeff" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#000000" , "animOpacity": 0.5, "strokeWidth": 0.5 } ,
-		"v":      { "legendary": 1 , "x": "VVENT"           , "t": "vvent"           , "c": "#ffaa00" , "stroke": "#882200" , "lightc": "#000000" , "font": "#222244" , "animOpacity": 0.4, "strokeWidth": 2.5 } ,
-		"b":      { "legendary": 1 , "x": "MVENT"           , "t": "mvent"           , "c": "#008844" , "stroke": "#006622" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 2.5 } ,
-		"f":      { "legendary": 1 , "x": "EVACUEE"         , "t": "evacuee"         , "c": "#ffffff" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity":  1 , "strokeWidth": 0 }   ,
-		"y":      { "legendary": 1 , "x": "FIRE"            , "t": "fire"            , "c": "#ff4400" , "stroke": "#220000" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4, "strokeWidth": 10 }  ,
-		"p":      { "legendary": 0 , "x": "UNDERLAY_SCALER" , "t": "underlay_scaler" , "c": "#ff00ff" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity": 0.4, "strokeWidth": 0 }   ,
-		"canvas": { "legendary": 0 , "x": "canvas"          , "t": "canvas"          , "c": "#333333" , "stroke": "#333333" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity":  1 , "strokeWidth": 0 }   ,
-		"doseN":  { "legendary": 0 , "x": "doseN"           , "t": "doseN"           , "c": "#ffffff" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1 , "strokeWidth": 0 }  ,
-		"doseL":  { "legendary": 0 , "x": "doseL"           , "t": "doseL"           , "c": "#ffff00" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1 , "strokeWidth": 0 }  ,
-		"doseM":  { "legendary": 0 , "x": "doseM"           , "t": "doseM"           , "c": "#ee7700" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1 , "strokeWidth": 0 }  ,
-		"doseH":  { "legendary": 0 , "x": "doseH"           , "t": "doseH"           , "c": "#aa0000" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1 , "strokeWidth": 0 }  ,
-		"fg":     { "legendary": 0 , "x": "fg"              , "t": "fg"              , "c": "#ffffff" , "stroke": "#ffffff" , "lightc": "#222222" , "font": "#444444" , "animOpacity":  1 , "strokeWidth": 0 }
-	}                              ,
+		"r":       { "legendary": 1 , "x": "ROOM"            , "t": "room"            , "c": "#729fcf" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 5 }   ,
+		"c":       { "legendary": 1 , "x": "COR"             , "t": "room"            , "c": "#3465a4" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 5 }   ,
+		"d":       { "legendary": 1 , "x": "DOOR"            , "t": "door"            , "c": "#73d216" , "stroke": "#73d216" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 5 }   ,
+		"z":       { "legendary": 1 , "x": "HOLE"            , "t": "hole"            , "c": "#c4a000" , "stroke": "#c4a000" , "lightc": "#000000" , "font": "#222244" , "animOpacity": 0.4 , "strokeWidth": 5 }   ,
+		"w":       { "legendary": 1 , "x": "WIN"             , "t": "window"          , "c": "#ffffff" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#444444" , "animOpacity": 0.4 , "strokeWidth": 4 }   ,
+		"s":       { "legendary": 1 , "x": "STAI"            , "t": "room"            , "c": "#5c3566" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 5 }   ,
+		"a":       { "legendary": 1 , "x": "HALL"            , "t": "room"            , "c": "#e9b96e" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#000000" , "animOpacity": 0.4 , "strokeWidth": 5 }   ,
+		"q":       { "legendary": 1 , "x": "DCLOSER"         , "t": "door"            , "c": "#cc0000" , "stroke": "#cc0000" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 5 }   ,
+		"e":       { "legendary": 1 , "x": "DELECTR"         , "t": "door"            , "c": "#443366" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 5 }   ,
+		"t":       { "legendary": 1 , "x": "OBST"            , "t": "obst"            , "c": "#eeeeff" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#000000" , "animOpacity": 0.5 , "strokeWidth": 0.5 } ,
+		"v":       { "legendary": 1 , "x": "VVENT"           , "t": "vvent"           , "c": "#ffaa00" , "stroke": "#882200" , "lightc": "#000000" , "font": "#222244" , "animOpacity": 0.4 , "strokeWidth": 2.5 } ,
+		"b":       { "legendary": 1 , "x": "MVENT"           , "t": "mvent"           , "c": "#008844" , "stroke": "#006622" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 2.5 } ,
+		"f":       { "legendary": 1 , "x": "EVACUEE"         , "t": "evacuee"         , "c": "#ffffff" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"y":       { "legendary": 1 , "x": "FIRE"            , "t": "fire"            , "c": "#ff4400" , "stroke": "#220000" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 10 }  ,
+		"p":       { "legendary": 0 , "x": "UNDERLAY_SCALER" , "t": "underlay_scaler" , "c": "#ff00ff" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity": 0.4 , "strokeWidth": 0 }   ,
+		"canvas":  { "legendary": 0 , "x": "canvas"          , "t": "canvas"          , "c": "#333333" , "stroke": "#333333" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_N": { "legendary": 0 , "x": "color_N"         , "t": "color_N"         , "c": "#ffffff" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_L": { "legendary": 0 , "x": "color_L"         , "t": "color_L"         , "c": "#ffff00" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_M": { "legendary": 0 , "x": "color_M"         , "t": "color_M"         , "c": "#ee7700" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_H": { "legendary": 0 , "x": "color_H"         , "t": "color_H"         , "c": "#aa0000" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_0": { "legendary": 0 , "x": "color_0"         , "t": "color_0"         , "c": "#ee7700" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_1": { "legendary": 0 , "x": "color_1"         , "t": "color_1"         , "c": "#ff00ff" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_2": { "legendary": 0 , "x": "color_2"         , "t": "color_2"         , "c": "#00ff00" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_3": { "legendary": 0 , "x": "color_3"         , "t": "color_3"         , "c": "#00ffff" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_4": { "legendary": 0 , "x": "color_4"         , "t": "color_4"         , "c": "#660066" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_5": { "legendary": 0 , "x": "color_5"         , "t": "color_5"         , "c": "#aa0000" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_6": { "legendary": 0 , "x": "color_6"         , "t": "color_6"         , "c": "#008800" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_7": { "legendary": 0 , "x": "color_7"         , "t": "color_7"         , "c": "#ffffff" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_8": { "legendary": 0 , "x": "color_8"         , "t": "color_8"         , "c": "#ffff00" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"color_9": { "legendary": 0 , "x": "color_9"         , "t": "color_9"         , "c": "#000000" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"fg":      { "legendary": 0 , "x": "fg"              , "t": "fg"              , "c": "#ffffff" , "stroke": "#ffffff" , "lightc": "#222222" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }
+	}                               ,
 
 	"aamksGeomsMap": {
 		"ROOM"    : "r" ,
@@ -47,6 +57,8 @@
 		"exit_type_primary":   { "stroke": "#f0f" },
 		"exit_type_secondary": { "stroke": "#000" }
 	},
+
+    "colors":["#ff00ff","#00ff00","#00ffff","#660066","#aa0000","#008800","#ffffff","#ffff00","#ee7700","#000000"],
 
 	"evacueeRadius": 25 
 }

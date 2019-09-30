@@ -21,8 +21,7 @@
 
 # CONFIGURATION, must be copied to ~/.bashrc
 
-AAMKS_SERVER=127.0.0.1
-#AAMKS_SERVER=192.168.100.131
+AAMKS_SERVER=127.0.0.1 # gearman + www for workers
 AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
 AAMKS_TESTING=0
 AAMKS_USE_GEARMAN=0

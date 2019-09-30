@@ -4,6 +4,7 @@ import re
 import os
 import shutil
 import math
+import numpy as np
 from collections import OrderedDict
 import json
 import getopt
@@ -12,6 +13,7 @@ import codecs
 from subprocess import Popen,call
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from shapely.ops import unary_union
+import zipfile
 
 from numpy.random import choice
 from numpy.random import uniform
@@ -28,16 +30,21 @@ from include import Sqlite
 from include import Json
 from include import Dump as dd
 from include import SimIterations
+from include import Vis
+
 from scipy.stats.distributions import lognorm
+from sklearn.cluster import MeanShift
+
 
 # }}}
 
 class EvacMcarlo():
     def __init__(self):# {{{
         ''' Generate montecarlo evac.conf. '''
+
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
@@ -51,6 +58,10 @@ class EvacMcarlo():
             self._dispatch_evacuees()
             self._make_evac_conf()
         self._evacuees_static_animator()
+        self._make_dispached_rooms()  
+        #self._clustering()
+        self._clustering_mimooh()
+        self._vis_clusters()
 
 # }}}
     def _static_evac_conf(self):# {{{
@@ -188,7 +199,6 @@ class EvacMcarlo():
 # }}}
     def _make_evac_conf(self):# {{{
         ''' Write data to sim_id/evac.json. '''
-
         self._evac_conf['FLOORS_DATA']=OrderedDict()
         for floor in self.floors:
             self._evac_conf['FLOORS_DATA'][floor]=OrderedDict()
@@ -206,8 +216,112 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['BETA_V']         = round(normal(self.conf['evacuees_beta_v']['mean']      , self.conf['evacuees_beta_v']['sd'])      , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(self.conf['evacuees_max_h_speed']['mean'] , self.conf['evacuees_max_h_speed']['sd']) , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(self.conf['evacuees_max_v_speed']['mean'] , self.conf['evacuees_max_v_speed']['sd']) , 2)
-
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
+# }}}
+    def _cluster_leader(self, center, points):# {{{
+        points = tuple(map(tuple, points))
+        dist_2 = np.sum((points - center) ** 2, axis=1)
+        return points[np.argmin(dist_2)]
+# }}}
+    def _make_dispached_rooms(self):# {{{
+        ''' 
+        rooms for dispatched_evacuees
+        '''
+
+        self._dispached_rooms={}
+        for floor in self.floors:
+            self._dispached_rooms[floor]={}
+            for name,data in self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'].items():
+                if data['COMPA'] not in self._dispached_rooms[floor]:
+                    self._dispached_rooms[floor][data['COMPA']]=[]
+                self._dispached_rooms[floor][data['COMPA']].append(data['ORIGIN'])
+
+
+# }}}
+    def _clustering(self):# {{{
+        ms = MeanShift()
+        grouped = []
+        nearest = []
+        y = 0
+        for floor,rooms in self._dispached_rooms.items():
+            for i, j in rooms.items():
+                #i to pokoj, j to polozenia
+                z = np.array(j)
+                ms.fit(z)
+                labels = ms.labels_
+                cluster_centers = ms.cluster_centers_
+                for center in cluster_centers:
+                    nearest.append(self._cluster_leader(center,z))
+                #clusters_ = len(np.unique(labels))
+                tux = 0
+                y+=1
+                for k in labels:
+                    x = i + '_' + str(k)
+                    #lista nearest za kazdym razem jest inna
+                    if tux == nearest[y]:
+                        x = x + '_chef'
+                        grouped.append(x)
+                    else:
+                        grouped.append(x)
+                    tux +=1
+            dd(nearest)
+        return grouped, nearest
+
+# }}}
+
+    def _clustering_mimooh(self):# {{{
+        ms = MeanShift()
+        self.clusters = {}
+        for floor,rooms in self._dispached_rooms.items():
+            self.clusters[floor]={}
+            for room, positions in rooms.items():
+                self.clusters[floor][room]=OrderedDict()
+                z = np.array(positions)
+                ms.fit(z)
+                cluster_centers = ms.cluster_centers_
+                labels = ms.labels_
+                for i in sorted(labels):
+                    self.clusters[floor][room][i]=OrderedDict([('agents', [])])
+
+                for idx,i in enumerate(labels):
+                    self.clusters[floor][room][i]['agents'].append(self._dispached_rooms[floor][room][idx])
+                for idx,i in enumerate(labels):
+                    self.clusters[floor][room][i]['center']=cluster_centers[i]
+                    self.clusters[floor][room][i]['leader']=self._cluster_leader(cluster_centers[i], self.clusters[floor][room][i]['agents'])
+
+# }}}
+    def _vis_clusters(self):# {{{
+        '''
+        We have 9 colors for clusters and 1 color for the leader of the cluster
+        '''
+
+        anim=OrderedDict([("simulation_id",1), ("simulation_time",0), ("time_shift",0)])
+
+        anim_evacuees=[OrderedDict(), OrderedDict()]
+        anim_rooms_opacity=[OrderedDict(), OrderedDict()]
+        for floor,floors in self.clusters.items():
+            frame=[]
+            for room,rooms in floors.items():
+                for cid,clusters in rooms.items():
+                    for agent in clusters['agents']:
+                        frame.append([agent[0],agent[1],0,0,str(cid%9),1])
+                    frame.append([clusters['leader'][0], clusters['leader'][1], 0, 0, str(9),1])
+                    
+                    anim_evacuees[0][floor]=frame
+                    anim_evacuees[1][floor]=frame
+                    anim_rooms_opacity[0][floor]={}
+                    anim_rooms_opacity[1][floor]={}
+        anim['animations']=OrderedDict([("evacuees", anim_evacuees), ("rooms_opacity", anim_rooms_opacity)]) 
+        self._write_anim_zip(anim)
+        Vis({'highlight_geom': None, 'anim': None, 'title': 'Clustering', 'srv': 1, 'anim': "1/clustering.zip"})
+
+# }}}
+    def _write_anim_zip(self,anim):# {{{
+        zf = zipfile.ZipFile("{}/workers/{}/clustering.zip".format(os.environ['AAMKS_PROJECT'], 1) , mode='w', compression=zipfile.ZIP_DEFLATED)
+        try:
+            zf.writestr("anim.json", json.dumps(anim))
+        finally:
+            zf.close()
 # }}}
     def _evacuees_static_animator(self):# {{{
         ''' 
@@ -222,6 +336,4 @@ class EvacMcarlo():
             m[floor]=self.dispatched_evacuees[floor]
         self.s.query('INSERT INTO dispatched_evacuees VALUES (?)', (json.dumps(m),))
         
-# }}}
-
 # }}}

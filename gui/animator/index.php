@@ -7,10 +7,10 @@ function site() {/*{{{*/
 	$doses="
 	<div style='display: flex'>
 		<a target=blank_ href=https://www.google.com/search?q=fractional+effective+dose>FED</a>: 
-		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['doseN']['stroke']."; background-color: ".$colors['doseN']['c']."; color: #000'></div>Neutral
-		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['doseL']['stroke']."; background-color: ".$colors['doseL']['c']."; color: #000'></div>Low
-		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['doseM']['stroke']."; background-color: ".$colors['doseM']['c']."; color: #000'></div>Medium
-		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['doseH']['stroke']."; background-color: ".$colors['doseH']['c']."; color: #000'></div>High
+		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['color_N']['stroke']."; background-color: ".$colors['color_N']['c']."; color: #000'></div>Neutral
+		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['color_L']['stroke']."; background-color: ".$colors['color_L']['c']."; color: #000'></div>Low
+		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['color_M']['stroke']."; background-color: ".$colors['color_M']['c']."; color: #000'></div>Medium
+		<div style='margin:5px; width:10px; height:10px; border-radius: 10px; border: 2px solid ".$colors['color_H']['stroke']."; background-color: ".$colors['color_H']['c']."; color: #000'></div>High
 	</div>
 	";
 	echo "
