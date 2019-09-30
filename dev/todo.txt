@@ -28,6 +28,17 @@ mimooh
 * animator: labels poly rooms
 
 -----------------------------
+* Project / scenario copy-to-new (avoid using text saves and typing)
+* Project / scenario download / upload
+* Scenario reset = remove previous calculations from the database
+* Button for stopping the calculation (this is big task with Gearman)
+* Scenario 'Submit' could be just 'Save'
+* Indication that the job is running. Now students press 'Launch' again when they think that they failed to start the simulation.
+* Simulation results database download (.csv)
+* Event tree FED branch logic revisiting. No suggestion yet.
+* Animator should default to the latest finalized simulation, not OnEnd()
+* Scenario setup parameters could be grouped under sub-headings (General, Safety systems, Evacuation, Fire)
+* Move indoor temperature and humidiy under 'Advanced' inputs.
 
 	7. Może warto przygotować instrukcję, albo film jak przygotować rysunek do
 	importu 
