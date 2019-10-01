@@ -728,7 +728,10 @@ function resizeAndRedrawCanvas() {//{{{
 //}}}
 view.onFrame=function(event) {//{{{
 	if(paused==1) { return; }
-	if (eData.length>0) {
+	if (eData.length<3) { 
+		showEvacueesLabels(); 
+		paused=1; 
+	} else {
 		evacueesInFrame();
 		roomsSmokeInFrame();
 		afterLerpFrame();

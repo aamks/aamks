@@ -272,11 +272,13 @@ class EvacMcarlo():
                 for idx,i in enumerate(labels):
                     self.clusters[floor][room][i]['center']=cluster_centers[i]
                     self.clusters[floor][room][i]['leader']=self._cluster_leader(cluster_centers[i], self.clusters[floor][room][i]['agents'])
+        #dd(self.clusters['0']['r4'])
 
 # }}}
     def _vis_clusters(self):# {{{
         '''
         We have 9 colors for clusters and 1 color for the leader of the cluster
+        Colors are defined in aamks/inc.json as color_0, color_1, ...
         '''
 
         anim=OrderedDict([("simulation_id",1), ("simulation_time",0), ("time_shift",0)])

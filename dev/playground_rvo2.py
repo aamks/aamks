@@ -21,7 +21,6 @@ from include import Json
 from include import Dump as dd
 from include import Vis
 from numpy.random import uniform
-from nav import Navmesh
 # }}}
 
 class EvacEnv:
@@ -32,7 +31,6 @@ class EvacEnv:
         self.evacuee_radius=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['evacueeRadius']
         time=1
         self.sim = rvo2.PyRVOSimulator(time     , 40                , 5            , time         , time                  , self.evacuee_radius , 30)
-        self.make_nav("0")
         self._anim={"simulation_id": 1, "simulation_time": 20, "time_shift": 0, "animations": { "evacuees": [], "rooms_opacity": [] }}
         self._create_agents()
         self._load_obstacles()
@@ -40,10 +38,6 @@ class EvacEnv:
         self._write_zip()
         Vis({'highlight_geom': None, 'anim': '1/f1.zip', 'title': 'x', 'srv': 1})
 
-# }}}
-    def make_nav(self,floor):# {{{
-        self.nav = Navmesh()
-        self.nav.build(floor)
 # }}}
     def _create_agents(self):# {{{
         z=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='EVACUEE'" )
@@ -57,8 +51,8 @@ class EvacEnv:
             self.sim.setAgentPrefVelocity(ii, (0,0))
             self.agents[aa]['behaviour']='random'
             self.agents[aa]['origin']=(i['x0'],i['y0'])
-            self.agents[aa]['target']=self.nav.room_leaves((i['x0'], i['y0']))['best'][0]
-        self._positions();
+            self.agents[aa]['target']=(i['x0']+1000, i['y0'])
+        self._positions()
 # }}}
     def _load_obstacles(self):# {{{
         z=self.json.readdb('obstacles')
@@ -97,6 +91,7 @@ class EvacEnv:
 # }}}
     def _write_zip(self):# {{{
         d="{}/workers/1".format(os.environ['AAMKS_PROJECT'])
+        dd(self._anim['animations']['evacuees'])
 
         zf=zipfile.ZipFile("{}/f1.zip".format(d), 'w')
         zf.writestr("anim.json", json.dumps(self._anim))
