@@ -147,7 +147,7 @@ class OnEnd():
             for i in range(*si.get()):
                 worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                 worker = worker.replace("/home","")
-                gearman="gearman -b -f aRun 'https://www.ctrk.pl:444{}'".format(worker)
+                gearman="gearman -b -f aRun 'https://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
                 os.system(gearman)
         except Exception as e:
             print('OnEnd: {}'.format(e))

@@ -29,7 +29,7 @@ class Manager():
         Gearman can then connect to worker machine and download the results.
         '''
 
-        Popen("(echo workers ; sleep 0.1) | netcat {} 4730 | grep -q aOut || {{ gearman -w -h {} -f aOut xargs python3 {}/manager/results_collector.py; }}".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
+        Popen("(echo workers ; sleep 0.1) | netcat {} 4730 -w 1 | grep -q aOut || {{ gearman -w -h {} -f aOut xargs python3 {}/manager/results_collector.py; }}".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
 # }}}
     def _list_enabled_networks(self):# {{{
         print("Networks enabled in conf.json")

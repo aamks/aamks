@@ -1,18 +1,24 @@
 # Not for production
 
 psql -f sql.sql
-preferences='{"apainter_editor": "text", "navmesh_debug": 1, "apainter_labels": 1, "partitioning_debug": 0, "use_fire_model": 0}';
 psql aamks -c "
 DELETE FROM users;
-INSERT INTO users(active_scenario, preferences, user_photo , user_name , email) values(3 , '$preferences', '/aamks/logo.svg' , 'Karol Kreński'    , 'mimoohowy@gmail.com');
-INSERT INTO users(active_scenario, preferences, user_photo , user_name , email) values(1 , '$preferences', '/aamks/logo.svg' , 'Stanisław Łazowy' , 'stanislaw.lazowy@gmail.com');
+INSERT INTO users(active_scenario, user_photo , user_name , password, email) values(3 , '/aamks/logo.svg' , 'Karol Kreński'    , 'cf87b610767de89e73f6', 'mimoohowy@gmail.com');
+INSERT INTO users(active_scenario, user_photo , user_name , password, email) values(1 , '/aamks/logo.svg' , 'Stanisław Łazowy' , 'cf87b610767de89e73f6', 'stanislaw.lazowy@gmail.com');
 DELETE FROM projects;
 INSERT INTO projects(user_id,project_name) values(1,'demo');
+INSERT INTO projects(user_id,project_name) values(2,'demo');
 DELETE FROM scenarios;
+
 INSERT INTO scenarios(project_id,scenario_name) values(1,'simple');
 INSERT INTO scenarios(project_id,scenario_name) values(1,'navmesh');
 INSERT INTO scenarios(project_id,scenario_name) values(1,'three');
 INSERT INTO scenarios(project_id,scenario_name) values(1,'fds');
+
+INSERT INTO scenarios(project_id,scenario_name) values(2,'simple');
+INSERT INTO scenarios(project_id,scenario_name) values(2,'navmesh');
+INSERT INTO scenarios(project_id,scenario_name) values(2,'three');
+INSERT INTO scenarios(project_id,scenario_name) values(2,'fds');
 ";
 
 # psql aamks -c "SELECT * FROM projects"

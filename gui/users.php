@@ -13,7 +13,7 @@ function update_prefs() { #{{{
 }
 /*}}}*/
 function prefs_form() { # {{{
-	if(!isset($_GET['edit_prefs'])) { return; }
+	if(!isset($_GET['edit_user'])) { return; }
 	echo "<div style='display:flex'>";
 		echo "<div>";
 			echo "<form method=post>";
@@ -22,7 +22,7 @@ function prefs_form() { # {{{
 			foreach($_SESSION['prefs'] as $k=>$v) {
 				echo "<tr><td>$k<td><input autocomplete=off name=update_prefs[$k] value=$v>";
 			}
-			echo "</table><br><center><input type=submit></center></form><br><br>";
+			echo "</table><br><center><input type=submit value='Save'></center></form><br><br>";
 		echo "</div>";
 
 		echo "<div>";

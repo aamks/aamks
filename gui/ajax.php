@@ -48,7 +48,7 @@ function ajaxGetUnderlay() { #{{{
 }
 /*}}}*/
 function ajaxChangeActiveScenario() { #{{{
-	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.id AS user_id, u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$_SESSION['main']['scenario_name']));
 }
@@ -248,7 +248,7 @@ function ajaxGoogleLogin() { /*{{{*/
 	$_SESSION['g_user_id']=$_SESSION['google_data']['g_user_id'];
 	$_SESSION['g_picture']=$_SESSION['google_data']['g_picture'];
 	$ret[0]=$_SESSION['nn']->do_google_login();
-	$_SESSION['nn']->set_user_variables($ret[0]);
+	$_SESSION['nn']->ch_main_vars($ret[0]);
 }
 /*}}}*/
 function main() { /*{{{*/

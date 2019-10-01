@@ -5,12 +5,6 @@
 
 # Aamks uses postgres (user:aamks, db:aamks) for collecting the simulations data.
 
-# AAMKS_NOTIFY is for gearman and other notifications. Emails notifications are
-# troublesome (local maileserver? / spam / google's authorizations) therefore we
-# notify via jabber. Just install xabber or other client on your smartphone /
-# your desktop, create your jabber account and make sure it works. Aamks may send
-# you some messages while it works. 
-
 # By convention users dirs are as follows:
 # /home/aamks_users/user1@gmail.com
 # /home/aamks_users/user2@hotmail.com
@@ -21,26 +15,28 @@
 
 # CONFIGURATION, must be copied to ~/.bashrc
 
-AAMKS_SERVER=127.0.0.1 # gearman + www for workers
-AAMKS_NOTIFY='mimooh@jabb.im, krasuski@jabb.im'
-AAMKS_TESTING=0
-AAMKS_USE_GEARMAN=0
-AAMKS_PATH='/usr/local/aamks'
+AAMKS_SERVER=127.0.0.1										# gearman + www for workers
+AAMKS_USE_GEARMAN=0											# needed if we have a cluster of workers
+AAMKS_PATH='/usr/local/aamks'								
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
 AAMKS_SALT='aamksisthebest'
+AAMKS_USE_GMAIL=0											# needed if we allow users to register accounts
+AAMKS_GMAIL_PASSWORD='none'									# needed if we allow users to register accounts
+AAMKS_GMAIL_USERNAME='none'									# needed if we allow users to register accounts
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 
 echo "This is the default Aamks configuration. You can change it in install.sh. "
 echo; echo;
 echo "AAMKS_SERVER: $AAMKS_SERVER"
 echo "AAMKS_USE_GEARMAN: $AAMKS_USE_GEARMAN"
-echo "AAMKS_NOTIFY: $AAMKS_NOTIFY"
-echo "AAMKS_TESTING: $AAMKS_TESTING"
 echo "AAMKS_PATH: $AAMKS_PATH"
 echo "AAMKS_PROJECT: $AAMKS_PROJECT"
 echo "AAMKS_PG_PASS: $AAMKS_PG_PASS"
 echo "AAMKS_SALT: $AAMKS_SALT"
+echo "AAMKS_USE_GMAIL: $AAMKS_USE_GMAIL"
+echo "AAMKS_GMAIL_USERNAME: $AAMKS_GMAIL_USERNAME"
+echo "AAMKS_GMAIL_PASSWORD: $AAMKS_GMAIL_PASSWORD"
 echo; echo;
 echo "<Enter> accepts, <ctrl+c> cancels"
 read
@@ -69,7 +65,6 @@ sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && {
 	# Buggy gearman hasn't been respecting /etc/ for ages now. Therefore we act directly on the /lib
 	# Normally we would go with:
 	# echo "PARAMS=\"--listen=$AAMKS_SERVER\"" | sudo tee /etc/default/gearman-job-server
-	sudo apt-get update 
 	sudo apt-get --yes install gearman
 	echo; echo;
 	echo "Gearmand (job server) will be configured to --listen on all interfaces (0.0.0.0) or whatever else you wish."
@@ -125,7 +120,7 @@ USER=`id -ru`
 
 sudo locale-gen en_US.UTF-8
 sudo apt-get update 
-sudo apt-get --yes install postgresql subversion python3-pip python3-psycopg2 sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php
+sudo apt-get --yes install postgresql subversion python3-pip python3-psycopg2 sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php 
 sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx sns seaborn statsmodels PyQt5 ete3
 
 
@@ -135,11 +130,12 @@ sudo cat /etc/apache2/envvars | grep -v AAMKS_ | grep -v umask > $temp
 echo "umask 0002" >> $temp
 echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> $temp
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> $temp
-echo "export AAMKS_NOTIFY='$AAMKS_NOTIFY'" >> $temp
-echo "export AAMKS_TESTING='$AAMKS_TESTING'" >> $temp
 echo "export AAMKS_USE_GEARMAN=$AAMKS_USE_GEARMAN" >> $temp
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> $temp
+echo "export AAMKS_USE_GMAIL='$AAMKS_USE_GMAIL'" >> $temp
+echo "export AAMKS_GMAIL_USERNAME='$AAMKS_GMAIL_USERNAME'" >> $temp
+echo "export AAMKS_GMAIL_PASSWORD='$AAMKS_GMAIL_PASSWORD'" >> $temp
 sudo cp $temp /etc/apache2/envvars
 
 echo "umask 0002" >> $temp
@@ -151,6 +147,14 @@ rm $temp
 
 sudo mkdir -p "$AAMKS_PROJECT"
 sudo cp -r $AAMKS_PATH/installer/demo /home/aamks_users/demo@aamks/
+
+
+[ "X$AAMKS_USE_GMAIL" == "X1" ] && { 
+	# TODO - instructables for sending mail via Gmail
+	sudo apt-get --yes install composer
+	composer require phpmailer/phpmailer
+	mv vendor $AAMKS_PATH/gui
+}
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.
 # Solves the problem of shell users vs www-data user permissions of new files.

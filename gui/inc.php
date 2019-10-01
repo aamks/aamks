@@ -1,4 +1,5 @@
 <?php
+session_name('aamks');
 session_start();
 ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
@@ -28,17 +29,6 @@ function dd3($arr) {
 }
 
 /*}}}*/
-function init_main_vars() { #{{{
-	#psql aamks -c 'select * from users'
-	#psql aamks -c "delete from users where email='stanislaw.lazowy@gmail.com' "
-	#psql aamks -c 'select * from projects'
-	echo "Init Main vars";
-	if(isset($_SESSION['main']['project_id'])) { return; }
-	#$_SESSION['main']['user_id']=1;
-	#$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM users u LEFT JOIN scenarios s ON (u.active_scenario=s.id) LEFT JOIN projects p ON(p.id=s.project_id) WHERE u.id=$1 AND u.active_scenario=s.id",array($_SESSION['main']['user_id']));
-	#$_SESSION['nn']->ch_main_vars($r[0]);
-}
-/*}}}*/
 class Aamks {/*{{{*/
 	public function __construct($site){
 		if($site!="ajax") { $this->htmlHead($site); } 
@@ -49,19 +39,16 @@ class Aamks {/*{{{*/
 	}
 
 /*}}}*/
-	public function set_user_variables($r){/*{{{*/
-		$_SESSION['main']['user_id']=$r['id'];
-		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
-		$_SESSION['main']['user_name']=$r['user_name']; # zmiany nazw
-		$_SESSION['main']['user_photo']=$r['user_photo']; # zmiany nazw 
-		$_SESSION['main']['user_email']=$r['email'];
-		$_SESSION['main']['email']=$r['email']; //TODO - usunać?
-		//can not put header location in here
-	}/*}}}*/
+
 	public function ch_main_vars($r) { #{{{
+		if(!array_key_exists('user_id', $r) || !array_key_exists('user_name', $r) || !array_key_exists('user_photo', $r) || !array_key_exists('project_id', $r) || !array_key_exists('project_name', $r) || !array_key_exists('scenario_id', $r) || !array_key_exists('scenario_name', $r)) { dd($r); die("ch_main_vars() bug"); }
+		if(!isset($r['preferences']['apainter_editor'])) { $r['preferences']=$this->mk_default_preferences($r['user_id']); }
+
 		$prefs=json_decode($r['preferences'],1);
 		ksort($prefs);
 		unset($r['preferences']);
+
+		$_SESSION['main']['user_id']=$r['user_id'];
 		$_SESSION['main']['project_id']=$r['project_id'];
 		$_SESSION['main']['user_name']=$r['user_name'];
 		$_SESSION['main']['user_photo']=$r['user_photo'];
@@ -70,6 +57,7 @@ class Aamks {/*{{{*/
 		$_SESSION['main']['scenario_name']=$r['scenario_name'];
 		$_SESSION['main']['user_home']="/home/aamks_users/$r[email]";
 		$_SESSION['main']['working_home']="/home/aamks_users/$r[email]/$r[project_name]/$r[scenario_name]";
+
 		$_SESSION['prefs']=[];
 		foreach($prefs as $k=>$v) { 
 			$_SESSION['prefs'][$k]=$v;
@@ -77,14 +65,6 @@ class Aamks {/*{{{*/
 		$this->query("UPDATE users SET active_scenario=$1 WHERE id=$2", array($r['scenario_id'], $_SESSION['main']['user_id']));
 	}
 	/*}}}*/
-	private function reportbug($details) {/*{{{*/
-		$home="<a href=".$_SESSION['home_url']."><img id=home src=/aamks/css/home.svg></a>";
-		$reportquery=join("\n\n" , array(date("G:i:s"), $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REQUEST_URI'], $details, "\n\n"));
-		mail('mimoohowy@gmail.com, stanislaw.lazowy@gmail.com', 'aamks bug!', "$reportquery", "from: mimooh@inf.sgsp.edu.pl"); 
-		echo "<fatal>DB error. Reported to the administrator.<br>$home</fatal>"; 
-		die();
-}
-/*}}}*/
 	public function assert_working_home_exists() { # {{{
 		// Things must exist. Otherwise we risk the redirection loops.
 		if(!is_dir($_SESSION['main']['working_home'])) { 
@@ -115,17 +95,12 @@ class Aamks {/*{{{*/
 	}
 /*}}}*/
 	public function menu($title='') { /*{{{*/
-		if(isset($_SESSION['main']['user_id'])){
-			$this->logoutButton();
-		}
+		$this->logoutButton();
 		$menu=$this->rawMenu();
 		echo "<left-menu-box> $menu </left-menu-box> <div id=content-main style='height: 95vh; margin-left: 150px; padding: 0px;'>";
 		if(!empty($title)) { echo "<tt>$title</tt>"; }
 	}
 	/*}}}*/
-public function me(){/*{{{*/
-	return("https://$_SERVER[SERVER_NAME]$_SERVER[SCRIPT_NAME]");
-}/*}}}*/
 	public function isChecked($val) {/*{{{*/
 		if($val==1) { return 'div-yes'; }
 			return 'div-no'; 
@@ -136,10 +111,10 @@ public function me(){/*{{{*/
 		# moze powinno byc w index.php:main() wiecej tych rzeczy?
 
 		# TODO: looks like a good place to control whether the user is logged in
-		 #if(empty($_SESSION['main']['user_id'])) { 
-		if($_SERVER['SCRIPT_NAME'] !="/aamks/login.php" and !isset($_SESSION['main']['user_id']) ){
-			 header("Location: /aamks/login.php?logi");
-		}
+		# if(empty($_SESSION['main']['user_id'])) { 
+		# 	header("Location: /aamks/index.php");
+		# 	exit();
+		# }
 
 		$header="<!DOCTYPE html>
 		<html> 
@@ -172,31 +147,13 @@ public function me(){/*{{{*/
 	}
 /*}}}*/
 	public function logoutButton() {/*{{{*/
-		if(isset($_REQUEST['logout'])) { 
-			unset($_SESSION['main']['user_id']);
-			echo "<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google 
-			session_destroy();
-			ob_flush();
-			flush();
-			sleep(2);
-			echo "<script type='text/javascript'> signOut(); </script> ";
-			echo"			<meta http-equiv='Refresh' content='0; url=index.php' />	";
-			echo "Logout";
-			exit;
-		}
+		if(!isset($_SESSION['main']['user_id'])) { header("Location: login.php"); }
 
-		if(!empty($_SESSION['main']['user_photo'])){
-			$setup_user="<a href=/aamks/users.php?edit_prefs><img src=".$_SESSION['main']['user_photo']." style='width:50px; height:50px; padding-right:4px;'></a>";
-		}else{
-
-			#$name=explode(" ", $_SESSION['main']['user_name'])[0];
-			if(empty($name)){$name="empty_name";}
-
-			$setup_user="<a href=/aamks/users.php?edit_user class=blink>$name</a>";
-		}
+		//$setup_user="<a href=/aamks/users.php?edit_user><img src=".$_SESSION['main']['user_photo']." style='width:50px; height:50px; padding-right:4px;'></a>";
+		$setup_user="<a href=/aamks/users.php?edit_user class=blink>".$_SESSION['main']['user_name']."</a>";
 		echo "
-		<div style='position:fixed; top: 0px; right: 10px; text-align:right'>
-		<a href=?logout=1 class=blink >Logout</a><br>
+		<div style='position:fixed; top: 20px; right: 10px; text-align:right'>
+		<a href=login.php?logout=1 class=blink >Logout</a><br>
 		$setup_user
 		</div>
 		";
@@ -260,7 +217,7 @@ public function do_google_login(){/*{{{*/
 	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE email = $1 ", array($_SESSION['g_email'] )); //
 #psql aamks -c 'delete from users';
 #psql aamks -c 'select * from users';
-#psql aamks -c 'update users set google_id = NULL';
+#psql aamks -c 'update users set preferences=NULL';
 	if (!empty($ret[0])){ //alredy there is a user with that email. -need to Join it
 		if(empty($ret[0]['google_id'])){ //if user already has a google_id
 			$_SESSION['nn']->query("UPDATE users SET 
@@ -340,5 +297,20 @@ public function do_google_login(){/*{{{*/
 		}
 	}
 	/*}}}*/
+
+	private function mk_default_preferences($user_id) { #{{{
+		$default_preferences='{"apainter_editor": "easy", "navmesh_debug": 0, "apainter_labels": 1, "partitioning_debug": 0, "use_fire_model": 1 }';
+		$this->query("UPDATE users SET preferences=$1 WHERE id=$2", array($default_preferences, $user_id));
+		return $default_preferences;
+	}
+/*}}}*/
+	private function reportbug($details) {/*{{{*/
+		$home="<a href=".$_SESSION['home_url']."><img id=home src=/aamks/css/home.svg></a>";
+		$reportquery=join("\n\n" , array(date("G:i:s"), $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REQUEST_URI'], $details, "\n\n"));
+		mail('mimoohowy@gmail.com, stanislaw.lazowy@gmail.com', 'aamks bug!', "$reportquery", "from: mimooh@inf.sgsp.edu.pl"); 
+		echo "<fatal>DB error. Reported to the administrator.<br>$home</fatal>"; 
+		die();
+}
+/*}}}*/
 }
 

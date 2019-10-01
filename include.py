@@ -14,20 +14,12 @@ import sys
 
 class SendMessage:# {{{
     ''' 
-    SendMessage() may fail if there are unescaped bash special chars. 
-    First we try to send the msg as it is, and if that fails, we convert to
-    alphanums only.
+    Useful for debuging gearman workers. In the past we had jabber here.
     '''
 
     def __init__(self,msg):
         with open("/tmp/aamks.log", "a") as f: 
             f.write(str(msg)+"\n")
-        # for to in [ i.strip() for i in os.environ['AAMKS_NOTIFY'].split(",") ]:
-        #     try:
-        #         Popen("printf '{}' | sendxmpp -r aamks -d -t -u aamks -p aamkstatanka -j jabb.im {}> /dev/null 2>/dev/null &".format(msg, to), shell=True)
-        #     except:
-        #         msg="".join([ c if c.isalnum() else " " for c in msg ])
-        #         Popen("printf '{}' | sendxmpp -r aamks -d -t -u aamks -p aamkstatanka -j jabb.im {}> /dev/null 2>/dev/null &".format(msg, to), shell=True)
 # }}}
 class Dump:# {{{
     def __init__(self,*args):
@@ -64,14 +56,14 @@ class SimIterations:# {{{
     def __init__(self, project, scenario_id, how_many):
         self.p=Psql()
         self.project=project
-        self.scenario=scenario_id
+        self.scenario_id=scenario_id
         self.how_many=how_many
 
     def get(self):
         self.r=[]
         try:
             # If project already exists in simulations table (e.g. adding 100 simulations to existing 1000)
-            _max=self.p.query('SELECT max(iteration)+1 FROM simulations WHERE project=%s AND scenario_id=%s', (self.project,self.scenario_id))[0][0]
+            _max=self.p.query("SELECT max(iteration)+1 FROM simulations WHERE project={} AND scenario_id={}".format(self.project,self.scenario_id))[0][0]
             self.r.append(_max-self.how_many)
             self.r.append(_max)
         except:
@@ -184,6 +176,11 @@ class Psql: # {{{
         self.PSQL.commit()
         if query[:6] in("select", "SELECT"):
             return self.psqldb.fetchall() 
+
+    def copy_expert(self, sql, csv_file):
+        cursor = self.PSQL.cursor()
+        with open(csv_file, "w") as f:
+            cursor.copy_expert(sql, f)
 
     def querydd(self,query,data=tuple()):
         ''' Debug query. Instead of connecting shows the exact query and params. '''

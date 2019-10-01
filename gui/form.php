@@ -60,7 +60,7 @@ function droplist_material($k,$in) {/*{{{*/
 }
 /*}}}*/
 function droplist_building_profile($in) {/*{{{*/
-	$select="<select name=post[building_profile][type]>";
+	$select="<select required name=post[building_profile][type]>";
 	$select.="<option value='$in'>$in</option>";
 	foreach(get_building(0,1) as $k) { 
 		$select.="<option value='$k'>$k</option>";
@@ -70,7 +70,7 @@ function droplist_building_profile($in) {/*{{{*/
 }
 /*}}}*/
 function droplist_alarming($in) { /*{{{*/
-	$select="<select name=post[building_profile][alarming]>";
+	$select="<select required name=post[building_profile][alarming]>";
 	$select.="<option value='$in'>$in</option>";
 	$select.="<option value=''></option>";
 	$select.="<option value=A1>A1</option>";
@@ -81,7 +81,7 @@ function droplist_alarming($in) { /*{{{*/
 }
 /*}}}*/
 function droplist_complexity($in) { /*{{{*/
-	$select="<select name=post[building_profile][complexity]>";
+	$select="<select required name=post[building_profile][complexity]>";
 	$select.="<option value='$in'>$in</option>";
 	$select.="<option value=''></option>";
 	$select.="<option value=B1>B1</option>";
@@ -92,7 +92,7 @@ function droplist_complexity($in) { /*{{{*/
 }
 /*}}}*/
 function droplist_management($in) { /*{{{*/
-	$select="<select name=post[building_profile][management]>";
+	$select="<select required name=post[building_profile][management]>";
 	$select.="<option value='$in'>$in</option>";
 	$select.="<option value=''></option>";
 	$select.="<option value=M1>M1</option>";
@@ -401,7 +401,7 @@ function delete_scenario() {/*{{{*/
 	$disk_delete=implode("/", array($_SESSION['main']['user_home'], $_SESSION['main']['project_name'], $_SESSION['main']['scenario_name']));
 	system("rm -rf $disk_delete");
 	unset($_SESSION['main']['scenario_id']);
-	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=$1 AND s.id IS NOT NULL ORDER BY s.modified DESC LIMIT 1",array($_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.id AS user_id, u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=$1 AND s.id IS NOT NULL ORDER BY s.modified DESC LIMIT 1",array($_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	header("Location: projects.php?projects_list");
 	# TODO: remove from db?

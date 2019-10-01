@@ -59,8 +59,7 @@ class EvacMcarlo():
             self._make_evac_conf()
         self._evacuees_static_animator()
         self._make_dispached_rooms()  
-        #self._clustering()
-        self._clustering_mimooh()
+        self._clustering()
         self._vis_clusters()
 
 # }}}
@@ -218,11 +217,22 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(self.conf['evacuees_max_v_speed']['mean'] , self.conf['evacuees_max_v_speed']['sd']) , 2)
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
 # }}}
-    def _cluster_leader(self, center, points):# {{{
-        points = tuple(map(tuple, points))
-        dist_2 = np.sum((points - center) ** 2, axis=1)
-        return points[np.argmin(dist_2)]
+    def _evacuees_static_animator(self):# {{{
+        ''' 
+        For the animator. We just pick a single, newest sim_id and display
+        evacuees init positions. Animator can use it when there are no worker
+        provided animations (moving evacuees for specific sim_id). 
+
+        '''
+
+        m={}
+        for floor in self.floors:
+            m[floor]=self.dispatched_evacuees[floor]
+        self.s.query('INSERT INTO dispatched_evacuees VALUES (?)', (json.dumps(m),))
+        
 # }}}
+
+# TODO move clustering to a separate class/file
     def _make_dispached_rooms(self):# {{{
         ''' 
         rooms for dispatched_evacuees
@@ -238,38 +248,12 @@ class EvacMcarlo():
 
 
 # }}}
-    def _clustering(self):# {{{
-        ms = MeanShift()
-        grouped = []
-        nearest = []
-        y = 0
-        for floor,rooms in self._dispached_rooms.items():
-            for i, j in rooms.items():
-                #i to pokoj, j to polozenia
-                z = np.array(j)
-                ms.fit(z)
-                labels = ms.labels_
-                cluster_centers = ms.cluster_centers_
-                for center in cluster_centers:
-                    nearest.append(self._cluster_leader(center,z))
-                #clusters_ = len(np.unique(labels))
-                tux = 0
-                y+=1
-                for k in labels:
-                    x = i + '_' + str(k)
-                    #lista nearest za kazdym razem jest inna
-                    if tux == nearest[y]:
-                        x = x + '_chef'
-                        grouped.append(x)
-                    else:
-                        grouped.append(x)
-                    tux +=1
-            dd(nearest)
-        return grouped, nearest
-
+    def _cluster_leader(self, center, points):# {{{
+        points = tuple(map(tuple, points))
+        dist_2 = np.sum((points - center) ** 2, axis=1)
+        return points[np.argmin(dist_2)]
 # }}}
-
-    def _clustering_mimooh(self):# {{{
+    def _clustering(self):# {{{
         ms = MeanShift()
         self.clusters = {}
         for floor,rooms in self._dispached_rooms.items():
@@ -299,12 +283,14 @@ class EvacMcarlo():
 
         anim_evacuees=[OrderedDict(), OrderedDict()]
         anim_rooms_opacity=[OrderedDict(), OrderedDict()]
+        color_iterator=0
         for floor,floors in self.clusters.items():
             frame=[]
             for room,rooms in floors.items():
                 for cid,clusters in rooms.items():
+                    color_iterator+=1
                     for agent in clusters['agents']:
-                        frame.append([agent[0],agent[1],0,0,str(cid%9),1])
+                        frame.append([agent[0],agent[1],0,0,str(color_iterator%9),1])
                     frame.append([clusters['leader'][0], clusters['leader'][1], 0, 0, str(9),1])
                     
                     anim_evacuees[0][floor]=frame
@@ -322,18 +308,4 @@ class EvacMcarlo():
             zf.writestr("anim.json", json.dumps(anim))
         finally:
             zf.close()
-# }}}
-    def _evacuees_static_animator(self):# {{{
-        ''' 
-        For the animator. We just pick a single, newest sim_id and display
-        evacuees init positions. Animator can use it when there are no worker
-        provided animations (moving evacuees for specific sim_id). 
-
-        '''
-
-        m={}
-        for floor in self.floors:
-            m[floor]=self.dispatched_evacuees[floor]
-        self.s.query('INSERT INTO dispatched_evacuees VALUES (?)', (json.dumps(m),))
-        
 # }}}
