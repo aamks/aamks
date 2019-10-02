@@ -226,6 +226,9 @@ class Json: # {{{
 class GetUserPrefs:# {{{
     def __init__(self):# {{{
         self.p=Psql()
+        if 'AAMKS_USER_ID' not in os.environ:
+            os.environ["AAMKS_USER_ID"]=1
+
         self.pconf=json.loads(self.p.query("SELECT preferences FROM users WHERE id=%s", (os.environ['AAMKS_USER_ID'],))[0][0])
     def get_var(self, var):
         return self.pconf[var]
