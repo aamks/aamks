@@ -77,7 +77,6 @@ CREATE TABLE simulations ( ---{{{
 CREATE TABLE users (---{{{
 	id serial PRIMARY KEY, 
 	active_scenario int,
-	active_editor int,
     email text UNIQUE,
 	google_id text,
     user_name text,
@@ -86,6 +85,7 @@ CREATE TABLE users (---{{{
 	access_time timestamp,
 	activation_token text,
 	reset_token text,
+	preferences text,
 	modified timestamp without time zone not null default now()
 );
 ---}}}

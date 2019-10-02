@@ -28,6 +28,26 @@ function read_aamks_conf_json() { /*{{{*/
 }
 /*}}}*/
 
+function droplist_fire_model($in) {/*{{{*/
+	$select="<select name=post[fire_model]>";
+	$select.="<option value='$in'>$in</option>";
+	$select.="<option value=CFAST>CFAST</option>";
+	$select.="<option value=FDS>FDS</option>";
+	$select.="<option value=None>None</option>";
+	$select.="</select>";
+	return $select;
+}
+/*}}}*/
+function droplist_dipatch_evacuees($in) {/*{{{*/
+	$select="<select name=post[dispatch_evacuees]>";
+	$select.="<option value='$in'>$in</option>";
+	$select.="<option value='manual+probabilistic'>manual+probabilistic</option>";
+	$select.="<option value='probabilistic+manual'>probabilistic+manual</option>";
+	$select.="<option value='manual'>manual</option>";
+	$select.="</select>";
+	return $select;
+}
+/*}}}*/
 function droplist_material($k,$in) {/*{{{*/
 	$select="<select name=post[$k][type]>";
 	$select.="<option value='$in'>$in</option>";
@@ -40,7 +60,7 @@ function droplist_material($k,$in) {/*{{{*/
 }
 /*}}}*/
 function droplist_building_profile($in) {/*{{{*/
-	$select="<select name=post[building_profile][type]>";
+	$select="<select required name=post[building_profile][type]>";
 	$select.="<option value='$in'>$in</option>";
 	foreach(get_building(0,1) as $k) { 
 		$select.="<option value='$k'>$k</option>";
@@ -50,7 +70,7 @@ function droplist_building_profile($in) {/*{{{*/
 }
 /*}}}*/
 function droplist_alarming($in) { /*{{{*/
-	$select="<select name=post[building_profile][alarming]>";
+	$select="<select required name=post[building_profile][alarming]>";
 	$select.="<option value='$in'>$in</option>";
 	$select.="<option value=''></option>";
 	$select.="<option value=A1>A1</option>";
@@ -61,7 +81,7 @@ function droplist_alarming($in) { /*{{{*/
 }
 /*}}}*/
 function droplist_complexity($in) { /*{{{*/
-	$select="<select name=post[building_profile][complexity]>";
+	$select="<select required name=post[building_profile][complexity]>";
 	$select.="<option value='$in'>$in</option>";
 	$select.="<option value=''></option>";
 	$select.="<option value=B1>B1</option>";
@@ -72,7 +92,7 @@ function droplist_complexity($in) { /*{{{*/
 }
 /*}}}*/
 function droplist_management($in) { /*{{{*/
-	$select="<select name=post[building_profile][management]>";
+	$select="<select required name=post[building_profile][management]>";
 	$select.="<option value='$in'>$in</option>";
 	$select.="<option value=''></option>";
 	$select.="<option value=M1>M1</option>";
@@ -202,11 +222,19 @@ function write($data) { #{{{
 	header("Location: form.php?edit");
 }
 /*}}}*/
-function update_form1() {/*{{{*/
-	if(empty($_POST['update_form1'])) { return; }
+function alarming_defaults($x) {/*{{{*/
+	if($x=='A1') { return array('mean' =>  0   , 'sd' =>  0)   ; }
+	if($x=='A2') { return array('mean' =>  180 , 'sd' =>  120) ; }
+	if($x=='A3') { return array('mean' =>  300 , 'sd' =>  180) ; }
+	return array('mean' =>  0, 'sd' =>  0) ;  # In case none of the alarming is chosen
+}
+/*}}}*/
+function update_form_easy() {/*{{{*/
+	if(empty($_POST['update_form_easy'])) { return; }
 	$out=$_POST['post'];
 	$out+=get_defaults('setup1');
 	$z=calculate_profile($_POST['post']['building_profile']);
+	$out['alarming']=alarming_defaults($out['building_profile']['alarming']);
 	$out['evacuees_concentration']=$z['evacuees_concentration'];
 	$out['hrr_alpha']['mode']=$z['hrr_alpha_mode'];
 	$out['hrrpua']['mode']=$z['hrrpua_mode'];
@@ -216,84 +244,97 @@ function update_form1() {/*{{{*/
 	write($s);
 }
 /*}}}*/
-function update_form2() {/*{{{*/
-	if(empty($_POST['update_form2'])) { return; }
+function update_form_advanced() {/*{{{*/
+	if(empty($_POST['update_form_advanced'])) { return; }
 	$out=$_POST['post'];
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
 	write($s);
 }
 /*}}}*/
-function update_form3() {/*{{{*/
-	if(empty($_POST['update_form3'])) { return; }
+function update_form_text() {/*{{{*/
+	if(empty($_POST['update_form_text'])) { return; }
 	write($_POST['json']);
 }
 /*}}}*/
-function update_form4() {/*{{{*/
-	if(empty($_POST['update_form4'])) { return; }
+function update_form_bprofiles() {/*{{{*/
+	if(empty($_POST['update_form_bprofiles'])) { return; }
 	$z=calculate_profile($_POST['post']['building_profile']);
 	dd($z);
 }
 /*}}}*/
 
-function form_fields_iterator($json,$variant) { #{{{
-	// In conf.json there are 3 types of values for each key: value, array, assoc 
-
-	foreach($json as $k=>$v)            {
-		if($k=='project_id')            { echo "<tr><td>".get_help($k)."<td>$v <input autocomplete=off type=hidden name=post[$k] value='$v'>"; }
-		else if($k=='scenario_id')      { echo "/$v							<input autocomplete=off type=hidden name=post[$k] value='$v'>"; }
-		else if($k=='building_profile') { echo building_fields($v, $variant); }
-		else if($k=='heat_detectors')   { echo "<tr><td><a class='rlink switch' id='$k'>heat detectors</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='smoke_detectors')  { echo "<tr><td><a class='rlink switch' id='$k'>smoke detectors</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='sprinklers')       { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='NSHEVS')           { echo "<tr><td><a class='rlink switch' id='$k'>$k</a><td>".form_plain_arr_switchable($k,$v); }
-		else if($k=='material_ceiling') { echo "<tr><td>".get_help('material')."<td>".form_material($json); }
-		else if($k=='material_floor')   { }
-		else if($k=='material_wall')    { }
-		else                            {
-			if(is_array($v) and isset($v[0])) {
-				echo "<tr><td>".get_help($k)."<td>".form_arr($k,$v); 
-			} else if(is_array($v) and !isset($v[0])) {
-				echo "<tr><td>".get_help($k)."<td>".form_assoc($k,$v); 
-			} else {
-				echo "<tr><td>".get_help($k)."<td><input autocomplete=off type=text automplete=off size=10 name=post[$k] value='$v'>"; 
-			}
-		}
-	}
-}
-/*}}}*/
-function form($variant) { /*{{{*/
-	// variant is easy or advanced
-	$update_var='update_form2';
+function form_fields_advanced() { #{{{
 	$json=read_aamks_conf_json();
-	if($variant=='easy') { 
-		foreach(array("navmesh_debug", "outdoor_temperature","indoor_pressure","windows","vents_open","c_const","evacuees_max_h_speed","evacuees_max_v_speed","evacuees_alpha_v","evacuees_beta_v","fire_starts_in_a_room","hrrpua","hrr_alpha","evacuees_concentration","pre_evac","pre_evac_fire_origin") as $i) { 
-			unset ($json[$i]);
-		}
-		$update_var='update_form1';
-	}
-
+	extract($json);
 	echo "<form method=post>";
+	echo "<input autocomplete=off type=submit name=update_form_advanced value='Save'><br><br>";
 	echo "<table>";
-	form_fields_iterator($json,$variant);
+	echo "<tr><td>".get_help('project_id')."<td>$project_id <input autocomplete=off type=hidden name=post[project_id] value='$project_id'>"; 
+	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
+	echo "<tr><td>".get_help('number_of_simulations')."<td><input autocomplete=off type=text automplete=off size=10 name=post[number_of_simulations] value='$number_of_simulations'>"; 
+	echo "<tr><td>".get_help('simulation_time')."<td><input autocomplete=off type=text automplete=off size=10 name=post[simulation_time] value='$simulation_time'>"; 
+	echo "<tr><td>".get_help('fire_model')."<td>".droplist_fire_model($fire_model); 
+	echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($dispatch_evacuees); 
+	echo "<tr><td>".get_help('indoor_temperature')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_temperature] value='$indoor_temperature'>"; 
+	echo "<tr><td>".get_help('outdoor_temperature')."<td>".form_assoc('outdoor_temperature',$outdoor_temperature); 
+	echo "<tr><td>".get_help('indoor_pressure')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_pressure] value='$indoor_pressure'>"; 
+	echo "<tr><td>".get_help('humidity')."<td><input autocomplete=off type=text automplete=off size=10 name=post[humidity] value='$humidity'>"; 
+	echo building_fields($building_profile, 'advanced');
+	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
+	echo "<tr><td><a class='rlink switch' id='heat_detectors'>heat detectors</a><td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
+	echo "<tr><td><a class='rlink switch' id='smoke_detectors'>smoke detectors</a><td>".form_plain_arr_switchable('smoke_detectors',$smoke_detectors); 
+	echo "<tr><td><a class='rlink switch' id='sprinklers'>sprinklers</a><td>".form_plain_arr_switchable('sprinklers',$sprinklers); 
+	echo "<tr><td><a class='rlink switch' id='NSHEVS'>NSHEVS</a><td>".form_plain_arr_switchable('NSHEVS',$NSHEVS); 
+	echo "<tr><td>".get_help('windows')."<td>".form_arr('windows',$windows); 
+	echo "<tr><td>".get_help('vents_open')."<td>".form_assoc('vents_open',$vents_open); 
+	echo "<tr><td>".get_help('c_const')."<td><input autocomplete=off type=text automplete=off size=10 name=post[c_const] value='$c_const'>"; 
+	echo "<tr><td>".get_help('fire_starts_in_a_room')."<td><input autocomplete=off type=text automplete=off size=10 name=post[fire_starts_in_a_room] value='$fire_starts_in_a_room'>"; 
+	echo "<tr><td>".get_help('hrrpua')."<td>".form_assoc('hrrpua',$hrrpua); 
+	echo "<tr><td>".get_help('hrr_alpha')."<td>".form_assoc('hrr_alpha',$hrr_alpha); 
+	echo "<tr><td>".get_help('evacuees_max_h_speed')."<td>".form_assoc('evacuees_max_h_speed',$evacuees_max_h_speed); 
+	echo "<tr><td>".get_help('evacuees_max_v_speed')."<td>".form_assoc('evacuees_max_v_speed',$evacuees_max_v_speed); 
+	echo "<tr><td>".get_help('evacuees_alpha_v')."<td>".form_assoc('evacuees_alpha_v',$evacuees_alpha_v); 
+	echo "<tr><td>".get_help('evacuees_beta_v')."<td>".form_assoc('evacuees_beta_v',$evacuees_beta_v); 
+	echo "<tr><td>".get_help('evacuees_concentration')."<td>".form_assoc('evacuees_concentration',$evacuees_concentration); 
+	echo "<tr><td>".get_help('alarming')."<td>".form_assoc('alarming',$alarming); 
+	echo "<tr><td>".get_help('pre_evac')."<td>".form_assoc('pre_evac',$pre_evac); 
+	echo "<tr><td>".get_help('pre_evac_fire_origin')."<td>".form_assoc('pre_evac_fire_origin',$pre_evac_fire_origin); 
 	echo "</table>";
-	echo "<center><br><input autocomplete=off type=submit name=$update_var value='submit'></center></form>";
+	echo "</form>";
 }
 /*}}}*/
-function form3() { /*{{{*/
-	echo "
-	<br><wheat>
-	You can directly manipulate conf.json. Aamks will not forgive any errors here.
-	</wheat><br><br>";
-	
+function form_fields_easy() { #{{{
+	$json=read_aamks_conf_json();
+	extract($json);
+	echo "<form method=post>";
+	echo "<input autocomplete=off type=submit name=update_form_easy value='Save'><br><br>";
+	echo "<table>";
+	echo "<tr><td>".get_help('project_id')."<td>$project_id <input autocomplete=off type=hidden name=post[project_id] value='$project_id'>"; 
+	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
+	echo "<tr><td>".get_help('number_of_simulations')."<td><input autocomplete=off type=text automplete=off size=10 name=post[number_of_simulations] value='$number_of_simulations'>"; 
+	echo "<tr><td>".get_help('simulation_time')."<td><input autocomplete=off type=text automplete=off size=10 name=post[simulation_time] value='$simulation_time'>"; 
+	echo "<tr><td>".get_help('indoor_temperature')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_temperature] value='$indoor_temperature'>"; 
+	echo "<tr><td>".get_help('humidity')."<td><input autocomplete=off type=text automplete=off size=10 name=post[humidity] value='$humidity'>"; 
+	echo building_fields($building_profile, 'easy');
+	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
+	echo "<tr><td><a class='rlink switch' id='heat_detectors'>heat detectors</a><td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
+	echo "<tr><td><a class='rlink switch' id='smoke_detectors'>smoke detectors</a><td>".form_plain_arr_switchable('smoke_detectors',$smoke_detectors); 
+	echo "<tr><td><a class='rlink switch' id='sprinklers'>sprinklers</a><td>".form_plain_arr_switchable('sprinklers',$sprinklers); 
+	echo "<tr><td><a class='rlink switch' id='NSHEVS'>NSHEVS</a><td>".form_plain_arr_switchable('NSHEVS',$NSHEVS); 
+	echo "</table>";
+	echo "</form>";
+}
+/*}}}*/
+function form_text() { /*{{{*/
 	$help=$_SESSION['help'];
 	$json=json_encode(read_aamks_conf_json(), JSON_PRETTY_PRINT);
 	echo "<form method=post>";
-	echo "<textarea name=json cols=80 rows=25>\n\n$json\n\n\n</textarea><br>";
-	echo "<br><center><input autocomplete=off type=submit name=update_form3 value='submit'></center></form>";
+	echo "<input autocomplete=off type=submit name=update_form_text value='Save'><br>";
+	echo "<textarea name=json style='height:90vh; width:700px'>\n\n$json\n\n\n</textarea><br>";
+	echo "</form>";
 }
 /*}}}*/
-function form4() { /*{{{*/
-	echo "<br><br><wheat> Browser of the building profiles </wheat><br><br>";
+function form_bprofiles() { /*{{{*/
 	$v=array();
 	if(isset($_POST['post']['building_profile'])) { 
 		$v=$_POST['post']['building_profile'];
@@ -303,7 +344,7 @@ function form4() { /*{{{*/
 	echo "<table>";
 	echo building_fields($v);
 	echo "</table>";
-	echo "<input autocomplete=off type=submit name=update_form4 value='submit'></form>";
+	echo "<input autocomplete=off type=submit name=update_form_bprofiles value='check'></form>";
 }
 /*}}}*/
 
@@ -317,44 +358,34 @@ function editors() {/*{{{*/
 	<orange>text</orange> direct access to even more, possibly not documented params 
 	";
 	$xx='';
-	foreach(array('easy','advanced','text') as $k=>$v) { 
+	foreach(array('easy','advanced','text') as $v) { 
 		$sty='';
-		if($_SESSION['main']['active_editor']==$k+1) { $sty="style='background: #616;'"; }
-		$xx.="<input autocomplete=off $sty type=submit name=e".($k+1)." value='$v'>";
+		if($_SESSION['prefs']['apainter_editor']!=$v) { $sty="style='background: #555; color: #aaa'"; }
+		$xx.="<input autocomplete=off $sty type=submit name='change_editor' value='$v'>";
 	}
-	echo "<div style=float:right>
-	Editor: 
+	echo "
+	<div style='position:absolute; left:600px; top:0px; white-space:nowrap'>Editor: 
 	<form style='display: inline' method=post>
-		<input autocomplete=off type=hidden name=change_editor>
 		$xx
 		<withHelp>?<help>$editors_help</help></withHelp>
 	</form>
-	<br><br> <br><br> <br><br>
-	<br><br> <br><br> <br><br>
-	<br><br> <br><br> <br><br>
-	<br><br> <br><br> <br><br>
-	<a style='opacity:0.1' class=blink href=/aamks/form.php?bprofiles>building profiles</a>
-	<br>
-	";
+	</div>";
 }
 /*}}}*/
 function change_editor() {/*{{{*/
 	if(!isset($_POST['change_editor'])) { return; }
-	if(isset($_POST['e1'])) { $_SESSION['main']['active_editor']=1; }
-	if(isset($_POST['e2'])) { $_SESSION['main']['active_editor']=2; }
-	if(isset($_POST['e3'])) { $_SESSION['main']['active_editor']=3; }
-	$_SESSION['nn']->query("UPDATE users SET active_editor=$1 WHERE id=$2", array($_SESSION['main']['active_editor'], $_SESSION['main']['user_id']));
+	$_SESSION['nn']->preferences_update_param("apainter_editor", $_POST['change_editor']);
 	header("Location: ?edit");
 	exit();
 }
 /*}}}*/
 function form_delete() { #{{{
-	// demo/simple is the built-in scenario which must never be deleted
+	// There are demo/* built-in scenarios which must never be deleted
 	// This way we make sure there will always be a fallback in $_SESSION['main']
 
-	if($_SESSION['main']['scenario_name']=='simple' && $_SESSION['main']['project_name']=='demo') { return; }
+	if($_SESSION['main']['project_name']=='demo' && in_array($_SESSION['main']['scenario_name'], array("simple", "navmesh", "three", "fds"))) { return; }
 	echo "<form method=post>";
-	echo "<input autocomplete=off style='float:right' class=srlink type=submit name=delete_scenario value='delete this scenario'>";
+	echo "<input autocomplete=off style='float:right; margin: 0px 50px 400px 0px' type=submit name=delete_scenario value='delete this scenario'>";
 	echo "</form>";
 }
 /*}}}*/
@@ -363,13 +394,14 @@ function delete_scenario() {/*{{{*/
 	// TODO: assert there is at least one scenario always 
 
 	# psql aamks -c 'select * from scenarios'
-	# psql aamks -c "SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=1 AND s.id IS NOT NULL  ORDER BY s.modified DESC "
+	# psql aamks -c 'select * from users'
+	# psql aamks -c "SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=1 AND s.id IS NOT NULL  ORDER BY s.modified DESC "
 	if(!isset($_POST['delete_scenario'])) { return; }
 	$_SESSION['nn']->query("DELETE FROM scenarios WHERE id=$1", array($_SESSION['main']['scenario_id']));
 	$disk_delete=implode("/", array($_SESSION['main']['user_home'], $_SESSION['main']['project_name'], $_SESSION['main']['scenario_name']));
 	system("rm -rf $disk_delete");
 	unset($_SESSION['main']['scenario_id']);
-	$r=$_SESSION['nn']->query("SELECT u.email, p.project_name, u.active_editor, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=$1 AND s.id IS NOT NULL ORDER BY s.modified DESC LIMIT 1",array($_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.id AS user_id, u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=$1 AND s.id IS NOT NULL ORDER BY s.modified DESC LIMIT 1",array($_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	header("Location: projects.php?projects_list");
 	# TODO: remove from db?
@@ -380,20 +412,21 @@ function delete_scenario() {/*{{{*/
 function main() {/*{{{*/
 	// 1: easy, 2: advanced, 3: text
 	$_SESSION['nn']->htmlHead("Scenario properties");
-	$_SESSION['nn']->menu("Scenario: ".$_SESSION['main']['scenario_name']);
+	$_SESSION['nn']->menu();
 	change_editor();
 	delete_scenario();
 	make_help();
 
 	if(isset($_GET['edit'])) { 
+		$e=$_SESSION['prefs']['apainter_editor'];
+		if($e=='easy')     { update_form_easy(); form_fields_easy(); }
+		if($e=='advanced') { update_form_advanced(); form_fields_advanced(); }
+		if($e=='text')     { update_form_text(); form_text(); }
 		form_delete();
-		$e=$_SESSION['main']['active_editor'];
-		if($e==1) { update_form1(); form("easy"); }
-		if($e==2) { update_form2(); form("advanced"); }
-		if($e==3) { update_form3(); form3(); }
 	}
 
-	if(isset($_GET['bprofiles'])) { form4(); update_form4(); }
+	if(isset($_GET['bprofiles'])) { $_SESSION['nn']->menu('Building profiles'); form_bprofiles(); update_form_bprofiles(); exit(); }
+
 	editors();
 }
 /*}}}*/

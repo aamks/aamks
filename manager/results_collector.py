@@ -8,6 +8,7 @@ from include import SendMessage
 from collections import OrderedDict
 from include import Psql
 import traceback
+from datetime import datetime
 
 try:
     class ResultsCollector():
@@ -45,8 +46,8 @@ try:
             room=self.meta['fire_origin']
             
             self.s=Sqlite("{}/aamks.sqlite".format(self.meta['path_to_project']))
-            z=self.s.query("SELECT center_x, center_y FROM aamks_geom WHERE name=?", (room,))[0]
-            return (z['center_x'], z['center_y'])
+            z=self.s.query("SELECT floor, center_x, center_y FROM aamks_geom WHERE name=?", (room,))[0]
+            return z['floor'], z['center_x'], z['center_y']
 # }}}
         def _animation(self):# {{{
             source = self.host+':'+self.meta['path_to_project']+'workers/'+str(self.meta['sim_id'])+'/'+self.meta['animation']
@@ -55,11 +56,13 @@ try:
 
             self.jsonOut=OrderedDict()
             self.jsonOut['sort_id']=int(sim_id)
-            self.jsonOut['title']="sim{}, f{}".format(self.meta['sim_id'], self.meta['floor'])
-            self.jsonOut['floor']=self.meta['floor']
-            self.jsonOut['fire_origin']=self._fire_origin_coords(self.meta['sim_id'])
+            self.jsonOut['title']="sim: {}".format(sim_id)
+            self.jsonOut['time']=datetime.now().strftime('%H:%M')
+            self.jsonOut['fire_origin'] = {"floor": self._fire_origin_coords(self.meta['sim_id'])[0], 
+                                         "x": self._fire_origin_coords(self.meta['sim_id'])[1],
+                                         "y": self._fire_origin_coords(self.meta['sim_id'])[2]}
             self.jsonOut['highlight_geom']=None
-            self.jsonOut['anim']="{}/{}".format(self.meta['sim_id'],self.meta['animation'])
+            self.jsonOut['anim']="{}/{}".format(self.meta['sim_id'], self.meta['animation'])
 
             anims_master="{}workers/anims.json".format(self.meta['path_to_project'])
             try:
@@ -73,7 +76,7 @@ try:
             p = Psql()
             fed=json.dumps(self.meta['psql']['fed'])
             rset = json.dumps(self.meta['psql']['rset'])
-            p.query("UPDATE simulations SET fed = '{}', wcbe='{}', run_time = {}, dcbe_time = {}, min_vis_compa = {}, max_temp = {}, host = '{}', min_hgt_compa = {}, min_vis_cor = {}, min_hgt_cor = {} WHERE project=%s AND iteration=%s".format(fed, rset, self.meta['psql']['runtime'], self.meta['psql']['cross_building_results']['dcbe'], self.meta['psql']['cross_building_results']['min_vis_compa'], self.meta['psql']['cross_building_results']['max_temp_compa'], self.meta['worker'], self.meta['psql']['cross_building_results']['min_hgt_compa'],self.meta['psql']['cross_building_results']['min_vis_cor'],self.meta['psql']['cross_building_results']['min_hgt_cor']), (self.meta['project_id'], self.meta['sim_id'])) 
+            p.query("UPDATE simulations SET fed = '{}', wcbe='{}', run_time = {}, dcbe_time = {}, min_vis_compa = {}, max_temp = {}, host = '{}', min_hgt_compa = {}, min_vis_cor = {}, min_hgt_cor = {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(fed, rset, self.meta['psql']['runtime'], self.meta['psql']['cross_building_results']['dcbe'], self.meta['psql']['cross_building_results']['min_vis_compa'], self.meta['psql']['cross_building_results']['max_temp_compa'], self.meta['worker'], self.meta['psql']['cross_building_results']['min_hgt_compa'],self.meta['psql']['cross_building_results']['min_vis_cor'],self.meta['psql']['cross_building_results']['min_hgt_cor']), (self.meta['project_id'], self.meta['scenario_id'], self.meta['sim_id']))
     try:
         host=sys.argv[1]
         meta_file=sys.argv[2]

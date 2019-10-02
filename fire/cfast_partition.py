@@ -10,13 +10,15 @@ from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from numpy.random import randint
 from include import Sqlite
 from include import Json
+from include import GetUserPrefs
 from include import Dump as dd
 from include import Vis
+from include import DDgeoms
 
 # }}}
 
 class CfastPartition():
-    def __init__(self, verbose=0): # {{{
+    def __init__(self): # {{{
         ''' 
         Divide space into cells for smoke conditions queries asked by evacuees.
         A cell may be a square or a rectangle. First divide space into squares
@@ -40,6 +42,10 @@ class CfastPartition():
 
         self._square_side=300
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.uprefs=GetUserPrefs()
+        verbose=0
+        if self.uprefs.get_var('partitioning_debug')==1: verbose=1
+
         try:
             self.s.query("DROP TABLE cell2compa")
             self.s.query("DROP TABLE query_vertices")
@@ -51,7 +57,7 @@ class CfastPartition():
         self.json=Json() 
         self._cell2compa=OrderedDict()
         self._save=OrderedDict()
-        floors=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
+        floors=self.json.readdb("floors_meta")
         for floor in floors.keys():
             self._init_space(floor) 
             self._intersect_space() 
@@ -60,13 +66,14 @@ class CfastPartition():
             if(verbose==1):
                 self._plot_space(floor)  # debug
         if(verbose==1):
-            Vis(None, 'image', 'partition') # debug
+            Vis({'highlight_geom': None, 'anim': None, 'title': 'partitioning', 'srv': 1, 'skip_fire_origin': 1, 'skip_evacuees': 1}) # debug
+
         self._dbsave()
 # }}}
     def _init_space(self,floor):# {{{
         ''' Divide floor into squares. Prepare empty rectangles placeholders. '''
 
-        floors=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
+        floors=self.json.readdb("floors_meta")
         fdims=floors[floor]
 
         self.squares=OrderedDict()
@@ -79,8 +86,8 @@ class CfastPartition():
             self.lines.append(LineString([ Point(i['x1'],i['y1']), Point(i['x0'], i['y1'])] ))
             self.lines.append(LineString([ Point(i['x1'],i['y1']), Point(i['x1'], i['y0'])] ))
 
-        x=int(fdims['width']/self._square_side)+1
-        y=int(fdims['height']/self._square_side)+1
+        x=int(fdims['xdim']/self._square_side)+1
+        y=int(fdims['ydim']/self._square_side)+1
         for v in range(y):
             for i in range(x):
                 x_=fdims['minx']+self._square_side*i
@@ -161,18 +168,20 @@ class CfastPartition():
         Plots the partition on top of the rooms. 
         '''
 
-        z=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-
         radius=5
         a=self._square_side
+
+        ddgeoms=DDgeoms()
+        ddgeoms.open()
         for k,v in self.rectangles.items():
-            z[floor]['rectangles'].append( { "xy": k, "width": a , "depth": a , "strokeColor": "#f80" , "strokeWidth": 2 , "opacity": 0.2 } )
-            z[floor]['circles'].append(    { "xy": k, "radius": radius , "fillColor": "#fff", "opacity": 0.3 } )
-            z[floor]['texts'].append(      { "xy": k, "content": k, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
+            ddgeoms.add({'type': 'rectangle', 'g': {'p0': k, 'size': (a,a)  },   'floor': floor, 'style': { "strokeColor": "#f80" , "strokeWidth": 2 , "opacity": 0.2 }})
+            ddgeoms.add({'type': 'circle'   , 'g': {'p0': k, 'radius': radius }, 'floor': floor, 'style': { "fillColor": "#fff", "opacity": 0.3 }})
+            ddgeoms.add({'type': 'text'     , 'g': {'p0': k, 'content': k },     'floor': floor, 'style': { "fontSize": 12, "fillColor":"#ff0", "opacity":0.7 }})
+            
             for mm in v:
-                z[floor]['circles'].append( { "xy": mm, "radius": radius, "fillColor": "#fff", "opacity": 0.3 } )
-                z[floor]['texts'].append(   { "xy": mm, "content": mm, "fontSize": 5, "fillColor":"#f0f", "opacity":0.7 })
-        self.json.write(z, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+                ddgeoms.add({'type': 'circle'   , 'g': {'p0': mm, 'radius': radius }, 'floor': floor, 'style': { "fillColor": "#fff", "opacity": 0.3 }})
+                ddgeoms.add({'type': 'text'     , 'g': {'p0': mm, 'content': mm },    'floor': floor, 'style': { "fontSize": 12, "fillColor":"#ff0", "opacity":0.7 }})
+        ddgeoms.write()
 # }}}
 
     def _make_cell2compa_record(self,cell,floor):# {{{

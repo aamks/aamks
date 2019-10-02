@@ -9,9 +9,11 @@ function onSignIn(googleUser) {
 		var refresh=response.data.dnr;
 		console.log('Refresh?='+refresh);
 		if (refresh==1){
-			//location.reload(); //force php to reload and read SESSION variables
+		//	location.reload(); //force php to reload and read SESSION variables
+		window.location.replace('https://student.szach.in/aamks/projects.php')
 		}
-			location.reload(); //force php to reload and read SESSION variables
+	//		location.reload(); //force php to reload and read SESSION variables
+		//window.location.replace('https://student.szach.in/aamks/projects.php')
 	});
 
 };
@@ -20,6 +22,6 @@ function signOut() {
 	var auth2 = gapi.auth2.getAuthInstance();
 	auth2.signOut().then(function () {
 		console.log('User signed out.');
-//		window.location.replace('https://stanley.szach.in/aamks/')
+		window.location.replace('https://student.szach.in/aamks/')
 	});
 }

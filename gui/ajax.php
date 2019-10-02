@@ -2,16 +2,67 @@
 session_name('aamks');
 require_once("inc.php"); 
 
+function ajaxAddUnderlay() { #{{{
+	shell_exec("mkdir -p ".$_SESSION['main']['working_home']."/underlays/");
+	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor].$_POST[type]";
+	if($_POST['type']=='pdf') { 
+		$z=pdf2svg();
+	} else {
+		$z=file_put_contents($dest, base64_decode($_POST['base64']));
+	}
+
+	if($z>0) { 
+		echo json_encode(array("msg"=>"", "err"=>0, "data"=> ""));
+	} else { 
+		echo json_encode(array("msg"=>"ajaxAddUnderlay(): ".error_get_last()['message'] , "err"=>1, "data"=>""));
+	}
+}
+/*}}}*/
+function pdf2svg() { /*{{{*/
+	$src=$_SESSION['main']['working_home']."/underlays/$_POST[floor].pdf";
+	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor].svg";
+	file_put_contents($src, base64_decode($_POST['base64']));
+	exec("pdf2svg $src $dest && rm -rf $src", $x, $z);
+	if(empty($z)) { return 1; } else { return 0; }
+
+}
+/*}}}*/
+function ajaxRemoveUnderlay() { #{{{
+	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor]";
+	shell_exec("rm $dest.*");
+}
+/*}}}*/
+function ajaxGetUnderlay() { #{{{
+	if($_POST['type']=='pdf') { $_POST['type']='svg'; }
+	$src=$_SESSION['main']['working_home']."/underlays/$_POST[floor].$_POST[type]";
+	if(in_array($_POST['type'], array("jpeg", "png"))) { 
+		$data64=shell_exec("base64 $src");
+		$img="data:image/$_POST[type];base64,$data64";
+	}
+	if(in_array($_POST['type'], array("svg"))) { 
+		$img=shell_exec("cat $src"); 
+		$img=preg_replace("/#/", "%23", $img);
+		$img="data:image/svg+xml;utf8,$img";
+	}
+	echo json_encode(array("msg"=> '', "err"=>0, "data"=>$img));
+}
+/*}}}*/
 function ajaxChangeActiveScenario() { #{{{
-	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.id AS user_id, u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$_SESSION['main']['scenario_name']));
+}
+/*}}}*/
+function ajaxUserPreferences() { #{{{
+	$r=$_SESSION['nn']->query("SELECT preferences FROM users WHERE id=$1",array($_SESSION['main']['user_id']));
+	echo json_encode(array("msg"=>"", "err"=>0, "data"=>json_decode($r[0]['preferences'],1)));
 }
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{
 	$aamks=getenv("AAMKS_PATH");
 	$working_home=$_SESSION['main']['working_home'];
-	if(!is_file("$working_home/cad.json")) { 
+	$user_id=$_SESSION['main']['user_id'];
+	if(!is_file("$working_home/cad.json") && !is_file("$working_home/cadfds.json")) { 
 		echo json_encode(array("msg"=>"You need to draw and save the project in <a class=blink href=/aamks/apainter>Apainter</a> first", "err"=>1, "data"=>''));
 		return;
 	}
@@ -24,7 +75,7 @@ function ajaxLaunchSimulation() { #{{{
 		echo json_encode(array("msg"=>"Problem with the number of simulations. <a class=blink href=/aamks/form.php?edit>Setup scenario</a>", "err"=>1, "data"=>''));
 		return;
 	}
-	$cmd="cd $aamks; python3 aamks.py $working_home 2>&1"; 
+	$cmd="cd $aamks; python3 aamks.py $working_home $user_id  2>&1"; 
 
 	$z=shell_exec("$cmd");
 	if(empty($z)) { 
@@ -39,8 +90,7 @@ function ajaxMenuContent() { /*{{{*/
 	# psql aamks -c "select * from scenarios"
 	# psql aamks -c "select * from projects"
 	$menu=$_SESSION['nn']->rawMenu();
-	$close_button="<close-left-menu-box><img src=/aamks/css/close.svg></close-left-menu-box><br>";
-	echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $close_button.$menu));
+	echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $menu));
 }
 /*}}}*/
 function ajaxAnimsList() { /*{{{*/
@@ -90,48 +140,57 @@ function ajaxSingleAnim() { /*{{{*/
 }
 /*}}}*/
 function funCircle() { /*{{{*/
-	$arr=[];
-	$colors=["N", "N", "N", "N"];
+	$frames=[];
+	$colors=["N", "L", "M", "H"];
+	$floor=new stdClass;
 	for($t=0; $t<15; $t+=2.5) { 
-		$record=[];
+		$floor->{'0'}=[];
 		for($a=0; $a<19; $a++) { 
-			$record[]=[ 2600 + round(100*cos($t+$a/3)), 1200 - round(100*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
-			$record[]=[ 2600 + round(200*cos($t+$a/3)), 1200 + round(200*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
-			$record[]=[ 2600 + round(300*cos($t+$a/3)), 1200 - round(300*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
+			$floor->{'0'}[]=[ 2600 + round(100*cos($t+$a/3)), 1200 - round(100*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
+			$floor->{'0'}[]=[ 2600 + round(200*cos($t+$a/3)), 1200 + round(200*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
+			$floor->{'0'}[]=[ 2600 + round(300*cos($t+$a/3)), 1200 - round(300*sin($t+$a/3)), 0, 0, $colors[$a%4], 1 ];
 		}
-		$arr[]=$record;
+		$frames[][]=$floor->{'0'};
 	}
 	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0, "animations" => array() ];
-	$collect['animations']['evacuees']=$arr;
+	$collect['animations']['evacuees']=$frames;
 	$collect['animations']['rooms_opacity']=[];
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=> json_encode($collect)));
 }
 /*}}}*/
 function funExplode() { /*{{{*/
-	$arr=[];
+	$frames=[];
 	$colors=["M", "L", "N", "H" ];
-	$y=[];
+	$floor=new stdClass;
+	$agents=2000;
 	for($t=0; $t<4; $t+=1) { 
-		$record=[];
-		for($a=0; $a<700; $a++) { 
-			$color=floor($a/100)%4;
-			$record[]=[ 2600+$t*rand(-12,12)*$a/10, 1200+$t*rand(-12,12)*$a/10, 0, 0, $colors[$color], 1 ];
+		if($t%2==0) { $radius=800; }
+		$floor->{'0'}=[];
+		for($a=0; $a<$agents; $a++) { 
+			$radius+=log(999,99999999);
+			$floor->{'0'}[]=[ 2600+$radius*cos(2*pi()*$a/$agents*15), 1200+$radius*sin(2*pi()*$a/$agents*15), 0, 0, $colors[rand(0,3)], 1 ];
 		}
-		$arr[]=$record;
+
+		$frames[][]=$floor->{'0'};
 	}
+
 	$collect=[ "simulation_id" => 1, "project_name" => "demo", "simulation_time" => 900, "time_shift" => 0, "animations" => array() ];
-	$collect['animations']['evacuees']=$arr;
+	$collect['animations']['evacuees']=$frames;
 	$collect['animations']['rooms_opacity']=[];
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=> json_encode($collect)));
 }
 /*}}}*/
 function ajaxApainterExport() { /*{{{*/
-	$src=$_POST['cadfile'];
-	$dest=$_SESSION['main']['working_home']."/cad.json";
+	$src=$_POST['data'];
+	if($_POST['fire_model']=='CFAST') { 
+		$dest=$_SESSION['main']['working_home']."/cad.json";
+	} else {
+		$dest=$_SESSION['main']['working_home']."/cadfds.json";
+	}
 	$z=file_put_contents($dest, $src);
 
 	if($z>0) { 
-		echo json_encode(array("msg"=>"ajaxApainterExport(): OK", "err"=>0, "data"=>""));
+		echo json_encode(array("msg"=>"File saved", "err"=>0, "data"=>""));
 	} else { 
 		echo json_encode(array("msg"=>"ajaxApainterExport(): ".error_get_last()['message'] , "err"=>1, "data"=>""));
 	}
@@ -141,12 +200,37 @@ function ajaxApainterImport() { /*{{{*/
 	// Apainter always checks if there's a file to import.
 	// It's not an error if the file is missing -- it has been not yet created.
 
-	if(is_file($_SESSION['main']['working_home']."/cad.json")) {
+	if(is_file($_SESSION['main']['working_home']."/conf.json")) {
+		$conffile=file_get_contents($_SESSION['main']['working_home']."/conf.json");
+		if(!json_decode($conffile)) { 
+			echo json_encode(array("msg"=>"ajaxApainterImport(): Project conf: broken file?", "err"=>1, "data"=>""));
+			return;
+		}
+		$conf=json_decode($conffile, 1);
+		if(!isset($conf['fire_model'])) {
+			echo json_encode(array("msg"=>"ajaxApainterImport(): Project conf: fire_model not specified", "err"=>1, "data"=>""));
+			return;
+		}
+	}
+
+	if($conf['fire_model']=='CFAST' && is_file($_SESSION['main']['working_home']."/cad.json")) {
 		$cadfile=file_get_contents($_SESSION['main']['working_home']."/cad.json");
 		if(json_decode($cadfile)) { 
 			echo json_encode(array("msg"=>"" , "err"=>0 , "data"=>json_decode($cadfile)));
+			return;
 		} else { 
 			echo json_encode(array("msg"=>"ajaxApainterImport(): Broken cad.json", "err"=>1, "data"=>""));
+			return;
+		}
+	}
+	if($conf['fire_model']=='FDS' && is_file($_SESSION['main']['working_home']."/cadfds.json")) {
+		$cadfile=file_get_contents($_SESSION['main']['working_home']."/cadfds.json");
+		if(json_decode($cadfile)) { 
+			echo json_encode(array("msg"=>"" , "err"=>'FDS', "data"=>$cadfile));
+			return;
+		} else { 
+			echo json_encode(array("msg"=>"ajaxApainterImport(): Broken cadfds.json", "err"=>1, "data"=>""));
+			return;
 		}
 	}
 }
@@ -164,21 +248,7 @@ function ajaxGoogleLogin() { /*{{{*/
 	$_SESSION['g_user_id']=$_SESSION['google_data']['g_user_id'];
 	$_SESSION['g_picture']=$_SESSION['google_data']['g_picture'];
 	$ret[0]=$_SESSION['nn']->do_google_login();
-	$_SESSION['nn']->set_user_variables($ret[0]);
-}
-/*}}}*/
-function ajaxPdf2svg() { /*{{{*/
-	$src=$_FILES['file']['tmp_name'];
-	$dest=$_SESSION['main']['working_home']."/out.svg";
-	$z=shell_exec("pdf2svg $src $dest 2>&1");
-	$svg='';
-	if(empty($z)) { 
-		$svg=shell_exec("cat $dest"); 
-		$svg=preg_replace("/#/", "%23", $svg);
-		echo json_encode(array("msg"=>"", "err"=>0,  "data"=>$svg));
-	} else {
-		echo json_encode(array("msg"=>"ajaxPdf2svg(): $z", "err"=>1, "data"=>""));
-	}
+	$_SESSION['nn']->ch_main_vars($ret[0]);
 }
 /*}}}*/
 function main() { /*{{{*/
@@ -188,16 +258,20 @@ function main() { /*{{{*/
 
 	if(!empty($_SESSION['main']['user_id']))            {
 
-		if(isset($_GET['ajaxPdf2svg']))                 { ini_set('display_errors', 0) ; ajaxPdf2svg()              ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxApainterExport']))          { ini_set('display_errors', 0) ; ajaxApainterExport()       ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxApainterImport']))          { ini_set('display_errors', 0) ; ajaxApainterImport()       ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxAnimsList']))               { ini_set('display_errors', 0) ; ajaxAnimsList()            ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxAnimsStatic']))             { ini_set('display_errors', 0) ; ajaxAnimsStatic()          ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxSingleAnim']))              { ini_set('display_errors', 0) ; ajaxSingleAnim()           ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxMenuContent']))             { ini_set('display_errors', 0) ; ajaxMenuContent()          ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1); }
-		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1); }
+		if(isset($_GET['ajaxPdf2svg']))                 { ini_set('display_errors', 0) ; ajaxPdf2svg()              ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxApainterExport']))          { ini_set('display_errors', 0) ; ajaxApainterExport()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxApainterImport']))          { ini_set('display_errors', 0) ; ajaxApainterImport()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxAnimsList']))               { ini_set('display_errors', 0) ; ajaxAnimsList()            ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxAnimsStatic']))             { ini_set('display_errors', 0) ; ajaxAnimsStatic()          ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxSingleAnim']))              { ini_set('display_errors', 0) ; ajaxSingleAnim()           ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxMenuContent']))             { ini_set('display_errors', 0) ; ajaxMenuContent()          ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxUserPreferences']))         { ini_set('display_errors', 0) ; ajaxUserPreferences()      ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxGetUnderlay']))             { ini_set('display_errors', 0) ; ajaxGetUnderlay()          ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxAddUnderlay']))             { ini_set('display_errors', 0) ; ajaxAddUnderlay()          ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxRemoveUnderlay']))          { ini_set('display_errors', 0) ; ajaxRemoveUnderlay()       ; ini_set('display_errors', 1) ; }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

@@ -12,52 +12,31 @@ import os
 import sqlite3
 import sys
 
-#JSON=self.json=Json()
-
-def dd(struct):# {{{
-    '''debugging function, much like print but handles various types better'''
-    print()
-    if isinstance(struct, list):
-        for i in struct:
-            print(i)
-    elif isinstance(struct, dict):
-        for k, v in struct.items():
-            print (str(k)+':', v)
-    else:
-        print(struct)
-# }}}
-
 class SendMessage:# {{{
     ''' 
-    SendMessage() may fail if there are unescaped bash special chars. 
-    First we try to send the msg as it is, and if that fails, we convert to
-    alphanums only.
+    Useful for debuging gearman workers. In the past we had jabber here.
     '''
 
     def __init__(self,msg):
         with open("/tmp/aamks.log", "a") as f: 
             f.write(str(msg)+"\n")
-        # for to in [ i.strip() for i in os.environ['AAMKS_NOTIFY'].split(",") ]:
-        #     try:
-        #         Popen("printf '{}' | sendxmpp -r aamks -d -t -u aamks -p aamkstatanka -j jabb.im {}> /dev/null 2>/dev/null &".format(msg, to), shell=True)
-        #     except:
-        #         msg="".join([ c if c.isalnum() else " " for c in msg ])
-        #         Popen("printf '{}' | sendxmpp -r aamks -d -t -u aamks -p aamkstatanka -j jabb.im {}> /dev/null 2>/dev/null &".format(msg, to), shell=True)
 # }}}
 class Dump:# {{{
-    def __init__(self,struct):
+    def __init__(self,*args):
         '''debugging function, much like print but handles various types better'''
         print()
-        if isinstance(struct, list):
-            for i in struct:
-                print(i)
-        elif isinstance(struct, dict):
-            for k, v in struct.items():
-                print (str(k)+':', v)
-        #elif isinstance(struct, zip):
-        #    self.dd(list(struct))
-        else:
-            print(struct)
+        for struct in args:
+            if isinstance(struct, list):
+                for i in struct:
+                    print(i)
+            elif isinstance(struct, tuple):
+                for i in struct:
+                    print(i)
+            elif isinstance(struct, dict):
+                for k, v in struct.items():
+                    print (str(k)+':', v)
+            else:
+                print(struct)
 # }}}
 class Colors:# {{{
     def hex2rgb(self,color):
@@ -74,16 +53,17 @@ class SimIterations:# {{{
     SELECT max(iteration)+1 
     '''
 
-    def __init__(self, project, how_many):
+    def __init__(self, project, scenario_id, how_many):
         self.p=Psql()
         self.project=project
+        self.scenario_id=scenario_id
         self.how_many=how_many
 
     def get(self):
         self.r=[]
         try:
             # If project already exists in simulations table (e.g. adding 100 simulations to existing 1000)
-            _max=self.p.query('SELECT max(iteration)+1 FROM simulations WHERE project=%s', (self.project,))[0][0]
+            _max=self.p.query("SELECT max(iteration)+1 FROM simulations WHERE project={} AND scenario_id={}".format(self.project,self.scenario_id))[0][0]
             self.r.append(_max-self.how_many)
             self.r.append(_max)
         except:
@@ -145,14 +125,6 @@ class Sqlite: # {{{
         for i in self.query('SELECT * FROM aamks_geom order by floor,type_pri,global_type_id'):
             print(i)
 
-    def dump2(self):
-        print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
-        print("project: {}".format(os.environ['AAMKS_PROJECT']))
-        print()
-        for i in self.query('SELECT * FROM world2d order by floor,type_pri,global_type_id'):
-            print(i)
-
-
     def dump_geoms(self,floor='all'):
         print("dump_geom() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         print("project: {}".format(os.environ['AAMKS_PROJECT']))
@@ -171,7 +143,7 @@ class Sqlite: # {{{
         print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         print("project: {}".format(os.environ['AAMKS_PROJECT']))
         print()
-        for i in ('aamks_geom', 'world2d', 'floors_meta', 'world2d_meta', 'obstacles', 'partition', 'cell2compa', 'navmeshes'):
+        for i in ('aamks_geom', 'floors_meta', 'obstacles', 'partition', 'cell2compa', 'navmeshes'):
             try:
                 print("\n=======================")
                 print("table:", i)
@@ -187,14 +159,13 @@ class Sqlite: # {{{
 # }}}
 class Psql: # {{{
     def __init__(self):
-        ''' Blender's python doesn't need nor supports psql '''
 
         import psycopg2
         import psycopg2.extras
 
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
         try:
-            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host={} password='{}'".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_PG_PASS']))
+            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host='127.0.0.1' password='{}'".format(os.environ['AAMKS_PG_PASS']))
             self.psqldb=self.PSQL.cursor(cursor_factory=psycopg2.extras.DictCursor)
         except:
             raise SystemExit("Fatal: Cannot connect to postresql.")
@@ -205,6 +176,11 @@ class Psql: # {{{
         self.PSQL.commit()
         if query[:6] in("select", "SELECT"):
             return self.psqldb.fetchall() 
+
+    def copy_expert(self, sql, csv_file):
+        cursor = self.PSQL.cursor()
+        with open(csv_file, "w") as f:
+            cursor.copy_expert(sql, f)
 
     def querydd(self,query,data=tuple()):
         ''' Debug query. Instead of connecting shows the exact query and params. '''
@@ -247,6 +223,57 @@ class Json: # {{{
 
 
 # }}}
+class GetUserPrefs:# {{{
+    def __init__(self):# {{{
+        self.p=Psql()
+        self.pconf=json.loads(self.p.query("SELECT preferences FROM users WHERE id=%s", (os.environ['AAMKS_USER_ID'],))[0][0])
+    def get_var(self, var):
+        return self.pconf[var]
+
+# }}}
+# }}}
+class DDgeoms:# {{{
+    '''
+    dd_geoms are some optional extra rectangles, points, paths and
+    circles that are written on top of our geoms. Useful for developing
+    and debugging features. 
+
+    styles: 'fillColor', 'strokeColor', 'strokeWidth', 'opacity', 'fontSize', 'dashArray': [10,20] 
+
+
+    params:
+
+        ddgeoms({"type": "circle"   , "g": {"p0": (0, 0) , "radius": 10        },               "floor": "0" , "style": {"fillColor": "#f00" }})
+        ddgeoms({"type": "rectangle", "g": {"p0": (0, 0) , "size": (100, 200)  },               "floor": "0" , "style": {"fillColor": "#f00" }})
+        ddgeoms({"type": "text"     , "g": {"p0": (0, 0) , "content": "Hello!" },               "floor": "0" , "style": {"fillColor": "#f00" }})
+        ddgeoms({"type": "path"     , "g": {"p0": (0, 0) , "points": [(100, 200), (200,200)]},  "floor": "0" , "style": {"fillColor": "#f00" }})
+
+    '''
+
+    def open(self):# {{{
+        self.json=Json()
+        try:
+            self.zz=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        except:
+            self.zz={}
+# }}}
+    def add(self,params):# {{{
+        floor=params['floor']
+        tt=params['type']
+        del params['floor']
+        del params['type']
+        if floor not in self.zz:
+            self.zz[floor]={ 'rectangle': [], 'path': [], 'circle': [], 'text': [] }
+        if "p0" in params['g']: params['g']["p0"]=[ int(params['g']['p0'][0]), int(params['g']['p0'][1]) ]
+        if "p1" in params['g']: params['g']["p1"]=[ int(params['g']['p1'][0]), int(params['g']['p1'][1]) ]
+        if "points" in params['g']: params['g']["points"]=[ [int(i), int(j)] for i,j in params['g']['points'] ]
+        params['g']=json.dumps(params['g'])
+        self.zz[floor][tt].append(params)
+# }}}
+    def write(self):# {{{
+        self.json.write(self.zz, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+# }}}
+# }}}
 class Vis:# {{{
     def __init__(self,params):# {{{
         ''' 
@@ -257,104 +284,96 @@ class Vis:# {{{
         highlight_geom: geom to highlight in Animator
         anim: animation file | empty
         title: title
-        srv: 0 | 1 (previous server visuals are obsolete and need to be removed)
-        fire_origin: fire_origin
+        srv: 0 | 1 comes from the server, not worker; serves the purposes:
+            * previous server visuals are obsolete and need to be removed
+            * initial Apainter's evacuees will be displayed
+        skip_evacuees: optional; good for cfast_partition.py calls before evacuees are ready
+        skip_fire_origin: optional; good for cfast_partition.py calls before fire_origin is ready
         '''
 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.params=params
 
         self._static_floors=OrderedDict()
-        self._static_world2d=OrderedDict()
         self._js_make_floors_and_meta()
         self._js_make_rooms()
         self._js_make_doors()
         self._js_make_obstacles()
         self._js_make_dd_geoms()
-
-        if 'fire_origin' not in params:
-            params['fire_origin']=self._js_vis_fire_origin()
-
-        self._save(params)
+        self._js_make_srv_evacuees()
+        self._js_vis_fire_origin()
+        self._save()
 # }}}
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''
         
-        for floor,meta in json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json']).items():
+        for floor,meta in self.json.readdb("floors_meta").items(): 
             self._static_floors[floor]=OrderedDict()
             self._static_floors[floor]['floor_meta']=meta
-
-        meta=json.loads(self.s.query("SELECT * FROM world2d_meta")[0]['json'])
-        self._static_world2d['floor_meta']=meta
 # }}}
     def _js_make_rooms(self):# {{{
         ''' Data for rooms. '''
 
         for floor in self._static_floors.keys():
             self._static_floors[floor]['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,width,depth,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
-                self._static_floors[floor]['rooms'][i['name']]=i
-
-        for floor in ['world2d']:
-            self._static_world2d['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,width,depth,type_sec,room_enter FROM world2d WHERE floor=? AND type_pri='COMPA'", (floor,)):
-                self._static_world2d['rooms'][i['name']]=i
-
+            for i in self.s.query("SELECT name,points,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
+                self._static_floors[floor]['rooms'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', i['points'])])
 # }}}
     def _js_make_doors(self):# {{{
         ''' Data for doors. '''
 
         for floor in self._static_floors.keys():
             self._static_floors[floor]['doors']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,center_x,center_y,width,depth,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
-                self._static_floors[floor]['doors'][i['name']]=i
-
-        for floor in ['world2d']:
-            self._static_world2d['doors']=OrderedDict()
-            for i in self.s.query("SELECT name,x0,y0,center_x,center_y,width,depth,type_sec FROM world2d WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
-                self._static_world2d['doors'][i['name']]=i
+            for i in self.s.query("SELECT name,points,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
+                self._static_floors[floor]['doors'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', i['points'])])
 # }}}
     def _js_make_obstacles(self):# {{{
         ''' 
-        Data for obstacles. It may happen that geom.py was interrupted before
-        obstacles were created, so we produce a 0 size obstacle in try/except. 
+        Data for obstacles. TODO: is it fine if geom.py is interrupted before obstacles are created?
         '''
 
-        try:
-            _json=JSON.readdb("obstacles")
-            #dd(_json)
-            for floor,obstacles in _json['named'].items():
-                self._static_floors[floor]['obstacles']=obstacles
+        xx=JSON.readdb("obstacles")
 
-            _json=JSON.readdb("world2d_obstacles")
-            self._static_world2d['obstacles']=_json['named']
+        for floor,obstacles in xx['obstacles'].items():
+            self._static_floors[floor]['obstacles']=[]
+            for obstacle in obstacles:
+                self._static_floors[floor]['obstacles'].append(json.dumps([ (o[0], o[1])  for o in obstacle ]))
 
-        except:
-            for floor in self._static_floors.keys():
-                self._static_floors['obstacles']=[ dict([("x0",0), ("y0",0), ("width",0), ("depth",0) ]) ]
+# }}}
+    def _js_make_srv_evacuees(self):# {{{
+        ''' Draw srv, non-animated evacuees '''
 
-            self._static_world2d['obstacles']=[ dict([("x0",0), ("y0",0), ("width",0), ("depth",0) ]) ]
+        if "skip_evacuees" in self.params:
+            for floor,meta in self.json.readdb("floors_meta").items(): 
+                self._static_floors[floor]['evacuees']=[]
+        else:
+            for floor,evacuees in JSON.readdb("dispatched_evacuees").items():
+                self._static_floors[floor]['evacuees']=[]
+                for i in evacuees:
+                    self._static_floors[floor]['evacuees'].append(json.dumps(i))
 # }}}
     def _js_make_dd_geoms(self):# {{{
-        ''' 
-        dd_geoms are initialized in geom.py. Those are optional extra
-        rectangles, points, lines and circles that are written to on top of our
-        geoms. Useful for debugging.
-        '''
-
-        f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
-        for floor in self._static_floors.keys():
-            self._static_floors[floor]['dd_geoms']=f[floor]
-
-        self._static_world2d['dd_geoms']=f['world2d']
-# }}}
-    def _js_vis_fire_origin(self):# {{{
         try:
-            z=self.s.query("SELECT x, y FROM fire_origin")
-            return (z[0]['x']*100, z[0]['y']*100)
+            f=self.json.read("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
         except:
-            return tuple()
+            pass
+
+        for floor in self._static_floors.keys():
+            try:
+                self._static_floors[floor]['dd_geoms']=f[floor]
+            except:
+                self._static_floors[floor]['dd_geoms']={ 'rectangle': [], 'path': [], 'circle': [], 'text': [] }
+# }}}
+
+    def _js_vis_fire_origin(self):# {{{
+
+        if "skip_fire_origin" in self.params:
+            self.params['fire_origin']=None
+        else:
+            z=self.s.query("SELECT floor, x, y FROM fire_origin")
+            self.params['fire_origin']={'floor': z[0]['floor'], 'x': z[0]['x'], 'y': z[0]['y'] }
 # }}}
     def _reorder_anims(self, z):# {{{
         '''
@@ -375,7 +394,7 @@ class Vis:# {{{
         return (sorted_anims, lowest_id - 1)
 
 # }}}
-    def _save(self,params):# {{{
+    def _save(self):# {{{
         ''' 
         Static.json is written each time, because obstacles may be available /
         non-available, so it is not constans. Except from static.json we update
@@ -384,9 +403,8 @@ class Vis:# {{{
         '''
 
         vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        if self._static_world2d['floor_meta']['multifloor']==1:
-            self._static_floors['world2d']=self._static_world2d
-        self.json.write(self._static_floors, '{}/static.json'.format(vis_dir)) 
+        
+        self.json.write(OrderedDict([('world_meta', JSON.readdb("world_meta")['world2d']), ('floors', self._static_floors)]), '{}/static.json'.format(vis_dir)) 
 
         try:
             z=self.json.read("{}/anims.json".format(vis_dir))
@@ -395,28 +413,27 @@ class Vis:# {{{
             z=[]
             lowest_id=-1
 
-        records=[]
-        for floor in self._static_floors.keys():
-            anim_record=OrderedDict()
-            anim_record['sort_id']=lowest_id
-            lowest_id-=1
-            anim_record['title']="{}: {}".format(floor, params['title'])
-            anim_record['time']=datetime.now().strftime('%H:%M')
-            anim_record['floor']=floor
-            anim_record['fire_origin']=params['fire_origin']
-            anim_record['highlight_geom']=params['highlight_geom']
-            anim_record['srv']=params['srv']
-            anim_record['anim']=params['anim']
-            records = [anim_record] + records
+        anim_record=OrderedDict()
+        anim_record['sort_id']=lowest_id
+        lowest_id-=1
+        anim_record['title']=self.params['title']
+        anim_record['time']=datetime.now().strftime('%H:%M')
+        anim_record['fire_origin']=self.params['fire_origin']
+        anim_record['highlight_geom']=self.params['highlight_geom']
+        anim_record['srv']=self.params['srv']
+        anim_record['anim']=self.params['anim']
+        records={}
+        records[anim_record['title']] = anim_record
 
-        unique=[]
+        # We are removing duplicates here
         for i in z:
-            for r in records:
-                if i['title'] != r['title'] and r['srv'] == 1:
-                    unique.append(i)
-        unique = records + unique
-        self.json.write(unique, "{}/anims.json".format(vis_dir))
+            # TODO: Jul.2019: perhaps this breaks worker animations. Consider r['srv'] == 1 ?
+            if i['title'] not in records:
+                records[i['title']]=i
+
+        self.json.write(list(records.values()), "{}/anims.json".format(vis_dir))
 # }}}
 # }}}
 
+dd=Dump
 JSON=Json()

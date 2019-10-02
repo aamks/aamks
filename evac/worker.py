@@ -3,7 +3,6 @@
 import os
 import shutil
 import sys
-import time
 from numpy import array
 from numpy import prod
 
@@ -15,13 +14,13 @@ from fire.smoke_query import SmokeQuery
 from include import Sqlite
 import time
 import logging
+from logging.handlers import TimedRotatingFileHandler
 from urllib.request import urlopen, urlretrieve
 from include import Json
 import json
 from collections import OrderedDict
 from subprocess import Popen
 import zipfile
-from include import SendMessage
 
 #SIMULATION_TYPE = 'NO_CFAST'
 SIMULATION_TYPE = 1
@@ -47,21 +46,29 @@ class Worker:
         os.environ["AAMKS_PROJECT"]='.'
         self.working_dir = self.url.split('aamks_users/')[1]
         self.cross_building_results = None
+        self.simulation_time = None
+        self.time_shift = None
+        self.animation_data = []
+        self.smoke_opacity = []
+        self.rooms_in_smoke = dict()
 
-    def error_report(self, message):
-        with open("/tmp/aamks.log", "a") as output:
-            output.write(message)
-
-    def _report_error(self, exception: Exception) -> logging:
-        print('Error occurred, see aamks.log file for details.')
-        logging.error('Cannot create RVO2 environment: {}'.format(str(exception)))
-        sys.exit(1)
+    def get_logger(self, logger_name):
+        FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
+        LOG_FILE = "/tmp/aamks_{}.log".format(self.sim_id)
+        file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
+        file_handler.setFormatter(FORMATTER)
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(eval('logging.{}'.format(self.config['LOGGING_MODE'])))
+        logger.addHandler(file_handler)
+        logger.propagate = False
+        return logger
 
     def get_config(self):
         try:
             f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
             self.config = json.load(f)
         except Exception as e:
+            print(e)
             sys.exit(1)
 
         try:
@@ -70,46 +77,46 @@ class Worker:
             print('Cannot fetch evac.json from server: {}'.format(str(e)))
             sys.exit(1)
         else:
-            print('URL OK. Starting calculations')
+            print('URL OK')
 
         self.sim_id = self.vars['conf']['SIM_ID']
         self.host_name = os.uname()[1]
         self.db_server = self.vars['conf']['SERVER']
+        print('Starting simulations id: {}'.format(self.sim_id))
+        self.wlogger=self.get_logger('worker.py')
+        self.vars['conf']['logger'] = self.get_logger('evac.py')
 
     def get_geom_and_cfast(self):
 
         os.chdir(self.working_dir)
 
-
-        logging.basicConfig(filename='aamks.log', level=logging.INFO,
-                            format='%(asctime)s %(levelname)s: %(message)s')
-
-        logging.info('URL: {}'.format(self.url))
+        self.wlogger.info('URL: {}'.format(self.url))
 
         try:
             urlretrieve('{}/../../aamks.sqlite'.format(self.url), 'aamks.sqlite')
-            urlretrieve('{}/../../0.nav.obj'.format(self.url), '0.obj')
 
         except Exception as e:
-            self._report_error(e)
+            self.wlogger.error(e)
         else:
-            logging.info('Aamks.sqlite fetched from server')
+            self.wlogger.debug('Aamks.sqlite fetched from server')
 
         try:
             self.cfast_input = urlopen('{}/cfast.in'.format(self.url)).read().decode()
-
         except Exception as e:
-            self._report_error(e)
+            self.wlogger.error(e)
         else:
-            logging.info('Cfast.in fetched from server')
-        print("Host: {} start simulation id: {}".format(self.host_name, self.sim_id))
+            self.wlogger.debug('cfast.in fetched from server')
+
+        self.wlogger.info("Host: {} start simulation id: {}".format(self.host_name, self.sim_id))
 
     def _create_workspace(self):
         try:
             shutil.rmtree(self.working_dir, ignore_errors=True)
             os.makedirs(self.working_dir)
         except Exception as e:
-            self._report_error(e)
+            self.wlogger.error(e)
+        else:
+            self.wlogger.debug('Workspace created')
 
     def run_cfast_simulations(self):
 
@@ -117,34 +124,34 @@ class Worker:
             with open('cfast.in', "w") as f:
                 f.write(self.cfast_input)
         except Exception as e:
-            self._report_error(e)
+            self.wlogger.error(e)
         else:
-            logging.debug('Cfast input file saved.')
+            self.wlogger.debug('cfast.in saved')
 
         try:
             os.system('/usr/local/aamks/fire/cfast cfast.in')
-            cfast_log = open('cfast.log', 'r')
         except Exception as e:
-            self._report_error(e)
-
-        for line in cfast_log.readlines():
-            if line.startswith("***Error:"):
-                self._report_error(Exception(line))
-
-        logging.info('Simulation finished with exit code 0')
+            self.wlogger.error(e)
+            cfast_log = open('cfast.log', 'r')
+            for line in cfast_log.readlines():
+                if line.startswith("***Error:"):
+                    self.wlogger.error(Exception(line))
+        else:
+            self.wlogger.info('CFAST simulation calculated with success')
 
     def create_geom_database(self):
 
         self.s = Sqlite("aamks.sqlite")
-        #self.s.dumpall()
-        doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom where type_pri="HVENT" AND vent_to_name="outside"')
+        #self.report_log_issue(message=self.s.dumpall(), mode='DEBUG')
+        doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom WHERE terminal_door IS NOT NULL')
         self.vars['conf']['doors']=doors
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
+        self.wlogger.info('SQLite load successfully')
 
     def _create_evacuees(self, floor):
 
         evacuees = []
-        logging.debug('Adding evacuues on floor: {}'.format(floor))
+        self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
         floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
 
@@ -153,75 +160,100 @@ class Worker:
                                     h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=floor['EVACUEES'][i]['PRE_EVACUATION'],
                                     alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
                                     node_radius=self.config['NODE_RADIUS']))
+            self.wlogger.debug('{} evacuee added'.format(i))
 
         e = Evacuees()
         [e.add_pedestrian(i) for i in evacuees]
 
-        logging.info('Num of evacuees placed: {}'.format(len(evacuees)))
+        self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees)))
         return e
 
     def prepare_simulations(self):
-        logging.info('Number of floors processed: {}'.format(len(self.obstacles['points'])))
-        obstacles = []
 
-        for i in range(len(self.obstacles['points'])):
+        for floor in sorted(self.obstacles['obstacles'].keys()):
+            eenv = None
+            obstacles = []
             try:
                 eenv = EvacEnv(self.vars['conf'])
-                eenv.floor = i
+                eenv.floor = floor
             except Exception as e:
-                self._report_error(e)
+                self.wlogger.error(e)
             else:
-                logging.info('RVO2 ready on {} floors'.format(i))
+                self.wlogger.info('rvo2_dto ready on {} floors'.format(floor))
 
-            for obst in self.obstacles['points'][str(i)]:
-                obstacles.append([tuple(x) for x in obst])
+            for obst in self.obstacles['obstacles'][str(floor)]:
+                obstacles.append([tuple(x) for x in array(obst)[[0,1,2,3,4,1]]])
+            if str(floor) in self.obstacles['fire']:
+                obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0,1,2,3,4,1]]])
+
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
             eenv.generate_nav_mesh()
-            logging.info('Added obstacles on floor: {}, number of vercites: {}'.format(str(i+1), num_of_vertices))
+            self.wlogger.debug('Added obstacles on floor: {}, number of vercites: {}'.format(1, num_of_vertices))
 
-            e = self._create_evacuees(i)
+            e = self._create_evacuees(floor)
+            self.wlogger.info('Evacuees placed on floor: {}'.format(floor))
             eenv.place_evacuees(e)
-            eenv.set_exit_door()
+            eenv.prepare_rooms_list()
+            self.wlogger.info('Room list prepared on floor: {}'.format(floor))
             self.floors.append(eenv)
 
-    def do_simulation(self):
-        logging.info('Starting simulations')
-        master_query = None
 
-        time_frame = 10
-        floor = 0
-        try:
-            master_query = SmokeQuery(floor='0')
-        except Exception as e:
-            self._report_error(e)
+    def connect_rvo2_with_smoke_query(self):
 
         for i in self.floors:
             try:
-                i.smoke_query = master_query
+                i.smoke_query = SmokeQuery(floor=i.floor)
             except Exception as e:
-                self._report_error(e)
+                self.wlogger.error(e)
             else:
-                logging.info('Smoke query connected to floor: {}'.format(floor))
-            floor += 1
+                self.wlogger.info('Smoke query connected to floor: {}'.format(i.floor))
+
+    def do_simulation(self):
+        self.wlogger.info('Starting simulations')
+        time_frame = 10
+        first_evacuue = []
         while 1:
-            x = master_query.cfast_has_time(time_frame)
-            if master_query.cfast_has_time(time_frame) == 1:
-                logging.info('Simulation time: {}'.format(time_frame))
-                l = []
+            self.floors[0].smoke_query.cfast_has_time(time_frame)
+            if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
+                self.wlogger.info('Simulation time: {}'.format(time_frame))
+                rsets = []
                 for i in self.floors:
                     i.read_cfast_record(time_frame)
-                    i.do_simulation(time_frame)
-                    l.append(i.rset)
+                    first_evacuue.append(i.evacuees.get_first_evacuees_time())
+
+                for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
+                    time_row = dict()
+                    smoke_row = dict()
+                    for i in self.floors:
+                        i.do_simulation(step)
+                        if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
+                            time_row.update({str(i.floor): i.get_data_for_visualization()})
+                            smoke_row.update({str(i.floor): i.update_room_opacity()})
+                    if len(time_row) > 0:
+                        self.animation_data.append(time_row)
+                        self.smoke_opacity.append(smoke_row)
+
+                for i in self.floors:
+                    rsets.append(i.rset)
+                    self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
                 time_frame += 10
             else:
                 time.sleep(1)
+            self.wlogger.info('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
             if time_frame > (self.vars['conf']['simulation_time'] - 10):
+                self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
                 break
-            if prod(array(l)) > 0:
+            if prod(array(rsets)) > 0:
+                self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(rsets))
+                self.simulation_time = max(rsets)
+                self.time_shift = 0
                 break
+        self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
+        self.wlogger.info('Final results gathered')
+        self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
 
-        self.cross_building_results = master_query.get_final_vars()
+
 
     def send_report(self): # {{{
         '''
@@ -236,7 +268,7 @@ class Worker:
         self._write_meta()
 
         Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
-        #print("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id) )
+        self.wlogger.info('aOut launched successfully')
     # }}}
     def _write_animation_zips(self):# {{{
         '''
@@ -244,16 +276,33 @@ class Worker:
         with anim.json inside.
         '''
 
-        floor = 0
-        for i in self.floors:
-            animation_data = i.record_data()
-            zf = zipfile.ZipFile("f{}_s{}.anim.zip".format(floor, self.sim_id), mode='w',
-                                 compression=zipfile.ZIP_DEFLATED)
-            try:
-                zf.writestr("anim.json", json.dumps(animation_data))
-            finally:
-                zf.close()
-            floor += 1
+        '''Selecting only the rooms that had smoke during simulations'''
+        smoke_data = []
+        for row in self.smoke_opacity:
+            floors = dict()
+            for key in row.keys():
+                room_on_floor = dict()
+                for room in self.rooms_in_smoke[key]:
+                    room_on_floor.update({room: row[key][room]})
+                floors.update({key: room_on_floor})
+            smoke_data.append(floors)
+        self.wlogger.info('Smoke data created')
+
+        json_content = {
+                        'simulation_id': self.sim_id,
+                        'simulation_time': self.simulation_time,
+                        'time_shift': self.time_shift,
+                        'animations': {
+                            'evacuees': self.animation_data,
+                            'rooms_opacity': smoke_data
+                        }
+                        }
+        zf = zipfile.ZipFile("{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
+        try:
+            zf.writestr("anim.json", json.dumps(json_content))
+            self.wlogger.info('Date for animation saved')
+        finally:
+            zf.close()
 
     # }}}
     def _write_meta(self):# {{{
@@ -261,6 +310,7 @@ class Worker:
         report = OrderedDict()
         report['worker'] = self.host_name
         report['sim_id'] = self.sim_id
+        report['scenario_id'] = self.vars['conf']['scenario_id']
         report['project_id'] = self.vars['conf']['project_id']
         report['path_to_project'] = '/home/aamks_users/'+self.working_dir.split('workers')[0]
         report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
@@ -274,11 +324,12 @@ class Worker:
             report['psql']['fed'][i.floor] = i.fed
             report['psql']['rset'][i.floor] = int(i.rset)
         for num_floor in range(len(self.floors)):
-            report['animation'] = "f{}_s{}.anim.zip".format(num_floor, self.sim_id)
+            report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
             report['floor'] = num_floor
 
         self.meta_file = "meta_{}.json".format(self.sim_id)
         j.write(report, self.meta_file)
+        self.wlogger.info('Metadata prepared successfully')
     # }}}
 
     def main(self):
@@ -288,35 +339,36 @@ class Worker:
         self.create_geom_database()
         self.run_cfast_simulations()
         self.prepare_simulations()
+        self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
-        #SendMessage('Worker: {} end sim: {}'.format(self.host_name, self.sim_id))
+        self.wlogger.info('Simulation ended')
 
     def test(self):
-        #self.get_config()
+        self.get_config()
         self.get_geom_and_cfast()
         self.create_geom_database()
         self.prepare_simulations()
+        self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
 
+    def local_worker(self):
+        self.get_config()
+        self.get_geom_and_cfast()
+        self.create_geom_database()
+        self.run_cfast_simulations()
+        self.prepare_simulations()
+        self.connect_rvo2_with_smoke_query()
+        self.do_simulation()
+
 
 w = Worker()
-w.main()
-
-#if SIMULATION_TYPE == 'NO_CFAST':
-#    try:
-#        w.test()
-#    except Exception as e:
-#        SendMessage(e)
-#    else:
-#        SendMessage("Worker: Alles in grunem bereisch")
-#else:
-#    try:
-#        w.main()
-#    except Exception as e:
-#        w.error_report('expeption: {}'.format(e))
-#        #SendMessage(e)
-#    else:
-#        #SendMessage("Worker: Alles in grunem bereisch")
-#        w.error_report('expeption: {}'.format('OK'))
+if SIMULATION_TYPE == 'NO_CFAST':
+    print('Working in NO_CFAST mode')
+    w.test()
+elif os.environ['AAMKS_LOCAL_WORKER'] == '1':
+    print('Working in local mode')
+    w.local_worker()
+else:
+    w.main()

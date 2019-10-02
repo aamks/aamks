@@ -12,12 +12,12 @@ function projects_list(){/*{{{*/
 		$rr=$_SESSION['nn']->query("SELECT *, modified::date AS date FROM scenarios WHERE project_id=$1 ORDER BY id", array($projects['id']));
 		if(empty($rr[0]['date'])) { $date=''; } else { $date=$rr[0]['date']; }
 		echo "<tr><td>$projects[project_name]<td style='opacity:0.2'>$date<td>";
-		echo "<form method=post><input autocomplete=off type=hidden name=project_name value='$projects[project_name]'><input autocomplete=off type=hidden name=project_id value='$projects[id]'><input autocomplete=off size=12 type=text placeholder='new scenario' name=new_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'><input autocomplete=off type=submit class=sblink value='add'></form><td>";
+		echo "<form method=post><input autocomplete=off type=hidden name=project_name value='$projects[project_name]'><input autocomplete=off type=hidden name=project_id value='$projects[id]'><input autocomplete=off size=12 type=text placeholder='new scenario' name=new_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'><input autocomplete=off type=submit value='add'></form><td>";
 		foreach($rr as $scenarios) { 
 			echo "<a class=blink href=?ch_scenario=$scenarios[id]>$scenarios[scenario_name]</a>"; 
 		}
 		if($projects['project_name']!='demo') { 
-			echo "<td><a class=srlink href=?delete_project=$projects[id]>delete</a>";
+			echo "<td><a href=?delete_project=$projects[id]>delete</a>";
 		}
 
 	}
@@ -26,7 +26,7 @@ function projects_list(){/*{{{*/
 	echo "<br><br><br>
 	<form method=POST>
 		<input autocomplete=off type=text placeholder='new project name' name=new_project required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
-		<input autocomplete=off type=submit name=submit class=sblink value='add'>
+		<input autocomplete=off type=submit name=submit value='add'>
 	</form>
 	";
 	exit();
@@ -48,8 +48,7 @@ function ch_scenario(){/*{{{*/
 	#psql aamks -c 'select * from scenarios'
 	#psql aamks -c 'select * from users'
 	if(!isset($_GET['ch_scenario'])) { return; }
-	#$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2 LIMIT 1",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
-	$r=$_SESSION['nn']->query("SELECT u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.active_editor, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
+	$r=$_SESSION['nn']->query("SELECT u.id AS user_id,u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
 	if(empty($r[0])) { die("scenario_id=$_GET[ch_scenario]?"); }
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	header("Location: form.php?edit");
@@ -74,25 +73,17 @@ function new_project() { # {{{
 	header("Location: projects.php?projects_list");
 }
 /*}}}*/
-function session_dump() { # {{{
-	if(!isset($_GET['session_dump'])) { return; }
-	dd($_SESSION['main']);
-	exit();
-}
-/*}}}*/
 function assert_session_complete() { #{{{
 }
 /*}}}*/
 function main() { #{{{
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; } # TODO: index.php should handle this
 	$_SESSION['nn']->htmlHead("Manage projects");
-	init_main_vars();
 	new_scenario();
 	new_project();
 	ch_scenario();
 	delete_project();
 	$_SESSION['nn']->menu('Manage projects');
-	session_dump();
 	if(isset($_GET['projects_list'])) { projects_list(); }
 }
 /*}}}*/

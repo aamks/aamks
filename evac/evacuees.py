@@ -1,4 +1,5 @@
 from evac.evacuee import Evacuee
+from pprint import pprint
 import logging
 
 #logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
@@ -117,12 +118,20 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].blocked_exits
 
+    def clear_blocked_exits(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].blocked_exits = list()
+
+    def set_optical_density(self, ped_no, optical_density):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].optical_density_at_position = optical_density
+
     def get_first_evacuees_time(self):
         pre_evacuation_times = [self.pedestrians[i].pre_evacuation_time for i in range(len(self.pedestrians))]
         return round(min(pre_evacuation_times), 2)
 
-    def update_speed_of_pedestrian(self, ped_no, optical_density):
-        self.pedestrians[ped_no].update_speed(optical_density)
+    def update_speed_of_pedestrian(self, ped_no):
+        self.pedestrians[ped_no].update_speed()
 
     def update_fed_of_pedestrian(self, ped_no, fed):
         self.pedestrians[ped_no].update_fed(fed)
@@ -131,6 +140,21 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].fed
 
+    def set_finish_to_agent(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].finished = 0
+
     def get_finshed_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].finished
+
+    def dump_evacuee_vars(self, ped_no):
+        pprint(vars(self.pedestrians[ped_no]))
+
+    def set_num_of_obstacle_neighbours(self, ped_no, num_of_neighbours):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].num_of_obstacle_neighbours = num_of_neighbours
+
+    def set_num_of_orca_lines(self, ped_no, num_of_lines):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].num_of_orca_lines = num_of_lines

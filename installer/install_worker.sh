@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 #This is the instalator of for worker. Currently it works only on Linux nodes.
 USER='krasus'
+AAMKS_LOCAL_WORKER=0
 
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
-sudo apt-get --yes install subversion python3-pip sendxmpp xdg-utils unzip cmake
+sudo apt-get --yes install subversion python3-pip sendxmpp xdg-utils unzip cmake gearman
 sudo -H pip3 install --upgrade pip
 sudo -H pip3 install webcolors colour shapely scipy numpy
 

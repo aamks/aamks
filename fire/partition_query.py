@@ -3,24 +3,17 @@ from collections import OrderedDict
 import csv
 import re
 import os
-import sys
-import inspect
 import json
-import time
 import bisect
-from numpy.random import randint
 from include import Sqlite
 from include import Json
-import logging
+from include import GetUserPrefs
 from math import exp
 from include import Dump as dd
-
 # }}}
 
-
-class SmokeQuery:
-
-    def __init__(self, floor):
+class PartitionQuery:
+    def __init__(self, floor):# {{{
         '''
         * On class init we read cell2compa map and and query_vertices from sqlite.
         * We are getting read_cfast_record(T) calls in say 10s intervals:
@@ -43,19 +36,22 @@ class SmokeQuery:
 
         self.json = Json()
         try:
-            self.s=Sqlite("aamks.sqlite", 1)
+            self.s=Sqlite("aamks.sqlite", 1) # We are the worker with aamks.sqlite copy in our working dir
         except:
-            print("mimooh CFAST fallback, not for production!")
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 1)
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 1) # We are the server
 
+        self.floor=str(floor)
+        self.floors_meta=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
+        self.uprefs=GetUserPrefs()
         self.config=self.json.read('{}/evac/config.json'.format(os.environ['AAMKS_PATH']))
-        self._sqlite_query_vertices(floor)
-        self._sqlite_cell2compa(floor)
+        self._sqlite_query_vertices()
+        self._sqlite_cell2compa()
         self._init_compa_conditions()
-        #print("smoke_query, enable me")
-        self._cfast_headers() # TODO needs to enable!
 
-    def _sqlite_query_vertices(self, floor):# {{{
+        if self.uprefs.get_var('use_fire_model')==1: 
+            self._cfast_headers() 
+# }}}
+    def _sqlite_query_vertices(self):# {{{
         ''' 
         Python has this nice dict[(1,2)], but json cannot handle it. We have
         passed it as dict['1x2'] and now need to bring back from str to
@@ -63,33 +59,21 @@ class SmokeQuery:
         '''
 
         son=json.loads(self.s.query("SELECT * FROM query_vertices")[0]['json'])
-        d=son[floor]
+        d=son[self.floor]
         self._square_side=d['square_side']
         self._query_vertices=OrderedDict()
         for k,v in d['query_vertices'].items():
             z=tuple( int(n) for n in k.split("x") )
             self._query_vertices[z]=v
 # }}}
-    def _sqlite_cell2compa(self, floor):# {{{
+    def _sqlite_cell2compa(self):# {{{
         son=json.loads(self.s.query("SELECT * FROM cell2compa")[0]['json'])
-        d=son[floor]
+        d=son[self.floor]
         self._cell2compa=OrderedDict()
         for k,v in d.items():
             z=tuple( int(n) for n in k.split("x") )
             self._cell2compa[z]=v
 # }}}
-
-    def _results(self,query,cell):# {{{
-        ''' Outside is for debugging - should never happen in aamks. '''
-        try:
-            compa=self._cell2compa[cell]
-        except Exception as e:
-            compa="outside"
-            logging.ERROR("Agent outside needs fixing: {}".format(e))
-
-        return self._compa_conditions[compa]
-# }}}
-
     def _init_compa_conditions(self):  # {{{
         ''' 
         Prepare dict structure for cfast csv values. Csv contain some params that are
@@ -102,7 +86,7 @@ class SmokeQuery:
         self._compa_conditions['outside']=OrderedDict() is more for debugging.
         '''
 
-        self.relevant_params = ('CEILT', 'DJET', 'FLHGT', 'FLOORT', 'HGT',
+        self.relevant_params = ('COMPA', 'CEILT', 'DJET', 'FLHGT', 'FLOORT', 'HGT',
         'HRR', 'HRRL', 'HRRU', 'IGN', 'LLCO', 'LLCO2', 'LLH2O', 'LLHCL',
         'LLHCN', 'LLN2', 'LLO2', 'LLOD', 'LLT', 'LLTS', 'LLTUHC', 'LWALLT',
         'PLUM', 'PRS', 'PYROL', 'TRACE', 'ULCO', 'ULCO2', 'ULH2O', 'ULHCL',
@@ -111,10 +95,11 @@ class SmokeQuery:
 
         self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
 
-        self._compa_conditions = OrderedDict()
+        self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
-            self._compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME']+list(self.relevant_params)])
-        self._compa_conditions['outside']=OrderedDict([('TIME',None)])
+            self.compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME'] + list(self.relevant_params)])
+            self.compa_conditions[compa]['COMPA']=compa
+        self.compa_conditions['outside']=OrderedDict([('TIME', None)])
 # }}}
     def _cfast_headers(self):# {{{
         '''
@@ -173,54 +158,72 @@ class SmokeQuery:
                         break
 
             for compa in self.all_compas:
-                self._compa_conditions[compa]['TIME']=needed_record[0]
-            self._compa_conditions['outside']['TIME']=needed_record[0]
+                self.compa_conditions[compa]['TIME']=needed_record[0]
+            self.compa_conditions['outside']['TIME']=needed_record[0]
 
             for m in range(len(needed_record)):
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
-                    self._compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
+                    self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
         return 1
 # }}}
-    def get_conditions(self,q, floor):# {{{
+    def xy2room(self,q):# {{{
         ''' 
         First we find to which square our q belongs. If this square has 0 rectangles
         then we return conditions from the square. If the square has rectangles
-        we need to loop through those rectangles. Finally we read the smoke
-        conditions from the cell. 
+        we need to loop through those rectangles. 
         '''
 
-        floors=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
-        self.floor_dim = floors[str(floor)]
-
-        x=self.floor_dim['minx'] + self._square_side * int((q[0]-self.floor_dim['minx'])/self._square_side) 
-        y=self.floor_dim['miny'] + self._square_side * int((q[1]-self.floor_dim['miny'])/self._square_side)
+        x=self.floors_meta[self.floor]['minx'] + self._square_side * int((q[0]-self.floors_meta[self.floor]['minx'])/self._square_side) 
+        y=self.floors_meta[self.floor]['miny'] + self._square_side * int((q[1]-self.floors_meta[self.floor]['miny'])/self._square_side)
 
         if len(self._query_vertices[x,y]['x'])==1:
-            return self._results(q, (x,y))
+            return self._cell2compa[(x,y)] if (x,y) in self._cell2compa else "outside"
         else:
             for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
                 if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
                     rx=self._query_vertices[(x,y)]['x'][i-1]
                     ry=self._query_vertices[(x,y)]['y'][i-1]
-                    return self._results(q, (rx,ry))
-        return self._results(q, (x,y)) # outside!
+                    return self._cell2compa[(rx,ry)] if (rx,ry) in self._cell2compa else "outside"
+        return "outside"
+# }}}
+    def get_conditions(self,q):# {{{
+        ''' 
+        Same as xy2room, except it returns conditions, not just the room.
+        '''
+
+        x=self.floors_meta[self.floor]['minx'] + self._square_side * int((q[0]-self.floors_meta[self.floor]['minx'])/self._square_side) 
+        y=self.floors_meta[self.floor]['miny'] + self._square_side * int((q[1]-self.floors_meta[self.floor]['miny'])/self._square_side)
+
+        if len(self._query_vertices[x,y]['x'])==1:
+            return self.compa_conditions[self._cell2compa[(x,y)]] if (x,y) in self._cell2compa else {'COMPA': 'outside'} 
+        else:
+            for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
+                if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
+                    rx=self._query_vertices[(x,y)]['x'][i-1]
+                    ry=self._query_vertices[(x,y)]['y'][i-1]
+                    return self.compa_conditions[self._cell2compa[(rx,ry)]] if (rx,ry) in self._cell2compa else {'COMPA': 'outside'} 
+        return {'COMPA': 'outside'} 
 # }}}
     def get_visibility(self, position, time, floor):# {{{
-        conditions = self.get_conditions(position, floor)
-        logging.debug('Query visibility at time: {} on position: {}'.format(time, position))
+        query = self.get_conditions(position, floor)
+        conditions = query[0]
+        room = query[1]
+        #print('FLOOR: {}, ROOM: {}, HGT: {}, TIME: {}'.format(floor, room, conditions['HGT'], time))
+
+        if conditions == 'outside':
+            print('outside')
 
         hgt = conditions['HGT']
         if hgt == None:
-            return 0
+            return 0, room
 
         if hgt > self.config['LAYER_HEIGHT']:
-            return conditions['LLOD']
+            return conditions['LLOD'], room
         else:
-            return conditions['ULOD']
+            return conditions['ULOD'], room
 # }}}
     def get_fed(self, position, time, floor):# {{{
-        logging.debug('Query FED at time: {} on position: {}'.format(time, position))
-        conditions = self.get_conditions(position, floor)
+        conditions = self.get_conditions(position, floor)[0]
         hgt = conditions['HGT']
         if hgt == None:
             return 0.
@@ -308,7 +311,7 @@ class SmokeQuery:
                     record[0]=int(float(row[0]))
                     for i,param in enumerate(self._headers[letter]['params']):
                         if param != 'Time':
-                            if self._headers[letter]['geoms'][i] != 'Outside':
+                            if self._headers[letter]['geoms'][i] != 'outside':
                                 if self._headers[letter]['geoms'][i] != 'medium':
                                     compa=self._headers[letter]['geoms'][i][0]
                                     finals.append((record[0], param, record[i], self._headers[letter]['geoms'][i], compa))

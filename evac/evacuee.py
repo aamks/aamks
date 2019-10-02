@@ -26,10 +26,13 @@ class Evacuee:
         self.finished = 1
         self.node_radius = node_radius
         self.pre_evacuation_time = pre_evacuation
+        self.optical_density_at_position = None
 
         self.alpha_v = alpha_v
         self.beta_v = beta_v
         self.max_speed = h_speed
+        self.num_of_obstacle_neighbours = 0
+        self.num_of_orca_lines = 0
 
         logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
                             format='%(asctime)s %(levelname)s: %(message)s')
@@ -51,10 +54,14 @@ class Evacuee:
     def set_goal(self, goal):
         assert isinstance(goal, list), '%goal is not a list'
         dist = cdist([self.position], [goal[-1]], 'euclidean')
-        if dist < 30:
+        if dist < 50:
             self.finished = 0
+            self.goal = [int(goal[0][0]), int(goal[0][1])]
         else:
-            self.goal = goal[1]
+            try:
+                self.goal = [int(goal[1][0]), int(goal[1][1])]
+            except:
+                self.goal = [int(goal[0][0]), int(goal[0][1])]
 
 
     def calculate_velocity(self, current_time):
@@ -62,11 +69,14 @@ class Evacuee:
         self.distance = (sqrt(self.unnorm_vector[0] ** 2 + self.unnorm_vector[1] ** 2))
 
         if current_time > self.pre_evacuation_time:
-            norm_vector = tuple((self.unnorm_vector[0] / self.distance, self.unnorm_vector[1] / self.distance))
-            self.velocity = (norm_vector[0] * self.speed, norm_vector[1] * self.speed)
+            try:
+                norm_vector = tuple((self.unnorm_vector[0] / self.distance, self.unnorm_vector[1] / self.distance))
+                self.velocity = (norm_vector[0] * self.speed, norm_vector[1] * self.speed)
+            except:
+                self.velocity = (0, 0)
 
-    def update_speed(self, optical_density):
-        extinction_coefficient = optical_density * 2.303
+    def update_speed(self):
+        extinction_coefficient = self.optical_density_at_position * 2.303
         if self.beta_v == 0:
             self.beta_v = 0.00000001
         self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.beta_v/self.alpha_v * extinction_coefficient))

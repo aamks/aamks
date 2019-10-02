@@ -34,14 +34,16 @@ class CfastMcarlo():
     def __init__(self):# {{{
         ''' Generate montecarlo cfast.in. Log what was drawn to psql. '''
 
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.p=Psql()
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        if self.conf['fire_model']=='FDS':
+            return
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.p=Psql()
         self._psql_collector=OrderedDict()
         self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,sim_id)")
 
-        si=SimIterations(self.conf['project_id'], self.conf['number_of_simulations'])
+        si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._new_psql_log()
@@ -65,7 +67,7 @@ class CfastMcarlo():
     def _draw_fire_origin(self):# {{{
         is_origin_in_room=binomial(1,self.conf['fire_starts_in_a_room'])
         
-        self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' and type_sec in('COR','HALL') ORDER BY global_type_id") ]
+        self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND type_sec in('COR','HALL') ORDER BY global_type_id") ]
         self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY global_type_id") ]
         fire_origin=[]
         if is_origin_in_room==1 or len(self.all_corridors_and_halls)==0:
@@ -76,15 +78,15 @@ class CfastMcarlo():
             fire_origin.append('non_room')
 
         compa=self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_origin[0],))[0]
-        x=round(compa['x0']/100+compa['width']/(2.0*100),2)
-        y=round(compa['y0']/100+compa['depth']/(2.0*100),2)
-        z=round(compa['z0']/100+compa['height']/100.0 * (1-math.log10(uniform(1,10))),2)
+        x=int(compa['x0']+compa['width']/2.0)
+        y=int(compa['y0']+compa['depth']/2.0)
+        z=int(compa['height'] * (1-math.log10(uniform(1,10))))
 
         fire_origin+=[x,y,z]
         fire_origin+=[compa['floor']]
         self._save_fire_origin(fire_origin)
 
-        collect=('FIRE', compa['global_type_id'], x, y, z, 1, 'TIME' ,'0','0','0','0','medium')
+        collect=('FIRE', compa['global_type_id'], round(compa['width']/(2.0*100),2), round(compa['depth']/(2.0*100),2), z, 1, 'TIME' ,'0','0','0','0','medium')
         return (','.join(str(i) for i in collect))
 
 # }}}
@@ -96,16 +98,16 @@ class CfastMcarlo():
         if len(self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")) > 0:
             z=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")
             i=z[0]
-            x=i['center_x']/100.0
-            y=i['center_y']/100.0
-            z=i['center_z']/100.0
-            room=self.s.query("SELECT floor,name,type_sec,global_type_id FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND x0<=? AND y0<=? AND x1>=? AND y1>=?", (i['floor'], i['x0'], i['y0'], i['x1'], i['y1']))
+            x=i['center_x']
+            y=i['center_y']
+            z=i['z1']-i['z0']
+            room=self.s.query("SELECT floor,name,type_sec,global_type_id FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", (i['floor'], i['x0'], i['y0'], i['x1'], i['y1']))
             if room[0]['type_sec'] in ('COR','HALL'):
                 fire_origin=[room[0]['name'], 'non_room', x, y, z, room[0]['floor']]
             else:
                 fire_origin=[room[0]['name'], 'room', x, y , z,  room[0]['floor']]
             self._save_fire_origin(fire_origin)
-            collect=('FIRE', room[0]['global_type_id'], x, y, z, 1, 'TIME' ,'0','0','0','0','medium')
+            collect=('FIRE', room[0]['global_type_id'], x*100, y*100, z*100, 1, 'TIME' ,'0','0','0','0','medium')
             cfast_fire=(','.join(str(i) for i in collect))
         else:
             cfast_fire=self._draw_fire_origin()
@@ -268,7 +270,7 @@ class CfastMcarlo():
 
         txt=(
         'VERSN,7,{}_{}'.format('SIM', self.conf['project_id']),
-        'TIMES,600,-120,10,10',
+        'TIMES,{},-120,10,10'.format(self.conf['simulation_time']),
         'EAMB,{},101300,0'.format(273+outdoor_temp),
         'TAMB,293.15,101300,0,50',
         'DTCHECK,1.E-9,100',
@@ -291,7 +293,7 @@ class CfastMcarlo():
 # }}}
     def _section_compa(self):# {{{
         txt=['!! COMPA,name,width,depth,height,x,y,z,matl_ceiling,matl_floor,matl_wall']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' ORDER BY global_type_id"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 ORDER BY global_type_id"):
             collect=[]
             collect.append('COMPA')                    # COMPA
             collect.append(v['name'])                  # NAME
@@ -310,7 +312,8 @@ class CfastMcarlo():
 # }}}
     def _section_halls_onez(self):# {{{
         txt=['!! ONEZ,id']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_sec in ('STAI', 'COR') order by type_sec"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_sec in ('STAI', 'COR') AND fire_model_ignore!=1 order by type_sec"):
+
             collect=[]
             if v['type_sec']=='COR':
                 collect.append('HALL')
@@ -373,7 +376,7 @@ class CfastMcarlo():
     def _section_vvent(self):# {{{
         # VVENT AREA, SHAPE, INITIAL_FRACTION
         txt=['!! VVENT,top,bottom,id,area,shape,rel_type,criterion,target,i_time, i_frac, f_time, f_frac, offset_x, offset_y']
-        #for v in self.s.query("SELECT distinct v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_pri='VVENTS' AND c.type_pri = 'COMPA' ORDER BY v.vent_from,v.vent_to"):
+        #for v in self.s.query("SELECT distinct v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_pri='VVENT' AND c.type_pri = 'COMPA' ORDER BY v.vent_from,v.vent_to"):
         for v in self.s.query("SELECT distinct v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to"):
             collect=[]
             collect.append('VVENT')                                         # VVENT AREA, SHAPE, INITIAL_FRACTION
@@ -416,7 +419,7 @@ class CfastMcarlo():
 # }}}
     def _section_heat_detectors(self):# {{{
         txt=['!! DETECTORS,type,compa,temp,width,depth,height,rti,supress,density']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND heat_detectors=1"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND heat_detectors=1"):
             temp = self._draw_heat_detectors_triggers()                # ACTIVATION_TEMPERATURE,
             if temp == '0.0':
                 collect = [] 
@@ -439,7 +442,7 @@ class CfastMcarlo():
 # }}}
     def _section_smoke_detectors(self):# {{{
         txt=['!! DETECTORS,type,compa,temp,width,depth,height,rti,supress,density']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND smoke_detectors=1"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND smoke_detectors=1"):
             temp = self._draw_smoke_detectors_triggers()                # ACTIVATION_TEMPERATURE,
             if temp == '0.0':
                 collect = [] 
@@ -462,7 +465,7 @@ class CfastMcarlo():
 # }}}
     def _section_sprinklers(self):# {{{
         txt=['!! SPRINKLERS,type,compa,temp,width,depth,height,rti,supress,density']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' and sprinklers=1"):
+        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1"):
             temp = self._draw_sprinklers_triggers() # ACTIVATION_TEMPERATURE,
             if temp == '0.0':
                 collect = [] 
@@ -482,37 +485,10 @@ class CfastMcarlo():
 
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
-    def _fire_obstacle(self):# {{{
-        '''
-        Fire Obstacle prevents humans to walk right through the fire. Currently
-        we build the rectangle xx * yy around x,y. Perhaps this size could be
-        some function of fire properties.
-        '''
-
-        xx=150
-        yy=150
-
-        z=self.s.query("SELECT * FROM fire_origin") 
-        i=z[0]
-        i['x']=int(i['x'] * 100)
-        i['y']=int(i['y'] * 100)
-        i['z']=int(i['z'] * 100)
-
-        points=[ [i['x']-xx, i['y']-yy], [i['x']+xx, i['y']-yy], [i['x']+xx, i['y']+yy], [i['x']-xx, i['y']+yy], [i['x']-xx, i['y']-yy], 'fire_obstacle' ]
-        named={ 'x0': i['x']-xx, 'y0': i['y']-yy, 'width': 2*xx, 'depth': 2*yy, 'fire_obstacle': 1 }
-
-        obstacles=self.json.readdb("obstacles")
-        obstacles['points'][i['floor']].append(points)
-        obstacles['named'][i['floor']].append(named)
-
-        self.s.query("UPDATE obstacles SET json=?", (json.dumps(obstacles),)) 
-
-# }}}
     def _section_fire(self):# {{{
         times, hrrs=self._draw_fire_development()
         fire_properties = self._draw_fire_properties(len(times))
         fire_origin=self._fire_origin()
-        self._fire_obstacle()
         area = (((npa(hrrs)/1000)/(fire_properties['q_star'] * 1.204 * 1.005 * 293 * sqrt(9.81))) ** (2/5)) + 0.0001
         txt=(
             '!! FIRE,compa,x,y,z,fire_number,ignition_type,ignition_criterion,ignition_target,?,?,name',
@@ -571,7 +547,7 @@ class CfastMcarlo():
         for k,v in self._psql_collector[self._sim_id].items():
             pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
         data=', '.join(pairs)
-        self.p.query("UPDATE simulations SET {} WHERE project=%s AND iteration=%s".format(data), (self.conf['project_id'], self._sim_id))
+        self.p.query("UPDATE simulations SET {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(data), (self.conf['project_id'], self.conf['scenario_id'], self._sim_id))
 
 #}}}
 

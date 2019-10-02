@@ -1,16 +1,7 @@
 var scene, camera;
 
 function init() {//{{{
-	$("view3d").append("<close-left-menu-box style='position: fixed; left: 10px; top:10px;'><img src=/aamks/css/close.svg> </close-left-menu-box><span style='margin-left:30px'>or h key</span>");
-	$('close-left-menu-box').click(function() { close3dview(); });
-	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', canvas[0]).attr('height', canvas[1]);
-}
-//}}}
-function visible3D() {//{{{
-	$("view2d").css("visibility", "hidden");
-	$("button-left-menu-box").css("visibility", "hidden");
-	$("#apainter-svg").css("display", "none");
-	$("view3d").css("visibility", "visible");
+	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
 }
 //}}}
 function colorHexDecode(hex) {//{{{
@@ -22,13 +13,6 @@ function colorHexDecode(hex) {//{{{
 	return RGB;
 }
 //}}}
-function close3dview() {//{{{
-	$("view3d").css("visibility", "hidden");
-	$("view2d").css("visibility", "visible");
-	$("button-left-menu-box").css("visibility", "visible");
-	$("#apainter-svg").css("display", "block");
-}
-//}}}
 function removeMeshes() { //{{{
 	// Database could have been updated so it is best to just clear the scene and reread meshes
 	for (var i in scene.meshes) { 
@@ -38,11 +22,12 @@ function removeMeshes() { //{{{
 //}}}
 function createMeshes() {//{{{
 	// random prevents z-fighting
-	var geoms=db().select("letter", "mvent_offsetz", "x0", "x1", "y0", "y1", "z0", "z1");
+	var geoms=db().get()
 	var half_x, half_y, half_z;
-	for (var i in geoms) {
-		var bb=[];
-		var random=Math.random()/40;
+	_.each(geoms, function(i) {
+		dd(i);
+		bb=[];
+		random=Math.random()/40;
 		bb.push(geoms[i][2]/100+random);
 		bb.push(geoms[i][3]/100+random);
 		bb.push(geoms[i][4]/100+random);
@@ -64,7 +49,7 @@ function createMeshes() {//{{{
 			size:   [ half_x, half_z, half_y], 
 			color:  gg[geoms[i][0]].c
 		});
-	}
+	});
 }
 //}}}
 function createMesh(d) {//{{{
@@ -122,17 +107,34 @@ function createScene() { //{{{
     new xeogl.CameraControl();
 }
 //}}}
+function polyExtrude() {//{{{
+
+	//var geoms=db().get();
+	var geoms=[db().get()[0]];
+	_.each(geoms, function(i) {
+		dd(i.polypoints);
+		const polygons = [ [ i.polypoints.reverse(), ] ];
+		const result = geometryExtrude.extrudePolygon(polygons, { depth: i.z[1]-i.z[0] });
+		dd(result.position);
+		dd(result.boundingRect);
+
+		//var mesh=new xeogl.Mesh({
+		//	geometry: new
+	});
+}
+//}}}
 function view3d() {//{{{
 	if(scene === undefined) {
-		$.getScript("js/xeogl.min.js", function(){
-			init();
-			createScene();
-			createMeshes(); 
-			visible3D();
+		$.getScript("js/geometry-extrude.min.js" , function(){
+			$.getScript("js/xeogl.min.js"        , function(){
+				init();
+				polyExtrude();
+				createScene();
+				//createMeshes(); 
+			});
 		});
 	} else {
 		removeMeshes();
 		createMeshes(); 
-		visible3D();
 	}
 }

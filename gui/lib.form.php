@@ -4,6 +4,8 @@ function make_help() { /*{{{*/
 	$help["project_id"]              = ["scenario"                         , "This is scenario"]                                                         ;
 	$help["number_of_simulations"]   = ["number of simulations"            , "write me..."]                                                              ;
 	$help["navmesh_debug"]			 = ["navmesh_debug"                    , "write me..."]                                                              ;
+	$help["fire_model"]				 = ["fire_model"                       , "CFAST | FDS | None"]                                                              ;
+	$help["dispatch_evacuees"]		 = ["dispatch_evacuees"                , "<orange>manual+probabilistic</orange> probabilistic evacuees only in the rooms free of manual evacuees<hr> <orange>probabilistic+manual</orange> probabilistic evacuees first and then extra manual evacuees<hr> <orange>manual</orange> probabilistic evacuees are never added "]                                                              ;
 	$help["simulation_time"]         = ["simulation time"                  , "write me..."]                                                              ;
 	$help["indoor_temperature"]      = ["indoor_temperature"               , "write me..."]                                                              ;
 	$help["outdoor_temperature"]     = ["outdoor_temperature"              , "write me..."]                                                              ;
@@ -306,6 +308,8 @@ function get_defaults($q) {/*{{{*/
 
 	$db['setup1']='
 	{
+		"fire_model": "CFAST",
+		"dispatch_evacuees": "manual+probabilistic",
 		"outdoor_temperature": { "mean": 20, "sd": 2 },
 		"navmesh_debug": 0,
 		"indoor_pressure": 101325,
@@ -315,16 +319,16 @@ function get_defaults($q) {/*{{{*/
 			{ "min": 15     , "max": 27    , "quarter": 0  , "full": 0.5 }  ,
 			{ "min": 27     , "max": 99999 , "quarter": 0  , "full": 0.5 }
 		], 
-		"vents_open": { "DELECTR": 0.04, "DCLOSER": 0.14, "DOOR": 0.5, "VVENTS": 0.96 },
+		"vents_open": { "DELECTR": 0.04, "DCLOSER": 0.14, "DOOR": 0.5, "VVENT": 0.96 },
 		"c_const": 8,
 		"evacuees_max_h_speed" : { "mean" : 120    , "sd" : 20 },
 		"evacuees_max_v_speed" : { "mean" : 80     , "sd" : 20 },
 		"evacuees_alpha_v"     : { "mean" : 0.706  , "sd" : 0.069 },
 		"evacuees_beta_v"      : { "mean" : -0.057 , "sd" : 0.015 },
+		"alarming"  :            { "mean": 0, "sd": 0 },
+		"hrrpua":                { "min": 300    , "mode": 1000  , "max": 1300 },
+		"hrr_alpha":             { "min": 0.0029 , "mode": 0.047 , "max": 0.188 },
 		"fire_starts_in_a_room"  : 0.8,
-
-		"hrrpua":	 { "min": 300    , "mode": 1000  , "max": 1300 },
-		"hrr_alpha": { "min": 0.0029 , "mode": 0.047 , "max": 0.188 },
 		"evacuees_concentration": { "COR": 20 , "STAI": 50 , "ROOM": 8  , "HALL": 30 } 
 	}';
 
