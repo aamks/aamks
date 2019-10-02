@@ -1,10 +1,13 @@
 # Not for production
 
+# should match gui/inc.php: private function mk_default_preferences()
+PREFS='{"apainter_editor": "text", "navmesh_debug": 1, "apainter_labels": 1, "partitioning_debug": 0, "use_fire_model": 0, "evac_clusters": 1 }';
+
 psql -f sql.sql
 psql aamks -c "
 DELETE FROM users;
-INSERT INTO users(active_scenario, user_photo , user_name , password, email) values(3 , '/aamks/logo.svg' , 'Karol Kreński'    , 'cf87b610767de89e73f6', 'mimoohowy@gmail.com');
-INSERT INTO users(active_scenario, user_photo , user_name , password, email) values(1 , '/aamks/logo.svg' , 'Stanisław Łazowy' , 'cf87b610767de89e73f6', 'stanislaw.lazowy@gmail.com');
+INSERT INTO users(active_scenario, user_photo , user_name , password, email, preferences) values(3 , '/aamks/logo.svg' , 'Karol Kreński'    , 'cf87b610767de89e73f6', 'mimoohowy@gmail.com', '$PREFS');
+INSERT INTO users(active_scenario, user_photo , user_name , password, email, preferences) values(1 , '/aamks/logo.svg' , 'Stanisław Łazowy' , 'cf87b610767de89e73f6', 'stanislaw.lazowy@gmail.com', '$PREFS');
 DELETE FROM projects;
 INSERT INTO projects(user_id,project_name) values(1,'demo');
 INSERT INTO projects(user_id,project_name) values(2,'demo');

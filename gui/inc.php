@@ -42,7 +42,7 @@ class Aamks {/*{{{*/
 
 	public function ch_main_vars($r) { #{{{
 		if(!array_key_exists('user_id', $r) || !array_key_exists('user_name', $r) || !array_key_exists('user_photo', $r) || !array_key_exists('project_id', $r) || !array_key_exists('project_name', $r) || !array_key_exists('scenario_id', $r) || !array_key_exists('scenario_name', $r)) { dd($r); die("ch_main_vars() bug"); }
-		if(!isset($r['preferences']['apainter_editor'])) { $r['preferences']=$this->mk_default_preferences($r['user_id']); }
+		if(empty($r['preferences'])) { $r['preferences']=$this->mk_default_preferences($r['user_id']); }
 
 		$prefs=json_decode($r['preferences'],1);
 		ksort($prefs);
