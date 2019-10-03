@@ -1092,9 +1092,15 @@ function saveRightBox() {//{{{
 
 function enumVertices() {//{{{
 	var mm=d3.select("#buildingLabels");
-	_.each(cg.polypoints, function(p) { 
-		mm.append("text").attr("class","building-vertex").attr("x",p[0]).attr("y",p[1]).text(p[0]+", "+p[1]);
-	});
+	if(['room', 'obst', 'mvent', 'fire', 'vvent'].includes(cg.type)) { 
+		_.each(cg.polypoints, function(p) { 
+			mm.append("text").attr("class","building-vertex").attr("x",p[0]+5).attr("y",p[1]-15).text(p[0]+", "+p[1]);
+		});
+	}
+	if(['evacuee', 'door', 'hole'].includes(cg.type)) { 
+		p=cg.polypoints[0];
+		mm.append("text").attr("class","building-vertex").attr("x",p[0]+50).attr("y",p[1]+80).text(p[0]+", "+p[1]);
+	}
 }
 //}}}
 function showBuildingLabels(aggressive=0, elems=[]) {//{{{

@@ -86,7 +86,7 @@ class CfastMcarlo():
         fire_origin+=[compa['floor']]
         self._save_fire_origin(fire_origin)
 
-        collect=('FIRE', compa['global_type_id'], round(compa['width']/(2.0*100),2), round(compa['depth']/(2.0*100),2), z, 1, 'TIME' ,'0','0','0','0','medium')
+        collect=('FIRE', compa['global_type_id'], round(0.01 * compa['width']/2.0, 2), round(0.01 * compa['depth']/2.0,2), round(0.01 * z,2), 1, 'TIME' ,'0','0','0','0','medium')
         return (','.join(str(i) for i in collect))
 
 # }}}
@@ -101,13 +101,13 @@ class CfastMcarlo():
             x=i['center_x']
             y=i['center_y']
             z=i['z1']-i['z0']
-            room=self.s.query("SELECT floor,name,type_sec,global_type_id FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", (i['floor'], i['x0'], i['y0'], i['x1'], i['y1']))
+            room=self.s.query("SELECT floor,name,type_sec,global_type_id,x0,y0 FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", (i['floor'], i['x0'], i['y0'], i['x1'], i['y1']))
             if room[0]['type_sec'] in ('COR','HALL'):
                 fire_origin=[room[0]['name'], 'non_room', x, y, z, room[0]['floor']]
             else:
                 fire_origin=[room[0]['name'], 'room', x, y , z,  room[0]['floor']]
             self._save_fire_origin(fire_origin)
-            collect=('FIRE', room[0]['global_type_id'], x*100, y*100, z*100, 1, 'TIME' ,'0','0','0','0','medium')
+            collect=('FIRE', room[0]['global_type_id'], round(0.01 * (x-room[0]['x0']), 2), round(0.01 * (y-room[0]['y0']), 2), round(0.01 * z, 2), 1, 'TIME' ,'0','0','0','0','medium')
             cfast_fire=(','.join(str(i) for i in collect))
         else:
             cfast_fire=self._draw_fire_origin()
