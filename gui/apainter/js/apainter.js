@@ -1090,10 +1090,18 @@ function saveRightBox() {//{{{
 }
 //}}}
 
+function enumVertices() {//{{{
+	var mm=d3.select("#buildingLabels");
+	_.each(cg.polypoints, function(p) { 
+		mm.append("text").attr("class","building-vertex").attr("x",p[0]).attr("y",p[1]).text(p[0]+", "+p[1]);
+	});
+}
+//}}}
 function showBuildingLabels(aggressive=0, elems=[]) {//{{{
 	$("#buildingLabels").html("");
 	if(aggressive==1 || aamksUserPrefs.apainter_labels==1) { 
 		var mm=d3.select("#buildingLabels");
+		enumVertices();
 		if(elems.length>0) {
 			_.each(elems, function(vv) { 
 				_.each(db({'name': vv}).get(), function(v) { 
