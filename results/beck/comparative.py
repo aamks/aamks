@@ -39,6 +39,12 @@ class processDists:
             shutil.rmtree('{}/picts'.format(self.dir))
         os.makedirs('{}/picts'.format(self.dir))
 
+    def get_scenarios(self):
+            query = "SELECT scenario_id FROM simulations where project = {}".format(self.confing['project_id'])
+            results = self.p.query(query)
+            print(results)
+
+
     def plot_dcbe_dist(self, project_list):
 #        plt.clf()
         n = 1
