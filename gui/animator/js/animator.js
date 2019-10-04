@@ -138,7 +138,6 @@ $.getJSON("inc.json", function(x) {//{{{
 	$.post('/aamks/ajax.php?ajaxAnimsList', function (response) { 
 		ajax_msg(response);
 		animsList=response['data'];
-		makeChooseVis();
 		currentAnimMeta=animsList[0];
 		showStaticImage();
 	});
@@ -148,8 +147,9 @@ function makeChooseVis() {//{{{
 	// Droplist of anims.json (all registered visualizations)
 	var items = [];
 	items.push("<select id=choose-vis>");
+	items.push( "<option value=''>" + currentAnimMeta['title'].substr(0,24) + " " + currentAnimMeta['time'] +"</option>" );
 	for (var i=0; i < animsList.length; i++) { 
-		items.push( "<option value='" + i + "'>" + animsList[i]["title"] + " " + animsList[i]["time"] +"</option>" );
+		items.push( "<option value='" + i + "'>" + animsList[i]["title"].substr(0,24) + " " + animsList[i]["time"] +"</option>" );
 	}
 	items.push("</select>");
 	$("choose-vis").html(items.join());
@@ -219,8 +219,7 @@ function showStaticImage() {//{{{
 		floors_ranges();
 		dstaticAllFloors=response['data'];
 		rescaleCanvas('world2d');
-
-		$("animator-title").html(currentAnimMeta['title'].substr(0,24));
+		$("animator-title").html("<choose-vis></choose-vis>");
 		$("animator-time").html(currentAnimMeta['time']);
 
 		floorLinks();
@@ -228,6 +227,7 @@ function showStaticImage() {//{{{
 		makeSetupBoxInputs();
 		makeColors();
 		highlightDroplist();
+		makeChooseVis();
 	});
 }
 //}}}
@@ -305,14 +305,14 @@ function makeAnimationControls() {//{{{
 	$('legend0').css({'width': '710px', 'top': '3px', 'display': 'flex', 'align-items': 'center'});
 	var items = [];
 	var ww=3;
-	items.push("<animator-title style='width:200px' />");
+	items.push(" &nbsp; <animator-time style='user-select: none'></animator-time> &nbsp; ");
 	items.push("<svg id=animator-time-svg width='"+ww+"00px' height='20px' style='fill: #333; border: 1px solid #555'>");
 	items.push("<rect id=animator-time-scroller x='0px' y='0px' height='20px'></rect>");
 	for (var i=0; i<100; i++) {
 		items.push("<rect class=canvas_slider_rect data-id='"+i+"' id='slider_"+i+"' x='"+(i*ww+1)+"' y='1' width='"+ww+"px' height='18px'></rect>");
 	}
 	items.push("</svg>");
-	items.push(" &nbsp; <animator-time style='user-select: none'></animator-time>");
+	items.push("<animator-title />");
 	$("legend0").append(items.join(""));
 }
 //}}}

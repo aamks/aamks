@@ -7,7 +7,6 @@ var cgID;
 var gg;
 var ggx;
 var zoom;
-var fire_model='CFAST';
 var currentView='2d';
 var activeLetter='r';
 var svg;
@@ -271,7 +270,6 @@ function closeTxtView() {//{{{
 }
 //}}}
 function start2dView() {//{{{
-	if(fire_model=='FDS') { return; }
 	currentView='2d'; 
 	close3dView();
 	$("view2d").css("display", "block");
@@ -279,7 +277,6 @@ function start2dView() {//{{{
 }
 //}}}
 function start3dView() {//{{{
-	if(fire_model=='FDS') { return; }
 	currentView='3d'; 
 	close2dView();
 	view3d();
@@ -303,7 +300,6 @@ function startTxtView(pretty_json="") {//{{{
 
 function nextView() {//{{{
 	$("right-menu-box").css("display", "none");
-	if(fire_model=='FDS') { return; }
 	closeTxtView();
 
 	if(currentView=='2d')       { start3dView(); }
@@ -702,7 +698,7 @@ function dbUpdateCadJsonStr() { //{{{
 //}}}
 function saveTxtCadJson() {//{{{
 	var json_data=$("#cad-json-textarea").val();
-	ajaxSaveCadJson(json_data, fire_model); 
+	ajaxSaveCadJson(json_data); 
 }
 //}}}
 function svgGroupsInit(json) { //{{{
@@ -756,8 +752,8 @@ function cgMake(floor,letter,record) { //{{{
 	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
 }
 //}}}
-function ajaxSaveCadJson(json_data, fire_model) { //{{{
-	$.post('/aamks/ajax.php?ajaxApainterExport', { 'data': json_data, 'fire_model': fire_model }, function (json) { 
+function ajaxSaveCadJson(json_data) { //{{{
+	$.post('/aamks/ajax.php?ajaxApainterExport', { 'data': json_data }, function (json) { 
 		ajax_msg(json); 
 		importCadJson();
 	});
@@ -771,20 +767,14 @@ function importCadJson() { //{{{
 		// At the end the last elem in the loop would be the cg
 		// which may run into this-elem-doesnt-belong-to-this-floor problem.
 		ajax_msg(json); 
-		if(json.err=='FDS') {
-			fire_model='FDS';
-			startTxtView(json.data);
-		} else {
-			fire_model='CFAST';
-			svgGroupsInit(json.data);
-			json2db(json.data);
-			_.each(json.data, function(data,floor) { 
-				importImgUnderlay(data['UNDERLAY_IMG'],floor); 
-				importFloorUnderlay(data['UNDERLAY_FLOOR'],floor); 
-			});
-			cg={};
-			d3.select('#floor_text').text("floor "+floor+"/"+floorsCount);
-		}
+		svgGroupsInit(json.data);
+		json2db(json.data);
+		_.each(json.data, function(data,floor) { 
+			importImgUnderlay(data['UNDERLAY_IMG'],floor); 
+			importFloorUnderlay(data['UNDERLAY_FLOOR'],floor); 
+		});
+		cg={};
+		d3.select('#floor_text').text("floor "+floor+"/"+floorsCount);
 	});
 }
 //}}}
@@ -854,7 +844,7 @@ function db2cadjson() {//{{{
 		cadjson[floor]['UNDERLAY_FLOOR']=underlayFloorSaveCad(floor);
 	}
 	pretty=JSON.stringify(cadjson,null,2);
-	ajaxSaveCadJson(pretty, fire_model);
+	ajaxSaveCadJson(pretty);
 	return pretty;
 }
 //}}}
@@ -1098,8 +1088,10 @@ function enumVertices() {//{{{
 		});
 	}
 	if(['evacuee', 'door', 'hole'].includes(cg.type)) { 
-		p=cg.polypoints[0];
-		mm.append("text").attr("class","building-vertex").attr("x",p[0]+50).attr("y",p[1]+80).text(p[0]+", "+p[1]);
+        if (cg.polypoints.length>0) { 
+            p=cg.polypoints[0];
+            mm.append("text").attr("class","building-vertex").attr("x",p[0]+50).attr("y",p[1]+80).text(p[0]+", "+p[1]);
+        }
 	}
 }
 //}}}
