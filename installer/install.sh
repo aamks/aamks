@@ -20,6 +20,7 @@ AAMKS_USE_GEARMAN=0											# needed if we have a cluster of workers
 AAMKS_PATH='/usr/local/aamks'								
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
+AAMKS_LOCAL_WORKER=1
 AAMKS_SALT='aamksisthebest'
 AAMKS_USE_GMAIL=0											# needed if we allow users to register accounts
 AAMKS_GMAIL_PASSWORD='none'									# needed if we allow users to register accounts

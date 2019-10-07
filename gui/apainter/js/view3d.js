@@ -1,7 +1,7 @@
-var scene, camera;
+var scene, camera, renderer;
 
 function init() {//{{{
-	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
+	//d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
 }
 //}}}
 function colorHexDecode(hex) {//{{{
@@ -88,6 +88,38 @@ function createMesh(d) {//{{{
 }
 //}}}
 function createScene() { //{{{
+	scene = new THREE.Scene();
+	//camera = new THREE.PerspectiveCamera(perspective , aspect_ratio  , near_clip , far_clip);
+	camera = new THREE.PerspectiveCamera(75            , win[0]/win[1] , 0.1       , 1000 );
+	renderer = new THREE.WebGLRenderer();
+	renderer.setSize(win[0], win[1]);
+	document.body.appendChild(renderer.domElement);
+var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+var cube = new THREE.Mesh( geometry, material );
+scene.add( cube );
+
+camera.position.z = 5;
+animate();
+dd(1);
+
+}
+//}}}
+function view3d() {//{{{
+	if(scene === undefined) {
+		$.getScript("js/three.r109.min.js"        , function(){
+			init();
+			createScene();
+			//createMeshes(); 
+		});
+	} else {
+		removeMeshes();
+		createMeshes(); 
+	}
+}
+
+//}}}
+function createSceneOld() { //{{{
     xeogl.scene = new xeogl.Scene({
         canvas: "canvas3d",
         transparent: false,
@@ -107,34 +139,7 @@ function createScene() { //{{{
     new xeogl.CameraControl();
 }
 //}}}
-function polyExtrude() {//{{{
-
-	//var geoms=db().get();
-	var geoms=[db().get()[0]];
-	_.each(geoms, function(i) {
-		dd(i.polypoints);
-		const polygons = [ [ i.polypoints.reverse(), ] ];
-		const result = geometryExtrude.extrudePolygon(polygons, { depth: i.z[1]-i.z[0] });
-		dd(result.position);
-		dd(result.boundingRect);
-
-		//var mesh=new xeogl.Mesh({
-		//	geometry: new
-	});
-}
-//}}}
-function view3d() {//{{{
-	if(scene === undefined) {
-		$.getScript("js/geometry-extrude.min.js" , function(){
-			$.getScript("js/xeogl.min.js"        , function(){
-				init();
-				polyExtrude();
-				createScene();
-				//createMeshes(); 
-			});
-		});
-	} else {
-		removeMeshes();
-		createMeshes(); 
-	}
+function animate() {
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
 }

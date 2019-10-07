@@ -75,6 +75,7 @@ function registerListeners() {//{{{
 	$("body").on("change"              , '#alter-exit-type'        , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-mvent-throughput' , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-polypoints'       , function() { saveRightBox(); });
+	$("body").on("keyup"               , '#alter-z'                , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-px'               , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-py'               , function() { saveRightBox(); });
 	$("body").on("mouseleave"          , 'right-menu-box'          , function() { saveRightBox(); showCgPropsBox(); });
@@ -563,10 +564,11 @@ function cgCreate() {//{{{
 //}}}
 
 function updatePosInfo(m) {//{{{
-	if('minx' in cg) { 
-		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]+" &nbsp; &nbsp;  size: "+Math.abs(cg.maxx-m.x)+" "+Math.abs(cg.maxy-m.y) +" "+(cg.z[1]-cg.z[0]));
-	} else {
+	if(cg.infant==1) {
 		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]);
+	} else {
+		b=getBbox();
+		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]+" &nbsp; &nbsp;  size: "+(b.max.x-b.min.x)+" "+ (b.max.y-b.min.y) +" "+(cg.z[1]-cg.z[0]));
 	}
 }
 //}}}
@@ -664,6 +666,8 @@ function cgStartDrawing() {//{{{
 function cgEscapeCreate() {//{{{
 	if(!isEmpty(cg) && "growing" in cg) { cgRemove(); } 
 	$(".temp-poly").remove();
+	$("#apainter-texts-pos").html('');
+	$(".building-vertex").remove() 
 	$(".cg-selected").removeClass('cg-selected'); 
 	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
 	snappingHide();
@@ -914,7 +918,6 @@ function bulkProps() {//{{{
 	html+=bulkPlainProps();
 	html+="</table>";
 	html+="</div>";
-
 	rightBoxShow(html, 0);
 }
 //}}}
@@ -1019,7 +1022,6 @@ function propsXYZ() {//{{{
 function showCgPropsBox() {//{{{
 	showBuildingLabels(1);
 	activeLetter=cg.letter;
-	
 	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
 	    "<center><red>&nbsp; "+cg.name+" &nbsp; "+gg[cg.letter]['x']+"</red><br>"+
@@ -1063,6 +1065,8 @@ function saveRightBoxCgProps() {//{{{
 		cg.room_enter=$("#alter-room-enter").val();
 		cg.exit_type=$("#alter-exit-type").val();
 		cg.mvent_throughput=Number($("#alter-mvent-throughput").val());
+		var zz=$("#alter-z").val().split(",")
+		cg.z=[Number(zz[0]), Number(zz[1])];
 
 		if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
 		cgUpdateSvg();

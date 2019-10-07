@@ -1,28 +1,28 @@
 K
 ==
 * master vs stable:
-	Bylo: fire_origin w [m]. Jest: [cm]
 	Bylo: obstacles jako 4 punkty. Jest: obstacles jako N punktow. Ostatni punkt jest powtorzonym pierwszym punktem.
-	Bylo: { "x":10, "y":20 }. Jest: [10,20]
-	Bylo: SmokeQuery. Jest PartitionQuery
-	Bylo: return conditions {'TIME': 0}, 'r1'. Jest: return conditions {'TIME': 0, 'compa': 'r1'}
-	Bylo: navmesh_debug per project (conf.json). Jest: per user w user preferences
 
-* Lokalny worker: w install.sh AAMKS_LOCAL_WORKER=1. Nie mozna bazowac na localhost, bo chcialbym workera na s.szach.in.
+* wyjasnic: apainter: pietra zle sie kopiuja, nikt nic nie wie
+* Lokalny worker: w install.sh AAMKS_LOCAL_WORKER=1 implikuje: bez udziału gearmana. Nie mozna bazowac na localhost, bo chcialbym workera na s.szach.in.
+* s.szach.in: AAMKS_LOCAL_WORKER=1, nie jest to devel z klastrem.
+* ewakuacja bez pozaru, zmienna per project
+* klatka schodowa jako środowisko rvo2 ze wspólnymi przedsionkami z piętrem
+* mventy obsługa
+* nowy cfast
 * braki w picts/ (instalator)
 * nav wysokopoziomowe: zachowanie stada, zawroc, ...
 * RVO2: detect the clash
 * RVO2: right hand side counterflow 
 * RVO2: transfer leader state to another leader to avoid the clash
 * mapa śmierci, zapisywnie współrzędnych FED=1
-* klatka schodowa jako 2 spoczniki + 2 biegi rozciągnięte
 
 
 mimooh
 =======
 
-* apainter view3d: https://github.com/pissang/geometry-extrude
-* apainter: poly: geom.py
+* apainter: znikajace rysunki
+* apainter: three.js
 * apainter: staircase slice
 * animator: Highlight poly geoms 
 * animator: labels poly rooms
