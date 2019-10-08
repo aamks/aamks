@@ -42,13 +42,14 @@ class PartitionQuery:
 
         self.floor=str(floor)
         self.floors_meta=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
-        self.uprefs=GetUserPrefs()
         self.config=self.json.read('{}/evac/config.json'.format(os.environ['AAMKS_PATH']))
+        self.project_conf=self.json.read('{}/conf.json'.format(os.environ['AAMKS_PROJECT']))
+
         self._sqlite_query_vertices()
         self._sqlite_cell2compa()
         self._init_compa_conditions()
 
-        if self.uprefs.get_var('use_fire_model')==1: 
+        if self.project_conf['fire_model']=='CFAST':
             self._cfast_headers() 
 # }}}
     def _sqlite_query_vertices(self):# {{{

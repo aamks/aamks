@@ -43,12 +43,10 @@ class EvacClusters():
     def __init__(self):# {{{
         ''' Generate clusters of evacuees. '''
 
-        self.uprefs=GetUserPrefs()
-        if self.uprefs.get_var('evac_clusters')==0:
-            return
-
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        if self.conf['evac_clusters']==0:
+            return
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.dispatched_evacuees=self.json.readdb("dispatched_evacuees")
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))

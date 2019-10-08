@@ -1,7 +1,7 @@
 # Not for production
 
-# should match gui/inc.php: private function mk_default_preferences()
-PREFS='{"apainter_editor": "text", "navmesh_debug": 1, "apainter_labels": 1, "partitioning_debug": 0, "use_fire_model": 0, "evac_clusters": 1 }';
+# should match /usr/local/aamks/gui/inc.php: private function mk_default_preferences()
+PREFS='{"apainter_editor": "text", "navmesh_debug": 1, "apainter_labels": 1, "partitioning_debug": 0 }';
 
 psql -f sql.sql
 psql aamks -c "

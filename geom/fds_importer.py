@@ -28,7 +28,7 @@ class FDSimporter():
     def __init__(self):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        if self.conf['fire_model']=='CFAST':
+        if self.conf['fire_model']!='FDS':
             return
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.cadfds=self.json.read("{}/cadfds.json".format(os.environ['AAMKS_PROJECT']))
