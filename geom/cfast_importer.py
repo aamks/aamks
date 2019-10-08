@@ -469,7 +469,8 @@ class CFASTimporter():
                 if len(v) == 1:
                     v.append(self.outside_compa)
                 if len(v) > 2:
-                    self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
+                    print("Door id={} intersects no rooms or more than 2 rooms".format(vent_id))
+                    exit()
                 update.append((v[0], v[1], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", update)
 
