@@ -8,10 +8,11 @@ from math import ceil
 import logging
 import os
 import json
-from nav import Navmesh
+from geom.nav import Navmesh
 from shapely.geometry import LineString
 from include import Sqlite
 from math import log
+import os
 
 
 class EvacEnv:
@@ -193,7 +194,7 @@ class EvacEnv:
                     if i == 0:
                         self.elog.info('FED calculated: {}'.format(fed))
                 except:
-                    self.elog.debug('Simulation without FED')
+                    self.elog.warning('Simulation without FED')
                     fed = 0.0
                 self.evacuees.update_fed_of_pedestrian(i, fed * self.config['SMOKE_QUERY_RESOLUTION'])
 
@@ -226,7 +227,7 @@ class EvacEnv:
         self.nav.build(floor=str(self.floor))
 
     def prepare_rooms_list(self):
-        self.s = Sqlite("aamks.sqlite")
+        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})

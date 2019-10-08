@@ -44,7 +44,7 @@ class Worker:
         self.floors = list()
         self.host_name = os.uname()[1]
         os.chdir('/home/aamks_users')
-        os.environ["AAMKS_PROJECT"]='.'
+        os.environ["AAMKS_PROJECT"] = '/home/aamks_users/'+self.url.split('aamks_users/')[1].split('/workers/')[0]
         self.working_dir = self.url.split('aamks_users/')[1]
         self.cross_building_results = None
         self.simulation_time = None
@@ -84,10 +84,17 @@ class Worker:
 
         self.sim_id = self.vars['conf']['SIM_ID']
         self.host_name = os.uname()[1]
-        self.db_server = self.vars['conf']['SERVER']
         print('Starting simulations id: {}'.format(self.sim_id))
         self.wlogger=self.get_logger('worker.py')
         self.vars['conf']['logger'] = self.get_logger('evac.py')
+
+        try:
+            urlretrieve('{}/../../conf.json'.format(self.url), '{}/conf.json'.format(os.environ['AAMKS_PROJECT']))
+
+        except Exception as e:
+            self.wlogger.error(e)
+        else:
+            self.wlogger.debug('conf.json fetched from server')
 
     def get_geom_and_cfast(self):
 
@@ -96,7 +103,7 @@ class Worker:
         self.wlogger.info('URL: {}'.format(self.url))
 
         try:
-            urlretrieve('{}/../../aamks.sqlite'.format(self.url), 'aamks.sqlite')
+            urlretrieve('{}/../../aamks.sqlite'.format(self.url), '{}/aamks.sqlite'.format(os.environ['AAMKS_PROJECT']))
 
         except Exception as e:
             self.wlogger.error(e)
@@ -144,10 +151,10 @@ class Worker:
 
     def create_geom_database(self):
 
-        self.s = Sqlite("aamks.sqlite")
-        #self.report_log_issue(message=self.s.dumpall(), mode='DEBUG')
-        doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom WHERE type_sec="DOOR"')
-        #doors = self.s.query('SELECT * from aamks_geom ')
+        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        #self.s.dumpall()
+        #doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom WHERE type_sec="DOOR"')
+        doors = self.s.query('SELECT * from aamks_geom ')
         self.vars['conf']['doors']=doors
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         self.wlogger.info('SQLite load successfully')
