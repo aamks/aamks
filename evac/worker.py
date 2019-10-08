@@ -10,12 +10,13 @@ from numpy import prod
 from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
-from fire.smoke_query import SmokeQuery
+from fire.partition_query import PartitionQuery
 from include import Sqlite
 import time
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from urllib.request import urlopen, urlretrieve
+import ssl
 from include import Json
 import json
 from collections import OrderedDict
@@ -51,6 +52,8 @@ class Worker:
         self.animation_data = []
         self.smoke_opacity = []
         self.rooms_in_smoke = dict()
+        ssl._create_default_https_context = ssl._create_unverified_context
+
 
     def get_logger(self, logger_name):
         FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
@@ -143,7 +146,8 @@ class Worker:
 
         self.s = Sqlite("aamks.sqlite")
         #self.report_log_issue(message=self.s.dumpall(), mode='DEBUG')
-        doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom WHERE terminal_door IS NOT NULL')
+        doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom WHERE type_sec="DOOR"')
+        #doors = self.s.query('SELECT * from aamks_geom ')
         self.vars['conf']['doors']=doors
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         self.wlogger.info('SQLite load successfully')
@@ -201,13 +205,14 @@ class Worker:
 
     def connect_rvo2_with_smoke_query(self):
 
-        for i in self.floors:
+        for floor in self.floors:
             try:
-                i.smoke_query = SmokeQuery(floor=i.floor)
+                floor.smoke_query = PartitionQuery(floor=floor.floor)
             except Exception as e:
                 self.wlogger.error(e)
+                exit(1)
             else:
-                self.wlogger.info('Smoke query connected to floor: {}'.format(i.floor))
+                self.wlogger.info('Smoke query connected to floor: {}'.format(floor.floor))
 
     def do_simulation(self):
         self.wlogger.info('Starting simulations')
@@ -367,8 +372,5 @@ w = Worker()
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()
-elif os.environ['AAMKS_LOCAL_WORKER'] == '1':
-    print('Working in local mode')
-    w.local_worker()
 else:
     w.main()
