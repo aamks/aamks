@@ -62,7 +62,7 @@ class EvacEnv:
             if door['floor'] != str(self.floor):
                 continue
             x, y = door['center_x'], door['center_y']
-            path = self.nav.query([self.evacuees.get_position_of_pedestrian(evacuee), (x, y)], maxStraightPath=200)
+            path = self.nav.nav_query(src=self.evacuees.get_position_of_pedestrian(evacuee), dst=(x, y), maxStraightPath=200)
             if path[0] == 'err':
                 continue
             if self._next_room_in_smoke(evacuee, path) is not True:
@@ -80,6 +80,7 @@ class EvacEnv:
             exits = list(zip(*paths_free_of_smoke))[-1]
             return paths_free_of_smoke[exits.index(min(exits))][0], paths_free_of_smoke[exits.index(min(exits))][1]
         else:
+            print(evacuee, self.evacuees.get_position_of_pedestrian(evacuee))
             exits = list(zip(*paths))[0]
             return paths[exits.index(min(exits))][0], paths[exits.index(min(exits))][1]
 
@@ -94,7 +95,7 @@ class EvacEnv:
         self.room = od_at_agent_position[1]
 
         if self.config['SMOKE_AWARENESS'] and len(path) > 1:
-            od_next_room = self.smoke_query.get_visibility(path[1], self.current_time, self.floor)
+            od_next_room = self.smoke_query.get_visibility(path[1])
             if od_at_agent_position[0] < od_next_room[0]:
                 return True
             else:
@@ -158,7 +159,7 @@ class EvacEnv:
                 continue
             else:
                 position = self.evacuees.get_position_of_pedestrian(e)
-                goal = self.nav.query([position, self._find_closest_exit(e)], maxStraightPath=32)
+                goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
                 try:
                     vis = self.sim.queryVisibility(position, goal[2], 15)
                     if vis:
@@ -188,9 +189,11 @@ class EvacEnv:
                 continue
             else:
                 try:
-                    fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i), self.current_time,
-                                               self.floor)
+                    fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i))
+                    if i == 0:
+                        self.elog.info('FED calculated: {}'.format(fed))
                 except:
+                    self.elog.debug('Simulation without FED')
                     fed = 0.0
                 self.evacuees.update_fed_of_pedestrian(i, fed * self.config['SMOKE_QUERY_RESOLUTION'])
 
@@ -259,10 +262,6 @@ class EvacEnv:
             else:
                 return (30-vis)/30
 
-
-    def do_step(self):
-        self.sim.doStep()
-
     def get_number_of_evacuees(self):
         return self.sim.getNumAgents()
 
@@ -287,7 +286,7 @@ class EvacEnv:
         self.sim.doStep()
         self.update_agents_position()
         self.update_time()
-        self.elog.info(self.current_time)
+        #self.elog.info(self.current_time)
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
             self.update_fed()
         if self.rset == 0:
