@@ -7,7 +7,6 @@ import json
 import bisect
 from include import Sqlite
 from include import Json
-from include import GetUserPrefs
 from math import exp
 from include import Dump as dd
 # }}}

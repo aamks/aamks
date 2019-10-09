@@ -21,6 +21,7 @@ K
 mimooh
 =======
 
+* zduplikowane klucze w conf.json i evac.json
 * apainter: znikajace rysunki
 * apainter: three.js
 * apainter: staircase slice
