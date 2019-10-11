@@ -169,6 +169,7 @@ sudo -u postgres psql -c 'DROP USER aamks' 2>/dev/null
 sudo -u postgres psql -c 'CREATE DATABASE aamks' 2>/dev/null
 sudo -u postgres psql -c "CREATE USER aamks WITH PASSWORD '$AAMKS_PG_PASS'";
 sudo -u postgres psql -f sql.sql
+bash play.sh
 
 echo
 echo "You may use these commands for some quick setup of SSL on the localhost. But you should really configure SSL for your site."

@@ -1,17 +1,11 @@
 <?php
 session_name('aamks');
 require_once("inc.php"); 
-require_once("lib.form.php"); 
 
 function read_aamks_conf_json() { /*{{{*/
 	$_SESSION['nn']->assert_working_home_exists();
 	if(!is_file($_SESSION['main']['working_home']."/conf.json")) { 
-		$template=file_get_contents(getenv("AAMKS_PATH")."/installer/demo/simple/conf.json");
-		$template_json=json_decode($template,1);
-		$template_json['project_id']=$_SESSION['main']['project_id'];
-		$template_json['scenario_id']=$_SESSION['main']['scenario_id'];
-		$s=json_encode($template_json, JSON_NUMERIC_CHECK);
-		write($s);
+		$_SESSION['nn']->scenario_from_template();
 	}
 	$json_path=$_SESSION['main']['working_home']."/conf.json";
 	if(is_readable($json_path)) { 
@@ -202,26 +196,6 @@ function calculate_profile($arr) { #{{{
 	);
 }
 /*}}}*/
-function assert_json_ids($data) { #{{{
-	// User is not allowed to alter their project/scenario ids
-	// At least textarea editor would allow for this
-
-	$conf=json_decode($data,1);
-	$conf['project_id']=$_SESSION['main']['project_id'];
-	$conf['scenario_id']=$_SESSION['main']['scenario_id'];
-	return json_encode($conf, JSON_NUMERIC_CHECK);
-}
-/*}}}*/
-function write($data) { #{{{
-	$data=assert_json_ids($data);
-	$file=$_SESSION['main']['working_home']."/conf.json";
-	$saved=file_put_contents($file, $data);
-	if($saved<=0) { 
-		$_SESSION['header_err'][]="problem saving $file";
-	}
-	header("Location: form.php?edit");
-}
-/*}}}*/
 function alarming_defaults($x) {/*{{{*/
 	if($x=='A1') { return array('mean' =>  0   , 'sd' =>  0)   ; }
 	if($x=='A2') { return array('mean' =>  180 , 'sd' =>  120) ; }
@@ -241,19 +215,19 @@ function update_form_easy() {/*{{{*/
 	$out['pre_evac']=$z['pre_evac'];
 	$out['pre_evac_fire_origin']=$z['pre_evac_fire_origin'];
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
-	write($s);
+	$_SESSION['nn']->write_scenario($s);
 }
 /*}}}*/
 function update_form_advanced() {/*{{{*/
 	if(empty($_POST['update_form_advanced'])) { return; }
 	$out=$_POST['post'];
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
-	write($s);
+	$_SESSION['nn']->write_scenario($s);
 }
 /*}}}*/
 function update_form_text() {/*{{{*/
 	if(empty($_POST['update_form_text'])) { return; }
-	write($_POST['json']);
+	$_SESSION['nn']->write_scenario($_POST['json']);
 }
 /*}}}*/
 function update_form_bprofiles() {/*{{{*/
@@ -279,6 +253,7 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('outdoor_temperature')."<td>".form_assoc('outdoor_temperature',$outdoor_temperature); 
 	echo "<tr><td>".get_help('indoor_pressure')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_pressure] value='$indoor_pressure'>"; 
 	echo "<tr><td>".get_help('humidity')."<td><input autocomplete=off type=text automplete=off size=10 name=post[humidity] value='$humidity'>"; 
+	echo "<tr><td>".get_help('evac_clusters')."<td><input autocomplete=off type=text automplete=off size=10 name=post[evac_clusters] value='$evac_clusters'>"; 
 	echo building_fields($building_profile, 'advanced');
 	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
 	echo "<tr><td><a class='rlink switch' id='heat_detectors'>heat detectors</a><td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
@@ -313,8 +288,6 @@ function form_fields_easy() { #{{{
 	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
 	echo "<tr><td>".get_help('number_of_simulations')."<td><input autocomplete=off type=text automplete=off size=10 name=post[number_of_simulations] value='$number_of_simulations'>"; 
 	echo "<tr><td>".get_help('simulation_time')."<td><input autocomplete=off type=text automplete=off size=10 name=post[simulation_time] value='$simulation_time'>"; 
-	echo "<tr><td>".get_help('indoor_temperature')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_temperature] value='$indoor_temperature'>"; 
-	echo "<tr><td>".get_help('humidity')."<td><input autocomplete=off type=text automplete=off size=10 name=post[humidity] value='$humidity'>"; 
 	echo building_fields($building_profile, 'easy');
 	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
 	echo "<tr><td><a class='rlink switch' id='heat_detectors'>heat detectors</a><td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
@@ -419,9 +392,9 @@ function main() {/*{{{*/
 
 	if(isset($_GET['edit'])) { 
 		$e=$_SESSION['prefs']['apainter_editor'];
-		if($e=='easy')     { update_form_easy(); form_fields_easy(); }
-		if($e=='advanced') { update_form_advanced(); form_fields_advanced(); }
-		if($e=='text')     { update_form_text(); form_text(); }
+		if($e=='easy')     { update_form_easy()     ; form_fields_easy()     ; }
+		if($e=='advanced') { update_form_advanced() ; form_fields_advanced() ; }
+		if($e=='text')     { update_form_text()     ; form_text()            ; }
 		form_delete();
 	}
 

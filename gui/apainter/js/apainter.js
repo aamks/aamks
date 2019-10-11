@@ -1,4 +1,6 @@
 // globals//{{{
+// cd /usr/local/aamks/gui/apainter/js/; git log -p apainter.js | v
+//
 var win=[screen.width-30,screen.height-190];
 var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
@@ -11,7 +13,7 @@ var currentView='2d';
 var activeLetter='r';
 var svg;
 var floor=0;
-var floorsCount=0;
+var floorsCount=1;
 var floorZ0=0;
 var building;
 var buildingLabels;
@@ -1143,7 +1145,7 @@ function sceneBuilder() { //{{{
 	d3.select('body').append('legend0');
 	d3.select('body').append('legend2');
 	d3.select('view2d').append('legend1');
-	d3.select('view2d').append("div").attr("id", "apainter-texts-floor");
+	d3.select('view2d').append("div").attr("id", "apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
 	d3.select('view2d').append("div").attr("id", "apainter-texts-keys").html("n: next floor<br>h: 2D/3D view");
 	d3.select('view2d').append("div").attr("id", "apainter-texts-pos");
 	make_legend0("apainter");

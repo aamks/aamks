@@ -3,9 +3,9 @@ function make_help() { /*{{{*/
 	$help=[]                                                                                                                                                              ;
 	$help["project_id"]              = ["scenario"                         , "This is scenario"]                                                         ;
 	$help["number_of_simulations"]   = ["number of simulations"            , "write me..."]                                                              ;
-	$help["navmesh_debug"]			 = ["navmesh_debug"                    , "write me..."]                                                              ;
 	$help["fire_model"]				 = ["fire_model"                       , "CFAST | FDS | None"]                                                              ;
 	$help["dispatch_evacuees"]		 = ["dispatch_evacuees"                , "<orange>manual+probabilistic</orange> probabilistic evacuees only in the rooms free of manual evacuees<hr> <orange>probabilistic+manual</orange> probabilistic evacuees first and then extra manual evacuees<hr> <orange>manual</orange> probabilistic evacuees are never added "]                                                              ;
+	$help["evac_clusters"]		     = ["evac_clusters"					   , "follow the leader, etc (TODO)."];                                                              ;
 	$help["simulation_time"]         = ["simulation time"                  , "write me..."]                                                              ;
 	$help["indoor_temperature"]      = ["indoor_temperature"               , "write me..."]                                                              ;
 	$help["outdoor_temperature"]     = ["outdoor_temperature"              , "write me..."]                                                              ;
@@ -303,34 +303,143 @@ function get_profile_code($q) { #{{{
 	}
 }
 /*}}}*/
-function get_defaults($q) {/*{{{*/
-	// setups may be later mapped to countries
+function get_template_defaults($q) {/*{{{*/
+	// This file is based on demo/simple/conf.json, but may have a different fire_model or whatever
+	// setups may be later mapped to countries -- that is another reason we don't just use demo/simple/conf.json
 
 	$db['setup1']='
-	{
-		"fire_model": "CFAST",
-		"dispatch_evacuees": "manual+probabilistic",
-		"outdoor_temperature": { "mean": 20, "sd": 2 },
-		"navmesh_debug": 0,
-		"indoor_pressure": 101325,
-		"windows": [ 
-			{ "min": -99999 , "max": -5    , "quarter": -5 , "full": 0.11 } ,
-			{ "min": -5     , "max": 15    , "quarter": 0  , "full": 0.5 }  ,
-			{ "min": 15     , "max": 27    , "quarter": 0  , "full": 0.5 }  ,
-			{ "min": 27     , "max": 99999 , "quarter": 0  , "full": 0.5 }
-		], 
-		"vents_open": { "DELECTR": 0.04, "DCLOSER": 0.14, "DOOR": 0.5, "VVENT": 0.96 },
-		"c_const": 8,
-		"evacuees_max_h_speed" : { "mean" : 120    , "sd" : 20 },
-		"evacuees_max_v_speed" : { "mean" : 80     , "sd" : 20 },
-		"evacuees_alpha_v"     : { "mean" : 0.706  , "sd" : 0.069 },
-		"evacuees_beta_v"      : { "mean" : -0.057 , "sd" : 0.015 },
-		"alarming"  :            { "mean": 0, "sd": 0 },
-		"hrrpua":                { "min": 300    , "mode": 1000  , "max": 1300 },
-		"hrr_alpha":             { "min": 0.0029 , "mode": 0.047 , "max": 0.188 },
-		"fire_starts_in_a_room"  : 0.8,
-		"evacuees_concentration": { "COR": 20 , "STAI": 50 , "ROOM": 8  , "HALL": 30 } 
-	}';
+{
+    "fire_model": "CFAST",
+    "evac_clusters": 1,
+    "dispatch_evacuees": "manual+probabilistic",
+    "number_of_simulations": 1,
+    "simulation_time": 100,
+    "indoor_temperature": 20,
+    "humidity": 40,
+    "building_profile": {
+        "type": "Bank",
+        "management": "M1",
+        "complexity": "B1",
+        "alarming": "A1"
+    },
+    "material_ceiling": {
+        "type": "concrete",
+        "thickness": 0.3
+    },
+    "material_floor": {
+        "type": "concrete",
+        "thickness": 0.3
+    },
+    "material_wall": {
+        "type": "concrete",
+        "thickness": 0.3
+    },
+    "heat_detectors": {
+        "temp_mean": "",
+        "temp_sd": "",
+        "RTI": "",
+        "not_broken": ""
+    },
+    "smoke_detectors": {
+        "temp_mean": "",
+        "temp_sd": "",
+        "not_broken": ""
+    },
+    "sprinklers": {
+        "temp_mean": 3,
+        "temp_sd": 4,
+        "density_mean": 1,
+        "density_sd": 2,
+        "RTI": 3,
+        "not_broken": 0.5
+    },
+    "NSHEVS": {
+        "activation_time": ""
+    },
+    "outdoor_temperature": {
+        "mean": 25,
+        "sd": 2
+    },
+    "indoor_pressure": 101325,
+    "windows": [
+        {
+            "min": -99999,
+            "max": -5,
+            "quarter": -5,
+            "full": 0.11
+        },
+        {
+            "min": -5,
+            "max": 15,
+            "quarter": 0,
+            "full": 0.5
+        },
+        {
+            "min": 15,
+            "max": 27,
+            "quarter": 0,
+            "full": 0.5
+        },
+        {
+            "min": 27,
+            "max": 99999,
+            "quarter": 0,
+            "full": 0.5
+        }
+    ],
+    "vents_open": {
+        "DELECTR": 0.04,
+        "DCLOSER": 0.14,
+        "DOOR": 0.5,
+        "VVENT": 0.96
+    },
+    "c_const": 8,
+    "evacuees_max_h_speed": {
+        "mean": 120,
+        "sd": 20
+    },
+    "evacuees_max_v_speed": {
+        "mean": 80,
+        "sd": 20
+    },
+    "evacuees_alpha_v": {
+        "mean": 0.706,
+        "sd": 0.069
+    },
+    "evacuees_beta_v": {
+        "mean": -0.057,
+        "sd": 0.015
+    },
+    "fire_starts_in_a_room": 0.8,
+    "hrrpua": {
+        "min": 300,
+        "mode": 500,
+        "max": 1300
+    },
+    "hrr_alpha": {
+        "min": 0.0029,
+        "mode": 0.0029,
+        "max": 0.188
+    },
+    "evacuees_concentration": {
+        "ROOM": 3,
+        "COR": 20,
+        "STAI": 20,
+        "HALL": 20
+    },
+    "alarming": {
+        "mean": 0,
+        "sd": 0
+    },
+    "pre_evac": {
+        "mean": 29.13,
+        "sd": 8.87
+    },
+    "pre_evac_fire_origin": {
+        "mean": 59.85,
+        "sd": 1.48
+    }
+}';
 
 	return json_decode($db[$q],1);
 }

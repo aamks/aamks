@@ -44,23 +44,26 @@ function delete_project() {/*{{{*/
 	exit();
 
 }/*}}}*/
-function ch_scenario(){/*{{{*/
+function ch_scenario($scenario, $header=NULL){/*{{{*/
 	#psql aamks -c 'select * from scenarios'
 	#psql aamks -c 'select * from users'
-	if(!isset($_GET['ch_scenario'])) { return; }
-	$r=$_SESSION['nn']->query("SELECT u.id AS user_id,u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_GET['ch_scenario'], $_SESSION['main']['user_id']));
-	if(empty($r[0])) { die("scenario_id=$_GET[ch_scenario]?"); }
+	$r=$_SESSION['nn']->query("SELECT u.id AS user_id,u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($scenario, $_SESSION['main']['user_id']));
+	if(empty($r[0])) { die("scenario_id=$scenario?"); }
 	$_SESSION['nn']->ch_main_vars($r[0]);
-	header("Location: form.php?edit");
+	if(!empty($header)) { header("Location: $header"); }
 }/*}}}*/
 function new_scenario() { # {{{
 	#psql aamks -c 'select  * from scenarios'
+
 	if(empty($_POST['new_scenario'])) { return; }
-	$_SESSION['nn']->query("INSERT INTO scenarios(project_id,scenario_name) VALUES($1, $2)", array($_POST['project_id'], $_POST['new_scenario'])); 
+	$sid=$_SESSION['nn']->query("INSERT INTO scenarios(project_id,scenario_name) VALUES($1, $2) RETURNING id", array($_POST['project_id'], $_POST['new_scenario'])); 
 	if (!mkdir(implode("/", array($_SESSION['main']['user_home'],$_POST['project_name'],$_POST['new_scenario'])), 0770, true)) {
 		$_SESSION['header_err'][]="Cannot create $_POST[project_name]/$_POST[new_scenario]";
-	} 
-	header("Location: projects.php?projects_list");
+		header("Location: projects.php?projects_list");
+	} else {
+		ch_scenario($sid[0]['id']);
+		$_SESSION['nn']->scenario_from_template("apainter/index.php");
+	}
 }
 /*}}}*/
 function new_project() { # {{{
@@ -81,14 +84,14 @@ function main() { #{{{
 	$_SESSION['nn']->htmlHead("Manage projects");
 	new_scenario();
 	new_project();
-	ch_scenario();
 	delete_project();
+	if(isset($_GET['ch_scenario'])) { ch_scenario($_GET['ch_scenario'], "form.php?edit"); }
 	$_SESSION['nn']->menu('Manage projects');
 	if(isset($_GET['projects_list'])) { projects_list(); }
 }
 /*}}}*/
 
-#psql aamks -c 'select  *  from users'
+#psql aamks -c 'select * from users'
 #psql aamks -c 'update users set active_scenario=2 where id=25'
 main();
 #dd($_SESSION['main']);
