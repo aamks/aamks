@@ -89,7 +89,7 @@ function launch_simulation() {//{{{
 			ajax_msg(json); 
 			if(json.err==0) {
 				setTimeout(function(){
-					location.reload();
+					location.assign("/aamks/animator/index.php");
 				}, 1500);
 			}
 		});
