@@ -138,11 +138,14 @@ class OnEnd():
         We only register works. The works will be run by workers registered via
         manager. 
         '''
+        si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
 
         if os.environ['AAMKS_USE_GEARMAN']=='0':
+            for i in range(*si.get()):
+                command = "python3 {}/evac/worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PATH'], os.environ['AAMKS_PROJECT'], i)
+            os.system(command)
             return
 
-        si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
         try:
             for i in range(*si.get()):
                 worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)

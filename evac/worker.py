@@ -11,6 +11,7 @@ from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
 from fire.partition_query import PartitionQuery
+from manager.results_collector import ResultsCollector as rc
 from include import Sqlite
 import time
 import logging
@@ -66,6 +67,40 @@ class Worker:
         logger.propagate = False
         return logger
 
+    def download_inputs(self):
+
+        os.chdir(self.working_dir)
+
+        try:
+            urlretrieve('{}/../../conf.json'.format(self.url), '{}/conf.json'.format(os.environ['AAMKS_PROJECT']))
+
+        except Exception as e:
+            print(e)
+        else:
+            print('conf.json fetched from server')
+
+        try:
+            urlretrieve('{}/evac.json'.format(self.url), 'evac.json'.format(os.environ['AAMKS_PROJECT']))
+        except Exception as e:
+            print(e)
+        else:
+            print('evac.json fetched from server')
+
+        try:
+            urlretrieve('{}/../../aamks.sqlite'.format(self.url), '{}/aamks.sqlite'.format(os.environ['AAMKS_PROJECT']))
+
+        except Exception as e:
+            print(e)
+        else:
+            print('Aamks.sqlite fetched from server')
+
+        try:
+            urlretrieve('{}/cfast.in'.format(self.url), 'cfast.in'.format(os.environ['AAMKS_PROJECT']))
+        except Exception as e:
+            print(e)
+        else:
+            print('cfast.in fetched from server')
+
     def get_config(self):
         try:
             f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
@@ -75,12 +110,11 @@ class Worker:
             sys.exit(1)
 
         try:
-            self.vars['conf'] = json.loads(urlopen('{}/evac.json'.format(self.url)).read().decode())
+            f = open('evac.json', 'r')
+            self.vars['conf'] = json.load(f)
         except Exception as e:
-            print('Cannot fetch evac.json from server: {}'.format(str(e)))
+            print('Cannot load evac.json from directory: {}'.format(str(e)))
             sys.exit(1)
-        else:
-            print('URL OK')
 
         self.sim_id = self.vars['conf']['SIM_ID']
         self.host_name = os.uname()[1]
@@ -88,55 +122,16 @@ class Worker:
         self.wlogger=self.get_logger('worker.py')
         self.vars['conf']['logger'] = self.get_logger('evac.py')
 
-        try:
-            urlretrieve('{}/../../conf.json'.format(self.url), '{}/conf.json'.format(os.environ['AAMKS_PROJECT']))
-
-        except Exception as e:
-            self.wlogger.error(e)
-        else:
-            self.wlogger.debug('conf.json fetched from server')
-
-    def get_geom_and_cfast(self):
-
-        os.chdir(self.working_dir)
-
-        self.wlogger.info('URL: {}'.format(self.url))
-
-        try:
-            urlretrieve('{}/../../aamks.sqlite'.format(self.url), '{}/aamks.sqlite'.format(os.environ['AAMKS_PROJECT']))
-
-        except Exception as e:
-            self.wlogger.error(e)
-        else:
-            self.wlogger.debug('Aamks.sqlite fetched from server')
-
-        try:
-            self.cfast_input = urlopen('{}/cfast.in'.format(self.url)).read().decode()
-        except Exception as e:
-            self.wlogger.error(e)
-        else:
-            self.wlogger.debug('cfast.in fetched from server')
-
-        self.wlogger.info("Host: {} start simulation id: {}".format(self.host_name, self.sim_id))
-
     def _create_workspace(self):
         try:
             shutil.rmtree(self.working_dir, ignore_errors=True)
             os.makedirs(self.working_dir)
         except Exception as e:
-            self.wlogger.error(e)
+            print(e)
         else:
-            self.wlogger.debug('Workspace created')
+            print('Workspace created')
 
     def run_cfast_simulations(self):
-
-        try:
-            with open('cfast.in', "w") as f:
-                f.write(self.cfast_input)
-        except Exception as e:
-            self.wlogger.error(e)
-        else:
-            self.wlogger.debug('cfast.in saved')
 
         try:
             os.system('/usr/local/aamks/fire/cfast cfast.in')
@@ -278,8 +273,12 @@ class Worker:
         self._write_animation_zips()
         self._write_meta()
 
-        Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
-        self.wlogger.info('aOut launched successfully')
+        if os.environ['AAMKS_USE_GEARMAN'] == '0':
+            Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
+            self.wlogger.info('aOut launched successfully')
+        else:
+            print('ok')
+            rc(host=self.host_name, meta_file=self.meta_file, sim_id=self.sim_id)
     # }}}
     def _write_animation_zips(self):# {{{
         '''
@@ -344,9 +343,9 @@ class Worker:
     # }}}
 
     def main(self):
-        self.get_config()
         self._create_workspace()
-        self.get_geom_and_cfast()
+        self.download_inputs()
+        self.get_config()
         self.create_geom_database()
         self.run_cfast_simulations()
         self.prepare_simulations()
@@ -357,7 +356,6 @@ class Worker:
 
     def test(self):
         self.get_config()
-        self.get_geom_and_cfast()
         self.create_geom_database()
         self.prepare_simulations()
         self.connect_rvo2_with_smoke_query()
@@ -365,18 +363,22 @@ class Worker:
         self.send_report()
 
     def local_worker(self):
+        os.chdir(self.working_dir)
         self.get_config()
-        self.get_geom_and_cfast()
         self.create_geom_database()
         self.run_cfast_simulations()
         self.prepare_simulations()
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()
+        self.send_report()
 
 
 w = Worker()
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()
+elif os.environ['AAMKS_LOCAL_WORKER'] == '0':
+    print('Working in LOCAL MODE')
+    w.local_worker()
 else:
     w.main()
