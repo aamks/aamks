@@ -204,10 +204,8 @@ class PartitionQuery:
                     return self.compa_conditions[self._cell2compa[(rx,ry)]] if (rx,ry) in self._cell2compa else {'COMPA': 'outside'} 
         return {'COMPA': 'outside'} 
 # }}}
-    def get_visibility(self, position, time, floor):# {{{
-        query = self.get_conditions(position, floor)
-        conditions = query[0]
-        room = query[1]
+    def get_visibility(self, position):# {{{
+        conditions = self.get_conditions(position)
         #print('FLOOR: {}, ROOM: {}, HGT: {}, TIME: {}'.format(floor, room, conditions['HGT'], time))
 
         if conditions == 'outside':
@@ -215,15 +213,15 @@ class PartitionQuery:
 
         hgt = conditions['HGT']
         if hgt == None:
-            return 0, room
+            return 0, conditions['COMPA']
 
         if hgt > self.config['LAYER_HEIGHT']:
-            return conditions['LLOD'], room
+            return conditions['LLOD'], conditions['COMPA']
         else:
-            return conditions['ULOD'], room
+            return conditions['ULOD'], conditions['COMPA']
 # }}}
-    def get_fed(self, position, time, floor):# {{{
-        conditions = self.get_conditions(position, floor)[0]
+    def get_fed(self, position):# {{{
+        conditions = self.get_conditions(position)
         hgt = conditions['HGT']
         if hgt == None:
             return 0.
@@ -235,7 +233,7 @@ class PartitionQuery:
 
         fed_co = 2.764e-5 * ((conditions[layer+'LCO'] * 1000000) ** 1.036) * (self.config['TIME_STEP'] / 60)
         fed_hcn = (exp((conditions[layer+'LHCN'] * 10000) / 43) / 220 - 0.0045) * (self.config['TIME_STEP'] / 60)
-        fed_hcl = ((conditions['LLHCL'] * 1000000) / 1900) * self.config['TIME_STEP']
+        fed_hcl = ((conditions[layer+'LHCL'] * 1000000) / 1900) * self.config['TIME_STEP']
         fed_o2 = (self.config['TIME_STEP'] / 60) / (60 * exp(8.13 - 0.54 * (20.9 - conditions[layer+'LO2'])))
         hv_co2 = exp(0.1903 * conditions[layer+'LCO2'] + 2.0004) / 7.1
         fed_total = (fed_co + fed_hcn + fed_hcl) * hv_co2 + fed_o2
