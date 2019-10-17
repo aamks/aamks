@@ -16,28 +16,29 @@
 # CONFIGURATION, must be copied to ~/.bashrc
 
 AAMKS_SERVER=127.0.0.1										# gearman + www for workers
-AAMKS_USE_GEARMAN=0											# needed if we have a cluster of workers
 AAMKS_PATH='/usr/local/aamks'								
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
-AAMKS_LOCAL_WORKER=1
+AAMKS_LOCAL_WORKER=1										# local worker means no cluster, means no gearman
 AAMKS_SALT='aamksisthebest'
 AAMKS_USE_GMAIL=0											# needed if we allow users to register accounts
 AAMKS_GMAIL_PASSWORD='none'									# needed if we allow users to register accounts
 AAMKS_GMAIL_USERNAME='none'									# needed if we allow users to register accounts
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 
-echo "This is the default Aamks configuration. You can change it in install.sh. "
+echo "This is the default Aamks configuration that can be modified in install.sh or later in /etc/apache2/envvars."
+echo "If you use PYTHONPATH in /etc/apache2/envvars make sure we haven't broken it."
 echo; echo;
 echo "AAMKS_SERVER: $AAMKS_SERVER"
-echo "AAMKS_USE_GEARMAN: $AAMKS_USE_GEARMAN"
 echo "AAMKS_PATH: $AAMKS_PATH"
 echo "AAMKS_PROJECT: $AAMKS_PROJECT"
 echo "AAMKS_PG_PASS: $AAMKS_PG_PASS"
+echo "AAMKS_LOCAL_WORKER: $AAMKS_LOCAL_WORKER"
 echo "AAMKS_SALT: $AAMKS_SALT"
 echo "AAMKS_USE_GMAIL: $AAMKS_USE_GMAIL"
 echo "AAMKS_GMAIL_USERNAME: $AAMKS_GMAIL_USERNAME"
 echo "AAMKS_GMAIL_PASSWORD: $AAMKS_GMAIL_PASSWORD"
+echo "PYTHONPATH: $PYTHONPATH"
 echo; echo;
 echo "<Enter> accepts, <ctrl+c> cancels"
 read
@@ -62,7 +63,7 @@ sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && {
 	# } 
 } 
 
-[ "X$AAMKS_USE_GEARMAN" == "X1" ] && { 
+[ "X$AAMKS_LOCAL_WORKER" == "X0" ] && { 
 	# Buggy gearman hasn't been respecting /etc/ for ages now. Therefore we act directly on the /lib
 	# Normally we would go with:
 	# echo "PARAMS=\"--listen=$AAMKS_SERVER\"" | sudo tee /etc/default/gearman-job-server
@@ -131,12 +132,13 @@ sudo cat /etc/apache2/envvars | grep -v AAMKS_ | grep -v umask > $temp
 echo "umask 0002" >> $temp
 echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> $temp
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> $temp
-echo "export AAMKS_USE_GEARMAN=$AAMKS_USE_GEARMAN" >> $temp
+echo "export AAMKS_LOCAL_WORKER=$AAMKS_LOCAL_WORKER" >> $temp
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> $temp
 echo "export AAMKS_USE_GMAIL='$AAMKS_USE_GMAIL'" >> $temp
 echo "export AAMKS_GMAIL_USERNAME='$AAMKS_GMAIL_USERNAME'" >> $temp
 echo "export AAMKS_GMAIL_PASSWORD='$AAMKS_GMAIL_PASSWORD'" >> $temp
+echo "export PYTHONPATH='$PYTHONPATH'" >> $temp
 sudo cp $temp /etc/apache2/envvars
 
 echo "umask 0002" >> $temp

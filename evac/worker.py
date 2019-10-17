@@ -273,7 +273,7 @@ class Worker:
         self._write_animation_zips()
         self._write_meta()
 
-        if os.environ['AAMKS_USE_GEARMAN'] == '0':
+        if os.environ['AAMKS_LOCAL_WORKER'] == '0':
             Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
             self.wlogger.info('aOut launched successfully')
         else:

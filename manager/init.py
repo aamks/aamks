@@ -120,7 +120,7 @@ class OnEnd():
         if self.uprefs.get_var('navmesh_debug')==1:
             self._test_navmesh()
         Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
-        self._gearman_register_works()
+        self._register_works()
 # }}}
     def _test_navmesh(self):# {{{
         navs={}
@@ -133,26 +133,26 @@ class OnEnd():
             navs[tuple(bypass_rooms)].build(floor,bypass_rooms)
             navs[tuple(bypass_rooms)].test()
 # }}}
-    def _gearman_register_works(self):# {{{
+    def _register_works(self):# {{{
         ''' 
         We only register works. The works will be run by workers registered via
         manager. 
         '''
+
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
 
-        if os.environ['AAMKS_USE_GEARMAN']=='0':
+        if os.environ['AAMKS_LOCAL_WORKER']=='0':
             for i in range(*si.get()):
-                command = "python3 {}/evac/worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PATH'], os.environ['AAMKS_PROJECT'], i)
-            os.system(command)
-            return
-
-        try:
-            for i in range(*si.get()):
-                worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                worker = worker.replace("/home","")
-                gearman="gearman -b -f aRun 'https://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
-                os.system(gearman)
-        except Exception as e:
-            print('OnEnd: {}'.format(e))
+                command = "cd {}/evac/; python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PATH'], os.environ['AAMKS_PROJECT'], i)
+                os.system(command)
+        else:
+            try:
+                for i in range(*si.get()):
+                    worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
+                    worker = worker.replace("/home","")
+                    gearman="gearman -b -f aRun 'https://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
+                    os.system(gearman)
+            except Exception as e:
+                print('OnEnd: {}'.format(e))
             
 # }}}
