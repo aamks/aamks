@@ -11,7 +11,6 @@ from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
 from fire.partition_query import PartitionQuery
-from manager.results_collector import ResultsCollector as rc
 from include import Sqlite
 import time
 import logging
@@ -277,8 +276,8 @@ class Worker:
             Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
             self.wlogger.info('aOut launched successfully')
         else:
-            print('ok')
-            rc(host=self.host_name, meta_file=self.meta_file, sim_id=self.sim_id)
+            command = "python3 {}/manager/results_collector.py {} {} {}".format(os.environ['AAMKS_PATH'], self.host_name, self.meta_file, self.sim_id)
+            os.system(command)
     # }}}
     def _write_animation_zips(self):# {{{
         '''
@@ -377,7 +376,7 @@ w = Worker()
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()
-elif os.environ['AAMKS_LOCAL_WORKER'] == '0':
+elif os.environ['AAMKS_LOCAL_WORKER'] == '1':
     print('Working in LOCAL MODE')
     w.local_worker()
 else:

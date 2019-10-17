@@ -81,7 +81,7 @@ class EvacEnv:
             exits = list(zip(*paths_free_of_smoke))[-1]
             return paths_free_of_smoke[exits.index(min(exits))][0], paths_free_of_smoke[exits.index(min(exits))][1]
         else:
-            print(evacuee, self.evacuees.get_position_of_pedestrian(evacuee))
+            #print(evacuee, self.evacuees.get_position_of_pedestrian(evacuee))
             exits = list(zip(*paths))[0]
             return paths[exits.index(min(exits))][0], paths[exits.index(min(exits))][1]
 
