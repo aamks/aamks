@@ -141,10 +141,10 @@ class OnEnd():
 
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
 
-        if os.environ['AAMKS_LOCAL_WORKER']=='0':
+        if os.environ['AAMKS_LOCAL_WORKER']=='1':
+            os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
-                command = "cd {}/evac/; python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PATH'], os.environ['AAMKS_PROJECT'], i)
-                os.system(command)
+                os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i))
         else:
             try:
                 for i in range(*si.get()):
