@@ -1,9 +1,5 @@
-var scene, camera, renderer;
+var scene, camera, renderer, controls;
 
-function init() {//{{{
-	//d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
-}
-//}}}
 function colorHexDecode(hex) {//{{{
 	if(hex.length == 7) { 
 		var RGB=[ parseInt(hex.substring(1,3),16)/255, parseInt(hex.substring(3,5),16)/255, parseInt(hex.substring(5,7),16)/255 ];
@@ -15,12 +11,90 @@ function colorHexDecode(hex) {//{{{
 //}}}
 function removeMeshes() { //{{{
 	// Database could have been updated so it is best to just clear the scene and reread meshes
-	for (var i in scene.meshes) { 
-		scene.meshes[i].destroy();
-	}
+	//for (var i in scene.meshes) { 
+	//	scene.meshes[i].destroy();
+	//}
+	dd('remove meshes');
 }
 //}}}
 function createMeshes() {//{{{
+	// random prevents z-fighting
+	//bb.push(geoms[i][2]/100+random);
+	
+	var ee=deepcopy(db().get());
+	_.each(ee, function(geom) {
+		if (geom.letter=='f') { return; }
+		random=Math.random()/40;
+		var extrudeSettings = { steps: 1, depth: (geom.z[1]-geom.z[0])/100+random, bevelEnabled: false };
+		var shape = new THREE.Shape();
+		var o=geom.polypoints.shift();
+		shape.moveTo(-o[0]/100+random, o[1]/100+random);
+		shape.lineTo(-geom.polypoints[0][0]/100+random, geom.polypoints[0][1]/100+random);
+		//_.each(geom.polypoints, function(p) {
+		//	shape.lineTo(-p[0]/100+random, p[1]/100+random);
+		//});
+		//shape.lineTo(-o[0]/100+random, o[1]/100+random);
+		var geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
+		geometry.rotateX(THREE.Math.degToRad(270));
+		//const material = new THREE.MeshPhongMaterial({
+		const material = new THREE.MeshBasicMaterial({
+		//const material = new THREE.MeshLambertMaterial({
+			wireframe: true,
+			color: gg[geom.letter].c,
+			opacity: 0.5,
+			transparent: true,
+			side: THREE.DoubleSide
+		});
+		var mesh = new THREE.Mesh(geometry, material) ;
+		scene.add( mesh );
+	});
+}
+//}}}
+function createScene() { //{{{
+	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
+	scene = new THREE.Scene();
+	canvas = document.querySelector('#canvas3d');
+	renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+	//camera = new THREE.PerspectiveCamera(perspective , aspect_ratio  , near_clip , far_clip);
+	camera = new THREE.PerspectiveCamera(75            , win[0]/win[1] , 0.1       , 1000 );
+	renderer.setClearColor(0x444444);
+	document.body.appendChild(renderer.domElement);
+	controls = new THREE.OrbitControls( camera, renderer.domElement );
+	//controls.enableRotate=0;
+	var gridXZ = new THREE.GridHelper(100, 10, 0x4f4f4f, 0x4f4f4f);
+    scene.add(gridXZ);
+	var axesHelper = new THREE.AxesHelper();
+	scene.add( axesHelper );
+
+	//var light = new THREE.HemisphereLight();
+    //scene.add(light);
+	camera.position.set(50, 30, -100);
+	animate();
+
+}
+//}}}
+function view3d() {//{{{
+	if(scene === undefined) {
+		$.getScript("js/three.r109.min.js", function(){
+			$.getScript("js/OrbitControls.js", function(){
+				createScene();
+				createMeshes(); 
+			});
+		});
+	} else {
+		removeMeshes();
+		createMeshes(); 
+	}
+}
+
+//}}}
+function animate() {
+	requestAnimationFrame( animate );
+	controls.update();
+	renderer.render( scene, camera );
+}
+
+function createMeshesOld() {//{{{
 	// random prevents z-fighting
 	var geoms=db().get()
 	var half_x, half_y, half_z;
@@ -52,94 +126,3 @@ function createMeshes() {//{{{
 	});
 }
 //}}}
-function createMesh(d) {//{{{
-	if (d.mesh=='sphere') {
-		d.center[1]+=1.2;
-		var geometry= new xeogl.SphereGeometry({
-		    radius: 0.25,
-			center: d.center
-		});
-	} else {
-		var geometry= new xeogl.BoxGeometry({
-			center: d.center,
-			xSize: d.size[0],
-			ySize: d.size[1],
-			zSize: d.size[2]
-		});
-	}
-
-	var mesh = new xeogl.Mesh({
-		geometry: geometry,
-
-		material: new xeogl.LambertMaterial({
-		   ambient: [1, 0.3, 0.3],
-		   color: colorHexDecode(d.color),
-		   alpha: 0.4,
-		}),
-
-		edgeMaterial: new xeogl.EdgeMaterial({
-		   edgeColor: colorHexDecode(d.color),
-		   edgeAlpha: 1,
-		   edgeWidth: 2
-		}),
-		edges: true
-	});
-
-}
-//}}}
-function createScene() { //{{{
-	scene = new THREE.Scene();
-	//camera = new THREE.PerspectiveCamera(perspective , aspect_ratio  , near_clip , far_clip);
-	camera = new THREE.PerspectiveCamera(75            , win[0]/win[1] , 0.1       , 1000 );
-	renderer = new THREE.WebGLRenderer();
-	renderer.setSize(win[0], win[1]);
-	document.body.appendChild(renderer.domElement);
-var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-var cube = new THREE.Mesh( geometry, material );
-scene.add( cube );
-
-camera.position.z = 5;
-animate();
-dd(1);
-
-}
-//}}}
-function view3d() {//{{{
-	if(scene === undefined) {
-		$.getScript("js/three.r109.min.js"        , function(){
-			init();
-			createScene();
-			//createMeshes(); 
-		});
-	} else {
-		removeMeshes();
-		createMeshes(); 
-	}
-}
-
-//}}}
-function createSceneOld() { //{{{
-    xeogl.scene = new xeogl.Scene({
-        canvas: "canvas3d",
-        transparent: false,
-    });
-	scene=xeogl.scene;
-    camera=scene.camera;
-    scene.gammaInput = false;
-    scene.gammaOutput = false;
-	scene.backgroundColor=[1,0,0];
-    camera.eye =  [50, 50, 20];
-    camera.look = [50, 0, 20];
-	camera.projection = "perspective"; 
-	//camera.projection = "ortho"; 
-    //camera.gimbalLock = true;
-    camera.up = [0, 0, -1]; 
-	new xeogl.AmbientLight({ color: [0.2, 0.2, 0.2], intensity: 1 });
-    new xeogl.CameraControl();
-}
-//}}}
-function animate() {
-	requestAnimationFrame( animate );
-	renderer.render( scene, camera );
-}

@@ -1,7 +1,7 @@
 // globals//{{{
 // cd /usr/local/aamks/gui/apainter/js/; git log -p apainter.js | v
 //
-var win=[screen.width-30,screen.height-190];
+var win=[ $(window).width()-30, $(window).height()-50];
 var db=TAFFY(); // http://taffydb.com/working_with_data.html
 var zt={'x':0, 'y':0, 'k':1}; // zoom transform
 var cg={}; // current geom, the one that is currently selected, created, removed, etc.
@@ -321,6 +321,7 @@ function cgRemove() {//{{{
 		bulkProps(); 
 	}
 	showBuildingLabels();
+	$(".building-vertex").remove() 
 }
 //}}}
 
