@@ -1,14 +1,5 @@
 var scene, camera, renderer, controls;
 
-function colorHexDecode(hex) {//{{{
-	if(hex.length == 7) { 
-		var RGB=[ parseInt(hex.substring(1,3),16)/255, parseInt(hex.substring(3,5),16)/255, parseInt(hex.substring(5,7),16)/255 ];
-	} else {
-		var RGB=[ parseInt(hex.substring(1,2)+"0",16)/255, parseInt(hex.substring(2,3)+"0",16)/255, parseInt(hex.substring(3,4)+"0",16)/255 ];
-	}
-	return RGB;
-}
-//}}}
 function removeMeshes() { //{{{
 	// Database could have been updated so it is best to just clear the scene and reread meshes
 	//for (var i in scene.meshes) { 
@@ -17,7 +8,40 @@ function removeMeshes() { //{{{
 	dd('remove meshes');
 }
 //}}}
+function boxGeometry() {//{{{
+	var geometry = new THREE.BoxGeometry(10,10,10);
+	geometry.rotateX(THREE.Math.degToRad(270));
+	//var material = new THREE.MeshPhongMaterial({
+	var material = new THREE.MeshBasicMaterial({
+	//const material = new THREE.MeshLambertMaterial({
+		//wireframe: true,
+		alphaTest: 0.3,
+		color: 0xff0000,
+		opacity: 0.4,
+		transparent: true,
+		blending: THREE.NormalBlending,
+	});
+	var mesh = new THREE.Mesh(geometry, material) ;
+	scene.add( mesh );
+
+	var geometry = new THREE.BoxGeometry(30,5,10);
+	geometry.rotateY(THREE.Math.degToRad(30));
+	//const material = new THREE.MeshPhongMaterial({
+	var material = new THREE.MeshBasicMaterial({
+	//const material = new THREE.MeshLambertMaterial({
+		//wireframe: true,
+		alphaTest: 0.3,
+		color: 0xff0000,
+		opacity: 0.4,
+		transparent: true,
+		blending: THREE.NormalBlending,
+	});
+	var mesh = new THREE.Mesh(geometry, material) ;
+	scene.add( mesh );
+}
+//}}}
 function createMeshes() {//{{{
+	//boxGeometry(); return;
 	// random prevents z-fighting
 	//bb.push(geoms[i][2]/100+random);
 	
@@ -29,24 +53,31 @@ function createMeshes() {//{{{
 		var shape = new THREE.Shape();
 		var o=geom.polypoints.shift();
 		shape.moveTo(-o[0]/100+random, o[1]/100+random);
-		shape.lineTo(-geom.polypoints[0][0]/100+random, geom.polypoints[0][1]/100+random);
-		//_.each(geom.polypoints, function(p) {
-		//	shape.lineTo(-p[0]/100+random, p[1]/100+random);
-		//});
-		//shape.lineTo(-o[0]/100+random, o[1]/100+random);
+		//shape.lineTo(-geom.polypoints[0][0]/100+random, geom.polypoints[0][1]/100+random);
+		_.each(geom.polypoints, function(p) {
+			shape.lineTo(-p[0]/100+random, p[1]/100+random);
+		});
+		shape.lineTo(-o[0]/100+random, o[1]/100+random);
 		var geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
 		geometry.rotateX(THREE.Math.degToRad(270));
 		//const material = new THREE.MeshPhongMaterial({
-		const material = new THREE.MeshBasicMaterial({
-		//const material = new THREE.MeshLambertMaterial({
-			wireframe: true,
+		
+		if (geom.letter=='d') { tt=false; } else { tt=true; }
+		var material = new THREE.MeshBasicMaterial({
 			color: gg[geom.letter].c,
 			opacity: 0.5,
-			transparent: true,
-			side: THREE.DoubleSide
+			transparent: tt,
 		});
 		var mesh = new THREE.Mesh(geometry, material) ;
 		scene.add( mesh );
+
+		//var material = new THREE.MeshBasicMaterial({
+		//	wireframe: true,
+		//	color: gg[geom.letter].c,
+		//	transparent: false
+		//});
+		//var mesh = new THREE.Mesh(geometry, material) ;
+		//scene.add( mesh );
 	});
 }
 //}}}
@@ -93,36 +124,3 @@ function animate() {
 	controls.update();
 	renderer.render( scene, camera );
 }
-
-function createMeshesOld() {//{{{
-	// random prevents z-fighting
-	var geoms=db().get()
-	var half_x, half_y, half_z;
-	_.each(geoms, function(i) {
-		dd(i);
-		bb=[];
-		random=Math.random()/40;
-		bb.push(geoms[i][2]/100+random);
-		bb.push(geoms[i][3]/100+random);
-		bb.push(geoms[i][4]/100+random);
-		bb.push(geoms[i][5]/100+random);
-		bb.push(geoms[i][6]/100+random);
-		bb.push(geoms[i][7]/100+random);
-		half_x=(bb[1]-bb[0])/2;
-		half_y=(bb[3]-bb[2])/2;
-		half_z=(bb[5]-bb[4])/2;
-		if(gg[geoms[i][0]].t == 'evacuee') { 
-			mesh='sphere';
-		}  else {
-			mesh='box';
-		}
-
-		createMesh({
-			mesh: mesh,
-			center: [ bb[0]+half_x, bb[4]+half_z, bb[2]+half_y ], 
-			size:   [ half_x, half_z, half_y], 
-			color:  gg[geoms[i][0]].c
-		});
-	});
-}
-//}}}
