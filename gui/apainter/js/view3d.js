@@ -8,98 +8,83 @@ function removeMeshes() { //{{{
 	dd('remove meshes');
 }
 //}}}
-function boxGeometry() {//{{{
-	var geometry = new THREE.BoxGeometry(10,10,10);
+function createDoor(geom) {//{{{
+	dd(geom);
+	random=Math.random()/40;
+	shape = new THREE.Shape();
+	o=geom.polypoints.shift();
+	shape.moveTo(-o[0]/100+random, o[1]/100+random);
+	_.each(geom.polypoints, function(p) {
+		shape.lineTo(-p[0]/100+random, p[1]/100+random);
+	});
+	shape.lineTo(-o[0]/100+random, o[1]/100+random);
 	geometry.rotateX(THREE.Math.degToRad(270));
-	//var material = new THREE.MeshPhongMaterial({
-	var material = new THREE.MeshBasicMaterial({
-	//const material = new THREE.MeshLambertMaterial({
-		//wireframe: true,
-		alphaTest: 0.3,
-		color: 0xff0000,
-		opacity: 0.4,
-		transparent: true,
-		blending: THREE.NormalBlending,
+	
+	material = new THREE.MeshBasicMaterial({
+		color: gg[geom.letter].c,
+		transparent: false
 	});
-	var mesh = new THREE.Mesh(geometry, material) ;
-	scene.add( mesh );
+	mesh = new THREE.Mesh(geometry, material) ;
+	//scene.add(mesh);
 
-	var geometry = new THREE.BoxGeometry(30,5,10);
-	geometry.rotateY(THREE.Math.degToRad(30));
-	//const material = new THREE.MeshPhongMaterial({
-	var material = new THREE.MeshBasicMaterial({
-	//const material = new THREE.MeshLambertMaterial({
-		//wireframe: true,
-		alphaTest: 0.3,
-		color: 0xff0000,
-		opacity: 0.4,
-		transparent: true,
-		blending: THREE.NormalBlending,
+}
+//}}}
+function createRoom(geom) {//{{{
+	random=Math.random()/40;
+	extrudeSettings = { steps: 1, depth: (geom.z[1]-geom.z[0])/100+random, bevelEnabled: false };
+	shape = new THREE.Shape();
+	o=geom.polypoints.shift();
+	shape.moveTo(-o[0]/100+random, o[1]/100+random);
+	_.each(geom.polypoints, function(p) {
+		shape.lineTo(-p[0]/100+random, p[1]/100+random);
 	});
-	var mesh = new THREE.Mesh(geometry, material) ;
-	scene.add( mesh );
+	shape.lineTo(-o[0]/100+random, o[1]/100+random);
+	geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
+	geometry.rotateX(THREE.Math.degToRad(270));
+	
+	material = new THREE.MeshBasicMaterial({
+		color: gg[geom.letter].c,
+		opacity: 0.5,
+		transparent: true,
+	});
+	mesh = new THREE.Mesh(geometry, material) ;
+	scene.add(mesh);
 }
 //}}}
 function createMeshes() {//{{{
-	//boxGeometry(); return;
 	// random prevents z-fighting
-	//bb.push(geoms[i][2]/100+random);
 	
 	var ee=deepcopy(db().get());
 	_.each(ee, function(geom) {
-		if (geom.letter=='f') { return; }
-		random=Math.random()/40;
-		var extrudeSettings = { steps: 1, depth: (geom.z[1]-geom.z[0])/100+random, bevelEnabled: false };
-		var shape = new THREE.Shape();
-		var o=geom.polypoints.shift();
-		shape.moveTo(-o[0]/100+random, o[1]/100+random);
-		//shape.lineTo(-geom.polypoints[0][0]/100+random, geom.polypoints[0][1]/100+random);
-		_.each(geom.polypoints, function(p) {
-			shape.lineTo(-p[0]/100+random, p[1]/100+random);
-		});
-		shape.lineTo(-o[0]/100+random, o[1]/100+random);
-		var geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
-		geometry.rotateX(THREE.Math.degToRad(270));
-		//const material = new THREE.MeshPhongMaterial({
-		
-		if (geom.letter=='d') { tt=false; } else { tt=true; }
-		var material = new THREE.MeshBasicMaterial({
-			color: gg[geom.letter].c,
-			opacity: 0.5,
-			transparent: tt,
-		});
-		var mesh = new THREE.Mesh(geometry, material) ;
-		scene.add( mesh );
-
-		//var material = new THREE.MeshBasicMaterial({
-		//	wireframe: true,
-		//	color: gg[geom.letter].c,
-		//	transparent: false
-		//});
-		//var mesh = new THREE.Mesh(geometry, material) ;
-		//scene.add( mesh );
+		if (geom.letter=='f')                 { return; }
+		if (geom.letter=='d')                 { createDoor(geom); }
+		if(['r', 'c' ].includes(geom.letter)) { createRoom(geom); }
 	});
 }
 //}}}
 function createScene() { //{{{
 	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
-	scene = new THREE.Scene();
 	canvas = document.querySelector('#canvas3d');
 	renderer = new THREE.WebGLRenderer({canvas, antialias: true});
-	//camera = new THREE.PerspectiveCamera(perspective , aspect_ratio  , near_clip , far_clip);
-	camera = new THREE.PerspectiveCamera(75            , win[0]/win[1] , 0.1       , 1000 );
 	renderer.setClearColor(0x444444);
 	document.body.appendChild(renderer.domElement);
-	controls = new THREE.OrbitControls( camera, renderer.domElement );
-	//controls.enableRotate=0;
-	var gridXZ = new THREE.GridHelper(100, 10, 0x4f4f4f, 0x4f4f4f);
-    scene.add(gridXZ);
-	var axesHelper = new THREE.AxesHelper();
-	scene.add( axesHelper );
 
-	//var light = new THREE.HemisphereLight();
-    //scene.add(light);
-	camera.position.set(50, 30, -100);
+	camera = new THREE.OrthographicCamera(win[0]/-50, win[0]/50, win[1]/50, win[1]/-50, 1, 1000);
+	camera.position.set(-200, 200, -200);
+	//camera.setViewOffset(win[0], win[1], 500, 500, win[0], win[1]);
+	//camera.lookAt(0, 0, 0);
+
+	
+	pivotX=db().max('maxx') -  db().min('minx')
+	controls = new THREE.OrbitControls( camera, renderer.domElement );
+	controls.target = new THREE.Vector3(-10, 10, 0);
+	gridXZ = new THREE.GridHelper(100, 10, 0x4f4f4f, 0x4f4f4f);
+	axesHelper = new THREE.AxesHelper();
+
+	scene = new THREE.Scene();
+    scene.add(gridXZ);
+	scene.add(axesHelper);
+
 	animate();
 
 }
