@@ -1,5 +1,31 @@
 var scene, camera, renderer, controls;
 
+function createScene() { //{{{
+	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
+	canvas = document.querySelector('#canvas3d');
+	renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+	renderer.setClearColor(0x444444);
+	document.body.appendChild(renderer.domElement);
+
+	centerX=-(db().min('minx') + (db().max('maxx') -  db().min('minx'))/2)/100
+	centerY=-(db().min('miny') + (db().max('maxy') -  db().min('miny'))/2)/100
+	camera = new THREE.OrthographicCamera(win[0]/-50, win[0]/50, win[1]/50, win[1]/-50, 1, 1000);
+	camera.position.set(-200, 200, -200);
+	//camera.lookAt(0, 0, 0);
+	
+	controls = new THREE.OrbitControls( camera, renderer.domElement );
+	controls.target = new THREE.Vector3(centerX, centerY, 0);
+	gridXZ = new THREE.GridHelper(100, 10, 0x4f4f4f, 0x4f4f4f);
+	axesHelper = new THREE.AxesHelper();
+
+	scene = new THREE.Scene();
+    scene.add(gridXZ);
+	scene.add(axesHelper);
+
+	animate();
+
+}
+//}}}
 function removeMeshes() { //{{{
 	// Database could have been updated so it is best to just clear the scene and reread meshes
 	//for (var i in scene.meshes) { 
@@ -62,33 +88,6 @@ function createMeshes() {//{{{
 	});
 }
 //}}}
-function createScene() { //{{{
-	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
-	canvas = document.querySelector('#canvas3d');
-	renderer = new THREE.WebGLRenderer({canvas, antialias: true});
-	renderer.setClearColor(0x444444);
-	document.body.appendChild(renderer.domElement);
-
-	camera = new THREE.OrthographicCamera(win[0]/-50, win[0]/50, win[1]/50, win[1]/-50, 1, 1000);
-	camera.position.set(-200, 200, -200);
-	//camera.setViewOffset(win[0], win[1], 500, 500, win[0], win[1]);
-	//camera.lookAt(0, 0, 0);
-
-	
-	pivotX=db().max('maxx') -  db().min('minx')
-	controls = new THREE.OrbitControls( camera, renderer.domElement );
-	controls.target = new THREE.Vector3(-10, 10, 0);
-	gridXZ = new THREE.GridHelper(100, 10, 0x4f4f4f, 0x4f4f4f);
-	axesHelper = new THREE.AxesHelper();
-
-	scene = new THREE.Scene();
-    scene.add(gridXZ);
-	scene.add(axesHelper);
-
-	animate();
-
-}
-//}}}
 function view3d() {//{{{
 	if(scene === undefined) {
 		$.getScript("js/three.r109.min.js", function(){
@@ -104,8 +103,9 @@ function view3d() {//{{{
 }
 
 //}}}
-function animate() {
+function animate() {//{{{
 	requestAnimationFrame( animate );
 	controls.update();
 	renderer.render( scene, camera );
 }
+//}}}
