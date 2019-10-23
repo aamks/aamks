@@ -16,6 +16,7 @@ K
 * RVO2: right hand side counterflow 
 * RVO2: transfer leader state to another leader to avoid the clash
 * mapa śmierci, zapisywnie współrzędnych FED=1
+* czas=0 jest metoda na USE_WORKER=0, wiec nie mamy na to osobnej zmiennej
 
 
 mimooh

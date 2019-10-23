@@ -10,7 +10,8 @@ function createScene() { //{{{
 	centerX=-(db().min('minx') + (db().max('maxx') -  db().min('minx'))/2)/100
 	centerY=-(db().min('miny') + (db().max('maxy') -  db().min('miny'))/2)/100
 	camera = new THREE.OrthographicCamera(win[0]/-50, win[0]/50, win[1]/50, win[1]/-50, 1, 1000);
-	camera.position.set(-db().max('maxx')/5, 100, -db().max('maxy')/5);
+	//camera.position.set(-db().max('maxx')/5, 100, -db().max('maxy')/5);
+	camera.position.set(200, 100, -200);
 	
 	controls = new THREE.OrbitControls( camera, renderer.domElement );
 	controls.target = new THREE.Vector3(centerX, 0, centerY);
@@ -26,11 +27,9 @@ function createScene() { //{{{
 }
 //}}}
 function removeMeshes() { //{{{
-	// Database could have been updated so it is best to just clear the scene and reread meshes
-	//for (var i in scene.meshes) { 
-	//	scene.meshes[i].destroy();
-	//}
-	dd('remove meshes');
+	while (scene.children.length > 0){ 
+		scene.remove(scene.children[0]); 
+	}
 }
 //}}}
 function createDoor(geom) {//{{{
@@ -77,7 +76,7 @@ function createRoom(geom) {//{{{
 	scene.add(mesh);
 }
 //}}}
-function createRoomEdges(geom) {
+function createRoomEdges(geom) {//{{{
 	_.each(geom.z, function(z) {
 		points3D = new THREE.Geometry();
 		o=geom.polypoints[0];
@@ -90,6 +89,7 @@ function createRoomEdges(geom) {
 		scene.add(line);
 	});
 }
+//}}}
 function createMeshes() {//{{{
 	// random prevents z-fighting
 	
