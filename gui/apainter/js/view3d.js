@@ -1,5 +1,11 @@
 var scene, camera, renderer, controls;
 
+function removeMeshes() { //{{{
+	while (scene.children.length > 0){ 
+		scene.remove(scene.children[0]); 
+	}
+}
+//}}}
 function createScene() { //{{{
 	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
 	canvas = document.querySelector('#canvas3d');
@@ -10,94 +16,65 @@ function createScene() { //{{{
 	centerX=-(db().min('minx') + (db().max('maxx') -  db().min('minx'))/2)/100
 	centerY=-(db().min('miny') + (db().max('maxy') -  db().min('miny'))/2)/100
 	camera = new THREE.OrthographicCamera(win[0]/-50, win[0]/50, win[1]/50, win[1]/-50, 1, 1000);
-	//camera.position.set(-db().max('maxx')/5, 100, -db().max('maxy')/5);
 	camera.position.set(200, 100, -200);
 	
 	controls = new THREE.OrbitControls( camera, renderer.domElement );
 	controls.target = new THREE.Vector3(centerX, 0, centerY);
-	gridXZ = new THREE.GridHelper(100, 10, 0x4f4f4f, 0x4f4f4f);
-	axesHelper = new THREE.AxesHelper();
 
 	scene = new THREE.Scene();
-    scene.add(gridXZ);
-	scene.add(axesHelper);
-
+	scene.add(new THREE.AxesHelper());
 	animate();
-
 }
 //}}}
-function removeMeshes() { //{{{
-	while (scene.children.length > 0){ 
-		scene.remove(scene.children[0]); 
-	}
-}
-//}}}
-function createDoor(geom) {//{{{
-	random=Math.random()/40;
-	shape = new THREE.Shape();
-	o=geom.polypoints.shift();
+function polyGeometry(geom) {//{{{
+	// random prevents z-fighting
+	var random=Math.random()/100;
+	var extrudeSettings = { steps: 1, depth: (geom.z[1]-geom.z[0])/100+random, bevelEnabled: false };
+	var shape = new THREE.Shape();
+	var o=geom.polypoints[0];
 	shape.moveTo(-o[0]/100+random, o[1]/100+random);
 	_.each(geom.polypoints, function(p) {
 		shape.lineTo(-p[0]/100+random, p[1]/100+random);
 	});
 	shape.lineTo(-o[0]/100+random, o[1]/100+random);
+	var geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings );
+	geometry.translate(0, random, random);
 	geometry.rotateX(THREE.Math.degToRad(270));
-	
-	material = new THREE.MeshBasicMaterial({
-		color: gg[geom.letter].c,
-		transparent: false
-	});
-	mesh = new THREE.Mesh(geometry, material) ;
-	//scene.add(mesh);
-
+	scene.add(new THREE.LineSegments(new THREE.EdgesGeometry( geometry ), new THREE.LineBasicMaterial( { color: gg[geom.letter].c })));
+	return geometry;
 }
 //}}}
-function createRoom(geom) {//{{{
-	random=Math.random()/100;
-	extrudeSettings = { steps: 1, depth: (geom.z[1]-geom.z[0])/100+random, bevelEnabled: false };
-	shape = new THREE.Shape();
-	edgePolypoints=deepcopy(geom);
-	o=geom.polypoints[0];
-	shape.moveTo(-o[0]/100+random, o[1]/100+random);
-	_.each(geom.polypoints, function(p) {
-		shape.lineTo(-p[0]/100+random, p[1]/100+random);
-	});
-	shape.lineTo(-o[0]/100+random, o[1]/100+random);
-	geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
-	geometry.rotateX(THREE.Math.degToRad(270));
-	
-	material = new THREE.MeshBasicMaterial({
-		color: gg[geom.letter].c,
-		opacity: 0.8,
-		side: THREE.DoubleSide,
-		transparent: true,
-	});
-	mesh = new THREE.Mesh(geometry, material) ;
-	scene.add(mesh);
+function createSphere(geom) {//{{{
+	var geometry = new THREE.SphereGeometry( 0.25, 30, 30 );
+	geometry.translate(-geom.minx/100, geom.z[1]/100, -geom.miny/100);
+	var material = new THREE.MeshBasicMaterial( {color: gg[geom.letter].c } );
+	var sphere = new THREE.Mesh( geometry, material );
+	scene.add( sphere );
 }
 //}}}
-function createRoomEdges(geom) {//{{{
-	_.each(geom.z, function(z) {
-		points3D = new THREE.Geometry();
-		o=geom.polypoints[0];
-		_.each(geom.polypoints, function(p) {
-			points3D.vertices.push(new THREE.Vector3(-p[0]/100, z/100, -p[1]/100));
-		});
-		points3D.vertices.push( new THREE.Vector3(-o[0]/100, z/100, -o[1]/100));
-		line = new THREE.Line(points3D, new THREE.LineBasicMaterial({color: gg[geom.letter].c}));
-		line = new THREE.Line(points3D, new THREE.LineBasicMaterial({color: 0xff0000}));
-		scene.add(line);
+function createWireFrame(geom) {//{{{
+	polyGeometry(geom);
+}
+//}}}
+function createBlock(geom, alpha=0) {//{{{
+	if (alpha==0) { var transparent=true; } else { var transparent=false; }
+	var material = new THREE.MeshBasicMaterial({
+		color: gg[geom.letter].c,
+		opacity: 0.4,
+		//side: THREE.DoubleSide,
+		transparent: transparent
 	});
+	var geometry=polyGeometry(geom);
+	scene.add(new THREE.Mesh(geometry, material)) ;
 }
 //}}}
 function createMeshes() {//{{{
-	// random prevents z-fighting
-	
 	var ee=deepcopy(db().get());
-	_.each(ee, function(geom) {
-		if (geom.letter=='f')                 { return; }
-		if (geom.letter=='d')                 { createDoor(geom); }
-		if(['r', 'c' ].includes(geom.letter)) { createRoom(geom); createRoomEdges(geom); }
+	_.each(ee, function(geom)     {
+		if (geom.type=='evacuee') { createSphere(geom); }
+		if (geom.type=='door')    { createWireFrame(geom); }
+		if (geom.type=='obst')    { createBlock(geom, 1); }
+		if (geom.type=='room')    { createBlock(geom); }
 	});
 }
 //}}}
