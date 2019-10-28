@@ -45,12 +45,16 @@ class Navmesh:
         nav.build(floor)
         nav.nav_query(src, dst)
 
-            or if you want to block r1 and r2 and have the navmeshes named
+            or if you want to block r1 and r2 and have the navmeshes named:
 
         navs=dict()
         navs[('r1','r2')]=Navmesh()
         navs[('r1','r2')].build(floor,('r1','r2'))
         navs[('r1','r2')].nav_query(src, dst)
+
+            for performance reasons navmesh looks ahead up to 16 segments, but we can extend this:
+
+        nav.nav_query(src, dst, maxStraightPath=300)
 
         '''
 
@@ -187,7 +191,7 @@ class Navmesh:
             leaves[ll]=(dest, door['name'])
 
         best_point, best_name=leaves[min(leaves.keys())]
-        best_path=self.nav_query(ee, best_point)
+        best_path=self.nav_query(ee, best_point, 300)
         candidates={'best_point': best_point, 'best_name': best_name, 'best_path': best_path, 'all': list(leaves.values())}
         return candidates
 

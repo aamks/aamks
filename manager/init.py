@@ -141,18 +141,20 @@ class OnEnd():
 
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
 
-        if os.environ['AAMKS_LOCAL_WORKER']=='1':
-            os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
-            for i in range(*si.get()):
-                os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i))
-        else:
-            try:
-                for i in range(*si.get()):
-                    worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                    worker = worker.replace("/home","")
-                    gearman="gearman -b -f aRun 'https://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
-                    os.system(gearman)
-            except Exception as e:
-                print('OnEnd: {}'.format(e))
+        # TODO: This code breaks Aamks (Launch fails on machines without gearman). 
+
+        # if os.environ['AAMKS_LOCAL_WORKER']=='1':
+        #     os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
+        #     for i in range(*si.get()):
+        #         os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i))
+        # else:
+        #     try:
+        #         for i in range(*si.get()):
+        #             worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
+        #             worker = worker.replace("/home","")
+        #             gearman="gearman -b -f aRun 'https://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
+        #             os.system(gearman)
+        #     except Exception as e:
+        #         print('OnEnd: {}'.format(e))
             
 # }}}

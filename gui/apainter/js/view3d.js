@@ -45,7 +45,7 @@ function polyGeometry(geom) {//{{{
 }
 //}}}
 function createSphere(geom) {//{{{
-	var geometry = new THREE.SphereGeometry( 0.25, 30, 30 );
+	var geometry = new THREE.SphereGeometry( 0.25, 10, 10 );
 	geometry.translate(-geom.minx/100, geom.z[1]/100, -geom.miny/100);
 	var material = new THREE.MeshBasicMaterial( {color: gg[geom.letter].c } );
 	var sphere = new THREE.Mesh( geometry, material );
@@ -58,6 +58,7 @@ function createWireFrame(geom) {//{{{
 //}}}
 function createBlock(geom, alpha=0) {//{{{
 	if (alpha==0) { var transparent=true; } else { var transparent=false; }
+	if(geom.letter=='c') { dd(geom); geom.z[1]+=1; }
 	var material = new THREE.MeshBasicMaterial({
 		color: gg[geom.letter].c,
 		opacity: 0.4,

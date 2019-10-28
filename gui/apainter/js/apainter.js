@@ -820,6 +820,7 @@ function dbReorder() {//{{{
 			idx++;
 		}
 	}
+	var idx=1;
 	for (var i in ee) {
 		ee[i]['idx']=idx;
 		ee[i]['name']="e"+idx;
