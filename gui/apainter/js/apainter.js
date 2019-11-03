@@ -78,6 +78,7 @@ function registerListeners() {//{{{
 	$("body").on("change"              , '#alter-exit-type'        , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-mvent-throughput' , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-polypoints'       , function() { saveRightBox(); });
+	$("body").on("keydown"             , '#alter-geom-letter'      , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-z'                , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-px'               , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-py'               , function() { saveRightBox(); });
@@ -96,23 +97,21 @@ function registerListeners() {//{{{
 
 }
 //}}}
-function keyboardEvents() {//{{{
-
-	$(this).keypress((e) => { if (e.key in gg && ! e.ctrlKey)    { cgEscapeCreate(); activeLetter=e.key; cgStartDrawing(); } });
-	$(this).keydown((e) =>  { if (e.key == 'Escape')             { escapeAll(); } });
-	$(this).keydown((e) =>  { if (e.key == 'h')                  { cgEscapeCreate(); nextView(); } });
-	$(this).keydown((e) =>  { if (e.key == 'p')                  { $("#p1").remove() ; } });
-	$(this).keydown((e) =>  { if (e.key == 'n')                  { cgEscapeCreate(); changeFloor(calcNextFloor()); } });
-	$(this).keydown((e) =>  { if (e.key == '=')                  { cgEscapeCreate(); resetView(); } });
-	$(this).keydown((e) =>  { if (e.key == 'r' && e.ctrlKey)     { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
-	$(this).keydown((e) =>  { if (e.key == 's' && e.ctrlKey)     { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
-	$(this).keyup((e) =>    { if (e.key == 'z' && e.ctrlKey)     { undoPop(); } }) ;
-	$(this).keyup((e) =>    { if (e.key == 'F1' && e.ctrlKey)    { startTxtView(); } }) ;
-	$(this).keypress((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgEscapeCreate(); cgRemove(); }});
-	
-	$(this).keypress((e) => { if (e.key == 'l')                  { cgEscapeCreate(); bulkProps(); } });
+function keyboardEvents()  { //{{ {
+	$(this).keyup((e) =>   { if (e.key in gg && ! e.ctrlKey)    { cgEscapeCreate(); activeLetter=e.key; cgStartDrawing(); } });
+	$(this).keydown((e) => { if (e.key == 'Escape')             { escapeAll(); } });
+	$(this).keydown((e) => { if (e.key == 'v')                  { cgEscapeCreate(); nextView(); } });
+	$(this).keydown((e) => { if (e.key == 'p')                  { $("#p1").remove() ; } });
+	$(this).keydown((e) => { if (e.key == 'n')                  { cgEscapeCreate(); changeFloor(calcNextFloor()); start2dView(); } });
+	$(this).keydown((e) => { if (e.key == '=')                  { cgEscapeCreate(); resetView(); } });
+	$(this).keyup((e) =>   { if (e.key == 'i')                  { startTxtView(); } }) ;
+	$(this).keydown((e) => { if (e.key == 'r' && e.ctrlKey)     { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
+	$(this).keydown((e) => { if (e.key == 's' && e.ctrlKey)     { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
+	$(this).keyup((e) =>   { if (e.key == 'z' && e.ctrlKey)     { undoPop(); } }) ;
+	$(this).keydown((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgEscapeCreate(); cgRemove(); }});
+	$(this).keydown((e) => { if (e.key == 'l')                  { cgEscapeCreate(); bulkProps(); } });
 	// debug
-	$(this).keypress((e) => { if (e.key == ']') { debug(); }});
+	$(this).keydown((e) => { if (e.key == ']') { debug(); }});
 }
 //}}}
 function dddx() {//{{{
@@ -389,14 +388,14 @@ function guessFloorZ0() {//{{{
 	// Guess 1: Perhaps user has set the z-origin for this floor -- we will then find it in db()
 	// Guess 2: If we are the first time on floor 5, then multiply floor0's dimz * 5
 	// Guess 3: If there's no floor0 even or any other occassion z-origin=0
-	var guess=db({"floor": floor, 'letter': 'r'}).select("z0");
+	var guess=db({"floor": floor, 'letter': 'r'}).select("z")[0];
 	if(guess[0] != undefined) {
 		$("#floorZ0").val(guess[0]);
 		floorZ0=guess[0];
 		return;
 	}
 
-	var guess=db({"floor": 0, 'letter': 'r'}).select("z1") - db({"floor": 0, 'letter': 'r'}).select("z0");
+	var guess=db({"floor": 0, 'letter': 'r'}).select("z1") - db({"floor": 0, 'letter': 'r'}).select("z")[0];
 	if(guess[0] != undefined) {
 		$("#floorZ0").val(guess[0]*floor);
 		floorZ0=guess[0]*floor;
@@ -509,7 +508,7 @@ function cgInit() {//{{{
 	if (cg.type=='fire') {
 		cg.z.push(cg.z[0] + 250);
 	} else if (cg.type=='evacuee') {
-		cg.z.push(cg.z[0] + 50);
+		cg.z.push(cg.z[0] + 150);
 	} else if (cg.type=='obst') {
 		cg.z.push(cg.z[0] + 100);
 	} else if (cg.type=='mvent') {
@@ -661,11 +660,7 @@ function cgStartDrawing() {//{{{
 	$('right-menu-box').fadeOut(0); 
 	legend();
 	$('#legend_'+activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
-	if(activeLetter=='m') { 
-		cgPolyCreate();
-	} else {
-		cgCreate();
-	}
+	cgCreate();
 }
 //}}}
 function cgEscapeCreate() {//{{{
@@ -860,7 +855,7 @@ function db2cadjson() {//{{{
 //}}}
 function floorCopy() {	//{{{
 	c2f=Number($("#copy_to_floor").val());
-	var guess=db({"floor": floor, 'letter': 'r'}).select("z1") - db({"floor": floor, 'letter': 'r'}).select("z0");
+	var guess=db({"floor": floor, 'letter': 'r'}).select("z")[1] - db({"floor": floor, 'letter': 'r'}).select("z")[0];
 	if(guess[0] != undefined) {
 		var z0=guess[0] * c2f;
 	} else {
@@ -876,8 +871,8 @@ function floorCopy() {	//{{{
 		cg.floor=c2f;
 		cg.idx=cgID;
 		cg.name=cg.letter + cgID;
-		cg.z0=z0;
-		cg.z1=z0 + m.z1 - m.z0;
+		cg.z[0]=z0;
+		cg.z[1]=z0 + m.z[1] - m.z[0];
 		cgDb();
 		cgSvg();
 	});
@@ -999,14 +994,14 @@ function showHelpBox() {//{{{
 		"<tr><td><letter>letter</letter> + <letter>leftMouse</letter><td> create element"+
 		"<tr><td><letter>rightMouse</letter><td> element properties"+
 		"<tr><td>hold <letter>ctrl</letter> <td> disable snapping"+ 
-		"<tr><td><letter>h</letter>	<td> 2D/3D views"+ 
+		"<tr><td><letter>v</letter>	<td> 2D/3D views"+ 
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
 		"<tr><td><letter>x</letter>	<td> delete active"+
 		"<tr><td><letter>l</letter>	<td> list all of active type"+
+		"<tr><td><letter>i</letter> <td> geometry as text"+ 
 		"<tr><td><letter>ctrl</letter> + <letter>alt</letter>	<td> underlays"+
 		"<tr><td><letter>ctrl</letter> + <letter>s</letter>	<td> save and read"+
 		"<tr><td><letter>ctrl</letter> + <letter>z</letter> <td> undo"+ 
-		"<tr><td><letter>ctrl</letter> + <letter>F1</letter> <td> geometry as text"+ 
 		"<tr><td><letter>=</letter>	<td> original zoom"+
 		"<tr><td><letter>escape</letter><td> cancel create"+
 		"</table>"
@@ -1026,11 +1021,16 @@ function propsXYZ() {//{{{
 }
 //}}}
 function showCgPropsBox() {//{{{
+	if(cg.letter==undefined)					 { return; }   // mouse leaving right boxes
+	if(db({'name':cg.name}).get()[0]==undefined) { return; }   // clicking right boxes while new element is very infant
+
 	showBuildingLabels(1);
 	activeLetter=cg.letter;
 	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
-	    "<center><red>&nbsp; "+cg.name+" &nbsp; "+gg[cg.letter]['x']+"</red><br>"+
+	    "<center><red>&nbsp; "+cg.name+" &nbsp; "+gg[cg.letter]['x']+"</red>"+
+		"<input type=hidden id=alter-geom-name-replaced value='"+cg.name+"'>"+
+		"<input id=alter-geom-letter value='"+cg.letter+"'><br>"+
 		propsXYZ()+
 		"<table>"+
 		roomProps()+
@@ -1055,6 +1055,21 @@ function saveRightBoxGeneral() {//{{{
 	legend();
 }
 //}}}
+function checkGeomReplacement() {//{{{
+	var origGeomName=$("#alter-geom-name-replaced").val();
+	if(cg.name != origGeomName) {
+		//var preserve={'name': cg.name, 'idx': cg.idx};
+		var preserveLetter=cg.letter;
+		cgSelect(origGeomName);
+		var newGeom=deepcopy(cg);
+		cgRemove();
+		cg=newGeom;
+		cg.letter=preserveLetter;
+		cg.name=cg.letter+cg.idx;
+		cgDb(); cgSvg(); cgCss(); cgEscapeCreate();
+	}
+}
+//}}}
 function saveRightBoxCgProps() {//{{{
 	if(cg.type=='evacuee') {
 		cg.polypoints=[[Number($("#alter-px").val()), Number($("#alter-py").val())]];
@@ -1070,10 +1085,11 @@ function saveRightBoxCgProps() {//{{{
 		});
 		cg.room_enter=$("#alter-room-enter").val();
 		cg.exit_type=$("#alter-exit-type").val();
+		cg.letter=$("#alter-geom-letter").val();
 		cg.mvent_throughput=Number($("#alter-mvent-throughput").val());
 		var zz=$("#alter-z").val().split(",")
 		cg.z=[Number(zz[0]), Number(zz[1])];
-
+		checkGeomReplacement();
 		if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
 		cgUpdateSvg();
 		cgCss();
@@ -1150,7 +1166,7 @@ function sceneBuilder() { //{{{
 	d3.select('body').append('legend2');
 	d3.select('view2d').append('legend1');
 	d3.select('view2d').append("div").attr("id", "apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
-	d3.select('view2d').append("div").attr("id", "apainter-texts-keys").html("n: next floor<br>h: 2D/3D view");
+	d3.select('view2d').append("div").attr("id", "apainter-texts-keys").html("n: next floor");
 	d3.select('view2d').append("div").attr("id", "apainter-texts-pos");
 	make_legend0("apainter");
 	make_legend2("apainter");

@@ -304,3 +304,5 @@ canvas-mouse-coords { pointer-events: none; z-index:20; display: none; backgroun
 letter { display: inline; padding: 0px 4px 1px 4px; background-color: #960; color: #fff;  }
 #alter-polypoints { margin-left:20px; margin-top: 8px; height: 140px; width: 120px }
 #alter-z { margin-left: 20px; height: 20px; width: 110px }
+#alter-geom-letter { width: 20px; }
+#apainter-next-view::first-letter { background-color: #960; padding-left: 3px; padding-right: 3px; margin-right: 1px; }

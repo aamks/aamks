@@ -22,11 +22,12 @@ K
 mimooh
 =======
 
-* apainter: test floors
+* apainter: underlay broken?
+* apainter: ctrl snapping broken?
+* apainter: undo broken?
 * apainter: evacuees density form
-* zduplikowane klucze w conf.json i evac.json
 * apainter: znikajace rysunki?
-* apainter: staircase slice
+* zduplikowane klucze w conf.json i evac.json
 * animator: Highlight poly geoms 
 * animator: labels poly rooms
 
