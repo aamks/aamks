@@ -1,4 +1,4 @@
-var scene, camera, renderer, controls;
+var scene, camera, renderer, controls, fireMesh;
 
 function removeMeshes() { //{{{
 	while (scene.children.length > 0){ 
@@ -7,11 +7,10 @@ function removeMeshes() { //{{{
 }
 //}}}
 function createScene() { //{{{
-	d3.select('view3d').append('canvas').attr('id', 'canvas3d').attr('width', win[0]).attr('height', win[1]);
-	canvas = document.querySelector('#canvas3d');
-	renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+	renderer = new THREE.WebGLRenderer({antialias: true});
 	renderer.setClearColor(0x444444);
-	document.body.appendChild(renderer.domElement);
+	renderer.setSize(win[0], win[1]);
+	$('view3d').append(renderer.domElement);
 
 	centerX=-(db().min('minx') + (db().max('maxx') -  db().min('minx'))/2)/100
 	centerY=-(db().min('miny') + (db().max('maxy') -  db().min('miny'))/2)/100
@@ -23,7 +22,6 @@ function createScene() { //{{{
 
 	scene = new THREE.Scene();
 	scene.add(new THREE.AxesHelper());
-	animate();
 }
 //}}}
 function polyGeometry(geom) {//{{{
@@ -38,9 +36,9 @@ function polyGeometry(geom) {//{{{
 	});
 	shape.lineTo(-o[0]/100+random, o[1]/100+random);
 	var geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings );
-	geometry.translate(0, random, random);
+	geometry.translate(0, random, geom.z[0]/100+random);
 	geometry.rotateX(THREE.Math.degToRad(270));
-	scene.add(new THREE.LineSegments(new THREE.EdgesGeometry( geometry ), new THREE.LineBasicMaterial( { color: gg[geom.letter].c })));
+	if(geom.type!='fire') { scene.add(new THREE.LineSegments(new THREE.EdgesGeometry( geometry ), new THREE.LineBasicMaterial( { color: gg[geom.letter].c }))); }
 	return geometry;
 }
 //}}}
@@ -58,7 +56,7 @@ function createWireFrame(geom) {//{{{
 //}}}
 function createBlock(geom, alpha=0) {//{{{
 	if (alpha==0) { var transparent=true; } else { var transparent=false; }
-	if(geom.letter=='c') { dd(geom); geom.z[1]+=1; }
+	if(geom.letter=='c') { geom.z[1]+=1; }
 	var material = new THREE.MeshBasicMaterial({
 		color: gg[geom.letter].c,
 		opacity: 0.4,
@@ -66,14 +64,26 @@ function createBlock(geom, alpha=0) {//{{{
 		transparent: transparent
 	});
 	var geometry=polyGeometry(geom);
-	scene.add(new THREE.Mesh(geometry, material)) ;
+	var mesh = new THREE.Mesh( geometry, material );
+	if(geom.type=='fire') { fireMesh=mesh; }
+	scene.add(mesh) ;
+}
+//}}}
+
+function animFire() {//{{{
+	//fireMesh.position.y += 0.01;
 }
 //}}}
 function createMeshes() {//{{{
 	var ee=deepcopy(db().get());
 	_.each(ee, function(geom)     {
 		if (geom.type=='evacuee') { createSphere(geom); }
+		if (geom.type=='window')  { createWireFrame(geom); }
 		if (geom.type=='door')    { createWireFrame(geom); }
+		if (geom.type=='hole')    { createWireFrame(geom); }
+		if (geom.type=='vvent')   { createBlock(geom,1); }
+		if (geom.type=='fire')    { createBlock(geom,1); }
+		if (geom.type=='mvent')   { createBlock(geom,1); }
 		if (geom.type=='obst')    { createBlock(geom, 1); }
 		if (geom.type=='room')    { createBlock(geom); }
 	});
@@ -85,17 +95,21 @@ function view3d() {//{{{
 			$.getScript("js/OrbitControls.js", function(){
 				createScene();
 				createMeshes(); 
+				animate();
 			});
 		});
 	} else {
 		removeMeshes();
 		createMeshes(); 
+		animate();
 	}
 }
 
 //}}}
 function animate() {//{{{
-	requestAnimationFrame( animate );
+	if(threejsPlay==0) { return; }
+	requestAnimationFrame(animate);
+	//if(fireMesh!=undefined) { animFire(); }
 	controls.update();
 	renderer.render( scene, camera );
 }

@@ -22,12 +22,10 @@ K
 mimooh
 =======
 
-* apainter: E-door disapears after save
-* apainter: 3d view all geoms
 * apainter: test floors
 * apainter: evacuees density form
 * zduplikowane klucze w conf.json i evac.json
-* apainter: znikajace rysunki
+* apainter: znikajace rysunki?
 * apainter: staircase slice
 * animator: Highlight poly geoms 
 * animator: labels poly rooms

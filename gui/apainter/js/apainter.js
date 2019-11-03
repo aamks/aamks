@@ -24,6 +24,7 @@ var defaults={'door_dimz': 200, 'door_width': 90, 'floor_dimz': 350, 'window_dim
 var activeSnap={};
 var undoBuffer=[];
 var evacueeRadius;
+var threejsPlay=1;
 //}}}
 function debug() {//{{{
 	console.clear();
@@ -266,6 +267,7 @@ function close2dView() {//{{{
 //}}}
 function close3dView() {//{{{
 	$("view3d").css("display", "none");
+	threejsPlay=0;
 }
 //}}}
 function closeTxtView() {//{{{
@@ -280,10 +282,10 @@ function start2dView() {//{{{
 }
 //}}}
 function start3dView() {//{{{
+	threejsPlay=1;
 	currentView='3d'; 
 	close2dView();
 	view3d();
-	$('#canvas3d').attr('width', win[0]).attr('height', win[1]);
 	$("view3d").css("display", "block");
 }
 //}}}
@@ -505,7 +507,7 @@ function cgInit() {//{{{
 	cg.preferredSnap=null;
 	if(cg.type=='hole') { cg.snapForce=100; } else { cg.snapForce=50; }
 	if (cg.type=='fire') {
-		cg.z.push(cg.z[0] + 50);
+		cg.z.push(cg.z[0] + 250);
 	} else if (cg.type=='evacuee') {
 		cg.z.push(cg.z[0] + 50);
 	} else if (cg.type=='obst') {
