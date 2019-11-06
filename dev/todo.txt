@@ -22,7 +22,6 @@ K
 mimooh
 =======
 
-* apainter: underlay broken?
 * apainter: ctrl snapping broken?
 * apainter: undo broken?
 * apainter: evacuees density form

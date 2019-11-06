@@ -35,6 +35,7 @@ function make_legend0(module) {//{{{
 function make_legend2(module) {//{{{
 	$('legend2').html("");
 	if (module=='apainter') {
+		$('legend2').append("<button id=btn-underlay-form title='Underlay setup'>U</button>");
 		$('legend2').append("<button id=button-help>Help</button>");
 		$('legend2').append("<button id=button-setup>Setup</button>");
 	} 

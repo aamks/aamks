@@ -28,10 +28,14 @@ var threejsPlay=1;
 //}}}
 function debug() {//{{{
 	console.clear();
+
+	dd($("#ufloor"+floor)[0]);
+	//dd($('#apainter-svg')[0]); 
+	//dd($('#uimg0')[0]); 
 	//ddd();
 	//return;
 	//dd($('#building')[0]);
-	dd($('#floor0')[0]);
+	//dd($('#floor0')[0]);
 	//dd(db2cadjson());
 	//dd($('#floor0')[0]);
 	//dd("f2", $('#ufloor2')[0]);
@@ -66,7 +70,6 @@ $(function()  {
 //}}}
 function registerListeners() {//{{{
 	$("right-menu-box").on("click"     , "#btn_copy_to_floor"      , function() { floorCopy() });
-	$("right-menu-box").on("click"     , '#setup_underlay'         , function() { underlay_form(); });
 	$("right-menu-box").on("mouseover" , ".bulkProps"              , function() { cgSelect($(this).attr('id')                                                                    , 1 , 0); });
 	$("right-menu-box").on("click"     , '.bulkProps'              , function() { cgSelect($(this).attr('id'));  });
 	$("body").on("click"               , '#apainter-save'          , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
@@ -104,7 +107,7 @@ function keyboardEvents()  { //{{ {
 	$(this).keydown((e) => { if (e.key == 'p')                  { $("#p1").remove() ; } });
 	$(this).keydown((e) => { if (e.key == 'n')                  { cgEscapeCreate(); changeFloor(calcNextFloor()); start2dView(); } });
 	$(this).keydown((e) => { if (e.key == '=')                  { cgEscapeCreate(); resetView(); } });
-	$(this).keyup((e) =>   { if (e.key == 'i')                  { startTxtView(); } }) ;
+	$(this).keyup((e) =>   { if (e.key == 'i' && e.ctrlKey)     { startTxtView(); } }) ;
 	$(this).keydown((e) => { if (e.key == 'r' && e.ctrlKey)     { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
 	$(this).keydown((e) => { if (e.key == 's' && e.ctrlKey)     { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
 	$(this).keyup((e) =>   { if (e.key == 'z' && e.ctrlKey)     { undoPop(); } }) ;
@@ -138,6 +141,7 @@ function escapeAll(rmbClose=1) {//{{{
 	$("#buildingLabels").html(""); 
 	$("#apainter-texts-pos").html(''); 
 	if(rmbClose==1) { $("right-menu-box").css("display", "none"); }
+	underlayPointerEvents(stopDragging=1);
 }
 //}}}
 function getBbox() {//{{{
@@ -637,7 +641,7 @@ function assertCgReady() {//{{{
 
 	if(cg.type=='underlay_scaler') { 
 		b=getBbox();
-		underlayForm(b.maxx-b.minx);
+		underlayForm(b.max.x-b.min.x);
 		return false;
 	}
 
@@ -661,6 +665,7 @@ function cgStartDrawing() {//{{{
 	legend();
 	$('#legend_'+activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
 	cgCreate();
+	underlayPointerEvents(stopDragging=1);
 }
 //}}}
 function cgEscapeCreate() {//{{{
@@ -966,16 +971,17 @@ function doorProps() {//{{{
 
 function rightBoxShow(html, close_button=1) {//{{{
 	$('right-menu-box').html("");
-	if(close_button==1) { $('right-menu-box').append("<close-right-menu-box><img src=/aamks/css/close.svg></close-right-menu-box><br>"); }
+	if(close_button==1) { $('right-menu-box').append("<close-right-menu-box><img id=close-img-svg src=/aamks/css/close.svg></close-right-menu-box><br>"); }
 	$('right-menu-box').append(html);
 	$('right-menu-box').fadeIn(); 
+	underlayPointerEvents();
 }
 //}}}
-function showGeneralBox() {//{{{
+function showGeneralBox() { //{{{
 	rightBoxShow(
 		"<table class=nobreak>"+
 		"<input id=general_setup type=hidden value=1>"+
-		"<tr><td colspan=2 style='text-align: center'>since now"+
+		"<tr><td colspan=2 style='text-align: center'>Since now"+
 		"<tr><td>floor<td><input id=floor type=text name=floor size=4 value="+floor+">"+ 
 		"<tr><td>floor's z-origin <td><input id=floorZ0 type=text size=4 name=floorZ0 value="+floorZ0+">"+
 		"<tr><td>door's width <td><input id=default_door_width type=text size=4 name=default_door_width  value="+defaults.door_width+">"+
@@ -983,6 +989,9 @@ function showGeneralBox() {//{{{
 		"<tr><td>room's z-dim <td><input id=default_floor_dimz type=text size=4 name=default_floor_dimz value="+defaults.floor_dimz+">"+
 		"<tr><td>window's z-dim <td><input id=default_window_dimz type=text size=4 name=default_window_dimz value="+defaults.window_dimz+">"+
 		"<tr><td>window's z-offset <td><input id=default_window_offsetz type=text size=4 name=default_window_offsetz value="+defaults.window_offsetz+">"+
+		"</table><br>"+
+		"<table class=nobreak>"+
+		"<tr><td colspan=2 style='text-align: center'>utils"+
 		"<tr><td colspan=2><button id=btn_copy_to_floor class=blink>copy</button> floor"+floor+" to floor <input id=copy_to_floor type=text style='width:20px' value=''>"+ 
 		"</table>"
 	);
@@ -998,10 +1007,9 @@ function showHelpBox() {//{{{
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
 		"<tr><td><letter>x</letter>	<td> delete active"+
 		"<tr><td><letter>l</letter>	<td> list all of active type"+
-		"<tr><td><letter>i</letter> <td> geometry as text"+ 
-		"<tr><td><letter>ctrl</letter> + <letter>alt</letter>	<td> underlays"+
-		"<tr><td><letter>ctrl</letter> + <letter>s</letter>	<td> save and read"+
-		"<tr><td><letter>ctrl</letter> + <letter>z</letter> <td> undo"+ 
+		"<tr><td><letter>ctrl</letter> + <letter>i</letter>		<td> geometry as text"+ 
+		"<tr><td><letter>ctrl</letter> + <letter>s</letter>		<td> save and read"+
+		"<tr><td><letter>ctrl</letter> + <letter>z</letter>		<td> undo"+ 
 		"<tr><td><letter>=</letter>	<td> original zoom"+
 		"<tr><td><letter>escape</letter><td> cancel create"+
 		"</table>"
@@ -1021,8 +1029,10 @@ function propsXYZ() {//{{{
 }
 //}}}
 function showCgPropsBox() {//{{{
+
 	if(cg.letter==undefined)					 { return; }   // mouse leaving right boxes
 	if(db({'name':cg.name}).get()[0]==undefined) { return; }   // clicking right boxes while new element is very infant
+	if($("#uimg_remove").length)				 { return; }   // return if underlay menu
 
 	showBuildingLabels(1);
 	activeLetter=cg.letter;
