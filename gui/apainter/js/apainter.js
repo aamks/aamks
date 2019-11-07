@@ -648,7 +648,7 @@ function assertCgReady() {//{{{
 	if(cg.type=='underlay_scaler') { 
 		b=getBbox();
 		underlayForm(b.max.x-b.min.x);
-		return false;
+		return true;
 	}
 
 	return true;

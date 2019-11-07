@@ -111,8 +111,11 @@ function underlay_zoomer(floor) {//{{{
 }
 //}}}
 function underlayForm(width=0) {//{{{
-	if(width>0) { submit="<input id=submit_scale data-underlay-width='"+width+"' class=blink type=button value=set>"; } else { submit='<letter>p</letter>+drag'; }
+	escapeAll();
+	
+	if(width>0) { var blinkSubmit=1; submit="<input id=submit_scale data-underlay-width='"+width+"' class=blink type=button value=set>"; } else { submit='<letter>p</letter>+drag'; }
 	if($("#ufloor"+floor).attr("uses_floor")!=undefined) { var uufloor=$("#ufloor"+floor).attr("uses_floor"); } else { var uufloor=''; } 
+	dd($("#ufloor"+floor).attr("uses_floor"));
 	
  	rightBoxShow(
 		"<center>Underlay setup</center><br><br>"+
@@ -121,7 +124,7 @@ function underlayForm(width=0) {//{{{
 		"<input type=file id=uimg_add    style='display:none'><label class=blink for='uimg_add'>add</label>"+
 		"<div class=blink id=uimg_remove>remove</div>"+
 		"<a href=underlay_example.svg target=_blank class=blink>scaling help</a><br><br>"+
-		"<letter>leftMouse</letter> drags the underlay"+ 
+		"<letter>leftMouse</letter> NOW drags the underlay"+ 
 		"<br><br><table>"+
 		"<tr><td>scaler width <td><input autocomplete=off id=uimg_scale   type=text style='width:60px' >"+submit+
 		"<tr><td>opacity      <td><input autocomplete=off id=uimg_opacity type=text value="+$("#uimg"+floor).css("opacity")+" style='width:30px' >"+
@@ -130,6 +133,8 @@ function underlayForm(width=0) {//{{{
 		"<tr><td>floor        <td><input autocomplete=off id=ufloor       type=text value='"+uufloor+"' style='width:30px'> as underlay"+
 		"</table>"
 	);
+	if(blinkSubmit==1) { $("#uimg_scale").css({'background-color': '#808'}); }
+	
 
 }
 //}}}
