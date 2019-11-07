@@ -22,11 +22,8 @@ K
 mimooh
 =======
 
-* apainter: ctrl snapping broken?
-* apainter: undo broken?
-* apainter: evacuees density form
-* apainter: znikajace rysunki?
 * zduplikowane klucze w conf.json i evac.json
+* apainter: evacuees density form
 * animator: Highlight poly geoms 
 * animator: labels poly rooms
 

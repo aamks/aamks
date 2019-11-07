@@ -29,7 +29,8 @@ var threejsPlay=1;
 function debug() {//{{{
 	console.clear();
 
-	dd($("#ufloor"+floor)[0]);
+	dd(undoBuffer);
+	//dd($("#ufloor"+floor)[0]);
 	//dd($('#apainter-svg')[0]); 
 	//dd($('#uimg0')[0]); 
 	//ddd();
@@ -100,7 +101,7 @@ function registerListeners() {//{{{
 
 }
 //}}}
-function keyboardEvents()  { //{{ {
+function keyboardEvents()  { // {{{
 	$(this).keyup((e) =>   { if (e.key in gg && ! e.ctrlKey)    { cgEscapeCreate(); activeLetter=e.key; cgStartDrawing(); } });
 	$(this).keydown((e) => { if (e.key == 'Escape')             { escapeAll(); } });
 	$(this).keydown((e) => { if (e.key == 'v')                  { cgEscapeCreate(); nextView(); } });
@@ -110,7 +111,7 @@ function keyboardEvents()  { //{{ {
 	$(this).keyup((e) =>   { if (e.key == 'i' && e.ctrlKey)     { startTxtView(); } }) ;
 	$(this).keydown((e) => { if (e.key == 'r' && e.ctrlKey)     { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
 	$(this).keydown((e) => { if (e.key == 's' && e.ctrlKey)     { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
-	$(this).keyup((e) =>   { if (e.key == 'z' && e.ctrlKey)     { undoPop(); } }) ;
+	$(this).keyup((e) =>   { if (e.key == 'z' && e.ctrlKey)     { undoApply(); } }) ;
 	$(this).keydown((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgEscapeCreate(); cgRemove(); }});
 	$(this).keydown((e) => { if (e.key == 'l')                  { cgEscapeCreate(); bulkProps(); } });
 	// debug
@@ -179,7 +180,7 @@ function cgCss() {//{{{
 	if(cg.exit_type=='secondary') { $("#"+cg.name).addClass('exit_type_secondary');}
 }
 //}}}
-function cgDb() { //{{{
+function cgDb(undoRegister=1) { //{{{
 	if(cg.type=='underlay_scaler') { return; }
 	var lines=[];
 
@@ -190,32 +191,26 @@ function cgDb() { //{{{
 	} else {
 		lines.push([-100000, -100000], [-100000, -100000], [-100000, -100000], [-100000, -100000]);
 	}
-	undoPush(deepcopy(cg));
 	db({"name": cg.name}).remove();
 	b=getBbox();
 	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y });
+	if(undoRegister==1) { undoBufferRegister('insert'); }
 }
 //}}}
-function undoPop() {//{{{
+function undoApply() {//{{{
+	escapeAll();
 	if (undoBuffer.length==0) { return; }
 	cg=undoBuffer.pop();
 	if(cg.op=='insert') { 
-		cgRemove();
+		cgRemove(undoRegister=0);
 	} else {
-		$("#"+cg.name).remove(); cgDb(); cgSvg(); cgCss(); updateSnapLines();
+		$("#"+cg.name).remove(); cgDb(undoRegister=0); cgSvg(); cgCss(); updateSnapLines();
 	}
-	undoBuffer.pop();
-	escapeAll();
 }
 //}}}
-function undoPush(mm) {//{{{
-	data=db({"name": mm.name}).get()[0]; // modify or remove
-	if(data==undefined) { // insert
-		data=mm;
-		data.op='insert';
-	} else {
-		data.op='modify';
-	}
+function undoBufferRegister(op) {//{{{
+	var data=deepcopy(db({"name": cg.name}).get()[0]);
+	data.op=op;
 	undoBuffer.push(data);
 }
 //}}}
@@ -315,8 +310,8 @@ function nextView() {//{{{
 	else if(currentView=='txt') { start2dView(); }
 }
 //}}}
-function cgRemove() {//{{{
-	undoBuffer.push(cg);
+function cgRemove(undoRegister=1) {//{{{
+	if(undoRegister==1) { undoBufferRegister('remove'); }
 	$("#"+cg.name).remove();
 	db({"name":cg.name}).remove();
 	updateSnapLines();
@@ -496,7 +491,7 @@ function snappingShow(m) {//{{{
 }
 //}}}
 function cgInit() {//{{{
-	delete cg.growing;
+	//delete cg.growing;
 	cgIdUpdate();
 	cg.name=activeLetter+cgID;
 	cg.idx=cgID;
@@ -560,6 +555,7 @@ function cgCreate() {//{{{
 	});  
 	svg.on('mouseup', function() {
 		if(assertCgReady()) {
+			delete cg.growing;
 			cgUpdateSvg();
 			cgDb();
 			updateSnapLines();
@@ -580,9 +576,19 @@ function updatePosInfo(m) {//{{{
 	}
 }
 //}}}
+function ctrlDrawing(m) {//{{{
+	if("infant" in cg && "growing" in cg) { cg.polypoints.push([m.x,m.y]); } 
+	if(cg.polypoints.length==0) { return; }
+	p0=[cg.polypoints[0][0], cg.polypoints[0][1]];
+	p1=[m.x, cg.polypoints[0][1]];
+	p2=[m.x, m.y];
+	p3=[cg.polypoints[0][0], m.y];
+	cg.polypoints=[p0,p1,p2,p3];
+}
+//}}}
 function cgDecidePoints(m) {//{{{
+	if (event.ctrlKey) { ctrlDrawing(m); return; }
 
-	if (event.ctrlKey) { return; }
 	if("x" in activeSnap) { px=activeSnap.x; } else { px=m.x; }
 	if("y" in activeSnap) { py=activeSnap.y; } else { py=m.y; }
 	if("growing" in cg) { cg.polypoints.push([px,py]); }
@@ -669,7 +675,7 @@ function cgStartDrawing() {//{{{
 }
 //}}}
 function cgEscapeCreate() {//{{{
-	if(!isEmpty(cg) && "growing" in cg) { cgRemove(); } 
+	if(!isEmpty(cg) && "growing" in cg) { cgRemove(undoRegister=0); } 
 	$(".temp-poly").remove();
 	$("#apainter-texts-pos").html('');
 	$(".building-vertex").remove() 
@@ -878,7 +884,7 @@ function floorCopy() {	//{{{
 		cg.name=cg.letter + cgID;
 		cg.z[0]=z0;
 		cg.z[1]=z0 + m.z[1] - m.z[0];
-		cgDb();
+		cgDb(undoRegister=0);
 		cgSvg();
 	});
 	$("#floor"+c2f).attr({"class": "floor", "fill-opacity": 0.4, "visibility": "hidden"});
@@ -1068,15 +1074,15 @@ function saveRightBoxGeneral() {//{{{
 function checkGeomReplacement() {//{{{
 	var origGeomName=$("#alter-geom-name-replaced").val();
 	if(cg.name != origGeomName) {
-		//var preserve={'name': cg.name, 'idx': cg.idx};
 		var preserveLetter=cg.letter;
 		cgSelect(origGeomName);
 		var newGeom=deepcopy(cg);
-		cgRemove();
+		cgRemove(undoRegister=0);
 		cg=newGeom;
 		cg.letter=preserveLetter;
 		cg.name=cg.letter+cg.idx;
-		cgDb(); cgSvg(); cgCss(); cgEscapeCreate();
+		$("#"+cg.name).remove();
+		cgDb(undoRegister=0); cgSvg(); cgCss(); cgEscapeCreate();
 	}
 }
 //}}}
@@ -1086,7 +1092,7 @@ function saveRightBoxCgProps() {//{{{
 		cg.z=[50,50];
 		$("#"+cg.name).attr('cx', cg.polypoints[0][0]).attr('cy', cg.polypoints[0][1]);   
 		cgUpdateSvg();
-		cgDb();
+		cgDb(undoRegister=0);
 	} else {
 		cg.polypoints=[];
 		_.each($("#alter-polypoints").val().split("\n"), function(m) { 
@@ -1103,7 +1109,7 @@ function saveRightBoxCgProps() {//{{{
 		if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
 		cgUpdateSvg();
 		cgCss();
-		cgDb();
+		cgDb(undoRegister=0);
 		updateSnapLines();
 	}
 
