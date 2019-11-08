@@ -16,7 +16,7 @@ $menu="
 
 $nodes['about']=array("About Aamks", /*{{{*/
 "
-Aamks is a web-based platform for assessing the fire safety of humans in buildings.
+Aamks is an open source, web-based platform for assessing the fire safety of humans in buildings.
 Aamks runs hundreds of fire simulations (CFAST) and evacuation simulations
 (Aamks.Evac) and then evaluates the results. In each simulation humans
 are moving across the building and are affected by fire and smoke.
@@ -25,7 +25,7 @@ are moving across the building and are affected by fire and smoke.
 /*}}}*/
 $nodes['devel']=array("Development version", /*{{{*/
 "
-Here you can play with the up-to-date <a href=https://student.szach.in/aamks/q.php?p=demo&s=simple&apainter=1>development version</a>.
+Here you can play with the up-to-date (but probably buggy here and there) <a href=https://student.szach.in/aamks/q.php?p=demo&s=simple&apainter=1>development version</a>.
 <br><br>
 
 Aamks is not production ready (we haven't yet released a stable version). This
@@ -84,14 +84,17 @@ $nodes['authors']=array("Authors", /*{{{*/
 "
 Core developers
 <ul>
-<li>Adam Krasuski, adam.p.krasuski@gmail.com
-<li>Karol Kreński, mimoohowy@gmail.com
-<li>Mateusz Fliszkiewicz, mateusz.fliszkiewicz@fkce.pl 
+<li><a target=_blank href=https://github.com/akrasuski>Adam Krasuski</a>
+<li><a target=_blank href=https://github.com/mimooh>Karol Kreński</a>
+<li><a target=_blank href=https://github.com/fliszer>Mateusz Fliszkiewicz</a>
 </ul>
 Contributors
 <ul>
+<li>Andrzej Krauze
 <li>Hubert Zawistowski
 <li>Mateusz Mackiewicz
+<li>Mateusz Zimny
+<li>Simo Hostikka
 <li>Stanisław Łazowy
 <li>Wojtek Kowalski
 </ul>
