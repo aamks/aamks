@@ -5,13 +5,15 @@
         "points": "[[1050,470],[2085,470],[2085,1415],[1050,1415]]",
         "idx": 2,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[2085,470],[3065,470],[3065,1415],[2085,1415]]",
         "idx": 4,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       }
     ],
     "COR": [
@@ -19,7 +21,8 @@
         "points": "[[1050,1415],[3755,1415],[3755,1930],[1050,1930]]",
         "idx": 3,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       }
     ],
     "DOOR": [
@@ -98,13 +101,15 @@
         "points": "[[415,470],[1050,470],[1050,1035],[415,1035]]",
         "idx": 1,
         "z": "[0,700]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[3065,470],[3755,470],[3755,1415],[3065,1415]]",
         "idx": 5,
         "z": "[0,1050]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       }
     ],
     "HALL": [],
@@ -130,7 +135,8 @@
         "points": "[[2085,470],[3065,470],[3065,1415],[2085,1415]]",
         "idx": 8,
         "z": "[350,700]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       }
     ],
     "COR": [
@@ -138,7 +144,8 @@
         "points": "[[1050,1415],[3755,1415],[3755,1930],[1050,1930]]",
         "idx": 7,
         "z": "[350,700]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       }
     ],
     "DOOR": [
@@ -206,7 +213,8 @@
         "points": "[[1050,470],[2085,470],[2085,1415],[1050,1415]]",
         "idx": 6,
         "z": "[350,1050]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       }
     ],
     "DCLOSER": [],
@@ -247,7 +255,8 @@
         "points": "[[2085,470],[3065,470],[3065,1415],[2085,1415]]",
         "idx": 10,
         "z": "[700,1050]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       }
     ],
     "COR": [
@@ -255,7 +264,8 @@
         "points": "[[1050,1415],[3755,1415],[3755,1930],[1050,1930]]",
         "idx": 9,
         "z": "[700,1050]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       }
     ],
     "DOOR": [

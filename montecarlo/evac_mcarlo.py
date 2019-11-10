@@ -108,9 +108,10 @@ class EvacMcarlo():
         Concentration comes as m^2, but aamks uses 100 * 100 cm^2 
         '''
 
-        z=self.conf['evacuees_concentration']
+        z=self.conf['evacuees_density']
         for i in [name, "{}_FLOOR_{}".format(type_sec,floor), type_sec]:
             if i in z.keys():
+                dd(i, z[i] * 100 * 100)
                 return z[i] * 100 * 100
         raise Exception("Cannot determine the density for {}".format(name))
 

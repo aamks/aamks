@@ -32,38 +32,38 @@ function make_help() { /*{{{*/
 }
 /*}}}*/
 function get_building($q,$get_keys=0) { /*{{{*/
-	$db['Hotel']                     =array('code'=> 'c1' , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1    , 'COR'=> 1    , 'STAI'=> 1    , 'HALL'=> 1)  ) ;
-	$db['Office (closed plan)']      =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>8    , 'COR'=> 20   , 'STAI'=> 50   , 'HALL'=> 30) ) ;
-	$db['Office (open plan)']        =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>50   , 'COR'=> 10   , 'STAI'=> 50   , 'HALL'=> 10) ) ;
-	$db['Amusement arcade']          =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.5  , 'COR'=> 10   , 'STAI'=> 30   , 'HALL'=> 4)  ) ;
-	$db['Archive, library']          =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$db['Art gallery']               =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$db['Assembly hall']             =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>30   , 'COR'=> 30   , 'STAI'=> 30   , 'HALL'=> 30) ) ;
-	$db['Bank']                      =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.0029 , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>3    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$db['Bar']                       =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.3  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$db['Bazaar']                    =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$db['Business centre']           =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>7    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$db['Canteen']                   =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1    , 'COR'=> 10   , 'STAI'=> 20   , 'HALL'=> 10) ) ;
-	$db['School']                    =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 10   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$db['Schopping mall']            =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>4    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 4)  ) ;
-	$db['Dance area']                =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.5  , 'COR'=> 1    , 'STAI'=> 1    , 'HALL'=> 1)  ) ;
-	$db['Dromitory']                 =array('code'=> 'c2' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$db['Exhibition area']           =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1.5  , 'COR'=> 1.5  , 'STAI'=> 10   , 'HALL'=> 1.5)) ;
-	$db['Factory area']              =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>5    , 'COR'=> 10   , 'STAI'=> 20   , 'HALL'=> 10) ) ;
-	$db['Gym or leisure centre']     =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1    , 'COR'=> 1    , 'STAI'=> 1    , 'HALL'=> 1)  ) ;
-	$db['Museum']                    =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.6  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$db['Restaurant']                =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>1    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$db['Shop sales']                =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 5    , 'STAI'=> 10   , 'HALL'=> 2)  ) ;
-	$db['Storage or warehousing']    =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.18   , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>30   , 'COR'=> 30   , 'STAI'=> 30   , 'HALL'=> 30) ) ;
-	$db['Theatre, concert hall']     =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>0.4  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$db['Medical day centre']        =array('code'=> 'd1' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>7    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
-	$db['Hospital, nursing home']    =array('code'=> 'd2' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>10   , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
-	$db['Railway station, airport']  =array('code'=> 'e'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_concentration'=> array('ROOM'=>2    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
+	$db['Hotel']                     =array('code'=> 'c1' , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>1    , 'COR'=> 1    , 'STAI'=> 1    , 'HALL'=> 1)  ) ;
+	$db['Office (closed plan)']      =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>8    , 'COR'=> 20   , 'STAI'=> 50   , 'HALL'=> 30) ) ;
+	$db['Office (open plan)']        =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>50   , 'COR'=> 10   , 'STAI'=> 50   , 'HALL'=> 10) ) ;
+	$db['Amusement arcade']          =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>0.5  , 'COR'=> 10   , 'STAI'=> 30   , 'HALL'=> 4)  ) ;
+	$db['Archive, library']          =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>5    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
+	$db['Art gallery']               =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>5    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
+	$db['Assembly hall']             =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>30   , 'COR'=> 30   , 'STAI'=> 30   , 'HALL'=> 30) ) ;
+	$db['Bank']                      =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.0029 , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>3    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
+	$db['Bar']                       =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>0.3  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
+	$db['Bazaar']                    =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>2    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
+	$db['Business centre']           =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>7    , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
+	$db['Canteen']                   =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>1    , 'COR'=> 10   , 'STAI'=> 20   , 'HALL'=> 10) ) ;
+	$db['School']                    =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>2    , 'COR'=> 10   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
+	$db['Schopping mall']            =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>4    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 4)  ) ;
+	$db['Dance area']                =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>0.5  , 'COR'=> 1    , 'STAI'=> 1    , 'HALL'=> 1)  ) ;
+	$db['Dromitory']                 =array('code'=> 'c2' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>5    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
+	$db['Exhibition area']           =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>1.5  , 'COR'=> 1.5  , 'STAI'=> 10   , 'HALL'=> 1.5)) ;
+	$db['Factory area']              =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>5    , 'COR'=> 10   , 'STAI'=> 20   , 'HALL'=> 10) ) ;
+	$db['Gym or leisure centre']     =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>1    , 'COR'=> 1    , 'STAI'=> 1    , 'HALL'=> 1)  ) ;
+	$db['Museum']                    =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>0.6  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
+	$db['Restaurant']                =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>1    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
+	$db['Shop sales']                =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.047  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>2    , 'COR'=> 5    , 'STAI'=> 10   , 'HALL'=> 2)  ) ;
+	$db['Storage or warehousing']    =array('code'=> 'a'  , 'hrr_alpha_mode'=> 0.18   , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>30   , 'COR'=> 30   , 'STAI'=> 30   , 'HALL'=> 30) ) ;
+	$db['Theatre, concert hall']     =array('code'=> 'b'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>0.4  , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
+	$db['Medical day centre']        =array('code'=> 'd1' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>7    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
+	$db['Hospital, nursing home']    =array('code'=> 'd2' , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>10   , 'COR'=> 20   , 'STAI'=> 20   , 'HALL'=> 20) ) ;
+	$db['Railway station, airport']  =array('code'=> 'e'  , 'hrr_alpha_mode'=> 0.012  , 'hrrpua_mode'=> 500  , 'evacuees_density'=> array('ROOM'=>2    , 'COR'=> 10   , 'STAI'=> 10   , 'HALL'=> 10) ) ;
 	if(empty($get_keys)) {  
 		if(isset($db[$q])) { 
 			return $db[$q];
 		} else {
-			return array('code'=>'', 'hrr_alpha_mode'=> '', 'hrrpua_mode'=> '', 'evacuees_concentration'=> array('ROOM'=>'', 'COR'=> '', 'STAI'=> '', 'HALL'=> '') ) ;
+			return array('code'=>'', 'hrr_alpha_mode'=> '', 'hrrpua_mode'=> '', 'evacuees_density'=> array('ROOM'=>'', 'COR'=> '', 'STAI'=> '', 'HALL'=> '') ) ;
 		}
 	} else {
 		return array_keys($db);
@@ -421,7 +421,7 @@ function get_template_defaults($q) {/*{{{*/
         "mode": 0.0029,
         "max": 0.188
     },
-    "evacuees_concentration": {
+    "evacuees_density": {
         "ROOM": 3,
         "COR": 20,
         "STAI": 20,

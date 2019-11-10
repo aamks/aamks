@@ -5,7 +5,8 @@
                 "points": "[[495,415],[1000,415],[1000,2000],[495,2000]]",
                 "idx": 1,
                 "z": "[0,350]",
-                "room_enter": "yes"
+                "room_enter": "yes",
+                "evacuees_density": "auto"
             }
         ],
         "COR": [
@@ -13,7 +14,8 @@
                 "points": "[[1000,415],[2235,415],[2235,1000],[1000,1000]]",
                 "idx": 2,
                 "z": "[0,350]",
-                "room_enter": "yes"
+                "room_enter": "yes",
+                "evacuees_density": "auto"
             }
         ],
         "DOOR": [

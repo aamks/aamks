@@ -5,91 +5,106 @@
         "points": "[[0,0],[1000,0],[1000,1000],[0,1000]]",
         "idx": 1,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[0,1000],[1000,1000],[1000,1650],[0,1650]]",
         "idx": 2,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[0,1985],[576,1985],[576,2434],[0,2434]]",
         "idx": 4,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[576,1985],[1306,1985],[1306,2434],[576,2434]]",
         "idx": 5,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[1000,0],[1995,0],[1995,1000],[1000,1000]]",
         "idx": 6,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[1000,1000],[1995,1000],[1995,1650],[1000,1650]]",
         "idx": 7,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[1306,1985],[2191,1985],[2191,2434],[1306,2434]]",
         "idx": 8,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[1995,0],[2610,0],[2610,450],[1995,450]]",
         "idx": 9,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[1995,450],[2610,450],[2610,1000],[1995,1000]]",
         "idx": 10,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[1995,1000],[2610,1000],[2610,1650],[1995,1650]]",
         "idx": 11,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[2191,1985],[2610,1985],[2610,2434],[2191,2434]]",
         "idx": 12,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[2610,1985],[3680,1985],[3680,2434],[2610,2434]]",
         "idx": 14,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[3070,0],[3680,0],[3680,1000],[3070,1000]]",
         "idx": 15,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[3070,1000],[3680,1000],[3680,1468],[3070,1468]]",
         "idx": 16,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[3070,1468],[3680,1468],[3680,1985],[3070,1985]]",
         "idx": 17,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       }
     ],
     "COR": [
@@ -97,13 +112,15 @@
         "points": "[[0,1650],[2610,1650],[2610,1985],[0,1985]]",
         "idx": 3,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       },
       {
         "points": "[[2610,0],[3070,0],[3070,1985],[2610,1985]]",
         "idx": 13,
         "z": "[0,350]",
-        "room_enter": "yes"
+        "room_enter": "yes",
+        "evacuees_density": "auto"
       }
     ],
     "DOOR": [

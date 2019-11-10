@@ -79,6 +79,7 @@ function registerListeners() {//{{{
 	$("body").on("click"               , '#button-setup'           , function() { showGeneralBox(); });
 	$("body").on("click"               , '.legend'                 , function() { activeLetter=$(this).attr('letter'); cgStartDrawing(); });
 	$("body").on("change"              , '#alter-room-enter'       , function() { saveRightBox(); });
+	$("body").on("change"              , '#alter-evacuees-density'     , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-exit-type'        , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-mvent-throughput' , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-polypoints'       , function() { saveRightBox(); });
@@ -193,7 +194,7 @@ function cgDb(undoRegister=1) { //{{{
 	}
 	db({"name": cg.name}).remove();
 	b=getBbox();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y });
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y });
 	if(undoRegister==1) { undoBufferRegister('insert'); }
 }
 //}}}
@@ -524,6 +525,7 @@ function cgInit() {//{{{
 	} else if (cg.type=='room') {
 		cg.z.push(cg.z[0] + defaults.floor_dimz);
 		cg.room_enter='yes';
+		cg.evacuees_density='auto';
 	} else {
 		cg.z.push(cg.z[0] + defaults.floor_dimz);
 	}
@@ -703,6 +705,7 @@ function dbUpdateCadJsonStr() { //{{{
 			cad_json["exit_type"]=i.exit_type;
 		} else if(i.type=='room') {
 			cad_json["room_enter"]=i.room_enter; 
+			cad_json["evacuees_density"]=i.evacuees_density; 
 		} else if(i.type=='mvent') {
 			cad_json["mvent_throughput"]=i.mvent_throughput;
 		}
@@ -764,6 +767,7 @@ function cgMake(floor,letter,record) { //{{{
 
 	if('exit_type' in record)        { cg.exit_type=record.exit_type; }
 	if('room_enter' in record)       { cg.room_enter=record.room_enter; }
+	if('evacuees_density' in record)     { cg.evacuees_density=record.evacuees_density; }
 	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
 }
 //}}}
@@ -936,6 +940,7 @@ function bulkProps() {//{{{
 
 function roomProps() {//{{{
 	pp="<input id=alter-room-enter type=hidden value=0>";
+	pp="<input id=alter-evacuees-density type=hidden value='auto'>";
 	if(cg.type=='room') {
 		v=db({'name':cg.name}).get()[0];
 		pp='';
@@ -945,6 +950,8 @@ function roomProps() {//{{{
 		pp+="<option value='yes'>yes</option>";
 		pp+="<option value='no'>no</option>";
 		pp+="</select>";
+		pp+="<tr><td>density <withHelp>?<help> Draws the given number of  evacuees per square metre. <br><orange>auto</orange> draws the evacuees according to the building profile.</help></withHelp>";
+		pp+="<td><input type=text style='width: 40px' id=alter-evacuees-density value='"+v.evacuees_density+"'>";
 	}
 	return pp;
 }
@@ -1100,6 +1107,7 @@ function saveRightBoxCgProps() {//{{{
 			if(arr.length==2 && $.isNumeric(arr[0]) && $.isNumeric(arr[1])) { cg.polypoints.push([Number(arr[0]), Number(arr[1])]); }
 		});
 		cg.room_enter=$("#alter-room-enter").val();
+		cg.evacuees_density=$("#alter-evacuees-density").val();
 		cg.exit_type=$("#alter-exit-type").val();
 		cg.letter=$("#alter-geom-letter").val();
 		cg.mvent_throughput=Number($("#alter-mvent-throughput").val());

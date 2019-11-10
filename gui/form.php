@@ -182,13 +182,13 @@ function building_fields($v, $variant='easy') {/*{{{*/
 function calculate_profile($arr) { #{{{
 	$arr['code']=get_building($arr['type'])['code'];
 	extract($arr);
-	$evacuees_concentration=get_building($arr['type'])['evacuees_concentration'];
+	$evacuees_density=get_building($arr['type'])['evacuees_density'];
 	$hrr_alpha_mode=get_building($arr['type'])['hrr_alpha_mode'];
 	$hrrpua_mode=get_building($arr['type'])['hrrpua_mode'];
 	$pre_evac=get_profile_code(implode(",", array($code,$management,$complexity,$alarming)));
 	$pre_evac_fire_origin=get_profile_code(implode(",", array($code,"fire_origin")));
 	return array(
-		'evacuees_concentration'=>$evacuees_concentration,
+		'evacuees_density'=>$evacuees_density,
 		'hrr_alpha_mode'=>$hrr_alpha_mode,
 		'hrrpua_mode'=>$hrrpua_mode,
 		'pre_evac'=>$pre_evac, 
@@ -209,7 +209,7 @@ function update_form_easy() {/*{{{*/
 	$out+=get_defaults('setup1');
 	$z=calculate_profile($_POST['post']['building_profile']);
 	$out['alarming']=alarming_defaults($out['building_profile']['alarming']);
-	$out['evacuees_concentration']=$z['evacuees_concentration'];
+	$out['evacuees_density']=$z['evacuees_density'];
 	$out['hrr_alpha']['mode']=$z['hrr_alpha_mode'];
 	$out['hrrpua']['mode']=$z['hrrpua_mode'];
 	$out['pre_evac']=$z['pre_evac'];
@@ -270,7 +270,7 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('evacuees_max_v_speed')."<td>".form_assoc('evacuees_max_v_speed',$evacuees_max_v_speed); 
 	echo "<tr><td>".get_help('evacuees_alpha_v')."<td>".form_assoc('evacuees_alpha_v',$evacuees_alpha_v); 
 	echo "<tr><td>".get_help('evacuees_beta_v')."<td>".form_assoc('evacuees_beta_v',$evacuees_beta_v); 
-	echo "<tr><td>".get_help('evacuees_concentration')."<td>".form_assoc('evacuees_concentration',$evacuees_concentration); 
+	echo "<tr><td>".get_help('evacuees_density')."<td>".form_assoc('evacuees_density',$evacuees_density); 
 	echo "<tr><td>".get_help('alarming')."<td>".form_assoc('alarming',$alarming); 
 	echo "<tr><td>".get_help('pre_evac')."<td>".form_assoc('pre_evac',$pre_evac); 
 	echo "<tr><td>".get_help('pre_evac_fire_origin')."<td>".form_assoc('pre_evac_fire_origin',$pre_evac_fire_origin); 
