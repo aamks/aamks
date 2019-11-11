@@ -167,7 +167,7 @@ class Aamks {/*{{{*/
 			<div id='hidden_form_container' style='display:none;'></div> 
 		</head>
 		<body>
-		<div id=ajax_msg></div>
+		<div id=amsg></div>
 		";
 		echo "$header";
 		$this->anyMessages();

@@ -46,26 +46,26 @@ function make_legend2(module) {//{{{
 
 }
 //}}}
-function ajax_msg(r) {//{{{
+function amsg(r) {//{{{
 	if(r['err']==1) { 
-		$('#ajax_msg').clearQueue();
-		$('#ajax_msg').css('display', 'none');
-		$('#ajax_msg').html("Aamks is halting on error:<br>"+r['msg']);
-		$('#ajax_msg').css('display', 'block');
-		$('#ajax_msg').css('background-color', "#800");
+		$('#amsg').clearQueue();
+		$('#amsg').css('display', 'none');
+		$('#amsg').html("Aamks is halting on error:<br>"+r['msg']);
+		$('#amsg').css('display', 'block');
+		$('#amsg').css('background-color', "#800");
 		throw new Error("Aamks is halting on error");
 	} 
 	else if(r['err']==0 && r['msg'].length>0) { 
-		$('#ajax_msg').css('display', 'none');
-		$('#ajax_msg').html(r['msg']);
-		$('#ajax_msg').css('display', 'block');
-		$('#ajax_msg').css('background-color', "#285");
+		$('#amsg').css('display', 'none');
+		$('#amsg').html(r['msg']);
+		$('#amsg').css('display', 'block');
+		$('#amsg').css('background-color', "#285");
 		if ("duration" in r) {
 			var duration=r['duration'];
 		} else {
 			var duration=1500;
 		}
-		$('#ajax_msg').delay(duration).fadeOut(400);
+		$('#amsg').delay(duration).fadeOut(400);
 	}
 }
 //}}}
@@ -85,9 +85,9 @@ function ajaxUserPreferences() {//{{{
 //}}}
 function launch_simulation() {//{{{
 	$("body").on("click", "#launch_simulation", function() {
-		ajax_msg({"msg": "Trying to launch...", "err":0, "duration": 20000 }); 
+		amsg({"msg": "Trying to launch...", "err":0, "duration": 20000 }); 
 		$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function (json) { 
-			ajax_msg(json); 
+			amsg(json); 
 			if(json.err==0) {
 				setTimeout(function(){
 					location.assign("/aamks/animator/index.php");

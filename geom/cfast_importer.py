@@ -167,8 +167,12 @@ class CFASTimporter():
         aa={}
         aa['mvent_throughput']=v['mvent_throughput']    if 'mvent_throughput' in v else None
         aa['room_enter']=v['room_enter']                if 'room_enter' in v else None
-        aa['evacuees_density']=v['evacuees_density']            if 'evacuees_density' in v else None
         aa['exit_type']=v['exit_type']                  if 'exit_type' in v else None
+
+        try: 
+            aa['evacuees_density']=float(v['evacuees_density'])
+        except: 
+            aa['evacuees_density']=None
         return aa
 # }}}
     def _prepare_geom_record(self,v):# {{{
@@ -529,7 +533,7 @@ class CFASTimporter():
                 vv=list(orig_record.values())
                 vv.append(flo)
                 vv.append("{}.{}".format(orig_name,flo))
-                self.s.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
+                self.s.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
                 high_global_type_id+=1
 
 # }}}

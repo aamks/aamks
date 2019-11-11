@@ -103,16 +103,19 @@ class EvacMcarlo():
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
         ''' 
-        Special selectors from distributions.json
-        First we try to return ROOM_1_2, then ROOM_FLOOR_1, then ROOM
-        Concentration comes as m^2, but aamks uses 100 * 100 cm^2 
+        1. See what Apainter says about the density 
+        2. See what conf.json says about evacuees density
+
+        Density comes as m^2, but aamks uses 100 * 100 cm^2 
         '''
 
-        z=self.conf['evacuees_density']
-        for i in [name, "{}_FLOOR_{}".format(type_sec,floor), type_sec]:
-            if i in z.keys():
-                dd(i, z[i] * 100 * 100)
-                return z[i] * 100 * 100
+        r=self.s.query("SELECT evacuees_density FROM aamks_geom WHERE name=?", (name,))[0]
+        if r['evacuees_density']  is not None:
+            return 1/r['evacuees_density'] * 100 * 100
+
+        z=self.conf['evacuees_density'][type_sec]
+        return 1/z * 100 * 100
+
         raise Exception("Cannot determine the density for {}".format(name))
 
 # }}}

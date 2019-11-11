@@ -22,8 +22,8 @@ K
 mimooh
 =======
 
+* apainter: manual+probabilistic
 * zduplikowane klucze w conf.json i evac.json
-* apainter: evacuees density form
 * animator: Highlight poly geoms 
 * animator: labels poly rooms
 

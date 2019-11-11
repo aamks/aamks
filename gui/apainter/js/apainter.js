@@ -79,7 +79,6 @@ function registerListeners() {//{{{
 	$("body").on("click"               , '#button-setup'           , function() { showGeneralBox(); });
 	$("body").on("click"               , '.legend'                 , function() { activeLetter=$(this).attr('letter'); cgStartDrawing(); });
 	$("body").on("change"              , '#alter-room-enter'       , function() { saveRightBox(); });
-	$("body").on("change"              , '#alter-evacuees-density'     , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-exit-type'        , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-mvent-throughput' , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-polypoints'       , function() { saveRightBox(); });
@@ -103,20 +102,20 @@ function registerListeners() {//{{{
 }
 //}}}
 function keyboardEvents()  { // {{{
-	$(this).keyup((e) =>   { if (e.key in gg && ! e.ctrlKey)    { cgEscapeCreate(); activeLetter=e.key; cgStartDrawing(); } });
-	$(this).keydown((e) => { if (e.key == 'Escape')             { escapeAll(); } });
-	$(this).keydown((e) => { if (e.key == 'v')                  { cgEscapeCreate(); nextView(); } });
-	$(this).keydown((e) => { if (e.key == 'p')                  { $("#p1").remove() ; } });
-	$(this).keydown((e) => { if (e.key == 'n')                  { cgEscapeCreate(); changeFloor(calcNextFloor()); start2dView(); } });
-	$(this).keydown((e) => { if (e.key == '=')                  { cgEscapeCreate(); resetView(); } });
-	$(this).keyup((e) =>   { if (e.key == 'i' && e.ctrlKey)     { startTxtView(); } }) ;
-	$(this).keydown((e) => { if (e.key == 'r' && e.ctrlKey)     { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
-	$(this).keydown((e) => { if (e.key == 's' && e.ctrlKey)     { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
-	$(this).keyup((e) =>   { if (e.key == 'z' && e.ctrlKey)     { undoApply(); } }) ;
-	$(this).keydown((e) => { if (e.key == 'x' && ! isEmpty(cg)) { cgEscapeCreate(); cgRemove(); }});
-	$(this).keydown((e) => { if (e.key == 'l')                  { cgEscapeCreate(); bulkProps(); } });
+	$(this).keyup((e) =>   { if (e.target.nodeName != 'INPUT' && e.key in gg && ! e.ctrlKey )   { cgEscapeCreate(); activeLetter=e.key; cgStartDrawing(); } });
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'v')                  { cgEscapeCreate(); nextView(); } });
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'p')                  { $("#p1").remove() ; } });
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'n')                  { cgEscapeCreate(); changeFloor(calcNextFloor()); start2dView(); } });
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == '=')                  { cgEscapeCreate(); resetView(); } });
+	$(this).keyup((e) =>   { if (e.target.nodeName != 'INPUT' && e.key == 'i' && e.ctrlKey)     { startTxtView(); } }) ;
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'r' && e.ctrlKey)     { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 's' && e.ctrlKey)     { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
+	$(this).keyup((e) =>   { if (e.target.nodeName != 'INPUT' && e.key == 'z' && e.ctrlKey)     { undoApply(); } }) ;
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'x' && ! isEmpty(cg)) { cgEscapeCreate(); cgRemove(); }});
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'l')                  { cgEscapeCreate(); bulkProps(); } });
+	$(this).keydown((e) => { if (e.key == 'Escape')												{ escapeAll(); } });
 	// debug
-	$(this).keydown((e) => { if (e.key == ']') { debug(); }});
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == ']') { debug(); }});
 }
 //}}}
 function dddx() {//{{{
@@ -767,13 +766,13 @@ function cgMake(floor,letter,record) { //{{{
 
 	if('exit_type' in record)        { cg.exit_type=record.exit_type; }
 	if('room_enter' in record)       { cg.room_enter=record.room_enter; }
-	if('evacuees_density' in record)     { cg.evacuees_density=record.evacuees_density; }
+	if('evacuees_density' in record) { cg.evacuees_density=record.evacuees_density; }
 	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
 }
 //}}}
 function ajaxSaveCadJson(json_data) { //{{{
 	$.post('/aamks/ajax.php?ajaxApainterExport', { 'data': json_data }, function (json) { 
-		ajax_msg(json); 
+		amsg(json); 
 		importCadJson();
 	});
 }
@@ -785,7 +784,7 @@ function importCadJson() { //{{{
 		// We loop thru cgDb() here which updates the cg
 		// At the end the last elem in the loop would be the cg
 		// which may run into this-elem-doesnt-belong-to-this-floor problem.
-		ajax_msg(json); 
+		amsg(json); 
 		svgGroupsInit(json.data);
 		json2db(json.data);
 		_.each(json.data, function(data,floor) { 
@@ -813,7 +812,7 @@ function dbReorder() {//{{{
 	// Re-enumerate all elems in this fashion: r1, r2, r3, ..., d1, d2, d3, ...
 	// CFAST expects elems to be numbered as above
 	// Evacuees will be in original order for navmesh testing pairing: e1 > e2, e3 > e4, ...
-	if(db({"type": 'fire'}).get().length > 1) { ajax_msg({ 'err': 1, 'msg': "Aamks allows for max one fire" }); }
+	if(db({"type": 'fire'}).get().length > 1) { amsg({ 'err': 1, 'msg': "Aamks allows for max one fire" }); }
 
 	db.sort("idx");
 	var ee=db({"type": 'evacuee'}).get();
@@ -896,7 +895,7 @@ function floorCopy() {	//{{{
 	cg={};
 	updateSnapLines();
 	showGeneralBox();
-	ajax_msg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
+	amsg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
 function cgSelect(elems, blink=1, showProps=1) {//{{{
 
@@ -918,9 +917,9 @@ function cgSelect(elems, blink=1, showProps=1) {//{{{
 //}}}
 function bulkPlainProps() {//{{{
 	var tbody='';
-	tbody+="<tr><td>name<td>z";
+	tbody+="<tr><td>name<td>z<td>density";
 	_.each(db({'letter': activeLetter, 'floor': floor}).get(), function (m) {
-		tbody+="<tr><td class=bulkProps id="+ m.name + ">"+ m.name +"</td><td>"+m.z;
+		tbody+="<tr><td class=bulkProps id="+ m.name + ">"+ m.name +"</td><td>"+m.z+"</td><td>"+m.evacuees_density;
 	});
 	return tbody;
 }
@@ -950,7 +949,7 @@ function roomProps() {//{{{
 		pp+="<option value='yes'>yes</option>";
 		pp+="<option value='no'>no</option>";
 		pp+="</select>";
-		pp+="<tr><td>density <withHelp>?<help> Draws the given number of  evacuees per square metre. <br><orange>auto</orange> draws the evacuees according to the building profile.</help></withHelp>";
+		pp+="<tr><td>density <withHelp>?<help> Draws the given number of  evacuees per square metre. <br><orange>auto</orange> draws the evacuees according to the building profile.<br><br>You can alter global densities in Project > Editor: text<br>evacuees_density:<br>{ ROOM: 0.33, COR: 0.05, STAI: 0.05, HALL: 0.05 }</help></withHelp>";
 		pp+="<td><input type=text style='width: 40px' id=alter-evacuees-density value='"+v.evacuees_density+"'>";
 	}
 	return pp;
@@ -1093,6 +1092,11 @@ function checkGeomReplacement() {//{{{
 	}
 }
 //}}}
+function validateForm() {//{{{
+	if(!cg.evacuees_density.match(/^auto$|^\d*\.?\d*$/)) { amsg({'err':1, 'msg': "Examples of valid density values:<br>auto<br>0.12"}); }
+	if($.isNumeric($("#alter-evacuees-density").val())) { cg.evacuees_density=Number($("#alter-evacuees-density").val()); } 
+}
+//}}}
 function saveRightBoxCgProps() {//{{{
 	if(cg.type=='evacuee') {
 		cg.polypoints=[[Number($("#alter-px").val()), Number($("#alter-py").val())]];
@@ -1111,6 +1115,7 @@ function saveRightBoxCgProps() {//{{{
 		cg.exit_type=$("#alter-exit-type").val();
 		cg.letter=$("#alter-geom-letter").val();
 		cg.mvent_throughput=Number($("#alter-mvent-throughput").val());
+		validateForm();
 		var zz=$("#alter-z").val().split(",")
 		cg.z=[Number(zz[0]), Number(zz[1])];
 		checkGeomReplacement();
@@ -1175,7 +1180,7 @@ function verifyIntersections() {//{{{
 					cgSelect([p1.name, p2.name]);
 					activeLetter=p1.letter;
 					bulkProps();
-					ajax_msg({'err':1, 'msg':"Overlaping rooms:<br>"+p1.name+"<br>"+p2.name}); 
+					amsg({'err':1, 'msg':"Overlaping rooms:<br>"+p1.name+"<br>"+p2.name}); 
 				}
 			});
 		});

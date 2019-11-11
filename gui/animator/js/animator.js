@@ -136,7 +136,7 @@ $.getJSON("inc.json", function(x) {//{{{
     evacueeRadius=incDB['evacueeRadius'];
 	setColors("dark");
 	$.post('/aamks/ajax.php?ajaxAnimsList', function (response) { 
-		ajax_msg(response);
+		amsg(response);
 		animsList=response['data'];
 		currentAnimMeta=animsList[0];
 		showStaticImage();
@@ -214,7 +214,7 @@ function showStaticImage() {//{{{
 	// We can only start animation after we are done with static rooms, doors etc.
 
 	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
-		ajax_msg(response);
+		amsg(response);
 		dstatic=response['data'];
 		floors_ranges();
 		dstaticAllFloors=response['data'];
@@ -268,7 +268,7 @@ function showAnimation() {//{{{
 	// After static data is loaded to paperjs we can run animations.
 	
 	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': currentAnimMeta['anim'] }, function(response) { 
-		ajax_msg(response);
+		amsg(response);
 		paused=0;
 		currentAnimData=JSON.parse(response['data']);
 		eData=currentAnimData.animations.evacuees;

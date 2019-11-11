@@ -39,7 +39,7 @@ function importImgUnderlay(data,f,reload_form=0) {//{{{
 	if(data != undefined) {
 		data.floor=f;
 		$.post('/aamks/ajax.php?ajaxGetUnderlay', data, function (json) { 
-			ajax_msg(json);
+			amsg(json);
 			d3.select("#uimg"+f).attr("xlink:href", json.data);
 			underlayImgAttribs(f, data);
 			if(reload_form==1) { underlayForm(); }
@@ -158,11 +158,11 @@ function uimgAdd(e) {//{{{
 		if(['jpeg', 'png', 'pdf', 'svg'].indexOf(type) > -1) {
 			uSetup={ 'floor': floor, 'type': type, 'base64': base64, 'opacity': 0.5, "scale": 1, "rotate": "0deg", "translate": '0px 0px' };
 			$.post('/aamks/ajax.php?ajaxAddUnderlay', uSetup, function (json) { 
-				ajax_msg(json);
+				amsg(json);
 				importImgUnderlay(uSetup, floor,1);
 			});
 		} else {
-			ajax_msg({'msg': "Aamks only supports png/jpg/svg/pdf underlays", 'err':1});
+			amsg({'msg': "Aamks only supports png/jpg/svg/pdf underlays", 'err':1});
 		}
 	}
 }
