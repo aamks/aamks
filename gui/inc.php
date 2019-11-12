@@ -192,7 +192,7 @@ class Aamks {/*{{{*/
 /*}}}*/
 	public function fatal($msg) {/*{{{*/
 		$home="<a href=".$_SESSION['home_url']."><img id=home src=/aamks/css/home.svg></a>";
-		echo "<fatal> $msg <br>$home</fatal>";
+		echo "<fatal>$msg</fatal>";
 		die();
 	}
 /*}}}*/

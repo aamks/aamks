@@ -227,6 +227,8 @@ function update_form_advanced() {/*{{{*/
 /*}}}*/
 function update_form_text() {/*{{{*/
 	if(empty($_POST['update_form_text'])) { return; }
+	json_decode($_POST['json']);
+	if (json_last_error() != JSON_ERROR_NONE) { $_SESSION['nn']->fatal("JSON: ".json_last_error_msg()."<br>Reverting to the previous version of the config." ); return; }
 	$_SESSION['nn']->write_scenario($_POST['json']);
 }
 /*}}}*/
@@ -383,7 +385,6 @@ function delete_scenario() {/*{{{*/
 /*}}}*/
 
 function main() {/*{{{*/
-	// 1: easy, 2: advanced, 3: text
 	$_SESSION['nn']->htmlHead("Scenario properties");
 	$_SESSION['nn']->menu();
 	change_editor();
