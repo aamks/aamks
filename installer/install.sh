@@ -122,8 +122,8 @@ USER=`id -ru`
 
 sudo locale-gen en_US.UTF-8
 sudo apt-get update 
-sudo apt-get --yes install postgresql subversion python3-pip python3-psycopg2 sendxmpp xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php 
-sudo -H pip3 install webcolors pyhull colour shapely scipy numpy networkx sns seaborn statsmodels PyQt5 ete3 sklearn
+sudo apt-get --yes install postgresql subversion python3-pip python3-psycopg2 xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php 
+sudo -H pip3 install webcolors pyhull colour shapely scipy numpy sns seaborn statsmodels PyQt5 ete3 sklearn
 
 
 # www-data user needs AAMKS_PG_PASS
