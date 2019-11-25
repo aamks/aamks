@@ -63,7 +63,6 @@ class Evacuee:
             except:
                 self.goal = [int(goal[0][0]), int(goal[0][1])]
 
-
     def calculate_velocity(self, current_time):
         self.unnorm_vector = tuple(map(sub, self.goal, self.position))
         self.distance = (sqrt(self.unnorm_vector[0] ** 2 + self.unnorm_vector[1] ** 2))
@@ -77,6 +76,9 @@ class Evacuee:
 
     def update_speed(self):
         extinction_coefficient = self.optical_density_at_position * 2.303
+        self.speed = max(self.max_speed * 0.1, self.calculate_max_speed_for_extinction(extinction_coefficient))
+
+    def calculate_max_speed_for_extinction(self, extinction_coefficient):
         if self.beta_v == 0:
             self.beta_v = 0.00000001
-        self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.beta_v/self.alpha_v * extinction_coefficient))
+        return self.max_speed * (1 + self.beta_v / self.alpha_v * extinction_coefficient)
