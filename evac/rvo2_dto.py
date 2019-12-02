@@ -13,6 +13,9 @@ from shapely.geometry import LineString
 from include import Sqlite
 from math import log
 import os
+from scipy.stats import norm
+from math import log
+from numpy import array, prod
 
 
 class EvacEnv:
@@ -26,6 +29,7 @@ class EvacEnv:
         self.velocity_vector = []
         self.speed_vec = []
         self.fed = []
+        self.fed_nummeric = []
         self.fed_vec = []
         self.finished = []
         self.finished_vec = []
@@ -199,6 +203,7 @@ class EvacEnv:
                 self.evacuees.update_fed_of_pedestrian(i, fed * self.config['SMOKE_QUERY_RESOLUTION'])
 
         fed = [self.evacuees.get_fed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
+        self.fed_nummeric = fed
         c = None
         fed_symbilic = []
         for i in fed:
@@ -278,6 +283,13 @@ class EvacEnv:
             self.rset = self.current_time + 30
         if all(x == 0 for x in self.finished) and self.rset == 0:
             self.rset = self.current_time + 30
+
+    def calculate_individual_risk(self):
+        p = list()
+        for i in self.fed_nummeric:
+            p.append(1 - norm.cdf(log(i)))
+        return 1 - prod(array(p))
+
 
     def do_simulation(self, step):
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
