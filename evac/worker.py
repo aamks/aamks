@@ -45,7 +45,11 @@ class Worker:
         self.host_name = os.uname()[1]
         os.chdir('/home/aamks_users')
         os.environ["AAMKS_PROJECT"] = '/home/aamks_users/'+self.url.split('aamks_users/')[1].split('/workers/')[0]
-        self.working_dir = self.url.split('aamks_users/')[1]
+        if self.url.split('aamks_users/')[1][0] == "/":
+            self.working_dir = self.url.split('aamks_users/')[1][1:]
+        else:
+            self.working_dir = self.url.split('aamks_users/')[1]
+
         self.cross_building_results = None
         self.simulation_time = None
         self.time_shift = None
