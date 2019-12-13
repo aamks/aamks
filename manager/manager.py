@@ -54,7 +54,7 @@ class Manager():
 
 # }}}
     def add_workers(self):# {{{
-        ''' Register each host enabled in conf.json to gearman $AAMKS_SERVER (.bashrc) '''
+        ''' Register each worker enabled in conf.json to gearman '''
 
         self._access_hosts()
         for i in self.s.query("SELECT host FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
@@ -86,8 +86,15 @@ class Manager():
 # }}}
     def update_workers(self):# {{{
         ''' 
-        * install packages
-        * workers use /etc/aamks_server.conf to define AAMKS_SERVER
+        TODO: Need to check in cluster environment
+        install / update should be separate functions
+        install needs to scp to initial script
+
+        Call the installer script on each worker:
+        -p   AAMKS_PATH (e.g. /usr/local/aamks, Aamks will be installed there on the worker)
+        -s   AAMKS_SERVER (e.g. 127.0.0.1, the worker will expect the Aamks server there)
+        -i   install worker from github
+        -u   update/inspect worker
         '''
 
         self._access_hosts()

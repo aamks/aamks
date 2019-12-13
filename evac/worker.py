@@ -29,6 +29,8 @@ SIMULATION_TYPE = 1
 class Worker:
 
     def __init__(self):
+        self.json=Json()
+        self.AAMKS_SERVER=self.json.read("/etc/aamks.conf")['AAMKS_SERVER']
         self.start_time = time.time()
         self.url = sys.argv[1]
         self.vars = OrderedDict()
@@ -277,7 +279,7 @@ class Worker:
         self._write_meta()
 
         if os.environ['AAMKS_LOCAL_WORKER'] == '0':
-            Popen("gearman -h {} -f aOut '{} {} {}'".format(os.environ['AAMKS_SERVER'], self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
+            Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
             self.wlogger.info('aOut launched successfully')
         else:
             command = "python3 {}/manager/results_collector.py {} {} {}".format(os.environ['AAMKS_PATH'], self.host_name, self.meta_file, self.sim_id)
