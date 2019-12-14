@@ -62,10 +62,10 @@ class Worker:
 
 
     def get_logger(self, logger_name):
-        FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
+        #FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
         LOG_FILE = "/tmp/aamks_{}.log".format(self.sim_id)
         file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
-        file_handler.setFormatter(FORMATTER)
+        #file_handler.setFormatter(FORMATTER)
         logger = logging.getLogger(logger_name)
         logger.setLevel(eval('logging.{}'.format(self.config['LOGGING_MODE'])))
         logger.addHandler(file_handler)
@@ -121,9 +121,11 @@ class Worker:
             print('Cannot load evac.json from directory: {}'.format(str(e)))
             sys.exit(1)
 
+        self.project_conf=self.json.read("../../conf.json")
+
         self.sim_id = self.vars['conf']['SIM_ID']
         self.host_name = os.uname()[1]
-        print('Starting simulations id: {}'.format(self.sim_id))
+        #print('Starting simulations id: {}'.format(self.sim_id))
         self.wlogger=self.get_logger('worker.py')
         self.vars['conf']['logger'] = self.get_logger('evac.py')
 
@@ -137,17 +139,17 @@ class Worker:
             print('Workspace created')
 
     def run_cfast_simulations(self):
-
-        try:
-            os.system('/usr/local/aamks/fire/cfast cfast.in')
-        except Exception as e:
-            self.wlogger.error(e)
-            cfast_log = open('cfast.log', 'r')
-            for line in cfast_log.readlines():
-                if line.startswith("***Error:"):
-                    self.wlogger.error(Exception(line))
-        else:
-            self.wlogger.info('CFAST simulation calculated with success')
+        if self.project_conf['fire_model'] == 'CFAST':
+            try:
+                os.system('/usr/local/aamks/fire/cfast cfast.in')
+            except Exception as e:
+                self.wlogger.error(e)
+                cfast_log = open('cfast.log', 'r')
+                for line in cfast_log.readlines():
+                    if line.startswith("***Error:"):
+                        self.wlogger.error(Exception(line))
+            else:
+                self.wlogger.info('CFAST simulation calculated with success')
 
     def create_geom_database(self):
 
@@ -380,10 +382,10 @@ class Worker:
 
 w = Worker()
 if SIMULATION_TYPE == 'NO_CFAST':
-    print('Working in NO_CFAST mode')
+    #print('Working in NO_CFAST mode')
     w.test()
 elif os.environ['AAMKS_LOCAL_WORKER'] == '1':
-    print('Working in LOCAL MODE')
+    #print('Working in LOCAL MODE')
     w.local_worker()
 else:
     w.main()
