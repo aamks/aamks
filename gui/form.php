@@ -206,7 +206,7 @@ function alarming_defaults($x) {/*{{{*/
 function update_form_easy() {/*{{{*/
 	if(empty($_POST['update_form_easy'])) { return; }
 	$out=$_POST['post'];
-	$out+=get_defaults('setup1');
+	$out+=get_template_defaults('setup1');
 	$z=calculate_profile($_POST['post']['building_profile']);
 	$out['alarming']=alarming_defaults($out['building_profile']['alarming']);
 	$out['evacuees_density']=$z['evacuees_density'];
