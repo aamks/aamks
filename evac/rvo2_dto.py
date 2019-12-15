@@ -56,9 +56,9 @@ class EvacEnv:
                                        self.max_speed)
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
-        simulation_id = 402 #przykladowa symulacja
+        simulation_id = 418 #przykladowa symulacja
         self.evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
-
+        self.all_evac = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]
 
     def _find_closest_exit(self, evacuee):
         '''
@@ -165,11 +165,16 @@ class EvacEnv:
 
     def set_goal(self):
         for e in range(self.evacuees.get_number_of_pedestrians()):
+            print("f"+str(e))
             if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
                 continue
             else:
-                position = self.evacuees.get_position_of_pedestrian(e)
-                goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
+                if self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]["f"+str(e)]["ETYPE"] == "ACTIVE":
+                    position = self.evacuees.get_position_of_pedestrian(e)
+                    goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
+                else:
+                    position = self.evacuees.get_position_of_pedestrian(e)
+                    
                 try:
                     vis = self.sim.queryVisibility(position, goal[2], 15)
                     if vis:
