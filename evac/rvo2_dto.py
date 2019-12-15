@@ -11,6 +11,7 @@ import json
 from geom.nav import Navmesh
 from shapely.geometry import LineString
 from include import Sqlite
+from include import Json
 from math import log
 import os
 from scipy.stats import norm
@@ -21,6 +22,7 @@ from numpy import array, prod
 class EvacEnv:
 
     def __init__(self, aamks_vars):
+        self.json = Json()
         self.evacuees = Evacuees
         self.max_speed = 0
         self.current_time = 0
@@ -54,9 +56,9 @@ class EvacEnv:
                                        self.max_speed)
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
-        simulation_id = 417 #przykladowa symulacja 
-        evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
-        print(evac_data)
+        simulation_id = 402 #przykladowa symulacja
+        self.evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
+
 
     def _find_closest_exit(self, evacuee):
         '''
