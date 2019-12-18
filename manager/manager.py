@@ -32,9 +32,9 @@ class Manager():
         Popen("(echo workers ; sleep 0.1) | netcat {} 4730 -w 1 | grep -q aOut || {{ gearman -w -h {} -f aOut xargs python3 {}/manager/results_collector.py; }}".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_SERVER'], os.environ['AAMKS_PATH']), shell=True)
 # }}}
     def _list_enabled_networks(self):# {{{
-        print("Networks enabled in conf.json")
-        dd(self.conf['enabled_networks'])
-        print("")
+        print("\nNetworks enabled in conf.json\n")
+        for k,v in self.conf['enabled_networks'].items():
+            if v==1: print("\t"+k)
 # }}}
     def _access_hosts(self):# {{{
         self.s=Sqlite("/tmp/manage_aamks.sqlite")
@@ -86,20 +86,17 @@ class Manager():
 # }}}
     def update_workers(self):# {{{
         ''' 
-
-        Call the installer script on each worker:
-        -p   AAMKS_PATH (e.g. /usr/local/aamks, Aamks will be installed there on the worker)
-        -s   AAMKS_SERVER (e.g. 127.0.0.1, the worker will expect the Aamks server there)
-        -i   install worker from github
-        -u   update/inspect worker
+        update or install if workers machines are new
         '''
 
         self._access_hosts()
         for i in self.s.query("SELECT distinct(host) FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
-            cmds=[]
-            cmds.append("ssh -o ConnectTimeout=3 {} ".format(i['host']))
-            Popen("".join(cmds), shell=True)
-            time.sleep(5)
+            Popen("scp {}/installer/worker_install.sh {}: ".format(os.environ['AAMKS_PATH'], i['host']), shell=True)
+        time.sleep(3)
+
+        for i in self.s.query("SELECT distinct(host) FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
+            Popen("ssh -o ConnectTimeout=3 {} bash worker_install.sh -p {} -s {} -u ; ".format(i['host'], os.environ['AAMKS_PATH'], os.environ['AAMKS_SERVER']), shell=True)
+            time.sleep(2)
 
 # }}}
     def reset_gearmand(self):# {{{
@@ -120,6 +117,7 @@ class Manager():
         If host has 0 cores enabled, then we will still have 1 record for it, because host may be disabled just now, but has been gearman_registered previously
         '''
 
+        data=[]
         self.s.query("CREATE TABLE workers('mac','host','broadcast','network','conf_enabled','gearman_registered')")
         for network,cores in self.conf['enabled_networks'].items():
             for record in self.conf['networks'][network]:
@@ -129,10 +127,11 @@ class Manager():
                 else:
                     record.append(1) # conf_enabled=1
                 record.append(0) # gearman_registered=0 for now
-                self.s.query('INSERT INTO workers VALUES (?,?,?,?,?,?)', record)
+                data.append(record)
                 for core in range(1,cores):
-                    self.s.query('INSERT INTO workers VALUES (?,?,?,?,?,?)', record)
+                    data.append(record)
 
+        self.s.executemany('INSERT INTO workers VALUES ({})'.format(','.join('?' * len(data[0]))), data)
         proc = Popen(["gearadmin", "--workers"], stdout=PIPE)
         registered_hosts=[]
         for line in proc.stdout:
@@ -141,10 +140,12 @@ class Manager():
                 self.s.query('UPDATE workers SET gearman_registered=1 WHERE host=?', (x[1],))
             except:
                 pass
+
+        print()
+
 # }}}
     def _argparse(self):# {{{
         parser = argparse.ArgumentParser(description='aamks manager')
-
         parser.add_argument('-a' , help='add workers from conf.json'                               , required=False   , action='store_true')
         parser.add_argument('-c' , help='workers: exec shell commands'                             , required=False )
         parser.add_argument('-k' , help='workers: kill gearman/cfast/python'                       , required=False   , action='store_true')
@@ -152,7 +153,7 @@ class Manager():
         parser.add_argument('-l' , help='list tasks'                                               , required=False   , action='store_true')
         parser.add_argument('-p' , help='ping all workers'                                         , required=False   , action='store_true')
         parser.add_argument('-r' , help='srv: clear/kill/restart gearmand'                         , required=False   , action='store_true')
-        parser.add_argument('-U' , help='update workers'                                           , required=False   , action='store_true')
+        parser.add_argument('-U' , help='update/install workers'                                   , required=False   , action='store_true')
         parser.add_argument('-w' , help='wakeOnLan'                                                , required=False   , action='store_true')
         args = parser.parse_args()
 
@@ -174,6 +175,7 @@ class Manager():
             self.update_workers()
         if args.w:
             self.wake_on_lan()
+
 # }}}
 
 manager=Manager()
