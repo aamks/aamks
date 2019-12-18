@@ -170,10 +170,8 @@ class EvacEnv:
             if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
                 continue
             else:
-                position = self.evacuees.get_position_of_pedestrian(e)
-                goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
                 
-                """ FOLLOWING
+                #""" FOLLOWING
                 if self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]["f"+str(e)]["ETYPE"] == "ACTIVE":
                     position = self.evacuees.get_position_of_pedestrian(e)
                     goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
@@ -189,7 +187,7 @@ class EvacEnv:
 
 
                     goal = self.nav.nav_query(src=position, dst=where_to_go, maxStraightPath=32)
-                """
+                #"""
 
                 try:
                     vis = self.sim.queryVisibility(position, goal[2], 15)
