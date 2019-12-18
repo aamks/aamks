@@ -18,7 +18,7 @@ class Manager():
             os.remove("/tmp/manage_aamks.sqlite")
             
         self.json=Json()
-        self.conf=self.json.read("{}/manager/conf.json".format(os.environ['AAMKS_PATH']))
+        self.conf=self.json.read("/etc/aamksconf.json")['AAMKS_NETCONF']
         self._list_enabled_networks()
         self._argparse()
 # }}}
@@ -86,9 +86,6 @@ class Manager():
 # }}}
     def update_workers(self):# {{{
         ''' 
-        TODO: Need to check in cluster environment
-        install / update should be separate functions
-        install needs to scp to initial script
 
         Call the installer script on each worker:
         -p   AAMKS_PATH (e.g. /usr/local/aamks, Aamks will be installed there on the worker)

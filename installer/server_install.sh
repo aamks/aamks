@@ -14,6 +14,7 @@
 # and will be accessed via https://your.host.abc/aamks
 
 # CONFIGURATION, must be copied to ~/.bashrc
+# The installer creates /etc/aamksconf.json 
 
 AAMKS_SERVER=127.0.0.1										# gearman + www for workers
 AAMKS_PATH='/usr/local/aamks'								
@@ -150,6 +151,8 @@ rm $temp
 
 sudo mkdir -p "$AAMKS_PROJECT"
 sudo cp -r $AAMKS_PATH/installer/demo /home/aamks_users/demo@aamks/
+sudo cp -r $AAMKS_PATH/installer/aamksconf.json /etc/
+sudo chown -R $USER:$USER /etc/aamksconf.json
 
 
 [ "X$AAMKS_USE_GMAIL" == "X1" ] && { 
