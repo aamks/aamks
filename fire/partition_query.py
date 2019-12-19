@@ -155,6 +155,8 @@ class PartitionQuery:
         if self.project_conf['fire_model'] == 'None':
             for room,data in self.compa_conditions.items():
                 self.compa_conditions[room]['TIME']=time
+                self.compa_conditions[room]['LLOYD']=0 # TODO, smoke?
+                self.compa_conditions[room]['ULOD']=0
             return
 
         for letter in ['n', 's', 'w']:
