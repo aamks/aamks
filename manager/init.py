@@ -141,13 +141,16 @@ class OnEnd():
 
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
 
-        # TODO: This code breaks Aamks (Launch fails on machines without gearman). 
+        if os.environ['AAMKS_WORKER']=='none':
+            return
 
-        if os.environ['AAMKS_LOCAL_WORKER']=='1':
+        if os.environ['AAMKS_WORKER']=='local':
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
                 os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i))
-        else:
+            return
+
+        if os.environ['AAMKS_WORKER']=='gearman':
             try:
                 for i in range(*si.get()):
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)

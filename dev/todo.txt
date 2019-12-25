@@ -4,8 +4,6 @@ K
 	Bylo: obstacles jako 4 punkty. Jest: obstacles jako N punktow. Ostatni punkt jest powtorzonym pierwszym punktem.
 
 * wyjasnic: apainter: pietra zle sie kopiuja, nikt nic nie wie
-* Lokalny worker: w install.sh AAMKS_LOCAL_WORKER=1 implikuje: bez udziału gearmana. Nie mozna bazowac na localhost, bo chcialbym workera na s.szach.in.
-* s.szach.in: AAMKS_LOCAL_WORKER=1, nie jest to devel z klastrem.
 * ewakuacja bez pozaru, zmienna per project
 * klatka schodowa jako środowisko rvo2 ze wspólnymi przedsionkami z piętrem
 * mventy obsługa

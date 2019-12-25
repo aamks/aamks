@@ -280,7 +280,7 @@ class Worker:
         self._write_animation_zips()
         self._write_meta()
 
-        if os.environ['AAMKS_LOCAL_WORKER'] == '0':
+        if os.environ['AAMKS_WORKER'] == 'gearman':
             Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
             self.wlogger.info('aOut launched successfully')
         else:
@@ -384,7 +384,7 @@ w = Worker()
 if SIMULATION_TYPE == 'NO_CFAST':
     #print('Working in NO_CFAST mode')
     w.test()
-elif os.environ['AAMKS_LOCAL_WORKER'] == '1':
+elif os.environ['AAMKS_WORKER'] != 'gearman':
     #print('Working in LOCAL MODE')
     w.local_worker()
 else:

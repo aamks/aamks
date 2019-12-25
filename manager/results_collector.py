@@ -27,7 +27,7 @@ try:
             self.meta = None
 
             self.json=Json()
-            if os.environ['AAMKS_LOCAL_WORKER'] == '0':
+            if os.environ['AAMKS_WORKER'] == 'gearman':
                 self._fetch_meta()
             self.meta=self.json.read(self.meta_file)
             self._animation()
