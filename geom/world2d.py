@@ -29,7 +29,7 @@ class World2d():
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.world_meta=self.json.readdb("world_meta")
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.floors_meta=self.json.readdb("floors_meta")
+        self._read_floors_meta()
         self.floors=self.floors_meta.keys()
         self.walls_width=self.world_meta['walls_width']
         self.projections={'top':dict(), 'side':dict()}
@@ -38,7 +38,14 @@ class World2d():
         self._meta_translate_y()
         self._world2d_boundaries()
 # }}}
-
+    def _read_floors_meta(self):# {{{
+        unordered=self.json.readdb("floors_meta")
+        x=list(unordered.keys())
+        x.sort(key=int)
+        self.floors_meta=OrderedDict()
+        for i in x:
+            self.floors_meta[i]=unordered[i]
+# }}}
     def _top_projection_make(self):# {{{
         '''
         In world2d we have top and left projections
@@ -72,8 +79,6 @@ class World2d():
         tx for staircases. 
         '''
 
-        floors_meta=self.json.readdb("floors_meta")
-
         for floor,line in self.projections['top']['lines'].items():
             self.floors_meta[floor]['ty']=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
             self.floors_meta[floor]['tx']=0
@@ -86,7 +91,7 @@ class World2d():
         m['miny']=99999999999
         m['maxx']=-99999999999
         m['maxy']=-99999999999
-        for floor,meta in self.json.readdb("floors_meta").items():
+        for floor,meta in self.floors_meta.items():
             m['minx']=min(m['minx'], meta['minx']+meta['tx'])
             m['miny']=min(m['miny'], meta['miny']+meta['ty'])
             m['maxx']=max(m['maxx'], meta['maxx']+meta['tx'])
