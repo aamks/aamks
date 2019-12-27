@@ -56,9 +56,9 @@ class EvacEnv:
                                        self.max_speed)
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
-        simulation_id = 1 #przykladowa symulacja
-        self.evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
-        self.all_evac = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]
+        #simulation_id = 1 #przykladowa symulacja
+        #self.evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
+        #self.all_evac = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]
 
     def _find_closest_exit(self, evacuee):
         '''

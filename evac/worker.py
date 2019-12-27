@@ -194,7 +194,11 @@ class Worker:
                 self.wlogger.info('rvo2_dto ready on {} floors'.format(floor))
 
             for obst in self.obstacles['obstacles'][str(floor)]:
-                obstacles.append([tuple(x) for x in array(obst)[[0,1,2,3,4,1]]])
+                coords = list()
+                for coord in obst:
+                    coords.append(tuple(coord))
+                coords.append(tuple(obst[1]))
+                obstacles.append(coords)
             if str(floor) in self.obstacles['fire']:
                 obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0,1,2,3,4,1]]])
 
@@ -381,11 +385,14 @@ class Worker:
 
 
 w = Worker()
+print(os.environ['AAMKS_WORKER'])
 if SIMULATION_TYPE == 'NO_CFAST':
-    #print('Working in NO_CFAST mode')
+    print('Working in NO_CFAST mode')
     w.test()
-elif os.environ['AAMKS_WORKER'] != 'gearman':
-    #print('Working in LOCAL MODE')
+elif os.environ['AAMKS_WORKER'] == 'local':
+    print('Working in LOCAL MODE')
     w.local_worker()
-else:
+elif os.environ['AAMKS_WORKER'] == 'gearman':
     w.main()
+else:
+    print('Please specify worker mode')
