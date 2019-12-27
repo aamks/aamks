@@ -385,12 +385,12 @@ class Worker:
 
 
 w = Worker()
-print(os.environ['AAMKS_WORKER'])
+#print(os.environ['AAMKS_WORKER'])
 if SIMULATION_TYPE == 'NO_CFAST':
-    print('Working in NO_CFAST mode')
+    #print('Working in NO_CFAST mode')
     w.test()
 elif os.environ['AAMKS_WORKER'] == 'local':
-    print('Working in LOCAL MODE')
+    #print('Working in LOCAL MODE')
     w.local_worker()
 elif os.environ['AAMKS_WORKER'] == 'gearman':
     w.main()
