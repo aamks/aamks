@@ -97,6 +97,11 @@ class PartitionQuery:
         'ULHCN', 'ULN2', 'ULO2', 'ULOD', 'ULT', 'ULTS', 'ULTUHC', 'UWALLT',
         'VOL')
 
+        self._default_conditions={}
+        for i in self.relevant_params:
+            self._default_conditions[i]=0
+        self._default_conditions['ULO2']=20
+
         self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
 
         self.compa_conditions = OrderedDict()
@@ -155,8 +160,7 @@ class PartitionQuery:
         if self.project_conf['fire_model'] == 'None':
             for room,data in self.compa_conditions.items():
                 self.compa_conditions[room]['TIME']=time
-                self.compa_conditions[room]['LLOYD']=0 # TODO, smoke?
-                self.compa_conditions[room]['ULOD']=0
+                self.compa_conditions[room]['ULO2']=20
             return
 
         for letter in ['n', 's', 'w']:
@@ -203,6 +207,9 @@ class PartitionQuery:
         ''' 
         Same as xy2room, except it returns conditions, not just the room.
         '''
+
+        if self.project_conf['fire_model'] == 'None':
+            return self._default_conditions
 
         x=self.floors_meta[self.floor]['minx'] + self._square_side * int((q[0]-self.floors_meta[self.floor]['minx'])/self._square_side) 
         y=self.floors_meta[self.floor]['miny'] + self._square_side * int((q[1]-self.floors_meta[self.floor]['miny'])/self._square_side)
