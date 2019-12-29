@@ -7,8 +7,11 @@ from include import Sqlite
 from include import SendMessage
 from collections import OrderedDict
 from include import Psql
+from include import CreateAnimEntry
 import traceback
 from datetime import datetime
+from include import Dump as dd
+
 
 try:
     class ResultsCollector():
@@ -23,14 +26,15 @@ try:
             '''
             self.host=host
             self.meta_file=meta_file
-            self.sim_id=sim_id
+            self.sim_id=int(sim_id)
             self.meta = None
 
             self.json=Json()
             if os.environ['AAMKS_WORKER'] == 'gearman':
                 self._fetch_meta()
             self.meta=self.json.read(self.meta_file)
-            self._animation()
+            self.s=Sqlite("{}/aamks.sqlite".format(self.meta['path_to_project']))
+            self._animation_save()
             self.psql_report()
 # }}}
         def _fetch_meta(self):# {{{
@@ -46,32 +50,18 @@ try:
             dest = self.meta['path_to_project']+'workers/'+str(self.meta['sim_id'])+'/'+self.meta['animation']
             Popen(["scp", source, dest])
 # }}}
-        def _fire_origin_coords(self, sim_id):# {{{
-            room=self.meta['fire_origin']
-            
-            self.s=Sqlite("{}/aamks.sqlite".format(self.meta['path_to_project']))
-            z=self.s.query("SELECT floor, center_x, center_y FROM aamks_geom WHERE name=?", (room,))[0]
-            return z['floor'], z['center_x'], z['center_y']
-# }}}
-        def _animation(self):# {{{
+        def _animation_save(self):# {{{
+            params=OrderedDict()
+            params['sort_id']=self.sim_id
+            params['title']="sim.{}".format(self.sim_id)
+            params['srv']=0
+            params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
+            params['highlight_geom']=None
+            params['anim']="{}/{}.zip".format(self.sim_id, self.sim_id)
 
-            self.jsonOut=OrderedDict()
-            self.jsonOut['sort_id']=int(sim_id)
-            self.jsonOut['title']="sim: {}".format(sim_id)
-            self.jsonOut['time']=datetime.now().strftime('%H:%M')
-            self.jsonOut['fire_origin'] = {"floor": self._fire_origin_coords(self.meta['sim_id'])[0], 
-                                         "x": self._fire_origin_coords(self.meta['sim_id'])[1],
-                                         "y": self._fire_origin_coords(self.meta['sim_id'])[2]}
-            self.jsonOut['highlight_geom']=None
-            self.jsonOut['anim']="{}/{}".format(self.meta['sim_id'], self.meta['animation'])
+            cae=CreateAnimEntry()
+            cae.save(params, "{}workers/anims.json".format(self.meta['path_to_project']))
 
-            anims_master="{}workers/anims.json".format(self.meta['path_to_project'])
-            try:
-                z=self.json.read(anims_master)
-            except:
-                z=[]
-            z.append(self.jsonOut)
-            self.json.write(z, anims_master)
 # }}}
         def psql_report(self):
             p = Psql()
@@ -84,6 +74,7 @@ try:
         sim_id=sys.argv[3]
     except:
         ''' Testing without gearman. Make sure workers/1/ exist and contains evac and cfast jsons. '''
+        # TODO: dec.2019: We probably NEVER reach here because ResultsCollector is only called when AAMKS_WORKER=='gearman'
         j=Json()
         c=j.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         host="localhost"

@@ -280,18 +280,8 @@ class DDgeoms:# {{{
 class Vis:# {{{
     def __init__(self,params):# {{{
         ''' 
-        Animator renderer for static img | animation
-
-        params
-        ======
-        highlight_geom: geom to highlight in Animator
-        anim: animation file | empty
-        title: title
-        srv: 0 | 1 comes from the server, not worker; serves the purposes:
-            * previous server visuals are obsolete and need to be removed
-            * initial Apainter's evacuees will be displayed
-        skip_evacuees: optional; good for cfast_partition.py calls before evacuees are ready
-        skip_fire_origin: optional; good for cfast_partition.py calls before fire_origin is ready
+        Static.json is written each time, because obstacles may be available /
+        non-available, so it is not constans. 
         '''
 
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -307,7 +297,9 @@ class Vis:# {{{
         self._js_make_dd_geoms()
         self._js_make_srv_evacuees()
         self._js_vis_fire_origin()
-        self._save()
+        self.json.write(OrderedDict([('world_meta', JSON.readdb("world_meta")['world2d']), ('floors', self._static_floors)]), '{}/workers/static.json'.format(os.environ['AAMKS_PROJECT'])) 
+        cae=CreateAnimEntry()
+        cae.save(self.params, "{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
 # }}}
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''
@@ -369,7 +361,6 @@ class Vis:# {{{
             except:
                 self._static_floors[floor]['dd_geoms']={ 'rectangle': [], 'path': [], 'circle': [], 'text': [] }
 # }}}
-
     def _js_vis_fire_origin(self):# {{{
 
         if "skip_fire_origin" in self.params:
@@ -378,6 +369,23 @@ class Vis:# {{{
             z=self.s.query("SELECT floor, x, y FROM fire_origin")
             self.params['fire_origin']={'floor': z[0]['floor'], 'x': z[0]['x'], 'y': z[0]['y'] }
 # }}}
+# }}}
+class CreateAnimEntry:# {{{
+    ''' 
+    Animator renderer for static img | animation
+
+    params for self.save()
+    ======
+    highlight_geom: geom to highlight in Animator
+    anim: animation file | empty
+    title: title
+    srv: 0 | 1 (worker | server). 1 serves the purposes:
+        * previous server visuals are obsolete and need to be removed
+        * initial Apainter's evacuees will be displayed
+    skip_evacuees: optional; good for cfast_partition.py calls before evacuees are ready
+    skip_fire_origin: optional; good for cfast_partition.py calls before fire_origin is ready
+    '''
+
     def _reorder_anims(self, z):# {{{
         '''
         sort_id -1, -2, -3 come from the server.
@@ -397,20 +405,12 @@ class Vis:# {{{
         return (sorted_anims, lowest_id - 1)
 
 # }}}
-    def _save(self):# {{{
-        ''' 
-        Static.json is written each time, because obstacles may be available /
-        non-available, so it is not constans. Except from static.json we update
-        the listing of the animations (anims.json). Animations are also updated from
-        workers via gearman. 
-        '''
+    def save(self, params, path_anims_json):# {{{
 
-        vis_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        
-        self.json.write(OrderedDict([('world_meta', JSON.readdb("world_meta")['world2d']), ('floors', self._static_floors)]), '{}/static.json'.format(vis_dir)) 
+        self.json=Json()
 
         try:
-            z=self.json.read("{}/anims.json".format(vis_dir))
+            z=self.json.read(path_anims_json)
             z,lowest_id=self._reorder_anims(z)
         except:
             z=[]
@@ -418,13 +418,13 @@ class Vis:# {{{
 
         anim_record=OrderedDict()
         anim_record['sort_id']=lowest_id
-        lowest_id-=1
-        anim_record['title']=self.params['title']
+        #lowest_id-=1
+        anim_record['title']=params['title']
         anim_record['time']=datetime.now().strftime('%H:%M')
-        anim_record['fire_origin']=self.params['fire_origin']
-        anim_record['highlight_geom']=self.params['highlight_geom']
-        anim_record['srv']=self.params['srv']
-        anim_record['anim']=self.params['anim']
+        anim_record['fire_origin']=params['fire_origin']
+        anim_record['highlight_geom']=params['highlight_geom']
+        anim_record['srv']=params['srv']
+        anim_record['anim']=params['anim']
         records={}
         records[anim_record['title']] = anim_record
 
@@ -434,7 +434,8 @@ class Vis:# {{{
             if i['title'] not in records:
                 records[i['title']]=i
 
-        self.json.write(list(records.values()), "{}/anims.json".format(vis_dir))
+        self.json.write(list(records.values()), path_anims_json)
+        #dd(records)
 # }}}
 # }}}
 
