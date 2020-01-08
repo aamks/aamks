@@ -24,6 +24,7 @@ mimooh
 * zduplikowane klucze w conf.json i evac.json
 * animator: Highlight poly geoms 
 * animator: labels poly rooms
+* projects: current/archive/trash
 
 -----------------------------
 * Project / scenario copy-to-new (avoid using text saves and typing)
