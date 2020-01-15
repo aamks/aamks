@@ -337,9 +337,9 @@ public function do_google_login(){/*{{{*/
 /*}}}*/
 	private function reportbug($details) {/*{{{*/
 		$home="<a href=".$_SESSION['home_url']."><img id=home src=/aamks/css/home.svg></a>";
-		$reportquery=join("\n\n" , array(date("G:i:s"), $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REQUEST_URI'], $details, "\n\n"));
+		$reportquery=join("\n\n" , array(date("G:i:s"), "srv:$_SERVER[SERVER_NAME]", "cli:$_SERVER[REMOTE_ADDR]", $_SERVER['HTTP_USER_AGENT'], $_SERVER['REQUEST_URI'], $details, "\n\n"));
 
-		if(preg_match("/invalid input syntax for integer/", $details)) {  # webcrawlers, not really query bugs 
+		if(!preg_match("/invalid input syntax for integer/", $details)) {  # webcrawlers, not really query bugs 
 			# TODO: setup $AAMKS_NOTIFY
 			# TODO: replace mail() with gmail
 			mail('mimoohowy@gmail.com, stanislaw.lazowy@gmail.com', 'aamks bug!', "$reportquery", "from: mimooh@inf.sgsp.edu.pl"); 
