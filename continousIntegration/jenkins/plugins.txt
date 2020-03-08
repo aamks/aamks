@@ -1,0 +1,5 @@
+git
+python
+pyenv
+sonar
+configuration-as-code

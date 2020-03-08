@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  jenkins:
+    # image: jenkins/jenkins:latest
+    build:
+      context: ./jenkins
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "5000:5000"
+    networks:
+      aamks:
+        ipv4_address: 172.28.0.2
+  sonarqube:
+    image: sonarqube
+    ports:
+      - "9000:9000"
+    networks:
+      aamks:
+        ipv4_address: 172.28.0.13
+networks:
+  aamks:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
