@@ -10,7 +10,6 @@ from fire.cfast_partition import CfastPartition
 from fire.partition_query import PartitionQuery
 from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
-from montecarlo.evac_clusters import EvacClusters
 from include import SendMessage
 
 #os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/navmesh'
@@ -22,5 +21,4 @@ Obstacles()
 CfastPartition() 
 CfastMcarlo()
 EvacMcarlo()
-EvacClusters()
 OnEnd()
