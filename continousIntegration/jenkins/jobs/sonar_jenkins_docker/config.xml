@@ -3,28 +3,17 @@
 <actions/>
 <description/>
 <keepDependencies>false</keepDependencies>
-<properties>
-<hudson.model.ParametersDefinitionProperty>
-<parameterDefinitions>
-<hudson.model.StringParameterDefinition>
-<name>branch</name>
-<description>Specify branch</description>
-<defaultValue>master</defaultValue>
-<trim>false</trim>
-</hudson.model.StringParameterDefinition>
-</parameterDefinitions>
-</hudson.model.ParametersDefinitionProperty>
-</properties>
+<properties/>
 <scm class="hudson.plugins.git.GitSCM" plugin="git@4.2.0">
 <configVersion>2</configVersion>
 <userRemoteConfigs>
 <hudson.plugins.git.UserRemoteConfig>
-<url>https://github.com/aamks/aamks</url>
+<url>https://github.com/aamks/aamks.git</url>
 </hudson.plugins.git.UserRemoteConfig>
 </userRemoteConfigs>
 <branches>
 <hudson.plugins.git.BranchSpec>
-<name>*/$branch</name>
+<name>*/jenkins-docker</name>
 </hudson.plugins.git.BranchSpec>
 </branches>
 <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
@@ -39,18 +28,21 @@
 <concurrentBuild>false</concurrentBuild>
 <builders>
 <hudson.tasks.Shell>
-<command>
-pytest -v tests/unit/evac/test_evacuee.py --junit-xml=results.xml
-</command>
+<command>pytest tests/unit/evac/test_evacuee.py --cov-report=xml --cov=evac</command>
 </hudson.tasks.Shell>
+<hudson.plugins.sonar.SonarRunnerBuilder plugin="sonar@2.11">
+<project/>
+<properties>
+sonar.projectKey=aamks-jenkins-docker
+sonar.exclusions=dev/**
+sonar.python.coverage.reportPaths=coverage.xml
+</properties>
+<javaOpts/>
+<additionalArguments/>
+<jdk>(Inherit From Job)</jdk>
+<task/>
+</hudson.plugins.sonar.SonarRunnerBuilder>
 </builders>
-<publishers>
-<hudson.tasks.junit.JUnitResultArchiver plugin="junit@1.26.1">
-<testResults>results.xml</testResults>
-<keepLongStdio>false</keepLongStdio>
-<healthScaleFactor>1.0</healthScaleFactor>
-<allowEmptyResults>false</allowEmptyResults>
-</hudson.tasks.junit.JUnitResultArchiver>
-</publishers>
+<publishers/>
 <buildWrappers/>
 </project>

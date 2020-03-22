@@ -19,11 +19,13 @@ COPY jobs/. /usr/share/jenkins/ref/jobs/.
 COPY plugins.txt /usr/share/jenkins/plugins.txt
 RUN /usr/local/bin/install-plugins.sh < /usr/share/jenkins/plugins.txt
 
-#Install python3 and pytest on container 
+#Install python3 and pytest, and other libs on container
 USER root
 RUN \
 apt-get update -y && \
 apt-get install python3-pip -y && \
-pip3 install pytest
+pip3 install pytest && \
+pip3 install scipy && \
+pip3 install pytest-cov
 
 USER jenkins

@@ -29,7 +29,10 @@
 <builders>
 <hudson.plugins.sonar.SonarRunnerBuilder plugin="sonar@2.11">
 <project/>
-<properties>sonar.projectKey=aamks-master</properties>
+<properties>
+sonar.projectKey=aamks-master
+sonar.exclusions=dev/**
+</properties>
 <javaOpts/>
 <additionalArguments/>
 <jdk>(Inherit From Job)</jdk>

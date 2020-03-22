@@ -3,3 +3,4 @@ python
 pyenv
 sonar
 configuration-as-code
+test-results-analyzer
