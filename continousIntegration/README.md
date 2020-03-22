@@ -1,11 +1,11 @@
-#How to run
-###Requirements 
+# How to run
+### Requirements 
 
 Installed:
 - docker
 - docker-compose
  
-###First run  ##todo rename directory 
+### First run  ##todo rename directory 
 Run in directory continousIntegration
 ```
 docker-compose up
@@ -41,9 +41,9 @@ List running containers
 docker ps
 ```
 
-#Extra information
-##Jenkins  
-###Plugins
+# Extra information
+## Jenkins  
+### Plugins
 jenkins/plugins.txt contains list plugins which will be installed on first jenkins server run
 
 * git - support git  
@@ -54,19 +54,19 @@ jenkins/plugins.txt contains list plugins which will be installed on first jenki
 * test-results-analyzer - generate test reports on jenkins jobs
 
 
-###Using Code as config plugin 
+### Using Code as config plugin 
 ///TODO
-###Jobs description   
+### Jobs description   
 //TODO 
 * integration - runs integration tests
 * unittest - runs unit tests
 * sonar_master - on branch 'master' calculate code coverage, run sonar scanner and push results to sonar server 
 * sonar_stable - on branch 'stable' calculate code coverage, run sonar scanner and push results to sonar server 
 
-###Adding new job to repository 
+### Adding new job to repository 
 //TODO
-##Sonar 
-###Sonar parameters on jenkins job stage with examples
+## Sonar 
+### Sonar parameters on jenkins job stage with examples
 Project Key - name of project on sonar server 
 ```
 sonar.projectKey=aamks-master
