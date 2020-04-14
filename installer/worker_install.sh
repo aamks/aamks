@@ -18,7 +18,7 @@ install() { #{{{
 	rm -rf $_AAMKS_PATH 
 	sudo locale-gen en_US.UTF-8
 	sudo apt-get update
-	sudo apt-get --yes install git python3-pip xdg-utils unzip cmake gearman ipython3 python3-urllib3 golang libboost-python-dev
+	sudo apt-get --yes install git python3-pip xdg-utils unzip cmake gearman ipython3 python3-urllib3 golang libboost-python-dev libgfortran3
 	sudo -H pip3 install --upgrade pip
 	sudo -H pip3 install shapely scipy numpy Cython
 	sudo rm -rf /etc/aamksconf.json
