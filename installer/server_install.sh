@@ -27,7 +27,10 @@ AAMKS_GMAIL_PASSWORD='none'									# needed if we allow users to register accou
 AAMKS_GMAIL_USERNAME='none'									# needed if we allow users to register accounts
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 
-echo "This is the default Aamks configuration that can be modified in install.sh or later in /etc/apache2/envvars."
+clear
+echo "Note: worker_install.sh downloads aamks from github and should be installed before server_install.sh"
+echo
+echo "This is the default Aamks configuration that can be modified in server_install.sh or later in /etc/apache2/envvars."
 echo "If you use PYTHONPATH in /etc/apache2/envvars make sure we haven't broken it."
 echo; echo;
 echo "AAMKS_SERVER: $AAMKS_SERVER"
@@ -112,7 +115,8 @@ EOF
 }
 
 
-[ -d $AAMKS_PATH ] || { echo "$AAMKS_PATH does not exist. Exiting"; exit;  }
+[ -d $AAMKS_PATH ] || { echo "$AAMKS_PATH does not exist. Run worker_install.sh first. Exiting"; exit;  }
+
 
 sudo mkdir -p /var/www/ssl/
 sudo rm -rf /var/www/ssl/aamks 
@@ -124,7 +128,8 @@ USER=`id -ru`
 sudo locale-gen en_US.UTF-8
 sudo apt-get update 
 sudo apt-get --yes install postgresql subversion python3-pip python3-psycopg2 xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php 
-sudo -H pip3 install webcolors pyhull colour shapely scipy numpy sns seaborn statsmodels PyQt5 ete3 sklearn
+sudo -H pip3 install webcolors pyhull colour shapely scipy numpy sns seaborn statsmodels # TODO: do we need these in master? PyQt5 ete3 sklearn. pip fails at PyQt5.
+#sudo -H pip3 install webcolors pyhull colour shapely scipy numpy sns seaborn statsmodels PyQt5 ete3 sklearn
 
 
 # www-data user needs AAMKS_PG_PASS
