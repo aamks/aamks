@@ -1,0 +1,9 @@
+tool:
+  sonarRunnerInstallation:
+    installations:
+    - name: "my-sonarqube"
+      properties:
+      - installSource:
+          installers:
+          - sonarRunnerInstaller:
+              id: "4.2.0.1873"
