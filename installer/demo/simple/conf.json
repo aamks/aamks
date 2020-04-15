@@ -113,11 +113,19 @@
     "mode": 0.0029,
     "max": 0.188
   },
-  "coyield'": {
+  "co_yield": {
     "min": 0.01,
     "max": 0.043
   },
-  "sootyield": {
+  "hcl_yield": {
+    "min": 0.01,
+    "max": 0.043
+  },
+  "hcn_yield": {
+    "min": 0.01,
+    "max": 0.043
+  },
+  "soot_yield": {
     "min": 0.11,
     "max": 0.17
   },

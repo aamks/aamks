@@ -83,3 +83,16 @@ class TestEvacuee(TestCase):
     def test_draw_fire_development(self):
         x = self.cfast_mcarlo._draw_fire_development()
         print(x)
+
+    def test_draw_fire_origin(self):
+        x = self.cfast_mcarlo._draw_fire_origin()
+        print(x)
+
+    def test_draw_fire_chem(self):
+        x = self.cfast_mcarlo._draw_fire_chem()
+        print(x)
+
+    def test_draw_fire_properties(self):
+        x = self.cfast_mcarlo._draw_fire_properties(20)
+        print(x)
+

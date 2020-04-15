@@ -31,6 +31,7 @@ class CfastMcarlo():
             'block': {'CONDUCTIVITY': 0.3, 'SPECIFIC_HEAT': 0.84, 'DENSITY': 800., 'EMISSIVITY': 0.85, 'THICKNESS': 0.2},
             'brick': {'CONDUCTIVITY': 0.3, 'SPECIFIC_HEAT': 0.9, 'DENSITY': 840., 'EMISSIVITY': 0.85, 'THICKNESS': 0.2}
             }
+    CHEM = {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5}
 
     def __init__(self):# {{{
         ''' Generate montecarlo cfast.in. Log what was drawn to psql. '''
@@ -38,7 +39,7 @@ class CfastMcarlo():
         self.read_json()
         self.create_sqlite_db()
         self.connect_psql_db()
-        #self.do_iterations()
+        self.do_iterations()
 
     def read_json(self):
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -48,7 +49,7 @@ class CfastMcarlo():
     def create_sqlite_db(self):
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         try:
-            self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,sim_id)")
+            self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,f_id,sim_id)")
         except Exception as e:
             print(e)
         return self.s
@@ -63,8 +64,8 @@ class CfastMcarlo():
         for self._sim_id in range(*si.get()):
             seed(self._sim_id)
             self._new_psql_log()
-            self._make_cfast()
-            self._write()
+            #self._make_cfast()
+            #self._write()
 # }}}
 
 # DISTRIBUTIONS / DRAWS
@@ -75,13 +76,13 @@ class CfastMcarlo():
 # }}}
     def _save_fire_origin(self, fire_origin):# {{{
         fire_origin.append(self._sim_id)
-        self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?,?)', fire_origin)
-
+        self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?,?,?)', fire_origin)
         self._psql_log_variable('fireorigname',fire_origin[0])
         self._psql_log_variable('fireorig',fire_origin[1])
 # }}}
+
     def _draw_fire_origin(self):# {{{
-        is_origin_in_room=binomial(1,self.conf['fire_starts_in_a_room'])
+        is_origin_in_room = binomial(1, self.conf['fire_starts_in_a_room'])
         
         self.all_corridors_and_halls=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND type_sec in('COR','HALL') ORDER BY global_type_id") ]
         self.all_rooms=[z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY global_type_id") ]
@@ -100,10 +101,16 @@ class CfastMcarlo():
 
         fire_origin+=[x,y,z]
         fire_origin+=[compa['floor']]
+        fire_origin.append("f{}".format(compa['global_type_id']))
+        print(fire_origin)
         self._save_fire_origin(fire_origin)
 
-        collect=('FIRE', compa['global_type_id'], round(0.01 * compa['width']/2.0, 2), round(0.01 * compa['depth']/2.0,2), round(0.01 * z,2), 1, 'TIME' ,'0','0','0','0','medium')
-        return (','.join(str(i) for i in collect))
+        collect = []
+        collect.append("&FIRE ID = 'f{}'".format(compa['global_type_id']))
+        collect.append("COMP_ID = '{}'".format(compa['name']))
+        collect.append("FIRE_ID = 'f{}'".format(compa['global_type_id']))
+        collect.append("LOCATION = {}, {} /".format(round(0.01 * compa['width']/2.0, 2), round(0.01 * compa['depth']/2.0,2)))#, round(0.01 * z,2), 1, 'TIME' ,'0','0','0','0','medium')
+        return (', '.join(str(i) for i in collect))
 
 # }}}
     def _fire_origin(self):# {{{
@@ -122,42 +129,49 @@ class CfastMcarlo():
                 fire_origin=[room[0]['name'], 'non_room', x, y, z, room[0]['floor']]
             else:
                 fire_origin=[room[0]['name'], 'room', x, y , z,  room[0]['floor']]
+
+            fire_origin += "f{}".format(room[0]['global_type_id'])
             self._save_fire_origin(fire_origin)
-            collect=('FIRE', room[0]['global_type_id'], round(0.01 * (x-room[0]['x0']), 2), round(0.01 * (y-room[0]['y0']), 2), round(0.01 * z, 2), 1, 'TIME' ,'0','0','0','0','medium')
-            cfast_fire=(','.join(str(i) for i in collect))
+
+            collect = []
+            collect.append("&FIRE ID = 'f{}'".format(room[0]['global_type_id']))
+            collect.append("COMP_ID = '{}'".format(room[0]['name']))
+            collect.append("FIRE_ID = 'f{}'".format(room[0]['global_type_id']))
+            collect.append("LOCATION = {}, {} /".format(round(0.01 * (x-room[0]['x0']), 2), round(0.01 * (y-room[0]['y0']), 2)))
+            cfast_fire=(', '.join(str(i) for i in collect))
         else:
             cfast_fire=self._draw_fire_origin()
 
         return cfast_fire
 # }}}
-    def _draw_fire_properties(self,intervals):# {{{
-        i              = OrderedDict()
-        i['coyield']   = round(uniform(0.01,0.043),3)
-        i['sootyield'] = round(uniform(0.11,0.17),3)
-        i['trace']     = 0
-        i['q_star']    = round(uniform(0.5,2),3)
-        i['heigh']     = 0
-        i['radfrac']   = round(gamma(124.48,0.00217),3)
-        i['heatcom']   = round(uniform(16400000,27000000),1)
-        for k,v in i.items():
-            self._psql_log_variable(k,v)
 
-        result=OrderedDict()
-        result['sootyield']='SOOT,{}'.format(','.join([str(i['sootyield'])]*intervals))
-        result['coyield']='CO,{}'.format(','.join([str(i['coyield'])]*intervals))
-        result['trace']='TRACE,{}'.format(','.join([str(i['trace'])]*intervals))
-        result['heigh']='HEIGH,{}'.format(','.join([str(i['heigh'])]*intervals))
-        result['radfrac']=str(i['radfrac'])
-        result['heatcom']=str(i['heatcom'])
-        return result
-# }}}
+    def _draw_fire_chem(self):
+        z = self.s.query("SELECT f_id, name FROM fire_origin")
+        collect = []
+        collect.append("&CHEM ID = '{}'".format(z[0]['f_id']))
+        for spec, s_value in self.CHEM.items():
+            collect.append("{} = {}".format(spec, s_value))
+        collect.append("HEAT_OF_COMBUSTION = {}".format(round(uniform(self.conf['heatcom']['min'], self.conf['heatcom']['max'])/1000, 0)))
+        collect.append("RADIATIVE_FRACTION = {} /".format(round(gamma(self.conf['radfrac']['k'], self.conf['radfrac']['theta']), 3))) #TODO LOW VARIABILITY, CHANGE DIST
+        return (', '.join(str(i) for i in collect))
 
-    def _draw_fire_development(self): # {{{
+    def _draw_fire_properties(self, intervals):# {{{
         '''
         Generate fire. Alpha t square on the left, then constant in the
         middle, then fading on the right. At the end read hrrs at given times.
         '''
+        z = self.s.query("SELECT f_id, name FROM fire_origin")
+        fire_origin = z[0]['name']
 
+        co_yield = [round(uniform(self.conf['co_yield']['min'], self.conf['co_yield']['max']),3)] * intervals
+        soot_yield = [round(uniform(self.conf['soot_yield']['min'], self.conf['soot_yield']['max']),3)] * intervals
+        hcn_yield = [round(uniform(self.conf['hcn_yield']['min'], self.conf['hcn_yield']['max']),3)] * intervals
+        hcl_yield = [round(uniform(self.conf['hcl_yield']['min'], self.conf['hcl_yield']['max']),3)] * intervals
+        params = {"CO_YIELD": co_yield, "SOOT_YIELD": soot_yield, "HCN_YIELD": hcn_yield, "HCL_YIELD": hcl_yield}
+        return params
+# }}}
+
+    def _draw_fire_development(self): # {{{
         hrrpua_d=self.conf['hrrpua']
         hrr_alpha=self.conf['hrr_alpha']
 
@@ -167,7 +181,6 @@ class CfastMcarlo():
         '''
         p = pareto(b=0.668, scale=0.775)
         fire_area = p.rvs(size=1)[0]
-        fire_origin = self.fire_origin
         orig_area = self.s.query("SELECT (width * depth)/10000 as area FROM aamks_geom WHERE name='{}'".format(fire_origin[0]))[0]['area']
 
         if fire_area > orig_area:
@@ -307,7 +320,7 @@ class CfastMcarlo():
 
 # }}}
     def _section_matl(self):# {{{
-        txt = list()
+        txt = ['!! SECTION MATL']
         for mat, m_params in self.MATL.items():
             row = "&MATL ID = '{}', ".format(mat)
             for key, value in m_params.items():
@@ -319,7 +332,7 @@ class CfastMcarlo():
         return "\n".join(txt)
 # }}}
     def _section_compa(self):# {{{
-        txt=[]
+        txt=['!! SECTION COMPA']
         for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 ORDER BY global_type_id"):
             collect=[]
             collect.append("&COMP ID = '{}'".format(v['name']))                        # COMP ID
@@ -369,7 +382,7 @@ class CfastMcarlo():
             collect.append("CRITERION = 'TIME' T = 0,1 F = 0,{} /".format(how_much_open))         # OPEN CLOSE
             txt.append(', '.join(str(i) for i in collect))
 
-        #self.s.executemany('UPDATE aamks_geom SET how_much_open=? WHERE name=?', windows_setup)
+        self.s.executemany('UPDATE aamks_geom SET how_much_open=? WHERE name=?', windows_setup)
 
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
@@ -509,7 +522,7 @@ class CfastMcarlo():
         times, hrrs=self._draw_fire_development()
         fire_properties = self._draw_fire_properties(len(times))
         fire_origin=self._fire_origin()
-        area = (((npa(hrrs)/1000)/(fire_properties['q_star'] * 1.204 * 1.005 * 293 * sqrt(9.81))) ** (2/5)) + 0.0001
+        area = (((npa(hrrs)/1000)/(2 * 1.204 * 1.005 * 293 * sqrt(9.81))) ** (2/5)) + 0.0001
         txt=(
             '!! FIRE,compa,x,y,z,fire_number,ignition_type,ignition_criterion,ignition_target,?,?,name',
             fire_origin,
