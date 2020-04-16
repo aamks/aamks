@@ -297,7 +297,8 @@ class Vis:# {{{
         self._js_make_dd_geoms()
         self._js_make_srv_evacuees()
         self._js_vis_fire_origin()
-        self.json.write(OrderedDict([('world_meta', JSON.readdb("world_meta")['world2d']), ('floors', self._static_floors)]), '{}/workers/static.json'.format(os.environ['AAMKS_PROJECT'])) 
+        self._js_world_meta()
+        self.json.write(OrderedDict([('world_meta', self._world_meta), ('floors', self._static_floors)]), '{}/workers/static.json'.format(os.environ['AAMKS_PROJECT'])) 
         cae=CreateAnimEntry()
         cae.save(self.params, "{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
 # }}}
@@ -326,10 +327,16 @@ class Vis:# {{{
 # }}}
     def _js_make_obstacles(self):# {{{
         ''' 
-        Data for obstacles. TODO: is it fine if geom.py is interrupted before obstacles are created?
+        Data for obstacles. 
         '''
 
-        xx=JSON.readdb("obstacles")
+        if "skip_obstacles" in self.params:
+            xx={'obstacles': {} }
+            dummy_obst=[[ [-1000, -1000, 0], [-1000, -1000, 0], [-1000, -1000, 0], [-1000, -1000, 0], [-1000, -1000, 0] ]]
+            for floor in self._static_floors.keys():
+                xx['obstacles'][floor]=dummy_obst
+        else:
+            xx=JSON.readdb("obstacles")
 
         for floor,obstacles in xx['obstacles'].items():
             self._static_floors[floor]['obstacles']=[]
@@ -362,12 +369,17 @@ class Vis:# {{{
                 self._static_floors[floor]['dd_geoms']={ 'rectangle': [], 'path': [], 'circle': [], 'text': [] }
 # }}}
     def _js_vis_fire_origin(self):# {{{
-
         if "skip_fire_origin" in self.params:
             self.params['fire_origin']=None
         else:
             z=self.s.query("SELECT floor, x, y FROM fire_origin")
             self.params['fire_origin']={'floor': z[0]['floor'], 'x': z[0]['x'], 'y': z[0]['y'] }
+# }}}
+    def _js_world_meta(self):# {{{
+        try:
+            self._world_meta=JSON.readdb("world_meta")['world2d']
+        except:
+            self._world_meta={ 'minx': 0, 'miny': 0, 'maxx': 3000, 'maxy': 2000, 'xdim': 3000, 'ydim': 2000, 'center': [1500, 100, 0] }
 # }}}
 # }}}
 class CreateAnimEntry:# {{{

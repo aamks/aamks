@@ -41,6 +41,7 @@ class CFASTimporter():
         self._aamks_geom_into_polygons()
         self._make_id2compa_name()
         self._find_intersections_within_floor()
+        self._find_mvent_intersections()
         self._get_faces()
         self._hvents_per_room()
         self._find_intersections_between_floors()
@@ -161,12 +162,13 @@ class CFASTimporter():
                     record=self._prepare_geom_record(v)
                     if record != False:
                         data.append(record)
-        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, exit_type, room_enter, evacuees_density, terminal_door, points, origin_room, orig_type, has_door)")
+        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, mvent_orientation, exit_type, room_enter, evacuees_density, terminal_door, points, origin_room, orig_type, has_door)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
     def _prepare_attrs(self,v):# {{{
         aa={}
         aa['mvent_throughput']=v['mvent_throughput']    if 'mvent_throughput' in v else None
+        aa['mvent_orientation']=v['mvent_orientation']  if 'mvent_orientation' in v else None
         aa['room_enter']=v['room_enter']                if 'room_enter' in v else None
         aa['exit_type']=v['exit_type']                  if 'exit_type' in v else None
 
@@ -222,8 +224,8 @@ class CFASTimporter():
         global_type_id=v['idx'];
         name='{}{}'.format(self.geomsMap[v['type']], global_type_id)
 
-        #self.s.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               , exit_type               , room_enter               , evacuees_density               , terminal_door , points                  , origin_room , orig_type , has_door)")
-        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] , v['attrs']['exit_type'] , v['attrs']['room_enter'] , v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None)
+        #self.s.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               , mvent_orientation              , exit_type               , room_enter               , evacuees_density               , terminal_door , points                  , origin_room , orig_type , has_door)")
+        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] , v['attrs']['mvent_throughput'] , v['attrs']['exit_type'] , v['attrs']['room_enter'] , v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None)
 
 # }}}
     def _enhancements(self):# {{{
@@ -276,7 +278,7 @@ class CFASTimporter():
         '''
 
         query=[]
-        for v in self.s.query("select vent_from,vent_to,name from aamks_geom where type_pri IN('HVENT', 'VVENT')"):
+        for v in self.s.query("select vent_from,vent_to,name from aamks_geom where type_pri IN('HVENT', 'VVENT', 'MVENT')"):
             query.append((self._id2compa_name[v['vent_from']], self._id2compa_name[v['vent_to']], v['name']))
         self.s.executemany('UPDATE aamks_geom SET vent_from_name=?, vent_to_name=? WHERE name=?', query)
 # }}}
@@ -552,6 +554,29 @@ class CFASTimporter():
                 high_global_type_id+=1
 
 # }}}
+    def _find_mvent_intersections(self):# {{{
+        ''' 
+        Mvent always intersects a room and we are finding it here
+            intersection.length > 100 (intersection perimeter, 100 is arbitrary)
+        '''
+
+        update=[]
+        for floor,vents_dict in self.aamks_polies['MVENT'].items():
+            all_mvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='MVENT' AND floor=? ORDER BY name", floor) ]
+            vc_intersections={key:[] for key in all_mvents }
+            for vent_id,vent_poly in vents_dict.items():
+                for compa_id,compa_poly in self.aamks_polies['COMPA'][floor].items():
+                    if vent_poly.intersection(compa_poly).length > 100:
+                        vc_intersections[vent_id].append(compa_id)
+
+            for vent_id,v in vc_intersections.items():
+                v=sorted(v)
+                if len(v) > 1: 
+                    self.make_vis('MVENT m{} crosses more than a single room'.format(vent_id), vent_id)
+                update.append((v[0], v[0], vent_id))
+        self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='MVENT'", update)
+
+# }}}
 
 # ASSERTIONS
     def _assert_faces_ok(self):# {{{
@@ -563,8 +588,6 @@ class CFASTimporter():
                 exit()
 # }}}
     def _assert_room_has_door(self):# {{{
-        # TODO: MUST ENABLE! 
-        return
         ''' Each room must have at least one type_tri DOOR. '''
         doors_intersect_room_ids=[]
         for i in self.s.query("SELECT vent_from,vent_to FROM aamks_geom WHERE type_tri='DOOR'"):
@@ -574,7 +597,7 @@ class CFASTimporter():
         all_interected_room=set(doors_intersect_room_ids)
         for i in self.s.query("SELECT name,floor,global_type_id FROM aamks_geom WHERE type_pri='COMPA'"):
             if i['global_type_id'] not in all_interected_room:
-                self.make_vis('Room without door (see Animator)', i['global_type_id'], 'COMPA')
+                self.make_vis('Room without door ', i['global_type_id'], 'COMPA')
 # }}}
 
     def make_vis(self, title, faulty_id='', type_pri='HVENT'):# {{{
@@ -586,11 +609,11 @@ class CFASTimporter():
         if faulty_id != '':
             r=self.s.query("SELECT name,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
             fatal="Fatal: {}: {}".format(r['name'], title)
-            Vis({'highlight_geom': r['name'], 'anim': None, 'title': "<div id=python_msg>{}</div>".format(fatal), 'srv': 1})
-            print(fatal)
+            Vis({'highlight_geom': r['name'], 'anim': None, 'title': "<div id=python_msg>{}</div>".format(fatal), 'srv': 1, 'skip_fire_origin': 1, 'skip_evacuees': 1, 'skip_obstacles': 1})
+            print("TODO: This should redirect to animator<br>", fatal)
             sys.exit()
         else:
-            Vis({'highlight_geom': None, 'anim': None, 'title': title, 'srv': 1})
+            Vis({'highlight_geom': None, 'anim': None, 'title': title, 'srv': 1, 'skip_fire_origin': 1, 'skip_evacuees': 1, 'skip_obstacles': 1})
 # }}}
 
     def _debug(self):# {{{
