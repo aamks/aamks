@@ -85,9 +85,10 @@ class TestEvacuee(TestCase):
 
     def test_section_windows(self):
         outdoor_temp = 20
-        x = self.cfast_mcarlo._section_windows(outdoor_temp)
-        expected = "&VENT TYPE = 'WALL', ID = 'w1', COMP_IDS = 'r1', 'OUTSIDE', WIDTH = 1.4, TOP = 2.5, BOTTOM = 1.0, OFFSET = 2.8, FACE = '1', CRITERION = 'TIME' T = 0, 1 F = 0, 1 /"
-        print(x)
+        txt = self.cfast_mcarlo._section_windows(outdoor_temp)
+        expected = "&VENT TYPE = 'WALL', ID = 'w1', COMP_IDS = 'r1', 'OUTSIDE', WIDTH = 1.4, TOP = 2.5, BOTTOM = 1.0, OFFSET = 2.8, FACE = '1', CRITERION = 'TIME' T = 0,1 F = 0,1 /"
+        actual = txt.splitlines()[1]
+        self.assertEqual(actual, expected)
 
     def test_section_doors_and_holes(self):
         txt = self.cfast_mcarlo._section_doors_and_holes()
