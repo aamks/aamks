@@ -2,29 +2,23 @@
 import os
 import math
 from collections import OrderedDict
-
 from numpy.random import choice
 from numpy.random import uniform
 from numpy.random import normal
-from numpy.random import lognormal
 from numpy.random import binomial
 from numpy.random import gamma
 from numpy.random import triangular
 from numpy.random import seed
 from numpy import array as npa
-from math import sqrt
 from scipy.stats import pareto
-
 from include import Sqlite
 from include import Psql
 from include import Json
-from include import Dump as dd
-from include import SimIterations
 
 # }}}
 
 class CfastMcarlo():
-    #TODO properly logging variables into psql; HALL, SHAFT; TRIGGERS; LEAK_AREA; OUTSIDE to upper in geom
+    #TODO properly logging variables into psql; TRIGGERS; HCN, HCL DISTRIBUTION, Fire development intervals
     MATL = {'concrete': {'CONDUCTIVITY': 1.75, 'SPECIFIC_HEAT': 1., 'DENSITY': 2200., 'EMISSIVITY': 0.94, 'THICKNESS': 0.15},
             'gypsum': {'CONDUCTIVITY': 0.3, 'SPECIFIC_HEAT': 1.09, 'DENSITY': 1000., 'EMISSIVITY': 0.85, 'THICKNESS': 0.03},
             'glass': {'CONDUCTIVITY': 0.8, 'SPECIFIC_HEAT': 0.84, 'DENSITY': 2500., 'EMISSIVITY': 0.9, 'THICKNESS': 0.013},
@@ -33,13 +27,15 @@ class CfastMcarlo():
             }
     CHEM = {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5}
 
-    def __init__(self):# {{{
+    def __init__(self, sim_id):# {{{
         ''' Generate montecarlo cfast.in. Log what was drawn to psql. '''
         self.json=Json()
         self.read_json()
         self.create_sqlite_db()
         self.connect_psql_db()
-        self.do_iterations()
+        self._sim_id = sim_id
+        self._new_psql_log()
+        seed(self._sim_id)
 
     def read_json(self):
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -60,25 +56,21 @@ class CfastMcarlo():
         return self.p
 
     def do_iterations(self):
-        si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
-        for self._sim_id in range(*si.get()):
-            seed(self._sim_id)
-            self._new_psql_log()
-            #self._make_cfast()
-            #self._write()
+        self._make_cfast()
+        self._write()
 # }}}
 
 # DISTRIBUTIONS / DRAWS
     def _draw_outdoor_temp(self):# {{{
-        outdoor_temp=round(normal(self.conf['outdoor_temperature']['mean'],self.conf['outdoor_temperature']['sd']),2)
-        self._psql_log_variable('outdoort',outdoor_temp)
+        outdoor_temp=round(normal(self.conf['outdoor_temperature']['mean'], self.conf['outdoor_temperature']['sd']),2)
+        self._psql_log_variable('outdoor_temp', outdoor_temp)
         return outdoor_temp
 # }}}
     def _save_fire_origin(self, fire_origin):# {{{
         fire_origin.append(self._sim_id)
         self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?,?,?)', fire_origin)
-        self._psql_log_variable('fireorigname',fire_origin[0])
-        self._psql_log_variable('fireorig',fire_origin[1])
+        self._psql_log_variable('fireorigname', fire_origin[0])
+        self._psql_log_variable('fireorig', fire_origin[1])
 # }}}
 
     def _draw_fire_origin(self):# {{{
@@ -102,7 +94,6 @@ class CfastMcarlo():
         fire_origin+=[x,y,z]
         fire_origin+=[compa['floor']]
         fire_origin.append("f{}".format(compa['global_type_id']))
-        print(fire_origin)
         self._save_fire_origin(fire_origin)
 
         collect = []
@@ -147,31 +138,29 @@ class CfastMcarlo():
 
     def _draw_fire_chem(self):
         z = self.s.query("SELECT f_id, name FROM fire_origin")
+
+        heat_of_combustion = round(uniform(self.conf['heatcom']['min'], self.conf['heatcom']['max'])/1000, 0)
+        self._psql_log_variable('heat_of_combustion', heat_of_combustion)
+
+        rad_frac = round(gamma(self.conf['radfrac']['k'], self.conf['radfrac']['theta']), 3)#TODO LOW VARIABILITY, CHANGE DIST
+        self._psql_log_variable('rad_frac', rad_frac)
+
         collect = []
         collect.append("&CHEM ID = '{}'".format(z[0]['f_id']))
         for spec, s_value in self.CHEM.items():
             collect.append("{} = {}".format(spec, s_value))
-        collect.append("HEAT_OF_COMBUSTION = {}".format(round(uniform(self.conf['heatcom']['min'], self.conf['heatcom']['max'])/1000, 0)))
-        collect.append("RADIATIVE_FRACTION = {} /".format(round(gamma(self.conf['radfrac']['k'], self.conf['radfrac']['theta']), 3))) #TODO LOW VARIABILITY, CHANGE DIST
+        collect.append("HEAT_OF_COMBUSTION = {}".format(heat_of_combustion))
+        collect.append("RADIATIVE_FRACTION = {} /".format(rad_frac))
         return (', '.join(str(i) for i in collect))
 
-    def _draw_fire_properties(self, intervals):# {{{
+    def _draw_fire_properties(self):# {{{
         '''
         Generate fire. Alpha t square on the left, then constant in the
         middle, then fading on the right. At the end read hrrs at given times.
         '''
         z = self.s.query("SELECT f_id, name FROM fire_origin")
         fire_origin = z[0]['name']
-
-        co_yield = [round(uniform(self.conf['co_yield']['min'], self.conf['co_yield']['max']),3)] * intervals
-        soot_yield = [round(uniform(self.conf['soot_yield']['min'], self.conf['soot_yield']['max']),3)] * intervals
-        hcn_yield = [round(uniform(self.conf['hcn_yield']['min'], self.conf['hcn_yield']['max']),3)] * intervals
-        hcl_yield = [round(uniform(self.conf['hcl_yield']['min'], self.conf['hcl_yield']['max']),3)] * intervals
-        params = {"CO_YIELD": co_yield, "SOOT_YIELD": soot_yield, "HCN_YIELD": hcn_yield, "HCL_YIELD": hcl_yield}
-        return params
-# }}}
-
-    def _draw_fire_development(self): # {{{
+        orig_area = self.s.query("SELECT (width * depth)/10000 as area FROM aamks_geom WHERE name='{}'".format(fire_origin))[0]['area']
         hrrpua_d=self.conf['hrrpua']
         hrr_alpha=self.conf['hrr_alpha']
 
@@ -179,24 +168,20 @@ class CfastMcarlo():
         Fire area is draw from pareto distrubution regarding the BS PD-7974-7. 
         There is lack of vent condition - underventilated fires
         '''
-        p = pareto(b=0.668, scale=0.775)
-        fire_area = p.rvs(size=1)[0]
-        orig_area = self.s.query("SELECT (width * depth)/10000 as area FROM aamks_geom WHERE name='{}'".format(fire_origin[0]))[0]['area']
-
+        p = pareto(b=self.conf['fire_area']['b'], scale=self.conf['fire_area']['scale'])
+        fire_area = round(p.rvs(size=1)[0], 2)
         if fire_area > orig_area:
             fire_area = orig_area
 
         self.hrrpua=int(triangular(hrrpua_d['min'], hrrpua_d['mode'], hrrpua_d['max']))
-        hrr_peak=int(self.hrrpua * 1000 * fire_area)
+        hrr_peak=int(self.hrrpua * fire_area)
         self.alpha=int(triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])*1000)
-
-        self._psql_log_variable('hrrpeak', hrr_peak/1000)
-        self._psql_log_variable('alpha', self.alpha/1000.0)
-        self._psql_log_variable('area', fire_area)
 
         # left
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
         interval = int(round(t_up_to_hrr_peak/10))
+        if interval == 0:
+            interval = 10
         times0 = list(range(0, t_up_to_hrr_peak, interval))+[t_up_to_hrr_peak]
         hrrs0 = [int((self.alpha * t ** 2)) for t in times0]
 
@@ -208,13 +193,55 @@ class CfastMcarlo():
         # right
         t_up_to_drops_to_zero=t_up_to_starts_dropping+t_up_to_hrr_peak
         interval = int(round((t_up_to_drops_to_zero - t_up_to_starts_dropping)/10))
+        if interval == 0:
+            interval = 10
         times2 = list(range(t_up_to_starts_dropping, t_up_to_drops_to_zero, interval))+[t_up_to_drops_to_zero]
         hrrs2 = [int((self.alpha * (t - t_up_to_drops_to_zero) ** 2)) for t in times2 ]
 
         times = list(times0 + times1 + times2)
         hrrs = list(hrrs0 + hrrs1 + hrrs2)
+        area = list(npa(hrrs)/hrr_peak * fire_area)
+        area = [round(i, 2) for i in area]
 
-        return times, hrrs
+        h = self.s.query("SELECT * FROM aamks_geom where name = '{}'".format(z[0]['name']))
+        h=int(h[0]['height']/100 * (1-math.log10(uniform(1,10))))
+
+        params = OrderedDict()
+        steps = len(times)
+        co_yield = [round(uniform(self.conf['co_yield']['min'], self.conf['co_yield']['max']), 3)] * steps
+        soot_yield = [round(uniform(self.conf['soot_yield']['min'], self.conf['soot_yield']['max']), 3)] * steps
+        hcn_yield = [round(uniform(self.conf['hcn_yield']['min'], self.conf['hcn_yield']['max']), 3)] * steps
+        hcl_yield = [round(uniform(self.conf['hcl_yield']['min'], self.conf['hcl_yield']['max']), 3)] * steps
+        height = [h] * steps
+        trace_yield = [0] * steps
+        params = {"TIME": times, "HRR": hrrs, "HEIGHT": height, "AREA": area, "CO_YIELD": co_yield, "SOOT_YIELD": soot_yield, "HCN_YIELD": hcn_yield, "HCL_YIELD": hcl_yield, "TRACE_YIELD": trace_yield}
+
+        self._psql_log_variable('hrrpeak', hrr_peak)
+        self._psql_log_variable('alpha', self.alpha/1000.0)
+        self._psql_log_variable('max_area', fire_area)
+        self._psql_log_variable('co_yield', co_yield[0])
+        self._psql_log_variable('soot_yield', soot_yield[0])
+        self._psql_log_variable('hcn_yield', hcn_yield[0])
+        self._psql_log_variable('hcl_yield', hcl_yield[0])
+        self._psql_log_variable('height', height[0])
+        return params, z[0]['f_id']
+# }}}
+
+    def _draw_fire_development(self): # {{{
+        params = self._draw_fire_properties()
+        txt = []
+        f_id = params[1]
+        collect = []
+        labels = "', '".join(params[0].keys())
+        collect.append("&TABL ID = '{}' LABELS = '{}' /".format(f_id, labels))
+        for i in range(len(params[0]['TIME'])):
+            row = []
+            for p_keys in params[0].keys():
+                row.append(str(params[0][p_keys][i]))
+            collect.append("&TABL ID = '{}', DATA = ".format(f_id)+", ".join(row)+ " /")
+        txt = "\n".join(collect)
+        return txt
+
 
 # }}}
     def _draw_window_opening(self,outdoor_temp): # {{{
@@ -225,7 +252,8 @@ class CfastMcarlo():
         (0). 
         '''
 
-        draw_value=uniform(0,1)
+        draw_value=uniform(0, 1)
+        how_much_open = 0
         for i in self.conf['windows']:
             if outdoor_temp > i['min'] and outdoor_temp <= i['max']:
                 if draw_value < i['full']:
@@ -290,7 +318,6 @@ class CfastMcarlo():
             self._section_preamble(self.conf['project_id'], self.conf['scenario_id'], self.conf['simulation_time'], outdoor_temp),
             self._section_matl(),
             self._section_compa(),
-            self._section_halls_onez(),
             self._section_windows(outdoor_temp),
             self._section_doors_and_holes(),
             self._section_vvent(),
@@ -299,6 +326,8 @@ class CfastMcarlo():
             self._section_heat_detectors(),
             self._section_smoke_detectors(),
             self._section_sprinklers(),
+            '',
+            '&TAIL /'
         )
 
         with open("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), "w") as output:
@@ -310,9 +339,9 @@ class CfastMcarlo():
         '''
 
         txt=(
-        '&HEAD VERSION = 7.5, TITLE = P_ID_{}_S_ID_{}/'.format(project_id, scenario_id),
-        '&TIMES SIMULATION = {}., PRINT = 100., SMOKEVIEW = 100., SPREADSHEET = 10. /'.format(simulation_time),
-        '&INIT PRESSURE = {}, RELATIVE_HUMIDITY = {}, INTERIOR_TEMPERATURE = {}., EXTERIOR_TEMPERATURE = {}. /'.format(pressure, humidity, indoor_temp, outdoor_temp),
+        "&HEAD VERSION = 7500, TITLE = 'P_ID_{}_S_ID_{}' /".format(project_id, scenario_id),
+        '&TIME SIMULATION = {}, PRINT = 100, SMOKEVIEW = 100, SPREADSHEET = 10 /'.format(simulation_time),
+        '&INIT PRESSURE = {} RELATIVE_HUMIDITY = {} INTERIOR_TEMPERATURE = {} EXTERIOR_TEMPERATURE = {} /'.format(pressure, humidity, indoor_temp, outdoor_temp),
         '&MISC LOWER_OXYGEN_LIMIT = {} /'.format(o_limit),
         '',
         )
@@ -331,34 +360,40 @@ class CfastMcarlo():
             txt.append(row)
         return "\n".join(txt)
 # }}}
+    def _build_compa_row(self, name, width, depth, height, ceiling_matl_id, wall_matl_id, floor_matl_id, type_sec, origin, leak_area, grid):
+        collect = []
+        collect.append("&COMP ID = '{}'".format(name))
+        collect.append('WIDTH = {}'.format(width))
+        collect.append('DEPTH = {}'.format(depth))
+        collect.append('HEIGHT = {}'.format(height))
+        collect.append("CEILING_MATL_ID = '{}'".format(ceiling_matl_id))
+        collect.append("WALL_MATL_ID = '{}'".format(wall_matl_id))
+        collect.append("FLOOR_MATL_ID = '{}'".format(floor_matl_id))
+        if type_sec == 'COR':
+            collect.append('HALL = .TRUE.')
+        if type_sec == 'STAI':
+            collect.append('SHAFT = .TRUE.')
+        collect.append('ORIGIN = {}, {}, {}'.format(origin[0], origin[1], origin[2]))
+        collect.append('LEAK_AREA = {}, {}'.format(leak_area[0], leak_area[1]))
+        collect.append('GRID = {}, {}, {} /'.format(grid[0], grid[1], grid[2]))
+        return collect
+
     def _section_compa(self):# {{{
         txt=['!! SECTION COMPA']
         for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 ORDER BY global_type_id"):
-            collect=[]
-            collect.append("&COMP ID = '{}'".format(v['name']))                        # COMP ID
-            collect.append('WIDTH = {}'.format(round(v['width']/100.0, 2)))            # WIDTH
-            collect.append('DEPTH = {}'.format(round(v['depth']/100.0, 2)))            # DEPTH
-            collect.append('HEIGHT = {}'.format(round(v['height']/100.0, 2)))          # HEIGHT
-            collect.append('ORIGIN = {}, {}, {}'.format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2), round(v['z0']/100.0, 2)))    # ORIGIN
-            collect.append("CEILING_MATL_ID = '{}'".format(v['material_ceiling']))      # CEILING_MATERIAL_NAME
-            collect.append("WALL_MATL_ID = '{}'".format(v['material_wall']))            # CEILING_MATERIAL_NAME
-            collect.append("FLOOR_MATL_ID = '{}'".format(v['material_floor']))          # CEILING_MATERIAL_NAME
-            collect.append('GRID = 50, 50, 50 /')
-            txt.append(', '.join(str(i) for i in collect))
-        return "\n".join(txt)+"\n" if len(txt)>1 else ""
-# }}}
-    def _section_halls_onez(self):# {{{
-        txt=['!! ONEZ,id']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_sec in ('STAI', 'COR') AND fire_model_ignore!=1 order by type_sec"):
-
-            collect=[]
-            if v['type_sec']=='COR':
-                collect.append('HALL')
-            else:
-                collect.append('ONEZ')
-            collect.append(v['global_type_id'])
-            txt.append(','.join(str(i) for i in collect))
-
+            name = v['name']
+            width = round(v['width'] / 100.0, 2)
+            depth = round(v['depth']/100.0, 2)
+            height = round(v['height']/100.0, 2)
+            ceiling_matl_id = v['material_ceiling']
+            wall_matl_id  = v['material_wall']
+            floor_matl_id = v['material_floor']
+            type_sec = v['type_sec']
+            origin = [round(v['x0']/100.0, 2), round(v['y0']/100.0, 2), round(v['z0']/100.0, 2)]
+            leak_area = [3.5E-4, 5.2E-5]
+            grid = [50, 50, 50]
+            c_row = self._build_compa_row(name, width, depth, height, ceiling_matl_id, wall_matl_id, floor_matl_id, type_sec, origin, leak_area, grid)
+            txt.append(', '.join(str(i) for i in c_row))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
     def _section_windows(self,outdoor_temp):# {{{
@@ -371,15 +406,15 @@ class CfastMcarlo():
             if how_much_open == 0:
                 continue
             collect=[]
-            collect.append("&VENT TYPE = 'WALL'")                                                      # HVENT
-            collect.append("ID = '{}'".format(v['name']))                                              # HVENT
-            collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))     # FROM_TO
-            collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))            # WIDTH
-            collect.append("TOP = {}".format(round((v['sill']+v['height'])/100.0, 2)))       # TOP (height of the top of the hvent relative to the floor)
-            collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))                  # BOTTOM
-            collect.append("OFFSET = {}".format(round(v['face_offset']/100.0, 2)))           # COMPARTMENT1_OFFSET
-            collect.append("FACE = '{}'".format(v['face']))                                  # FACE
-            collect.append("CRITERION = 'TIME' T = 0,1 F = 0,{} /".format(how_much_open))         # OPEN CLOSE
+            collect.append("&VENT TYPE = 'WALL'")
+            collect.append("ID = '{}'".format(v['name']))
+            collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))
+            collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))
+            collect.append("TOP = {}".format(round((v['sill']+v['height'])/100.0, 2)))
+            collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))
+            collect.append("OFFSET = {}".format(round(v['face_offset']/100.0, 2)))
+            collect.append("FACE = '{}'".format(v['face']))
+            collect.append("CRITERION = 'TIME' T = 0,1 F = 0,{} /".format(how_much_open))
             txt.append(', '.join(str(i) for i in collect))
 
         self.s.executemany('UPDATE aamks_geom SET how_much_open=? WHERE name=?', windows_setup)
@@ -397,7 +432,7 @@ class CfastMcarlo():
             if how_much_open == 0:
                 continue
             collect=[]
-            collect.append("&VENT TYPE = 'WALL")                                             # TYPE
+            collect.append("&VENT TYPE = 'WALL'")                                             # TYPE
             collect.append("ID = '{}'".format(v['name']))                                    # VENT ID
             collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))     # FROM_TO
             collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))            # WIDTH
@@ -415,14 +450,13 @@ class CfastMcarlo():
     def _section_vvent(self):# {{{
         # VVENT AREA, SHAPE, INITIAL_FRACTION
         txt=['!! SECTION NATURAL VENT']
-        #for v in self.s.query("SELECT distinct v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_pri='VVENT' AND c.type_pri = 'COMPA' ORDER BY v.vent_from,v.vent_to"):
         for v in self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to"):
             how_much_open = self._draw_door_and_hole_opening(v['type_sec'])           # end state with probability of working
             collect=[]
             collect.append("&VENT TYPE = 'CEILING'")                                                  # VENT TYPE
             collect.append("ID = '{}'".format(v['name']))                                             # VENT ID
             collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))    # FROM_TO
-            collect.append("AREA = '{}'".format(round((v['width']*v['depth'])/1e4, 2)))               # AREA OF THE VENT,
+            collect.append("AREA = {}".format(round((v['width']*v['depth'])/1e4, 2)))               # AREA OF THE VENT,
             collect.append("SHAPE = 'SQUARE'")
             collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))           # COMPARTMENT1_OFFSET
             collect.append("CRITERION = 'TIME' T = 0,90 F = 0,{} /".format(how_much_open))         # OPEN CLOSE
@@ -433,114 +467,84 @@ class CfastMcarlo():
 # }}}
     def _section_mvent(self):# {{{
         txt=['!! SECTION MECHANICAL VENT']
-        #for v in self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='MVENT' ORDER BY v.vent_from,v.vent_to"):
         for v in self.s.query( "SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
             collect=[]
-            collect.append("&VENT TYPE = 'MECHANICAL'")  # VENT TYPE
-            collect.append("ID = '{}'".format(v['name']))  # VENT ID
-            collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))    # FROM_TO
+            collect.append("&VENT TYPE = 'MECHANICAL'")
+            collect.append("ID = '{}'".format(v['name']))
+            collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))
             area = round((v['width']*v['depth'])/1e4, 2)
-            collect.append("AREAS = '{}, {}'".format(area, area))               # AREA OF THE VENT,
-            collect.append("HEIGHTS = '{}, {}'".format(v['height'], v['height']))               # AREA OF THE VENT,
-            collect.append("FLOW = {}".format(v['mvent_throughput']))  # FLOW ID
-            collect.append("CUTOFFS = 200., 300.")  # CUTOFFS
-            collect.append("ORIENTATION = 'VERTICAL'")  # ORIENTATION
-            collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))           # COMPARTMENT1_OFFSET
+            collect.append("AREAS = {}, {}".format(area, area))
+            collect.append("HEIGHTS = {}, {}".format(v['height'], v['height']))
+            collect.append("FLOW = {}".format(v['mvent_throughput']))
+            collect.append("CUTOFFS = 200, 300")
+            collect.append("ORIENTATIONS = 'VERTICAL'")
+            collect.append("OFFSETS = {}, {} /".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))
             txt.append(', '.join(str(i) for i in collect))
-
-        return "\n".join(txt)+"\n" if len(txt)>1 else ""
+        return "\n".join(txt)+"\n" if len(txt) > 1 else ""
 # }}}
     def _section_heat_detectors(self):# {{{
-        txt=['!! DETECTORS,type,compa,temp,width,depth,height,rti,supress,density']
+        txt=['!! HEAT DETECTORS']
         for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND heat_detectors=1"):
-            temp = self._draw_heat_detectors_triggers()                # ACTIVATION_TEMPERATURE,
+            temp = self._draw_heat_detectors_triggers()
             if temp == '0.0':
                 collect = [] 
             else: 
                 collect=[]
-                collect.append('DETECT')                           # DETECT,
-                collect.append('HEAT')                             # TYPE: HEAT,SMOKE,SPRINKLER 
-                collect.append(v['global_type_id'])                # COMPARTMENT,
-                collect.append(temp)                               # ACTIVATION_TEMPERATURE,
-                collect.append(round(v['width']/(2.0*100),2))      # WIDTH
-                collect.append(round(v['depth']/(2.0*100),2))      # DEPTH
-                collect.append(round(v['height']/100.0,2))         # HEIGHT
-                collect.append(80)                                 # RTI,
-                collect.append(0)                                  # SUPPRESSION,
-                collect.append(7E-05)                              # SPRAY_DENSITY
-                txt.append(','.join(str(i) for i in collect))
 
+                collect.append("&DEVC ID = 'hd{}' TYPE = 'HEAT_DETECTOR'".format(v['global_type_id']))
+                collect.append("COMP_ID = '{}'".format(v['name']))
+                collect.append("LOCATION = {}, {}, {}".format(round(v['width']/(2.0*100), 2), round(v['depth']/(2.0*100), 2), round(v['height']/100.0, 2)))
+                collect.append("SETPOINT = {}".format(temp))
+                collect.append("RTI = {}".format(404))
+                txt.append(','.join(str(i) for i in collect))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 
 # }}}
     def _section_smoke_detectors(self):# {{{
-        txt=['!! DETECTORS,type,compa,temp,width,depth,height,rti,supress,density']
+        txt=['!! SMOKE DETECTORS']
         for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND smoke_detectors=1"):
             temp = self._draw_smoke_detectors_triggers()                # ACTIVATION_TEMPERATURE,
             if temp == '0.0':
                 collect = [] 
             else: 
                 collect=[]
-                collect.append('DETECT')                           # DETECT,
-                collect.append('SMOKE')                            # TYPE: HEAT,SMOKE,SPRINKLER 
-                collect.append(v['global_type_id'])                # COMPARTMENT,
-                collect.append(temp)                               # ACTIVATION_TEMPERATURE,
-                collect.append(round(v['width']/(2.0*100),2))      # WIDTH
-                collect.append(round(v['depth']/(2.0*100),2))      # DEPTH
-                collect.append(round(v['height']/100.0,2))         # HEIGHT
-                collect.append(80)                                 # RTI,
-                collect.append(0)                                  # SUPPRESSION,
-                collect.append(7E-05)                              # SPRAY_DENSITY
+                collect.append("&DEVC ID = 'sd{}' TYPE = 'SMOKE_DETECTOR'".format(v['global_type_id']))
+                collect.append("COMP_ID = '{}'".format(v['name']))
+                collect.append("LOCATION = {}, {}, {}".format(round(v['width']/(2.0*100), 2), round(v['depth']/(2.0*100), 2), round(v['height']/100.0, 2)))
+                collect.append("SETPOINTS = {}, {} /".format(temp, temp))
                 txt.append(','.join(str(i) for i in collect))
-
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 
 # }}}
     def _section_sprinklers(self):# {{{
-        txt=['!! SPRINKLERS,type,compa,temp,width,depth,height,rti,supress,density']
+        txt=['!! SECTION SPRINKLERS']
         for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1"):
             temp = self._draw_sprinklers_triggers() # ACTIVATION_TEMPERATURE,
             if temp == '0.0':
                 collect = [] 
             else: 
                 collect=[]
-                collect.append('DETECT')                           # DETECT,
-                collect.append('SPRINKLER')                        # TYPE: HEAT,SMOKE,SPRINKLER 
-                collect.append(v['global_type_id'])                # COMPARTMENT,
-                collect.append(temp)                               # ACTIVATION_TEMPERATURE,
-                collect.append(round(v['width']/(2.0*100),2))      # WIDTH
-                collect.append(round(v['depth']/(2.0*100),2))      # DEPTH
-                collect.append(round(v['height']/100.0,2))         # HEIGHT
-                collect.append(50)                                 # RTI,
-                collect.append(1)                                  # SUPPRESSION,
-                collect.append(7E-05)                              # SPRAY_DENSITY
-                txt.append(','.join(str(i) for i in collect))
-
+                collect.append("&DEVC ID = 'sp{}' TYPE = 'SPRINKLER'".format(v['global_type_id']))
+                collect.append("COMP_ID = '{}'".format(v['name']))
+                collect.append("LOCATION = {}, {}, {}".format(round(v['width']/(2.0*100), 2), round(v['depth']/(2.0*100), 2), round(v['height']/100.0, 2)))
+                collect.append("SETPOINT = {}".format(temp))
+                collect.append("RTI = {}".format(100))
+                collect.append("SPRAY_DENSITY = {} /".format(7.E-5))
+                txt.append(', '.join(str(i) for i in collect))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
     def _section_fire(self):# {{{
-        times, hrrs=self._draw_fire_development()
-        fire_properties = self._draw_fire_properties(len(times))
-        fire_origin=self._fire_origin()
-        area = (((npa(hrrs)/1000)/(2 * 1.204 * 1.005 * 293 * sqrt(9.81))) ** (2/5)) + 0.0001
-        txt=(
-            '!! FIRE,compa,x,y,z,fire_number,ignition_type,ignition_criterion,ignition_target,?,?,name',
+        fire_origin = self._draw_fire_origin()
+        fire_chem = self._draw_fire_chem()
+        fire_development = self._draw_fire_development()
+        txt = (
+            '!! SECTION FIRE',
+            '',
             fire_origin,
-            '',
-            '!! CHEMI,?,?,?,?',
-            'CHEMI,1,1.8,0.3,0.05,0,0.283,{}'.format(fire_properties['heatcom']),
-            '',
-            'TIME,'+','.join(str(i) for i in times),
-            'HRR,'+','.join(str(round(i,3)) for i in hrrs),
-            fire_properties['sootyield'],
-            fire_properties['coyield'],
-            fire_properties['trace'],
-            'AREA,'+','.join(str(i) for i in area),
-            fire_properties['heigh'],
-            
+            fire_chem,
+            fire_development
         )
         return "\n".join(txt)+"\n"
-
 # }}}
 
     def _new_psql_log(self):#{{{
@@ -551,22 +555,24 @@ class CfastMcarlo():
             ('heat_detectors'  , []) ,
             ('smoke_detectors' , []) ,
             ('hrrpeak'         , []) ,
-            ('sootyield'       , []) ,
-            ('coyield'         , []) ,
+            ('soot_yield'      , []) ,
+            ('co_yield'        , []) ,
+            ('hcl_yield'       , []) ,
+            ('hcn_yield'       , []) ,
             ('alpha'           , []) ,
             ('trace'           , []) ,
-            ('area'            , []) ,
+            ('max_area'        , []) ,
             ('q_star'          , []) ,
-            ('heigh'           , []) ,
+            ('height'          , []) ,
             ('w'               , []) ,
-            ('outdoort'        , []) ,
+            ('outdoor_temp'    , []) ,
             ('dcloser'         , []) ,
             ('door'            , []) ,
             ('sprinklers'      , []) ,
-            ('heatcom'         , []) ,
+            ('heat_of_combustion', []) ,
             ('delectr'         , []) ,
             ('vvent'           , []) ,
-            ('radfrac'         , []) ,
+            ('rad_frac'        , []) ,
         ])
 #}}}
     def _write(self):#{{{
@@ -580,7 +586,7 @@ class CfastMcarlo():
         for k,v in self._psql_collector[self._sim_id].items():
             pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
         data=', '.join(pairs)
-        self.p.query("UPDATE simulations SET {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(data), (self.conf['project_id'], self.conf['scenario_id'], self._sim_id))
+        #self.p.query("UPDATE simulations SET {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(data), (self.conf['project_id'], self.conf['scenario_id'], self._sim_id))
 
 #}}}
 
