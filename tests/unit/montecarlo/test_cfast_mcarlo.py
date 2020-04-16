@@ -14,8 +14,7 @@ class TestEvacuee(TestCase):
         self.assertEqual(expected_id, id)
 
     def test_create_sqlite_db(self):
-        link = self.cfast_mcarlo.create_sqlite_db()
-        t_name = link.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
+        t_name = self.cfast_mcarlo.create_sqlite_db()
         self.assertEqual(t_name['tbl_name'], 'fire_origin')
 
     def test_connect_psql_db(self):
@@ -92,28 +91,29 @@ class TestEvacuee(TestCase):
 
     def test_section_doors_and_holes(self):
         txt = self.cfast_mcarlo._section_doors_and_holes()
-        print(txt)
+        expected = "&VENT TYPE = 'WALL', ID = 'd4', COMP_IDS = 'c2', 'r3', WIDTH = 0.9, TOP = 2.0, BOTTOM = 0.0, OFFSET = 12.09, FACE = '1', CRITERION = 'TIME' T = 0 F = 1 /"
+        actual = txt.splitlines()[1]
+        self.assertEqual(actual, expected)
+
 
     def test_section_vvent(self):
         x = self.cfast_mcarlo._section_vvent()
-        print(x)
+        self.assertEqual(len(x), 484)
 
     def test_section_mvent(self):
         x = self.cfast_mcarlo._section_mvent()
-        print(x)
+        self.assertEqual(len(x), 578)
 
 
     def test_draw_fire_development(self):
         x = self.cfast_mcarlo._draw_fire_development()
-        print(x)
+        self.assertEqual(len(x), 1678)
 
     def test_draw_fire_origin(self):
-        x = self.cfast_mcarlo._draw_fire_origin()
-        print(x)
-
-    def test_draw_fire_chem(self):
-        x = self.cfast_mcarlo._draw_fire_chem()
-        print(x)
+        txt = self.cfast_mcarlo._draw_fire_origin()
+        expected = "&FIRE ID = 'f1', COMP_ID = 'r1', FIRE_ID = 'f1', LOCATION = 4.4, 3.83 /"
+        #actual = txt.splitlines()
+        self.assertEqual(txt, expected)
 
     def test_draw_fire_properties(self):
         params = self.cfast_mcarlo._draw_fire_properties()
@@ -121,12 +121,4 @@ class TestEvacuee(TestCase):
         expected_keys = ['TIME', 'HRR', 'HEIGHT', 'AREA', 'CO_YIELD', 'SOOT_YIELD', 'HCN_YIELD', 'HCL_YIELD', 'TRACE_YIELD']
         self.assertEqual(actual_keys, expected_keys)
         self.assertGreater(len(params[0]['HRR']), 20)
-
-    def test_draw_fire_development(self):
-        txt = self.cfast_mcarlo._draw_fire_development()
-        print(txt)
-
-    def test_section_fire(self):
-        x = self.cfast_mcarlo._section_fire()
-        print(x)
 

@@ -44,11 +44,13 @@ class CfastMcarlo():
 
     def create_sqlite_db(self):
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        t_name= ""
         try:
             self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,f_id,sim_id)")
+            t_name = self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
         except Exception as e:
-            print(e)
-        return self.s
+            t_name = self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
+        return t_name
 
     def connect_psql_db(self):
         self.p=Psql()
@@ -586,7 +588,7 @@ class CfastMcarlo():
         for k,v in self._psql_collector[self._sim_id].items():
             pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
         data=', '.join(pairs)
-        #self.p.query("UPDATE simulations SET {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(data), (self.conf['project_id'], self.conf['scenario_id'], self._sim_id))
+        self.p.query("UPDATE simulations SET {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(data), (self.conf['project_id'], self.conf['scenario_id'], self._sim_id))
 
 #}}}
 
