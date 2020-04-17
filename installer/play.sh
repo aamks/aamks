@@ -15,12 +15,10 @@ DELETE FROM scenarios;
 INSERT INTO scenarios(project_id,scenario_name) values(1,'simple');
 INSERT INTO scenarios(project_id,scenario_name) values(1,'navmesh');
 INSERT INTO scenarios(project_id,scenario_name) values(1,'three');
-INSERT INTO scenarios(project_id,scenario_name) values(1,'fds');
 
 INSERT INTO scenarios(project_id,scenario_name) values(2,'simple');
 INSERT INTO scenarios(project_id,scenario_name) values(2,'navmesh');
 INSERT INTO scenarios(project_id,scenario_name) values(2,'three');
-INSERT INTO scenarios(project_id,scenario_name) values(2,'fds');
 ";
 
 # psql aamks -c "SELECT * FROM projects"

@@ -310,7 +310,6 @@ function get_template_defaults($q) {/*{{{*/
 	$db['setup1']='
 {
     "fire_model": "CFAST",
-    "evac_clusters": 1,
     "dispatch_evacuees": "manual+probabilistic",
     "number_of_simulations": 1,
     "simulation_time": 100,
