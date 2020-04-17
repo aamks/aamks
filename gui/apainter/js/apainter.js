@@ -886,8 +886,9 @@ function floorCopy() {	//{{{
 		cg.floor=c2f;
 		cg.idx=cgID;
 		cg.name=cg.letter + cgID;
-		cg.z[0]=z0;
-		cg.z[1]=z0 + m.z[1] - m.z[0];
+		cg.z[0]=z0 + m.z[0];
+		cg.z[1]=z0 + m.z[1];
+		console.log(cg);
 		cgDb(undoRegister=0);
 		cgSvg();
 	});

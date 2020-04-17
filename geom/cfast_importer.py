@@ -463,11 +463,13 @@ class CFASTimporter():
             for vent_id,v in vc_intersections.items():
                 v=sorted(v)
                 if len(v) == 2 and self.aamks_polies['COMPA'][floor][v[0]].intersects(self.aamks_polies['COMPA'][floor][v[1]]) == False:
-                    self.make_vis("Space between compas", vent_id)
+                    name=self.s.query("SELECT name FROM aamks_geom WHERE type_pri='HVENT' AND global_type_id=?", (vent_id,))[0]['name']
+                    self.fatal("{}: space between compas.".format(name))
                 if len(v) == 1:
                     v.append(self.outside_compa)
-                if len(v) > 2:
-                    self.make_vis('Door intersects no rooms or more than 2 rooms.', vent_id)
+                if len(v) > 2 or len(v)<1:
+                    name=self.s.query("SELECT name FROM aamks_geom WHERE type_pri='HVENT' AND global_type_id=?", (vent_id,))[0]['name']
+                    self.fatal("{}: door intersects no rooms or more than 2 rooms.".format(name))
                 update.append((v[0], v[1], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", update)
 
@@ -504,8 +506,9 @@ class CFASTimporter():
                 v=sorted(v)
                 if len(v) == 1:
                     v.append(self.outside_compa)
-                if len(v) > 2:
-                    self.make_vis('Vent intersects no rooms or more than 2 rooms.', vent_id)
+                if len(v) > 2 or len(v)<1:
+                    name=self.s.query("SELECT name FROM aamks_geom WHERE type_pri='VVENT' AND global_type_id=?", (vent_id,))[0]['name']
+                    self.fatal('{}: vvent intersects no rooms or more than 2 rooms.'.format(name))
                 update.append((v[0], v[1], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
 
@@ -571,7 +574,8 @@ class CFASTimporter():
             for vent_id,v in vc_intersections.items():
                 v=sorted(v)
                 if len(v) > 1: 
-                    self.make_vis('MVENT m{} crosses more than a single room'.format(vent_id), vent_id)
+                    name=self.s.query("SELECT name FROM aamks_geom WHERE type_pri='MVENT' AND global_type_id=?", (vent_id,))[0]['name']
+                    self.fatal('{}: mvent crosses more than a single room.'.format(name))
                 update.append((v[0], v[0], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='MVENT'", update)
 
@@ -611,23 +615,16 @@ class CFASTimporter():
         all_interected_room=set(doors_intersect_room_ids)
         for i in self.s.query("SELECT name,floor,global_type_id FROM aamks_geom WHERE type_pri='COMPA'"):
             if i['global_type_id'] not in all_interected_room:
-                self.make_vis('Room without door ', i['global_type_id'], 'COMPA')
+                self.fatal('{}: room without door.'.format(i['name']))
 # }}}
 
-    def make_vis(self, title, faulty_id='', type_pri='HVENT'):# {{{
+    def fatal(self, title):# {{{
         ''' 
-        This method is for visualizing both errors and just how things look. 
-        If faulty_id comes non-empty then we are signaling an error.
+        Errors go to apainter. 
         '''
 
-        if faulty_id != '':
-            r=self.s.query("SELECT name,floor FROM aamks_geom WHERE type_pri=? AND global_type_id=?", (type_pri,faulty_id))[0]
-            fatal="Fatal: {}: {}".format(r['name'], title)
-            Vis({'highlight_geom': r['name'], 'anim': None, 'title': "<div id=python_msg>{}</div>".format(fatal), 'srv': 1, 'skip_fire_origin': 1, 'skip_evacuees': 1, 'skip_obstacles': 1})
-            print("TODO: This should redirect to animator<br>", fatal)
-            sys.exit()
-        else:
-            Vis({'highlight_geom': None, 'anim': None, 'title': title, 'srv': 1, 'skip_fire_origin': 1, 'skip_evacuees': 1, 'skip_obstacles': 1})
+        print(title)
+        sys.exit()
 # }}}
 
     def _debug(self):# {{{
