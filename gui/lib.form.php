@@ -421,6 +421,34 @@ function get_template_defaults($q) {/*{{{*/
         "mode": 0.0029,
         "max": 0.188
     },
+    "co_yield": {
+      "min": 0.01,
+      "max": 0.043
+    },
+    "hcl_yield": {
+      "min": 0.01,
+      "max": 0.043
+    },
+    "hcn_yield": {
+      "min": 0.01,
+      "max": 0.043
+    },
+    "soot_yield": {
+      "min": 0.11,
+      "max": 0.17
+    },
+    "radfrac": {
+      "k": 124.48,
+      "theta": 0.00217
+    },
+    "heatcom": {
+      "min": 16400000,
+      "max": 27000000
+    },
+    "fire_area": {
+      "b": 0.668,
+      "scale": 0.775
+    },
     "evacuees_density": { "ROOM": 0.33, "COR": 0.05, "STAI": 0.05, "HALL": 0.05 },
     "alarming": {
         "mean": 0,
