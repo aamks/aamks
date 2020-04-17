@@ -102,7 +102,7 @@ class TestEvacuee(TestCase):
 
     def test_section_mvent(self):
         x = self.cfast_mcarlo._section_mvent()
-        self.assertEqual(len(x), 578)
+        self.assertEqual(len(x), 594)
 
 
     def test_draw_fire_development(self):

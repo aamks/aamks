@@ -225,7 +225,7 @@ class CfastMcarlo():
         self._psql_log_variable('soot_yield', soot_yield[0])
         self._psql_log_variable('hcn_yield', hcn_yield[0])
         self._psql_log_variable('hcl_yield', hcl_yield[0])
-        self._psql_log_variable('height', height[0])
+        self._psql_log_variable('heigh', height[0])
         return params, z[0]['f_id']
 # }}}
 
@@ -470,16 +470,24 @@ class CfastMcarlo():
     def _section_mvent(self):# {{{
         txt=['!! SECTION MECHANICAL VENT']
         for v in self.s.query( "SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
+            if v['mvent_throughput'] < 0:
+                comp_ids = [v['vent_from_name'], 'OUTSIDE']
+            else:
+                comp_ids = ['OUTSIDE', v['vent_from_name']]
+            if v['is_vertical'] is True:
+                orientation = 'VERTICAL'
+            else:
+                orientation = 'HORIZONTAL'
             collect=[]
             collect.append("&VENT TYPE = 'MECHANICAL'")
             collect.append("ID = '{}'".format(v['name']))
-            collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))
+            collect.append("COMP_IDS = '{}', '{}'".format(comp_ids[0], comp_ids[1]))
             area = round((v['width']*v['depth'])/1e4, 2)
             collect.append("AREAS = {}, {}".format(area, area))
-            collect.append("HEIGHTS = {}, {}".format(v['height'], v['height']))
-            collect.append("FLOW = {}".format(v['mvent_throughput']))
+            collect.append("HEIGHTS = {}, {}".format(round(v['height']/100, 2), round(v['height'], 2)))
+            collect.append("FLOW = {}".format(abs(v['mvent_throughput'])))
             collect.append("CUTOFFS = 200, 300")
-            collect.append("ORIENTATIONS = 'VERTICAL'")
+            collect.append("ORIENTATIONS = '{}'".format(orientation))
             collect.append("OFFSETS = {}, {} /".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))
             txt.append(', '.join(str(i) for i in collect))
         return "\n".join(txt)+"\n" if len(txt) > 1 else ""
@@ -564,8 +572,7 @@ class CfastMcarlo():
             ('alpha'           , []) ,
             ('trace'           , []) ,
             ('max_area'        , []) ,
-            ('q_star'          , []) ,
-            ('height'          , []) ,
+            ('heigh'           , []) ,
             ('w'               , []) ,
             ('outdoor_temp'    , []) ,
             ('dcloser'         , []) ,
