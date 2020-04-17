@@ -267,7 +267,7 @@ class CFASTimporter():
         self._id2compa_name=OrderedDict() 
         for v in self.s.query("select name,global_type_id from aamks_geom where type_pri='COMPA' ORDER BY global_type_id"):
             self._id2compa_name[v['global_type_id']]=v['name']
-        self._id2compa_name[self.outside_compa]='outside'
+        self._id2compa_name[self.outside_compa]='OUTSIDE'
 
 # }}}
     def _add_names_to_vents_from_to(self):# {{{
@@ -315,7 +315,7 @@ class CFASTimporter():
         Doors that lead to outside or lead to staircases ('s%') are terminal
         '''
         update=[]
-        z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE type_pri='HVENT' AND (vent_from_name LIKE 's%' OR vent_to_name LIKE 's%' OR vent_to_name='outside')")
+        z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE type_pri='HVENT' AND (vent_from_name LIKE 's%' OR vent_to_name LIKE 's%' OR vent_to_name='OUTSIDE')")
         for i in z:
             for ii in z:
                 update.append((ii['exit_type'], ii['name']))
