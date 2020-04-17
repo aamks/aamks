@@ -180,6 +180,7 @@ class CFASTimporter():
 # }}}
     def _prepare_geom_record(self,v):# {{{
         ''' Format a record for sqlite. Hvents get fixed width self.doors_width cm '''
+        is_vertical=None
         # OBST
         if v['type'] in ('OBST',):
             type_pri='OBST'
@@ -199,6 +200,7 @@ class CFASTimporter():
         elif v['type'] in ('MVENT',):                  
             type_pri='MVENT'
             type_tri=''
+            is_vertical=1 if v['mvent_orientation']=='vert' else 0
 
         # VVENT      
         elif v['type'] in ('VVENT',):                  
@@ -225,7 +227,7 @@ class CFASTimporter():
         name='{}{}'.format(self.geomsMap[v['type']], global_type_id)
 
         #self.s.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               , mvent_orientation              , exit_type               , room_enter               , evacuees_density               , terminal_door , points                  , origin_room , orig_type , has_door)")
-        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] , v['attrs']['mvent_throughput'] , v['attrs']['exit_type'] , v['attrs']['room_enter'] , v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None)
+        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , is_vertical , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] , v['attrs']['mvent_throughput'] , v['attrs']['exit_type'] , v['attrs']['room_enter'] , v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None)
 
 # }}}
     def _enhancements(self):# {{{

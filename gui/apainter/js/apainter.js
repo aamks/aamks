@@ -389,16 +389,17 @@ function guessFloorZ0() {//{{{
 	// Guess 2: If we are the first time on floor 5, then multiply floor0's dimz * 5
 	// Guess 3: If there's no floor0 even or any other occassion z-origin=0
 	var guess=db({"floor": floor, 'letter': 'r'}).select("z")[0];
-	if(guess[0] != undefined) {
+	if(guess != undefined) {
 		$("#floorZ0").val(guess[0]);
 		floorZ0=guess[0];
 		return;
 	}
 
-	var guess=db({"floor": 0, 'letter': 'r'}).select("z1") - db({"floor": 0, 'letter': 'r'}).select("z")[0];
-	if(guess[0] != undefined) {
-		$("#floorZ0").val(guess[0]*floor);
-		floorZ0=guess[0]*floor;
+	var guess=db({"floor": 0, 'letter': 'r'}).select("z");
+	if(guess != undefined) {
+		var z0=floor*(guess[0][1]-guess[0][0]);
+		$("#floorZ0").val(z0);
+		floorZ0=z0;
 		return;
 	}
 
