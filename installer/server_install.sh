@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Configure until the END OF CONFIGURATION. Then run bash install.sh.
-# All CONFIGURATION variables must be written here and in your ~/.bashrc.
+# Configure until the END OF CONFIGURATION. Then run bash server_install.sh.
+# All the configuration may be later tweaked in:
+# ~/.bashrc
+# /etc/aamksconf.json
+# /etc/apache2/envvars
 
 # Aamks uses postgres (user:aamks, db:aamks) for collecting the simulations data.
 
@@ -13,22 +16,19 @@
 # By convention aamks GUI must reside under /var/www/ssl/aamks
 # and will be accessed via https://your.host.abc/aamks
 
-# CONFIGURATION, must be copied to ~/.bashrc
-# The installer creates /etc/aamksconf.json 
-
 AAMKS_SERVER=127.0.0.1										# gearman + www for workers
 AAMKS_PATH='/usr/local/aamks'								
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
-AAMKS_WORKER='none'											# 'none': no worker | 'local': no cluster(grid), no gearman | 'gearman': bunch of workers
+AAMKS_WORKER='none'											# 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'gearman': dispatch simulations over a network (grid/cluster environment)
 AAMKS_SALT='aamksisthebest'
 AAMKS_USE_GMAIL=0											# needed if we allow users to register accounts
 AAMKS_GMAIL_PASSWORD='none'									# needed if we allow users to register accounts
 AAMKS_GMAIL_USERNAME='none'									# needed if we allow users to register accounts
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
+# END OF CONFIGURATION
 
-clear
-echo "Note: worker_install.sh downloads aamks from github and should be installed before server_install.sh"
+[ -d $AAMKS_PATH ] || { echo "$AAMKS_PATH does not exist. Run 'bash worker_install.sh' first. Exiting"; exit;  }
 echo
 echo "This is the default Aamks configuration that can be modified in server_install.sh or later in /etc/apache2/envvars."
 echo "If you use PYTHONPATH in /etc/apache2/envvars make sure we haven't broken it."
@@ -47,7 +47,6 @@ echo; echo;
 echo "<Enter> accepts, <ctrl+c> cancels"
 read
 
-# END OF CONFIGURATION
 
 sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw 'aamks' && { 
 	echo "Aamks already exists in psql. Do you wish to remove Aamks database?";
@@ -115,7 +114,6 @@ EOF
 }
 
 
-[ -d $AAMKS_PATH ] || { echo "$AAMKS_PATH does not exist. Run worker_install.sh first. Exiting"; exit;  }
 
 
 sudo mkdir -p /var/www/ssl/
