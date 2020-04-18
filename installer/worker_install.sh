@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # This is the installer of the worker. 
 
-[ -z $_AAMKS_PATH ] ||  { _AAMKS_PATH="/usr/local/aamks"; }
-[ -z $_AAMKS_SERVER] || { _AAMKS_SERVER="127.0.0.1"; }
+[ -z $_AAMKS_PATH ] &&  { _AAMKS_PATH="/usr/local/aamks"; }
+[ -z $_AAMKS_SERVER] && { _AAMKS_SERVER="127.0.0.1"; }
 
 update() { #{{{
 	[ -d $_AAMKS_PATH ] || { install; }
@@ -24,7 +24,7 @@ install() { #{{{
 	sudo -H pip3 install shapely scipy numpy Cython
 	sudo rm -rf /etc/aamksconf.json
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
-	git clone https://github.com/aamks/aamks
+	[ -d aamks ] || { git clone https://github.com/aamks/aamks; }
 	sudo mv aamks $_AAMKS_PATH
 	sudo chown -R $USER:$USER $_AAMKS_PATH
 
@@ -41,7 +41,16 @@ install() { #{{{
 	echo; echo; echo "Installing recast (path finding library, navmesh producer)..."; echo; echo;
 	cd
 	go get -u github.com/arl/go-detour/cmd/recast
-	[ -f ~/go/bin/recast ] || { echo " ~/go/bin/recast is missing. It is likely that your golang version is obsolete."; exit; }
+	[ -f ~/go/bin/recast ] || { 
+		echo " ~/go/bin/recast is missing. It is likely that your golang version is obsolete."; 
+		echo "Perhaps the below commands can fix golang. Once you have fixed golang, you can rerun the installer.
+
+sudo add-apt-repository ppa:longsleep/golang-backports;
+sudo apt update;
+sudo apt install golang-go;
+";
+exit; }
+
 	sudo mv ~/go/bin/recast /usr/local/bin
 	echo "Recast should be now installed"
 
@@ -65,6 +74,7 @@ Worker installer options:
     -h   this help;
 
 EOF
+info
 	exit
 } #}}}
 info() { #{{{
