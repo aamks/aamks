@@ -81,7 +81,6 @@ function registerListeners() {//{{{
 	$("body").on("change"              , '#alter-room-enter'        , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-exit-type'         , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-mvent-throughput'  , function() { saveRightBox(); });
-	$("body").on("change"              , '#alter-mvent-orientation' , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-polypoints'        , function() { saveRightBox(); });
 	$("body").on("keydown"             , '#alter-geom-letter'       , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-z'                 , function() { saveRightBox(); });
@@ -194,7 +193,7 @@ function cgDb(undoRegister=1) { //{{{
 	}
 	db({"name": cg.name}).remove();
 	b=getBbox();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "mvent_orientation": cg.mvent_orientation, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y });
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y });
 	if(undoRegister==1) { undoBufferRegister('insert'); }
 }
 //}}}
@@ -389,16 +388,17 @@ function guessFloorZ0() {//{{{
 	// Guess 2: If we are the first time on floor 5, then multiply floor0's dimz * 5
 	// Guess 3: If there's no floor0 even or any other occassion z-origin=0
 	var guess=db({"floor": floor, 'letter': 'r'}).select("z")[0];
-	if(guess[0] != undefined) {
+	if(guess != undefined) {
 		$("#floorZ0").val(guess[0]);
 		floorZ0=guess[0];
 		return;
 	}
 
-	var guess=db({"floor": 0, 'letter': 'r'}).select("z1") - db({"floor": 0, 'letter': 'r'}).select("z")[0];
-	if(guess[0] != undefined) {
-		$("#floorZ0").val(guess[0]*floor);
-		floorZ0=guess[0]*floor;
+	var guess=db({"floor": 0, 'letter': 'r'}).select("z");
+	if(guess != undefined) {
+		var z0=floor*(guess[0][1]-guess[0][0]);
+		$("#floorZ0").val(z0);
+		floorZ0=z0;
 		return;
 	}
 
@@ -501,7 +501,6 @@ function cgInit() {//{{{
 	cg.letter=activeLetter;
 	cg.type=gg[activeLetter].t;
 	cg.mvent_throughput=0;
-	cg.mvent_orientation='horiz';
 	cg.z=[floorZ0];
 	cg.polypoints=[];
 	cg.preferredSnap=null;
@@ -709,7 +708,6 @@ function dbUpdateCadJsonStr() { //{{{
 			cad_json["evacuees_density"]=i.evacuees_density; 
 		} else if(i.type=='mvent') {
 			cad_json["mvent_throughput"]=i.mvent_throughput;
-			cad_json["mvent_orientation"]=i.mvent_orientation;
 		}
 
 		db({'name': i.name}).update({'cad_json': cad_json});
@@ -771,7 +769,6 @@ function cgMake(floor,letter,record) { //{{{
 	if('room_enter' in record)       { cg.room_enter=record.room_enter; }
 	if('evacuees_density' in record) { cg.evacuees_density=record.evacuees_density; }
 	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
-	if('mvent_orientation' in record) { cg.mvent_orientation=record.mvent_orientation; }
 }
 //}}}
 function ajaxSaveCadJson(json_data) { //{{{
@@ -889,8 +886,9 @@ function floorCopy() {	//{{{
 		cg.floor=c2f;
 		cg.idx=cgID;
 		cg.name=cg.letter + cgID;
-		cg.z[0]=z0;
-		cg.z[1]=z0 + m.z[1] - m.z[0];
+		cg.z[0]=z0 + m.z[0];
+		cg.z[1]=z0 + m.z[1];
+		console.log(cg);
 		cgDb(undoRegister=0);
 		cgSvg();
 	});
@@ -961,15 +959,9 @@ function roomProps() {//{{{
 //}}}
 function mventProps() {//{{{
 	pp="<input id=alter-mvent-throughput type=hidden value=0>";
-	pp+="<input id=alter-mvent-orientation type=hidden value='horiz'>";
 	if(cg.type=='mvent') {
 		v=db({'name':cg.name}).get()[0];
 		pp="<tr><td>throughput<td>  <input id=alter-mvent-throughput type=text size=3 value="+v.mvent_throughput+">";
-		pp+="<tr><td>orientation<td><select id=alter-mvent-orientation>";
-		pp+="<option value="+v.mvent_orientation+">"+v.mvent_orientation+"</option>";
-		pp+="<option value='horiz'>horiz</option>";
-		pp+="<option value='vert'>vert</option>";
-		pp+="</select>";
 	} 
 	return pp;
 }
@@ -1125,7 +1117,6 @@ function saveRightBoxCgProps() {//{{{
 		cg.exit_type=$("#alter-exit-type").val();
 		cg.letter=$("#alter-geom-letter").val();
 		cg.mvent_throughput=Number($("#alter-mvent-throughput").val());
-		cg.mvent_orientation=$("#alter-mvent-orientation").val();
 		validateForm();
 		var zz=$("#alter-z").val().split(",")
 		cg.z=[Number(zz[0]), Number(zz[1])];
