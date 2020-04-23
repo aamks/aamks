@@ -2,6 +2,7 @@ from unittest import TestCase
 from evac.staircase import Queue
 from evac.staircase import Staircase
 from matplotlib import pyplot as plt
+from decimal import Decimal
 
 class TestStairCase(TestCase):
     @classmethod
@@ -42,13 +43,22 @@ class TestStairCase(TestCase):
         self.assertEqual(actual_in_queue, expected_in_queue)
 
     def test_move(self):
+        time_step = 0.05
+        stair_step = 0.5
         self.staircase.add_to_queues(2, "e1")
         self.staircase.show_status()
-        self.staircase.move()
-        is_in_queue = self.staircase.check_if_in("e1")
-        print(is_in_queue)
+        pos = []
         self.staircase.show_status()
-        self.staircase.move()
-        is_in_queue = self.staircase.check_if_in("e1")
-        print(is_in_queue)
-        self.staircase.show_status()
+        for i in range(20):
+            self.staircase.move()
+            pos.append(self.staircase.check_if_in("e1"))
+            x = 0
+        for i in range(200):
+            x += time_step
+            y = round(x % stair_step, 2)
+            print(y)
+            if y == 0:
+                print("hello")
+
+
+

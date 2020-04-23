@@ -10,6 +10,7 @@ from numpy import prod
 from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
+from evac.staircase import Staircase
 from fire.partition_query import PartitionQuery
 from include import Sqlite
 import time
@@ -179,6 +180,13 @@ class Worker:
 
         self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees)))
         return e
+
+    def prepare_staircases(self):
+        rows = self.s.query("SELECT name, floor, x0, y0, width, depth, height, room_area from aamks_geom WHERE type_sec='STAI'")
+        stair_cases = []
+        for row in rows:
+            staircase = {row['name']: Staircase(name=row['name'], floors=9, number_queues=2, doors=1, width=row['width'], height=row['height'], offsetx=1500, offsety=0)}
+        print(staircase)
 
     def prepare_simulations(self):
 
@@ -378,6 +386,7 @@ class Worker:
         self.get_config()
         self.create_geom_database()
         self.run_cfast_simulations()
+        self.prepare_staircases()
         self.prepare_simulations()
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()

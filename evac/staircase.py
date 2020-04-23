@@ -266,7 +266,7 @@ class Staircase:
                 x,y = self.positions[self.ques[i].give_index(agent_id)]
                 x += i*100
                 y += i*100
-                return [x,y]# }}}
+                return int(x), int(y)# }}}
             else:
                 return False
 
@@ -276,12 +276,14 @@ class Staircase:
         for i in self.ques:
             Ptotal+=i.count_insiders()
         return Ptotal# }}}
+
     def total_completed(self):# {{{
         """<b>Funkcja total_completed</b> zwraca liczbę wszystkich agentów, którzy ukończyli kolejkę."""
         number = 0
         for i in self.ques:
             number+=i.count_completed()
         return number# }}}
+
     def move(self):# {{{
         """
         <b>Funkcja move</b> jest krokiem czasowym dla kolejek. Odpowiednio przesuwa lub wstrzymuje kolejki, w zależności
