@@ -390,10 +390,10 @@ if SIMULATION_TYPE == 'NO_CFAST':
     #print('Working in NO_CFAST mode')
     w.test()
 elif os.environ['AAMKS_WORKER'] == 'local':
-    print('Working in LOCAL MODE')
+    #print('Working in LOCAL MODE')
     w.local_worker()
 elif os.environ['AAMKS_WORKER'] == 'gearman':
-    print('Working in gearman MODE')
+    #print('Working in gearman MODE')
     w.main()
 else:
     print('Please specify worker mode')
