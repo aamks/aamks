@@ -606,14 +606,18 @@ class CFASTimporter():
                 exit()
 # }}}
     def _assert_room_has_door(self):# {{{
-        ''' Each room must have at least one type_tri DOOR. '''
+        ''' 
+        Each room must have at least one type_tri DOOR. 
+        Doesn't apply to staircase slices (orig_type is null).
+        '''
+
         doors_intersect_room_ids=[]
         for i in self.s.query("SELECT vent_from,vent_to FROM aamks_geom WHERE type_tri='DOOR'"):
             doors_intersect_room_ids.append(i['vent_from'])
             doors_intersect_room_ids.append(i['vent_to'])
 
         all_interected_room=set(doors_intersect_room_ids)
-        for i in self.s.query("SELECT name,floor,global_type_id FROM aamks_geom WHERE type_pri='COMPA'"):
+        for i in self.s.query("SELECT name,floor,global_type_id FROM aamks_geom WHERE type_pri='COMPA' AND orig_type is not null"):
             if i['global_type_id'] not in all_interected_room:
                 self.fatal('{}: room without door.'.format(i['name']))
 # }}}
