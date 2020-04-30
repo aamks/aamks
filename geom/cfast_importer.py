@@ -384,7 +384,7 @@ class CFASTimporter():
                 lines[3]=LineString([compa[1], compa[2]])
                 lines[4]=LineString([compa[2], compa[3]])
                 lines[1]=LineString([compa[3], compa[0]])
-                for key,line in lines.items():
+                for key, line in lines.items():
                     if hvent_poly.intersection(line).length > self.doors_width:
                         pt=list(zip(*line.xy))[0]
                         face=key

@@ -186,7 +186,6 @@ class Worker:
         stair_cases = []
         for row in rows:
             staircase = {row['name']: Staircase(name=row['name'], floors=9, number_queues=2, doors=1, width=row['width'], height=row['height'], offsetx=1500, offsety=0)}
-        print(staircase)
 
     def prepare_simulations(self):
 
