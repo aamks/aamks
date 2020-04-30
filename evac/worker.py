@@ -182,10 +182,11 @@ class Worker:
         return e
 
     def prepare_staircases(self):
-        rows = self.s.query("SELECT name, floor, x0, y0, width, depth, height, room_area from aamks_geom WHERE type_sec='STAI'")
+        rows = self.s.query("SELECT name, floor, x0, y0, width, depth, height, room_area from aamks_geom WHERE type_sec='STAI' AND fire_model_ignore !=1 ORDER BY name")
         stair_cases = []
         for row in rows:
             staircase = {row['name']: Staircase(name=row['name'], floors=9, number_queues=2, doors=1, width=row['width'], height=row['height'], offsetx=1500, offsety=0)}
+            stair_cases.append(staircase)
 
     def prepare_simulations(self):
 
