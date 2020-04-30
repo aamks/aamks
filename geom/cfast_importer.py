@@ -289,10 +289,15 @@ class CFASTimporter():
 
         update=[]
         for hi,lo in self.towers_parents.items():
-            z=self.s.query("SELECT name,vent_from FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
+            z=self.s.query("SELECT name,vent_from,vent_from_name,vent_to_name FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
             for i in z:
-                update.append((min(lo,i['vent_from']), max(lo,i['vent_from']), i['name']))
-        self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=?  WHERE name=?", update)
+                mmin=min(lo,i['vent_from'])
+                mmax=max(lo,i['vent_from'])
+                if mmin == i['vent_from']:
+                    update.append((mmin, mmax, i['vent_from_name'], i['vent_to_name'], i['name']))
+                else:
+                    update.append((mmin, mmax, i['vent_to_name'], i['vent_from_name'], i['name']))
+        self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=?, vent_from_name=?, vent_to_name=?  WHERE name=?", update)
 
 # }}}
     def _calculate_sills(self):# {{{
@@ -635,7 +640,7 @@ class CFASTimporter():
         #dd(os.environ['AAMKS_PROJECT'])
         #self.s.dumpall()
         #self.s.dump_geoms()
-        #dd(self.s.query("select * from aamks_geom"))
+        #dd(self.s.query("select * from aamks_geom where name='d13'")[0])
         #dd(self.s.query("select * from world2d"))
         #exit()
         #self.s.dump()
