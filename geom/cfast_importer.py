@@ -288,10 +288,11 @@ class CFASTimporter():
         '''
 
         update=[]
-        for hi,lo in self.towers_parents.items():
+        for hi, lo in self.towers_parents.items():
+            print(hi, lo)
             z=self.s.query("SELECT name,vent_from FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
             for i in z:
-                update.append((min(lo,i['vent_from']), max(lo,i['vent_from']), i['name']))
+                update.append((min(lo, i['vent_from']), max(lo, i['vent_from']), i['name']))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=?  WHERE name=?", update)
 
 # }}}
@@ -380,11 +381,11 @@ class CFASTimporter():
                 compa_poly=self.aamks_polies['COMPA'][floor][i['compa_id']]
                 compa=[(round(x),round(y)) for x,y in compa_poly.exterior.coords]
                 lines=OrderedDict()
-                lines[2]=LineString([compa[0], compa[1]])
-                lines[3]=LineString([compa[1], compa[2]])
-                lines[4]=LineString([compa[2], compa[3]])
-                lines[1]=LineString([compa[3], compa[0]])
-                for key,line in lines.items():
+                lines['LEFT']=LineString([compa[0], compa[1]])
+                lines['REAR']=LineString([compa[1], compa[2]])
+                lines['RIGHT']=LineString([compa[2], compa[3]])
+                lines['FRONT']=LineString([compa[3], compa[0]])
+                for key, line in lines.items():
                     if hvent_poly.intersection(line).length > self.doors_width:
                         pt=list(zip(*line.xy))[0]
                         face=key
@@ -606,14 +607,18 @@ class CFASTimporter():
                 exit()
 # }}}
     def _assert_room_has_door(self):# {{{
-        ''' Each room must have at least one type_tri DOOR. '''
+        ''' 
+        Each room must have at least one type_tri DOOR. 
+        Doesn't apply to staircase slices (orig_type is null).
+        '''
+
         doors_intersect_room_ids=[]
         for i in self.s.query("SELECT vent_from,vent_to FROM aamks_geom WHERE type_tri='DOOR'"):
             doors_intersect_room_ids.append(i['vent_from'])
             doors_intersect_room_ids.append(i['vent_to'])
 
         all_interected_room=set(doors_intersect_room_ids)
-        for i in self.s.query("SELECT name,floor,global_type_id FROM aamks_geom WHERE type_pri='COMPA'"):
+        for i in self.s.query("SELECT name,floor,global_type_id FROM aamks_geom WHERE type_pri='COMPA' AND orig_type is not null"):
             if i['global_type_id'] not in all_interected_room:
                 self.fatal('{}: room without door.'.format(i['name']))
 # }}}
