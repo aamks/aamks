@@ -307,6 +307,11 @@ function get_template_defaults($q) {/*{{{*/
 	// This file is based on demo/simple/conf.json, but may have a different fire_model or whatever
 	// setups may be later mapped to countries -- that is another reason we don't just use demo/simple/conf.json
 
+	// We need to sync all the keys here with
+	// 1. form_fields_advanced() in form.php 
+	// 2. installer/demos/
+
+
 	$db['setup1']='
 {
     "fire_model": "CFAST",
@@ -448,7 +453,12 @@ function get_template_defaults($q) {/*{{{*/
       "b": 0.668,
       "scale": 0.775
     },
-    "evacuees_density": { "ROOM": 0.33, "COR": 0.05, "STAI": 0.05, "HALL": 0.05 },
+    "evacuees_density": { 
+		"ROOM": 0.33, 
+		"COR": 0.05, 
+		"STAI": 0.05, 
+		"HALL": 0.05 
+	},
     "alarming": {
         "mean": 0,
         "sd": 0

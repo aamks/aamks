@@ -45,9 +45,9 @@ install() { #{{{
 		echo " ~/go/bin/recast is missing. It is likely that your golang version is obsolete."; 
 		echo "Perhaps the below commands can fix golang. Once you have fixed golang, you can rerun the installer.
 
-sudo add-apt-repository ppa:longsleep/golang-backports;
-sudo apt update;
-sudo apt install golang-go;
+sudo add-apt-repository ppa:longsleep/golang-backports
+sudo apt update
+sudo apt install golang-go
 ";
 exit; }
 

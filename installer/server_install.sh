@@ -183,6 +183,11 @@ echo
 echo "You may use these commands for some quick setup of SSL on the localhost. But you should really configure SSL for your site."
 echo "sudo a2enmod ssl"
 echo "sudo a2ensite default-ssl.conf"
-echo "sudo service apache2 reload"
-echo "We normally serve https://localhost/aamks from /var/www/ssl/aamks"
-echo
+echo "sudo systemctl restart apache2"
+echo "/var/www/ssl must be your Apache DocumentRoot or a link to your Apache DocumentRoot."
+echo "That means /var/www/ssl/aamks must be served at http://127.0.0.1/aamks"
+echo 
+echo 
+echo "Inspecting /etc/apache2/sites-available/000-default.conf for your DocumentRoot"
+cat /etc/apache2/sites-available/000-default.conf  | grep -i DocumentRoot
+

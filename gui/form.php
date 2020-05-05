@@ -244,7 +244,7 @@ function form_fields_advanced() { #{{{
 	extract($json);
 	echo "<form method=post>";
 	echo "<input autocomplete=off type=submit name=update_form_advanced value='Save'><br><br>";
-	echo "<table>";
+	echo "<table style='margin-bottom:200px'>";
 	echo "<tr><td>".get_help('project_id')."<td>$project_id <input autocomplete=off type=hidden name=post[project_id] value='$project_id'>"; 
 	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
 	echo "<tr><td>".get_help('number_of_simulations')."<td><input autocomplete=off type=text automplete=off size=10 name=post[number_of_simulations] value='$number_of_simulations'>"; 
@@ -255,7 +255,6 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('outdoor_temperature')."<td>".form_assoc('outdoor_temperature',$outdoor_temperature); 
 	echo "<tr><td>".get_help('indoor_pressure')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_pressure] value='$indoor_pressure'>"; 
 	echo "<tr><td>".get_help('humidity')."<td><input autocomplete=off type=text automplete=off size=10 name=post[humidity] value='$humidity'>"; 
-	echo "<tr><td>".get_help('evac_clusters')."<td><input autocomplete=off type=text automplete=off size=10 name=post[evac_clusters] value='$evac_clusters'>"; 
 	echo building_fields($building_profile, 'advanced');
 	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
 	echo "<tr><td><a class='rlink switch' id='heat_detectors'>heat detectors</a><td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
@@ -276,6 +275,13 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('alarming')."<td>".form_assoc('alarming',$alarming); 
 	echo "<tr><td>".get_help('pre_evac')."<td>".form_assoc('pre_evac',$pre_evac); 
 	echo "<tr><td>".get_help('pre_evac_fire_origin')."<td>".form_assoc('pre_evac_fire_origin',$pre_evac_fire_origin); 
+	echo "<tr><td>".get_help('co_yield')."<td>".form_assoc('co_yield',$co_yield); 
+	echo "<tr><td>".get_help('fire_area')."<td>".form_assoc('fire_area',$fire_area); 
+	echo "<tr><td>".get_help('hcl_yield')."<td>".form_assoc('hcl_yield',$hcl_yield); 
+	echo "<tr><td>".get_help('hcn_yield')."<td>".form_assoc('hcn_yield',$hcn_yield); 
+	echo "<tr><td>".get_help('heatcom')."<td>".form_assoc('heatcom',$heatcom); 
+	echo "<tr><td>".get_help('radfrac')."<td>".form_assoc('radfrac',$radfrac); 
+	echo "<tr><td>".get_help('soot_yield')."<td>".form_assoc('soot_yield',$soot_yield); 
 	echo "</table>";
 	echo "</form>";
 }
