@@ -441,8 +441,8 @@ function get_template_defaults($q) {/*{{{*/
       "theta": 0.00217
     },
     "heatcom": {
-      "min": 16400000,
-      "max": 27000000
+      "min": 16400,
+      "max": 27000
     },
     "fire_area": {
       "b": 0.668,
