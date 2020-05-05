@@ -654,25 +654,12 @@ function randBetween(min, max) {//{{{
     return Math.random() * (max - min) + min;
 }
 //}}}
-function bubbles_ranges(side) { //{{{
-	// Room divided into segments results in smoke more even than purely random
-	var bubbles_segment=300;
-	var count=side/bubbles_segment;
-
-	var ranges=[];
-	for (var i=0; i < count; i++) { 
-		ranges.push([ i * bubbles_segment, i * bubbles_segment + bubbles_segment]);
-	}
-	return ranges;
-}
-//}}}
 function initRoomSmoke() {//{{{
 	project.layers.roomSmoke.activate();
 	var radius=350;
 	var roomMargin=25;
 	var center;
 	var rw, rh;
-	var x_ranges, y_ranges;
 
 	for (var ffloor in roomsOpacity[0]) {
 		if(dstatic.floors[ffloor]===undefined) { continue; }
@@ -689,22 +676,7 @@ function initRoomSmoke() {//{{{
 			group=new Group();
 			group.name=room;
 			group.floor=ffloor;
-			
-			group.addChild(new Path.Rectangle({ point: new Point(points[0][0]+roomMargin, points[0][1]+roomMargin), size: new Size(rw-2*roomMargin,rh-2*roomMargin)}));
-			group.clipped=true;
-			group.opacity=0.3;
-			x_ranges=bubbles_ranges(points[1][0] - points[0][0]);
-			y_ranges=bubbles_ranges(points[2][1] - points[1][1]);
-			for (var xx in x_ranges) {
-				for (var yy in y_ranges) {
-					center=[
-						points[0][0] + randBetween (x_ranges[xx][0], x_ranges[xx][1] ), 
-						points[0][1] + randBetween (y_ranges[yy][0], y_ranges[yy][1] ),
-					];
-					group.addChild(new Path.Circle({ opacity: 0.5, center: new Point(center[0], center[1]), radius: radius*randBetween(0.7,1),  fillColor: "#023" }));
-
-				}
-			}
+			group.addChild(new Path.Rectangle({ opacity: roomsOpacity[0], point: new Point(points[0][0]+roomMargin, points[0][1]+roomMargin), fillColor:"#010", size: new Size(rw-2*roomMargin,rh-2*roomMargin)}));
 		}
 	}
 }
@@ -712,7 +684,7 @@ function initRoomSmoke() {//{{{
 function roomsSmokeInFrame() {//{{{
 	if (eData.length<1) { return; }
 	_.each(project.layers.roomSmoke.getItems(), function(i,key) { 
-		project.layers.roomSmoke.children[key].opacity=roomsOpacity[frame][i.floor][i.name];
+		project.layers.roomSmoke.children[key].opacity=roomsOpacity[frame][i.floor][i.name]*0.8;
 	});
 }
 //}}}
