@@ -339,8 +339,8 @@ public function do_google_login(){/*{{{*/
 		$home="<a href=".$_SESSION['home_url']."><img id=home src=/aamks/css/home.svg></a>";
 		$reportquery=join("\n\n" , array(date("G:i:s"), "srv:$_SERVER[SERVER_NAME]", "cli:$_SERVER[REMOTE_ADDR]", $_SERVER['HTTP_USER_AGENT'], $_SERVER['REQUEST_URI'], $details, "\n\n"));
 		$ignore=0;
-		if(!preg_match("/(invalid input syntax for integer)|(nieprawidłowa składnia wejścia dla typu integer)/", $details)) { $ignore=1; } # webcrawlers, not really query bugs
-		if(!preg_match("/MJ12bot/", $_SERVER['HTTP_USER_AGENT']))                                                           { $ignore=1; } # webcrawlers, not really query bugs
+		if(preg_match("/(invalid input syntax for integer)|(nieprawidłowa składnia wejścia dla typu integer)/", $details)) { $ignore=1; } # webcrawlers, not really query bugs
+		if(preg_match("/MJ12bot/", $_SERVER['HTTP_USER_AGENT']))                                                           { $ignore=1; } # webcrawlers, not really query bugs
 
 		if($ignore==0) {
 			# TODO: setup $AAMKS_NOTIFY
