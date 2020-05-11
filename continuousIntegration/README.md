@@ -5,8 +5,8 @@ Installed:
 - docker
 - docker-compose
  
-### First run  ##todo rename directory 
-Run in directory continousIntegration
+### First run  
+Run in directory continuousIntegration
 ```
 docker-compose up
 ```
@@ -55,16 +55,23 @@ jenkins/plugins.txt contains list plugins which will be installed on first jenki
 
 
 ### Using Code as config plugin 
-///TODO
+https://github.com/jenkinsci/configuration-as-code-plugin
 ### Jobs description   
-//TODO 
 * integration - runs integration tests
 * unittest - runs unit tests
 * sonar_master - on branch 'master' calculate code coverage, run sonar scanner and push results to sonar server 
 * sonar_stable - on branch 'stable' calculate code coverage, run sonar scanner and push results to sonar server 
 
 ### Adding new job to repository 
-//TODO
+1 Create Job in jenkins
+2 Go to Job endpoint with xml extension e.g.:
+```
+http://localhost:8080/job/unittest/config.xml
+```
+3 Copy above config.xml file to 
+```
+jenkins/jobs/new_job_titel/config.xml
+```
 ## Sonar 
 ### Sonar parameters on jenkins job stage with examples
 Project Key - name of project on sonar server 

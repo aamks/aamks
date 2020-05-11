@@ -12,9 +12,9 @@ class TestEvacuee(TestCase):
     def test_update_fed(self):
         """Fed should be updated correctly"""
         increment = 3.0
-        max_speed_before_increment = self.evacuee.max_speed
+        fed_before_increment = self.evacuee.fed
         self.evacuee.update_fed(increment)
-        self.assertTrue(self.evacuee.max_speed, max_speed_before_increment + increment)
+        self.assertTrue(self.evacuee.max_speed, fed_before_increment + increment)
 
     def test_update_fed_throw_exception(self):
         """Update fed should throw exception when fed is not float"""
