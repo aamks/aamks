@@ -1,5 +1,5 @@
 # How to install and configure Jenkins and SonarQube Servers
-##Requirements 
+## Requirements 
 * Ubuntu 18.04
 * Installed Java 11
 
@@ -33,7 +33,7 @@ To verify installation:
 ```
 sudo systemctl status postgresql
 ```
-2. Create Sonar database in pSQL <br>
+2 Create Sonar database in pSQL <br>
 Switch to postgresql user and create sonar database user
 ```
 su - postgres
@@ -205,7 +205,7 @@ sonar.exclusions=dev/**
 sonar.python.coverage.reportPaths=coverage.xml
 ```
 
-### Run Uni tests
+### Run Unit tests
 Create new base job (project) and add following steps:
 1 Select repository and branch
 2 Execute shell: 

@@ -63,7 +63,7 @@ https://github.com/jenkinsci/configuration-as-code-plugin
 * sonar_stable - on branch 'stable' calculate code coverage, run sonar scanner and push results to sonar server 
 
 ### Adding new job to repository 
-1 Create Job in jenkins
+1 Create Job in jenkins <br>
 2 Go to Job endpoint with xml extension e.g.:
 ```
 http://localhost:8080/job/unittest/config.xml
