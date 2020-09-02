@@ -185,8 +185,10 @@ class Worker:
         rows = self.s.query("SELECT name, floor, x0, y0, width, depth, height, room_area from aamks_geom WHERE type_sec='STAI' AND fire_model_ignore !=1 ORDER BY name")
         stair_cases = []
         for row in rows:
-            staircase = {row['name']: Staircase(name=row['name'], floors=9, number_queues=2, doors=1, width=row['width'], height=row['height'], offsetx=1500, offsety=0)}
+            staircase = {row['name']: Staircase(name=row['name'], floors=9, number_queues=2, doors=1, width=row['width'], height=row['height'], offsetx=0, offsety=0)}
             stair_cases.append(staircase)
+        self.vars['conf']['staircases'] = stair_cases
+        return stair_cases
 
     def prepare_simulations(self):
 
@@ -208,7 +210,7 @@ class Worker:
                 coords.append(tuple(obst[1]))
                 obstacles.append(coords)
             if str(floor) in self.obstacles['fire']:
-                obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0,1,2,3,4,1]]])
+                obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0, 1, 2, 3, 4, 1]]])
 
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
