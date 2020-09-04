@@ -97,9 +97,7 @@ class EvacEnv:
     def _next_room_in_smoke(self, evacuee, path):
         try:
             s=self.evacuees.get_position_of_pedestrian(evacuee)
-            od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee),
-                                                                   self.current_time, self.floor)
-            print("test")
+            od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee))
         except:
             od_at_agent_position = 0, 'outside'
 
