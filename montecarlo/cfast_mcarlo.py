@@ -74,7 +74,6 @@ class CfastMcarlo():
         self._psql_log_variable('fireorigname', fire_origin[0])
         self._psql_log_variable('fireorig', fire_origin[1])
 # }}}
-
     def _draw_fire_origin(self):# {{{
         is_origin_in_room = binomial(1, self.conf['fire_starts_in_a_room'])
         
@@ -137,8 +136,7 @@ class CfastMcarlo():
 
         return cfast_fire
 # }}}
-
-    def _draw_fire_chem(self):
+    def _draw_fire_chem(self):# {{{
         z = self.s.query("SELECT f_id, name FROM fire_origin")
 
         heat_of_combustion = round(uniform(self.conf['heatcom']['min'], self.conf['heatcom']['max'])/1000, 0)
@@ -154,7 +152,7 @@ class CfastMcarlo():
         collect.append("HEAT_OF_COMBUSTION = {}".format(heat_of_combustion))
         collect.append("RADIATIVE_FRACTION = {} /".format(rad_frac))
         return (', '.join(str(i) for i in collect))
-
+# }}}
     def _draw_fire_properties(self):# {{{
         '''
         Generate fire. Alpha t square on the left, then constant in the
@@ -228,7 +226,6 @@ class CfastMcarlo():
         self._psql_log_variable('heigh', height[0])
         return params, z[0]['f_id']
 # }}}
-
     def _draw_fire_development(self): # {{{
         params = self._draw_fire_properties()
         txt = []
@@ -362,7 +359,7 @@ class CfastMcarlo():
             txt.append(row)
         return "\n".join(txt)
 # }}}
-    def _build_compa_row(self, name, width, depth, height, ceiling_matl_id, wall_matl_id, floor_matl_id, type_sec, origin, leak_area, grid):
+    def _build_compa_row(self, name, width, depth, height, ceiling_matl_id, wall_matl_id, floor_matl_id, type_sec, origin, leak_area, grid):# {{{
         collect = []
         collect.append("&COMP ID = '{}'".format(name))
         collect.append('WIDTH = {}'.format(width))
@@ -379,7 +376,7 @@ class CfastMcarlo():
         collect.append('LEAK_AREA = {}, {}'.format(leak_area[0], leak_area[1]))
         collect.append('GRID = {}, {}, {} /'.format(grid[0], grid[1], grid[2]))
         return collect
-
+# }}}
     def _section_compa(self):# {{{
         txt=['!! SECTION COMPA']
         for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 ORDER BY global_type_id"):
@@ -560,7 +557,6 @@ class CfastMcarlo():
         )
         return "\n".join(txt)+"\n"
 # }}}
-
     def _new_psql_log(self):#{{{
         ''' Init the collector for storing montecarlo cfast setup. Variables will be registered later one at a time. '''
         self._psql_collector[self._sim_id]=OrderedDict([

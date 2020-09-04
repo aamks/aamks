@@ -288,12 +288,16 @@ class CFASTimporter():
         '''
 
         update=[]
-        for hi, lo in self.towers_parents.items():
-            print(hi, lo)
-            z=self.s.query("SELECT name,vent_from FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
+        for hi,lo in self.towers_parents.items():
+            z=self.s.query("SELECT name,vent_from,vent_from_name,vent_to_name,vent_to FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
             for i in z:
-                update.append((min(lo, i['vent_from']), max(lo, i['vent_from']), i['name']))
-        self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=?  WHERE name=?", update)
+                mmin=min(lo,i['vent_from'])
+                mmax=max(lo,i['vent_from'])
+                if mmin == i['vent_from'] or i['vent_to_name'] == 'OUTSIDE':
+                    update.append((mmin, mmax, i['vent_from_name'], i['vent_to_name'], i['name']))
+                else:
+                    update.append((mmin, mmax, i['vent_to_name'], i['vent_from_name'], i['name']))
+        self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=?, vent_from_name=?, vent_to_name=?  WHERE name=?", update)
 
 # }}}
     def _calculate_sills(self):# {{{
@@ -305,7 +309,7 @@ class CFASTimporter():
         '''
 
         update=[]
-        for v in self.s.query("SELECT global_type_id, z0, vent_from  FROM aamks_geom WHERE type_pri='HVENT' ORDER BY name"): 
+        for v in self.s.query("SELECT global_type_id, z0, vent_from, vent_from_name FROM aamks_geom WHERE type_pri='HVENT' ORDER BY name"): 
             floor_baseline=self.s.query("SELECT z0 FROM aamks_geom WHERE global_type_id=? AND type_pri='COMPA'", (v['vent_from'],))[0]['z0']
             update.append((v['z0']-floor_baseline, v['global_type_id']))
         self.s.executemany("UPDATE aamks_geom SET sill=? WHERE type_pri='HVENT' AND global_type_id=?", update)
