@@ -24,8 +24,11 @@ from collections import OrderedDict
 from subprocess import Popen
 import zipfile
 
-#SIMULATION_TYPE = 'NO_CFAST'
+
 SIMULATION_TYPE = 1
+if 'AAMKS_SKIP_CFAST' in os.environ:
+    if os.environ['AAMKS_SKIP_CFAST']=='1':
+        SIMULATION_TYPE = 'NO_CFAST'
 
 class Worker:
 
@@ -376,6 +379,7 @@ class Worker:
         self.wlogger.info('Simulation ended')
 
     def test(self):
+        os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
         self.prepare_simulations()
@@ -398,13 +402,13 @@ class Worker:
 w = Worker()
 #print(os.environ['AAMKS_WORKER'])
 if SIMULATION_TYPE == 'NO_CFAST':
-    #print('Working in NO_CFAST mode')
+    print('Working in NO_CFAST mode')
     w.test()
 elif os.environ['AAMKS_WORKER'] == 'local':
-    #print('Working in LOCAL MODE')
+    print('Working in LOCAL MODE')
     w.local_worker()
 elif os.environ['AAMKS_WORKER'] == 'gearman':
-    #print('Working in gearman MODE')
+    print('Working in gearman MODE')
     w.main()
 else:
     print('Please specify worker mode')

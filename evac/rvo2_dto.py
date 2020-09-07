@@ -5,18 +5,16 @@ warnings.simplefilter('ignore', RuntimeWarning)
 import rvo2
 from evac.evacuees import Evacuees
 from math import ceil
-import logging
-import os
 import json
 from geom.nav import Navmesh
 from shapely.geometry import LineString
 from include import Sqlite
 from include import Json
-from math import log
 import os
 from scipy.stats import norm
 from math import log
 from numpy import array, prod
+from scipy.spatial.distance import cdist
 
 
 class EvacEnv:
@@ -72,8 +70,9 @@ class EvacEnv:
             if door['floor'] != str(self.floor):
                 continue
             x, y = door['center_x'], door['center_y']
-            path = self.nav.nav_query(src=self.evacuees.get_position_of_pedestrian(evacuee), dst=(x, y), maxStraightPath=200)
-            if path[0] == 'err':
+            path = self.nav.nav_query(src=self.evacuees.get_position_of_pedestrian(evacuee), dst=(x, y), maxStraightPath=999)
+            dist = int(((door['center_x'] - path[-1][0])**2 + (door['center_y'] - path[-1][1])**2)**(1/2))
+            if path[0] == 'err' or dist > 100:
                 continue
             if self._next_room_in_smoke(evacuee, path) is not True:
                 try:
@@ -262,6 +261,7 @@ class EvacEnv:
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})
+
 
     def update_room_opacity(self):
         smoke_opacity = dict()
