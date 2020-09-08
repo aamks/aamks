@@ -38,14 +38,14 @@ try:
             self.psql_report()
 # }}}
         def _fetch_meta(self):# {{{
-            SendMessage("self.meta copied")
             try:
                 Popen(["scp", "{}:{}".format(self.host, self.meta_file), self.meta_file]).wait()
+                SendMessage("self.meta copied")
             except Exception as e:
                 SendMessage(e)
             else: 
                 pass
-
+            SendMessage(self.meta)
             source = self.host+':'+self.meta['path_to_project']+'workers/'+str(self.meta['sim_id'])+'/'+self.meta['animation']
             dest = self.meta['path_to_project']+'workers/'+str(self.meta['sim_id'])+'/'+self.meta['animation']
             Popen(["scp", source, dest])
