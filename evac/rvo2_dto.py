@@ -171,25 +171,6 @@ class EvacEnv:
                 # TODO: mimooh temporary fix
                 position = self.evacuees.get_position_of_pedestrian(e)
                 goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
-                # mimooh end of fix
-                
-                # #""" FOLLOWING
-                # if self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]["f"+str(e)]["ETYPE"] == "ACTIVE":
-                #     position = self.evacuees.get_position_of_pedestrian(e)
-                #     goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
-                #     print("aktywny", self._find_closest_exit(e))
-
-
-                # else:
-                #     position = self.evacuees.get_position_of_pedestrian(e)
-                #     who_to_follow = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]["f"+str(e)]["LEADER"]
-                #     where_to_go = self.evacuees.get_position_of_pedestrian(who_to_follow)
-                #     where_to_go = tuple(float(x) for x in where_to_go)
-                #     print(where_to_go)
-
-
-                #     goal = self.nav.nav_query(src=position, dst=where_to_go, maxStraightPath=32)
-                # #"""
 
                 try:
                     vis = self.sim.queryVisibility(position, goal[2], 15)

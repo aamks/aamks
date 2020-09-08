@@ -27,7 +27,7 @@ import zipfile
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
-    if os.environ['AAMKS_SKIP_CFAST']=='1':
+    if os.environ['AAMKS_SKIP_CFAST'] == '1':
         SIMULATION_TYPE = 'NO_CFAST'
 
 class Worker:
