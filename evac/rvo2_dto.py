@@ -141,6 +141,7 @@ class EvacEnv:
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 self.sim.setAgentPosition(i, (10000 + i * 200, 10000))
+                # Tu agent opuszcza pietro
                 continue
             else:
                 self.evacuees.set_position_to_pedestrian(i, (int(self.sim.getAgentPosition(i)[0]),

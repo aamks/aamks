@@ -159,8 +159,8 @@ class Worker:
 
         self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         #self.s.dumpall()
-        doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom WHERE terminal_door IS NOT NULL')
-        self.vars['conf']['doors']=doors
+        doors = self.s.query('SELECT floor, name, center_x, center_y, terminal_door from aamks_geom WHERE terminal_door IS NOT NULL')
+        self.vars['conf']['doors'] = doors
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         self.wlogger.info('SQLite load successfully')
 
