@@ -331,7 +331,7 @@ class Worker:
                             'rooms_opacity': smoke_data
                         }
                         }
-        zf = zipfile.ZipFile("{}.zip".format(self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
+        zf = zipfile.ZipFile("{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
         try:
             zf.writestr("anim.json", json.dumps(json_content))
             self.wlogger.info('Date for animation saved')
