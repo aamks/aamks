@@ -2,7 +2,8 @@
 # This is the installer of the worker. 
 
 [ -z $_AAMKS_PATH ] &&  { _AAMKS_PATH="/usr/local/aamks"; }
-[ -z $_AAMKS_SERVER] && { _AAMKS_SERVER="127.0.0.1"; }
+[ -z $_AAMKS_SERVER] && { _AAMKS_SERVER="192.168.0.10"; }
+[ -z $_AAMKS_WORKER] && { _AAMKS_WORKER="gearman"; }
 
 update() { #{{{
 	[ -d $_AAMKS_PATH ] || { install; }
@@ -19,7 +20,7 @@ install() { #{{{
 	rm -rf $_AAMKS_PATH 
 	sudo locale-gen en_US.UTF-8
 	sudo apt-get update
-	sudo apt-get --yes install git python3-pip xdg-utils unzip cmake gearman ipython3 python3-urllib3 golang libboost-python-dev libgfortran3
+	sudo apt-get --yes install git python3-pip xdg-utils unzip cmake gearman ipython3 python3-urllib3 libboost-python-dev libgfortran4
 	sudo -H pip3 install --upgrade pip
 	sudo -H pip3 install shapely scipy numpy Cython
 	sudo rm -rf /etc/aamksconf.json
@@ -38,6 +39,11 @@ install() { #{{{
 	cd
 
 	# recast
+	wget wget https://golang.org/dl/go1.15.1.linux-amd64.tar.gz 
+	sudo tar -C /usr/local -xzf go1.15.1.linux-amd64.tar.gz
+	echo "PATH=\"/usr/local/go/bin:\$PATH\"" >> ~/.profile
+	export PATH=$PATH:/usr/local/go/bin
+
 	echo; echo; echo "Installing recast (path finding library, navmesh producer)..."; echo; echo;
 	cd
 	go get -u github.com/arl/go-detour/cmd/recast
@@ -61,6 +67,9 @@ exit; }
 	cd recastlib
 	cp -rf ./Recast\(Patched\)/Detour/ ./Recast/
 	sudo python3 setup.py install
+
+	sudo mkdir /home/aamks_users
+	sudo chmod 777 /home/aamks_users
 }
 #}}}
 print_help() { #{{{
@@ -84,11 +93,12 @@ info() { #{{{
 	echo
 }
 #}}}
-while getopts "p:s:iuh" opt #{{{
+while getopts "p:s:w:iuh" opt #{{{
 do
 case $opt in
 	p) _AAMKS_PATH=$OPTARG;;
 	s) _AAMKS_SERVER=$OPTARG;;
+	w) _AAMKS_WORKER=$OPTARG;;
 	i) info; echo "Clear and install fresh Aamks worker from github. OK? Ctrl+c to cancel."; read; install; exit;;
 	u) info; update; exit;;
 esac

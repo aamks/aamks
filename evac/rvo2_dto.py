@@ -5,18 +5,16 @@ warnings.simplefilter('ignore', RuntimeWarning)
 import rvo2
 from evac.evacuees import Evacuees
 from math import ceil
-import logging
-import os
 import json
 from geom.nav import Navmesh
 from shapely.geometry import LineString
 from include import Sqlite
 from include import Json
-from math import log
 import os
 from scipy.stats import norm
 from math import log
 from numpy import array, prod
+from scipy.spatial.distance import cdist
 
 
 class EvacEnv:
@@ -72,8 +70,9 @@ class EvacEnv:
             if door['floor'] != str(self.floor):
                 continue
             x, y = door['center_x'], door['center_y']
-            path = self.nav.nav_query(src=self.evacuees.get_position_of_pedestrian(evacuee), dst=(x, y), maxStraightPath=200)
-            if path[0] == 'err':
+            path = self.nav.nav_query(src=self.evacuees.get_position_of_pedestrian(evacuee), dst=(x, y), maxStraightPath=999)
+            dist = int(((door['center_x'] - path[-1][0])**2 + (door['center_y'] - path[-1][1])**2)**(1/2))
+            if path[0] == 'err' or dist > 100:
                 continue
             if self._next_room_in_smoke(evacuee, path) is not True:
                 try:
@@ -97,9 +96,7 @@ class EvacEnv:
     def _next_room_in_smoke(self, evacuee, path):
         try:
             s=self.evacuees.get_position_of_pedestrian(evacuee)
-            od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee),
-                                                                   self.current_time, self.floor)
-            print("test")
+            od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee))
         except:
             od_at_agent_position = 0, 'outside'
 
@@ -144,6 +141,7 @@ class EvacEnv:
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 self.sim.setAgentPosition(i, (10000 + i * 200, 10000))
+                # Tu agent opuszcza pietro
                 continue
             else:
                 self.evacuees.set_position_to_pedestrian(i, (int(self.sim.getAgentPosition(i)[0]),
@@ -173,25 +171,6 @@ class EvacEnv:
                 # TODO: mimooh temporary fix
                 position = self.evacuees.get_position_of_pedestrian(e)
                 goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
-                # mimooh end of fix
-                
-                # #""" FOLLOWING
-                # if self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]["f"+str(e)]["ETYPE"] == "ACTIVE":
-                #     position = self.evacuees.get_position_of_pedestrian(e)
-                #     goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
-                #     print("aktywny", self._find_closest_exit(e))
-
-
-                # else:
-                #     position = self.evacuees.get_position_of_pedestrian(e)
-                #     who_to_follow = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]["f"+str(e)]["LEADER"]
-                #     where_to_go = self.evacuees.get_position_of_pedestrian(who_to_follow)
-                #     where_to_go = tuple(float(x) for x in where_to_go)
-                #     print(where_to_go)
-
-
-                #     goal = self.nav.nav_query(src=position, dst=where_to_go, maxStraightPath=32)
-                # #"""
 
                 try:
                     vis = self.sim.queryVisibility(position, goal[2], 15)
@@ -264,6 +243,7 @@ class EvacEnv:
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})
+
 
     def update_room_opacity(self):
         smoke_opacity = dict()

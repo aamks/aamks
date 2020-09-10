@@ -74,7 +74,6 @@ class CfastMcarlo():
         self._psql_log_variable('fireorigname', fire_origin[0])
         self._psql_log_variable('fireorig', fire_origin[1])
 # }}}
-
     def _draw_fire_origin(self):# {{{
         is_origin_in_room = binomial(1, self.conf['fire_starts_in_a_room'])
         
@@ -137,8 +136,7 @@ class CfastMcarlo():
 
         return cfast_fire
 # }}}
-
-    def _draw_fire_chem(self):
+    def _draw_fire_chem(self):# {{{
         z = self.s.query("SELECT f_id, name FROM fire_origin")
 
         heat_of_combustion = round(uniform(self.conf['heatcom']['min'], self.conf['heatcom']['max'])/1000, 0)
@@ -154,7 +152,7 @@ class CfastMcarlo():
         collect.append("HEAT_OF_COMBUSTION = {}".format(heat_of_combustion))
         collect.append("RADIATIVE_FRACTION = {} /".format(rad_frac))
         return (', '.join(str(i) for i in collect))
-
+# }}}
     def _draw_fire_properties(self):# {{{
         '''
         Generate fire. Alpha t square on the left, then constant in the
@@ -228,7 +226,6 @@ class CfastMcarlo():
         self._psql_log_variable('heigh', height[0])
         return params, z[0]['f_id']
 # }}}
-
     def _draw_fire_development(self): # {{{
         params = self._draw_fire_properties()
         txt = []
@@ -362,7 +359,7 @@ class CfastMcarlo():
             txt.append(row)
         return "\n".join(txt)
 # }}}
-    def _build_compa_row(self, name, width, depth, height, ceiling_matl_id, wall_matl_id, floor_matl_id, type_sec, origin, leak_area, grid):
+    def _build_compa_row(self, name, width, depth, height, ceiling_matl_id, wall_matl_id, floor_matl_id, type_sec, origin, leak_area, grid):# {{{
         collect = []
         collect.append("&COMP ID = '{}'".format(name))
         collect.append('WIDTH = {}'.format(width))
@@ -379,7 +376,7 @@ class CfastMcarlo():
         collect.append('LEAK_AREA = {}, {}'.format(leak_area[0], leak_area[1]))
         collect.append('GRID = {}, {}, {} /'.format(grid[0], grid[1], grid[2]))
         return collect
-
+# }}}
     def _section_compa(self):# {{{
         txt=['!! SECTION COMPA']
         for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 ORDER BY global_type_id"):
@@ -428,15 +425,17 @@ class CfastMcarlo():
 
         txt=['!! SECTION DOORS AND HOLES']
         hvents_setup=[]
-        for v in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from,vent_to"):
+        for v in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from, vent_to"):
             how_much_open=self._draw_door_and_hole_opening(v['type_sec']) # HOLE_CLOSE
             hvents_setup.append((how_much_open, v['name']))
             if how_much_open == 0:
                 continue
             collect=[]
+            vent_from_name = v['vent_from_name'].split(".")[0]
+            vent_to_name = v['vent_to_name'].split(".")[0]
             collect.append("&VENT TYPE = 'WALL'")                                             # TYPE
             collect.append("ID = '{}'".format(v['name']))                                    # VENT ID
-            collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))     # FROM_TO
+            collect.append("COMP_IDS = '{}', '{}'".format(vent_from_name, vent_to_name))     # FROM_TO
             collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))            # WIDTH
             collect.append("TOP = {}".format(round((v['sill']+v['height'])/100.0, 2)))       # TOP (height of the top of the hvent relative to the floor)
             collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))                  # BOTTOM
@@ -455,9 +454,11 @@ class CfastMcarlo():
         for v in self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to"):
             how_much_open = self._draw_door_and_hole_opening(v['type_sec'])           # end state with probability of working
             collect=[]
+            vent_from_name = v['vent_from_name'].split(".")[0]
+            vent_to_name = v['vent_to_name'].split(".")[0]
             collect.append("&VENT TYPE = 'CEILING'")                                                  # VENT TYPE
             collect.append("ID = '{}'".format(v['name']))                                             # VENT ID
-            collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))    # FROM_TO
+            collect.append("COMP_IDS = '{}', '{}'".format(vent_from_name, vent_to_name))    # FROM_TO
             collect.append("AREA = {}".format(round((v['width']*v['depth'])/1e4, 2)))               # AREA OF THE VENT,
             collect.append("SHAPE = 'SQUARE'")
             collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))           # COMPARTMENT1_OFFSET
@@ -556,7 +557,6 @@ class CfastMcarlo():
         )
         return "\n".join(txt)+"\n"
 # }}}
-
     def _new_psql_log(self):#{{{
         ''' Init the collector for storing montecarlo cfast setup. Variables will be registered later one at a time. '''
         self._psql_collector[self._sim_id]=OrderedDict([

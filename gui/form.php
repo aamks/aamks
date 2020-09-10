@@ -267,6 +267,13 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('fire_starts_in_a_room')."<td><input autocomplete=off type=text automplete=off size=10 name=post[fire_starts_in_a_room] value='$fire_starts_in_a_room'>"; 
 	echo "<tr><td>".get_help('hrrpua')."<td>".form_assoc('hrrpua',$hrrpua); 
 	echo "<tr><td>".get_help('hrr_alpha')."<td>".form_assoc('hrr_alpha',$hrr_alpha); 
+	echo "<tr><td>".get_help('co_yield')."<td>".form_assoc('co_yield',$co_yield); 
+	echo "<tr><td>".get_help('hcl_yield')."<td>".form_assoc('hcl_yield',$hcl_yield); 
+	echo "<tr><td>".get_help('hcn_yield')."<td>".form_assoc('hcn_yield',$hcn_yield); 
+	echo "<tr><td>".get_help('soot_yield')."<td>".form_assoc('soot_yield',$soot_yield); 
+	echo "<tr><td>".get_help('radfrac')."<td>".form_assoc('radfrac',$radfrac); 
+	echo "<tr><td>".get_help('heatcom')."<td>".form_assoc('heatcom',$heatcom); 
+	echo "<tr><td>".get_help('fire_area')."<td>".form_assoc('fire_area',$fire_area); 
 	echo "<tr><td>".get_help('evacuees_max_h_speed')."<td>".form_assoc('evacuees_max_h_speed',$evacuees_max_h_speed); 
 	echo "<tr><td>".get_help('evacuees_max_v_speed')."<td>".form_assoc('evacuees_max_v_speed',$evacuees_max_v_speed); 
 	echo "<tr><td>".get_help('evacuees_alpha_v')."<td>".form_assoc('evacuees_alpha_v',$evacuees_alpha_v); 

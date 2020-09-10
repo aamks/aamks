@@ -10,6 +10,7 @@ from numpy import prod
 from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
+from evac.staircase import Staircase
 from fire.partition_query import PartitionQuery
 from include import Sqlite
 import time
@@ -23,8 +24,11 @@ from collections import OrderedDict
 from subprocess import Popen
 import zipfile
 
-#SIMULATION_TYPE = 'NO_CFAST'
+
 SIMULATION_TYPE = 1
+if 'AAMKS_SKIP_CFAST' in os.environ:
+    if os.environ['AAMKS_SKIP_CFAST'] == '1':
+        SIMULATION_TYPE = 'NO_CFAST'
 
 class Worker:
 
@@ -155,8 +159,8 @@ class Worker:
 
         self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         #self.s.dumpall()
-        doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom WHERE terminal_door IS NOT NULL')
-        self.vars['conf']['doors']=doors
+        doors = self.s.query('SELECT floor, name, center_x, center_y, terminal_door from aamks_geom WHERE terminal_door IS NOT NULL')
+        self.vars['conf']['doors'] = doors
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         self.wlogger.info('SQLite load successfully')
 
@@ -180,6 +184,15 @@ class Worker:
         self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees)))
         return e
 
+    def prepare_staircases(self):
+        rows = self.s.query("SELECT name, floor, x0, y0, width, depth, height, room_area from aamks_geom WHERE type_sec='STAI' AND fire_model_ignore !=1 ORDER BY name")
+        stair_cases = []
+        for row in rows:
+            staircase = {row['name']: Staircase(name=row['name'], floors=9, number_queues=2, doors=1, width=row['width'], height=row['height'], offsetx=0, offsety=0)}
+            stair_cases.append(staircase)
+        self.vars['conf']['staircases'] = stair_cases
+        return stair_cases
+
     def prepare_simulations(self):
 
         for floor in sorted(self.obstacles['obstacles'].keys()):
@@ -200,7 +213,7 @@ class Worker:
                 coords.append(tuple(obst[1]))
                 obstacles.append(coords)
             if str(floor) in self.obstacles['fire']:
-                obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0,1,2,3,4,1]]])
+                obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0, 1, 2, 3, 4, 1]]])
 
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
@@ -366,6 +379,7 @@ class Worker:
         self.wlogger.info('Simulation ended')
 
     def test(self):
+        os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
         self.prepare_simulations()
@@ -378,6 +392,7 @@ class Worker:
         self.get_config()
         self.create_geom_database()
         self.run_cfast_simulations()
+        self.prepare_staircases()
         self.prepare_simulations()
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()
@@ -387,7 +402,7 @@ class Worker:
 w = Worker()
 #print(os.environ['AAMKS_WORKER'])
 if SIMULATION_TYPE == 'NO_CFAST':
-    #print('Working in NO_CFAST mode')
+    print('Working in NO_CFAST mode')
     w.test()
 elif os.environ['AAMKS_WORKER'] == 'local':
     print('Working in LOCAL MODE')

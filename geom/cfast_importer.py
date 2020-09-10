@@ -289,11 +289,11 @@ class CFASTimporter():
 
         update=[]
         for hi,lo in self.towers_parents.items():
-            z=self.s.query("SELECT name,vent_from,vent_from_name,vent_to_name FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
+            z=self.s.query("SELECT name,vent_from,vent_from_name,vent_to_name,vent_to FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
             for i in z:
                 mmin=min(lo,i['vent_from'])
                 mmax=max(lo,i['vent_from'])
-                if mmin == i['vent_from']:
+                if mmin == i['vent_from'] or i['vent_to_name'] == 'OUTSIDE':
                     update.append((mmin, mmax, i['vent_from_name'], i['vent_to_name'], i['name']))
                 else:
                     update.append((mmin, mmax, i['vent_to_name'], i['vent_from_name'], i['name']))
@@ -309,7 +309,7 @@ class CFASTimporter():
         '''
 
         update=[]
-        for v in self.s.query("SELECT global_type_id, z0, vent_from  FROM aamks_geom WHERE type_pri='HVENT' ORDER BY name"): 
+        for v in self.s.query("SELECT global_type_id, z0, vent_from, vent_from_name FROM aamks_geom WHERE type_pri='HVENT' ORDER BY name"): 
             floor_baseline=self.s.query("SELECT z0 FROM aamks_geom WHERE global_type_id=? AND type_pri='COMPA'", (v['vent_from'],))[0]['z0']
             update.append((v['z0']-floor_baseline, v['global_type_id']))
         self.s.executemany("UPDATE aamks_geom SET sill=? WHERE type_pri='HVENT' AND global_type_id=?", update)
@@ -385,11 +385,11 @@ class CFASTimporter():
                 compa_poly=self.aamks_polies['COMPA'][floor][i['compa_id']]
                 compa=[(round(x),round(y)) for x,y in compa_poly.exterior.coords]
                 lines=OrderedDict()
-                lines[2]=LineString([compa[0], compa[1]])
-                lines[3]=LineString([compa[1], compa[2]])
-                lines[4]=LineString([compa[2], compa[3]])
-                lines[1]=LineString([compa[3], compa[0]])
-                for key,line in lines.items():
+                lines['LEFT']=LineString([compa[0], compa[1]])
+                lines['REAR']=LineString([compa[1], compa[2]])
+                lines['RIGHT']=LineString([compa[2], compa[3]])
+                lines['FRONT']=LineString([compa[3], compa[0]])
+                for key, line in lines.items():
                     if hvent_poly.intersection(line).length > self.doors_width:
                         pt=list(zip(*line.xy))[0]
                         face=key
