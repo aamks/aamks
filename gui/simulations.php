@@ -28,7 +28,7 @@ function show_pictures() {/*{{{*/
 	/*Generate pictures with using beck.py script*/
 	$aamks=getenv("AAMKS_PATH");
 	
-	$cmd="cd $aamks/results/beck; python3 beck.py $f 2>&1"; 
+	$cmd="cd $aamks/results; python3 beck.py $f 2>&1"; 
 	$z=shell_exec("$cmd");
 
 	if (!empty($z)){
