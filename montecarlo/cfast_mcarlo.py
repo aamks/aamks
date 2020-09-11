@@ -130,7 +130,7 @@ class CfastMcarlo():
             collect = []
             collect.append("&FIRE ID = '{}'".format(z[0]['f_id']))
             collect.append("COMP_ID = '{}'".format(room[0]['name']))
-            collect.append("FIRE_ID = 'f{}'".format(room[0]['global_type_id']))
+            collect.append("FIRE_ID = 'f{}'".format(z[0]['f_id']))
             collect.append("LOCATION = {}, {} /".format(round(0.01 * (x-room[0]['x0']), 2), round(0.01 * (y-room[0]['y0']), 2)))
             cfast_fire=(', '.join(str(i) for i in collect))
         else:
