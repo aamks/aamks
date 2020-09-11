@@ -90,6 +90,7 @@ info() { #{{{
 	echo
 	echo "AAMKS_PATH: $_AAMKS_PATH"
 	echo "AAMKS_SERVER: $_AAMKS_SERVER"
+	echo "AAMKS_WORKER: $_AAMKS_WORKER"
 	echo
 }
 #}}}

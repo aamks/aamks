@@ -25,6 +25,7 @@ class ResultsCollector():
         self.sim_id = int(sim_id)
         self.meta = None
         self.json = Json()
+        SendMessage(host + meta_file + sim_id)
 
         if os.environ['AAMKS_WORKER'] == 'gearman':
             self._fetch_meta()
@@ -51,6 +52,7 @@ class ResultsCollector():
     def _get_meta_animation(self):
         source = self.host+':'+self.meta['path_to_project']+'workers/'+str(self.meta['sim_id'])+'/'+self.meta['animation']
         dest = self.meta['path_to_project']+'workers/'+str(self.meta['sim_id'])+'/'+self.meta['animation']
+        SendMessage(source + " " + dest)
         Popen(["scp", source, dest])
         SendMessage("Animation data copied")
 
@@ -61,7 +63,7 @@ class ResultsCollector():
         params['srv']=0
         params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
         params['highlight_geom']=None
-        params['anim']="{}/{}.zip".format(self.sim_id, self.sim_id)
+        params['anim']="{}/{}_{}_{}_anim.zip".format(self.sim_id, self.meta['project_id'], self.meta['scenario_id'], self.sim_id)
 
         cae=CreateAnimEntry()
         cae.save(params, "{}workers/anims.json".format(self.meta['path_to_project']))
