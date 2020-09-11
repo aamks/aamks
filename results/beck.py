@@ -21,6 +21,7 @@ from include import Sqlite
 from include import Psql
 import csv
 from include import Dump as dd
+from math import sqrt
 
 
 class processDists:
@@ -32,13 +33,16 @@ class processDists:
         self.t_k = 0
         self.total = 0
         self.dead = 0
+        self.dcbe = []
         self.dir = sys.argv[1]
         self.configs = self._get_json('{}/conf.json'.format(self.dir))
         self.p = Psql()
+        self.avg_risk = list()
+        self.err_risk = list()
         if os.path.exists('{}/picts'.format(self.dir)):
             shutil.rmtree('{}/picts'.format(self.dir))
         os.makedirs('{}/picts'.format(self.dir))
-        self.horisontal_time=dict({'0': 0, '1': 36, '2': 72, '3': 112})
+        self.horisontal_time=dict({'0': 3, '1': 36, '2': 72, '3': 112, '4': 148, '5': 184, '6': 220})
 
     def plot_dcbe_dist(self):
 #        plt.clf()
@@ -50,6 +54,18 @@ class processDists:
         #plt.xlim([0,499])
         fig = sns_plot.get_figure()
         fig.savefig("{}/picts/dcbe.png".format(self.dir))
+        plt.clf()
+
+    def plot_wcbe_dist_r(self):
+#        plt.clf()
+        query = "SELECT run_time FROM simulations where project = {} AND scenario_id = {} AND dcbe_time is not null AND dcbe_time < 9999".format(self.configs['project_id'], self.configs['scenario_id'])
+        results = self.p.query(query)
+        dcbe = [int(i[0]) for i in results]
+        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True}, bins=50)
+        #plt.xlabel=('DCBE [s]')
+        #plt.xlim([0,499])
+        fig = sns_plot.get_figure()
+        fig.savefig("{}/picts/wcbe_r.png".format(self.dir))
         plt.clf()
 
     def plot_wcbe_dist(self):
@@ -145,10 +161,16 @@ class processDists:
         row = [json.loads(i[0]) for i in results]
         fed=list()
         for i in row:
-            for values in i.values():
-                fed.append(collections.Counter(np.array(values)))
+            temp_list = list()
+            for key, values in i.items():
+                temp_list = temp_list + values
+                #print("KEY: {}, VALUE: {}\n".format(key, values))
+            fed.append(collections.Counter(np.array(temp_list)))
 
         for item in fed:
+            if ('H' in item) or ('M' in item) or ('L' in item):
+                self.dcbe.append(1)
+
             for key in item.keys():
                 if key == 'H':
                     losses['dead'].append(item[key])
@@ -185,6 +207,37 @@ class processDists:
         fig.savefig('{}/picts/ccdf.png'.format(self.dir))
         fig.clf()
 
+    def calculate_indvidual_risk(self):
+        query = "SELECT i_risk FROM simulations where project = {} AND scenario_id = {} AND dcbe_time is not null AND i_risk is not null".format(self.configs['project_id'], self.configs['scenario_id'])
+        results = self.p.query(query)
+        row = [json.loads(i[0]) for i in results]
+        risk=list()
+        for i in row:
+            for values in i.values():
+                risk.append(values)
+                self.avg_risk.append(sum(risk)/len(risk))
+                self.err_risk.append(1.96*sqrt((self.avg_risk[-1]*(1 - self.avg_risk[-1]))/len(risk)))
+        return sum(risk)/len(risk)
+
+    def plot_risk_convergence(self, init_risk):
+        #fig = plt.figure(figsize=(10, 3))
+        fig = plt.figure()
+        ax = plt.axes()
+
+        avg_risk = list(np.array(self.avg_risk)*init_risk)
+        upper_e = list(np.array(avg_risk) + np.array(self.err_risk)*init_risk)
+        lower_e = list(np.array(avg_risk) - np.array(self.err_risk)*init_risk)
+
+        ax.plot(range(len(avg_risk)), avg_risk, label='mean value')
+        ax.plot(range(len(avg_risk)), lower_e, '--k', label='-2sigma')
+        ax.plot(range(len(avg_risk)), upper_e, '-.k', label='+2sigma')
+        plt.ylim(0,max(upper_e))
+        plt.ylabel('mean and error value')
+        plt.xlabel('sample size')
+        plt.legend()
+        fig.savefig('{}/picts/convergence.png'.format(self.dir))
+        fig.clf()
+
     def plot_ccdf_percentage(self):
 
         fig = plt.figure(figsize=(12, 3))
@@ -208,19 +261,6 @@ class processDists:
         dump = json.load(f, object_pairs_hook=OrderedDict)
         f.close()
         return dump
-
-    def plot_event_tree(self):
-        t = Tree("((1:0.001, 0.1:0.23, 0.001, >0.001), NIE);")
-        t = Tree("((D: 0.723274, F: 0.567784)1.000000: 0.067192, (B: 0.279326, H: 0.756049)1.000000: 0.807788);")
-        t.support = 0.1
-        ts = TreeStyle()
-        ts.show_leaf_name = True
-        ts.show_branch_length = True
-        ts.show_branch_support = True
-
-        t.add_face(TextFace(" hola "), column=0, position = 'branch-right')
-        t.show(tree_style=ts)
-
 
     def plot_losses_hist(self):
         labels = ['Death', 'Heavy injury', 'Light injury', 'Neglegible']
@@ -316,15 +356,19 @@ class processDists:
         mean = results[0][0]
         return [lower, mean]
 
+    def copy_data(self):
+        query = "COPY (SELECT * FROM simulations where project = {} AND scenario_id = {}) TO STDOUT WITH CSV DELIMITER ';' HEADER".format(self.configs['project_id'], self.configs['scenario_id'])
+        self.p.copy_expert(sql=query, csv_file='{}/picts/data.csv'.format(p.dir))
+
     def calculate_building_area(self):
         s=Sqlite("{}/aamks.sqlite".format(self.dir))
         result = s.query("SELECT sum(room_area) as total FROM aamks_geom");
-        #return result[0]['total']/10000
-        return 7800
+        return result[0]['total']/10000
 
 p = processDists()
 p.plot_dcbe_dist()
 p.plot_wcbe_dist()
+p.plot_wcbe_dist_r()
 p.plot_min_height()
 p.plot_min_height_cor()
 p.plot_max_temp()
@@ -336,21 +380,26 @@ p.plot_ccdf()
 #p.plot_ccdf_percentage()
 p.plot_losses_hist()
 p.plot_pie_fault()
+p.copy_data()
 #print(p.total)
 
 bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
 #bar = 10e-6 * 1530
+#bar = (4e-3)/3
 print(p.calculate_building_area())
 #if p.losses_num[4] == 0:
 #    p.losses_num[4] = 1e-12
 
-fed_f = float('%.3f' % (len(p.losses['dead'])/p.total))
+fed_f = float('%.3f' % (p.calculate_indvidual_risk()))
 fed_m = float('%.3f' % (len(p.losses['heavy'])/p.total))
 fed_l = float('%.3f' % (len(p.losses['light'])/p.total))
 fed_n = float('%.3f' % (len(p.losses['neglegible'])/p.total))
-t_kryt = float('%.3f' % (len(p.losses['dead'])/p.total))
+p_dcbe = float('%.3f' % (len(p.dcbe)/p.total))
 p_ext = float('%.3f' % 0.17)
 p_tk = float('%.3f' % (p.t_k/p.total))
+init_riks = bar*p_ext*p_dcbe
+
+p.plot_risk_convergence(init_riks)
 
 with open('{}/picts/dane.txt'.format(p.dir), 'w') as g: 
     dcbe_val = p.dcbe_values()
@@ -363,15 +412,22 @@ with open('{}/picts/dane.txt'.format(p.dir), 'w') as g:
     g.write("MIN_VISIBILITY - PER: {}, MEAN: {}".format(min_vis[0], min_vis[1]))
     temp_val = p.temp_values()
     g.write("MAX_TEMP - PER: {}, MEAN: {}".format(temp_val[0], temp_val[1]))
-    g.write('P_dcbe: {}'.format(t_kryt*bar*p_ext))
+    g.write('P_dcbe: {}'.format(p_dcbe*bar*p_ext))
     g.write('DEAD RATIO: {}'.format(sum(p.losses['dead'])/p.total))
+    g.write('DEAD FACTOR: {}'.format(sum(p.losses['dead'])/len(p.losses['dead'])))
+    g.write('HEAVY FACTOR: {}'.format(sum(p.losses['heavy'])/len(p.losses['heavy'])))
+    print('DEAD FACTOR: {}'.format(sum(p.losses['dead'])/len(p.losses['dead'])))
+    print('HEAVY FACTOR: {}'.format(sum(p.losses['heavy'])/len(p.losses['heavy'])))
+    print('P_DCBE: {}'.format(len(p.dcbe)/p.total))
+    print('P_FED_F: {}'.format(fed_f))
 
 
-t = EventTreeFED(building=p.dir, p_general=bar, p_develop=p_ext, p_dcbe=t_kryt, p_fed_n=fed_n, p_fed_l=fed_l, p_fed_m=fed_m, p_fed_f=fed_f)
+t = EventTreeFED(building=p.dir, p_general=bar, p_develop=p_ext, p_dcbe=p_dcbe, p_fed_n=fed_n, p_fed_l=fed_l, p_fed_m=fed_m, p_fed_f=fed_f, mode='F')
+t.draw_tree()
+t = EventTreeFED(building=p.dir, p_general=bar, p_develop=p_ext, p_dcbe=p_dcbe, p_fed_n=fed_n, p_fed_l=fed_l, p_fed_m=fed_m, p_fed_f=fed_f, mode='M')
 t.draw_tree()
 
 s = EventTreeSteel(building=p.dir, p_general=bar, p_develop=p_ext, p_Tk=p_tk, p_time_less=0.001)
 s.draw_tree()
-#p.plot_event_tree()
 
 print('Charts are ready to display')
