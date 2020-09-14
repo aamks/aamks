@@ -331,7 +331,7 @@ class Worker:
                             'rooms_opacity': smoke_data
                         }
                         }
-        zf = zipfile.ZipFile("{}.zip".format(self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
+        zf = zipfile.ZipFile("{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
         try:
             zf.writestr("anim.json", json.dumps(json_content))
             self.wlogger.info('Date for animation saved')
@@ -352,11 +352,13 @@ class Worker:
         report['psql'] = dict()
         report['psql']['fed'] = dict()
         report['psql']['rset'] = dict()
+        report['psql']['i_risk'] = dict()
         report['psql']['runtime'] = int(time.time() - self.start_time)
         report['psql']['cross_building_results'] = self.cross_building_results
         for i in self.floors:
             report['psql']['fed'][i.floor] = i.fed
             report['psql']['rset'][i.floor] = int(i.rset)
+            report['psql']['i_risk'][i.floor] = round(i.calculate_individual_risk(), 2)
         for num_floor in range(len(self.floors)):
             report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
             report['floor'] = num_floor

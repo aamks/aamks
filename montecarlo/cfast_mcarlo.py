@@ -14,6 +14,7 @@ from scipy.stats import pareto
 from include import Sqlite
 from include import Psql
 from include import Json
+from collections import OrderedDict
 
 # }}}
 
@@ -97,10 +98,12 @@ class CfastMcarlo():
         fire_origin.append("f{}".format(compa['global_type_id']))
         self._save_fire_origin(fire_origin)
 
+        z = self.s.query("SELECT f_id, name FROM fire_origin")
+
         collect = []
-        collect.append("&FIRE ID = 'f{}'".format(compa['global_type_id']))
+        collect.append("&FIRE ID = '{}'".format(z[0]['f_id']))
         collect.append("COMP_ID = '{}'".format(compa['name']))
-        collect.append("FIRE_ID = 'f{}'".format(compa['global_type_id']))
+        collect.append("FIRE_ID = '{}'".format(z[0]['f_id']))
         collect.append("LOCATION = {}, {} /".format(round(0.01 * compa['width']/2.0, 2), round(0.01 * compa['depth']/2.0,2)))#, round(0.01 * z,2), 1, 'TIME' ,'0','0','0','0','medium')
         return (', '.join(str(i) for i in collect))
 
@@ -125,10 +128,12 @@ class CfastMcarlo():
             fire_origin += "f{}".format(room[0]['global_type_id'])
             self._save_fire_origin(fire_origin)
 
+            f = self.s.query("SELECT f_id, name FROM fire_origin")
+
             collect = []
-            collect.append("&FIRE ID = 'f{}'".format(room[0]['global_type_id']))
+            collect.append("&FIRE ID = '{}'".format(f[0]['f_id']))
             collect.append("COMP_ID = '{}'".format(room[0]['name']))
-            collect.append("FIRE_ID = 'f{}'".format(room[0]['global_type_id']))
+            collect.append("FIRE_ID = 'f{}'".format(f[0]['f_id']))
             collect.append("LOCATION = {}, {} /".format(round(0.01 * (x-room[0]['x0']), 2), round(0.01 * (y-room[0]['y0']), 2)))
             cfast_fire=(', '.join(str(i) for i in collect))
         else:
@@ -232,7 +237,7 @@ class CfastMcarlo():
         f_id = params[1]
         collect = []
         labels = "', '".join(params[0].keys())
-        collect.append("&TABL ID = '{}' LABELS = '{}' /".format(f_id, labels))
+        collect.append("&TABL ID = '{}', LABELS = '{}' /".format(f_id, labels))
         for i in range(len(params[0]['TIME'])):
             row = []
             for p_keys in params[0].keys():
@@ -352,7 +357,7 @@ class CfastMcarlo():
         for mat, m_params in self.MATL.items():
             row = "&MATL ID = '{}', ".format(mat)
             for key, value in m_params.items():
-                if key == 'THICKNESS':
+                if key == list(m_params.keys())[-1]:
                     row = row + key + " = " + str(value) + " /"
                 else:
                     row = row + key + " = " + str(value) + ", "

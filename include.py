@@ -163,7 +163,11 @@ class Psql: # {{{
         import psycopg2
         import psycopg2.extras
 
-        self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
+        try:
+            self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
+        except:
+            pass
+
         try:
             self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host='127.0.0.1' password='{}'".format(os.environ['AAMKS_PG_PASS']))
             self.psqldb=self.PSQL.cursor(cursor_factory=psycopg2.extras.DictCursor)

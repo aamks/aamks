@@ -72,6 +72,7 @@ CREATE TABLE simulations ( ---{{{
     max_temp decimal,
 	status text,
 	animation text,
+	i_risk text,
 	modified timestamp without time zone not null default now()
 );
 ---}}}
