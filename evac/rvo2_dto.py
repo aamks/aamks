@@ -295,9 +295,10 @@ class EvacEnv:
     def calculate_individual_risk(self):
         p = list()
         for i in self.fed_nummeric:
+            if i == 0:
+                i = 1e-7
             p.append(1 - norm.cdf(log(i)))
         return 1 - prod(array(p))
-
 
     def do_simulation(self, step):
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
