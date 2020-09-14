@@ -99,48 +99,61 @@ class Worker:
             urlretrieve('{}/../../aamks.sqlite'.format(self.url), '{}/aamks.sqlite'.format(os.environ['AAMKS_PROJECT']))
 
         except Exception as e:
-            self.wlogger.error(e)
+            print(e)
         else:
-            self.wlogger.debug('Aamks.sqlite fetched from server')
+            print('Aamks.sqlite fetched from server')
 
         try:
             urlretrieve('{}/cfast.in'.format(self.url), 'cfast.in'.format(os.environ['AAMKS_PROJECT']))
         except Exception as e:
-            self.wlogger.error(e)
+            print(e)
         else:
-            self.wlogger.debug('cfast.in fetched from server')
+            print('cfast.in fetched from server')
 
     def get_config(self):
         try:
             f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
             self.config = json.load(f)
         except Exception as e:
-            self.wlogger.error(e)
-        else:
-            self.wlogger.debug('Workspace created')
-
-    def run_cfast_simulations(self):
+            print(e)
+            sys.exit(1)
 
         try:
             f = open('evac.json', 'r')
             self.vars['conf'] = json.load(f)
         except Exception as e:
-            self.wlogger.error(e)
-        else:
-            self.wlogger.debug('cfast.in saved')
+            print('Cannot load evac.json from directory: {}'.format(str(e)))
+            sys.exit(1)
+
+        self.project_conf=self.json.read("../../conf.json")
+
+        self.sim_id = self.vars['conf']['SIM_ID']
+        self.host_name = os.uname()[1]
+        #print('Starting simulations id: {}'.format(self.sim_id))
+        self.wlogger=self.get_logger('worker.py')
+        self.vars['conf']['logger'] = self.get_logger('evac.py')
 
     def _create_workspace(self):
         try:
             shutil.rmtree(self.working_dir, ignore_errors=True)
             os.makedirs(self.working_dir)
         except Exception as e:
-            self.wlogger.error(e)
-            cfast_log = open('cfast.log', 'r')
-            for line in cfast_log.readlines():
-                if line.startswith("***Error:"):
-                    self.wlogger.error(Exception(line))
+            print(e)
         else:
-            self.wlogger.info('CFAST simulation calculated with success')
+            print('Workspace created')
+
+    def run_cfast_simulations(self):
+        if self.project_conf['fire_model'] == 'CFAST':
+            try:
+                os.system('/usr/local/aamks/fire/cfast cfast.in')
+            except Exception as e:
+                self.wlogger.error(e)
+                cfast_log = open('cfast.log', 'r')
+                for line in cfast_log.readlines():
+                    if line.startswith("***Error:"):
+                        self.wlogger.error(Exception(line))
+            else:
+                self.wlogger.info('CFAST simulation calculated with success')
 
     def create_geom_database(self):
 
