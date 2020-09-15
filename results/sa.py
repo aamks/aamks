@@ -28,7 +28,9 @@ class SA:
         vent_to, vent_from = list(), list()
         row=0
         d_open=0
+        print(d_type, mask, c_id)
         for v in self.s.query("SELECT global_type_id, vent_to, vent_from FROM aamks_geom WHERE type_tri='{}' AND type_sec='DOOR' ORDER BY vent_from,vent_to".format(d_type)):
+            print(v)
             if (v['vent_to'] == c_id) or (v['vent_from'] == c_id):
                 if mask[row] == 1:
                     d_open = 1
@@ -47,10 +49,11 @@ class SA:
 
         ranks = dict()
         d_factor = dict()
-        query = "SELECT sootyield, hrrpeak, door, coyield, alpha, fireorig, heatcom, radfrac, dcloser, delectr, vvent, sprinklers, fireorigname, i_risk, fed \
+        query = "SELECT soot_yield, hrrpeak, door, co_yield, alpha, fireorig, heat_of_combustion, rad_frac, dcloser, delectr, vvent, sprinklers, fireorigname, i_risk, fed \
         FROM simulations where project = {} AND scenario_id = {} AND i_risk \
         is not null".format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
+        print(results)
         print(self.configs['scenario_id'])
         print(self.configs['project_id'])
 
@@ -66,6 +69,7 @@ class SA:
         df['doors open'] = ['0'] * len(df['risk'])
 
         for index, row in df.iterrows():
+            print(row)
             if len(sprinklered_rooms) > 0:
                 s_name = sprinklered_rooms.index(row['fname'])
                 row['sprinklers'] = float(list(map(float, row['sprinklers'].split(',')))[s_name])
