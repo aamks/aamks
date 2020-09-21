@@ -28,9 +28,7 @@ class SA:
         vent_to, vent_from = list(), list()
         row=0
         d_open=0
-        print(d_type, mask, c_id)
         for v in self.s.query("SELECT global_type_id, vent_to, vent_from FROM aamks_geom WHERE type_tri='{}' AND type_sec='DOOR' ORDER BY vent_from,vent_to".format(d_type)):
-            print(v)
             if (v['vent_to'] == c_id) or (v['vent_from'] == c_id):
                 if mask[row] == 1:
                     d_open = 1
@@ -53,9 +51,6 @@ class SA:
         FROM simulations where project = {} AND scenario_id = {} AND i_risk \
         is not null".format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
-        print(results)
-        print(self.configs['scenario_id'])
-        print(self.configs['project_id'])
 
         df = pd.DataFrame(results, columns=['soot yield', 'hrr peak', 'doors p', 'co yield', 'growth rate', 'fire origin', 'heat of combustion', 'radiative fraction', 'doors c', 'doors e', 'vvent', 'sprinklers', 'fname', 'risk', 'fed'])
         df['doors p'].replace("", "0,0", inplace=True)
@@ -69,7 +64,6 @@ class SA:
         df['doors open'] = ['0'] * len(df['risk'])
 
         for index, row in df.iterrows():
-            print(row)
             if len(sprinklered_rooms) > 0:
                 s_name = sprinklered_rooms.index(row['fname'])
                 row['sprinklers'] = float(list(map(float, row['sprinklers'].split(',')))[s_name])
@@ -127,6 +121,8 @@ class SA:
                 continue
             ranks.update({colname: spearmanr(colvalues, df['risk'])})
             d_factor.update({colname: spearmanr(colvalues, df['fed'])})
+
+        df.to_csv("{}/picts/sa.csv".format(self.dir))
         return ranks, d_factor
     
     def plot_ranks(self, ranks, d_factor):
