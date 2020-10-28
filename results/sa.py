@@ -47,12 +47,10 @@ class SA:
 
         ranks = dict()
         d_factor = dict()
-        query = "SELECT sootyield, hrrpeak, door, coyield, alpha, fireorig, heatcom, radfrac, dcloser, delectr, vvent, sprinklers, fireorigname, i_risk, fed \
+        query = "SELECT soot_yield, hrrpeak, door, co_yield, alpha, fireorig, heat_of_combustion, rad_frac, dcloser, delectr, vvent, sprinklers, fireorigname, i_risk, fed \
         FROM simulations where project = {} AND scenario_id = {} AND i_risk \
         is not null".format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
-        print(self.configs['scenario_id'])
-        print(self.configs['project_id'])
 
         df = pd.DataFrame(results, columns=['soot yield', 'hrr peak', 'doors p', 'co yield', 'growth rate', 'fire origin', 'heat of combustion', 'radiative fraction', 'doors c', 'doors e', 'vvent', 'sprinklers', 'fname', 'risk', 'fed'])
         df['doors p'].replace("", "0,0", inplace=True)
@@ -123,6 +121,8 @@ class SA:
                 continue
             ranks.update({colname: spearmanr(colvalues, df['risk'])})
             d_factor.update({colname: spearmanr(colvalues, df['fed'])})
+
+        df.to_csv("{}/picts/sa.csv".format(self.dir))
         return ranks, d_factor
     
     def plot_ranks(self, ranks, d_factor):
