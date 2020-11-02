@@ -73,7 +73,8 @@ class EvacEnv:
             path = self.nav.nav_query(src=self.evacuees.get_position_of_pedestrian(evacuee), dst=(x, y), maxStraightPath=999)
             dist = int(((door['center_x'] - path[-1][0])**2 + (door['center_y'] - path[-1][1])**2)**(1/2))
             if path[0] == 'err' or dist > 100:
-                continue
+                path= self.nav.room_leaves(self.evacuees.get_position_of_pedestrian(evacuee))['best_path']
+            #    continue
             if self._next_room_in_smoke(evacuee, path) is not True:
                 try:
                     paths_free_of_smoke.append([x, y, LineString(path).length])
