@@ -39,7 +39,7 @@ class ResultsCollector():
             self.s = Sqlite("{}/aamks.sqlite".format(self.meta['path_to_project']))
             self._animation_save()
             self.psql_report()
-
+#}}}
     def _fetch_meta(self):# {{{
         try:
             Popen(["scp", "{}:{}".format(self.host, self.meta_file), self.meta_file]).wait()
@@ -55,14 +55,17 @@ class ResultsCollector():
         SendMessage(source + " " + dest)
         Popen(["scp", source, dest])
         SendMessage("Animation data copied")
-
+#}}}
     def _animation_save(self):# {{{
         params=OrderedDict()
         params['sort_id']=self.sim_id
         params['title']="sim.{}".format(self.sim_id)
         params['srv']=0
+        SendMessage("ORIGIN")
+        SendMessage(self.s.query("select sim_id from fire_origin"))
         params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
         params['highlight_geom']=None
+        SendMessage("{}/{}_{}_{}_anim.zip".format(self.sim_id, self.meta['project_id'], self.meta['scenario_id'], self.sim_id))
         params['anim']="{}/{}_{}_{}_anim.zip".format(self.sim_id, self.meta['project_id'], self.meta['scenario_id'], self.sim_id)
 
         cae=CreateAnimEntry()

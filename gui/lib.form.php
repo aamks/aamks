@@ -24,6 +24,7 @@ function make_help() { /*{{{*/
 	$help["pre_evac_fire_origin"]	 = ["pre-evacuation<br>in fire origin" , "fire origin room" ]                                                        ;
 	$help["management"]			     = ["management"                       , "help for management" ]                                                     ;
 	$help["temp_mean"]			     = ["temp mean"                        , "help for temp mean" ]                                                      ;
+	$help["obscuration_mean"]	     = ["obscuration mean"                 , "help for obscuration mean" ]                                               ;
 
 	foreach($help as $k=>$v) { 
 		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
@@ -340,7 +341,7 @@ function get_template_defaults($q) {/*{{{*/
         "not_broken": ""
     },
     "smoke_detectors": {
-        "temp_mean": "",
+        "obscuration_mean": "",
         "temp_sd": "",
         "not_broken": ""
     },
