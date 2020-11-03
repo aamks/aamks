@@ -110,7 +110,7 @@ class Navmesh:
         filtr = dt.dtQueryFilter()
         query = dt.dtNavMeshQuery()
 
-        status = query.init(self.NAV, 2048)
+        status = query.init(self.NAV, 20048)
         if dt.dtStatusFailed(status):
             return "err", -1, status
 
@@ -334,7 +334,9 @@ class Navmesh:
         self._hole_connected_rooms()
         doors={}
         for rr in self._hole_rooms.keys():
-            z=self.s.query("SELECT name, type_sec, x0, y0, x1, y1, center_x, center_y, is_vertical FROM aamks_geom WHERE type_sec='DOOR' AND (vent_from_name=? OR vent_to_name=?)", (rr, rr))
+#            print("RR:", rr)
+            z=self.s.query("SELECT name, type_sec, x0, y0, x1, y1, center_x, center_y, is_vertical FROM aamks_geom WHERE (type_sec='DOOR' OR type_sec='DCLOSER' OR type_sec='DELECTR') AND (vent_from_name=? OR vent_to_name=?)", (rr, rr))
+#            print("Z:", z)
             for d in z:
                 doors[d['name']]=d
         return list(doors.values())
