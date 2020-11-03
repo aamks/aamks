@@ -100,7 +100,7 @@ class Manager():
 
 # }}}
     def reset_gearmand(self):# {{{
-        cmds="sudo killall -9 gearman 2>/dev/null; sudo /etc/init.d/gearman-job-server restart"
+        cmds="sudo killall -9 gearman 2>/dev/null; sudo systemctl stop gearman-job-server.service"
         Popen(cmds, shell=True)
 
 # }}}

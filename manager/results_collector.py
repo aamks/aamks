@@ -61,8 +61,6 @@ class ResultsCollector():
         params['sort_id']=self.sim_id
         params['title']="sim.{}".format(self.sim_id)
         params['srv']=0
-        SendMessage("ORIGIN")
-        SendMessage(self.s.query("select sim_id from fire_origin"))
         params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
         params['highlight_geom']=None
         SendMessage("{}/{}_{}_{}_anim.zip".format(self.sim_id, self.meta['project_id'], self.meta['scenario_id'], self.sim_id))

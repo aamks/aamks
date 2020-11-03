@@ -62,7 +62,14 @@ class OnInit():
 # }}}
     def _clear_sqlite(self):# {{{
         try:
-            os.remove("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+            s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+            s.query("DROP TABLE dispatched_evacuees")
+            s.query("DROP TABLE aamks_geom")
+            s.query("DROP TABLE floors_meta")
+            s.query("DROP TABLE world_meta")
+            s.query("DROP TABLE obstacles")
+            s.query("DROP TABLE cell2compa")
+            s.query("DROP TABLE query_vertices")
         except:
             pass
 # }}}

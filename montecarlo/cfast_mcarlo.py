@@ -47,9 +47,9 @@ class CfastMcarlo():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         t_name= ""
         try:
-            self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,f_id,sim_id)")
             t_name = self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
         except Exception as e:
+            self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,f_id,sim_id)")
             t_name = self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
         return t_name
 
@@ -72,6 +72,7 @@ class CfastMcarlo():
     def _save_fire_origin(self, fire_origin):# {{{
         fire_origin.append(self._sim_id)
         self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?,?,?)', fire_origin)
+        fr=self.s.query('SELECT * FROM fire_origin WHERE sim_id={}'.format(self._sim_id))
         self._psql_log_variable('fireorigname', fire_origin[0])
         self._psql_log_variable('fireorig', fire_origin[1])
 # }}}
