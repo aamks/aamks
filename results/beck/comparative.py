@@ -32,8 +32,8 @@ class processDists:
         self.floors = 0
         self.total = list()
         self.dead = 0
-        #self.dir = sys.argv[1]
-        self.dir = "/home/aamks_users/mzimny94@gmail.com/SFPE_Case_study/S1"
+        self.dir = sys.argv[1]
+        #self.dir = "/home/aamks_users/mzimny94@gmail.com/SFPE_Case_study/S1"
         self.configs = self._get_json('{}/conf.json'.format(self.dir))
         self.p = Psql()
         if os.path.exists('{}/../picts'.format(self.dir)):
@@ -154,6 +154,7 @@ class processDists:
                     i = 600
                 temp.append(i)
             sns_plot = sns.distplot(temp, hist=False, kde_kws={'cumulative': True, 'label': 'CDF CD{}'.format(n)}, bins=50)
+            n+=1
 
         sns_plot.set(xlabel='Temperature [C]', ylabel='Probability [-]')
         fig = sns_plot.get_figure()
@@ -250,7 +251,7 @@ class processDists:
 
 p = processDists()
 s_list = p.get_scenarios()
-s_list = [211,210,217,209]
+s_list = [351,349]
 p.plot_dcbe_dist(scenario_list=s_list)
 p.plot_wcbe_dist(scenario_list=s_list)
 p.plot_min_height_cor(scenario_list=s_list)

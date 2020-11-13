@@ -297,7 +297,7 @@ class processDists:
         educational = [0.003, 3e-6, -1.26, -0.05]
         building = {'other_building': other_building, 'office': office, 'warehouse': warehouse, 'commercial': commercial,
                     'nursing': nursing, 'educational': educational}
-        b_type = 'office'
+        b_type = 'other_building'
         ignition = building[b_type][0]*(area) ** (building[b_type][2]) + \
                    building[b_type][1] * (area) ** (building[b_type][3])
         return ignition
@@ -385,7 +385,7 @@ p.copy_data()
 
 bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
 #bar = 10e-6 * 1530
-bar = (4e-3)/3
+#bar = (4e-3)/3
 print(p.calculate_building_area())
 #if p.losses_num[4] == 0:
 #    p.losses_num[4] = 1e-12
