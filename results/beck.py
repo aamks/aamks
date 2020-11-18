@@ -297,10 +297,10 @@ class processDists:
         educational = [0.003, 3e-6, -1.26, -0.05]
         building = {'other_building': other_building, 'office': office, 'warehouse': warehouse, 'commercial': commercial,
                     'nursing': nursing, 'educational': educational}
-        b_type = 'other_building'
+        b_type = 'office'
         ignition = building[b_type][0]*(area) ** (building[b_type][2]) + \
                    building[b_type][1] * (area) ** (building[b_type][3])
-        return ignition
+        return ignition/3
 
     def dcbe_values(self):
         query = "SELECT count(*) FROM simulations where project = {} AND scenario_id = {} AND dcbe_time < 9999".format(
@@ -383,9 +383,10 @@ p.plot_pie_fault()
 p.copy_data()
 #print(p.total)
 
-bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
+#bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
+
 #bar = 10e-6 * 1530
-#bar = (4e-3)/3
+bar = (1.8e-2)/2
 print(p.calculate_building_area())
 #if p.losses_num[4] == 0:
 #    p.losses_num[4] = 1e-12
