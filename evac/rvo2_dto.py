@@ -54,6 +54,10 @@ class EvacEnv:
                                        self.max_speed)
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
+        self.prev_fed = [] 
+        self.position_fed_tables_information = []
+        self.position_fed_to_insert = []
+        self.steps_fed_positions_data = []
         #simulation_id = 1 #przykladowa symulacja
         #self.evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
         #self.all_evac = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]
@@ -300,16 +304,49 @@ class EvacEnv:
             p.append(1 - norm.cdf(log(i)))
         return 1 - prod(array(p))
 
+    def save_positions_with_fed(self):
+        if len(self.prev_fed) == 0:
+            self.prev_fed = [0 for i in range(self.sim.getNumAgents())]
+        for i in range(self.sim.getNumAgents()):
+            fed = self.fed_nummeric[i]
+            x = int(self.positions[i][0])
+            y = int(self.positions[i][1])
+            fed_growth = round((fed - self.prev_fed[i]),2)
+            self.steps_fed_positions_data.append({'x':x, 'y':y, 'fed_growth': fed_growth, 'floor': int(self.floor)})
+            self.prev_fed[i] = fed
+
+    def insert_into_database_positions_fed_growth(self):
+        for row in self.steps_fed_positions_data:
+            self.find_proper_cell_and_append(row['x'],row['y'],row['fed_growth'], row['floor'])
+        self.insert_positions_fed_growth_into_database()
+
+    def insert_positions_fed_growth_into_database(self):
+        self.position_fed_db = Sqlite(os.environ['AAMKS_PROJECT'] + "/fed_mesh.sqlite")
+        unique_cell_numbers = set(map(lambda x:x['cell_number'], self.position_fed_to_insert))
+        fed_growth_grouped_by_cell = [{'sum':sum([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]),'count':len([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]), 'cell_number':cell_number} for cell_number in unique_cell_numbers]
+        for fed_growth in fed_growth_grouped_by_cell:
+            self.position_fed_db.query("UPDATE mesh_cells SET fed_growth_sum = fed_growth_sum + {}, samples_count = samples_count + {} WHERE number={}".format(fed_growth['sum'], fed_growth['count'], fed_growth['cell_number']))
+
+    def find_proper_cell_and_append(self, x, y, fed_growth, floor):
+        for j in range(len(self.position_fed_tables_information)):
+            for k in range(len(self.position_fed_tables_information[0])):
+                if self.position_fed_tables_information[j][k]['x_min'] < x <= self.position_fed_tables_information[j][k]['x_max'] and self.position_fed_tables_information[j][k]['y_min'] < y <= self.position_fed_tables_information[j][k]['y_max']:
+                    value = {'fed_growth':fed_growth, 'cell_number':self.position_fed_tables_information[j][k]['number']}
+                    self.position_fed_to_insert.append(value)
+                    return;
+
     def do_simulation(self, step):
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
             self.set_goal()
             self.update_speed()
         self.update_agents_velocity()
         self.sim.doStep()
+
         self.update_agents_position()
         self.update_time()
         #self.elog.info(self.current_time)
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
             self.update_fed()
+            self.save_positions_with_fed()
         if self.rset == 0:
             self.get_rset_time()

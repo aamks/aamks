@@ -6,12 +6,16 @@ import psycopg2
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as clr
+import matplotlib
+from matplotlib.collections import PatchCollection
 from statsmodels.distributions.empirical_distribution import ECDF as ecdf
 import matplotlib.ticker as tic
-from ete3 import Tree, TreeStyle, TextFace
+from ete3 import Tree #, TreeStyle, TextFace
 import sys
 sys.path.insert(0, '/usr/local/aamks')
 import os
+import time
 import shutil
 from event_tree_en import EventTreeFED
 from event_tree_en import EventTreeSteel
@@ -19,6 +23,7 @@ import scipy.stats as stat
 import collections
 from include import Sqlite
 from include import Psql
+from matplotlib.patches import Rectangle
 import csv
 from include import Dump as dd
 from math import sqrt
@@ -365,6 +370,106 @@ class processDists:
         result = s.query("SELECT sum(room_area) as total FROM aamks_geom");
         return result[0]['total']/10000
 
+    def plot_heatmap_positions_fed_growth(self):
+
+        aamks_sqlite = Sqlite("{}/aamks.sqlite".format(self.dir))
+        position_fed_db = Sqlite("{}/fed_mesh.sqlite".format(self.dir))
+        floors = position_fed_db.query("SELECT DISTINCT floor_number from mesh_cells")
+
+        for floor in floors:
+            patches = []
+            x_mesh_size = position_fed_db.query("SELECT DISTINCT x_max from mesh_cells where floor_number = {}".format(floor['floor_number']))
+            y_mesh_size = position_fed_db.query("SELECT DISTINCT y_max from mesh_cells where floor_number = {}".format(floor['floor_number']))
+            mesh_cells_table_one_floor = position_fed_db.query("SELECT * from mesh_cells where floor_number = {}".format(floor['floor_number']))
+            samples_count = sum([x['samples_count'] for x in mesh_cells_table_one_floor])
+            avg_samples_count_per_cell = samples_count/len(mesh_cells_table_one_floor)
+
+            for cell in mesh_cells_table_one_floor:
+                if cell['samples_count'] < avg_samples_count_per_cell:
+                    cell['AVG_fed_growth'] = 0
+                else:
+                    cell['AVG_fed_growth'] = cell['fed_growth_sum']/cell['samples_count']
+
+            rooms = aamks_sqlite.query(
+                "SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%');".format(
+                    floor['floor_number']))
+            doors = aamks_sqlite.query(
+                "SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 'd%');".format(
+                    floor['floor_number']))
+ 
+            fig = plt.figure()
+            plt.grid(False)
+            ax = fig.add_subplot(111)
+            colors = {'ROOM': '#8C9DCE', 'COR': '#385195', 'HALL': '#DBB55B', 'CONTOUR': '#000000', 'DOOR': '#005000'}
+            cmap = matplotlib.cm.get_cmap('Reds')
+            max_fed_growth = max([cell['AVG_fed_growth'] for cell in mesh_cells_table_one_floor])
+            no_fed_growth = False;
+
+            if max_fed_growth == 0:
+                no_fed_growth = True;
+                max_fed_growth = 1
+
+            for cell in mesh_cells_table_one_floor:
+                height = cell['y_max'] - cell['y_min']
+                width = cell['x_max'] - cell['x_min']
+                patches.append(
+                    matplotlib.patches.Rectangle((cell['x_min'], cell['y_min']), width, height,
+                                                 facecolor=clr.to_hex(list(cmap(cell['AVG_fed_growth']/max_fed_growth))),
+                                                 edgecolor=None,
+                                                 alpha=1))
+
+            for room in rooms:
+                y = json.loads(room['points'])
+                x_set = list(x[0] for x in json.loads(room['points']))
+                y_set = list(x[1] for x in json.loads(room['points']))
+                x_min = min(x_set)
+                y_min = min(y_set)
+                height = max(y_set) - min(y_set)
+                width = max(x_set) - min(x_set)
+                patches.append(
+                    matplotlib.patches.Rectangle((x_min, y_min), width, height, lw=1.5,
+                                                 edgecolor=colors['CONTOUR'], fill=None))
+            
+            for door in doors:
+                y = json.loads(door['points'])
+                x_set = list(x[0] for x in json.loads(door['points']))
+                y_set = list(x[1] for x in json.loads(door['points']))
+                x_min = min(x_set)
+                y_min = min(y_set)
+                height = max(y_set) - min(y_set)
+                width = max(x_set) - min(x_set)
+                patches.append(
+                    matplotlib.patches.Rectangle((x_min, y_min), width, height, lw=1.5,
+                                                 edgecolor=None,
+                                                 facecolor=colors['DOOR']))
+                
+            ax.add_collection(PatchCollection(patches, match_original=True))
+            x_min = min([cell['x_min'] for cell in mesh_cells_table_one_floor])
+            x_max = max([cell['x_max'] for cell in mesh_cells_table_one_floor])
+            y_min = min([cell['y_min'] for cell in mesh_cells_table_one_floor])
+            y_max = max([cell['y_max'] for cell in mesh_cells_table_one_floor])
+            plt.xlim([x_min - 100, x_max + 100])
+            plt.ylim([y_min - 100, y_max + 100])
+            ax.set_ylim(ax.get_ylim()[::-1])
+            ax.set_title("floor {}".format(floor['floor_number']))
+            ax.set_xlabel('x axis')
+            ax.set_ylabel('y axis')
+            plt.gca().set_aspect('equal', adjustable='box')
+
+            fed_list_2_d = [[0 for y in y_mesh_size] for x in x_mesh_size]
+            for i in range(len(fed_list_2_d)):
+                for j in range(len(fed_list_2_d[0])):
+                    fed_list_2_d[i][j] = mesh_cells_table_one_floor[j+i*len(y_mesh_size)]['AVG_fed_growth']
+
+            c = ax.pcolormesh(fed_list_2_d, cmap='Reds')
+
+            if no_fed_growth == True:
+                fed_list_2_d[0][0] = 0.1
+                c = ax.pcolormesh(fed_list_2_d, cmap='Reds')
+
+            fig.colorbar(c, ax=ax, fraction=0.046, pad=0.04)
+            fig.savefig('{}/picts/floor_{}.png'.format(self.dir,floor['floor_number']), dpi=170)
+
 p = processDists()
 p.plot_dcbe_dist()
 p.plot_wcbe_dist()
@@ -382,6 +487,7 @@ p.plot_losses_hist()
 p.plot_pie_fault()
 p.copy_data()
 #print(p.total)
+p.plot_heatmap_positions_fed_growth()
 
 bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
 #bar = 10e-6 * 1530

@@ -6,6 +6,7 @@ import sqlite3
 import json
 import sys
 import argparse
+sys.path.insert(0, "../")
 from include import Sqlite
 from include import Json
 from include import Dump as dd
