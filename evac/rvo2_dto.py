@@ -58,6 +58,7 @@ class EvacEnv:
         self.position_fed_tables_information = []
         self.position_fed_to_insert = []
         self.steps_fed_positions_data = []
+        self.fed_growth_grouped_by_cell = []
         #simulation_id = 1 #przykladowa symulacja
         #self.evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
         #self.all_evac = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]
@@ -315,17 +316,14 @@ class EvacEnv:
             self.steps_fed_positions_data.append({'x':x, 'y':y, 'fed_growth': fed_growth, 'floor': int(self.floor)})
             self.prev_fed[i] = fed
 
-    def insert_into_database_positions_fed_growth(self):
+    def prepare_for_inserting_into_db(self):
         for row in self.steps_fed_positions_data:
             self.find_proper_cell_and_append(row['x'],row['y'],row['fed_growth'], row['floor'])
-        self.insert_positions_fed_growth_into_database()
+        self.group_data()
 
-    def insert_positions_fed_growth_into_database(self):
-        self.position_fed_db = Sqlite(os.environ['AAMKS_PROJECT'] + "/fed_mesh.sqlite")
+    def group_data(self):
         unique_cell_numbers = set(map(lambda x:x['cell_number'], self.position_fed_to_insert))
-        fed_growth_grouped_by_cell = [{'sum':sum([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]),'count':len([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]), 'cell_number':cell_number} for cell_number in unique_cell_numbers]
-        for fed_growth in fed_growth_grouped_by_cell:
-            self.position_fed_db.query("UPDATE mesh_cells SET fed_growth_sum = fed_growth_sum + {}, samples_count = samples_count + {} WHERE number={}".format(fed_growth['sum'], fed_growth['count'], fed_growth['cell_number']))
+        self.fed_growth_grouped_by_cell = [{'sum':sumj([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]),'count':len([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]), 'cell_number':cell_number} for cell_number in unique_cell_numbers]
 
     def find_proper_cell_and_append(self, x, y, fed_growth, floor):
         for j in range(len(self.position_fed_tables_information)):

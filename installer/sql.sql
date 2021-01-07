@@ -105,6 +105,20 @@ CREATE TABLE scenarios (---{{{
 	modified timestamp without time zone not null default now()
 );
 ---}}}
+CREATE TABLE fed_growth_cells_data (---{{{
+    cell_id integer,
+    floor smallint, 
+    project_id integer,
+    scenario_id integer,
+    x_min integer, 
+    x_max integer,
+    y_min integer, 
+    y_max integer,
+    fed_growth_sum decimal, 
+    samples_number integer,
+    modified timestamp without time zone not null default now()
+);
+---}}}
 ---{{{ TRIGGERS
 CREATE TRIGGER update_modified BEFORE UPDATE ON categories FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_modified BEFORE UPDATE ON library FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
@@ -112,6 +126,7 @@ CREATE TRIGGER update_modified BEFORE UPDATE ON simulations FOR EACH ROW EXECUTE
 CREATE TRIGGER update_modified BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_modified BEFORE UPDATE ON projects FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 CREATE TRIGGER update_modified BEFORE UPDATE ON scenarios FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
+CREATE TRIGGER update_modified BEFORE UPDATE ON fed_growth_cells_data FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 ---}}}
 ---{{{ ALTERS
 ALTER TABLE users OWNER TO aamks;
@@ -141,6 +156,11 @@ GRANT ALL ON SEQUENCE simulations_id_seq TO aamks;
 ALTER TABLE users OWNER TO aamks;
 GRANT ALL ON TABLE users TO aamks;
 GRANT ALL ON SEQUENCE users_id_seq TO aamks;
+
+ALTER TABLE fed_growth_cells_data OWNER TO aamks;
+ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_scenario_id FOREIGN KEY (scenario_id) REFERENCES scenarios (id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_project_id FOREIGN KEY (project_id) REFERENCES projects (id) ON UPDATE CASCADE ON DELETE CASCADE;
+GRANT ALL ON TABLE fed_growth_cells_data TO aamks;
 
 ALTER TABLE projects OWNER TO aamks;
 ALTER TABLE projects ADD CONSTRAINT projects_user_id FOREIGN KEY (user_id) REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE;

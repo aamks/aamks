@@ -65,6 +65,7 @@ class Worker:
         self.rooms_in_smoke = dict()
         self.position_fed_tables_information = []
         ssl._create_default_https_context = ssl._create_unverified_context
+        self.rows_to_insert = []
 
 
     def get_logger(self, logger_name):
@@ -282,8 +283,7 @@ class Worker:
                 self.time_shift = 0
                 break
         for i in self.floors:
-            p = multiprocessing.Process(target=i.insert_into_database_positions_fed_growth)
-            p.start()
+            i.prepare_for_inserting_into_db()
         self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
         self.wlogger.info('Final results gathered')
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
@@ -308,6 +308,7 @@ class Worker:
         else:
             command = "python3 {}/manager/results_collector.py {} {} {}".format(os.environ['AAMKS_PATH'], self.host_name, self.meta_file, self.sim_id)
             os.system(command)
+
     # }}}
     def _write_animation_zips(self):# {{{
         '''
@@ -343,7 +344,7 @@ class Worker:
         finally:
             zf.close()
 
-    # }}}
+    # }}}   
     def _write_meta(self):# {{{
         j=Json()
         report = OrderedDict()
@@ -358,12 +359,16 @@ class Worker:
         report['psql']['fed'] = dict()
         report['psql']['rset'] = dict()
         report['psql']['i_risk'] = dict()
+        report['psql']['fed_heatmaps_table_schema'] = dict()
+        report['psql']['fed_heatmaps_data_to_insert'] = dict()
         report['psql']['runtime'] = int(time.time() - self.start_time)
         report['psql']['cross_building_results'] = self.cross_building_results
         for i in self.floors:
             report['psql']['fed'][i.floor] = i.fed
             report['psql']['rset'][i.floor] = int(i.rset)
             report['psql']['i_risk'][i.floor] = round(i.calculate_individual_risk(), 2)
+            report['psql']['fed_heatmaps_table_schema'][i.floor] = self.position_fed_tables_information[int(i.floor)]
+            report['psql']['fed_heatmaps_data_to_insert'][i.floor] = self.floors[int(i.floor)].fed_growth_grouped_by_cell
         for num_floor in range(len(self.floors)):
             report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
             report['floor'] = num_floor
@@ -374,94 +379,57 @@ class Worker:
     # }}}
 
     def create_fed_mesh_db(self):
-        self.position_fed_db = Sqlite(os.environ['AAMKS_PROJECT'] + "/fed_mesh.sqlite")
         aamks_sqlite = Sqlite(os.environ['AAMKS_PROJECT']  + "/aamks.sqlite")
-        tables_fed_mesh = self.position_fed_db.query("SELECT name FROM sqlite_master WHERE type='table';")
+        self.position_fed_tables_information = [[]for k in range (len(self.floors))]
+        for floor in range(0,(len(self.floors))):
 
-        # first simulation of scenario - mesh_cells table hasn't beed created yet
-        # we need to create mesh_cells table
-        # we also need to pass self.position_fed_tables_information to every floor of EvacEnv
-        if len(tables_fed_mesh) == 0:
-            self.position_fed_tables_information = [[]for k in range (len(self.floors))]
-            self.position_fed_db.query("CREATE TABLE mesh_cells(number, floor_number, x_min, x_max, y_min, y_max, fed_growth_sum, samples_count)")
-            for floor in range(0,(len(self.floors))):
+            rooms = aamks_sqlite.query("SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%');".format(floor))
+            x_set_fed_whole_floor = list(x[0] for x in sum([json.loads(t['points']) for t in rooms],[]))
+            y_set_fed_whole_floor = list(x[1] for x in sum([json.loads(t['points']) for t in rooms],[]))
 
-                rooms = aamks_sqlite.query("SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%');".format(floor))
-                x_set_fed_whole_floor = list(x[0] for x in sum([json.loads(t['points']) for t in rooms],[]))
-                y_set_fed_whole_floor = list(x[1] for x in sum([json.loads(t['points']) for t in rooms],[]))
+            x_min = min(x_set_fed_whole_floor)
+            x_max = max(x_set_fed_whole_floor)
+            y_min = min(y_set_fed_whole_floor)
+            y_max = max(y_set_fed_whole_floor)
 
-                x_min = min(x_set_fed_whole_floor)
-                x_max = max(x_set_fed_whole_floor)
-                y_min = min(y_set_fed_whole_floor)
-                y_max = max(y_set_fed_whole_floor)
+            width = x_max - x_min
+            height = y_max - y_min
 
-                width = x_max - x_min
-                height = y_max - y_min
-                if width >= height:
-                    mesh_size_y = self.config['MESH_RESOLUTION_SMALLER_SIDE']
-                    mesh_size_x = round(self.config['MESH_RESOLUTION_SMALLER_SIDE'] * width / height)
-                else:
-                    mesh_size_x = self.config['MESH_RESOLUTION_SMALLER_SIDE']
-                    mesh_size_y = round(self.config['MESH_RESOLUTION_SMALLER_SIDE'] * height / width)
+            mesh_size_x = int((self.config['APPROXIMATE_NUMBER_OF_CELLS_PER_FLOOR']*width/height)**0.5)
 
-                # divide x axis
-                num = x_max - x_min
-                x_points = ([num // mesh_size_x + (1 if x < num % mesh_size_x else 0) for x in range(mesh_size_x)])
-                x_points = cumsum(x_points)
-                x_points = insert(x_points, 0, 0, axis=0)
-                x_points = [x + x_min for x in x_points]
-                x_points = list(x_points)
-                # divide y axis
-                num = y_max - y_min
-                y_points = ([num // mesh_size_y + (1 if x < num % mesh_size_y else 0) for x in range(mesh_size_y)])
-                y_points = cumsum(y_points)
-                y_points = insert(y_points, 0, 0, axis=0)
-                y_points = [y + y_min for y in y_points]
-                y_points = list(y_points)
-                
-                self.position_fed_tables_information[floor] = [[0 for i in range(mesh_size_y)] for j in range(mesh_size_x)]
-                max_current_number_of_row = self.position_fed_db.query("SELECT Count(*) from mesh_cells")
+            mesh_size_y = int((self.config['APPROXIMATE_NUMBER_OF_CELLS_PER_FLOOR']*height/width)**0.5)
 
-                for i in range(len(x_points)-1):
-                    for j in range(len(y_points)-1):
-                        values = (max_current_number_of_row[0]['Count(*)']+j+i*(len(y_points)-1),floor,int(x_points[i]),int(x_points[i+1]),int(y_points[j]),int(y_points[j+1]),float(0),0)
-                        self.position_fed_db.query("INSERT INTO mesh_cells VALUES (?,?,?,?,?,?,?,?)",values)
-                        self.position_fed_tables_information[floor][i][j] = {
-                                        'number': max_current_number_of_row[0]['Count(*)']+j+i*(len(y_points)-1),
-                                        'y_min': int(y_points[j]),
-                                        'y_max': int(y_points[j+1]),
-                                        'x_min': int(x_points[i]),
-                                        'x_max': int(x_points[i+1]),
-                                        'fed_growth_sum':0.0,
-                                        'samples_count':0
-                                        }
+            # divide x axis
+            num = x_max - x_min
+            x_points = ([num // mesh_size_x + (1 if x < num % mesh_size_x else 0) for x in range(mesh_size_x)])
+            x_points = cumsum(x_points)
+            x_points = insert(x_points, 0, 0, axis=0)
+            x_points = [x + x_min for x in x_points]
+            x_points = list(x_points)
+            # divide y axis
+            num = y_max - y_min
+            y_points = ([num // mesh_size_y + (1 if x < num % mesh_size_y else 0) for x in range(mesh_size_y)])
+            y_points = cumsum(y_points)
+            y_points = insert(y_points, 0, 0, axis=0)
+            y_points = [y + y_min for y in y_points]
+            y_points = list(y_points)
+            
+            self.position_fed_tables_information[floor] = [[0 for i in range(mesh_size_y)] for j in range(mesh_size_x)]
+            
+            for i in range(len(x_points)-1):
+                for j in range(len(y_points)-1):
+                    self.position_fed_tables_information[floor][i][j] = {
+                                    'number': j+i*(len(y_points)-1),
+                                    'floor': floor,
+                                    'y_min': int(y_points[j]),
+                                    'y_max': int(y_points[j+1]),
+                                    'x_min': int(x_points[i]),
+                                    'x_max': int(x_points[i+1]),
+                                    'fed_growth_sum':0.0,
+                                    'samples_count':0
+                                    }
 
-                self.floors[floor].position_fed_tables_information = self.position_fed_tables_information[floor]
-
-        # not first simulation of scenario - mesh_cells table has already been created
-        # we only need to pass self.position_fed_tables_information to every floor of EvacEnv
-        else:
-            self.position_fed_tables_information = [[]for k in range (len(self.floors))]
-            for floor in range(0,(len(self.floors))):
-                fed_mesh_db = self.position_fed_db.query("SELECT * FROM mesh_cells where floor_number = {}".format(floor))
-                x_mesh_size = self.position_fed_db.query("SELECT DISTINCT x_max from mesh_cells where floor_number = {}".format(floor))
-                y_mesh_size = self.position_fed_db.query("SELECT DISTINCT y_max from mesh_cells where floor_number = {}".format(floor))
-                self.position_fed_tables_information[floor] = [[0 for i in range(len(y_mesh_size))] for j in range(len(x_mesh_size))]
-                count = 0
-                for i in range(len(x_mesh_size)):
-                    for j in range(len(y_mesh_size)):
-                        self.position_fed_tables_information[floor][i][j] = {
-                                        'number': fed_mesh_db[count]['number'],
-                                        'y_min': fed_mesh_db[count]['y_min'],
-                                        'y_max': fed_mesh_db[count]['y_max'],
-                                        'x_min': fed_mesh_db[count]['x_min'],
-                                        'x_max': fed_mesh_db[count]['x_max'],
-                                        'fed_growth_sum':0.0,
-                                        'samples_count':0
-                                        }
-                        count +=1
-                self.floors[floor].position_fed_tables_information = self.position_fed_tables_information[floor]
-
+            self.floors[floor].position_fed_tables_information = self.position_fed_tables_information[floor]
 
     def main(self):
         self._create_workspace()
@@ -485,6 +453,7 @@ class Worker:
         self.send_report()
 
     def local_worker(self):
+
         os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
