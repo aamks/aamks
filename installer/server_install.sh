@@ -16,7 +16,7 @@
 # By convention aamks GUI must reside under /var/www/ssl/aamks
 # and will be accessed via https://your.host.abc/aamks
 
-AAMKS_SERVER=192.168.0.10									# gearman + www for workers
+AAMKS_SERVER=10.10.47.15									# gearman + www for workers
 AAMKS_PATH='/usr/local/aamks'								
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
