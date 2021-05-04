@@ -226,8 +226,12 @@ function ajaxGoogleLogin() { /*{{{*/
 /*}}}*/
 function main() { /*{{{*/
 	header('Content-type: application/json');
-
 	ini_set('display_errors', 1);
+
+	// sanitize all $_POST, Cyril Vallicari from https://www.ziwit.com/ thanks for schooling me! :)
+	foreach($_POST as $k=>$v) {
+		$_POST[$k]=escapeshellcmd($v);
+	}
 
 	if(!empty($_SESSION['main']['user_id']))            {
 
