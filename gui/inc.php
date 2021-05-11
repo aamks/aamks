@@ -162,7 +162,7 @@ class Aamks {/*{{{*/
 			<script src='/aamks/js/jquery.js'></script>
 			<script src='/aamks/js/form.js'></script>
 			<script src='/aamks/js/utils.js'></script>
-			<script src='/aamks/js/lodash.min.js'></script>
+			<script src='https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js'></script>
 			<script src='/aamks/js/taffy-min.js'></script>
 			<script src='https://apis.google.com/js/platform.js' async defer></script>
 			<div id='hidden_form_container' style='display:none;'></div> 
