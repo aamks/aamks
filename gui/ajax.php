@@ -6,7 +6,7 @@ function ajaxAddUnderlay() { #{{{
 	shell_exec("mkdir -p ".$_SESSION['main']['working_home']."/underlays/");
 	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor].$_POST[type]";
 	if($_POST['type']=='pdf') { 
-		$z=pdf2svg();
+		$z=ajaxPdf2svg();
 	} else {
 		$z=file_put_contents($dest, base64_decode($_POST['base64']));
 	}
@@ -18,7 +18,7 @@ function ajaxAddUnderlay() { #{{{
 	}
 }
 /*}}}*/
-function pdf2svg() { /*{{{*/
+function ajaxPdf2svg() { /*{{{*/
 	$src=$_SESSION['main']['working_home']."/underlays/$_POST[floor].pdf";
 	$dest=$_SESSION['main']['working_home']."/underlays/$_POST[floor].svg";
 	file_put_contents($src, base64_decode($_POST['base64']));
@@ -229,6 +229,7 @@ function main() { /*{{{*/
 	ini_set('display_errors', 1);
 
 	// sanitize all $_POST, Cyril Vallicari from https://www.ziwit.com/ thanks for schooling me! :)
+	// Aamks is now secure but broken :( We cannot globally escape $_POST because it hurts json files etc.
 	foreach($_POST as $k=>$v) {
 		$_POST[$k]=escapeshellcmd($v);
 	}
