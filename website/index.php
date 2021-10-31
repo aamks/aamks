@@ -19,7 +19,9 @@ $nodes['about']=array("About Aamks", /*{{{*/
 Aamks is an open source, web-based platform for assessing the fire safety of humans in buildings.
 Aamks runs hundreds of fire simulations (CFAST) and evacuation simulations
 (Aamks.Evac) and then evaluates the results. In each simulation humans
-are moving across the building and are affected by fire and smoke.
+are moving across the building and are affected by fire and smoke.<br><br>
+
+Aamks is an open source software released under the GPL license.
 
 ");
 /*}}}*/
