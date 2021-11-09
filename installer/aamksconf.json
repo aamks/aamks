@@ -6,7 +6,7 @@
 	"AAMKS_NETCONF": {
 		"comment": "Enable networks and specify number of cores, e.g. network_208: 4. Cores 0 disables network. ",
 		"enabled_networks": {
-			"localhost": 0,
+			"localhost": 2,
 			"pokoj102": 0,
 			"network_208": 0,
 			"network_003": 0,
@@ -20,7 +20,7 @@
 		"networks": {
 			"localhost": [ 
 
-				["70:f3:95:04:c6:4e" , "127.0.0.1"  , "127.0.0.255" ] 
+				["2c:60:0c:80:e4:b7" , "127.0.0.1"  , "127.0.0.255" ] 
 			],
 			"pokoj102": [ 
                 [ "00:4e:01:9e:8f:9d" , "10.10.20.231", "10.0.0.255" ],

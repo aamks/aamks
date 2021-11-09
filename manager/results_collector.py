@@ -74,6 +74,21 @@ class ResultsCollector():
         fed=json.dumps(self.meta['psql']['fed'])
         rset = json.dumps(self.meta['psql']['rset'])
         i_risk = json.dumps(self.meta['psql']['i_risk'])
+        query = "SELECT Count(*) FROM fed_growth_cells_data where project_id = {} AND scenario_id = {} ".format(self.meta['project_id'], self.meta['scenario_id'])
+        results = p.query(query)
+        count = [i[0] for i in results]
+        if count[0] == 0:
+            for key in self.meta['psql']['fed_heatmaps_table_schema']:
+                for i in range(len(self.meta['psql']['fed_heatmaps_table_schema'][key])):
+                    for j in range(len(self.meta['psql']['fed_heatmaps_table_schema'][key][0])):
+                        values = (self.meta['psql']['fed_heatmaps_table_schema'][key][i][j]["number"],self.meta['scenario_id'],self.meta['project_id'],self.meta['psql']['fed_heatmaps_table_schema'][key][i][j]["floor"],self.meta['psql']['fed_heatmaps_table_schema'][key][i][j]["x_min"],self.meta['psql']['fed_heatmaps_table_schema'][key][i][j]["x_max"],self.meta['psql']['fed_heatmaps_table_schema'][key][i][j]["y_min"],self.meta['psql']['fed_heatmaps_table_schema'][key][i][j]["y_max"],0,0)
+                        p.query("INSERT INTO fed_growth_cells_data(cell_id, scenario_id, project_id, floor, x_min, x_max, y_min, y_max, fed_growth_sum, samples_number) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", values)
+        
+        for key in self.meta['psql']['fed_heatmaps_data_to_insert']:
+            for row in self.meta['psql']['fed_heatmaps_data_to_insert'][key]:
+                query = "UPDATE fed_growth_cells_data SET fed_growth_sum = fed_growth_sum + {}, samples_number = samples_number + {} WHERE cell_id={} and scenario_id={} and project_id={} and floor={}".format(round(row["sum"],2), row["count"], row['cell_number'], self.meta['scenario_id'], self.meta['project_id'], int(key))
+                p.query(query)
+
         p.query("UPDATE simulations SET fed = '{}', wcbe='{}', run_time = {}, dcbe_time = {}, min_vis_compa = {}, max_temp = {}, host = '{}', min_hgt_compa = {}, min_vis_cor = {}, min_hgt_cor = {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(fed, rset, self.meta['psql']['runtime'], self.meta['psql']['cross_building_results']['dcbe'], self.meta['psql']['cross_building_results']['min_vis_compa'], self.meta['psql']['cross_building_results']['max_temp_compa'], self.meta['worker'], self.meta['psql']['cross_building_results']['min_hgt_compa'],self.meta['psql']['cross_building_results']['min_vis_cor'],self.meta['psql']['cross_building_results']['min_hgt_cor']), (self.meta['project_id'], self.meta['scenario_id'], self.meta['sim_id']))
         p.query("UPDATE simulations SET i_risk = '{}' WHERE project=%s AND scenario_id=%s AND iteration=%s".format(i_risk), (self.meta['project_id'], self.meta['scenario_id'], self.meta['sim_id']))
         SendMessage("Database updated")
