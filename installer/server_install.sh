@@ -16,11 +16,11 @@
 # By convention aamks GUI must reside under /var/www/ssl/aamks
 # and will be accessed via https://your.host.abc/aamks
 
-AAMKS_SERVER=127.0.0.1									# gearman + www for workers
+AAMKS_SERVER=10.8.47.50									# gearman + www for workers
 AAMKS_PATH='/usr/local/aamks'								
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
-AAMKS_WORKER='local'										# 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'gearman': dispatch simulations over a network (grid/cluster environment)
+AAMKS_WORKER='gearman'										# 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'gearman': dispatch simulations over a network (grid/cluster environment)
 AAMKS_SALT='aamksisthebest'
 AAMKS_USE_GMAIL=0											# needed if we allow users to register accounts
 AAMKS_GMAIL_PASSWORD='none'									# needed if we allow users to register accounts

@@ -39,6 +39,7 @@ class ResultsCollector():
             self.s = Sqlite("{}/aamks.sqlite".format(self.meta['path_to_project']))
             self._animation_save()
             self.psql_report()
+#}}}
 
     def _fetch_meta(self):# {{{
         try:
@@ -48,13 +49,14 @@ class ResultsCollector():
             SendMessage(e)
         else:
             pass
-
+#}}}
     def _get_meta_animation(self):
         source = self.host+':'+self.meta['path_to_project']+'workers/'+str(self.meta['sim_id'])+'/'+self.meta['animation']
         dest = self.meta['path_to_project']+'workers/'+str(self.meta['sim_id'])+'/'+self.meta['animation']
         SendMessage(source + " " + dest)
         Popen(["scp", source, dest])
         SendMessage("Animation data copied")
+#}}}
 
     def _animation_save(self):# {{{
         params=OrderedDict()
@@ -68,7 +70,7 @@ class ResultsCollector():
         cae=CreateAnimEntry()
         cae.save(params, "{}workers/anims.json".format(self.meta['path_to_project']))
         SendMessage("Animation updated and saved")
-
+#}}}
     def psql_report(self):
         p = Psql()
         fed=json.dumps(self.meta['psql']['fed'])

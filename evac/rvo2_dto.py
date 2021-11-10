@@ -145,7 +145,7 @@ class EvacEnv:
     def update_agents_position(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
-                self.sim.setAgentPosition(i, (10000 + i * 200, 10000))
+                self.sim.setAgentPosition(i, (1000000 + i * 200, 10000))
                 # Tu agent opuszcza pietro
                 continue
             else:
@@ -323,7 +323,7 @@ class EvacEnv:
 
     def group_data(self):
         unique_cell_numbers = set(map(lambda x:x['cell_number'], self.position_fed_to_insert))
-        self.fed_growth_grouped_by_cell = [{'sum':sumj([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]),'count':len([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]), 'cell_number':cell_number} for cell_number in unique_cell_numbers]
+        self.fed_growth_grouped_by_cell = [{'sum':sum([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]),'count':len([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]), 'cell_number':cell_number} for cell_number in unique_cell_numbers]
 
     def find_proper_cell_and_append(self, x, y, fed_growth, floor):
         for j in range(len(self.position_fed_tables_information)):
