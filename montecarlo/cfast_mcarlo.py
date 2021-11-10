@@ -47,9 +47,9 @@ class CfastMcarlo():
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         t_name= ""
         try:
-            self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,f_id,sim_id)")
             t_name = self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
         except Exception as e:
+            self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,f_id,sim_id)")
             t_name = self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
         return t_name
 
@@ -72,6 +72,7 @@ class CfastMcarlo():
     def _save_fire_origin(self, fire_origin):# {{{
         fire_origin.append(self._sim_id)
         self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?,?,?)', fire_origin)
+        fr=self.s.query('SELECT * FROM fire_origin WHERE sim_id={}'.format(self._sim_id))
         self._psql_log_variable('fireorigname', fire_origin[0])
         self._psql_log_variable('fireorig', fire_origin[1])
 # }}}
@@ -266,7 +267,7 @@ class CfastMcarlo():
                     how_much_open=0.25 
                 else:
                     how_much_open=0 
-        #self._psql_log_variable('w',how_much_open)
+        self._psql_log_variable('w',how_much_open)
         return how_much_open
         
 # }}}
@@ -281,7 +282,7 @@ class CfastMcarlo():
             how_much_open=1
         else:
             how_much_open=binomial(1,vents[Type])
-            #self._psql_log_variable(Type.lower(),how_much_open)
+            self._psql_log_variable(Type.lower(),how_much_open)
 
         return how_much_open
 # }}}
@@ -511,7 +512,7 @@ class CfastMcarlo():
                 collect.append("COMP_ID = '{}'".format(v['name']))
                 collect.append("LOCATION = {}, {}, {}".format(round(v['width']/(2.0*100), 2), round(v['depth']/(2.0*100), 2), round(v['height']/100.0, 2)))
                 collect.append("SETPOINT = {}".format(temp))
-                collect.append("RTI = {}".format(404))
+                collect.append("RTI = {} /".format(5))
                 txt.append(','.join(str(i) for i in collect))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 
@@ -600,6 +601,7 @@ class CfastMcarlo():
         for k,v in self._psql_collector[self._sim_id].items():
             pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
         data=', '.join(pairs)
+
         self.p.query("UPDATE simulations SET {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(data), (self.conf['project_id'], self.conf['scenario_id'], self._sim_id))
 
 #}}}

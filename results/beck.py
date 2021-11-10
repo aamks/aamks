@@ -141,7 +141,7 @@ class processDists:
 
     def plot_max_temp(self):
         query = "SELECT max_temp FROM simulations where project = {} AND scenario_id = {} and dcbe_time is " \
-                "not null".format(self.configs['project_id'], self.configs['scenario_id'])
+                "not null AND max_temp < 900".format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
         dcbe = [float(i[0]) for i in results]
         dist = getattr(stat, 'norm')
@@ -302,7 +302,7 @@ class processDists:
         educational = [0.003, 3e-6, -1.26, -0.05]
         building = {'other_building': other_building, 'office': office, 'warehouse': warehouse, 'commercial': commercial,
                     'nursing': nursing, 'educational': educational}
-        b_type = 'other_building'
+        b_type = 'commercial'
         ignition = building[b_type][0]*(area) ** (building[b_type][2]) + \
                    building[b_type][1] * (area) ** (building[b_type][3])
         return ignition
@@ -407,12 +407,17 @@ class processDists:
             doors = aamks_sqlite.query(
                 "SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 'd%');".format(
                     floor['floor']))
+            obstacles = aamks_sqlite.query(
+                "SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 't%');".format(
+                    floor['floor']))  
 
             fig = plt.figure()
             plt.grid(False)
             ax = fig.add_subplot(111)
-            colors = {'ROOM': '#8C9DCE', 'COR': '#385195', 'HALL': '#DBB55B', 'CONTOUR': '#000000', 'DOOR': '#005000'}
             cmap = matplotlib.cm.get_cmap('Reds')
+            light_red = cmap(0)
+            colors = {'ROOM': '#8C9DCE', 'COR': '#385195', 'HALL': '#DBB55B', 'CONTOUR': '#000000', 'DOOR': matplotlib.colors.rgb2hex(light_red), 'OBSTACLE': '#707070'}
+            
             max_fed_growth = float(max([cell[7] for cell in mesh_cells_table_one_floor]))
             no_fed_growth = False;
 
@@ -426,7 +431,7 @@ class processDists:
                 patches.append(
                     matplotlib.patches.Rectangle((cell['x_min'], cell['y_min']), width, height,
                                                  facecolor=clr.to_hex(
-                                                     list(cmap(float(cell[7]) / max_fed_growth))),
+                                                        list(cmap(float(cell[7]) / max_fed_growth))),
                                                  edgecolor=None,
                                                  alpha=1))
 
@@ -454,6 +459,20 @@ class processDists:
                     matplotlib.patches.Rectangle((x_min, y_min), width, height, lw=1.5,
                                                  edgecolor=None,
                                                  facecolor=colors['DOOR']))
+
+            for obstacle in obstacles:
+                y = json.loads(obstacle['points'])
+                x_set = list(x[0] for x in json.loads(obstacle['points']))
+                y_set = list(x[1] for x in json.loads(obstacle['points']))
+                x_min = min(x_set)
+                y_min = min(y_set)
+                height = max(y_set) - min(y_set)
+                width = max(x_set) - min(x_set)
+                patches.append(
+                    matplotlib.patches.Rectangle((x_min, y_min), width, height, lw=1.5,
+                                                 edgecolor=None,
+                                                 facecolor=colors['OBSTACLE']))
+
 
             ax.add_collection(PatchCollection(patches, match_original=True))
             x_min = min([cell['x_min'] for cell in mesh_cells_table_one_floor])
@@ -502,8 +521,9 @@ p.copy_data()
 p.plot_heatmap_positions_fed_growth()
 
 bar = p.calculate_barrois(p.calculate_building_area())*p.calculate_building_area()
-#bar = 10e-6 * 1530
-#bar = (4e-3)/3
+#bar = 1.8e-2 / 2
+bar = (4e-3)/3
+#bar = 1.3e-3
 print(p.calculate_building_area())
 #if p.losses_num[4] == 0:
 #    p.losses_num[4] = 1e-12
