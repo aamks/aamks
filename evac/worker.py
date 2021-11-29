@@ -148,7 +148,7 @@ class Worker:
     def run_cfast_simulations(self):
         if self.project_conf['fire_model'] == 'CFAST':
             try:
-                os.system('/usr/local/aamks/fire/cfast cfast.in')
+                os.system('/usr/local/aamks/fire/cfast7_linux_64 cfast.in')
             except Exception as e:
                 self.wlogger.error(e)
                 cfast_log = open('cfast.log', 'r')

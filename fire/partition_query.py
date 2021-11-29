@@ -78,6 +78,20 @@ class PartitionQuery:
             z=tuple( int(n) for n in k.split("x") )
             self._cell2compa[z]=v
 # }}}
+
+    def extend_compas_by_devices(self):
+        with open('cfast_devices.csv', 'r') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',')
+            skip = next(reader)
+            skip = next(reader)
+            devices_names = next(reader)
+            for name in devices_names[1:]: 
+                if name not in self.all_compas:
+                    self.all_compas.append(name)
+        
+                
+
+
     def _init_compa_conditions(self):  # {{{
         ''' 
         Prepare dict structure for cfast csv values. Csv contain some params that are
@@ -94,31 +108,40 @@ class PartitionQuery:
         'HRR', 'HRRL', 'HRRU', 'IGN', 'LLCO', 'LLCO2', 'LLH2O', 'LLHCL',
         'LLHCN', 'LLN2', 'LLO2', 'LLOD', 'LLT', 'LLTS', 'LLTUHC', 'LWALLT',
         'PLUM', 'PRS', 'PYROL', 'TRACE', 'ULCO', 'ULCO2', 'ULH2O', 'ULHCL',
-        'ULHCN', 'ULN2', 'ULO2', 'ULOD', 'ULT', 'ULTS', 'ULTUHC', 'UWALLT',
-        'VOL')
+        'ULHCN', 'ULN2', 'ULO2', 'ULOD', 'ULT', 'ULTS', 'ULTUHC', 'UWALLT','VOL',
+        'SENST','SENSACT','SENSGAST','SENSGASV') # from devices.csv - location in csv are "sp1","sp2" , for rest is 'r1' or 'c1'
+        
 
         self._default_conditions={}
         for i in self.relevant_params:
             self._default_conditions[i]=0
         self._default_conditions['ULO2']=20
-
         self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
-
+        self.extend_compas_by_devices() 
         self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
             self.compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME'] + list(self.relevant_params)])
             self.compa_conditions[compa]['COMPA']=compa
         self.compa_conditions['outside']=OrderedDict([('TIME', None)])
 # }}}
+
+
     def _cfast_headers(self):# {{{
+        
+        
         '''
+        in old version:
         CFAST must have produced the first lines of csv by now, which is the header.
         Get 3 first rows from n,s,w files and make headers: params and geoms.
         Happens only once.
+        in newer version:
+        the same, but in files: 'compartments', 'devices', 'vents', 'walls'
+
+
         '''
 
         self._headers=OrderedDict()
-        for letter in ['n', 's', 'w']:
+        for letter in ['compartments', 'devices', 'vents', 'walls']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
@@ -131,6 +154,8 @@ class PartitionQuery:
             self._headers[letter]=OrderedDict()
             self._headers[letter]['params']=headers[0]
             self._headers[letter]['geoms']=headers[2]
+        
+
 # }}}
     def cfast_has_time(self,time):# {{{
         ''' 
@@ -143,13 +168,14 @@ class PartitionQuery:
             return 1
 
         needed_record_id=int(time/10)+1
-        with open('cfast_n.csv') as f:
+        with open('cfast_compartments.csv') as f:
             num_data_records=sum(1 for _ in f)-4
         if num_data_records > needed_record_id:
             return 1
         else:
             return 0
 # }}}
+    
 
     def read_cfast_record(self, time):# {{{
         ''' 
@@ -163,7 +189,7 @@ class PartitionQuery:
                 self.compa_conditions[room]['ULO2']=20
             return
 
-        for letter in ['n', 's', 'w']:
+        for letter in ['compartments','devices','vents','walls']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
@@ -171,7 +197,7 @@ class PartitionQuery:
                     next(reader)
                 for row in reader:
                     if int(float(row[0])) == time:
-                        needed_record=[float(j) for j in row]
+                        needed_record=[(float(j)) for j in row]
                         needed_record[0]=int(float(row[0]))
                         break
 
@@ -182,6 +208,11 @@ class PartitionQuery:
             for m in range(len(needed_record)):
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
                     self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
+           
+
+
+
+
 # }}}
     def xy2room(self,q):# {{{
         ''' 
@@ -242,6 +273,7 @@ class PartitionQuery:
 # }}}
     def get_fed(self, position):# {{{
         conditions = self.get_conditions(position)
+
         hgt = conditions['HGT']
         if hgt == None:
             return 0.
@@ -295,6 +327,11 @@ class PartitionQuery:
         # min(ULT_COMPA)
         finals['max_temp_compa']=self.sf.query("SELECT MAX(value) FROM finals WHERE param='ULT'")[0]['MAX(value)']
 
+        #min detection time - need to be tested in big simulations  
+        #SENSACT gives only 0 (not activeted) or 1(activated) - query finds the least time 
+        finals['min_time_detection']=self.sf.query("SELECT MIN(time) from finals where param='SENSACT' AND value>0")
+
+
         c_const = 5
         # min(ULOD_COR)
         ul_od_cor = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='c' AND param='ULOD'")[0]['MAX(value)']
@@ -321,7 +358,7 @@ class PartitionQuery:
 
         finals=[]
 
-        for letter in ['n', 's']:
+        for letter in ['compartments', 'devices', 'vents','walls']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
@@ -344,4 +381,6 @@ class PartitionQuery:
         self.sf=Sqlite("finals.sqlite")
         self.sf.query("CREATE TABLE finals('time','param','value','compa','compa_type')")
         self.sf.executemany('INSERT INTO finals VALUES ({})'.format(','.join('?' * len(finals[0]))), finals)
+        
+
 # }}}
