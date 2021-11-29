@@ -33,8 +33,8 @@ class FIRE_DTO:
         return cursor.fetchall()
 
     def _make_times(self):
-        ''' We assume that times from the first column of cfast_n.csv is the way to go '''
-        file = '{}/cfast_n.csv'.format(self.path_to_cfast_dir)
+        ''' We assume that times from the first column of (cfast_compartments.csv)(old cfast_n.csv) is the way to go '''
+        file = '{}/cfast_compartments.csv'.format(self.path_to_cfast_dir)
         col1 = [x.split(',')[0] for x in open(file).readlines()]
         times = []
         for i in col1[4:]:
@@ -51,7 +51,7 @@ class FIRE_DTO:
 
     def _prepare_dict_for_csv_fields(self):  # {{{
         '''Placeholder dict for csv values
-        Collect allParams (predefined, all interesting stuff from f,s,n,w files) and allGeoms (calculated)
+        Collect allParams (predefined, all interesting stuff from compartment file (old s,n,w + f) files) and allGeoms (calculated)
         '''
         # TODO! calculate allGeoms, because they're fixed here!
         times = self._make_times()
@@ -67,35 +67,34 @@ class FIRE_DTO:
             for t in times:
                 self.parsed[(g, t)] = OrderedDict([(x, None) for x in self.allParams])
 
-    def _parse_csv_n_s_w(self):
-        ''' Parse aamks csv output from n,s,w files. Create csvTuple for sqlite and csvDict '''
+    def _parse_csv_compartments(self):
+        ''' Parse aamks csv output from _comparmetns.csv(CFASTv 7.7, in CFAST 7.3 n,s,w.csv) file. Create csvTuple for sqlite and csvDict '''
 
-        for letter in ['n', 's', 'w']:
-            file = '{}/cfast_{}.csv'.format(self.path_to_cfast_dir, letter)
-            with open(file, 'r') as csvfile:
-                reader = csv.reader(csvfile, delimiter=',')
-                headers = []
-                for x in range(4):
-                    headers.append([field.replace(' ', '') for field in next(reader)])
-                    headers[x]
-                headers[0] = [re.sub("_.*", "", xx) for xx in headers[0]]
+        file = '{}/cfast_compartments.csv'.format(self.path_to_cfast_dir)
+        with open(file, 'r') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',')
+            headers = []
+            for x in range(4):
+                headers.append([field.replace(' ', '') for field in next(reader)])
+                headers[x]
+            headers[0] = [re.sub("_.*", "", xx) for xx in headers[0]]
 
-                csvData = list()
-                for row in reader:
-                    csvData.append(tuple(round(float(j), 2) for j in row))
+            csvData = list()
+            for row in reader:
+                csvData.append(tuple(round(float(j), 2) for j in row))
 
-            params = headers[0]
-            geoms = headers[2]
+        params = headers[0]
+        geoms = headers[2]
 
-            for row in csvData:
-                time = row[0]
-                for m in range(len(row)):
-                    if params[m] in self.allParams and geoms[m] in self.allGeoms:
-                        self.parsed[geoms[m], time][params[m]] = row[m]
+        for row in csvData:
+            time = row[0]
+            for m in range(len(row)):
+                if params[m] in self.allParams and geoms[m] in self.allGeoms:
+                    self.parsed[geoms[m], time][params[m]] = row[m]
 
     def create_dbs(self):
         self._prepare_dict_for_csv_fields()
-        self._parse_csv_n_s_w()
+        self._parse_csv_compartments()
 
         columns = ['GEOM', 'TIME'] + list(self.allParams)
 
