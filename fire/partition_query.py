@@ -135,8 +135,8 @@ class PartitionQuery:
         '''
 
         self._headers=OrderedDict()
-        for letter in ['n', 's', 'w']:
-            f = 'cfast_{}.csv'.format(letter)
+        for letter in ['compartments', 'devices', 'vents']:
+            f = '{}_{}.csv'.format(self.sim_name, letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 headers = []
@@ -160,7 +160,7 @@ class PartitionQuery:
             return 1
 
         needed_record_id=int(time/10)+1
-        with open('cfast_n.csv') as f:
+        with open('{}_compartments.csv'.format(self.sim_name)) as f:
             num_data_records=sum(1 for _ in f)-4
         if num_data_records > needed_record_id:
             return 1
@@ -180,8 +180,8 @@ class PartitionQuery:
                 self.compa_conditions[room]['ULO2']=20
             return
 
-        for letter in ['n', 's', 'w']:
-            f = 'cfast_{}.csv'.format(letter)
+        for letter in ['compartments', 'devices', 'vents']:
+            f = '{}_{}.csv'.format(self.sim_name, letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):
