@@ -9,6 +9,7 @@ from include import Sqlite
 from include import Json
 from math import exp
 from include import Dump as dd
+import shutil
 # }}}
 
 class PartitionQuery:
@@ -110,7 +111,23 @@ class PartitionQuery:
             self.compa_conditions[compa]['COMPA']=compa
         self.compa_conditions['outside']=OrderedDict([('TIME', None)])
 # }}}
+    def copy_csv_files(self):
+        dst = os.getcwd()
+        print(dst)
+        base_src = "/home/zarooba/CFAST/new/"
+        self.sim_name = "cfastnew"
+        all_files = ["{}_compartments.csv".format(self.sim_name),"{}_devices.csv".format(self.sim_name),"{}_vents.csv".format(self.sim_name)]
+        for file in all_files:
+            src= "{}{}".format(base_src,file)
+            try:
+                shutil.copy(src, dst+'/')
+            except:
+                print("cos poszlo nie tak")
+
     def _cfast_headers(self):# {{{
+        print("start copy")
+        self.copy_csv_files()
+        print("end copy")
         '''
         CFAST must have produced the first lines of csv by now, which is the header.
         Get 3 first rows from n,s,w files and make headers: params and geoms.

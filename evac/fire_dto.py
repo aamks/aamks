@@ -5,6 +5,11 @@ from math import exp
 import bson
 import math
 
+"""
+Is this file even being executed?
+
+"""
+
 
 class FIRE_DTO:
     def __init__(self, sql_connection, aamks_vars):
@@ -91,6 +96,8 @@ class FIRE_DTO:
             for m in range(len(row)):
                 if params[m] in self.allParams and geoms[m] in self.allGeoms:
                     self.parsed[geoms[m], time][params[m]] = row[m]
+
+                    
 
     def create_dbs(self):
         self._prepare_dict_for_csv_fields()
