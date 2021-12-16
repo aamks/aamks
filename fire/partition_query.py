@@ -182,7 +182,7 @@ class PartitionQuery:
 
         for letter in ['compartments', 'devices', 'vents']:
             f = '{}_{}.csv'.format(self.sim_name, letter)
-            #print(f)
+            print(f)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):
@@ -202,10 +202,17 @@ class PartitionQuery:
 
             for m in range(len(needed_record)):
                 #print(self._headers[letter]['params'][m])
+                #print('headpm', self._headers[letter]['params'][m])
+                #print('relp',self.relevant_params)
+                #print('geomm',self._headers[letter]['geoms'][m])
+                #print('ac:',self.all_compas)
+                #print(self._headers[letter]['geoms'][m] in self.all_compas)   
+                #print(self._headers[letter]['params'][m] in self.relevant_params)
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
-                    #print('PRZESZLO')
+                    print('PRZESZLO')
                     self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
-
+            print(self._headers[letter]['params'])
+            print(self.relevant_params)
 # }}}
     def xy2room(self,q):# {{{
         ''' 
