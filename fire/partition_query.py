@@ -182,24 +182,30 @@ class PartitionQuery:
 
         for letter in ['compartments', 'devices', 'vents']:
             f = '{}_{}.csv'.format(self.sim_name, letter)
+            print(f)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):
                     next(reader)
                 for row in reader:
-                    print(float(row[0]))
+                    #print(float(row[0]))
+                    print(row)
                     if int(float(row[0])) == time:
-                        needed_record=[float(j) for j in row]
+                        needed_record=[(float(j)) for j in row]
                         needed_record[0]=int(float(row[0]))
                         break
 
             for compa in self.all_compas:
                 self.compa_conditions[compa]['TIME']=needed_record[0]
+                #print(needed_record)
             self.compa_conditions['outside']['TIME']=needed_record[0]
 
             for m in range(len(needed_record)):
+                #print(self._headers[letter]['params'][m])
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
+                    #print('PRZESZLO')
                     self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
+
 # }}}
     def xy2room(self,q):# {{{
         ''' 
