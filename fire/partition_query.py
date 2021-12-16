@@ -187,6 +187,7 @@ class PartitionQuery:
                 for x in range(4):
                     next(reader)
                 for row in reader:
+                    print(float(row[0]))
                     if int(float(row[0])) == time:
                         needed_record=[float(j) for j in row]
                         needed_record[0]=int(float(row[0]))
