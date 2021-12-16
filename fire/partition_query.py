@@ -182,14 +182,14 @@ class PartitionQuery:
 
         for letter in ['compartments', 'devices', 'vents']:
             f = '{}_{}.csv'.format(self.sim_name, letter)
-            print(f)
+            #print(f)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):
                     next(reader)
                 for row in reader:
                     #print(float(row[0]))
-                    print(row)
+                    #print(row)
                     if int(float(row[0])) == time:
                         needed_record=[(float(j)) for j in row]
                         needed_record[0]=int(float(row[0]))
@@ -345,8 +345,8 @@ class PartitionQuery:
 
         finals=[]
 
-        for letter in ['n', 's']:
-            f = 'cfast_{}.csv'.format(letter)
+        for letter in ['compartments', 'devices', 'vents']:
+            f = '{}_{}.csv'.format(self.sim_name, letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):
