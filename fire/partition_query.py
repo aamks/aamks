@@ -114,7 +114,7 @@ class PartitionQuery:
 # }}}
 
     
-    def copy_csv_files(self): #copying files only is only for debugging - has to be deleted
+    def copy_csv_files(self): #copying files - only for debugging - has to be deleted
         print("start copying")
         dst = os.getcwd()
         #base_src = "/home/zarooba/CFAST/new/"
@@ -133,7 +133,6 @@ class PartitionQuery:
 
     def _cfast_headers(self):# {{{
         
-        #self.copy_csv_files()
         
         '''
         CFAST must have produced the first lines of csv by now, which is the header.
@@ -143,7 +142,7 @@ class PartitionQuery:
 
         self._headers=OrderedDict()
         for letter in ['compartments', 'devices', 'vents']:
-            f = '{}_{}.csv'.format(self.sim_name, letter)
+            f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 headers = []
@@ -167,7 +166,7 @@ class PartitionQuery:
             return 1
 
         needed_record_id=int(time/10)+1
-        with open('{}_compartments.csv'.format(self.sim_name)) as f:
+        with open('cfast_compartments.csv') as f:
             num_data_records=sum(1 for _ in f)-4
         if num_data_records > needed_record_id:
             return 1
@@ -188,7 +187,7 @@ class PartitionQuery:
             return
 
         for letter in ['compartments', 'devices', 'vents']:
-            f = '{}_{}.csv'.format(self.sim_name, letter)
+            f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):
@@ -365,7 +364,7 @@ class PartitionQuery:
         finals=[]
 
         for letter in ['compartments', 'devices', 'vents']:
-            f = '{}_{}.csv'.format(self.sim_name, letter)
+            f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):
