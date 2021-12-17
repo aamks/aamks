@@ -10,6 +10,7 @@ from include import Json
 from math import exp
 from include import Dump as dd
 import shutil
+#from cfast_debug import func_name_decor
 # }}}
 
 class PartitionQuery:
@@ -104,18 +105,22 @@ class PartitionQuery:
         self._default_conditions['ULO2']=20
 
         self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
-
+        #print('all compas', self.all_compas)
         self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
             self.compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME'] + list(self.relevant_params)])
             self.compa_conditions[compa]['COMPA']=compa
         self.compa_conditions['outside']=OrderedDict([('TIME', None)])
 # }}}
+
+    
     def copy_csv_files(self):
+        print("start copying")
         dst = os.getcwd()
-        print(dst)
-        base_src = "/home/zarooba/CFAST/new/"
-        self.sim_name = "cfastnew"
+        #base_src = "/home/zarooba/CFAST/new/"
+        base_src = "/home/zarooba/CFAST/new/new1/"
+        #self.sim_name = "cfastnew"
+        self.sim_name = "newcfast2"
         all_files = ["{}_compartments.csv".format(self.sim_name),"{}_devices.csv".format(self.sim_name),"{}_vents.csv".format(self.sim_name)]
         for file in all_files:
             src= "{}{}".format(base_src,file)
@@ -123,11 +128,13 @@ class PartitionQuery:
                 shutil.copy(src, dst+'/')
             except:
                 print("cos poszlo nie tak")
+            else:
+                print("coppying done properly")
 
     def _cfast_headers(self):# {{{
-        print("start copy")
+        
         self.copy_csv_files()
-        print("end copy")
+        
         '''
         CFAST must have produced the first lines of csv by now, which is the header.
         Get 3 first rows from n,s,w files and make headers: params and geoms.
@@ -182,14 +189,12 @@ class PartitionQuery:
 
         for letter in ['compartments', 'devices', 'vents']:
             f = '{}_{}.csv'.format(self.sim_name, letter)
-            print(f)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
                 for x in range(4):
                     next(reader)
                 for row in reader:
                     #print(float(row[0]))
-                    #print(row)
                     if int(float(row[0])) == time:
                         needed_record=[(float(j)) for j in row]
                         needed_record[0]=int(float(row[0]))
@@ -210,15 +215,16 @@ class PartitionQuery:
                 #print(self._headers[letter]['params'][m])
                 #print('headpm', self._headers[letter]['params'][m])
                 #print('relp',self.relevant_params)
-                print('geomm',self._headers[letter]['geoms'][m])
+                #print('geomm',self._headers[letter]['geoms'][m])
                 #print('ac:',self.all_compas)
                 #print(self._headers[letter]['geoms'][m] in self.all_compas)   
                 #print(self._headers[letter]['params'][m] in self.relevant_params)
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
-                    print('PRZESZLO')
+                    #print('PRZESZLO')
                     self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
             #print(self._headers[letter]['params'])
             #print(self.relevant_params)
+            #print(self._headers[letter]['geoms'])
 # }}}
     def xy2room(self,q):# {{{
         ''' 
