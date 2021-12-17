@@ -141,7 +141,7 @@ class PartitionQuery:
         '''
 
         self._headers=OrderedDict()
-        for letter in ['compartments', 'devices', 'vents']:
+        for letter in ['compartments', 'devices', 'vents', 'walls']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
@@ -190,7 +190,7 @@ class PartitionQuery:
                 self.compa_conditions[room]['ULO2']=20
             return
 
-        for letter in ['compartments', 'devices', 'vents']:
+        for letter in ['compartments', 'devices', 'vents','walls']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
@@ -369,7 +369,7 @@ class PartitionQuery:
 
         finals=[]
 
-        for letter in ['compartments', 'devices', 'vents']:
+        for letter in ['compartments', 'devices', 'vents','walls']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
