@@ -114,7 +114,7 @@ class PartitionQuery:
 # }}}
 
     
-    def copy_csv_files(self):
+    def copy_csv_files(self): #copying files only is only for debugging - has to be deleted
         print("start copying")
         dst = os.getcwd()
         #base_src = "/home/zarooba/CFAST/new/"
@@ -133,7 +133,7 @@ class PartitionQuery:
 
     def _cfast_headers(self):# {{{
         
-        self.copy_csv_files()
+        #self.copy_csv_files()
         
         '''
         CFAST must have produced the first lines of csv by now, which is the header.
