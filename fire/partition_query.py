@@ -96,8 +96,8 @@ class PartitionQuery:
         'HRR', 'HRRL', 'HRRU', 'IGN', 'LLCO', 'LLCO2', 'LLH2O', 'LLHCL',
         'LLHCN', 'LLN2', 'LLO2', 'LLOD', 'LLT', 'LLTS', 'LLTUHC', 'LWALLT',
         'PLUM', 'PRS', 'PYROL', 'TRACE', 'ULCO', 'ULCO2', 'ULH2O', 'ULHCL',
-        'ULHCN', 'ULN2', 'ULO2', 'ULOD', 'ULT', 'ULTS', 'ULTUHC', 'UWALLT',
-        'VOL')
+        'ULHCN', 'ULN2', 'ULO2', 'ULOD', 'ULT', 'ULTS', 'ULTUHC', 'UWALLT','VOL',
+        'SENST','SENSACT','SENSGAST','SENSGASV') # from devices.csv - location in csv are "sp1","sp2" , for rest is 'r1' or 'c1' or sth like this
 
         self._default_conditions={}
         for i in self.relevant_params:
@@ -153,7 +153,11 @@ class PartitionQuery:
 
             self._headers[letter]=OrderedDict()
             self._headers[letter]['params']=headers[0]
+            
+            #print(self._headers[letter]['params'])
             self._headers[letter]['geoms']=headers[2]
+            #print(self._headers[letter]['geoms'])
+
 # }}}
     def cfast_has_time(self,time):# {{{
         ''' 
@@ -220,6 +224,8 @@ class PartitionQuery:
                 #print(self._headers[letter]['params'][m] in self.relevant_params)
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
                     #print('PRZESZLO')
+                    #print(self._headers[letter]['params'][m])
+                    #if 'ULTUHC' in self._headers[letter]['params'][m]: print("jest")
                     self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
             #print(self._headers[letter]['params'])
             #print(self.relevant_params)

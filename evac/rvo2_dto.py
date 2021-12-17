@@ -255,7 +255,6 @@ class EvacEnv:
         for room in self.room_list.keys():
             opacity =  0.0
             hgt = self.smoke_query.compa_conditions[str(room)]['HGT']
-            #print('hgt to',hgt)
             if hgt == None:
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room).split('.')[0]]['ULOD'])
             elif hgt <= self.config['LAYER_HEIGHT']:
