@@ -97,14 +97,19 @@ class PartitionQuery:
         'LLHCN', 'LLN2', 'LLO2', 'LLOD', 'LLT', 'LLTS', 'LLTUHC', 'LWALLT',
         'PLUM', 'PRS', 'PYROL', 'TRACE', 'ULCO', 'ULCO2', 'ULH2O', 'ULHCL',
         'ULHCN', 'ULN2', 'ULO2', 'ULOD', 'ULT', 'ULTS', 'ULTUHC', 'UWALLT','VOL',
-        'SENST','SENSACT','SENSGAST','SENSGASV') # from devices.csv - location in csv are "sp1","sp2" , for rest is 'r1' or 'c1' or sth like this
+        'SENST','SENSACT','SENSGAST','SENSGASV') # from devices.csv - location in csv are "sp1","sp2" , for rest is 'r1' or 'c1'
+        """
+        all_compas are hardcoded with all_compas.extend("sp1","sp2") - the way how compa_conditions are represented has to be discussed
+
+        """
 
         self._default_conditions={}
         for i in self.relevant_params:
             self._default_conditions[i]=0
         self._default_conditions['ULO2']=20
-
+        #print(self.all_compas)
         self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
+        self.all_compas.extend(['sp1','sp2'])
         #print('all compas', self.all_compas)
         self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
@@ -131,13 +136,20 @@ class PartitionQuery:
             else:
                 print("coppying done properly")
 
+
+
     def _cfast_headers(self):# {{{
         
         
         '''
+        in old version:
         CFAST must have produced the first lines of csv by now, which is the header.
         Get 3 first rows from n,s,w files and make headers: params and geoms.
         Happens only once.
+        in newer version:
+        the same, but in files: 'compartments', 'devices', 'vents', 'walls'
+
+
         '''
 
         self._headers=OrderedDict()
@@ -157,6 +169,7 @@ class PartitionQuery:
             #print(self._headers[letter]['params'])
             self._headers[letter]['geoms']=headers[2]
             #print(self._headers[letter]['geoms'])
+        
 
 # }}}
     def cfast_has_time(self,time):# {{{
@@ -177,6 +190,7 @@ class PartitionQuery:
         else:
             return 0
 # }}}
+    
 
     def read_cfast_record(self, time):# {{{
         ''' 
@@ -190,7 +204,7 @@ class PartitionQuery:
                 self.compa_conditions[room]['ULO2']=20
             return
 
-        for letter in ['compartments', 'devices', 'vents','walls']:
+        for letter in ['compartments','devices','vents','walls']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
                 reader = csv.reader(csvfile, delimiter=',')
@@ -223,13 +237,20 @@ class PartitionQuery:
                 #print(self._headers[letter]['geoms'][m] in self.all_compas)   
                 #print(self._headers[letter]['params'][m] in self.relevant_params)
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
-                    #print('PRZESZLO')
                     #print(self._headers[letter]['params'][m])
-                    #if 'ULTUHC' in self._headers[letter]['params'][m]: print("jest")
+                    #if 'SENST' in self._headers[letter]['params'][m]: print("jest")
                     self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
             #print(self._headers[letter]['params'])
             #print(self.relevant_params)
             #print(self._headers[letter]['geoms'])
+            #print(self.compa_conditions)
+            #print(self.all_compas)
+            #print(self.compa_conditions['sp1'])
+            
+
+
+
+
 # }}}
     def xy2room(self,q):# {{{
         ''' 
