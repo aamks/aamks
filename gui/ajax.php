@@ -230,9 +230,14 @@ function main() { /*{{{*/
 
 	// sanitize all $_POST, Cyril Vallicari from https://www.ziwit.com/ thanks for schooling me! :)
 	// Aamks is now secure but broken :( We cannot globally escape $_POST because it hurts json files etc.
-//	 foreach($_POST as $k=>$v) {
-//		$_POST[$k]=escapeshellcmd($v);
-//	}
+	/*
+	
+	foreach($_POST as $k=>$v) {
+		$_POST[$k]=escapeshellcmd($v);
+		echo $_POST;
+		}
+	*/ 
+	
 
 	if(!empty($_SESSION['main']['user_id']))            {
 

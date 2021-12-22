@@ -246,7 +246,7 @@ class PartitionQuery:
             #print(self.compa_conditions)
             #print(self.all_compas)
             #print(self.compa_conditions['sp1'])
-            
+            #dd(self.compa_conditions)
 
 
 
