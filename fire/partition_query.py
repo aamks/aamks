@@ -9,8 +9,7 @@ from include import Sqlite
 from include import Json
 from math import exp
 from include import Dump as dd
-import shutil
-#from cfast_debug import func_name_decor
+
 # }}}
 
 class PartitionQuery:
@@ -98,44 +97,20 @@ class PartitionQuery:
         'PLUM', 'PRS', 'PYROL', 'TRACE', 'ULCO', 'ULCO2', 'ULH2O', 'ULHCL',
         'ULHCN', 'ULN2', 'ULO2', 'ULOD', 'ULT', 'ULTS', 'ULTUHC', 'UWALLT','VOL',
         'SENST','SENSACT','SENSGAST','SENSGASV') # from devices.csv - location in csv are "sp1","sp2" , for rest is 'r1' or 'c1'
-        """
-        all_compas are hardcoded with all_compas.extend("sp1","sp2") - the way how compa_conditions are represented has to be discussed
-
-        """
+        
 
         self._default_conditions={}
         for i in self.relevant_params:
             self._default_conditions[i]=0
         self._default_conditions['ULO2']=20
-        #print(self.all_compas)
         self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
         self.all_compas.extend(['sp1','sp2'])
-        #print('all compas', self.all_compas)
         self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
             self.compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME'] + list(self.relevant_params)])
             self.compa_conditions[compa]['COMPA']=compa
         self.compa_conditions['outside']=OrderedDict([('TIME', None)])
 # }}}
-
-    
-    def copy_csv_files(self): #copying files - only for debugging - has to be deleted
-        print("start copying")
-        dst = os.getcwd()
-        #base_src = "/home/zarooba/CFAST/new/"
-        base_src = "/home/zarooba/CFAST/new/new1/"
-        #self.sim_name = "cfastnew"
-        self.sim_name = "newcfast2"
-        all_files = ["{}_compartments.csv".format(self.sim_name),"{}_devices.csv".format(self.sim_name),"{}_vents.csv".format(self.sim_name)]
-        for file in all_files:
-            src= "{}{}".format(base_src,file)
-            try:
-                shutil.copy(src, dst+'/')
-            except:
-                print("cos poszlo nie tak")
-            else:
-                print("coppying done properly")
-
 
 
     def _cfast_headers(self):# {{{
@@ -165,10 +140,7 @@ class PartitionQuery:
 
             self._headers[letter]=OrderedDict()
             self._headers[letter]['params']=headers[0]
-            
-            #print(self._headers[letter]['params'])
             self._headers[letter]['geoms']=headers[2]
-            #print(self._headers[letter]['geoms'])
         
 
 # }}}
@@ -211,7 +183,6 @@ class PartitionQuery:
                 for x in range(4):
                     next(reader)
                 for row in reader:
-                    #print(float(row[0]))
                     if int(float(row[0])) == time:
                         needed_record=[(float(j)) for j in row]
                         needed_record[0]=int(float(row[0]))
@@ -219,34 +190,12 @@ class PartitionQuery:
 
             for compa in self.all_compas:
                 self.compa_conditions[compa]['TIME']=needed_record[0]
-                #print(needed_record)
             self.compa_conditions['outside']['TIME']=needed_record[0]
 
             for m in range(len(needed_record)):
-                """
-                print(m,'-----')
-                print(self._headers[letter]['params'][m] in self.relevant_params)
-                print(self._headers[letter]['geoms'][m] in self.all_compas)
-                print('-----')
-                """
-                #print(self._headers[letter]['params'][m])
-                #print('headpm', self._headers[letter]['params'][m])
-                #print('relp',self.relevant_params)
-                #print('geomm',self._headers[letter]['geoms'][m])
-                #print('ac:',self.all_compas)
-                #print(self._headers[letter]['geoms'][m] in self.all_compas)   
-                #print(self._headers[letter]['params'][m] in self.relevant_params)
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
-                    #print(self._headers[letter]['params'][m])
-                    #if 'SENST' in self._headers[letter]['params'][m]: print("jest")
                     self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
-            #print(self._headers[letter]['params'])
-            #print(self.relevant_params)
-            #print(self._headers[letter]['geoms'])
-            #print(self.compa_conditions)
-            #print(self.all_compas)
-            #print(self.compa_conditions['sp1'])
-            #dd(self.compa_conditions)
+           
 
 
 
@@ -311,6 +260,7 @@ class PartitionQuery:
 # }}}
     def get_fed(self, position):# {{{
         conditions = self.get_conditions(position)
+
         hgt = conditions['HGT']
         if hgt == None:
             return 0.
@@ -413,4 +363,7 @@ class PartitionQuery:
         self.sf=Sqlite("finals.sqlite")
         self.sf.query("CREATE TABLE finals('time','param','value','compa','compa_type')")
         self.sf.executemany('INSERT INTO finals VALUES ({})'.format(','.join('?' * len(finals[0]))), finals)
+        print(self.sf.query("SELECT value,time FROM finals WHERE param='SENSGASV'"))
+
+
 # }}}
