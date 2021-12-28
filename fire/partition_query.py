@@ -9,7 +9,6 @@ from include import Sqlite
 from include import Json
 from math import exp
 from include import Dump as dd
-
 # }}}
 
 class PartitionQuery:
@@ -104,7 +103,6 @@ class PartitionQuery:
             self._default_conditions[i]=0
         self._default_conditions['ULO2']=20
         self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
-        self.all_compas.extend(['sp1','sp2'])
         self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
             self.compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME'] + list(self.relevant_params)])
