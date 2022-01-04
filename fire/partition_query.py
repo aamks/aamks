@@ -78,6 +78,20 @@ class PartitionQuery:
             z=tuple( int(n) for n in k.split("x") )
             self._cell2compa[z]=v
 # }}}
+
+    def extend_compas_by_devices(self):
+        with open('cfast_devices.csv', 'r') as csvfile:
+            reader = csv.reader(csvfile, delimiter=',')
+            skip = next(reader)
+            skip = next(reader)
+            devices_names = next(reader)
+            for name in devices_names[1:]: 
+                if name not in self.all_compas:
+                    self.all_compas.append(name)
+        
+                
+
+
     def _init_compa_conditions(self):  # {{{
         ''' 
         Prepare dict structure for cfast csv values. Csv contain some params that are
@@ -103,6 +117,7 @@ class PartitionQuery:
             self._default_conditions[i]=0
         self._default_conditions['ULO2']=20
         self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
+        self.extend_compas_by_devices() 
         self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
             self.compa_conditions[compa] = OrderedDict([(x, None) for x in ['TIME'] + list(self.relevant_params)])
@@ -361,7 +376,7 @@ class PartitionQuery:
         self.sf=Sqlite("finals.sqlite")
         self.sf.query("CREATE TABLE finals('time','param','value','compa','compa_type')")
         self.sf.executemany('INSERT INTO finals VALUES ({})'.format(','.join('?' * len(finals[0]))), finals)
-        print(self.sf.query("SELECT value,time FROM finals WHERE param='SENSGASV'"))
+        #print(self.sf.query("SELECT * FROM finals WHERE param='SENSGASV'"))
 
 
 # }}}
