@@ -327,6 +327,11 @@ class PartitionQuery:
         # min(ULT_COMPA)
         finals['max_temp_compa']=self.sf.query("SELECT MAX(value) FROM finals WHERE param='ULT'")[0]['MAX(value)']
 
+        #min detection time - need to be tested in big simulations  
+        #SENSACT gives only 0 (not activeted) or 1(activated) - query finds the least time 
+        finals['min_time_detection']=self.sf.query("SELECT MIN(time) from finals where param='SENSACT' AND value>0")
+
+
         c_const = 5
         # min(ULOD_COR)
         ul_od_cor = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='c' AND param='ULOD'")[0]['MAX(value)']
@@ -376,7 +381,6 @@ class PartitionQuery:
         self.sf=Sqlite("finals.sqlite")
         self.sf.query("CREATE TABLE finals('time','param','value','compa','compa_type')")
         self.sf.executemany('INSERT INTO finals VALUES ({})'.format(','.join('?' * len(finals[0]))), finals)
-        #print(self.sf.query("SELECT * FROM finals WHERE param='SENSGASV'"))
-
+        
 
 # }}}
