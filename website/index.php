@@ -9,7 +9,6 @@ $menu="
 <li class='lnav'><a href=?node=papers>Papers</a>
 <li class='lnav'><a target=_blank href=https://github.com/aamks/aamks>Github</a>
 <li class='lnav'><a href=?node=authors>Authors</a>
-
 </ul>
 ";
 /*}}}*/
