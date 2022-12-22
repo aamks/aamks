@@ -69,14 +69,22 @@ class Worker:
 
 
     def get_logger(self, logger_name):
-        #FORMATTER = logging.Formatter("%(asctime)s — %(name)s — %(levelname)s — %(message)s")
-        LOG_FILE = "/tmp/aamks_{}.log".format(self.sim_id)
+        FORMATTER = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
+        LOG_FILE = "/home/aamks_users/aamks.log"
         file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
-        #file_handler.setFormatter(FORMATTER)
+        file_handler.setFormatter(FORMATTER)
+        file_handler.setLevel(logging.INFO)
+
         logger = logging.getLogger(logger_name)
-        logger.setLevel(eval('logging.{}'.format(self.config['LOGGING_MODE'])))
+        #logger.setLevel(eval('logging.{}'.format(self.config['LOGGING_MODE'])))
+        logger.setLevel(logging.DEBUG)
         logger.addHandler(file_handler)
         logger.propagate = False
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.ERROR)
+        ch.setFormatter(FORMATTER)
+        logger.addHandler(ch)
+
         return logger
 
     def download_inputs(self):
@@ -272,6 +280,7 @@ class Worker:
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
                 time_frame += 10
             else:
+                # TODO: endless loop, propably cfast error
                 time.sleep(1)
             self.wlogger.info('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
             if time_frame > (self.vars['conf']['simulation_time'] - 10):
