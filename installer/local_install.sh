@@ -189,15 +189,16 @@ sudo chmod -R g+w /home/aamks_users
 sudo chmod -R g+s /home/aamks_users
 sudo ln -sf /home/aamks_users /var/www/ssl/
 sudo find /home/aamks_users -type f -exec chmod 664 {} \;
+
 cd "/usr/local/aamks/installer" || exit;
-psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'aamks'" | grep -q 1 | psql -U postgres -c "CREATE DATABASE aamks"
-psql -U postgres -tc "SELECT 1 FROM pg_user WHERE username = 'aamks'" | grep -q 1 || psql -U postgres -c "CREATE USER aamks WITH PASSWORD '$AAMKS_PG_PASS'";
+sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname = 'aamks'" | grep -q 1 || sudo -u postgres psql -c "CREATE DATABASE aamks"
+sudo -u postgres psql -tc "SELECT 1 FROM pg_user WHERE usename = 'aamks'" | grep -q 1 || psql -U postgres -c "CREATE USER aamks WITH PASSWORD '$AAMKS_PG_PASS'";
 sudo -u postgres psql -f sql.sql
 
 # Generate database tables 
 bash play.sh
 
-# These commands are for quick setup of SSL on your computer. You should really configure SSL for your site."
+# These commands are for quick setup of SSL on :your computer. You should really configure SSL for your site."
 sudo a2enmod ssl
 sudo a2ensite default-ssl.conf
 sudo sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/ssl/' /etc/apache2/sites-available/000-default.conf
