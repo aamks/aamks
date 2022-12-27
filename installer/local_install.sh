@@ -58,60 +58,68 @@ fi
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
 
 # RVO2
-echo; echo; echo "Installing RVO2 (agents collisions library) ..."; echo; echo;
-[ -d Python-RVO2 ] && { git -C Python-RVO2 pull; } || { git clone https://github.com/sybrenstuvel/Python-RVO2; }
-cd Python-RVO2 || exit
-echo "Build RVO2..."
-python3 setup.py build
-echo
-echo "Build RVO2 exit code - " $? 
-echo "Installing RVO2..."
-sudo python3 setup.py install
-echo
-echo "Installing RVO2 exit code - " $?
+pip list | grep pyrvo2
+if [ $? -ne 0 ];then 
+	echo "pyrvo2 installed"
+else
+	echo; echo; echo "Installing RVO2 (agents collisions library) ..."; echo; echo;
+	[ -d Python-RVO2 ] && { git -C Python-RVO2 pull; } || { git clone https://github.com/sybrenstuvel/Python-RVO2; }
+	cd Python-RVO2 || exit
+	echo "Build RVO2..."
+	python3 setup.py build
+	echo
+	echo "Build RVO2 exit code - " $? 
+	echo "Installing RVO2..."
+	sudo python3 setup.py install
+	echo
+	echo "Installing RVO2 exit code - " $?
+fi
 cd || exit
 
 # recast
-wget https://golang.org/dl/go1.15.1.linux-amd64.tar.gz
-if [ $? -ne 0 ]; then
-	echo "Golang download failure - check your network connection"
-	exit
-fi
-sudo tar -C /usr/local -xzf go1.15.1.linux-amd64.tar.gz
-echo
-echo "Extracting go exit code - " $? 
-sudo rm go1.15.1.linux-amd64.tar.gz
-echo "PATH=\"/usr/local/go/bin:\$PATH\"" >> ~/.profile
-export PATH=$PATH:/usr/local/go/bin
-echo; echo; echo "Installing recast (path finding library, navmesh producer)..."; echo; echo;
-cd || exit
-go get -u github.com/arl/go-detour/cmd/recast
-if [ $? -ne 0 ]; then
-	echo "go get -u...  failure"
-	exit
-fi
-[ -f ~/go/bin/recast ] || {
-        echo " ~/go/bin/recast is missing. It is likely that your golang version is obsolete.";
-echo "Perhaps the below commands can fix golang. Once you have fixed golang, you can rerun the installer.
-sudo add-apt-repository ppa:longsleep/golang-backports
-sudo apt update
-sudo apt install golang-go";exit; }
+if [ -f /usr/local/bin/recast ] then
+	echo "recast installed"
+else 
+	wget https://golang.org/dl/go1.15.1.linux-amd64.tar.gz
+	if [ $? -ne 0 ]; then
+		echo "Golang download failure - check your network connection"
+		exit
+	fi
+	sudo tar -C /usr/local -xzf go1.15.1.linux-amd64.tar.gz
+	echo
+	echo "Extracting go exit code - " $? 
+	sudo rm go1.15.1.linux-amd64.tar.gz
+	echo "PATH=\"/usr/local/go/bin:\$PATH\"" >> ~/.profile
+	export PATH=$PATH:/usr/local/go/bin
+	echo; echo; echo "Installing recast (path finding library, navmesh producer)..."; echo; echo;
+	cd || exit
+	go get -u github.com/arl/go-detour/cmd/recast
+	if [ $? -ne 0 ]; then
+		echo "go get -u...  failure"
+		exit
+	fi
+	[ -f ~/go/bin/recast ] || {
+			echo " ~/go/bin/recast is missing. It is likely that your golang version is obsolete.";
+	echo "Perhaps the below commands can fix golang. Once you have fixed golang, you can rerun the installer.
+	sudo add-apt-repository ppa:longsleep/golang-backports
+	sudo apt update
+	sudo apt install golang-go";exit; }
 
-sudo mv ~/go/bin/recast /usr/local/bin
-echo "Recast should be now installed"
+	sudo mv ~/go/bin/recast /usr/local/bin
+	echo "Recast should be now installed"
 
-# detour
-echo; echo; echo "Installing detour (path finding library, navmesh navigator) ..."; echo; echo;
-cd || exit
-[ -d recastlib ] && { git -C recastlib pull; } || { git clone https://github.com/layzerar/recastlib.git; }
-cd recastlib || exit
-cp -rf ./Recast\(Patched\)/Detour/ ./Recast/
-sudo python3 setup.py install
-if [ $? -ne 0 ]; then
-	echo "python3 setup.py install... Detour install failure"
-	exit
+	# detour
+	echo; echo; echo "Installing detour (path finding library, navmesh navigator) ..."; echo; echo;
+	cd || exit
+	[ -d recastlib ] && { git -C recastlib pull; } || { git clone https://github.com/layzerar/recastlib.git; }
+	cd recastlib || exit
+	cp -rf ./Recast\(Patched\)/Detour/ ./Recast/
+	sudo python3 setup.py install
+	if [ $? -ne 0 ]; then
+		echo "python3 setup.py install... Detour install failure"
+		exit
+	fi
 fi
-
 # mkdir if there is not any
 if [ ! -d  /home/aamks_users ]; then
 	sudo mkdir /home/aamks_users
@@ -169,8 +177,9 @@ rm "$temp"
 echo; echo; echo  "sudo service apache2 restart..."
 sudo service apache2 restart
 
-
-sudo mkdir -p "$AAMKS_PROJECT"
+if [ ! -d  "$AAMKS_PROJECT" ]; then
+	sudo mkdir -p "$AAMKS_PROJECT"
+fi
 sudo cp -r "$AAMKS_PATH"/installer/demo /home/aamks_users/demo@aamks/
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.
@@ -181,8 +190,8 @@ sudo chmod -R g+s /home/aamks_users
 sudo ln -sf /home/aamks_users /var/www/ssl/
 sudo find /home/aamks_users -type f -exec chmod 664 {} \;
 cd "/usr/local/aamks/installer" || exit;
-sudo -u postgres psql -c 'CREATE DATABASE aamks' 2>/dev/null
-sudo -u postgres psql -c "CREATE USER aamks WITH PASSWORD '$AAMKS_PG_PASS'";
+psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'aamks'" | grep -q 1 | psql -U postgres -c "CREATE DATABASE aamks"
+psql -U postgres -tc "SELECT 1 FROM pg_user WHERE username = 'aamks'" | grep -q 1 || psql -U postgres -c "CREATE USER aamks WITH PASSWORD '$AAMKS_PG_PASS'";
 sudo -u postgres psql -f sql.sql
 
 # Generate database tables 
