@@ -208,7 +208,7 @@ class EvacEnv:
                 try:
                     fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i))
                     if i == 0:
-                        self.elog.info('FED calculated: {}'.format(fed))
+                        self.elog.debug('FED calculated: {}'.format(fed))
                 except:
                     self.elog.warning('Simulation without FED')
                     fed = 0.0
