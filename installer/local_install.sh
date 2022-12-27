@@ -77,7 +77,7 @@ fi
 cd || exit
 
 # recast
-if [ -f /usr/local/bin/recast ] then
+if [ -f /usr/local/bin/recast ]; then
 	echo "recast installed"
 else 
 	wget https://golang.org/dl/go1.15.1.linux-amd64.tar.gz
