@@ -46,7 +46,15 @@ sudo chown -R "$USER":"$USER" /etc/aamksconf.json
 echo "Check if aamks is download in /home/USER directory..."
 cd || exit
 [ -d aamks ] || { git clone https://github.com/aamks/aamks; }
-sudo mv aamks "$AAMKS_PATH"
+
+# clear $AAMKS_PATH if there is already any content
+if [ -d "$AAMKS_PATH" ]; then
+	sudo rm -r "$AAMKS_PATH"
+	sudo mv aamks "$AAMKS_PATH"
+else
+	sudo mv aamks "$AAMKS_PATH"
+fi
+
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
 
 # RVO2
@@ -103,7 +111,12 @@ if [ $? -ne 0 ]; then
 	echo "python3 setup.py install... Detour install failure"
 	exit
 fi
-sudo mkdir /home/aamks_users
+
+# mkdir if there is not any
+if [ ! -d  /home/aamks_users ]; then
+	sudo mkdir /home/aamks_users
+fi
+
 sudo chmod 777 /home/aamks_users
 sudo mkdir -p /var/www/ssl/
 sudo ln -sf "$AAMKS_PATH"/gui /var/www/ssl/aamks
