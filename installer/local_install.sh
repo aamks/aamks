@@ -123,7 +123,7 @@ sudo ln -sf "$AAMKS_PATH"/gui /var/www/ssl/aamks
 
 # www-data user needs AAMKS_PG_PASS"
 temp=$(mktemp)
-sudo cat /etc/apache2/envvars | grep -v AAMKS_ | grep -v umask > "$temp"
+sudo cat /etc/apache2/envvars | grep -v AAMKS_ | grep -v umask | grep -v PYTHONPATH > "$temp"
 echo "umask 0002" >> "$temp"
 echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> "$temp"
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> "$temp"
@@ -138,7 +138,7 @@ sudo cp "$temp" /etc/apache2/envvars
 rm "$temp"
 
 temp=$(mktemp)
-sudo cat ~/.bashrc > "$temp"
+sudo cat ~/.bashrc | grep -v AAMKS_ | grep -v umask  | grep -v USER | grep -v LOGNAME | grep -v HOSTNAME > "$temp"
 echo "umask 0002" >> "$temp"
 echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> "$temp"
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> "$temp"
@@ -154,8 +154,8 @@ echo "export AAMKS_PROJECT='$AAMKS_PROJECT'" >> "$temp"
 echo "export AAMKS_USER_ID=1" >> "$temp"
 echo "export AAMKS_USE_GEARMAN=0" >> "$temp"
 echo "export USER='$(id -un)'" >> "$temp"
-echo "export USERNAME='$USER'" >> "$temp"
-echo "export LOGNAME='$USER'" >> "$temp"
+echo "export USERNAME='$(id -un)'" >> "$temp"
+echo "export LOGNAME='$(id -un)'" >> "$temp"
 echo "export HOSTNAME='$HOSTNAME'" >> "$temp"
 echo "alias aamks='cd /usr/local/aamks/'" >> "$temp"
 echo "alias aamks.manager='cd /usr/local/aamks/manager; python3 manager.py'" >> "$temp"
