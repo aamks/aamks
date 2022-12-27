@@ -174,8 +174,8 @@ sudo mkdir -p "$AAMKS_PROJECT"
 sudo cp -r "$AAMKS_PATH"/installer/demo /home/aamks_users/demo@aamks/
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.
-sudo usermod -a -G www-data $USER
-sudo chown -R $USER:www-data /home/aamks_users
+sudo usermod -a -G www-data $USERNAME
+sudo chown -R $USERNAME:www-data /home/aamks_users
 sudo chmod -R g+w /home/aamks_users
 sudo chmod -R g+s /home/aamks_users
 sudo ln -sf /home/aamks_users /var/www/ssl/
