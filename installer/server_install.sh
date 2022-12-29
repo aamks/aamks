@@ -189,5 +189,6 @@ echo "That means /var/www/ssl/aamks must be served at http://127.0.0.1/aamks"
 echo 
 echo 
 echo "Inspecting /etc/apache2/sites-available/000-default.conf for your DocumentRoot"
+echo "Already DocumentRoot is set to: "
 cat /etc/apache2/sites-available/000-default.conf  | grep -i DocumentRoot
 

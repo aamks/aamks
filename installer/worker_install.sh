@@ -20,9 +20,12 @@ install() { #{{{
 	rm -rf $_AAMKS_PATH 
 	sudo locale-gen en_US.UTF-8
 	sudo apt-get update
-	sudo apt-get --yes install git python3-pip xdg-utils unzip cmake gearman ipython3 python3-urllib3 libboost-python-dev libgfortran4
+	sudo apt-get --yes install git python3-pip xdg-utils unzip cmake gearman ipython3 python3-urllib3 libboost-python-dev libgfortran5
 	sudo -H pip3 install --upgrade pip
 	sudo -H pip3 install shapely scipy numpy Cython
+	if [ ! -f /usr/lib/x86_64-linux-gnu/libboost_python3.so  ]; then
+		sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python3*.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
+	fi
 	sudo rm -rf /etc/aamksconf.json
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
 	[ -d aamks ] || { git clone https://github.com/aamks/aamks; }
@@ -39,7 +42,7 @@ install() { #{{{
 	cd
 
 	# recast
-	wget wget https://golang.org/dl/go1.15.1.linux-amd64.tar.gz 
+	wget https://golang.org/dl/go1.15.1.linux-amd64.tar.gz 
 	sudo tar -C /usr/local -xzf go1.15.1.linux-amd64.tar.gz
 	echo "PATH=\"/usr/local/go/bin:\$PATH\"" >> ~/.profile
 	export PATH=$PATH:/usr/local/go/bin
