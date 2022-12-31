@@ -80,20 +80,20 @@ cd || exit
 if [ -f /usr/local/bin/recast ]; then
 	echo "recast installed"
 else 
-	wget https://golang.org/dl/go1.15.1.linux-amd64.tar.gz
+	wget https://golang.org/dl/go1.19.4.linux-amd64.tar.gz
 	if [ $? -ne 0 ]; then
 		echo "Golang download failure - check your network connection"
 		exit
 	fi
-	sudo tar -C /usr/local -xzf go1.15.1.linux-amd64.tar.gz
+	sudo tar -C /usr/local -xzf go1.19.4.linux-amd64.tar.gz
 	echo
 	echo "Extracting go exit code - " $? 
-	sudo rm go1.15.1.linux-amd64.tar.gz
+	sudo rm go1.19.4.linux-amd64.tar.gz
 	echo "PATH=\"/usr/local/go/bin:\$PATH\"" >> ~/.profile
 	export PATH=$PATH:/usr/local/go/bin
 	echo; echo; echo "Installing recast (path finding library, navmesh producer)..."; echo; echo;
 	cd || exit
-	go get -u github.com/arl/go-detour/cmd/recast
+	go install github.com/arl/go-detour/cmd/recast@latest
 	if [ $? -ne 0 ]; then
 		echo "go get -u...  failure"
 		exit
