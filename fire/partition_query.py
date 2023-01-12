@@ -188,7 +188,7 @@ class PartitionQuery:
                 self.compa_conditions[room]['TIME']=time
                 self.compa_conditions[room]['ULO2']=20
             return
-
+        # 'letter' can be changed to name - missleading
         for letter in ['compartments','devices','vents','walls']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
@@ -261,7 +261,6 @@ class PartitionQuery:
 
         if conditions == 'outside':
             print('outside')
-
         hgt = conditions['HGT']
         if hgt == None:
             return 0, conditions['COMPA']

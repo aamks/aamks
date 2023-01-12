@@ -11,7 +11,6 @@ import matplotlib
 from matplotlib.collections import PatchCollection
 from statsmodels.distributions.empirical_distribution import ECDF as ecdf
 import matplotlib.ticker as tic
-from ete3 import Tree #, TreeStyle, TextFace
 import sys
 sys.path.insert(0, '/usr/local/aamks')
 import os
@@ -54,10 +53,10 @@ class processDists:
         query = "SELECT dcbe_time FROM simulations where project = {} AND scenario_id = {} AND dcbe_time is not null AND dcbe_time < 9999".format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
         dcbe = [int(i[0]) for i in results]
-        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True}, bins=50)
+        sns_plot = sns.displot(dcbe, cumulative=True, bins=50)
         #plt.xlabel=('DCBE [s]')
         #plt.xlim([0,499])
-        fig = sns_plot.get_figure()
+        fig = sns_plot.fig
         fig.savefig("{}/picts/dcbe.png".format(self.dir))
         plt.clf()
 
@@ -66,7 +65,7 @@ class processDists:
         query = "SELECT run_time FROM simulations where project = {} AND scenario_id = {} AND dcbe_time is not null AND dcbe_time < 9999".format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
         dcbe = [int(i[0]) for i in results]
-        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True}, bins=50)
+        sns_plot = sns.histplot(dcbe, cumulative=True, bins=50)
         #plt.xlabel=('DCBE [s]')
         #plt.xlim([0,499])
         fig = sns_plot.get_figure()
@@ -84,10 +83,10 @@ class processDists:
             item = max(i.values())
             if item > 0:
                 wcbe.append(item)
-        sns_plot = sns.distplot(wcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
+        sns_plot = sns.displot(wcbe, cumulative=True, bins=50)
 #        plt.xlabel('WCBE [s]')
 #        plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.get_figure()
+        fig = sns_plot.fig
         fig.savefig("{}/picts/wcbe.png".format(self.dir))
         plt.clf()
 
@@ -96,10 +95,10 @@ class processDists:
             .format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
         dcbe = [float(i[0]) for i in results]
-        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
+        sns_plot = sns.displot(dcbe, cumulative=True, bins=50)
 #        sns.plt.xlabel('Wysokość warstwy dymu [cm]')
 #        sns.plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.get_figure()
+        fig = sns_plot.fig
         fig.savefig("{}/picts/height.png".format(self.dir))
         plt.clf()
 
@@ -108,10 +107,10 @@ class processDists:
             .format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
         dcbe = [float(i[0]) for i in results]
-        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
+        sns_plot = sns.displot(dcbe, cumulative=True, bins=50)
 #        sns.plt.xlabel('Wysokość warstwy dymu [cm]')
 #        sns.plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.get_figure()
+        fig = sns_plot.fig
         fig.savefig("{}/picts/hgt_cor.png".format(self.dir))
         plt.clf()
 
@@ -120,10 +119,10 @@ class processDists:
         query = "SELECT min_vis_compa FROM simulations where project = {} AND scenario_id = {} AND min_vis_compa < 60".format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
         vis = [float(i[0]) for i in results]
-        sns_plot = sns.distplot(vis, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
+        sns_plot = sns.displot(vis, cumulative=True, bins=50)
 #        sns.plt.xlabel('Zasięg widzialności [m]')
 #        sns.plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.get_figure()
+        fig = sns_plot.fig
         fig.savefig("{}/picts/vis.png".format(self.dir))
         plt.clf()
 
@@ -131,10 +130,10 @@ class processDists:
         query = "SELECT min_vis_cor FROM simulations where project = {} AND scenario_id = {} AND min_vis_cor < 60".format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
         vis = [float(i[0]) for i in results]
-        sns_plot = sns.distplot(vis, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
+        sns_plot = sns.displot(vis, cumulative=True, bins=50)
         #sns.plt.xlabel('Zasięg widzialności [m]')
         #sns.plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.get_figure()
+        fig = sns_plot.fig
         fig.savefig("{}/picts/vis_cor.png".format(self.dir))
         plt.clf()
 
@@ -149,10 +148,10 @@ class processDists:
         #print(param)
         dcbe_n = np.array(dcbe)
         self.t_k= len(dcbe_n[dcbe_n > 450])
-        sns_plot = sns.distplot(dcbe, hist_kws={'cumulative': True}, kde_kws={'cumulative': True, 'label': 'CDF'}, bins=50)
+        sns_plot = sns.displot(dcbe, cumulative=True, bins=50)
 #        sns.plt.xlabel('Temperatura ')
 #        sns.plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.get_figure()
+        fig = sns_plot.fig
         fig.savefig("{}/picts/temp.png".format(self.dir))
         plt.clf()
 
