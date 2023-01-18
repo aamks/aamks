@@ -1,7 +1,8 @@
+.gitignore
 /.idea
 /venv
 __pycache__/
 /htmlcov
 .coverage
-.gitignore
 coverage.xml
+.vscode/

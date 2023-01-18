@@ -66,6 +66,7 @@ class Worker:
         self.position_fed_tables_information = []
         ssl._create_default_https_context = ssl._create_unverified_context
         self.rows_to_insert = []
+        self.staircase = Staircase(name="Str1", floors=3, number_queues=2, doors=1, width=500, height=2965/3, offsetx=1500, offsety=0)
 
 
     def get_logger(self, logger_name):
@@ -268,6 +269,10 @@ class Worker:
                     smoke_row = dict()
                     for i in self.floors:
                         i.do_simulation(step)
+                        stairs_que = i.agents_to_stairs()
+                        for agent in stairs_que:
+                            if self.staircase.add_to_queues(floor=i.floor, agent_id=agent):
+                                i.move_to_stairs(agent)
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})

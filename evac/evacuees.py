@@ -9,7 +9,7 @@ import logging
 class Evacuees:
     def __init__(self):
         self.pedestrians = []
-
+        self.outsiders = []
 
 
     def add_pedestrian(self, pedestrian):
@@ -158,3 +158,13 @@ class Evacuees:
     def set_num_of_orca_lines(self, ped_no, num_of_lines):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].num_of_orca_lines = num_of_lines
+
+    def set_to_go(self, ped_no):
+        self.outsiders.append(self.pedestrians[ped_no])
+
+    def get_outsiders(self):
+        return self.outsiders
+
+    def get_to_stairs(self, agent):
+        self.outsiders.remove(agent)
+        
