@@ -204,7 +204,7 @@ class Staircase:
         """<b>Funkcja create_queues</b> tworzy kilka kolejek (obiekty klasy Queue)."""
         que = []
         for i in range(self.number_queues):
-            que.append(Queue(i, self.floors, self.floor_space))
+            que.append(Queue(f'Que-{i}', self.floors, self.floor_space))
         return que# }}}
     def create_floor_positions(self,floor=0):# {{{
         """<b>Funkcja create_floor_positions</b> pobiera parametr:<br>

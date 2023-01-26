@@ -15,6 +15,7 @@ from include import Vis
 from include import GetUserPrefs
 from geom.nav import Navmesh
 
+import subprocess
 import logging
 logger = logging.getLogger('AAMKS.init.py')
 
@@ -154,8 +155,10 @@ class OnEnd():
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
                 logger.info('start worker.py sim - %s', i)
-                exit_status = os.WEXITSTATUS(os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)))
-                if exit_status != 0:
+               
+                # exit_status = os.WEXITSTATUS(os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)))
+                exit_status = subprocess.run(["python3", "worker.py", "http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                if exit_status.returncode != 0:
                     logger.error('worker exit status - %s', exit_status)
                 else:
                     logger.info('finished worker.py')

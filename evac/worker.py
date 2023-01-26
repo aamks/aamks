@@ -263,7 +263,6 @@ class Worker:
                 for i in self.floors:
                     i.read_cfast_record(time_frame)
                     first_evacuue.append(i.evacuees.get_first_evacuees_time())
-
                 for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
                     time_row = dict()
                     smoke_row = dict()
@@ -271,11 +270,15 @@ class Worker:
                         i.do_simulation(step)
                         stairs_que = i.agents_to_stairs()
                         for agent in stairs_que:
-                            if self.staircase.add_to_queues(floor=i.floor, agent_id=agent):
+                            if self.staircase.add_to_queues(floor=int(i.floor), agent_id=agent):
                                 i.move_to_stairs(agent)
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})
+                    
+                    self.staircase.show_status()
+                    self.staircase.move()
+
                     if len(time_row) > 0:
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
