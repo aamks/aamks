@@ -28,6 +28,7 @@ from include import Dump as dd
 from math import sqrt
 
 
+
 class processDists:
 
     def __init__(self):
@@ -39,136 +40,100 @@ class processDists:
         self.dead = 0
         self.dcbe = []
         self.dir = sys.argv[1]
-        self.configs = self._get_json('{}/conf.json'.format(self.dir))
+        self.configs = self._get_json(f'{self.dir}/conf.json')
         self.p = Psql()
         self.avg_risk = list()
         self.err_risk = list()
-        if os.path.exists('{}/picts'.format(self.dir)):
-            shutil.rmtree('{}/picts'.format(self.dir))
-        os.makedirs('{}/picts'.format(self.dir))
+        if os.path.exists(f'{self.dir}/picts'):
+            shutil.rmtree(f'{self.dir}/picts')
+        os.makedirs(f'{self.dir}/picts')
         self.horisontal_time=dict({'0': 3, '1': 36, '2': 72, '3': 112, '4': 148, '5': 184, '6': 220})
 
-    def plot_dcbe_dist(self):
-#        plt.clf()
-        query = "SELECT dcbe_time FROM simulations where project = {} AND scenario_id = {} AND dcbe_time is not null AND dcbe_time < 9999".format(self.configs['project_id'], self.configs['scenario_id'])
-        results = self.p.query(query)
-        dcbe = [int(i[0]) for i in results]
-        sns_plot = sns.displot(dcbe, cumulative=True, bins=50)
-        #plt.xlabel=('DCBE [s]')
-        #plt.xlim([0,499])
-        fig = sns_plot.fig
-        fig.savefig("{}/picts/dcbe.png".format(self.dir))
+    # basic and the most used type of plot in the code
+    def cdf(self, data, path=None, label=None, hist=False):
+        if hist: 
+            plot = sns.displot(data, cumulative=True, stat='density', bins=50)
+        else:
+            plot = sns.displot(data, cumulative=True, kde=True, stat='density', bins=50, fill=True, kde_kws={'cut': 2})
+        if label:
+            plot.set_axis_labels(label)
+        fig = plot.fig
+        if path:
+            fig.savefig(os.path.join(self.dir, 'picts', path))
         plt.clf()
+    
+    # template for psql query
+    def quering(self, selects: str, wheres=[], raw=False, typ='int'):
+        base = f"SELECT {selects} FROM simulations WHERE project = {self.configs['project_id']} AND scenario_id = {self.configs['scenario_id']}"
+        query = " AND ".join([base] + wheres)
+        results = self.p.query(query)
+
+        if raw:
+            return results 
+        elif typ == 'int':
+            return [int(i[0]) for i in results]
+        elif typ == 'float':
+            return [float(i[0]) for i in results]
+        
+
+    def plot_dcbe_dist(self):
+        data = self.quering('dcbe_time', wheres=["dcbe_time is not null", "dcbe_time < 9999"])
+        self.cdf(data, path="dcbe.png")
 
     def plot_wcbe_dist_r(self):
-#        plt.clf()
-        query = "SELECT run_time FROM simulations where project = {} AND scenario_id = {} AND dcbe_time is not null AND dcbe_time < 9999".format(self.configs['project_id'], self.configs['scenario_id'])
-        results = self.p.query(query)
-        dcbe = [int(i[0]) for i in results]
-        sns_plot = sns.histplot(dcbe, cumulative=True, bins=50)
-        #plt.xlabel=('DCBE [s]')
-        #plt.xlim([0,499])
-        fig = sns_plot.get_figure()
-        fig.savefig("{}/picts/wcbe_r.png".format(self.dir))
-        plt.clf()
+        data = self.quering('run_time', wheres=["dcbe_time is not null", "dcbe_time < 9999"])
+        self.cdf(data, path="wcbe_r.png", hist=True)
 
     def plot_wcbe_dist(self):
-        query = "SELECT wcbe FROM simulations where project = {} AND scenario_id = {} AND dcbe_time is not null".format(self.configs['project_id'], self.configs['scenario_id'])
-        results = self.p.query(query)
-        wcbe = list()
-        dcbe = [json.loads(i[0]) for i in results]
+        raw = self.quering('wcbe',  wheres=["dcbe_time is not null"], raw=True)
+        data = list()
+        dcbe = [json.loads(i[0]) for i in raw]
         for i in dcbe:
             for key in i.keys():
                 i.update({key: (i[key] + int(self.horisontal_time[key]))})
             item = max(i.values())
             if item > 0:
-                wcbe.append(item)
-        sns_plot = sns.displot(wcbe, cumulative=True, bins=50)
-#        plt.xlabel('WCBE [s]')
-#        plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.fig
-        fig.savefig("{}/picts/wcbe.png".format(self.dir))
-        plt.clf()
+                data.append(item)
+        self.cdf(data, path="wcbe.png")
 
     def plot_min_height(self):
-        query = "SELECT min_hgt_compa * 100 FROM simulations where project = {} AND scenario_id = {} AND min_hgt_compa < 12.8"\
-            .format(self.configs['project_id'], self.configs['scenario_id'])
-        results = self.p.query(query)
-        dcbe = [float(i[0]) for i in results]
-        sns_plot = sns.displot(dcbe, cumulative=True, bins=50)
-#        sns.plt.xlabel('Wysokość warstwy dymu [cm]')
-#        sns.plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.fig
-        fig.savefig("{}/picts/height.png".format(self.dir))
-        plt.clf()
+        data = self.quering('min_hgt_compa * 100', wheres=['min_hgt_compa < 12.8'], typ='float')
+        self.cdf(data, path="height.png")
 
     def plot_min_height_cor(self):
-        query = "SELECT min_hgt_cor * 100 FROM simulations where project = {} AND scenario_id = {} AND min_hgt_cor < 12.8"\
-            .format(self.configs['project_id'], self.configs['scenario_id'])
-        results = self.p.query(query)
-        dcbe = [float(i[0]) for i in results]
-        sns_plot = sns.displot(dcbe, cumulative=True, bins=50)
-#        sns.plt.xlabel('Wysokość warstwy dymu [cm]')
-#        sns.plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.fig
-        fig.savefig("{}/picts/hgt_cor.png".format(self.dir))
-        plt.clf()
-
+        data = self.quering('min_hgt_cor * 100', wheres=['min_hgt_cor < 12.8'], typ='float')
+        self.cdf(data, path="hgt_cor.png")
 
     def plot_min_vis(self):
-        query = "SELECT min_vis_compa FROM simulations where project = {} AND scenario_id = {} AND min_vis_compa < 60".format(self.configs['project_id'], self.configs['scenario_id'])
-        results = self.p.query(query)
-        vis = [float(i[0]) for i in results]
-        sns_plot = sns.displot(vis, cumulative=True, bins=50)
-#        sns.plt.xlabel('Zasięg widzialności [m]')
-#        sns.plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.fig
-        fig.savefig("{}/picts/vis.png".format(self.dir))
-        plt.clf()
+        data = self.quering('min_vis_compa', wheres=['min_vis_compa < 60'], typ='float')
+        self.cdf(data, path="vis.png")
 
     def plot_min_vis_cor(self):
-        query = "SELECT min_vis_cor FROM simulations where project = {} AND scenario_id = {} AND min_vis_cor < 60".format(self.configs['project_id'], self.configs['scenario_id'])
-        results = self.p.query(query)
-        vis = [float(i[0]) for i in results]
-        sns_plot = sns.displot(vis, cumulative=True, bins=50)
-        #sns.plt.xlabel('Zasięg widzialności [m]')
-        #sns.plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.fig
-        fig.savefig("{}/picts/vis_cor.png".format(self.dir))
-        plt.clf()
+        data = self.quering('min_vis_cor', wheres=['min_vis_cor < 60'], typ='float')
+        self.cdf(data, path="vis_cor.png")
 
 
     def plot_max_temp(self):
-        query = "SELECT max_temp FROM simulations where project = {} AND scenario_id = {} and dcbe_time is " \
-                "not null AND max_temp < 900".format(self.configs['project_id'], self.configs['scenario_id'])
-        results = self.p.query(query)
-        dcbe = [float(i[0]) for i in results]
+        data = self.quering('max_temp', wheres=['dcbe_time is not null', 'max_temp < 900'], typ='float')
         dist = getattr(stat, 'norm')
-        param = dist.fit(dcbe)
-        #print(param)
-        dcbe_n = np.array(dcbe)
+        param = dist.fit(data)
+        dcbe_n = np.array(data)
         self.t_k= len(dcbe_n[dcbe_n > 450])
-        sns_plot = sns.displot(dcbe, cumulative=True, bins=50)
-#        sns.plt.xlabel('Temperatura ')
-#        sns.plt.ylabel('Prawdopodobieństwo')
-        fig = sns_plot.fig
-        fig.savefig("{}/picts/temp.png".format(self.dir))
-        plt.clf()
+        self.cdf(dcbe_n, path='temp.png')
 
     def calculate_ccdf(self):
         losses={'dead': list(), 'heavy': list(), 'light': list(), 'neglegible': list()}
+        results = self.quering('fed, id', wheres=['dcbe_time IS NOT NULL'], raw=True)
 
-        query = "SELECT fed, id FROM simulations where project = {} and scenario_id = {} " \
-                "and dcbe_time IS NOT NULL".format(self.configs['project_id'], self.configs['scenario_id'])
-        results = self.p.query(query)
         self.total = len(results)
+        print(self.total)
         row = [json.loads(i[0]) for i in results]
         fed=list()
         for i in row:
             temp_list = list()
             for key, values in i.items():
                 temp_list = temp_list + values
-                #print("KEY: {}, VALUE: {}\n".format(key, values))
+                print(f"KEY: {key}, VALUE: {values}\n")
             fed.append(collections.Counter(np.array(temp_list)))
 
         for item in fed:
@@ -185,6 +150,11 @@ class processDists:
                 if key == 'N':
                     losses['neglegible'].append(item[key])
 
+        for k in losses.keys():
+            l = len(losses[k])
+            if  l < self.total:
+                losses[k] = losses[k] + [0] * (self.total - l)
+
         self.losses = losses
 
     def plot_ccdf(self):
@@ -198,19 +168,24 @@ class processDists:
             if key == 'neglegible':
                 continue
             if len(self.losses[key]) == 0:
+                print(key)
                 continue 
-            dane = ecdf(self.losses[key])
+            dane = ecdf(self.losses[key], side='left')
+            print(key, sorted(self.losses[key]), 1-dane(sorted(self.losses[key])))
             axs[wykres].plot(sorted(self.losses[key]), 1-dane(sorted(self.losses[key])))
             axs[wykres].set_xlabel('Number of people')
             axs[wykres].set_ylabel('Likelihood')
             axs[wykres].set_title(key)
+            axs[wykres].set_xlim(left=0)
             wykres += 1
-            #axs[i].xaxis.set_major_formatter(tic.FormatStrFormatter('%4.f'))
 
         fig.tight_layout()
-        fig.savefig('{}/picts/ccdf.png'.format(self.dir))
+        fig.savefig(f'{self.dir}/picts/ccdf.png')
         fig.clf()
 
+###WK finished here###
+
+    # to calculate risk per one person
     def calculate_indvidual_risk(self):
         query = "SELECT i_risk FROM simulations where project = {} AND scenario_id = {} AND dcbe_time is not null AND i_risk is not null".format(self.configs['project_id'], self.configs['scenario_id'])
         results = self.p.query(query)
