@@ -1,6 +1,8 @@
 # === Modelowanie kolejki na klatce schodowej ===
 import numpy.random as random
 from math import ceil
+from itertools import compress
+
 """
 Importowanie niezbędnych modułów:<br>
     numpy.random -generowanie losowych liczb,<br>
@@ -16,25 +18,36 @@ class Queue:
     (funkcja give_index),jak również obliczania jak długo agent znajduje się w kolejce, na jakiej  jest pozycji i czy opuścił kolejkę
     (funkcja count, count_completed). 
     """
-    def __init__(self, name, floor, floor_space):# {{{
+    def __init__(self, name: str, floors: int, floor_space: int):# {{{
         """
         Generując daną kolejkę przypisywana jest jej nazwa (name), 
-        liczba pięter (floor), ilość miejsc między piętrami (floor_space). Tworzony jest wskaźnik określający czy nastąpiło przesunięcie,
+        liczba pięter - wysokość kolejki (floor), ilość miejsc między piętrami (floor_space). Tworzony jest wskaźnik określający czy nastąpiło przesunięcie,
         licznik poszczególnych agentów, a także formowana jest sama kolejka wypełniona pustymi polami. 
         """
         self.name = name
-        self.floor = floor
+        self.floors = floors
         self.floor_space = floor_space
         self.moved = False
         self.counter = {}
-        self.queue = ((floor-1)*floor_space+2)*[None]# }}}
+        self.queue = (floors*floor_space)*[None]# }}}
     def __repr__(self):# {{{
         """<b>Funkcja __repr__ </b> zwraca nazwę danej kolejki """
         return str(self.name)+"-queue"# }}}
     def __len__(self):# {{{
         """<b>Funkcja __len__</b> zwraca długość danej kolejki """
         return len(self.queue)# }}}
-    def add(self, floor, agent_id):# {{{
+    def __getitem__(self, key):
+        return self.queue[key]
+    def __setitem__(self, key, value):
+        self.queue[key] = value
+    def get_rand(self):
+            return random.randint(0,3)
+    def get_in(self, position, agent_id):
+        self.queue[position] = agent_id
+        self.counter[agent_id] = {"added_at":position,
+                                "cur_pos":position, "steps":0, 
+                                "finished":0, "id":agent_id}
+    def add(self, position, agent_id):# {{{
         """
         <b>Funkcja add</b> pobiera parametry:<br>
         floor -numer piętra na którym dodany ma być agent, <br>
@@ -51,17 +64,20 @@ class Queue:
         losowanie 1 do 3 z agentem przebywającym w kolejce, gdy dodawany agent wygra, funkcja
         dodaje go do kolejki i zwraca wartość 2.<br>
         W przypadku nie dodania agenta do kolejki funkcja zwraca 0.
-        """
-
-        if self.queue[floor*self.floor_space] is None:
-            if self.queue[floor*self.floor_space+1] is None:
-                self.queue[floor*self.floor_space] = agent_id
-                self.counter[agent_id] = [floor*self.floor_space, 0, 0]
+        """   
+        if self.moved:
+            if position != 0:
+                position += 1
+        if self.queue[position] is None:
+            if position == len(self.queue)-1:
+                self.get_in(position, agent_id)
+                return 1
+            if self.queue[position+1] is None:
+                self.get_in(position, agent_id)                
                 return 1
             else:
                 if not random.randint(0,3):
-                    self.queue[floor*self.floor_space] = agent_id
-                    self.counter[agent_id] = [floor*self.floor_space, 0, 0]
+                    self.get_in(position, agent_id)  
                     return 1
                 else:
                     return 0
@@ -69,11 +85,15 @@ class Queue:
             if not random.randint(0,3):
                 if not self.moved:
                     return 2
+                    # if self.can_move_in_next_step(position):
+                    #     return 2
+                    # else:
+                    #     return 0
                 else:
                     return 0
             else:
                 return 0# }}}
-    def insert(self, floor, agent_id):# {{{
+    def insert(self, position, agent_id):# {{{
         """
         <b>Funkcja insert</b> pobierająca parametry:<br>
         floor -numer piętra na którym dodany ma być agent, <br>
@@ -84,20 +104,22 @@ class Queue:
         jego miejsce dodania.
         """
         self.moved = True
-        self.queue.insert(floor*self.floor_space, agent_id)
-        self.counter[agent_id] = [floor*self.floor_space, 0, 0]# }}}
+        self.queue.insert(position, agent_id)
+        self.counter[agent_id] = {"added_at":position, 
+                                    "cur_pos":position, "steps":0, 
+                                    "finished":0, "id":agent_id}# }}}
     def pop(self):# {{{
         """
         <b>Funckja pop</b> usuwa pierwszy element z kolejki i dodaje puste pole
         na końcu w celu zachowania stałej wielkości kolejki. W przypadku gdy
-        usuwany jest agent, zapisywany jest fakt ukończenia kolejki, funkcja zwraca True.
+        usuself.q1[9] = "agent"wany jest agent, zapisywany jest fakt ukończenia kolejki, funkcja zwraca True.
         Gdy usuwane jest puste miejsce funkcja zwraca False.
         """
         data = self.queue.pop(0)
         self.queue.append(None)
         if data is not None:
-            self.counter[data].append("Done")
-            return True
+            self.counter.get(data, {})["finished"] = 1
+            return data
         return False# }}}
     def pop_none(self):# {{{
         """
@@ -109,12 +131,12 @@ class Queue:
         if self.queue[0] is None:
             self.queue.pop(0)
             self.queue.append(None)
+            return True
         else:
-            for i in range(len(self.queue)):
-                if self.queue[i] == None:
-                    del self.queue[i]
-                    self.queue.append(None)
-                    break# }}}
+            if self.only_pop_none():
+                self.queue.append(None)
+                return True
+            return False
     def only_pop(self):# {{{
         """
         <b>Funkcja only_pop</b> usuwa pierwszy element z kolejki. Gdy usuwa agenta,
@@ -122,10 +144,20 @@ class Queue:
         """
         data = self.queue.pop(0)
         if data is not None:
-            self.counter[data].append("Done")
-            return True
+            self.counter.get(data, {})["finished"] = 1
+            return data
         else:
             return False# }}}
+    def only_pop_none(self):
+        for i in range(len(self.queue)):
+            if self.queue[i] == None:
+                del self.queue[i]
+                return True
+        return False
+    def can_move_in_next_step(self, position):
+        if None in self.queue[:position] or position == 0:
+            return True
+        return False
     def count(self):# {{{
         """
         <b>Funkcja count</b> zlicza poszczególnym agentom jak długo znajdują się w kolejce,
@@ -133,18 +165,17 @@ class Queue:
         """
         for x, i in enumerate(self.queue):
             if i is not None:
-                self.counter[i][1] += 1
-                self.counter[i][2] = x# }}}
+                self.counter.get(i, {})['steps'] += 1
+                self.counter.get(i, {})['cur_pos'] = x# }}}
     def print_count(self):# {{{
         """<b>Funckja print_count</b> służy do wyświetlania na ekranie licznika."""
-        for i in self.counter.keys():
-            if len(self.counter[i])<4:
-                print("{:5}: \tenter  {} \tsteps  {} \tposition  {}".format(i,*self.counter[i]))
-            else:
-                print("{:5}: \tenter  {} \tsteps  {} \tposition  {} -- {}".format(i,*self.counter[i]))#}}}
+        if self.counter.keys():
+            print(self.name)
+            for i in self.counter.keys():
+                print(self.counter[i])#}}}
     def count_completed(self):# {{{
         """<b>Funkcja count_completed</b> zwraca liczbę agentów, którzy już opuścili kolejkę."""
-        return len([x for x in self.counter.values() if len(x)==4])# }}}
+        return sum([self.counter[x]["finished"] for x in self.counter.keys()])# }}}
     def count_insiders(self):# {{{
         """<b>Funkcja count_insiders</b> zwraca liczbę agentów, którzy przebywają w kolejce."""
         return len([x for x in self.queue if x is not None])# }}}
@@ -177,18 +208,18 @@ class Staircase:
     Istnieje opcja wyświetlenia stanu poszczególnych kolejek (funkcja show_status), obliczenia gęstości zapełnienia klatki
     (funkcja density2) oraz przepływu agentów przez wyjście (funkcja flow).
     """
-    def __init__(self, name="Str1", floors=3, number_queues=2, doors=1, width=500, height=2965/3, offsetx=1500, offsety=0):# {{{
+    def __init__(self, name: str="Str1", floors: int=3, number_queues: int=2, exits: int=1, width: float=500, height: float=2965/3, offsetx: int=1500, offsety: int=0):# {{{
         """
         Podczas tworzenia obiektu klasy Staircase nadawana jest mu nazwa (name), przypisywana liczba pięter (floors),
-        liczba kolejek klasy Queue (number_queues), liczba wyjść (doors), a także wprowadzane są wymiary klatki (width, height)
+        liczba kolejek klasy Queue (number_queues), liczba wyjść (exits), a także wprowadzane są wymiary klatki (width, height)
         oraz jej przesunięcie na potrzeby animacji (offsetx, offsety). Tworzony jest wskaźnik zliczający ilość agentów, którzy się poruszyli
-        w danym momencie. Obliczana jest długość przeciwprostokątnej rzutu klatki schodowej (lenght) w celu wyznaczenia pojemności
+        w danym momencie (insert). Obliczana jest długość przeciwprostokątnej rzutu klatki schodowej (lenght) w celu wyznaczenia pojemności
         (floor_space) kolejek, które są generowane. Obliczane i zapisywane są pozycje dla poszególnych miejsc kolejki.
         """
         self.name = name
         self.floors = floors
         self.number_queues = number_queues
-        self.doors = doors
+        self.exits = exits
         self.width = width
         self.height = height
         self.offsetx = offsetx
@@ -197,6 +228,7 @@ class Staircase:
         self.lenght = (self.width**2+self.height**2)**(1/2)
         #self.floor_space = int((self.width+self.lenght)/50)
         self.floor_space = 10
+        self.entrance = {i:self.number_queues for i in range(self.floors+1)} # 1 ground floor
         self.ques = self.create_queues()
         self.positions = self.create_positions() # }}}
 
@@ -223,7 +255,7 @@ class Staircase:
             else:
                 x = self.offsetx+l*cos_alfa
                 y = self.offsety+floor*self.height+l*sin_alfa
-            positions.append([x,y])
+            positions.append([int(x),int(y)])
         return positions# }}}
 
     def create_positions(self):# {{{
@@ -233,7 +265,21 @@ class Staircase:
             positions.extend(self.create_floor_positions(floor=i))
         positions.reverse()
         return positions# }}}
-
+    
+    def get_data_for_visualization(self):
+        data_row=[]
+        
+        #mask = [x is not None for x in self.ques[0].queue]
+        #positions = list(compress(self.positions, mask))
+        #data_row.extend(positions)
+        
+        #data_row.append([int(self.positions[n][0]), int(self.positions[n][1]), self.velocities[n][0], self.velocities[n][1], self.fed[n], self.finished[n]])
+        for que in self.ques:
+            for x, agent in enumerate(que.queue):
+                if agent is not None:
+                    data_row.append([self.positions[x][0], self.positions[x][1], x, que.name, str(agent)])
+        return data_row
+    
     def add_to_queues(self, floor, agent_id):# {{{
         """
         <b>Funkcja add_to_queues</b> pobiera dwa parametry:<br>
@@ -241,20 +287,47 @@ class Staircase:
         agent_id -identyfikator danego agenta.<br>
         Funkcja próbuje dodać agenta do jednej z kolejek, gdy agent zostanie dodany zwraca True, w innym przypadku False.
         """
-        if self.check_if_in(agent_id) is not False:
-            print("Evacuee {} already in queue".format(agent_id))
-            return True
-        for i in self.ques:
-            output = i.add(floor, agent_id)
+        if floor == 0:
+            position = 0
+        else:
+            position = floor*self.floor_space-1
+        for i in self.sort_ques(position):
+            output = i.add(position, agent_id)
             if output == 1:
+                self.entrance[floor] -= 1
                 return True
             elif output == 2:
-                if self.insert < self.doors:
+                if self.is_accessible_exit():
                     self.insert += 1
-                    i.insert(floor, agent_id)
+                    self.entrance[floor] -= 1
+                    i.insert(position, agent_id)
                     return True
         return False # }}}
-               
+
+    def sort_ques(self, position):
+        temp = []
+        for q in self.ques:
+            try:
+                temp.append((q, q[position], q[position+1], q.moved))
+            except IndexError:
+                temp.append((q, q[position], q[position], q.moved))
+        temp.sort(key=lambda x: ((x[1] is not None, x[2] is not None, x[3]) if (x[1] is None)
+                                else (x[1] is not None, x[3], x[2] is not None)))
+        return [i[0] for i in temp]
+        # [q, None, None, F], [q, None, None, T], [q, None, "agent", F], [q, None, "agent", T]
+        #    [q, "agent", None, F], [q, "agent", "agent", F], [q, "agent", None, T], [q, "agent", "agent", T]
+
+    def is_accessible_exit(self):
+        if self.insert < self.exits:
+            return True
+        return False
+    def is_accessible_entrance(self, floor):
+        if self.entrance[floor] > 0:
+            return True
+        if self.entrance[floor] <= 0:
+            if sum(abs(i) for i in self.entrance.values() if i < 0) < self.exits:
+                return True
+        return False
     def check_if_in(self, agent_id):# {{{
         """
         <b>Funkcja check_if_in</b> pobiera parametr:<br>
@@ -269,6 +342,7 @@ class Staircase:
                 return int(x), int(y)# }}}
             else:
                 return False
+
 
     def total_number_of_people(self):# {{{
         """<b>Funkcja total_number_of_people</b> zwraca liczbę wszystkich agentów, którzy przebywają w kolejkach."""
@@ -289,27 +363,30 @@ class Staircase:
         <b>Funkcja move</b> jest krokiem czasowym dla kolejek. Odpowiednio przesuwa lub wstrzymuje kolejki, w zależności
         od zapełnienia danej kolejki i dostępnych wyjść.
         """
+        self.entrance = (self.floors+1)*self.number_queues+self.exits
         self.insert = 0
         agent_dropped = 0
         for que in sorted(self.ques, key=lambda x: x.moved, reverse=True):
             que.count()
-            if que.moved:
-                que.moved = False
-                if que.only_pop():
-                    agent_dropped += 1
-            else: 
-                if agent_dropped < self.doors:
-                    if que.pop():
+            if agent_dropped < self.exits:
+                if que.moved:
+                    que.moved = False
+                    if que.only_pop():
                         agent_dropped += 1
                 else:
-                    que.pop_none()# }}}
+                    if que.pop():
+                        agent_dropped += 1
+            else:
+                if que.moved:
+                    if que.only_pop_none():
+                        que.moved = False
+                else:
+                    que.pop_none()
 
     def show_status(self):# {{{
         """<b>Funkcja show_status</b> wyświetla na ekranie stan poszczególnych kolejek."""
         for i in self.ques:
-            print(i)
-            i.print_count()
-        print("\n\n")# }}}
+            i.print_count()# }}}
     def density2(self, x):# {{{
         """<b>Funkcja density2</b> zwraca procentowy poziom zapełnienia klatki schodowej."""
         return ceil(x/((len(self.ques[0])-2)*self.number_queues)*100)# }}}

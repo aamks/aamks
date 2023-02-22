@@ -66,7 +66,7 @@ class Worker:
         self.position_fed_tables_information = []
         ssl._create_default_https_context = ssl._create_unverified_context
         self.rows_to_insert = []
-        self.staircase = Staircase(name="Str1", floors=3, number_queues=2, doors=1, width=500, height=2965/3, offsetx=1500, offsety=0)
+        self.staircase = Staircase(name="Str1", floors=3, number_queues=2, exits=1, width=500, height=2965/3, offsetx=1500, offsety=0)
 
 
     def get_logger(self, logger_name):
@@ -74,7 +74,7 @@ class Worker:
         LOG_FILE = "/home/aamks_users/aamks.log"
         file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
         file_handler.setFormatter(FORMATTER)
-        file_handler.setLevel(logging.INFO)
+        file_handler.setLevel(logging.DEBUG)
 
         logger = logging.getLogger(logger_name)
         #logger.setLevel(eval('logging.{}'.format(self.config['LOGGING_MODE'])))
@@ -82,7 +82,7 @@ class Worker:
         logger.addHandler(file_handler)
         logger.propagate = False
         ch = logging.StreamHandler()
-        ch.setLevel(logging.ERROR)
+        ch.setLevel(logging.INFO)
         ch.setFormatter(FORMATTER)
         logger.addHandler(ch)
 
@@ -200,7 +200,7 @@ class Worker:
         rows = self.s.query("SELECT name, floor, x0, y0, width, depth, height, room_area from aamks_geom WHERE type_sec='STAI' AND fire_model_ignore !=1 ORDER BY name")
         stair_cases = []
         for row in rows:
-            staircase = {row['name']: Staircase(name=row['name'], floors=9, number_queues=2, doors=1, width=row['width'], height=row['height'], offsetx=0, offsety=0)}
+            staircase = {row['name']: Staircase(name=row['name'], floors=9, number_queues=2, exits=1, width=row['width'], height=row['height'], offsetx=0, offsety=0)}
             stair_cases.append(staircase)
         self.vars['conf']['staircases'] = stair_cases
         return stair_cases
@@ -270,16 +270,21 @@ class Worker:
                         i.do_simulation(step)
                         stairs_que = i.agents_to_stairs()
                         for agent in stairs_que:
-                            if self.staircase.add_to_queues(floor=int(i.floor), agent_id=agent):
-                                i.move_to_stairs(agent)
+                            if self.staircase.is_accessible_entrance(int(i.floor)):
+                                if self.staircase.add_to_queues(floor=int(i.floor), agent_id=agent):
+                                    i.move_to_stairs(agent)
+                            else:
+                                break
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})
                     
-                    self.staircase.show_status()
+                    # self.staircase.show_status()
                     self.staircase.move()
+                    self.staircase.show_status()
 
                     if len(time_row) > 0:
+                        time_row.update({"stairs": self.staircase.get_data_for_visualization()})
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
 
