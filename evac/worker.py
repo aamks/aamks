@@ -3,6 +3,7 @@
 import os
 import shutil
 import sys
+sys.path.insert(1, '/usr/local/aamks')
 from numpy import array
 from numpy import prod
 from numpy import insert
@@ -447,6 +448,7 @@ class Worker:
         self.create_geom_database()
         self.run_cfast_simulations()
         self.prepare_simulations()
+        self.create_fed_mesh_db()
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
@@ -477,6 +479,9 @@ class Worker:
 
 w = Worker()
 #print(os.environ['AAMKS_WORKER'])
+os.environ['AAMKS_WORKER'] = 'gearman'
+os.environ['AAMKS_PATH'] = '/usr/local/aamks'
+os.environ['AAMKS_SERVER'] = '192.168.0.185'
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()

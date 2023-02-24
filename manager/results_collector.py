@@ -1,5 +1,6 @@
 import os 
 import sys
+sys.path.insert(1, '/usr/local/aamks')
 import json
 from subprocess import Popen,PIPE
 from include import Json

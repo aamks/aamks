@@ -93,10 +93,11 @@ class EvacEnv:
         if len(paths_free_of_smoke) > 0:
             exits = list(zip(*paths_free_of_smoke))[-1]
             return paths_free_of_smoke[exits.index(min(exits))][0], paths_free_of_smoke[exits.index(min(exits))][1]
-        else:
-            #print(evacuee, self.evacuees.get_position_of_pedestrian(evacuee))
+        elif len(paths) > 0:
             exits = list(zip(*paths))[0]
             return paths[exits.index(min(exits))][0], paths[exits.index(min(exits))][1]
+        else:
+            return self.sim.getAgentPosition(evacuee)[0], self.sim.getAgentPosition(evacuee)[1]
 
     def _next_room_in_smoke(self, evacuee, path):
         try:
