@@ -277,13 +277,11 @@ class Worker:
                                 break
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
-                            smoke_row.update({str(i.floor): i.update_room_opacity()})
-                    
-                    # self.staircase.show_status()
-                    self.staircase.move()
-                    self.staircase.show_status()
+                            smoke_row.update({str(i.floor): i.update_room_opacity()})                    
 
                     if len(time_row) > 0:
+                        #self.staircase.show_status()
+                        self.staircase.move()
                         time_row.update({"stairs": self.staircase.get_data_for_visualization()})
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)

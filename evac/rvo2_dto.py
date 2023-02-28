@@ -145,11 +145,13 @@ class EvacEnv:
     def update_agents_position(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
-                self.sim.setAgentPosition(i, (0 + i * 20, 0))
-                self.evacuees.set_position_to_pedestrian(i, (0 + i * 20, 0))
-                self.evacuees.set_to_go(i)
-                # Tu agent opuszcza pietro
-                continue
+                if not self.evacuees.if_outsider(i):
+                    self.sim.setAgentPosition(i, (0 + i * 20, 0))
+                    self.evacuees.set_position_to_pedestrian(i, (0 + i * 20, 0))
+                    self.evacuees.set_to_go(i)
+                    # Tu agent opuszcza pietro
+                else:
+                    continue
             else:
                 self.evacuees.set_position_to_pedestrian(i, (int(self.sim.getAgentPosition(i)[0]),
                                                              int(self.sim.getAgentPosition(i)[1])))

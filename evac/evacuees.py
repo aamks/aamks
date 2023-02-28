@@ -10,6 +10,7 @@ class Evacuees:
     def __init__(self):
         self.pedestrians = []
         self.outsiders = []
+        self.outsiders_no = []
 
 
     def add_pedestrian(self, pedestrian):
@@ -159,7 +160,14 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].num_of_orca_lines = num_of_lines
 
+    def if_outsider(self, ped_no):
+        if ped_no in self.outsiders_no:
+            return True
+        else:
+            return False 
+        
     def set_to_go(self, ped_no):
+        self.outsiders_no.append(ped_no)
         self.outsiders.append(self.pedestrians[ped_no])
 
     def get_outsiders(self):

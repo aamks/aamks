@@ -277,7 +277,8 @@ class Staircase:
         for que in self.ques:
             for x, agent in enumerate(que.queue):
                 if agent is not None:
-                    data_row.append([self.positions[x][0], self.positions[x][1], x, que.name, str(agent)])
+                    data_row.append([self.positions[x][0], self.positions[x][1], 0, 0, 0, 1])
+                    #data_row.append([self.positions[x][0], self.positions[x][1], x, que.name, str(agent)])
         return data_row
     
     def add_to_queues(self, floor, agent_id):# {{{
@@ -363,7 +364,8 @@ class Staircase:
         <b>Funkcja move</b> jest krokiem czasowym dla kolejek. Odpowiednio przesuwa lub wstrzymuje kolejki, w zależności
         od zapełnienia danej kolejki i dostępnych wyjść.
         """
-        self.entrance = (self.floors+1)*self.number_queues+self.exits
+        for i in self.entrance:
+            self.entrance[i] = min(self.entrance[i]+self.number_queues, self.number_queues)
         self.insert = 0
         agent_dropped = 0
         for que in sorted(self.ques, key=lambda x: x.moved, reverse=True):
@@ -387,6 +389,10 @@ class Staircase:
         """<b>Funkcja show_status</b> wyświetla na ekranie stan poszczególnych kolejek."""
         for i in self.ques:
             i.print_count()# }}}
+    def save_ques(self):
+        with open('/home/mateusz/que.txt', 'a') as f:
+            for i in range(len(self.ques[0])):
+                print(i,";",self.ques[0][i],";",self.ques[1][i], file=f)
     def density2(self, x):# {{{
         """<b>Funkcja density2</b> zwraca procentowy poziom zapełnienia klatki schodowej."""
         return ceil(x/((len(self.ques[0])-2)*self.number_queues)*100)# }}}
