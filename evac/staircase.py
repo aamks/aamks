@@ -208,7 +208,7 @@ class Staircase:
     Istnieje opcja wyświetlenia stanu poszczególnych kolejek (funkcja show_status), obliczenia gęstości zapełnienia klatki
     (funkcja density2) oraz przepływu agentów przez wyjście (funkcja flow).
     """
-    def __init__(self, name: str="Str1", floors: int=3, number_queues: int=2, exits: int=1, width: float=500, height: float=2965/3, offsetx: int=1500, offsety: int=0):# {{{
+    def __init__(self, name: str="Str1", floors: int=3, number_queues: int=2, exits: int=1, width: float=500, height: float=2965/3, offsetx: int=1500, offsety: int=0, ty: dict={'0': 3000, '1':500}):# {{{
         """
         Podczas tworzenia obiektu klasy Staircase nadawana jest mu nazwa (name), przypisywana liczba pięter (floors),
         liczba kolejek klasy Queue (number_queues), liczba wyjść (exits), a także wprowadzane są wymiary klatki (width, height)
@@ -224,6 +224,7 @@ class Staircase:
         self.height = height
         self.offsetx = offsetx
         self.offsety = offsety
+        self.ty = ty
         self.insert = 0
         self.lenght = (self.width**2+self.height**2)**(1/2)
         #self.floor_space = int((self.width+self.lenght)/50)
@@ -238,48 +239,62 @@ class Staircase:
         for i in range(self.number_queues):
             que.append(Queue(f'Que-{i}', self.floors, self.floor_space))
         return que# }}}
-    def create_floor_positions(self,floor=0):# {{{
-        """<b>Funkcja create_floor_positions</b> pobiera parametr:<br>
-        floor -piętro dla którego ma wygenerować położenia,<br>
-        Zwraca listę składającą się z koordynat (x,y) odpowiadającą miejscami danego piętra.
-        """
+    # def create_floor_positions(self,floor=0):# {{{
+    #     """<b>Funkcja create_floor_positions</b> pobiera parametr:<br>
+    #     floor -piętro dla którego ma wygenerować położenia,<br>
+    #     Zwraca listę składającą się z koordynat (x,y) odpowiadającą miejscami danego piętra.
+    #     """
+    #     positions = []
+    #     sin_alfa = self.height/self.lenght
+    #     cos_alfa = self.width/self.lenght
+    #     lenght_steps = (self.width+self.lenght)/self.floor_space
+    #     for i in range(self.floor_space):
+    #         l = i*lenght_steps
+    #         if l>self.lenght:
+    #             x = self.offsetx+lenght_steps*(self.floor_space-i)
+    #             #y = self.offsety+floor*self.height+self.height+self.ty[str(floor)]
+    #             y = self.offsety+self.height+self.ty[str(floor)]
+    #         else:
+    #             x = self.offsetx+l*cos_alfa
+    #             y = self.offsety+self.height+l*sin_alfa+self.ty[str(floor)]
+    #         positions.append((int(x),int(y)))
+    #     return positions# }}}
+    def create_floor_positions(self,floor=0, queue=0):
         positions = []
-        sin_alfa = self.height/self.lenght
-        cos_alfa = self.width/self.lenght
-        lenght_steps = (self.width+self.lenght)/self.floor_space
-        for i in range(self.floor_space):
-            l = i*lenght_steps
-            if l>self.lenght:
-                x = self.offsetx+lenght_steps*(self.floor_space-i)
-                y = self.offsety+floor*self.height+self.height
-            else:
-                x = self.offsetx+l*cos_alfa
-                y = self.offsety+floor*self.height+l*sin_alfa
-            positions.append([int(x),int(y)])
-        return positions# }}}
+        w = self.width/self.number_queues
+        no_y = int(self.height/25)-1
+        no_x = int(w/25)
+        no_pos = 0
+        for nx in range(no_x):
+            for ny in range(no_y):
+                if nx % 2 == 0:
+                    x = self.offsetx+(1+nx)*25+queue*w
+                    y = self.ty[str(floor)]-(1+ny)*25
+                else:
+                    x = self.offsetx+(1+nx)*25+queue*w
+                    y = self.ty[str(floor)]-self.height+(1+ny)*25
+                positions.append((int(x),int(y)))
+                no_pos += 1
+                if no_pos == self.floor_space:
+                    return positions
+        raise Exception("Floor_space > available space to animate positions")
 
     def create_positions(self):# {{{
         """<b>Funkcja create_positions</b> generuje i zwraca listę z koordynatami (x,y) dla wszystkich miejsc kolejki."""
-        positions = []
-        for i in range(self.floors):
-            positions.extend(self.create_floor_positions(floor=i))
-        positions.reverse()
-        return positions# }}}
+        d_pos = {}
+        for j in range(self.number_queues):
+            positions = []
+            for i in range(self.floors):
+                positions.extend(self.create_floor_positions(floor=i, queue=j))
+            d_pos[j] = positions
+        return d_pos# }}}
     
     def get_data_for_visualization(self):
-        data_row=[]
-        
-        #mask = [x is not None for x in self.ques[0].queue]
-        #positions = list(compress(self.positions, mask))
-        #data_row.extend(positions)
-        
-        #data_row.append([int(self.positions[n][0]), int(self.positions[n][1]), self.velocities[n][0], self.velocities[n][1], self.fed[n], self.finished[n]])
-        for que in self.ques:
-            for x, agent in enumerate(que.queue):
+        for i in range(self.number_queues):
+            for x, agent in enumerate(self.ques[i]):
                 if agent is not None:
-                    data_row.append([self.positions[x][0], self.positions[x][1], 0, 0, 0, 1])
-                    #data_row.append([self.positions[x][0], self.positions[x][1], x, que.name, str(agent)])
-        return data_row
+                    agent.position = self.positions[i][x]
+            
     
     def add_to_queues(self, floor, agent_id):# {{{
         """

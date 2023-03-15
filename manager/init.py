@@ -161,7 +161,7 @@ class OnEnd():
                 if exit_status.returncode != 0:
                     logger.error('worker exit status - %s', exit_status)
                 else:
-                    logger.info('finished worker.py')
+                    logger.info('finished worker.py sim - %s', i)
             return
 
         if os.environ['AAMKS_WORKER']=='gearman':

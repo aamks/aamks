@@ -25,6 +25,7 @@ from collections import OrderedDict
 from subprocess import Popen
 import zipfile
 import multiprocessing
+import re
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
@@ -66,7 +67,7 @@ class Worker:
         self.position_fed_tables_information = []
         ssl._create_default_https_context = ssl._create_unverified_context
         self.rows_to_insert = []
-        self.staircase = Staircase(name="Str1", floors=3, number_queues=2, exits=1, width=500, height=2965/3, offsetx=1500, offsety=0)
+        self.stair_cases = {}
 
 
     def get_logger(self, logger_name):
@@ -197,13 +198,14 @@ class Worker:
         return e
 
     def prepare_staircases(self):
-        rows = self.s.query("SELECT name, floor, x0, y0, width, depth, height, room_area from aamks_geom WHERE type_sec='STAI' AND fire_model_ignore !=1 ORDER BY name")
-        stair_cases = []
-        for row in rows:
-            staircase = {row['name']: Staircase(name=row['name'], floors=9, number_queues=2, exits=1, width=row['width'], height=row['height'], offsetx=0, offsety=0)}
-            stair_cases.append(staircase)
-        self.vars['conf']['staircases'] = stair_cases
-        return stair_cases
+        rows = self.s.query("SELECT name, floor, x0, y0, width, depth, height, room_area from aamks_geom WHERE type_sec='STAI' ORDER BY name")
+        s_list = [s for s in rows if re.search(r's\d+$', s['name'])]
+        floors_meta = json.loads(self.s.query("SELECT json FROM floors_meta")[0]['json']) 
+        ty = {x: floors_meta[x]['ty'] for x in floors_meta.keys()}
+        for s in s_list:
+            floors = sum([1 for row in rows if re.search(f'{s["name"]}\.\d+', row['name'])])
+            self.stair_cases[s['name']] = Staircase(name=s['name'], floors=floors, number_queues=2, exits=1, width=s['width'], height=s['depth'], offsetx=s['x0'], offsety=s['y0'], ty=ty)
+        self.vars['conf']['staircases'] = self.stair_cases
 
     def prepare_simulations(self):
 
@@ -268,21 +270,21 @@ class Worker:
                     smoke_row = dict()
                     for i in self.floors:
                         i.do_simulation(step)
+                        #TODO: queues to different staircases
                         stairs_que = i.agents_to_stairs()
                         for agent in stairs_que:
-                            if self.staircase.is_accessible_entrance(int(i.floor)):
-                                if self.staircase.add_to_queues(floor=int(i.floor), agent_id=agent):
+                            if self.stair_cases["s5"].is_accessible_entrance(int(i.floor)):
+                                if self.stair_cases["s5"].add_to_queues(floor=int(i.floor), agent_id=agent):
                                     i.move_to_stairs(agent)
                             else:
                                 break
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
+                            self.stair_cases["s5"].get_data_for_visualization()
+                            self.stair_cases["s5"].move()
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})                    
 
-                    if len(time_row) > 0:
-                        #self.staircase.show_status()
-                        self.staircase.move()
-                        time_row.update({"stairs": self.staircase.get_data_for_visualization()})
+                    if len(time_row) > 0:                    
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
 

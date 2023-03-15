@@ -160,7 +160,7 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].num_of_orca_lines = num_of_lines
 
-    def if_outsider(self, ped_no):
+    def is_outsider(self, ped_no):
         if ped_no in self.outsiders_no:
             return True
         else:

@@ -137,6 +137,7 @@ class EvacEnv:
         return int(ceil(time / 10.0)) * 10
 
     def get_data_for_visualization(self):
+        self.get_agents_positions()
         data_row=[]
         for n in range(self.sim.getNumAgents()):
             data_row.append([int(self.positions[n][0]), int(self.positions[n][1]), self.velocities[n][0], self.velocities[n][1], self.fed[n], self.finished[n]])
@@ -145,9 +146,11 @@ class EvacEnv:
     def update_agents_position(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
-                if not self.evacuees.if_outsider(i):
-                    self.sim.setAgentPosition(i, (0 + i * 20, 0))
-                    self.evacuees.set_position_to_pedestrian(i, (0 + i * 20, 0))
+                if not self.evacuees.is_outsider(i):
+                    pos = (int(self.sim.getAgentPosition(i)[0]), int(self.sim.getAgentPosition(i)[1]))
+                    self.evacuees.set_position_to_pedestrian(i, pos)
+                    self.evacuees.set_goal(i, [pos])
+                    self.sim.setAgentPosition(i, (0 + i*30,0))
                     self.evacuees.set_to_go(i)
                     # Tu agent opuszcza pietro
                 else:
@@ -155,9 +158,10 @@ class EvacEnv:
             else:
                 self.evacuees.set_position_to_pedestrian(i, (int(self.sim.getAgentPosition(i)[0]),
                                                              int(self.sim.getAgentPosition(i)[1])))
-
-        self.positions = [tuple((int(self.sim.getAgentPosition(i)[0]), int(self.sim.getAgentPosition(i)[1]))) for (i)
-                          in range(self.sim.getNumAgents())]
+                
+    def get_agents_positions(self):
+        self.positions = [self.evacuees.get_position_of_pedestrian(i) for (i)
+                          in range(self.evacuees.get_number_of_pedestrians())]
         
     def agents_to_stairs(self):
         return self.evacuees.get_outsiders()
@@ -355,6 +359,7 @@ class EvacEnv:
         #self.elog.info(self.current_time)
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
             self.update_fed()
+            self.get_agents_positions()
             self.save_positions_with_fed()
         if self.rset == 0:
             self.get_rset_time()
