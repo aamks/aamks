@@ -23,7 +23,7 @@ import ssl
 from include import Json
 import json
 from collections import OrderedDict
-from subprocess import Popen
+from subprocess import Popen, run
 import zipfile
 import multiprocessing
 
@@ -157,7 +157,9 @@ class Worker:
     def run_cfast_simulations(self):
         if self.project_conf['fire_model'] == 'CFAST':
             try:
-                os.system('/usr/local/aamks/fire/cfast7_linux_64 cfast.in')
+                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=30)
+            except subprocess.TimeoutExpired:
+                p.kill()
             except Exception as e:
                 self.wlogger.error(e)
                 cfast_log = open('cfast.log', 'r')
