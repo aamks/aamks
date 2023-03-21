@@ -84,6 +84,7 @@ class EvacEnv:
                     paths_free_of_smoke.append([x, y, LineString(path).length])
                 except:
                     self.evacuees.set_finish_to_agent(evacuee)
+                    self.evacuees.set_to_go(evacuee, door['staircase'])
                     paths_free_of_smoke.append([x, y, 0])
 
                 # paths.append([x, y, LineString(path).length])
@@ -149,9 +150,11 @@ class EvacEnv:
                 if not self.evacuees.is_outsider(i):
                     pos = (int(self.sim.getAgentPosition(i)[0]), int(self.sim.getAgentPosition(i)[1]))
                     self.evacuees.set_position_to_pedestrian(i, pos)
-                    self.evacuees.set_goal(i, [pos])
-                    self.sim.setAgentPosition(i, (0 + i*30,0))
-                    self.evacuees.set_to_go(i)
+                    print(self.evacuees.get_goal(i))
+                    self.evacuees.set_goal(i, [(0 + i*70,0)])
+                    self.sim.setAgentPosition(i, (0 + i*70,0))
+                    self.evacuees.set_outsider(i)
+                    #self.evacuees.set_to_go(i, door['staircase'])        
                     # Tu agent opuszcza pietro
                 else:
                     continue
@@ -164,10 +167,10 @@ class EvacEnv:
                           in range(self.evacuees.get_number_of_pedestrians())]
         
     def agents_to_stairs(self):
-        return self.evacuees.get_outsiders()
+        return self.evacuees.agents_to_stairs()
 
     def move_to_stairs(self, agent):
-        self.evacuees.get_to_stairs(agent)
+        self.evacuees.move_to_stairs(agent)
 
     def update_agents_velocity(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):

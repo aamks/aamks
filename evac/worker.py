@@ -172,7 +172,10 @@ class Worker:
 
         self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         #self.s.dumpall()
-        doors = self.s.query('SELECT floor, name, center_x, center_y, terminal_door from aamks_geom WHERE terminal_door IS NOT NULL')
+        doors = self.s.query('SELECT floor, name, center_x, center_y, terminal_door, vent_from_name, vent_to_name from aamks_geom WHERE terminal_door IS NOT NULL')
+        for d in doors:
+            staircase = re.search(r'(s\d+).*', d['vent_from_name']) or re.search(r'(s\d+).*', d['vent_to_name'])
+            d['staircase'] = staircase.groups()[0]
         self.vars['conf']['doors'] = doors
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         self.wlogger.info('SQLite load successfully')
@@ -268,26 +271,27 @@ class Worker:
                 for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
                     time_row = dict()
                     smoke_row = dict()
+                    for i in self.stair_cases.keys():
+                        self.stair_cases[i].update_positions()
+                        self.stair_cases[i].move()
+
                     for i in self.floors:
                         i.do_simulation(step)
-                        #TODO: queues to different staircases
                         stairs_que = i.agents_to_stairs()
-                        for agent in stairs_que:
-                            if self.stair_cases["s5"].is_accessible_entrance(int(i.floor)):
-                                if self.stair_cases["s5"].add_to_queues(floor=int(i.floor), agent_id=agent):
+                        for agent, staircase in stairs_que:
+                            if self.stair_cases[staircase].is_accessible_entrance(int(i.floor)):
+                                if self.stair_cases[staircase].add_to_queues(int(i.floor), agent):
                                     i.move_to_stairs(agent)
                             else:
                                 break
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
-                            self.stair_cases["s5"].get_data_for_visualization()
-                            self.stair_cases["s5"].move()
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})                    
 
                     if len(time_row) > 0:                    
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
-
+                        
                 for i in self.floors:
                     rsets.append(i.rset)
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})

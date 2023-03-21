@@ -289,7 +289,7 @@ class Staircase:
             d_pos[j] = positions
         return d_pos# }}}
     
-    def get_data_for_visualization(self):
+    def update_positions(self):
         for i in range(self.number_queues):
             for x, agent in enumerate(self.ques[i]):
                 if agent is not None:

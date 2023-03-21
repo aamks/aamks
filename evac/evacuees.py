@@ -166,13 +166,15 @@ class Evacuees:
         else:
             return False 
         
-    def set_to_go(self, ped_no):
+    def set_to_go(self, ped_no, staircase):
+        self.outsiders.append((self.pedestrians[ped_no], staircase))
+    
+    def set_outsider(self, ped_no):
         self.outsiders_no.append(ped_no)
-        self.outsiders.append(self.pedestrians[ped_no])
 
-    def get_outsiders(self):
+    def agents_to_stairs(self):
         return self.outsiders
 
-    def get_to_stairs(self, agent):
-        self.outsiders.remove(agent)
+    def move_to_stairs(self, agent):
+        del self.outsiders[list(zip(*self.outsiders))[0].index(agent)]
         
