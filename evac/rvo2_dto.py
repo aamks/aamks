@@ -149,12 +149,13 @@ class EvacEnv:
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 if not self.evacuees.is_outsider(i):
                     pos = (int(self.sim.getAgentPosition(i)[0]), int(self.sim.getAgentPosition(i)[1]))
+                    door_x, door_y = self._find_closest_exit(i)
+                    staircase = self.find_staircase(door_x, door_y)                   
                     self.evacuees.set_position_to_pedestrian(i, pos)
-                    print(self.evacuees.get_goal(i))
                     self.evacuees.set_goal(i, [(0 + i*70,0)])
                     self.sim.setAgentPosition(i, (0 + i*70,0))
                     self.evacuees.set_outsider(i)
-                    #self.evacuees.set_to_go(i, door['staircase'])        
+                    self.evacuees.set_to_go(i, staircase)        
                     # Tu agent opuszcza pietro
                 else:
                     continue
@@ -171,6 +172,14 @@ class EvacEnv:
 
     def move_to_stairs(self, agent):
         self.evacuees.move_to_stairs(agent)
+
+    def find_staircase(self, door_x, door_y):
+        for staircase in self.general['staircases']:
+            for door in self.general['staircases'][staircase]['doors']:
+                if door['floor'] != self.floor:
+                    continue
+                if door['center_x'] == door_x and door['center_y'] == door_y:
+                    return staircase
 
     def update_agents_velocity(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):

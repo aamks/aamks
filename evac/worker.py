@@ -67,7 +67,7 @@ class Worker:
         self.position_fed_tables_information = []
         ssl._create_default_https_context = ssl._create_unverified_context
         self.rows_to_insert = []
-        self.stair_cases = {}
+        self.staircases = {}
 
 
     def get_logger(self, logger_name):
@@ -207,8 +207,10 @@ class Worker:
         ty = {x: floors_meta[x]['ty'] for x in floors_meta.keys()}
         for s in s_list:
             floors = sum([1 for row in rows if re.search(f'{s["name"]}\.\d+', row['name'])])
-            self.stair_cases[s['name']] = Staircase(name=s['name'], floors=floors, number_queues=2, exits=1, width=s['width'], height=s['depth'], offsetx=s['x0'], offsety=s['y0'], ty=ty)
-        self.vars['conf']['staircases'] = self.stair_cases
+            doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom WHERE vent_to_name LIKE ? OR vent_from_name LIKE ? AND terminal_door IS NOT NULL', (s["name"]+'%', s["name"]+'%'))
+            self.staircases[s['name']] = {'class':Staircase(name=s['name'], floors=floors, number_queues=2, exits=1, width=s['width'], height=s['depth'], offsetx=s['x0'], offsety=s['y0'], ty=ty)}
+            self.staircases[s['name']]['doors'] = doors
+        self.vars['conf']['staircases'] = self.staircases
 
     def prepare_simulations(self):
 
@@ -271,16 +273,13 @@ class Worker:
                 for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
                     time_row = dict()
                     smoke_row = dict()
-                    for i in self.stair_cases.keys():
-                        self.stair_cases[i].update_positions()
-                        self.stair_cases[i].move()
 
                     for i in self.floors:
                         i.do_simulation(step)
                         stairs_que = i.agents_to_stairs()
                         for agent, staircase in stairs_que:
-                            if self.stair_cases[staircase].is_accessible_entrance(int(i.floor)):
-                                if self.stair_cases[staircase].add_to_queues(int(i.floor), agent):
+                            if self.staircases[staircase]['class'].is_accessible_entrance(int(i.floor)):
+                                if self.staircases[staircase]['class'].add_to_queues(int(i.floor), agent):
                                     i.move_to_stairs(agent)
                             else:
                                 break
@@ -291,7 +290,11 @@ class Worker:
                     if len(time_row) > 0:                    
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
-                        
+
+                    for i in self.staircases.keys():
+                        self.staircases[i]['class'].update_positions()
+                        self.staircases[i]['class'].move()
+
                 for i in self.floors:
                     rsets.append(i.rset)
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
