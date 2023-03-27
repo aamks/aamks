@@ -1,7 +1,7 @@
 # === Modelowanie kolejki na klatce schodowej ===
 import numpy.random as random
 from math import ceil
-from itertools import compress
+import collections, functools, operator
 
 """
 Importowanie niezbędnych modułów:<br>
@@ -178,7 +178,14 @@ class Queue:
         return sum([self.counter[x]["finished"] for x in self.counter.keys()])# }}}
     def count_insiders(self):# {{{
         """<b>Funkcja count_insiders</b> zwraca liczbę agentów, którzy przebywają w kolejce."""
-        return len([x for x in self.queue if x is not None])# }}}
+        count = {}
+        _from = 0
+        for i in range(self.floors):
+            _to = (i+1)*self.floor_space-1
+            count[str(i)] = len([x for x in self.queue[_from:_to] if x is not None])
+            _from = _to
+        count[str(self.floors)] = len([x for x in self.queue[_from:] if x is not None])
+        return count.items() # }}}
     def give_index(self, agent_id):# {{{
         """
         <b>Funkcja give_index</b> pobiera parametr:<br>
@@ -293,7 +300,10 @@ class Staircase:
         for i in range(self.number_queues):
             for x, agent in enumerate(self.ques[i]):
                 if agent is not None:
-                    agent.position = self.positions[i][x]
+                    try:
+                        agent.position = self.positions[i][x]
+                    except:
+                        print(x, ' ', )
             
     
     def add_to_queues(self, floor, agent_id):# {{{
@@ -360,12 +370,13 @@ class Staircase:
                 return False
 
 
-    def total_number_of_people(self):# {{{
-        """<b>Funkcja total_number_of_people</b> zwraca liczbę wszystkich agentów, którzy przebywają w kolejkach."""
-        Ptotal=0
+    def count_insiders(self):# {{{
+        """<b>Funkcja count_insiders</b> zwraca liczbę agentów, na poszczególnych piętrach."""
+        count={}
         for i in self.ques:
-            Ptotal+=i.count_insiders()
-        return Ptotal# }}}
+            for k,v in i.count_insiders():
+                count[k] = count.get(k, 0) + v
+        return count.items()# }}}
 
     def total_completed(self):# {{{
         """<b>Funkcja total_completed</b> zwraca liczbę wszystkich agentów, którzy ukończyli kolejkę."""
@@ -417,3 +428,4 @@ class Staircase:
 # Dexit -maksymalny dystans przebyty przez agenta w klatce schodowej
         Fave = 0.42*(self.total_completed()/self.Dexit)**(1/3)
         return Fave# }}}
+    

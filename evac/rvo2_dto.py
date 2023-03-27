@@ -84,6 +84,7 @@ class EvacEnv:
                     paths_free_of_smoke.append([x, y, LineString(path).length])
                 except:
                     self.evacuees.set_finish_to_agent(evacuee)
+                    self.evacuees.set_outsider(evacuee)
                     self.evacuees.set_to_go(evacuee, door['staircase'])
                     paths_free_of_smoke.append([x, y, 0])
 
@@ -148,10 +149,8 @@ class EvacEnv:
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 if not self.evacuees.is_outsider(i):
-                    pos = (int(self.sim.getAgentPosition(i)[0]), int(self.sim.getAgentPosition(i)[1]))
                     door_x, door_y = self._find_closest_exit(i)
-                    staircase = self.find_staircase(door_x, door_y)                   
-                    self.evacuees.set_position_to_pedestrian(i, pos)
+                    staircase = self.find_staircase(door_x, door_y)              
                     self.evacuees.set_goal(i, [(0 + i*70,0)])
                     self.sim.setAgentPosition(i, (0 + i*70,0))
                     self.evacuees.set_outsider(i)

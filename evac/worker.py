@@ -285,15 +285,18 @@ class Worker:
                                 break
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
-                            smoke_row.update({str(i.floor): i.update_room_opacity()})                    
+                            smoke_row.update({str(i.floor): i.update_room_opacity()})
+                            time_row['stairs'] = {}
+                            for i in self.staircases:
+                                for k,v in self.staircases[i]['class'].count_insiders():
+                                    time_row['stairs'][k] = time_row['stairs'].get(k, 0) + v
+                                self.staircases[i]['class'].update_positions()
+                                self.staircases[i]['class'].move()
+
 
                     if len(time_row) > 0:                    
                         self.animation_data.append(time_row)
-                        self.smoke_opacity.append(smoke_row)
-
-                    for i in self.staircases.keys():
-                        self.staircases[i]['class'].update_positions()
-                        self.staircases[i]['class'].move()
+                        self.smoke_opacity.append(smoke_row)                
 
                 for i in self.floors:
                     rsets.append(i.rset)
