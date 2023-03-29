@@ -3,6 +3,7 @@
 import os
 import shutil
 import sys
+sys.path.insert(1, '/usr/local/aamks')
 from numpy import array
 from numpy import prod
 from numpy import insert
@@ -22,7 +23,7 @@ import ssl
 from include import Json
 import json
 from collections import OrderedDict
-from subprocess import Popen
+from subprocess import Popen, run
 import zipfile
 import multiprocessing
 import re
@@ -158,7 +159,9 @@ class Worker:
     def run_cfast_simulations(self):
         if self.project_conf['fire_model'] == 'CFAST':
             try:
-                os.system('/usr/local/aamks/fire/cfast7_linux_64 cfast.in')
+                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=30)
+            except subprocess.TimeoutExpired:
+                p.kill()
             except Exception as e:
                 self.wlogger.error(e)
                 cfast_log = open('cfast.log', 'r')
@@ -470,6 +473,7 @@ class Worker:
         self.create_geom_database()
         self.run_cfast_simulations()
         self.prepare_simulations()
+        self.create_fed_mesh_db()
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
@@ -500,6 +504,9 @@ class Worker:
 
 w = Worker()
 #print(os.environ['AAMKS_WORKER'])
+os.environ['AAMKS_WORKER'] = 'gearman'
+os.environ['AAMKS_PATH'] = '/usr/local/aamks'
+os.environ['AAMKS_SERVER'] = '192.168.0.185'
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()

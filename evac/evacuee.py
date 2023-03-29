@@ -26,7 +26,7 @@ class Evacuee:
         self.finished = 1
         self.node_radius = node_radius
         self.pre_evacuation_time = pre_evacuation
-        self.optical_density_at_position = None
+        self.optical_density_at_position = 0.0
 
         self.alpha_v = alpha_v
         self.beta_v = beta_v
