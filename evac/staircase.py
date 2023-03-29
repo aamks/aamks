@@ -377,7 +377,10 @@ class Staircase:
             for k,v in i.count_insiders():
                 count[k] = count.get(k, 0) + v
         return count.items()# }}}
-
+    
+    def get_position(self):
+        return {"x":self.offsetx, "y":self.offsety}
+    
     def total_completed(self):# {{{
         """<b>Funkcja total_completed</b> zwraca liczbę wszystkich agentów, którzy ukończyli kolejkę."""
         number = 0

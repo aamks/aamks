@@ -3,7 +3,6 @@
 import os
 import shutil
 import sys
-sys.path.insert(1, '/usr/local/aamks')
 from numpy import array
 from numpy import prod
 from numpy import insert
@@ -27,6 +26,7 @@ from subprocess import Popen, run
 import zipfile
 import multiprocessing
 import re
+from collections import defaultdict
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
@@ -69,6 +69,7 @@ class Worker:
         ssl._create_default_https_context = ssl._create_unverified_context
         self.rows_to_insert = []
         self.staircases = {}
+        self.staircase_anim = list()
 
 
     def get_logger(self, logger_name):
@@ -276,7 +277,7 @@ class Worker:
                 for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
                     time_row = dict()
                     smoke_row = dict()
-
+                     
                     for i in self.floors:
                         i.do_simulation(step)
                         stairs_que = i.agents_to_stairs()
@@ -289,13 +290,15 @@ class Worker:
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})
-                            time_row['stairs'] = {}
-                            for i in self.staircases:
-                                for k,v in self.staircases[i]['class'].count_insiders():
-                                    time_row['stairs'][k] = time_row['stairs'].get(k, 0) + v
-                                self.staircases[i]['class'].update_positions()
-                                self.staircases[i]['class'].move()
-
+                            stair_data = defaultdict(list)
+                            for s_name in self.staircases:
+                                self.staircases[s_name]['class'].update_positions()
+                                for k,v in self.staircases[s_name]['class'].count_insiders():
+                                    frame = self.staircases[s_name]['class'].get_position()
+                                    frame['count'] = v
+                                    stair_data[k].append(frame)
+                                self.staircase_anim.append(stair_data)
+                                self.staircases[s_name]['class'].move()
 
                     if len(time_row) > 0:                    
                         self.animation_data.append(time_row)
@@ -369,7 +372,8 @@ class Worker:
                         'time_shift': self.time_shift,
                         'animations': {
                             'evacuees': self.animation_data,
-                            'rooms_opacity': smoke_data
+                            'rooms_opacity': smoke_data,
+                            'staircases' : self.staircase_anim
                         }
                         }
         zf = zipfile.ZipFile("{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
@@ -504,9 +508,7 @@ class Worker:
 
 w = Worker()
 #print(os.environ['AAMKS_WORKER'])
-os.environ['AAMKS_WORKER'] = 'gearman'
-os.environ['AAMKS_PATH'] = '/usr/local/aamks'
-os.environ['AAMKS_SERVER'] = '192.168.0.185'
+
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()

@@ -5,7 +5,6 @@ import shutil
 import os
 import re
 import sys
-sys.path.insert(1, '/usr/local/aamks')
 import codecs
 import itertools
 import _recast as dt
