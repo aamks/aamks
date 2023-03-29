@@ -21,6 +21,8 @@ var frame=0;
 var velocitiesGroup={};
 var evacueesGroup={};
 var evacueesLabelsGroup={};
+var currentAgentsOnStairs={};
+var agentsOnStairsLabelfontSize = 100;
 
 paper.install(window);
 window.onload = function() {
@@ -38,6 +40,7 @@ function initLayers() {//{{{
 	new Layer({'name': 'highlight'});
 	new Layer({'name': 'animated'});
 	new Layer({'name': 'info'});
+	new Layer({'name': 'staircases'});
 }
 //}}}
 function listenForSpeedChange() {//{{{
@@ -273,7 +276,9 @@ function showAnimation() {//{{{
 		currentAnimData=JSON.parse(response['data']);
 		eData=currentAnimData.animations.evacuees;
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
+		agentsOnStaircases=currentAnimData.animations.staircases;
 		initRoomSmoke();
+		initAgentsOnStaircasesLabels();
 		initAnimAgents();
 		initSpeed();
 	});
@@ -696,8 +701,41 @@ function resizeAndRedrawCanvas() {//{{{
 	view.viewSize = new Size(wWidth, wHeight);
 	view.draw();
 }
-
 //}}}
+function initAgentsOnStaircasesLabels(){
+	project.layers.staircases.activate()
+	_.each(agentsOnStaircases[0], function(floor_stairs_data, i) {
+		currentAgentsOnStairs[i]=new Group();
+		_.each(floor_stairs_data, function(stair_data) {
+			printAgentsOnStaircasesLabels(i,stair_data["x"],stair_data["y"],stair_data["count"])
+		});
+	});
+
+}
+function agentsOnStaircasesLabelsInFrame(){
+	clearAgentsOnStaircasesLabels();
+	_.each(agentsOnStaircases[frame], function(floor_stairs_data, i) {
+		_.each(floor_stairs_data, function(stair_data) {
+				printAgentsOnStaircasesLabels(i,stair_data["x"],stair_data["y"],stair_data["count"])
+			});
+	});
+}
+
+function printAgentsOnStaircasesLabels(floor,x,y,agentsNumber){
+	tx = dstatic.floors[floor].floor_meta.tx;
+	ty = dstatic.floors[floor].floor_meta.ty;
+	currentAgentsOnStairs[floor].addChild((new PointText(  { point: new Point(x+tx+10,
+					y+ty+agentsOnStairsLabelfontSize), fillColor:"#af0", content: agentsNumber, 
+				fontFamily: 'Roboto', fontWeight:'bold', 
+				fontSize: agentsOnStairsLabelfontSize })));
+}
+
+function clearAgentsOnStaircasesLabels() {//{{{
+	_.each(currentAgentsOnStairs, function(data,i) {
+		currentAgentsOnStairs[i].removeChildren();
+	})
+}
+
 view.onFrame=function(event) {//{{{
 	if(paused==1) { return; }
 	if (eData.length<3) { 
@@ -706,6 +744,7 @@ view.onFrame=function(event) {//{{{
 	} else {
 		evacueesInFrame();
 		roomsSmokeInFrame();
+		agentsOnStaircasesLabelsInFrame();
 		afterLerpFrame();
 	} 
 }
