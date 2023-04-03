@@ -22,7 +22,7 @@ var velocitiesGroup={};
 var evacueesGroup={};
 var evacueesLabelsGroup={};
 var currentAgentsOnStairs={};
-var agentsOnStairsLabelfontSize = 100;
+var agentsOnStairsLabelfontSize = 180;
 
 paper.install(window);
 window.onload = function() {
@@ -724,8 +724,8 @@ function agentsOnStaircasesLabelsInFrame(){
 function printAgentsOnStaircasesLabels(floor,x,y,agentsNumber){
 	tx = dstatic.floors[floor].floor_meta.tx;
 	ty = dstatic.floors[floor].floor_meta.ty;
-	currentAgentsOnStairs[floor].addChild((new PointText(  { point: new Point(x+tx+10,
-					y+ty+agentsOnStairsLabelfontSize), fillColor:"#af0", content: agentsNumber, 
+	currentAgentsOnStairs[floor].addChild((new PointText(  { point: new Point(x+tx-agentsOnStairsLabelfontSize/2,
+					y+ty), fillColor:"#af0", content: agentsNumber, 
 				fontFamily: 'Roboto', fontWeight:'bold', 
 				fontSize: agentsOnStairsLabelfontSize })));
 }

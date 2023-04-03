@@ -277,7 +277,7 @@ class Worker:
                 for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
                     time_row = dict()
                     smoke_row = dict()
-                     
+                    stair_data = defaultdict(list)
                     for i in self.floors:
                         i.do_simulation(step)
                         stairs_que = i.agents_to_stairs()
@@ -290,15 +290,19 @@ class Worker:
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})
-                            stair_data = defaultdict(list)
-                            for s_name in self.staircases:
-                                self.staircases[s_name]['class'].update_positions()
-                                for k,v in self.staircases[s_name]['class'].count_insiders():
-                                    frame = self.staircases[s_name]['class'].get_position()
-                                    frame['count'] = v
-                                    stair_data[k].append(frame)
-                                self.staircase_anim.append(stair_data)
-                                self.staircases[s_name]['class'].move()
+
+                    if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
+                        for s_name in self.staircases:
+                            for k,v in self.staircases[s_name]['class'].count_insiders():
+                                frame = self.staircases[s_name]['class'].get_position()
+                                frame['count'] = v
+                                stair_data[k].append(frame)
+                        self.staircase_anim.append(stair_data)
+
+                    if (step % i.config['STAIRCASE_STEP']) == 0:        
+                        for s_name in self.staircases:
+                            self.staircases[s_name]['class'].update_positions()
+                            self.staircases[s_name]['class'].move()            
 
                     if len(time_row) > 0:                    
                         self.animation_data.append(time_row)

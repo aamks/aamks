@@ -236,6 +236,8 @@ class Staircase:
         self.lenght = (self.width**2+self.height**2)**(1/2)
         #self.floor_space = int((self.width+self.lenght)/50)
         self.floor_space = 10
+        self.center_x = offsetx + width/2
+        self.center_y = offsety + height/2
         self.entrance = {i:self.number_queues for i in range(self.floors+1)} # 1 ground floor
         self.ques = self.create_queues()
         self.positions = self.create_positions() # }}}
@@ -379,7 +381,7 @@ class Staircase:
         return count.items()# }}}
     
     def get_position(self):
-        return {"x":self.offsetx, "y":self.offsety}
+        return {"x":self.center_x, "y":self.center_y}
     
     def total_completed(self):# {{{
         """<b>Funkcja total_completed</b> zwraca liczbę wszystkich agentów, którzy ukończyli kolejkę."""

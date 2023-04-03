@@ -154,6 +154,7 @@ class EvacEnv:
                     staircase = self.find_staircase(door_x, door_y)              
                     self.evacuees.set_goal(i, [(0 + i*70,0)])
                     self.sim.setAgentPosition(i, (0 + i*70,0))
+                    self.evacuees.set_position_to_pedestrian(i, (1000000 + i * 200, 10000))
                     self.evacuees.set_outsider(i)
                     self.evacuees.set_to_go(i, staircase)        
                     # Tu agent opuszcza pietro
