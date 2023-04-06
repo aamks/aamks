@@ -122,7 +122,7 @@ class processDists:
         self.cdf(dcbe_n, path='temp.png')
 
     def calculate_ccdf(self):
-        losses={'dead': list(), 'heavy': list(), 'light': list(), 'neglegible': list()}
+        losses={'d': list(), 'h': list(), 'l': list(), 'n': list()}
         results = self.quering('fed, id', wheres=['dcbe_time IS NOT NULL'], raw=True)
 
         self.total = len(results) # number of reults (simulations finished)
@@ -141,64 +141,76 @@ class processDists:
 
             for key in item.keys():
                 if key == 'H':
-                    losses['dead'].append(item[key])
+                    losses['d'].append(item[key])
                 if key == 'M':
-                    losses['heavy'].append(item[key])
+                    losses['h'].append(item[key])
                 if key == 'L':
-                    losses['light'].append(item[key])
+                    losses['l'].append(item[key])
                 if key == 'N':
-                    losses['neglegible'].append(item[key])
+                    losses['n'].append(item[key])
 
+        # add 0 for simulations with no casualities of given type
         for k in losses.keys():
             l = len(losses[k])
             if  l < self.total:
                 losses[k] = losses[k] + [0] * (self.total - l)
 
+        losses['lab'] = {'d':'Dead', 'h': 'Heavily injured', 'l': 'Lightly injured', 'n': 'Neglegible'}
+
         self.losses = losses
 
     def plot_ccdf(self):
+        lims = [0, 10]    #[xmax, ymin]
         fig = plt.figure(figsize=(12, 3))
         axs = [fig.add_subplot(131), fig.add_subplot(132), fig.add_subplot(133)]
-
-        xtic = tic.MaxNLocator(3)
 
         wykres = 0
 
         for key in self.losses.keys():
-            if key == 'neglegible':
+            if key in ('n', 'lab'):     # neglegible states for no casualities, thus no FN curve is created
                 continue
-            if len(self.losses[key]) == 0:
-                print(key )
-                continue 
-            elif sum(self.losses[key]) == 0:
-                lab = 'deaths' if key == 'dead' else f'{key} injuries'
-                plt.text(0.5, 0.5, f'No data available for {lab}',horizontalalignment='center',
-     verticalalignment='center', transform=axs[wykres].transAxes,
-     bbox=dict(facecolor='red', alpha=0.5))
+#            if len(self.losses[key]) == 0:      # empty list is an error 
+#                raise ValueError(f'[from beck.py] List of {key} injuries is empty') 
+            elif sum(self.losses[key]) == 0:    # no casualities of {key} type
+                plt.text(0.5, 0.5, f'No data available for {self.losses["lab"][key]}',horizontalalignment='center',
+     verticalalignment='center', transform=axs[wykres].transAxes, bbox=dict(facecolor='red', alpha=0.5))
                 axs[wykres].set_facecolor('#555555')
-                continue
+            else:
+                # data plotting
+                dane = ecdf(self.losses[key], side='left')
+                n = sorted(self.losses[key])    # number of casualities
+                f = 1-dane(sorted(self.losses[key]))    # frequency of n 
+                axs[wykres].plot(n, f, '-')
+                
+                # axis labels
+                axs[wykres].set_xlabel('Number of people')
+                axs[wykres].set_ylabel('Likelihood')
+                
+                # axis formatting
+                axs[wykres].semilogx()
+                axs[wykres].semilogy()
+                axs[wykres].grid(which='both')
+                axs[wykres].yaxis.set_major_formatter('{x}')
+                axs[wykres].xaxis.set_major_formatter(tic.ScalarFormatter())
+                lims[0] = n[-1] if n[-1] > lims[0] else lims[0] 
+                lims[1] = f[-1] if f[-1] < lims[1] else lims[1]
 
-            dane = ecdf(self.losses[key], side='left')
-            print(key, sorted(self.losses[key]), 1-dane(sorted(self.losses[key])))
-            axs[wykres].plot(sorted(self.losses[key]), 1-dane(sorted(self.losses[key])), '-o')
-            axs[wykres].set_xlabel('Number of people')
-            axs[wykres].set_ylabel('Likelihood')
-            axs[wykres].set_title(key)
-            axs[wykres].set_xlim(left=0)
+            axs[wykres].set_title(self.losses["lab"][key])
             wykres += 1
 
+        for w in range(3):
+            axs[w].set_xlim(left=1, right=lims[0])
+            axs[w].set_ylim(bottom=lims[1], top=1)
         fig.tight_layout()
         fig.savefig(f'{self.dir}/picts/ccdf.png')
         fig.clf()
 
 
     # to calculate risk per one person
-    # WK # Where is individual risk calculated?
+    # WK # Where is individual risk calculated? [rvo2_dto.py]
     def calculate_indvidual_risk(self):
         results = self.quering('i_risk', wheres=['dcbe_time is not null','i_risk is not null'], raw=True)
         row = [json.loads(i[0]) for i in results]
-        print(results)
-        exit()
         risk=list()
         for i in row:
             for values in i.values():
@@ -251,30 +263,28 @@ class processDists:
         return dump
 
     def plot_losses_hist(self):
-        labels = ['Death', 'Heavy injury', 'Light injury', 'Neglegible']
-
         wykres = 0
-        for i, key in enumerate(self.losses.keys()):
-            if len(self.losses[key]) == 0:
+        for key in self.losses.keys():
+            if len(self.losses[key]) == 0 or key == 'lab':
                 continue
             elif sum(self.losses[key]) == 0:
-                lab = 'deaths' if key == 'dead' else f'{key} injuries'
                 fig = plt.figure()
-                plt.text(0.5, 0.5, f'No data available for {lab} histogram',
+                plt.text(0.5, 0.5, f'No data available for {self.losses["lab"][key]} histogram',
                         horizontalalignment='center', verticalalignment='center',
                         bbox=dict(facecolor='red', alpha=0.5))
                 plt.title(labels[i])
                 fig.savefig(f'{self.dir}/picts/losses{key}.png')
                 fig.clf()
             else:
-                plot = sns.displot(self.losses[key], bins=20).set(title=labels[i])
+                plot = sns.displot(self.losses[key], bins=20).set(title=self.losses["lab"][key])
                 plot.set_axis_labels('Number of casualities', 'Number of scenarios')
                 plot.savefig(f'{self.dir}/picts/losses{key}.png')
 
 
     def plot_pie_fault(self):
         fig = plt.figure()
-        sizes = [len(self.losses['dead']), self.total-len(self.losses['dead'])]
+        n_success = self.losses['d'].count(0)
+        sizes = [self.total - n_success, n_success]
         labels = ['Failure', 'Success']
         colors = ['lightcoral', 'lightskyblue']
         explode = (0.1, 0)
@@ -507,9 +517,9 @@ def tree_planting(proc: processDists, feds: list, probs: list):
 
 def risk(proc: processDists):
     fed_f = float('%.3f' % (proc.calculate_indvidual_risk()))
-    fed_m = float('%.3f' % (len(proc.losses['heavy'])/proc.total))
-    fed_l = float('%.3f' % (len(proc.losses['light'])/proc.total)) 
-    fed_n = float('%.3f' % (len(proc.losses['neglegible'])/proc.total))
+    fed_m = float('%.3f' % (len(proc.losses['h'])/proc.total))
+    fed_l = float('%.3f' % (len(proc.losses['l'])/proc.total)) 
+    fed_n = float('%.3f' % (len(proc.losses['n'])/proc.total))
 
     p_dcbe = float('%.3f' % (len(proc.dcbe)/proc.total))
     p_ext = float('%.3f' % 0.17)
@@ -540,11 +550,11 @@ def risk(proc: processDists):
         temp_val = p.temp_values()
         g.write("MAX_TEMP - PER: {}, MEAN: {}".format(temp_val[0], temp_val[1]))
         g.write('P_dcbe: {}'.format(p_dcbe*bar*p_ext))
-        g.write('DEAD RATIO: {}'.format(sum(p.losses['dead'])/p.total))
-        g.write('DEAD FACTOR: {}'.format(sum(p.losses['dead'])/len(p.losses['dead'])))
-        g.write('HEAVY FACTOR: {}'.format(sum(p.losses['heavy'])/len(p.losses['heavy'])))
-        print('DEAD FACTOR: {}'.format(sum(p.losses['dead'])/len(p.losses['dead'])))
-        print('HEAVY FACTOR: {}'.format(sum(p.losses['heavy'])/len(p.losses['heavy'])))
+        g.write('DEAD RATIO: {}'.format(sum(p.losses['d'])/p.total))
+        g.write('DEAD FACTOR: {}'.format(sum(p.losses['d'])/len(p.losses['d'])))
+        g.write('HEAVY FACTOR: {}'.format(sum(p.losses['h'])/len(p.losses['h'])))
+        print('DEAD FACTOR: {}'.format(sum(p.losses['d'])/len(p.losses['d'])))
+        print('HEAVY FACTOR: {}'.format(sum(p.losses['h'])/len(p.losses['h'])))
         print('P_DCBE: {}'.format(len(p.dcbe)/p.total))
         print('P_FED_F: {}'.format(fed_f))
 

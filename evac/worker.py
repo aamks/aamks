@@ -23,7 +23,7 @@ import ssl
 from include import Json
 import json
 from collections import OrderedDict
-from subprocess import Popen, run
+from subprocess import Popen, run, TimeoutExpired
 import zipfile
 import multiprocessing
 
@@ -158,8 +158,8 @@ class Worker:
         if self.project_conf['fire_model'] == 'CFAST':
             try:
                 p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=30)
-            except subprocess.TimeoutExpired:
-                p.kill()
+            except TimeoutExpired as e:
+                self.wlogger.error(e)
             except Exception as e:
                 self.wlogger.error(e)
                 cfast_log = open('cfast.log', 'r')
@@ -481,9 +481,9 @@ class Worker:
 
 w = Worker()
 #print(os.environ['AAMKS_WORKER'])
-os.environ['AAMKS_WORKER'] = 'gearman'
-os.environ['AAMKS_PATH'] = '/usr/local/aamks'
-os.environ['AAMKS_SERVER'] = '192.168.0.185'
+#os.environ['AAMKS_WORKER'] = 'gearman'
+#os.environ['AAMKS_PATH'] = '/usr/local/aamks'
+#os.environ['AAMKS_SERVER'] = '192.168.0.185'
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()
