@@ -369,6 +369,7 @@ class Worker:
         report['highlight_geom'] = None
         report['psql'] = dict()
         report['psql']['fed'] = dict()
+        report['psql']['fed_num'] = dict()
         report['psql']['rset'] = dict()
         report['psql']['i_risk'] = dict()
         report['psql']['fed_heatmaps_table_schema'] = dict()
@@ -377,6 +378,7 @@ class Worker:
         report['psql']['cross_building_results'] = self.cross_building_results
         for i in self.floors:
             report['psql']['fed'][i.floor] = i.fed
+            report['psql']['fed_num'][i.floor] = i.fed_nummeric
             report['psql']['rset'][i.floor] = int(i.rset)
             report['psql']['i_risk'][i.floor] = round(i.calculate_individual_risk(), 2)
             report['psql']['fed_heatmaps_table_schema'][i.floor] = self.position_fed_tables_information[int(i.floor)]

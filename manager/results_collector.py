@@ -75,6 +75,7 @@ class ResultsCollector():
     def psql_report(self):
         p = Psql()
         fed=json.dumps(self.meta['psql']['fed'])
+        fed_num=json.dumps(self.meta['psql']['fed_num'])
         rset = json.dumps(self.meta['psql']['rset'])
         i_risk = json.dumps(self.meta['psql']['i_risk'])
         query = "SELECT Count(*) FROM fed_growth_cells_data where project_id = {} AND scenario_id = {} ".format(self.meta['project_id'], self.meta['scenario_id'])
