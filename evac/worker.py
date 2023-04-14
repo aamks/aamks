@@ -257,13 +257,19 @@ class Worker:
         self.wlogger.info('Starting simulations')
         time_frame = 10
         first_evacuue = []
+        naps = 0    # how many times 
         while 1:
             self.floors[0].smoke_query.cfast_has_time(time_frame)
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
                 for i in self.floors:
-                    i.read_cfast_record(time_frame)
+                    try:
+                        i.read_cfast_record(time_frame)
+                    except IndexError:
+                        self.wlogger.error(f'Unable to read CFAST results at {time_frame} s')
+                        #TODO: mark simulation as broken/not finished due to CFAST
+                        break
                     first_evacuue.append(i.evacuees.get_first_evacuees_time())
 
                 for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
@@ -284,7 +290,12 @@ class Worker:
                 time_frame += 10
             else:
                 # TODO: endless loop, propably cfast error
+                # [WK] exiting the loop with error message prevents being stuck in it
                 time.sleep(1)
+                naps += 1
+                if naps == 10:
+                    self.wlogger.error(f'There was no data found at {time_frame} s in CFAST results.')
+                    break
             self.wlogger.info('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
             if time_frame > (self.vars['conf']['simulation_time'] - 10):
                 self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
@@ -369,18 +380,16 @@ class Worker:
         report['highlight_geom'] = None
         report['psql'] = dict()
         report['psql']['fed'] = dict()
-        report['psql']['fed_num'] = dict()
         report['psql']['rset'] = dict()
-        report['psql']['i_risk'] = dict()
+        report['psql']['i_risk'] = dict()  # deprecated
         report['psql']['fed_heatmaps_table_schema'] = dict()
         report['psql']['fed_heatmaps_data_to_insert'] = dict()
         report['psql']['runtime'] = int(time.time() - self.start_time)
         report['psql']['cross_building_results'] = self.cross_building_results
         for i in self.floors:
             report['psql']['fed'][i.floor] = i.fed
-            report['psql']['fed_num'][i.floor] = i.fed_nummeric
             report['psql']['rset'][i.floor] = int(i.rset)
-            report['psql']['i_risk'][i.floor] = round(i.calculate_individual_risk(), 2)
+            report['psql']['i_risk'][i.floor] = round(i.calculate_individual_risk(), 2) # deprecated
             report['psql']['fed_heatmaps_table_schema'][i.floor] = self.position_fed_tables_information[int(i.floor)]
             report['psql']['fed_heatmaps_data_to_insert'][i.floor] = self.floors[int(i.floor)].fed_growth_grouped_by_cell
         for num_floor in range(len(self.floors)):
