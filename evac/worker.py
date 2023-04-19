@@ -156,18 +156,20 @@ class Worker:
 
     def run_cfast_simulations(self):
         if self.project_conf['fire_model'] == 'CFAST':
+            err = False
             try:
-                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=30)
+                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=30, capture_output=True, text=True)
             except TimeoutExpired as e:
                 self.wlogger.error(e)
-            except Exception as e:
-                self.wlogger.error(e)
-                cfast_log = open('cfast.log', 'r')
-                for line in cfast_log.readlines():
-                    if line.startswith("***Error:"):
-                        self.wlogger.error(Exception(line))
+                err = True
             else:
-                self.wlogger.info('CFAST simulation calculated with success')
+                for line in p.stdout.split('\n'):
+                    if line.startswith("***Error") or err:
+                        err = True
+                        self.wlogger.error(Exception(f'CFAST:{line}'))
+            inf = 'Iteration skipped due to CFAST error' if err else 'CFAST simulation calculated with success' 
+            self.wlogger.info(inf)
+            return not err
 
     def create_geom_database(self):
 
@@ -481,13 +483,13 @@ class Worker:
         os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
-        self.run_cfast_simulations()
-        self.prepare_staircases()
-        self.prepare_simulations()
-        self.create_fed_mesh_db()
-        self.connect_rvo2_with_smoke_query()
-        self.do_simulation()
-        self.send_report()
+        if self.run_cfast_simulations():
+            self.prepare_staircases()
+            self.prepare_simulations()
+            self.create_fed_mesh_db()
+            self.connect_rvo2_with_smoke_query()
+            self.do_simulation()
+            self.send_report()
 
 
 w = Worker()
