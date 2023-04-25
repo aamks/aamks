@@ -179,7 +179,8 @@ class Worker:
         doors = self.s.query('SELECT floor, name, center_x, center_y, terminal_door, vent_from_name, vent_to_name from aamks_geom WHERE terminal_door IS NOT NULL')
         for d in doors:
             staircase = re.search(r'(s\d+).*', d['vent_from_name']) or re.search(r'(s\d+).*', d['vent_to_name'])
-            d['staircase'] = staircase.groups()[0]
+            if staircase:
+                d['staircase'] = staircase.groups()[0]
         self.vars['conf']['doors'] = doors
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         self.wlogger.info('SQLite load successfully')
@@ -211,9 +212,12 @@ class Worker:
         ty = {x: floors_meta[x]['ty'] for x in floors_meta.keys()}
         for s in s_list:
             floors = sum([1 for row in rows if re.search(f'{s["name"]}\.\d+', row['name'])])
-            doors = self.s.query('SELECT floor, name, center_x, center_y from aamks_geom WHERE vent_to_name LIKE ? OR vent_from_name LIKE ? AND terminal_door IS NOT NULL', (s["name"]+'%', s["name"]+'%'))
+            doors = self.s.query('SELECT floor, name, center_x, center_y, vent_from_name, vent_to_name from aamks_geom WHERE vent_to_name LIKE ? OR vent_from_name LIKE ? AND terminal_door IS NOT NULL', (s["name"]+'%', s["name"]+'%'))
             self.staircases[s['name']] = {'class':Staircase(name=s['name'], floors=floors, number_queues=2, exits=1, width=s['width'], height=s['depth'], offsetx=s['x0'], offsety=s['y0'], ty=ty)}
             self.staircases[s['name']]['doors'] = doors
+            for door in doors:
+                if door['vent_from_name'] == 'OUTSIDE' or door['vent_to_name'] == 'OUTSIDE':
+                    self.staircases[s['name']]['exit_door'] = (door['center_x'], door['center_y'])
         self.vars['conf']['staircases'] = self.staircases
 
     def prepare_simulations(self):
@@ -299,10 +303,22 @@ class Worker:
                                 stair_data[k].append(frame)
                         self.staircase_anim.append(stair_data)
 
-                    if (step % i.config['STAIRCASE_STEP']) == 0:        
+                    if (step % i.config['STAIRCASE_STEP']) == 0:
+                        agents_ground_floor = []        
                         for s_name in self.staircases:
                             self.staircases[s_name]['class'].update_positions()
-                            self.staircases[s_name]['class'].move()            
+                            agents = self.staircases[s_name]['class'].move()
+                            if 'exit_door' not in self.staircases[s_name]:
+                                for agent in agents:
+                                    agent.position = (self.staircases[s_name]['doors'][0]['center_x'],
+                                                  self.staircases[s_name]['doors'][0]['center_y'])
+                                    agent.floor = '0'
+                                    agent.finished = 1
+                                    
+                            agents_ground_floor.extend(agents)            
+                        
+                        for agent in agents_ground_floor:
+                            self.floors[0].add_evacuee(agent)
 
                     if len(time_row) > 0:                    
                         self.animation_data.append(time_row)

@@ -12,7 +12,8 @@ class Evacuee:
         :type origin: tuple
         :type roadmap: list
         """
-
+        self.id = 0
+        self.floor = '0'
         self.origin = origin
         self.goal = None
         self.exit_door = None

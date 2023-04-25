@@ -305,7 +305,8 @@ class Staircase:
                     try:
                         agent.position = self.positions[i][x]
                     except:
-                        print(x, ' ', )
+                        #print(x, ' ', )
+                        pass
             
     
     def add_to_queues(self, floor, agent_id):# {{{
@@ -399,22 +400,28 @@ class Staircase:
             self.entrance[i] = min(self.entrance[i]+self.number_queues, self.number_queues)
         self.insert = 0
         agent_dropped = 0
+        agents = []
         for que in sorted(self.ques, key=lambda x: x.moved, reverse=True):
             que.count()
             if agent_dropped < self.exits:
                 if que.moved:
                     que.moved = False
-                    if que.only_pop():
+                    agent = que.only_pop()
+                    if agent:
                         agent_dropped += 1
+                        agents.append(agent)
                 else:
-                    if que.pop():
+                    agent = que.pop()
+                    if agent:
                         agent_dropped += 1
+                        agents.append(agent)
             else:
                 if que.moved:
                     if que.only_pop_none():
                         que.moved = False
                 else:
                     que.pop_none()
+        return agents
 
     def show_status(self):# {{{
         """<b>Funkcja show_status</b> wyświetla na ekranie stan poszczególnych kolejek."""

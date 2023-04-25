@@ -22,6 +22,7 @@ class EvacEnv:
     def __init__(self, aamks_vars):
         self.json = Json()
         self.evacuees = Evacuees
+        self.evacuees_from_stairs = {}
         self.max_speed = 0
         self.current_time = 0
         self.positions = []
@@ -63,7 +64,7 @@ class EvacEnv:
         #self.evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
         #self.all_evac = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]
 
-    def _find_closest_exit(self, evacuee):
+    def _find_closest_exit(self, evacuee, position):
         '''
         It finds the closest exit from the set of available exits.
         :param evacuee: object evacuee with the defined parameters.
@@ -72,21 +73,26 @@ class EvacEnv:
         paths, paths_free_of_smoke = list(), list()
 
         for door in self.general['doors']:
-            if door['floor'] != str(self.floor):
+            if door['floor'] != self.floor:
                 continue
             x, y = door['center_x'], door['center_y']
-            path = self.nav.nav_query(src=self.evacuees.get_position_of_pedestrian(evacuee), dst=(x, y), maxStraightPath=999)
+            path = self.nav.nav_query(src=position, dst=(x, y), maxStraightPath=999)
             dist = int(((door['center_x'] - path[-1][0])**2 + (door['center_y'] - path[-1][1])**2)**(1/2))
-            if path[0] == 'err' or dist > 100:
+            if dist > 100:
                 continue
-            if self._next_room_in_smoke(evacuee, path) is not True:
+            if self._next_room_in_smoke(evacuee, position, path) is False:
                 try:
                     paths_free_of_smoke.append([x, y, LineString(path).length])
                 except:
-                    self.evacuees.set_finish_to_agent(evacuee)
-                    self.evacuees.set_outsider(evacuee)
-                    self.evacuees.set_to_go(evacuee, door['staircase'])
                     paths_free_of_smoke.append([x, y, 0])
+                    try:
+                        self.evacuees.set_finish_to_agent(evacuee)
+                        if self.evacuees.get_floor_of_pedestrian(evacuee) == self.floor and self.floor != '0':
+                            self.evacuees.set_outsider(evacuee)
+                            self.evacuees.set_to_go(evacuee, door['staircase'])
+                    except:
+                        pass
+                    #TODO: set_finish_to_agent() when agent is out of self.evacuees                       
 
                 # paths.append([x, y, LineString(path).length])
             else:
@@ -101,14 +107,16 @@ class EvacEnv:
         else:
             return self.sim.getAgentPosition(evacuee)[0], self.sim.getAgentPosition(evacuee)[1]
 
-    def _next_room_in_smoke(self, evacuee, path):
+    def _next_room_in_smoke(self, evacuee, position, path):
         try:
-            s=self.evacuees.get_position_of_pedestrian(evacuee)
-            od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee))
+            od_at_agent_position = self.smoke_query.get_visibility(position)
         except:
             od_at_agent_position = 0, 'outside'
+        try:
+            self.evacuees.set_optical_density(evacuee, od_at_agent_position[0])
+        except:
+            self.evacuees_from_stairs[evacuee].optical_density_at_position = od_at_agent_position[0]
 
-        self.evacuees.set_optical_density(evacuee, od_at_agent_position[0])
         self.room = od_at_agent_position[1]
 
         if self.config['SMOKE_AWARENESS'] and len(path) > 1:
@@ -126,6 +134,8 @@ class EvacEnv:
     def place_evacuees(self, evacuees):
         assert isinstance(evacuees, Evacuees), '%evacuees is not type of Evacuees'
         self.evacuees = evacuees
+        self.evacuees.set_id_to_pedestrians(self.floor)
+
         [self.sim.addAgent(self.evacuees.get_origin_of_pedestrian(i))
          for (i) in range(self.evacuees.get_number_of_pedestrians())]
 
@@ -134,6 +144,13 @@ class EvacEnv:
 
         [self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_max_of_pedestrian(i))
          for i in range(self.evacuees.get_number_of_pedestrians())]
+    
+    def add_evacuee(self, evacuee):
+        agent_id = self.sim.addAgent(evacuee.position)
+        self.sim.setAgentPrefVelocity(agent_id, evacuee.velocity)
+        self.sim.setAgentMaxSpeed(agent_id, evacuee.max_speed)
+        evacuee.id = agent_id
+        self.evacuees_from_stairs[agent_id] = evacuee
 
     @staticmethod
     def discretize_time(time):
@@ -142,27 +159,35 @@ class EvacEnv:
     def get_data_for_visualization(self):
         self.get_agents_positions()
         data_row=[]
-        for n in range(self.sim.getNumAgents()):
+        for n in range(self.evacuees.get_number_of_pedestrians()):
             data_row.append([int(self.positions[n][0]), int(self.positions[n][1]), self.velocities[n][0], self.velocities[n][1], self.fed[n], self.finished[n]])
         return data_row
 
     def update_agents_position(self):
-        for i in range(self.evacuees.get_number_of_pedestrians()):
-            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
-                if not self.evacuees.is_outsider(i):
-                    door_x, door_y = self._find_closest_exit(i)
-                    staircase = self.find_staircase(door_x, door_y)              
-                    self.evacuees.set_goal(i, [(0 + i*70,0)])
-                    self.sim.setAgentPosition(i, (0 + i*70,0))
-                    self.evacuees.set_position_to_pedestrian(i, (1000000 + i * 200, 10000))
-                    self.evacuees.set_outsider(i)
-                    self.evacuees.set_to_go(i, staircase)        
-                    # Tu agent opuszcza pietro
-                else:
+        for i in range(self.sim.getNumAgents()):
+            try:
+                if self.evacuees.get_floor_of_pedestrian(i) == self.floor:
+                    if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
+                        position = self.evacuees.get_position_of_pedestrian(i)
+                        self.evacuees.set_goal(i, [(i * 25, 0)]) #1000000 + i * 200
+                        self.sim.setAgentPosition(i, (i * 25, 0))
+                        self.evacuees.set_position_to_pedestrian(i, (i * 25, 0))
+                        if self.floor == '0':
+                            continue
+                        if not self.evacuees.is_outsider(i):
+                            door_x, door_y = self._find_closest_exit(i, position)
+                            staircase = self.find_staircase(door_x, door_y)              
+                            self.evacuees.set_outsider(i)
+                            self.evacuees.set_to_go(i, staircase)        
+                            # Tu agent opuszcza pietro
+                    else:
+                        self.evacuees.set_position_to_pedestrian(i, (int(self.sim.getAgentPosition(i)[0]),
+                                                                        int(self.sim.getAgentPosition(i)[1])))
+            except IndexError:
+                if self.evacuees_from_stairs[i].finished == 0:
                     continue
-            else:
-                self.evacuees.set_position_to_pedestrian(i, (int(self.sim.getAgentPosition(i)[0]),
-                                                             int(self.sim.getAgentPosition(i)[1])))
+                self.evacuees_from_stairs[i].position = (int(self.sim.getAgentPosition(i)[0]),
+                                                        int(self.sim.getAgentPosition(i)[1]))
                 
     def get_agents_positions(self):
         self.positions = [self.evacuees.get_position_of_pedestrian(i) for (i)
@@ -181,67 +206,113 @@ class EvacEnv:
                     continue
                 if door['center_x'] == door_x and door['center_y'] == door_y:
                     return staircase
+        raise Exception("nie ma klatki")
 
     def update_agents_velocity(self):
-        for i in range(self.evacuees.get_number_of_pedestrians()):
-            self.evacuees.set_num_of_obstacle_neighbours(i, self.sim.getAgentNumObstacleNeighbors(i))
-            self.evacuees.set_num_of_orca_lines(i, self.sim.getAgentNumORCALines(i))
-            #if i == 210:
-                #self.evacuees.dump_evacuee_vars(i)
-            self.evacuees.calculate_pedestrian_velocity(i, self.current_time)
-        for i in range(self.evacuees.get_number_of_pedestrians()):
-            self.sim.setAgentPrefVelocity(i, self.evacuees.get_velocity_of_pedestrian(i))
-        self.velocities = [tuple((int(self.sim.getAgentPrefVelocity(i)[0]), int(self.sim.getAgentPrefVelocity(i)[1])))
-                           for (i)
-                           in range(self.sim.getNumAgents())]
+        self.velocities = []
+        for i in range(self.sim.getNumAgents()):
+            try:
+                if self.evacuees.get_finshed_of_pedestrian(i) == 0:
+                    self.velocities.append((0,0))
+                if self.evacuees.get_floor_of_pedestrian(i) == self.floor:
+                    self.evacuees.set_num_of_obstacle_neighbours(i, self.sim.getAgentNumObstacleNeighbors(i))
+                    self.evacuees.set_num_of_orca_lines(i, self.sim.getAgentNumORCALines(i))
+                    #if i == 210:
+                        #self.evacuees.dump_evacuee_vars(i)
+                    self.evacuees.calculate_pedestrian_velocity(i, self.current_time)
+                    velocity = self.evacuees.get_velocity_of_pedestrian(i)
+                    self.sim.setAgentPrefVelocity(i, velocity)
+                    self.velocities.append(velocity)
+                else:
+                    self.velocities.append(self.evacuees.get_velocity_of_pedestrian(i))
+            except IndexError:
+                if self.evacuees_from_stairs[i].finished == 0:
+                    continue
+                self.evacuees_from_stairs[i].calculate_velocity(self.current_time)
+                self.sim.setAgentPrefVelocity(i, self.evacuees_from_stairs[i].velocity)          
 
     def set_goal(self):
-        for e in range(self.evacuees.get_number_of_pedestrians()):
-            if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
-                continue
-            else:
-                # TODO: mimooh temporary fix
-                position = self.evacuees.get_position_of_pedestrian(e)
-                goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
+        for e in range(self.sim.getNumAgents()):
+            try:
+                if self.evacuees.get_floor_of_pedestrian(e) == self.floor:
+                    if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
+                        continue
+                    else:
+                        # TODO: mimooh temporary fix
+                        position = self.evacuees.get_position_of_pedestrian(e)
+                        goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e, position), maxStraightPath=32)
 
+                        try:
+                            vis = self.sim.queryVisibility(position, goal[2], 15)
+                            if vis:
+                                self.evacuees.set_goal(ped_no=e, goal=goal[1:])
+                            else:
+                                self.evacuees.set_goal(ped_no=e, goal=goal)
+                        except:
+                            self.evacuees.set_goal(ped_no=e, goal=goal)
+                else:
+                    print(e, " ", self.floor, "-", self.evacuees.get_position_of_pedestrian(e))
+            except IndexError:
+                if self.evacuees_from_stairs[e].finished == 0:
+                    continue
+                position = self.evacuees_from_stairs[e].position
+                goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e, position), maxStraightPath=32)
                 try:
                     vis = self.sim.queryVisibility(position, goal[2], 15)
                     if vis:
-                        self.evacuees.set_goal(ped_no=e, goal=goal[1:])
+                        self.evacuees_from_stairs[e].set_goal(goal[1:])
                     else:
-                        self.evacuees.set_goal(ped_no=e, goal=goal)
+                        self.evacuees_from_stairs[e].set_goal(goal)
                 except:
-                    self.evacuees.set_goal(ped_no=e, goal=goal)
+                    self.evacuees_from_stairs[e].set_goal(goal)
+                print("err ", self.evacuees_from_stairs[e].goal)
 
-        self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
-        for e in range(self.sim.getNumAgents()):
+        self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.evacuees.get_number_of_pedestrians())]
+        for e in range(self.evacuees.get_number_of_pedestrians()):
             self.focus.append(self.evacuees.get_goal_of_pedestrian(e))
 
     def update_speed(self):
-        for i in range(self.evacuees.get_number_of_pedestrians()):
+        for i in range(self.sim.getNumAgents()):
             self.elog.debug('Number of neigbouring agents: {}'.format(self.sim.getAgentNumAgentNeighbors(i)))
             self.elog.debug('Neigbouring distance: {}'.format(self.sim.getAgentNeighborDist(i)))
-            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
-                continue
-            else:
-                self.evacuees.update_speed_of_pedestrian(i)
-                self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_of_pedestrian(i))
+            try:
+                if self.evacuees.get_floor_of_pedestrian(i) == self.floor:
+                    if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
+                        continue
+                    else:
+                        self.evacuees.update_speed_of_pedestrian(i)
+                        self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_of_pedestrian(i))
+            except IndexError:
+                if self.evacuees_from_stairs[i].finished == 0:
+                    continue
+                self.evacuees_from_stairs[i].update_speed()
+                self.sim.setAgentMaxSpeed(i, self.evacuees_from_stairs[i].speed)
 
     def update_fed(self):
-        for i in range(self.evacuees.get_number_of_pedestrians()):
-            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
-                continue
-            else:
+        for i in range(self.sim.getNumAgents()):
+            try:
+                if self.evacuees.get_floor_of_pedestrian(i) == self.floor:
+                    if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
+                        continue
+                    else:
+                        try:
+                            fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i))
+                            if i == 0:
+                                self.elog.debug('FED calculated: {}'.format(fed))
+                        except:
+                            self.elog.warning('Simulation without FED')
+                            fed = 0.0
+                        self.evacuees.update_fed_of_pedestrian(i, fed * self.config['SMOKE_QUERY_RESOLUTION'])
+            except IndexError:
+                if self.evacuees_from_stairs[i].finished == 0:
+                    continue
                 try:
-                    fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i))
-                    if i == 0:
-                        self.elog.debug('FED calculated: {}'.format(fed))
+                    fed = self.smoke_query.get_fed(self.evacuees_from_stairs[i].position)
                 except:
-                    self.elog.warning('Simulation without FED')
                     fed = 0.0
-                self.evacuees.update_fed_of_pedestrian(i, fed * self.config['SMOKE_QUERY_RESOLUTION'])
+                self.evacuees_from_stairs[i].update_fed(fed * self.config['SMOKE_QUERY_RESOLUTION'])
 
-        fed = [self.evacuees.get_fed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
+        fed = [self.evacuees.get_fed_of_pedestrian(i) for i in range(self.evacuees.get_number_of_pedestrians())]
         self.fed_nummeric = fed
         c = None
         fed_symbilic = []
@@ -268,7 +339,7 @@ class EvacEnv:
 
     def generate_nav_mesh(self):
         self.nav = Navmesh()
-        self.nav.build(floor=str(self.floor))
+        self.nav.build(floor=self.floor)
 
     def prepare_rooms_list(self):
         self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -334,8 +405,8 @@ class EvacEnv:
 
     def save_positions_with_fed(self):
         if len(self.prev_fed) == 0:
-            self.prev_fed = [0 for i in range(self.sim.getNumAgents())]
-        for i in range(self.sim.getNumAgents()):
+            self.prev_fed = [0 for i in range(self.evacuees.get_number_of_pedestrians())]
+        for i in range(self.evacuees.get_number_of_pedestrians()):
             fed = self.fed_nummeric[i]
             x = int(self.positions[i][0])
             y = int(self.positions[i][1])
