@@ -77,6 +77,8 @@ class EvacEnv:
                 continue
             x, y = door['center_x'], door['center_y']
             path = self.nav.nav_query(src=position, dst=(x, y), maxStraightPath=999)
+            if path[0] == 'err':
+                continue
             dist = int(((door['center_x'] - path[-1][0])**2 + (door['center_y'] - path[-1][1])**2)**(1/2))
             if dist > 100:
                 continue
@@ -91,6 +93,7 @@ class EvacEnv:
                             self.evacuees.set_outsider(evacuee)
                             self.evacuees.set_to_go(evacuee, door['staircase'])
                     except:
+                        print(evacuee, " ", len(self.evacuees.pedestrians))
                         pass
                     #TODO: set_finish_to_agent() when agent is out of self.evacuees                       
 
@@ -185,13 +188,19 @@ class EvacEnv:
                                                                         int(self.sim.getAgentPosition(i)[1])))
             except IndexError:
                 if self.evacuees_from_stairs[i].finished == 0:
-                    continue
+                    self.sim.setAgentPosition(i, (i * 25, 0))
                 self.evacuees_from_stairs[i].position = (int(self.sim.getAgentPosition(i)[0]),
                                                         int(self.sim.getAgentPosition(i)[1]))
                 
     def get_agents_positions(self):
-        self.positions = [self.evacuees.get_position_of_pedestrian(i) for (i)
-                          in range(self.evacuees.get_number_of_pedestrians())]
+        self.positions = []
+        for i in range(self.evacuees.get_number_of_pedestrians()):
+            pos = self.evacuees.get_position_of_pedestrian(i)
+            if self.evacuees.get_floor_of_pedestrian(i) != self.floor:
+                self.positions.append((pos[0], pos[1]+2345))
+            else:
+                self.positions.append(pos)
+
         
     def agents_to_stairs(self):
         return self.evacuees.agents_to_stairs()
@@ -250,13 +259,14 @@ class EvacEnv:
                                 self.evacuees.set_goal(ped_no=e, goal=goal)
                         except:
                             self.evacuees.set_goal(ped_no=e, goal=goal)
-                else:
-                    print(e, " ", self.floor, "-", self.evacuees.get_position_of_pedestrian(e))
             except IndexError:
                 if self.evacuees_from_stairs[e].finished == 0:
                     continue
                 position = self.evacuees_from_stairs[e].position
                 goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e, position), maxStraightPath=32)
+                if goal[0] == 'err':
+                    print(self.evacuees_from_stairs[e].position, "-->", self.evacuees_from_stairs[e].goal)
+                    continue
                 try:
                     vis = self.sim.queryVisibility(position, goal[2], 15)
                     if vis:
@@ -265,7 +275,6 @@ class EvacEnv:
                         self.evacuees_from_stairs[e].set_goal(goal)
                 except:
                     self.evacuees_from_stairs[e].set_goal(goal)
-                print("err ", self.evacuees_from_stairs[e].goal)
 
         self.finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.evacuees.get_number_of_pedestrians())]
         for e in range(self.evacuees.get_number_of_pedestrians()):

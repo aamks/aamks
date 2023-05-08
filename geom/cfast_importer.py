@@ -320,10 +320,12 @@ class CFASTimporter():
         Doors that lead to outside or lead to staircases ('s%') are terminal
         '''
         update=[]
-        z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE type_pri='HVENT' AND (vent_from_name LIKE 's%' OR vent_to_name LIKE 's%' OR vent_to_name='OUTSIDE')")
+        z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE floor !='0' AND type_pri='HVENT' AND (vent_from_name LIKE 's%' OR vent_to_name LIKE 's%' OR vent_to_name='OUTSIDE')")
         for i in z:
-            for ii in z:
-                update.append((ii['exit_type'], ii['name']))
+            update.append((i['exit_type'], i['name']))
+        z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE type_pri='HVENT' AND vent_to_name='OUTSIDE'")
+        for i in z:
+            update.append((i['exit_type'], i['name']))
         self.s.executemany("UPDATE aamks_geom SET terminal_door=? WHERE name=?", update)
         #dd(self.s.query("SELECT name,terminal_door,vent_from_name,vent_to_name from aamks_geom order by name"))
 
