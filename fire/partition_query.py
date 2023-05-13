@@ -273,6 +273,10 @@ class PartitionQuery:
     def get_fed(self, position):# {{{
         conditions = self.get_conditions(position)
 
+        # when position of evacuee is outside the building we assume no FED absorbed
+        if conditions['COMPA'] == 'outside':
+            return 0.
+
         hgt = conditions['HGT']
         if hgt == None:
             return 0.

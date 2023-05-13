@@ -23,7 +23,7 @@ import ssl
 from include import Json
 import json
 from collections import OrderedDict
-from subprocess import Popen, run
+from subprocess import Popen, run, TimeoutExpired
 import zipfile
 import multiprocessing
 
@@ -156,18 +156,20 @@ class Worker:
 
     def run_cfast_simulations(self):
         if self.project_conf['fire_model'] == 'CFAST':
+            err = False
             try:
-                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=30)
-            except subprocess.TimeoutExpired:
-                p.kill()
-            except Exception as e:
+                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=30, capture_output=True, text=True)
+            except TimeoutExpired as e:
                 self.wlogger.error(e)
-                cfast_log = open('cfast.log', 'r')
-                for line in cfast_log.readlines():
-                    if line.startswith("***Error:"):
-                        self.wlogger.error(Exception(line))
+                err = True
             else:
-                self.wlogger.info('CFAST simulation calculated with success')
+                for line in p.stdout.split('\n'):
+                    if line.startswith("***Error") or err:
+                        err = True
+                        self.wlogger.error(Exception(f'CFAST:{line}'))
+            inf = 'Iteration skipped due to CFAST error' if err else 'CFAST simulation calculated with success' 
+            self.wlogger.info(inf)
+            return not err
 
     def create_geom_database(self):
 
@@ -263,7 +265,12 @@ class Worker:
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
                 for i in self.floors:
-                    i.read_cfast_record(time_frame)
+                    try:
+                        i.read_cfast_record(time_frame)
+                    except IndexError:
+                        self.wlogger.error(f'Unable to read CFAST results at {time_frame} s')
+                        #TODO: mark simulation as broken/not finished due to CFAST
+                        break
                     first_evacuue.append(i.evacuees.get_first_evacuees_time())
 
                 for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
@@ -283,8 +290,8 @@ class Worker:
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
                 time_frame += 10
             else:
-                # TODO: endless loop, propably cfast error
-                time.sleep(1)
+                self.wlogger.error(f'There was no data found at {time_frame} s in CFAST results.')
+                break
             self.wlogger.info('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
             if time_frame > (self.vars['conf']['simulation_time'] - 10):
                 self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
@@ -369,16 +376,16 @@ class Worker:
         report['highlight_geom'] = None
         report['psql'] = dict()
         report['psql']['fed'] = dict()
+        report['psql']['fed_symbolic'] = dict()
         report['psql']['rset'] = dict()
-        report['psql']['i_risk'] = dict()
         report['psql']['fed_heatmaps_table_schema'] = dict()
         report['psql']['fed_heatmaps_data_to_insert'] = dict()
         report['psql']['runtime'] = int(time.time() - self.start_time)
         report['psql']['cross_building_results'] = self.cross_building_results
         for i in self.floors:
             report['psql']['fed'][i.floor] = i.fed
+            report['psql']['fed_symbolic'][i.floor] = i.fed_symbolic
             report['psql']['rset'][i.floor] = int(i.rset)
-            report['psql']['i_risk'][i.floor] = round(i.calculate_individual_risk(), 2)
             report['psql']['fed_heatmaps_table_schema'][i.floor] = self.position_fed_tables_information[int(i.floor)]
             report['psql']['fed_heatmaps_data_to_insert'][i.floor] = self.floors[int(i.floor)].fed_growth_grouped_by_cell
         for num_floor in range(len(self.floors)):
@@ -448,13 +455,13 @@ class Worker:
         self.download_inputs()
         self.get_config()
         self.create_geom_database()
-        self.run_cfast_simulations()
-        self.prepare_simulations()
-        self.create_fed_mesh_db()
-        self.connect_rvo2_with_smoke_query()
-        self.do_simulation()
-        self.send_report()
-        self.wlogger.info('Simulation ended')
+        if self.run_cfast_simulations():
+            self.prepare_simulations()
+            self.create_fed_mesh_db()
+            self.connect_rvo2_with_smoke_query()
+            self.do_simulation()
+            self.send_report()
+            self.wlogger.info('Simulation ended successfully')
 
     def test(self):
         os.chdir(self.working_dir)
@@ -470,13 +477,14 @@ class Worker:
         os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
-        self.run_cfast_simulations()
-        self.prepare_staircases()
-        self.prepare_simulations()
-        self.create_fed_mesh_db()
-        self.connect_rvo2_with_smoke_query()
-        self.do_simulation()
-        self.send_report()
+        if self.run_cfast_simulations():
+            self.prepare_staircases()
+            self.prepare_simulations()
+            self.create_fed_mesh_db()
+            self.connect_rvo2_with_smoke_query()
+            self.do_simulation()
+            self.send_report()
+            self.wlogger.info('Simulation ended successfully')
 
 
 w = Worker()

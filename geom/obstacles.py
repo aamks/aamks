@@ -94,7 +94,7 @@ class Obstacles():
             if isinstance(wall, MultiPolygon):
                 for i in polygonize(wall):
                     obsts.append(i)
-            elif isinstance(wall, Polygon):
+            elif isinstance(wall, Polygon) and not wall.is_empty:
                 obsts.append(wall)
         return obsts 
 # }}}
