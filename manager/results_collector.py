@@ -75,8 +75,8 @@ class ResultsCollector():
     def psql_report(self):
         p = Psql()
         fed=json.dumps(self.meta['psql']['fed'])
+        fed_symbolic=json.dumps(self.meta['psql']['fed_symbolic'])
         rset = json.dumps(self.meta['psql']['rset'])
-        i_risk = json.dumps(self.meta['psql']['i_risk']) # deprecated
         query = "SELECT Count(*) FROM fed_growth_cells_data where project_id = {} AND scenario_id = {} ".format(self.meta['project_id'], self.meta['scenario_id'])
         results = p.query(query)
         count = [i[0] for i in results]
@@ -92,8 +92,7 @@ class ResultsCollector():
                 query = "UPDATE fed_growth_cells_data SET fed_growth_sum = fed_growth_sum + {}, samples_number = samples_number + {} WHERE cell_id={} and scenario_id={} and project_id={} and floor={}".format(round(row["sum"],2), row["count"], row['cell_number'], self.meta['scenario_id'], self.meta['project_id'], int(key))
                 p.query(query)
 
-        p.query("UPDATE simulations SET fed = '{}', wcbe='{}', run_time = {}, dcbe_time = {}, min_vis_compa = {}, max_temp = {}, host = '{}', min_hgt_compa = {}, min_vis_cor = {}, min_hgt_cor = {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(fed, rset, self.meta['psql']['runtime'], self.meta['psql']['cross_building_results']['dcbe'], self.meta['psql']['cross_building_results']['min_vis_compa'], self.meta['psql']['cross_building_results']['max_temp_compa'], self.meta['worker'], self.meta['psql']['cross_building_results']['min_hgt_compa'],self.meta['psql']['cross_building_results']['min_vis_cor'],self.meta['psql']['cross_building_results']['min_hgt_cor']), (self.meta['project_id'], self.meta['scenario_id'], self.meta['sim_id']))
-        p.query("UPDATE simulations SET i_risk = '{}' WHERE project=%s AND scenario_id=%s AND iteration=%s".format(i_risk), (self.meta['project_id'], self.meta['scenario_id'], self.meta['sim_id']))
+        p.query("UPDATE simulations SET fed = '{}', fed_symbolic = '{}', wcbe='{}', run_time = {}, dcbe_time = {}, min_vis_compa = {}, max_temp = {}, host = '{}', min_hgt_compa = {}, min_vis_cor = {}, min_hgt_cor = {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(fed, fed_symbolic, rset, self.meta['psql']['runtime'], self.meta['psql']['cross_building_results']['dcbe'], self.meta['psql']['cross_building_results']['min_vis_compa'], self.meta['psql']['cross_building_results']['max_temp_compa'], self.meta['worker'], self.meta['psql']['cross_building_results']['min_hgt_compa'],self.meta['psql']['cross_building_results']['min_vis_cor'],self.meta['psql']['cross_building_results']['min_hgt_cor']), (self.meta['project_id'], self.meta['scenario_id'], self.meta['sim_id']))
         SendMessage("Database updated")
 
 try:

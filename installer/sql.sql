@@ -64,7 +64,8 @@ CREATE TABLE simulations ( ---{{{
     wcbe text,
     dcbe_time integer,
     dcbe_compa text,
-    fed text,
+    fed real,
+    fed_symbolic text,
     min_hgt_compa decimal,
     min_hgt_cor decimal,
     min_vis_compa decimal,
@@ -72,8 +73,8 @@ CREATE TABLE simulations ( ---{{{
     max_temp decimal,
 	status text,
 	animation text,
-	i_risk text,
-	modified timestamp without time zone not null default now()
+	modified timestamp without time zone not null default now(),
+    results text
 );
 ---}}}
 CREATE TABLE users (---{{{

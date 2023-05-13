@@ -60,7 +60,7 @@ class processDists:
         fig = plot.fig
         if path:
             fig.savefig(os.path.join(self.dir, 'picts', path))
-        plt.clf()
+        plt.close()
     
     # template for psql query
     def quering(self, selects: str, wheres=[], raw=False, typ='int'):
@@ -123,7 +123,7 @@ class processDists:
 
     def calculate_ccdf(self):
         losses={'d': list(), 'h': list(), 'l': list(), 'n': list()}
-        results = self.quering('fed, id', wheres=['dcbe_time IS NOT NULL'], raw=True)
+        results = self.quering('fed_symbolic, id', wheres=['dcbe_time IS NOT NULL'], raw=True)
 
         self.total = len(results) # number of reults (simulations finished)
         row = [json.loads(i[0]) for i in results]
@@ -203,7 +203,7 @@ class processDists:
             axs[w].set_ylim(bottom=lims[1], top=1)
         fig.tight_layout()
         fig.savefig(f'{self.dir}/picts/ccdf.png')
-        fig.clf()
+        plt.close()
 
 
     # to calculate risk per one person
@@ -236,7 +236,7 @@ class processDists:
         plt.xlabel('sample size')
         plt.legend()
         fig.savefig('{}/picts/convergence.png'.format(self.dir))
-        fig.clf()
+        fig.close()
 
     def plot_ccdf_percentage(self):
 
@@ -254,7 +254,7 @@ class processDists:
 
         fig.tight_layout()
         fig.savefig('{}/picts/ccdf_per.png'.format(self.dir))
-        fig.clf()
+        fig.close()
 
     def _get_json(self, path):
         f = open(path, 'r')
@@ -272,13 +272,14 @@ class processDists:
                 plt.text(0.5, 0.5, f'No data available for {self.losses["lab"][key]} histogram',
                         horizontalalignment='center', verticalalignment='center',
                         bbox=dict(facecolor='red', alpha=0.5))
-                plt.title(labels[i])
+                plt.title(key)
                 fig.savefig(f'{self.dir}/picts/losses{key}.png')
-                fig.clf()
+                plt.close()
             else:
                 plot = sns.displot(self.losses[key], bins=20).set(title=self.losses["lab"][key])
                 plot.set_axis_labels('Number of casualities', 'Number of scenarios')
                 plot.savefig(f'{self.dir}/picts/losses{key}.png')
+                plt.close()
 
 
     def plot_pie_fault(self):
@@ -291,7 +292,7 @@ class processDists:
         plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True)
         plt.axis('equal')
         fig.savefig(f'{self.dir}/picts/pie_fault.png')
-        fig.clf()
+        plt.close()
 
     def calculate_barrois(self, area):
         other_building = [1.18, 1e-4, -1.87, -0.20]
@@ -482,13 +483,21 @@ class processDists:
 
             fig.colorbar(c, ax=ax, fraction=0.046, pad=0.04)
             fig.savefig('{}/picts/floor_{}.png'.format(self.dir, floor['floor']), dpi=170)
+            plt.close()
 
 
 def plot_all(proc: processDists):
     proc.calculate_ccdf()
     proc.plot_ccdf()
     proc.plot_pie_fault()
-    proc.plot_heatmap_positions_fed_growth()
+    try:
+        proc.plot_heatmap_positions_fed_growth()
+    except:
+        for i in range(10):
+            fig = plt.figure()
+            plt.text(0.5, 0.5, f'[SERVICE WORKS IN PROGRESS]\n',horizontalalignment='center')
+            fig.savefig(f'{p.dir}/picts/floor{i}.png')
+            plt.close()
 
     sns.set_theme()
     proc.plot_dcbe_dist()
@@ -507,6 +516,14 @@ def plot_all(proc: processDists):
 
 #[fed_f, fed_m, fed_l, fed_n], [bar, p_dcbe, p_ext, p_tk]
 def tree_planting(proc: processDists, feds: list, probs: list):
+    fig = plt.figure()
+    plt.text(0.5, 0.5, f'[SERVICE WORKS IN PROGRESS]\nRisk calculations and event trees are currently not available in this module.',horizontalalignment='center')
+    fig.savefig(f'{p.dir}/picts/tree_F.png')
+    fig.savefig(f'{p.dir}/picts/tree_M.png')
+    fig.savefig(f'{p.dir}/picts/tree_steel.png')
+    plt.close()
+    return -1
+
     for m in ('F', 'M'):
         t = EventTreeFED(building=proc.dir, p_general=probs[0], p_develop=probs[2], p_dcbe=probs[1], p_fed_n=feds[3], p_fed_l=feds[2], p_fed_m=feds[1], p_fed_f=feds[0], mode=m)
         t.draw_tree()
@@ -516,6 +533,7 @@ def tree_planting(proc: processDists, feds: list, probs: list):
 
 
 def risk(proc: processDists):
+    return -1, -1
     fed_f = float('%.3f' % (proc.calculate_indvidual_risk()))
     fed_m = float('%.3f' % (len(proc.losses['h'])/proc.total))
     fed_l = float('%.3f' % (len(proc.losses['l'])/proc.total)) 
@@ -565,5 +583,6 @@ p = processDists()
 plot_all(p)
 feds, probs = risk(p)
 tree_planting(p, feds, probs)
+print('[SERVICE WORKS IN PROGRESS]\nRisk calculations and event trees are currently not available in this module.')
 
 print('Charts are ready to display')
