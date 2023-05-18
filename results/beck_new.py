@@ -27,6 +27,7 @@ import csv
 from include import Dump as dd
 from math import sqrt
 import warnings
+import pandas as pd
 
 
 
@@ -37,6 +38,7 @@ class GetData:
         self.configs = self._get_json(f'{scenario_dir}/conf.json')
         self.horisontal_time=dict({'0': 3, '1': 36, '2': 72, '3': 112, '4': 148, '5': 184, '6': 220})   # ???
         self.p = Psql()
+        self.s = Sqlite(f'{self.dir}/aamks.sqlite')
         self.raw = {}
 
     def _get_json(self, path):
@@ -46,8 +48,8 @@ class GetData:
         return dump
 
     # query DB
-    def _quering(self, selects: str, wheres=[], raw=False, typ='int'):
-        base = f"SELECT {selects} FROM simulations WHERE project = {self.configs['project_id']} AND scenario_id = {self.configs['scenario_id']}"
+    def _quering(self, selects: str, tab='simulations', wheres=[], raw=False, typ='int'):
+        base = f"SELECT {selects} FROM {tab} WHERE project = {self.configs['project_id']} AND scenario_id = {self.configs['scenario_id']}"
         q = " AND ".join([base] + wheres)
         results = self.p.query(q)
 
@@ -113,7 +115,6 @@ class GetData:
         self.raw['min_vis_cor'] = r
         return r
 
-
     def max_temp(self):
         data = self._quering('max_temp', wheres=['dcbe_time is not null', 'max_temp < 900'], typ='float')
         dist = getattr(stat, 'norm')
@@ -123,19 +124,45 @@ class GetData:
 
         return np.array(data)
 
-    def area(self):
-        s = Sqlite(f'{self.dir}/aamks.sqlite')
-        r = s.query('SELECT sum(room_area) as total FROM aamks_geom')[0]['total'] / 10000
-
-        self.raw['area'] = r 
-        return r
-
     
     def feds(self):
         r = self._quering('fed, id', wheres=['dcbe_time IS NOT NULL'], raw=True)
         self.raw['feds'] = r
 
         return r
+    
+    def fed_der_df(self):
+        fed_der_df_data = []
+        col_names = ['cell_id', 'x_min', 'x_max', 'y_min', 'y_max', 'samples_number', 'fed_growth_sum']
+
+        self.geometry() if 'geometry' not in self.raw.keys() else None
+
+        for f in range(self.raw['geometry']['floors']+1):
+             fed_der_df_data.append(pd.DataFrame(self._quering(', '.join(col_names),
+                 tab='fed_growth_cells_data', wheres=[f'floor={f}'], raw=True), columns=col_names))
+
+        self.raw['fed_der_df'] = fed_der_df_data
+
+        return fed_der_df_data
+
+    def geometry(self):
+        geom_data = {}
+
+        geom_data['floors'] = int(max(self._quering('DISTINCT floor', tab='fed_growth_cells_data', raw=True)))
+        geom_data['area'] = self.s.query('SELECT sum(room_area) as total FROM aamks_geom')[0]['total'] / 10000
+        
+        for label, prefixes in {'rooms':['r', 'c', 'a'], 'doors':['d'], 'obsts':['t']}.items():
+            g = []
+            for p in prefixes:
+                for f in range(geom_data['floors']+1):
+                     g.extend(self.s.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{f}' and \
+                        (a.name LIKE '{p}%' or a.name LIKE 'c%' or a.name LIKE 'a%');"))
+            geom_data[label] = g
+
+        self.raw['geometry'] = geom_data
+
+        return geom_data
+        
 
     # ask for all data
     def _all(self):
@@ -147,8 +174,9 @@ class GetData:
         self.min_vis()
         self.min_vis_cor()
         self.max_temp()
-        self.area()
         self.feds()
+        self.geometry()
+        self.fed_der_df()
 
     # return raw data
     def drop(self, with_fed=True):
@@ -349,6 +377,32 @@ class RiskIteration:
         return self.risks
 
 
+'''Calculations of FED absorption heatmap
+based on previously processed results from fed_growth_cells_data table'''
+class Heatmap:
+    def __init__(self, fed_growth_data: dict, geom: dict):
+        self.data = fed_growth_data
+        self.geom = geom
+    
+    def calc(self):
+        for f in range(self.geom['floors']+1):
+            df = self.data[f]
+            total_samples = df['samples_number'].sum()
+            mean_samp_density = total_samples / len(df.index)
+
+            def func(x):
+                if x['samples_number'] < mean_samp_density:
+                    return 0
+                else:
+                    return x['fed_growth_sum']/x['samples_number']
+
+            df['mean_growth'] = df.apply(func, axis=1)
+            df['height'] = df['y_max'] - df['y_min']
+            df['width'] = df['x_max'] - df['x_min']
+
+        return self.data
+
+
 '''Basic plot class, containes all types of plots we use and their settings'''
 class Plot:
     def __init__(self, scenario_dir):
@@ -427,53 +481,10 @@ class Plot:
         fig.savefig(os.path.join(self.dir, 'picts', 'pie_fault.png'))
         plt.clf()
 
-
-'''Heatmap of FED absorption'''
-#[WK] continue from here
-class Heatmap:
-    def __init__(self, scenario_dir, fed_growth):
-        self.dir = scenario_dir
-        self.fed_growth
-
-    def plot(self):
-        aamks_sqlite = Sqlite(f'{self.dir}/aamks.sqlite')
-        postgresql_query = "SELECT distinct floor from fed_growth_cells_data where scenario_id = {} and project_id = {}".format(
-            self.configs['scenario_id'], self.configs['project_id'])
-        floors = self.p.query(postgresql_query)
-        # position_fed_db = Sqlite("{}/fed_mesh.sqlite".format(self.dir))
-        # floors = results[0]
-        # floors = position_fed_db.query("SELECT DISTINCT floor_number from mesh_cells")
-
-        for floor in floors:
+    def heatmap(self, hm: Heatmap):
+        for f in range(hm.geom['floors']+1):
             patches = []
-            x_mesh_size = self.p.query(
-                "SELECT DISTINCT x_max from fed_growth_cells_data where floor = {} and scenario_id = {} and project_id = {}".format(
-                    floor['floor'], self.configs['scenario_id'], self.configs['project_id']))
-            y_mesh_size = self.p.query(
-                "SELECT DISTINCT y_max from fed_growth_cells_data where floor = {} and scenario_id = {} and project_id = {}".format(
-                    floor['floor'], self.configs['scenario_id'], self.configs['project_id']))
-            mesh_cells_table_one_floor = self.p.query(
-                "SELECT cell_id, x_min, x_max, y_min, y_max, samples_number, fed_growth_sum from fed_growth_cells_data where floor = {} and scenario_id = {} and project_id = {}".format(
-                    floor['floor'], self.configs['scenario_id'], self.configs['project_id']))
-            samples_count = sum([x['samples_number'] for x in mesh_cells_table_one_floor])
-            avg_samples_count_per_cell = samples_count / len(mesh_cells_table_one_floor)
-            avg_fed_growth = []
-
-            for cell in mesh_cells_table_one_floor:
-                if cell['samples_number'] < avg_samples_count_per_cell:
-                    cell.append(0)
-                else:
-                    cell.append(cell['fed_growth_sum'] / cell['samples_number'])
-
-            rooms = aamks_sqlite.query(
-                "SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%');".format(
-                    floor['floor']))
-            doors = aamks_sqlite.query(
-                "SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 'd%');".format(
-                    floor['floor']))
-            obstacles = aamks_sqlite.query(
-                "SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 't%');".format(
-                    floor['floor']))  
+            floor_df = hm.data[f]
 
             fig = plt.figure()
             plt.grid(False)
@@ -485,26 +496,24 @@ class Heatmap:
             ax = fig.add_subplot(111)
             cmap = matplotlib.cm.get_cmap('Reds')
             light_red = cmap(0)
-            colors = {'ROOM': '#8C9DCE', 'COR': '#385195', 'HALL': '#DBB55B', 'CONTOUR': '#000000', 'DOOR': matplotlib.colors.rgb2hex(light_red), 'OBSTACLE': '#707070'}
+            colors = {'ROOM': '#8C9DCE', 'COR': '#385195', 'HALL': '#DBB55B', 'CONTOUR': '#000000', 
+                    'DOOR': matplotlib.colors.rgb2hex(light_red), 'OBSTACLE': '#707070'}
             
-            max_fed_growth = float(max([cell[7] for cell in mesh_cells_table_one_floor]))
+            max_fed_growth = float(floor_df['fed_growth_sum'].max())
             no_fed_growth = False;
 
             if max_fed_growth == 0:
-                no_fed_growth = True;
                 max_fed_growth = 1
+                no_fed_growth = True;
 
-            for cell in mesh_cells_table_one_floor:
-                height = cell['y_max'] - cell['y_min']
-                width = cell['x_max'] - cell['x_min']
-                patches.append(
-                    matplotlib.patches.Rectangle((cell['x_min'], cell['y_min']), width, height,
-                                                 facecolor=clr.to_hex(
-                                                        list(cmap(float(cell[7]) / max_fed_growth))),
-                                                 edgecolor=None,
-                                                 alpha=1))
+            def patch(x):
+                patches.append(matplotlib.patches.Rectangle((x['x_min'], x['y_min']), x['width'], x['height'],
+                    facecolor=clr.to_hex(list(cmap(float(x['fed_growth_sum']) / max_fed_growth))), edgecolor=None,
+                    alpha=1))
 
-            for room in rooms:
+            floor_df.apply(patch, axis=1)
+
+            for room in hm.geom['rooms']:
                 y = json.loads(room['points'])
                 x_set = list(x[0] for x in json.loads(room['points']))
                 y_set = list(x[1] for x in json.loads(room['points']))
@@ -516,7 +525,7 @@ class Heatmap:
                     matplotlib.patches.Rectangle((x_min, y_min), width, height, lw=1.5,
                                                  edgecolor=colors['CONTOUR'], fill=None))
 
-            for door in doors:
+            for door in hm.geom['doors']:
                 y = json.loads(door['points'])
                 x_set = list(x[0] for x in json.loads(door['points']))
                 y_set = list(x[1] for x in json.loads(door['points']))
@@ -529,7 +538,7 @@ class Heatmap:
                                                  edgecolor=None,
                                                  facecolor=colors['DOOR']))
 
-            for obstacle in obstacles:
+            for obstacle in hm.geom['obsts']:
                 y = json.loads(obstacle['points'])
                 x_set = list(x[0] for x in json.loads(obstacle['points']))
                 y_set = list(x[1] for x in json.loads(obstacle['points']))
@@ -544,19 +553,16 @@ class Heatmap:
 
 
             ax.add_collection(PatchCollection(patches, match_original=True))
-            x_min = min([cell['x_min'] for cell in mesh_cells_table_one_floor])
-            x_max = max([cell['x_max'] for cell in mesh_cells_table_one_floor])
-            y_min = min([cell['y_min'] for cell in mesh_cells_table_one_floor])
-            y_max = max([cell['y_max'] for cell in mesh_cells_table_one_floor])
-            plt.xlim([x_min - 100, x_max + 100])
-            plt.ylim([y_min - 100, y_max + 100])
+            plt.xlim([floor_df['x_min'].min() - 100, floor_df['x_max'].max() + 100])
+            plt.ylim([floor_df['y_min'].min() - 100, floor_df['y_max'].max() + 100])
             ax.set_ylim(ax.get_ylim()[::-1])
-            ax.set_title("floor {}".format(floor['floor']))
+            ax.set_title(f'floor {f}')
             ax.set_xlabel('x axis')
             ax.set_ylabel('y axis')
             plt.gca().set_aspect('equal', adjustable='box')
             #fig.a.set_visible(False)
 
+            #[WK]
             fed_list_2_d = [[0 for y in y_mesh_size] for x in x_mesh_size]
             for i in range(len(fed_list_2_d)):
                 for j in range(len(fed_list_2_d[0])):
@@ -571,12 +577,14 @@ class Heatmap:
             fig.colorbar(c, ax=ax, fraction=0.046, pad=0.04)
             fig.savefig('{}/picts/floor_{}.png'.format(self.dir, floor['floor']), dpi=170)
 
+            plt.clf()
 
 
 '''Generating plots and results visualization - the head class'''
 class PostProcess:
     def __init__(self):
-        self.dir = sys.argv[1]
+        self.dir = sys.argv[1] if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT')
+        print(self.dir)
         self.gd = GetData(self.dir)
         self.data = {**self.gd.drop(with_fed=False), **RiskScenario(self.gd.raw['feds']).all()} # results for THE SCENARIO
         self.probs = []#{}
@@ -653,11 +661,15 @@ class PostProcess:
         os.makedirs(f'{self.dir}/picts')
 
         p = Plot(self.dir)
+        h = Heatmap(self.data['fed_der_df'], self.data['geometry'])
+        h.calc()
+        p.heatmap(h)
         [p.cdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['cdf']]
         [p.pdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf']]
         [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
         [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
         p.pie(self.data['pdf_fn'][0])
+
 
         self.plant()
 
