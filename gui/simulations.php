@@ -65,20 +65,20 @@ function show_pictures() {/*{{{*/
 		echo "<p>Figure ". $counter .". <strong>".$picture[1]."</strong></p>";
 		$counter += 1;
 	}
-#	$path = $f."/picts/";
-#	$cmd = "cd $path; ls -d floor* 2>&1";
-#	$result=shell_exec("$cmd");
-#	$result_array=explode("\n",$result);
-#	foreach ($result_array as $pic) {
-#		if (strpos($pic, "floor") !== false) {
-#			$file=$f."/picts/".$pic;
-#			$size_info=getimagesize($file);
-#			$data64=shell_exec("base64 $file");
-#			echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
-#			echo "<p>Figure ". $counter .". <strong>".$pic." Avarage fed growth on the floor divided into cells </strong></p>";
-#			$counter += 1;
-#		}
-#	}
+	$path = $f."/picts/";
+	$cmd = "cd $path; ls -d floor* 2>&1";
+	$result=shell_exec("$cmd");
+	$result_array=explode("\n",$result);
+	foreach ($result_array as $pic) {
+		if (strpos($pic, "floor") !== false) {
+			$file=$f."/picts/".$pic;
+			$size_info=getimagesize($file);
+			$data64=shell_exec("base64 $file");
+			echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
+			echo "<p>Figure ". $counter .". <strong>".$pic." Avarage fed growth on the floor divided into cells </strong></p>";
+			$counter += 1;
+		}
+	}
 }
 /*}}}*/
 

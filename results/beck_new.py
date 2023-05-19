@@ -22,7 +22,7 @@ import scipy.stats as stat
 import collections
 from include import Sqlite
 from include import Psql
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Rectangle as rect
 import csv
 from include import Dump as dd
 from math import sqrt
@@ -152,12 +152,13 @@ class GetData:
         geom_data['area'] = self.s.query('SELECT sum(room_area) as total FROM aamks_geom')[0]['total'] / 10000
         
         for label, prefixes in {'rooms':['r', 'c', 'a'], 'doors':['d'], 'obsts':['t']}.items():
-            g = []
-            for p in prefixes:
-                for f in range(geom_data['floors']+1):
-                     g.extend(self.s.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{f}' and \
-                        (a.name LIKE '{p}%' or a.name LIKE 'c%' or a.name LIKE 'a%');"))
-            geom_data[label] = g
+            geom_data[label] = []
+            for f in range(geom_data['floors']+1):
+                g = []
+                for p in prefixes:
+                    g.extend(self.s.query(
+                    f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{f}' and a.name LIKE '{p}%';"))
+                geom_data[label].append(g)
 
         self.raw['geometry'] = geom_data
 
@@ -380,7 +381,7 @@ class RiskIteration:
 '''Calculations of FED absorption heatmap
 based on previously processed results from fed_growth_cells_data table'''
 class Heatmap:
-    def __init__(self, fed_growth_data: dict, geom: dict):
+    def __init__(self, fed_growth_data: pd.DataFrame, geom: dict):
         self.data = fed_growth_data
         self.geom = geom
     
@@ -481,78 +482,62 @@ class Plot:
         fig.savefig(os.path.join(self.dir, 'picts', 'pie_fault.png'))
         plt.clf()
 
+    # refractor the physical meaning of this heatmapping and compare with worker/results_collector references
     def heatmap(self, hm: Heatmap):
         for f in range(hm.geom['floors']+1):
             patches = []
             floor_df = hm.data[f]
 
+            # initial figure definition
             fig = plt.figure()
-            plt.grid(False)
-
-            # hide figure axes
-            plt.gca().axes.get_xaxis().set_visible(False)
-            plt.gca().axes.get_yaxis().set_visible(False)
-
             ax = fig.add_subplot(111)
             cmap = matplotlib.cm.get_cmap('Reds')
-            light_red = cmap(0)
             colors = {'ROOM': '#8C9DCE', 'COR': '#385195', 'HALL': '#DBB55B', 'CONTOUR': '#000000', 
-                    'DOOR': matplotlib.colors.rgb2hex(light_red), 'OBSTACLE': '#707070'}
+                    'DOOR': matplotlib.colors.rgb2hex(cmap(0)), 'OBSTACLE': '#707070'}
             
-            max_fed_growth = float(floor_df['fed_growth_sum'].max())
-            no_fed_growth = False;
+            # find color of each cell
+            max_fed_growth = floor_df['fed_growth_sum'].max()
 
-            if max_fed_growth == 0:
-                max_fed_growth = 1
-                no_fed_growth = True;
+            def find_cell_color(x):
+                try:
+                    color_frac = float(x['fed_growth_sum'] / max_fed_growth)
+                except ZeroDivisionError:
+                    color_frac = 0.
 
+                return clr.to_hex(list(cmap(color_frac)))
+
+
+            floor_df['color'] = floor_df.apply(find_cell_color, axis=1)
+
+            # add collored rectangle for each cell
             def patch(x):
-                patches.append(matplotlib.patches.Rectangle((x['x_min'], x['y_min']), x['width'], x['height'],
-                    facecolor=clr.to_hex(list(cmap(float(x['fed_growth_sum']) / max_fed_growth))), edgecolor=None,
-                    alpha=1))
+                patches.append(rect((x['x_min'], x['y_min']), x['width'], x['height'],
+                    facecolor=x['color'], edgecolor=None, alpha=1))
 
             floor_df.apply(patch, axis=1)
 
-            for room in hm.geom['rooms']:
-                y = json.loads(room['points'])
-                x_set = list(x[0] for x in json.loads(room['points']))
-                y_set = list(x[1] for x in json.loads(room['points']))
-                x_min = min(x_set)
-                y_min = min(y_set)
-                height = max(y_set) - min(y_set)
-                width = max(x_set) - min(x_set)
-                patches.append(
-                    matplotlib.patches.Rectangle((x_min, y_min), width, height, lw=1.5,
-                                                 edgecolor=colors['CONTOUR'], fill=None))
+            # draw geometry entities
+            def pts2rect(pts):
+                xys = list(zip(*json.loads(pts)))
+                return tuple(min(xys[i]) for i in range(2)), max(xys[0]) - min(xys[0]), max(xys[1]) - min(xys[1])
 
-            for door in hm.geom['doors']:
-                y = json.loads(door['points'])
-                x_set = list(x[0] for x in json.loads(door['points']))
-                y_set = list(x[1] for x in json.loads(door['points']))
-                x_min = min(x_set)
-                y_min = min(y_set)
-                height = max(y_set) - min(y_set)
-                width = max(x_set) - min(x_set)
-                patches.append(
-                    matplotlib.patches.Rectangle((x_min, y_min), width, height, lw=1.5,
-                                                 edgecolor=None,
-                                                 facecolor=colors['DOOR']))
+            for room in hm.geom['rooms'][f]:
+                patches.append(rect(*pts2rect(room['points']), lw=1.5, edgecolor=colors['CONTOUR'], fill=None))
 
-            for obstacle in hm.geom['obsts']:
-                y = json.loads(obstacle['points'])
-                x_set = list(x[0] for x in json.loads(obstacle['points']))
-                y_set = list(x[1] for x in json.loads(obstacle['points']))
-                x_min = min(x_set)
-                y_min = min(y_set)
-                height = max(y_set) - min(y_set)
-                width = max(x_set) - min(x_set)
-                patches.append(
-                    matplotlib.patches.Rectangle((x_min, y_min), width, height, lw=1.5,
-                                                 edgecolor=None,
-                                                 facecolor=colors['OBSTACLE']))
+            for door in hm.geom['doors'][f]:
+                patches.append(rect(*pts2rect(door['points']), lw=1.5, edgecolor=None, facecolor=colors['DOOR']))
+
+            for obst in hm.geom['obsts'][f]:
+                patches.append(rect(*pts2rect(obst['points']), lw=1.5, edgecolor=None, facecolor=colors['OBSTACLE']))
 
 
+            # data plotting
             ax.add_collection(PatchCollection(patches, match_original=True))
+
+            # figure settings
+            plt.grid(False)
+            plt.gca().axes.get_xaxis().set_visible(False)
+            plt.gca().axes.get_yaxis().set_visible(False)
             plt.xlim([floor_df['x_min'].min() - 100, floor_df['x_max'].max() + 100])
             plt.ylim([floor_df['y_min'].min() - 100, floor_df['y_max'].max() + 100])
             ax.set_ylim(ax.get_ylim()[::-1])
@@ -562,21 +547,18 @@ class Plot:
             plt.gca().set_aspect('equal', adjustable='box')
             #fig.a.set_visible(False)
 
-            #[WK]
-            fed_list_2_d = [[0 for y in y_mesh_size] for x in x_mesh_size]
-            for i in range(len(fed_list_2_d)):
-                for j in range(len(fed_list_2_d[0])):
-                    fed_list_2_d[i][j] = float(mesh_cells_table_one_floor[j + i * len(y_mesh_size)][7])
-
+            # legend bar
+            fed_list_2_d = floor_df[['x_max', 'y_max', 'fed_growth_sum']].pivot(columns='x_max', index='y_max').astype(float)
             c = ax.pcolormesh(fed_list_2_d, cmap='Reds')
 
-            if no_fed_growth == True:
-                fed_list_2_d[0][0] = 0.1
+            if max_fed_growth == 0:
+                fed_list_2_d.iloc[0, 0] = 0.1
                 c = ax.pcolormesh(fed_list_2_d, cmap='Reds')
 
             fig.colorbar(c, ax=ax, fraction=0.046, pad=0.04)
-            fig.savefig('{}/picts/floor_{}.png'.format(self.dir, floor['floor']), dpi=170)
-
+            
+            # save figure
+            fig.savefig(os.path.join(self.dir, 'picts', f'floor_{f}.png'), dpi=170)
             plt.clf()
 
 
