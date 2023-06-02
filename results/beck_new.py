@@ -279,6 +279,7 @@ class RiskIteration:
         #print('MonteCarlo assesment of PDF for FN in progress...', end='\r')
         fn_mc = np.array([0] * (self.n + 1))
         rmse = [1] * (self.n + 1)
+        return fn_mc
 
         # draw samples from LN distributions of death untill RMSE threshold is met but at least
         i = 1
@@ -381,27 +382,23 @@ class RiskIteration:
 '''Calculations of FED absorption heatmap
 based on previously processed results from fed_growth_cells_data table'''
 class Heatmap:
-    def __init__(self, fed_growth_data: pd.DataFrame, geom: dict):
+    def __init__(self, fed_growth_data: pd.DataFrame, geom: dict, n_iter = int):
         self.data = fed_growth_data
         self.geom = geom
+        self.n_iter = n_iter
+
+        self.plot = {'range': 0, 'floors': [{} for i in range(geom['floors']+1)]}
     
     def calc(self):
-        for f in range(self.geom['floors']+1):
-            df = self.data[f]
-            total_samples = df['samples_number'].sum()
-            mean_samp_density = total_samples / len(df.index)
+        for f, df in enumerate(self.plot['floors']):
+            df['xes'] = np.array(sorted([min(self.data[f]['x_min']), *self.data[f]['x_max'].unique()]))
+            df['yes'] = np.array(sorted([min(self.data[f]['y_min']), *self.data[f]['y_max'].unique()]))
+            df['data'] = self.data[f][['x_max', 'y_max', 'fed_growth_sum']].pivot(columns='x_max',
+                    index='y_max').astype(float).fillna(-1).apply(lambda x: x/self.n_iter).to_numpy()
 
-            def func(x):
-                if x['samples_number'] < mean_samp_density:
-                    return 0
-                else:
-                    return x['fed_growth_sum']/x['samples_number']
+            self.plot['range'] = max(df['data'].max(), self.plot['range'])
 
-            df['mean_growth'] = df.apply(func, axis=1)
-            df['height'] = df['y_max'] - df['y_min']
-            df['width'] = df['x_max'] - df['x_min']
-
-        return self.data
+        return self.plot
 
 
 '''Basic plot class, containes all types of plots we use and their settings'''
@@ -482,80 +479,49 @@ class Plot:
         fig.savefig(os.path.join(self.dir, 'picts', 'pie_fault.png'))
         plt.clf()
 
-    # refractor the physical meaning of this heatmapping and compare with worker/results_collector references
-    def heatmap(self, hm: Heatmap):
+    # plot heatmap of FED absorption
+    def heatmap(self, hm: Heatmap, lab='Total FED absorbed in cell [-]'):
         for f in range(hm.geom['floors']+1):
-            patches = []
-            floor_df = hm.data[f]
-
             # initial figure definition
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            cmap = matplotlib.cm.get_cmap('Reds')
+
+            # colors
+            my_cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', ['white', 'coral', 'darkred'])
             colors = {'ROOM': '#8C9DCE', 'COR': '#385195', 'HALL': '#DBB55B', 'CONTOUR': '#000000', 
-                    'DOOR': matplotlib.colors.rgb2hex(cmap(0)), 'OBSTACLE': '#707070'}
+                    'DOOR': matplotlib.colors.rgb2hex(my_cmap(0)), 'OBSTACLE': '#707070'}
             
-            # find color of each cell
-            max_fed_growth = floor_df['fed_growth_sum'].max()
+            # plot fed growth data
+            dat = hm.plot['floors'][f]
+            c = ax.pcolormesh(dat['xes'], dat['yes'], dat['data'], cmap=my_cmap, vmax=hm.plot['range'])
 
-            def find_cell_color(x):
-                try:
-                    color_frac = float(x['fed_growth_sum'] / max_fed_growth)
-                except ZeroDivisionError:
-                    color_frac = 0.
-
-                return clr.to_hex(list(cmap(color_frac)))
-
-
-            floor_df['color'] = floor_df.apply(find_cell_color, axis=1)
-
-            # add collored rectangle for each cell
-            def patch(x):
-                patches.append(rect((x['x_min'], x['y_min']), x['width'], x['height'],
-                    facecolor=x['color'], edgecolor=None, alpha=1))
-
-            floor_df.apply(patch, axis=1)
-
-            # draw geometry entities
+            # add geometry entities to patches and plot them
+            patches = []
             def pts2rect(pts):
                 xys = list(zip(*json.loads(pts)))
                 return tuple(min(xys[i]) for i in range(2)), max(xys[0]) - min(xys[0]), max(xys[1]) - min(xys[1])
 
             for room in hm.geom['rooms'][f]:
                 patches.append(rect(*pts2rect(room['points']), lw=1.5, edgecolor=colors['CONTOUR'], fill=None))
-
             for door in hm.geom['doors'][f]:
                 patches.append(rect(*pts2rect(door['points']), lw=1.5, edgecolor=None, facecolor=colors['DOOR']))
-
             for obst in hm.geom['obsts'][f]:
                 patches.append(rect(*pts2rect(obst['points']), lw=1.5, edgecolor=None, facecolor=colors['OBSTACLE']))
 
-
-            # data plotting
             ax.add_collection(PatchCollection(patches, match_original=True))
 
             # figure settings
-            plt.grid(False)
             plt.gca().axes.get_xaxis().set_visible(False)
             plt.gca().axes.get_yaxis().set_visible(False)
-            plt.xlim([floor_df['x_min'].min() - 100, floor_df['x_max'].max() + 100])
-            plt.ylim([floor_df['y_min'].min() - 100, floor_df['y_max'].max() + 100])
+            plt.xlim([dat['xes'].min() - 100, dat['xes'].max() + 100])
+            plt.ylim([dat['yes'].min() - 100, dat['yes'].max() + 100])
             ax.set_ylim(ax.get_ylim()[::-1])
-            ax.set_title(f'floor {f}')
+            ax.set_title(f'Level {f}')
             ax.set_xlabel('x axis')
             ax.set_ylabel('y axis')
             plt.gca().set_aspect('equal', adjustable='box')
-            #fig.a.set_visible(False)
-
-            # legend bar
-            fed_list_2_d = floor_df[['x_max', 'y_max', 'fed_growth_sum']].pivot(columns='x_max', index='y_max').astype(float)
-            c = ax.pcolormesh(fed_list_2_d, cmap='Reds')
-
-            if max_fed_growth == 0:
-                fed_list_2_d.iloc[0, 0] = 0.1
-                c = ax.pcolormesh(fed_list_2_d, cmap='Reds')
-
-            fig.colorbar(c, ax=ax, fraction=0.046, pad=0.04)
+            fig.colorbar(c, ax=ax, fraction=0.03, pad=0.04, label=lab)
+            fig.tight_layout()
             
             # save figure
             fig.savefig(os.path.join(self.dir, 'picts', f'floor_{f}.png'), dpi=170)
@@ -569,6 +535,7 @@ class PostProcess:
         print(self.dir)
         self.gd = GetData(self.dir)
         self.data = {**self.gd.drop(with_fed=False), **RiskScenario(self.gd.raw['feds']).all()} # results for THE SCENARIO
+        self.n = len(self.gd.raw['feds'])  # number of finished iterations taken for results analysis
         self.probs = []#{}
 
         self.plot_type = {
@@ -643,17 +610,17 @@ class PostProcess:
         os.makedirs(f'{self.dir}/picts')
 
         p = Plot(self.dir)
-        h = Heatmap(self.data['fed_der_df'], self.data['geometry'])
+        h = Heatmap(self.data['fed_der_df'], self.data['geometry'], self.n)
         h.calc()
         p.heatmap(h)
-        [p.cdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['cdf']]
-        [p.pdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf']]
-        [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
-        [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
-        p.pie(self.data['pdf_fn'][0])
-
-
-        self.plant()
+#        [p.cdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['cdf']]
+#        [p.pdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf']]
+#        [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
+#        [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
+#        p.pie(self.data['pdf_fn'][0])
+#
+#
+#        self.plant()
 
         self.save()
         

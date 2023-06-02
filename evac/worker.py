@@ -301,8 +301,6 @@ class Worker:
                 self.simulation_time = max(rsets)
                 self.time_shift = 0
                 break
-        for i in self.floors:
-            i.prepare_for_inserting_into_db()
         self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
         self.wlogger.info('Final results gathered')
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
@@ -378,16 +376,15 @@ class Worker:
         report['psql']['fed'] = dict()
         report['psql']['fed_symbolic'] = dict()
         report['psql']['rset'] = dict()
-        report['psql']['fed_heatmaps_table_schema'] = dict()
-        report['psql']['fed_heatmaps_data_to_insert'] = dict()
+        #report['psql']['fed_heatmaps_table_schema'] = dict()
+        report['psql']['dfed'] = dict()
         report['psql']['runtime'] = int(time.time() - self.start_time)
         report['psql']['cross_building_results'] = self.cross_building_results
         for i in self.floors:
             report['psql']['fed'][i.floor] = i.fed
             report['psql']['fed_symbolic'][i.floor] = i.fed_symbolic
             report['psql']['rset'][i.floor] = int(i.rset)
-            report['psql']['fed_heatmaps_table_schema'][i.floor] = self.position_fed_tables_information[int(i.floor)]
-            report['psql']['fed_heatmaps_data_to_insert'][i.floor] = self.floors[int(i.floor)].fed_growth_grouped_by_cell
+            report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
         for num_floor in range(len(self.floors)):
             report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
             report['floor'] = num_floor
@@ -397,58 +394,7 @@ class Worker:
         self.wlogger.info('Metadata prepared successfully')
     # }}}
 
-    def create_fed_mesh_db(self):
-        aamks_sqlite = Sqlite(os.environ['AAMKS_PROJECT']  + "/aamks.sqlite")
-        self.position_fed_tables_information = [[]for k in range (len(self.floors))]
-        for floor in range(0,(len(self.floors))):
 
-            rooms = aamks_sqlite.query("SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%');".format(floor))
-            x_set_fed_whole_floor = list(x[0] for x in sum([json.loads(t['points']) for t in rooms],[]))
-            y_set_fed_whole_floor = list(x[1] for x in sum([json.loads(t['points']) for t in rooms],[]))
-
-            x_min = min(x_set_fed_whole_floor)
-            x_max = max(x_set_fed_whole_floor)
-            y_min = min(y_set_fed_whole_floor)
-            y_max = max(y_set_fed_whole_floor)
-
-            width = x_max - x_min
-            height = y_max - y_min
-
-            mesh_size_x = int((self.config['APPROXIMATE_NUMBER_OF_CELLS_PER_FLOOR']*width/height)**0.5)
-
-            mesh_size_y = int((self.config['APPROXIMATE_NUMBER_OF_CELLS_PER_FLOOR']*height/width)**0.5)
-
-            # divide x axis
-            num = x_max - x_min
-            x_points = ([num // mesh_size_x + (1 if x < num % mesh_size_x else 0) for x in range(mesh_size_x)])
-            x_points = cumsum(x_points)
-            x_points = insert(x_points, 0, 0, axis=0)
-            x_points = [x + x_min for x in x_points]
-            x_points = list(x_points)
-            # divide y axis
-            num = y_max - y_min
-            y_points = ([num // mesh_size_y + (1 if x < num % mesh_size_y else 0) for x in range(mesh_size_y)])
-            y_points = cumsum(y_points)
-            y_points = insert(y_points, 0, 0, axis=0)
-            y_points = [y + y_min for y in y_points]
-            y_points = list(y_points)
-            
-            self.position_fed_tables_information[floor] = [[0 for i in range(mesh_size_y)] for j in range(mesh_size_x)]
-            
-            for i in range(len(x_points)-1):
-                for j in range(len(y_points)-1):
-                    self.position_fed_tables_information[floor][i][j] = {
-                                    'number': j+i*(len(y_points)-1),
-                                    'floor': floor,
-                                    'y_min': int(y_points[j]),
-                                    'y_max': int(y_points[j+1]),
-                                    'x_min': int(x_points[i]),
-                                    'x_max': int(x_points[i+1]),
-                                    'fed_growth_sum':0.0,
-                                    'samples_count':0
-                                    }
-
-            self.floors[floor].position_fed_tables_information = self.position_fed_tables_information[floor]
 
     def main(self):
         self._create_workspace()
@@ -457,7 +403,6 @@ class Worker:
         self.create_geom_database()
         if self.run_cfast_simulations():
             self.prepare_simulations()
-            self.create_fed_mesh_db()
             self.connect_rvo2_with_smoke_query()
             self.do_simulation()
             self.send_report()
@@ -473,14 +418,12 @@ class Worker:
         self.send_report()
 
     def local_worker(self):
-
         os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
         if self.run_cfast_simulations():
             self.prepare_staircases()
             self.prepare_simulations()
-            self.create_fed_mesh_db()
             self.connect_rvo2_with_smoke_query()
             self.do_simulation()
             self.send_report()
@@ -489,9 +432,6 @@ class Worker:
 
 w = Worker()
 #print(os.environ['AAMKS_WORKER'])
-os.environ['AAMKS_WORKER'] = 'gearman'
-os.environ['AAMKS_PATH'] = '/usr/local/aamks'
-os.environ['AAMKS_SERVER'] = '192.168.0.185'
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()

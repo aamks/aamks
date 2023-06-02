@@ -6,8 +6,12 @@ require_once("inc.php");
 function listing() {/*{{{*/
 	extract($_SESSION['main']);
 	$sim="$project_id/$scenario_id";
-    //echo "<a class=blink href=?make_pictures>Run postprocess!</a>";
-    echo "<form method=POST><input autocomplete=off type=submit name=postprocess value='Run postprocess'><input type=submit value='Reload pictures'></form>";
+	echo "<form method='POST' action=''>
+			<input type='submit' name='btn-beck' value='Postprocess'>
+		</form>";
+	echo "<form method='POST' action=''>
+		<input type='submit' name='btn-images' value='Reload images'>
+	</form>";
 
 }
 /*}}}*/
@@ -26,16 +30,16 @@ function status() {/*{{{*/
 
 /*}}}*/
 function make_pictures() {/*{{{*/
-	if(empty($_POST['postprocess'])) { return; }
 	$f=$_SESSION['main']['working_home'];
 
 	/*Generate pictures with using beck.py script*/
 	$aamks=getenv("AAMKS_PATH");
 	
-	$cmd="cd $aamks/results; python3 beck_new.py $f 2>&1"; 
+	$cmd="cd $aamks/results; python3 beck_new.py $f 2>&1";
     // Output a 'waiting message'
-
 	$z=shell_exec("$cmd");
+    show_pictures();
+
 /*}}}*/
 }
 
@@ -44,8 +48,8 @@ function show_pictures() {/*{{{*/
 
 	$counter = 1;
     $pictures_list = array(
-        array('pie_fault','The share of scenario with failure of safety systems (at least one dead)'),
-        array('pdf_fn','Probability density function of deaths'), 
+        array('pie_fault','The share of scenario with failure of safety systems (at least one fatality)'),
+        array('pdf_fn','Fatalities histogram'), 
         array('fn_curve','FN curve of the building'), 
         array('dcbe','Cumulative distribution function of ASET'), 
         array('wcbe','Cumulative distribution function of RSET'), 
@@ -82,14 +86,21 @@ function show_pictures() {/*{{{*/
 }
 /*}}}*/
 
-
 function main() {/*{{{*/
 	$_SESSION['nn']->htmlHead("Simulations");
 	$_SESSION['nn']->menu('Manage simulations');
 	listing();
 	status();
-	show_pictures();
-    make_pictures();
+	//show_pictures();
+    //make_pictures();
+
+	if (isset($_POST['btn-beck'])) {
+		make_pictures();
+	}
+
+	if (isset($_POST['btn-images'])) {
+		show_pictures();
+	}
 }
 /*}}}*/
 

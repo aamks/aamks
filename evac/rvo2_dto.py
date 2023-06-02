@@ -13,8 +13,9 @@ from include import Json
 import os
 from scipy.stats import norm
 from math import log
-from numpy import array, prod
+from numpy import array, prod, zeros, ndenumerate
 from scipy.spatial.distance import cdist
+import pandas as pd
 
 
 class EvacEnv:
@@ -54,6 +55,9 @@ class EvacEnv:
                                        self.max_speed)
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
+
+        self.dfed = FEDDerivative(floor=self.floor)
+
         self.prev_fed = [] 
         self.position_fed_tables_information = []
         self.position_fed_to_insert = []
@@ -302,35 +306,9 @@ class EvacEnv:
     def calculate_individual_risk(self):
         # deprecated function
         # all risk calculations are proceeded with results.beck_new.py now
+        # possibly to be changed due to parallelization 
         return -1
 
-    def save_positions_with_fed(self):
-        if len(self.prev_fed) == 0:
-            self.prev_fed = [0 for i in range(self.sim.getNumAgents())]
-        for i in range(self.sim.getNumAgents()):
-            fed = self.fed[i]
-            x = int(self.positions[i][0])
-            y = int(self.positions[i][1])
-            fed_growth = round((fed - self.prev_fed[i]),2)
-            self.steps_fed_positions_data.append({'x':x, 'y':y, 'fed_growth': fed_growth, 'floor': int(self.floor)})
-            self.prev_fed[i] = fed
-
-    def prepare_for_inserting_into_db(self):
-        for row in self.steps_fed_positions_data:
-            self.find_proper_cell_and_append(row['x'],row['y'],row['fed_growth'], row['floor'])
-        self.group_data()
-
-    def group_data(self):
-        unique_cell_numbers = set(map(lambda x:x['cell_number'], self.position_fed_to_insert))
-        self.fed_growth_grouped_by_cell = [{'sum':sum([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]),'count':len([row['fed_growth'] for row in self.position_fed_to_insert if row['cell_number']==cell_number]), 'cell_number':cell_number} for cell_number in unique_cell_numbers]
-
-    def find_proper_cell_and_append(self, x, y, fed_growth, floor):
-        for j in range(len(self.position_fed_tables_information)):
-            for k in range(len(self.position_fed_tables_information[0])):
-                if self.position_fed_tables_information[j][k]['x_min'] < x <= self.position_fed_tables_information[j][k]['x_max'] and self.position_fed_tables_information[j][k]['y_min'] < y <= self.position_fed_tables_information[j][k]['y_max']:
-                    value = {'fed_growth':fed_growth, 'cell_number':self.position_fed_tables_information[j][k]['number']}
-                    self.position_fed_to_insert.append(value)
-                    return;
 
     def do_simulation(self, step):
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
@@ -344,6 +322,98 @@ class EvacEnv:
         #self.elog.info(self.current_time)
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
             self.update_fed()
-            self.save_positions_with_fed()
+        if self.dfed.n_agents == 0:
+            self.dfed.n_agents = self.get_number_of_evacuees()
+            self.dfed.fed = [0 for i in range(self.dfed.n_agents)]
+        self.dfed.update_dfed(self.config['TIME_STEP'], self.positions, self.fed)
         if self.rset == 0:
             self.get_rset_time()
+
+
+# Total FED growth spatial function (per floor)
+class FEDDerivative:
+    def __init__(self, floor: int):
+        self.n_agents = 0
+        self.floor = floor
+        self.dim = self._find_2dims()
+
+        self.raw = []
+        self.raw_df = pd.DataFrame(self.raw)
+
+        self.cell_size = [50, 50]    # fixed cell size [dx,dy] [cm]
+        self.celled = self._meshing()
+        self.celled_df = pd.DataFrame(self.celled)
+        
+        self.fed = []
+
+    # find dimensions of the plane returns list: [[xmin, ymin], [xmax, ymax]]
+    def _find_2dims(self):
+        aamks_sqlite = Sqlite(os.environ['AAMKS_PROJECT']  + "/aamks.sqlite")
+        dims = []
+        q = aamks_sqlite.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
+                (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%');")
+        def minmax(pts):
+            ret = []
+            xys = list(zip(*pts))
+            ret.append([min(xys[i]) for i in range(2)])
+            ret.append([max(xys[i]) for i in range(2)])
+            return ret
+
+        for i in q:
+            dims.extend(minmax(json.loads(i['points'])))
+
+        return minmax(dims)
+
+    def _meshing(self):
+        # mesh geometry with structurized quadrilaterall elements (of self.size dimensions)
+
+        shape = [self._dim2cell(self.dim[1][ax], axis=ax) for ax in range(2)]
+
+        return zeros(shape)
+
+    def _append_to_cell(self, x: float, y: float, value: float):
+        i = self._dim2cell(x)
+        j = self._dim2cell(y, axis=1)
+
+        self.celled[i, j] += value
+   
+
+    def _cell2dim(self, cell_no: int, axis=0):
+        # return the minimum coordinate of [cell_no] cell, axis==0 for X, 1 for Y
+        return cell_no * self.cell_size[axis] + self.dim[0][axis]
+
+    def _dim2cell(self, dim: float, axis=0):
+        # return cell number for given dimension, axis==0 for X, 1 for Y !!! int is not the best function here!!!
+        cell_no = int((dim - self.dim[0][axis]) / self.cell_size[axis])
+        if cell_no < 0:
+            raise ValueError(f'Cell number takes only positive values ({dim}, {cell_no})')
+        else:
+            return cell_no
+
+    def update_dfed(self, dt: float,  positions: list, fed_table: list):
+        for i in range(self.n_agents):
+            x = int(positions[i][0])
+            y = int(positions[i][1])
+            dfed = fed_table[i] - self.fed[i] 
+
+            if dfed > 0:
+                self.raw.append({'x':x, 'y':y, 'dfed/dt':dfed/dt})
+                try:
+                    self._append_to_cell(x, y, dfed/dt)
+                except IndexError:
+                    # evacuee outside the building
+                    pass
+
+        self.fed = fed_table
+        
+    # exporting non-zero dfed cells
+    def export(self):
+        exp = []
+        for i, v in ndenumerate(self.celled):
+            if v > 0: 
+                row = {'cell_id': i, 'xmin': self._cell2dim(i[0]), 'xmax': self._cell2dim(i[0]+1),
+                        'ymin': self._cell2dim(i[1], axis=1), 'ymax': self._cell2dim(i[1]+1, axis=1), 'total_dfed': v}
+                exp.append(row)
+        return pd.DataFrame(exp).to_json()
+
+        
