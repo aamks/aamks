@@ -9,6 +9,7 @@ from numpy import prod
 from numpy import insert
 from numpy import cumsum
 
+from results.beck_new import RiskIteration as RI
 from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
@@ -376,7 +377,6 @@ class Worker:
         report['psql']['fed'] = dict()
         report['psql']['fed_symbolic'] = dict()
         report['psql']['rset'] = dict()
-        #report['psql']['fed_heatmaps_table_schema'] = dict()
         report['psql']['dfed'] = dict()
         report['psql']['runtime'] = int(time.time() - self.start_time)
         report['psql']['cross_building_results'] = self.cross_building_results
@@ -388,6 +388,7 @@ class Worker:
         for num_floor in range(len(self.floors)):
             report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
             report['floor'] = num_floor
+        report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
 
         self.meta_file = "meta_{}.json".format(self.sim_id)
         j.write(report, self.meta_file)

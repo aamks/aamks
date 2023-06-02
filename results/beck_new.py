@@ -7,7 +7,6 @@ import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
-import matplotlib
 from matplotlib.collections import PatchCollection
 from statsmodels.distributions.empirical_distribution import ECDF as ecdf
 import matplotlib.ticker as tic
@@ -16,8 +15,8 @@ sys.path.insert(0, '/usr/local/aamks')
 import os
 import time
 import shutil
-from event_tree_en import EventTreeFED
-from event_tree_en import EventTreeSteel
+#from event_tree_en import EventTreeFED
+#from event_tree_en import EventTreeSteel
 import scipy.stats as stat
 import collections
 from include import Sqlite
@@ -124,12 +123,19 @@ class GetData:
 
         return np.array(data)
 
-    
     def feds(self):
         r = self._quering('fed, id', wheres=['dcbe_time IS NOT NULL'], raw=True)
         self.raw['feds'] = r
 
         return r
+
+    def results(self):
+        r = self._quering('results', wheres=['dcbe_time IS NOT NULL'], raw=True)
+        r_dicts = [json.loads(i[0]) for i in r]
+
+        self.raw['results'] = r_dicts
+
+        return r_dicts  # list(dict)
     
     def fed_der_df(self):
         fed_der_df_data = []
@@ -178,6 +184,7 @@ class GetData:
         self.feds()
         self.geometry()
         self.fed_der_df()
+        self.results()
 
     # return raw data
     def drop(self, with_fed=True):
@@ -197,30 +204,17 @@ class GetData:
 Basic references: Krasuski A., "Multisimulation: Stochastic simulations for the assessment of building fire safety", 2019; Jokman et al. "An overview of quantitative risk measures for loss of life and economic damage", 2003;  Meacham B., Ultimate Health & Safety (UHS) Quantification: Individual and Societal Risk Quantification for Use in National Construction Code (NCC), 2016'''
 
 class RiskScenario:
-    def __init__(self, feds: list(), fire_prob=1):
-        self.feds = feds # raw FEDs for each iteration, floor and agent
-        print('[OK] FED imported')
+    def __init__(self, results_from_psql: list, fire_prob=1):
+        #self.feds = results_from_psql # raw FEDs for each iteration, floor and agent
+        #print('[OK] FED imported')
 
-        self.cdffeds = self._rawFED2CDF() # number of death probabilities per agent per iteration (NO FLOOR)
-        print('[OK] CDF of FED calculated')
-        self.n = len(self.cdffeds) # number of iterations
-        self.iterations = [RiskIteration(i, calculate=True) for i in self.cdffeds]    # list of iterations (RiskIteration objects)
-        print('[OK] Iterations analyzed')
+      #  self.cdffeds = self._rawFED2CDF() # number of death probabilities per agent per iteration (NO FLOOR)
+        #print('[OK] CDF of FED calculated')
+        self.iterations = results_from_psql    # list of iterations (results from RiskIteration)
+        self.n = len(self.iterations) # number of iterations
         self.risks = {}
         self.fire = fire_prob   # fire probability [1/year]
 
-    # remove floor division in FED data and process it to P(death) = CDF(ln(FED))
-    def _rawFED2CDF(self):
-        cdfs = []
-        for i in self.feds:
-            cdf_i = []
-            for floor in json.loads(i[0]).values():
-                with warnings.catch_warnings():     # FED = 0 is interpreted as 0 probability of death
-                    warnings.simplefilter('ignore')
-                    cdf_i.extend(stat.norm.cdf(np.log(floor)))
-            cdfs.append(cdf_i)
-                
-        return cdfs
 
     def calc_scenario(self, key):
         if key in ('pdf_fn', 'fn_curve'):
@@ -228,12 +222,12 @@ class RiskScenario:
             n = 0
             while True: 
                 try:
-                    scenario_value.append(np.mean([i.risks[key][n] for i in self.iterations]) * self.fire)
+                    scenario_value.append(np.mean([i[key][n] for i in self.iterations]) * self.fire)
                 except IndexError:
                     break
                 n += 1
         else:
-            scenario_value = np.mean([i.risks[key] for i in self.iterations]) * self.fire
+            scenario_value = np.mean([i[key] for i in self.iterations]) * self.fire
 
         self.risks[key] = scenario_value
         
@@ -242,20 +236,35 @@ class RiskScenario:
         return scenario_value
 
     def all(self):
-        # calculate values for iterations if necessary
-        for i in self.iterations:
-            i.all() if not i.risks else None
-        [self.calc_scenario(k) for k in self.iterations[0].risks.keys()]    # calculate values for scenario
+        [self.calc_scenario(k) for k in self.iterations[0].keys()]    # calculate values for scenario
+
         return self.risks
+
+#    def all(self):
+#        # calculate values for iterations if necessary
+#        for i in self.iterations:
+#            i.all() if not i.risks else None
+#        [self.calc_scenario(k) for k in self.iterations[0].risks.keys()]    # calculate values for scenario
+#        return self.risks
                         
 
 class RiskIteration:
-    def __init__(self, deathprobs: list(), calculate=False):
-        self.p = deathprobs # probabilities of death for agents in THIS iteration
-        self.n  = len(deathprobs)
+    def __init__(self, feds_per_floor: list(), calculate=False):
+        self.p = self._rawFED2CDF(feds_per_floor) # probabilities of death for agents in THIS iteration
+        self.n  = len(self.p)    # number of agents
         self.risks = {}
         if calculate:
             self.all()
+
+    # remove floor division in FED data and process it to P(death) = CDF(ln(FED))
+    def _rawFED2CDF(self, feds: dict):
+        cdfs = []
+        for fed in feds.values():
+            with warnings.catch_warnings():     # FED = 0 is interpreted as 0 probability of death
+                warnings.simplefilter('ignore')
+                cdfs.extend(stat.norm.cdf(np.log(fed)))
+                
+        return cdfs
 
     # probability of randomly taken person been found dead in case of fire
     def individual(self):
@@ -266,20 +275,20 @@ class RiskIteration:
 
     # PDF of x people been found dead in case of fire
     def pdf_fn(self, mc=True):
-        fn = self.pdf_fn_mc() if mc else self.pdf_fn_comb()
+        fn = self._pdf_fn_mc() if mc else self._pdf_fn_comb()
 
-        self.risks['pdf_fn'] = fn
-        return fn
+        self.risks['pdf_fn'] = list(fn)
+
+        return list(fn)
 
     # assess the probability of x deads in fire with MC sampling
-    def pdf_fn_mc(self, rmse_threshold=0.01):
+    def _pdf_fn_mc(self, rmse_threshold=0.01):
         def calc_rmse(p: float, n: float): return sqrt(p * (1 - p) / n)
         def ask_the_moirai(feds: list): return np.random.binomial(1, p=feds)
 
         #print('MonteCarlo assesment of PDF for FN in progress...', end='\r')
         fn_mc = np.array([0] * (self.n + 1))
         rmse = [1] * (self.n + 1)
-        return fn_mc
 
         # draw samples from LN distributions of death untill RMSE threshold is met but at least
         i = 1
@@ -294,16 +303,16 @@ class RiskIteration:
             # calculate RMSE
             rmse = [calc_rmse(fn, i) for fn in fn_mc]
 
-            if max(rmse) > rmse_threshold:
-                print(f'{i} {max(rmse)}', end='\r')
-            elif not any([i < self.n, max(rmse) > rmse_threshold]):
-                print(i)
+#            if max(rmse) > rmse_threshold:
+#                print(f'{i} {max(rmse)}', end='\r')
+#            elif not any([i < self.n, max(rmse) > rmse_threshold]):
+#                print(i)
             i += 1
         #print(f'RMSE of PDF values{rmse}')
 
         return fn_mc#, rmse
         
-    def pdf_fn_comb(self):
+    def _pdf_fn_comb(self):
         fn_comb = []
         for x in range(self.n + 1): 
             fnx = []
@@ -377,6 +386,9 @@ class RiskIteration:
         #self.sri()
         
         return self.risks
+    
+    def export(self):
+        return json.dumps(self.risks)
 
 
 '''Calculations of FED absorption heatmap
@@ -487,9 +499,9 @@ class Plot:
             ax = fig.add_subplot(111)
 
             # colors
-            my_cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', ['white', 'coral', 'darkred'])
+            my_cmap = mtl.colors.LinearSegmentedColormap.from_list('', ['white', 'coral', 'darkred'])
             colors = {'ROOM': '#8C9DCE', 'COR': '#385195', 'HALL': '#DBB55B', 'CONTOUR': '#000000', 
-                    'DOOR': matplotlib.colors.rgb2hex(my_cmap(0)), 'OBSTACLE': '#707070'}
+                    'DOOR': mtl.colors.rgb2hex(my_cmap(0)), 'OBSTACLE': '#707070'}
             
             # plot fed growth data
             dat = hm.plot['floors'][f]
@@ -524,7 +536,7 @@ class Plot:
             fig.tight_layout()
             
             # save figure
-            fig.savefig(os.path.join(self.dir, 'picts', f'floor_{f}.png'), dpi=170)
+            fig.savefig(os.path.join(self.dir, 'picts', f'floor_{f}.png'))#, dpi=170)
             plt.clf()
 
 
@@ -532,9 +544,8 @@ class Plot:
 class PostProcess:
     def __init__(self):
         self.dir = sys.argv[1] if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT')
-        print(self.dir)
         self.gd = GetData(self.dir)
-        self.data = {**self.gd.drop(with_fed=False), **RiskScenario(self.gd.raw['feds']).all()} # results for THE SCENARIO
+        self.data = {**self.gd.drop(with_fed=False), **RiskScenario(self.gd.raw['results']).all()} # results for THE SCENARIO
         self.n = len(self.gd.raw['feds'])  # number of finished iterations taken for results analysis
         self.probs = []#{}
 
@@ -609,24 +620,38 @@ class PostProcess:
             shutil.rmtree(f'{self.dir}/picts')
         os.makedirs(f'{self.dir}/picts')
 
+        def tm(x): 
+            print(f'{x}: {time.time() - self.t}')
+            self.t = time.time()
         p = Plot(self.dir)
+        tm('Plot')
         h = Heatmap(self.data['fed_der_df'], self.data['geometry'], self.n)
+        tm('Heatmap')
         h.calc()
+        tm('heatmap calc')
         p.heatmap(h)
-#        [p.cdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['cdf']]
-#        [p.pdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf']]
-#        [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
-#        [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
-#        p.pie(self.data['pdf_fn'][0])
-#
-#
-#        self.plant()
+        tm('plot heat')
+        [p.cdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['cdf']]
+        tm('plot cdf')
+        [p.pdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf']]
+        tm('plot pdf')
+        [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
+        tm('plot pdf_n')
+        [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
+        tm('plot fn_curve')
+        p.pie(self.data['pdf_fn'][0])
+        tm('plot pie')
+
+        self.plant()
+        tm('plant trees')
 
         self.save()
+        tm('save')
         
 
 if __name__ == '__main__':
     pp = PostProcess()
+    pp.t = time.time()
     pp.produce()
 
     

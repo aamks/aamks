@@ -107,7 +107,8 @@ class ResultsCollector():
                 max_temp = {self.meta['psql']['cross_building_results']['max_temp_compa']}, host = '{self.meta['worker']}',
                 min_hgt_compa = {self.meta['psql']['cross_building_results']['min_hgt_compa']},
                 min_vis_cor = {self.meta['psql']['cross_building_results']['min_vis_cor']},
-                min_hgt_cor = {self.meta['psql']['cross_building_results']['min_hgt_cor']}
+                min_hgt_cor = {self.meta['psql']['cross_building_results']['min_hgt_cor']},
+                results = '{self.meta['psql']['i_risk']}'
                 WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
         SendMessage("Database updated")
 
