@@ -1,5 +1,67 @@
 <?php
+function elasticMail($to, $subject, $fields, $template_name) { #{{{
+	if(getenv("AAMKS_USE_GMAIL")==0) { die("mail() not configured on this server"); }
+	require_once 'vendor/autoload.php';
 
+	// Configure API key authorization: apikey
+	$config = ElasticEmail\Configuration::getDefaultConfiguration()->setApiKey('X-ElasticEmail-ApiKey', getenv("AAMKS_MAIL_API_KEY"));
+	// Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
+	// $config = ElasticEmail\Configuration::getDefaultConfiguration()->setApiKeyPrefix('X-ElasticEmail-ApiKey', 'Bearer');
+ 
+ 
+	$apiInstance = new ElasticEmail\Api\EmailsApi(
+    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
+    // This is optional, `GuzzleHttp\Client` will be used as default.
+    new GuzzleHttp\Client(),
+    $config
+	);
+	$email_message_data = new \ElasticEmail\Model\EmailTransactionalMessageData([
+		"recipients" => new \ElasticEmail\Model\TransactionalRecipient([
+			"to" => [$to],
+		]),
+		"content" => new \ElasticEmail\Model\EmailContent([
+			"body" => [new \ElasticEmail\Model\BodyPart([
+					"content_type" => "HTML",
+					"charset" => "utf-8",
+					"content" => "",
+					//"content" => $msg,
+				])
+			],
+			//"merge" => ["url" => "www.google.pl"],
+			"merge" => $fields,
+			"template_name" => $template_name,
+			"from" => "projectaamks@gmail.com",
+			"subject" => $subject,
+			"reply_to" => "projectaamks@gmail.com",
+		]),
+		"options" => new \ElasticEmail\Model\Options([
+			"channel_name" => "My Channel"
+		])
+	]);
+	try {
+		$response = $apiInstance->emailsTransactionalPost($email_message_data);
+	} catch (Exception $e) {
+		echo 'Exception when calling EE API: ', $e->getMessage(), PHP_EOL;
+	}
+}
+function replace_link($link, $html){
+	//$html = file_get_contents("mail_template/reset_password.html");
+	$html = str_replace("{url}", $link, $html);
+	//$html = str_replace("{TIME}", date("H:i:s d-m-Y"), $html);
+	return $html;
+}
+function reset_template(){
+	require_once 'vendor/autoload.php';
+	$config = ElasticEmail\Configuration::getDefaultConfiguration()->setApiKey('X-ElasticEmail-ApiKey', getenv('AAMKS_MAIL_API_AMKS'));
+	$apiInstance = new ElasticEmail\Api\TemplatesApi(
+		new GuzzleHttp\Client(),
+		$config
+	);
+	$name = "password_reset";
+	$response = $apiInstance->templatesByNameGet($name)->getBody();
+	//print('<pre>' . print_r( $response, true) . '</pre>');
+	return $response[0]->getContent();
+}
 function gmail($to, $subject, $msg) { #{{{
 	if(getenv("AAMKS_USE_GMAIL")==0) { die("gmail() not configured on this server"); }
 	require_once 'vendor/phpmailer/phpmailer/src/Exception.php';
@@ -56,6 +118,8 @@ function login_form(){/*{{{*/
 	</div>
 	New to Aamks?
 	<a href=?register>Register</a>
+	Forgot your password?
+	<a href=?reset>Reset</a>
     </form>
     </center>
 	";
@@ -69,9 +133,12 @@ function do_login() { #{{{
 	$salted=salt($_POST['password']);
 	$ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.email=$1 AND u.password=$2", array($_POST['email'], $salted));
 	if(!empty($ret)){//password and email match
-		if($salted==$ret[0]['password']){
+		if($salted==$ret[0]['password'] && $ret[0]['activation_token'] == 'already activated'){
 			$_SESSION['nn']->ch_main_vars($ret[0]);
-			header("Location: projects.php");
+		 	header("Location: projects.php");
+		} else {
+			echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+			$_SESSION['nn']->fatal("Email address not activated!");
 		}
 	}else{
 		$_SESSION['reset_email']=$_POST['email'];
@@ -89,17 +156,17 @@ function do_register(){/*{{{*/
 	extract($_POST);
 	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE email = $1 ", array($_POST['email'] ));
 	if (!empty($ret[0])){
+		echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 		$_SESSION['nn']->fatal("Email address already used in AAMKS!");
 	}
 	$salted=salt($password);
 	$token=md5(time());
 	$_SESSION['nn']->query("insert into users (user_name, email, password, activation_token,active_scenario) values ($1,$2,$3,$4,$5)", array($name, $email, $salted,$token,1));
-
-	// TODO: enable for production!
-	// gmail($email,"Welcome to AAMKS","Confirm your email address and activate your AAMKS account <br> 
-	//	<a href=http://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token>Click here</a>");
-	//echo "<br> or click here <a href=login.php?activation_token=$token>Click here</a>";  
-	header("Location: login.php?activation_token=$token"); // Finland only
+	$_SESSION['nn']->msg("We send you email to activation account. Check inbox or spam folder for activation link!");
+	elasticMail($email,"AAMKS activation account",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token"], "activation");
+	
+	//echo "<br>activation account <a href=login.php?activation_token=$token>Click here</a>";  
+	header("Location: login.php"); // Finland only
 }/*}}}*/
 function do_logout() { #{{{
 
@@ -142,6 +209,7 @@ function register_form(){/*{{{*/
 function activate_user(){/*{{{*/
 	$r=$_SESSION['nn']->query("SELECT * FROM users WHERE activation_token= $1 AND activation_token !='already activated'", array($_GET['activation_token'] ));
 	if (empty($r[0])){
+		echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 		$_SESSION['nn']->fatal("Activation token not valid");
 	} else {
 		$_SESSION['nn']->query("UPDATE users SET activation_token='already activated' WHERE id=$1", array($r[0]['id'])) ;
@@ -159,8 +227,9 @@ function activate_user(){/*{{{*/
 			mkdir -p $user_dir
 			cp -r $AAMKS_PATH/installer/demo/ $user_dir
 		");
-		$_SESSION['nn']->ch_main_vars($ret[0]);
-		header("location:/aamks/projects.php"); 
+		//$_SESSION['nn']->ch_main_vars($ret[0]);
+		$_SESSION['nn']->msg("Account activated! You can login now!");
+		header("location:/aamks/login.php"); 
 	}
 
 	# psql aamks -c 'select * from users';
@@ -170,15 +239,41 @@ function activate_user(){/*{{{*/
 function reset_password(){/*{{{*/
 	$token=md5(salt(time()));
 	$k=rand(10,10000);
+	$expFormat = mktime(date("H")+24, date("i"), date("s"), date("m") ,date("d"), date("Y"));
+	$expDate = date("Y-m-d H:i:s",$expFormat);
 	if(empty($_GET['reset'])){//start of reseting proces
-		if($ret=$_SESSION['nn']->query("UPDATE users SET reset_token = $1 where email = $2 returning id", array($token, $_SESSION['reset_email']))){
-			gmail($_SESSION['reset_email'],"AAMKS reset password $k","Reset the AAMKS password <a href=".loginphp()."?reset=$token>HERE</a>") ;
-			echo "Email sent to $_SESSION[reset_email]" ;
-			echo " <a href=".loginphp()."?reset=$token>HERE</a>";
-			$_SESSION['nn']->msg("Check mail for reset instructions");
-
-		}else{//did not enter email address
-			header("location:".loginphp()); 
+		$form = "
+		<form method=POST> <center>
+		<br><br>
+		<div class=frame>
+		<table>
+		<tr><td>Your e-mail<td><input type=email name=email size=32 >
+		</table><br>
+		<input type=submit name=reset value='Reset password'>
+		</div>
+		</form>
+		</center> ";/*}}}*/
+		if(!isset($_POST['reset'])){//show reset form
+	# echo 'select * from users' | psql aamks
+		echo $form;
+		}else{
+			$reset_email = $_POST['email'];
+			$result = $_SESSION['nn']->query("SELECT * FROM users WHERE email= '" . $reset_email . "'");
+			if(empty($result)){
+				echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+				$_SESSION['nn']->fatal("There is no such email in our database!");
+				header("location:/aamks/login.php"); 
+				exit();
+			}else{
+				echo $result;
+				$ret=$_SESSION['nn']->query("UPDATE users SET reset_token = $1, access_time = $2 where email = $3 returning id", array($token, $expDate, $reset_email));
+				elasticMail($reset_email,"AAMKS reset password",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token"], "password_reset");
+				//elasticMail($reset_email,"AAMKS reset password",replace_link("".loginphp()."?reset=$token", reset_template()));
+				$_SESSION['nn']->msg("Email sent, check inbox or spam folder for reset link!");
+				$_SESSION['reset_email'] = $reset_email;
+				//echo "Email sent to $reset_email" ;
+				//echo " <a href=".loginphp()."?reset=$token>HERE</a>";
+			}
 		}
 	}else{
 /*{{{FORM*/
@@ -187,8 +282,8 @@ function reset_password(){/*{{{*/
 		<br><br>
 		<div class=frame>
 		<table>
-		<tr><td>login<td><input type=email name=email value='$_SESSION[reset_email]' readonly size=32 >
-		<tr><td>new password<td><input type=password name='password' size=32 placeholder='new password' >
+		<tr><td>Your e-mail<td><input type=email name=email value='$_SESSION[reset_email]' readonly size=32 >
+		<tr><td>Set new password<td><input type=password name='password' size=32 placeholder='new password' >
 		</table><br>
 		<input type=submit name=reset value='RESET'>
 		</div>
@@ -198,13 +293,27 @@ function reset_password(){/*{{{*/
 	# echo 'select * from users' | psql aamks
 		echo $form;
 		}else{//do the reseting
-			if($ret=$_SESSION['nn']->query("UPDATE users SET password = $1, reset_token = NULL where email = $2 AND reset_token = $3 returning *", array(salt($_POST['password']), $_SESSION['reset_email'], $_GET['reset']))){
-				$_SESSION['header_ok'][]="DONE!";
-				$ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.id=$1", array($ret[0]['id']));
-				$_SESSION['nn']->ch_main_vars($ret[0]);
-				header("Location: projects.php");
+			$reset_email = $_SESSION['reset_email'];
+			$result = $_SESSION['nn']->query("SELECT * FROM users WHERE reset_token = $1 AND email=$2", array($_GET['reset'], $reset_email));
+			if(!empty($result)){
+				if($result[0]['access_time'] >= date("Y-m-d H:i:s")){
+					if($ret=$_SESSION['nn']->query("UPDATE users SET password = $1, reset_token = NULL, access_time = NULL where email = $2 AND reset_token = $3 returning *", array(salt($_POST['password']), $_SESSION['reset_email'], $_GET['reset']))){
+						$_SESSION['header_ok'][]="Password changed!";
+						$ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.id=$1", array($ret[0]['id']));
+						$_SESSION['nn']->ch_main_vars($ret[0]);
+						header("Location: projects.php");
+						exit();
+					}else{
+						echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+						$_SESSION['nn']->fatal("Something goes wrong. Please try again!");
+					}
+				}else{
+					echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+					$_SESSION['nn']->fatal("This forget password link has been expired!");
+				}
 			}else{
-				$_SESSION['nn']->fatal("Did not change the password!!");
+				echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+				$_SESSION['nn']->fatal("Wrong token!");
 			}
 		}
 	}
