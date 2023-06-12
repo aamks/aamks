@@ -1,6 +1,6 @@
 <?php
-function elasticMail($to, $subject, $fields, $template_name) { #{{{
-	if(getenv("AAMKS_USE_GMAIL")==0) { die("mail() not configured on this server"); }
+function sendMail($to, $subject, $fields, $template_name) { #{{{
+	if(getenv("AAMKS_USE_MAIL")==0) { die("mail() not configured on this server"); }
 	require_once 'vendor/autoload.php';
 
 	// Configure API key authorization: apikey
@@ -30,67 +30,15 @@ function elasticMail($to, $subject, $fields, $template_name) { #{{{
 			//"merge" => ["url" => "www.google.pl"],
 			"merge" => $fields,
 			"template_name" => $template_name,
-			"from" => "projectaamks@gmail.com",
+			"from" => getenv("AAMKS_MAIL_SENDER"),
 			"subject" => $subject,
-			"reply_to" => "projectaamks@gmail.com",
-		]),
-		"options" => new \ElasticEmail\Model\Options([
-			"channel_name" => "My Channel"
+			"reply_to" => getenv("AAMKS_MAIL_SENDER"),
 		])
 	]);
 	try {
 		$response = $apiInstance->emailsTransactionalPost($email_message_data);
 	} catch (Exception $e) {
 		echo 'Exception when calling EE API: ', $e->getMessage(), PHP_EOL;
-	}
-}
-function replace_link($link, $html){
-	//$html = file_get_contents("mail_template/reset_password.html");
-	$html = str_replace("{url}", $link, $html);
-	//$html = str_replace("{TIME}", date("H:i:s d-m-Y"), $html);
-	return $html;
-}
-function reset_template(){
-	require_once 'vendor/autoload.php';
-	$config = ElasticEmail\Configuration::getDefaultConfiguration()->setApiKey('X-ElasticEmail-ApiKey', getenv('AAMKS_MAIL_API_AMKS'));
-	$apiInstance = new ElasticEmail\Api\TemplatesApi(
-		new GuzzleHttp\Client(),
-		$config
-	);
-	$name = "password_reset";
-	$response = $apiInstance->templatesByNameGet($name)->getBody();
-	//print('<pre>' . print_r( $response, true) . '</pre>');
-	return $response[0]->getContent();
-}
-function gmail($to, $subject, $msg) { #{{{
-	if(getenv("AAMKS_USE_GMAIL")==0) { die("gmail() not configured on this server"); }
-	require_once 'vendor/phpmailer/phpmailer/src/Exception.php';
-	require_once 'vendor/phpmailer/phpmailer/src/PHPMailer.php';
-	require_once 'vendor/phpmailer/phpmailer/src/SMTP.php';
-
-	$mail = new PHPMailer\PHPMailer\PHPMailer;
-	$mail->CharSet = 'UTF-8';
-	$mail->Encoding = 'base64';
-	$mail->isSMTP();
-	$mail->Host = 'smtp.gmail.com';
-	$mail->Port = 587;
-	$mail->SMTPSecure = 'tls';
-	$mail->SMTPAuth = true;
-	$mail->Username = getenv("AAMKS_GMAIL_USERNAME"); 
-	$mail->Password = getenv("AAMKS_GMAIL_PASSWORD");
-	$mail->setFrom('aamksproject@gmail.com', 'Aamks Project');		
-	$mail->addReplyTo('aamksproject@gmail.com', 'Aamks Project');	
-	$mail->addAddress($to);
-	$mail->Subject = $subject;
-
-	$mail->isHTML(true);                                  
-    $mail->Body    = "$msg";
-    $mail->AltBody = "$msg";
-
-	if (!$mail->send()) {
-		echo "Some Error!: " . $mail->ErrorInfo;
-	} else {
-		echo "Mail Sent to $to";
 	}
 }
 /*}}}*/
@@ -163,7 +111,7 @@ function do_register(){/*{{{*/
 	$token=md5(time());
 	$_SESSION['nn']->query("insert into users (user_name, email, password, activation_token,active_scenario) values ($1,$2,$3,$4,$5)", array($name, $email, $salted,$token,1));
 	$_SESSION['nn']->msg("We send you email to activation account. Check inbox or spam folder for activation link!");
-	elasticMail($email,"AAMKS activation account",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token"], "activation");
+	sendMail($email,"AAMKS activation account",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token"], "activation");
 	
 	//echo "<br>activation account <a href=login.php?activation_token=$token>Click here</a>";  
 	header("Location: login.php"); // Finland only
@@ -267,8 +215,7 @@ function reset_password(){/*{{{*/
 			}else{
 				echo $result;
 				$ret=$_SESSION['nn']->query("UPDATE users SET reset_token = $1, access_time = $2 where email = $3 returning id", array($token, $expDate, $reset_email));
-				elasticMail($reset_email,"AAMKS reset password",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token"], "password_reset");
-				//elasticMail($reset_email,"AAMKS reset password",replace_link("".loginphp()."?reset=$token", reset_template()));
+				sendMail($reset_email,"AAMKS reset password",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token"], "password_reset");
 				$_SESSION['nn']->msg("Email sent, check inbox or spam folder for reset link!");
 				$_SESSION['reset_email'] = $reset_email;
 				//echo "Email sent to $reset_email" ;
