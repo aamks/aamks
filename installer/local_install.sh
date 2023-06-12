@@ -25,16 +25,16 @@ echo "AAMKS_PROJECT: $AAMKS_PROJECT"
 echo "AAMKS_PG_PASS: $AAMKS_PG_PASS"
 echo "AAMKS_WORKER: $AAMKS_WORKER"
 echo "AAMKS_SALT: $AAMKS_SALT"
-echo "AAMKS_USE_GMAIL: $AAMKS_USE_GMAIL"
-echo "AAMKS_GMAIL_USERNAME: $AAMKS_GMAIL_USERNAME"
-echo "AAMKS_GMAIL_PASSWORD: $AAMKS_GMAIL_PASSWORD"
+echo "AAMKS_USE_MAIL: $AAMKS_USE_MAIL"
+echo "AAMKS_MAIL_API_KEY: $AAMKS_MAIL_API_KEY"
 echo "PYTHONPATH: $PYTHONPATH"
 echo; echo;
-echo "<Enter> accepts, <ctrl+c> cancels"
+echo "<Enter> accepts, <ctrl+c> cancels";
+read
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
 sudo apt-get --yes install git python3-pip xdg-utils unzip cmake ipython3 python3-urllib3 libboost-python-dev libgfortran5
-sudo apt-get --yes install postgresql subversion python3-psycopg2 apache2 php-pgsql pdf2svg libapache2-mod-php 
+sudo apt-get --yes install php-curl postgresql subversion python3-psycopg2 apache2 php-pgsql pdf2svg libapache2-mod-php 
 sudo -H pip3 install --upgrade pip
 sudo -H pip3 install shapely scipy numpy Cython webcolors pyhull colour sns seaborn statsmodels
 if [ ! -f /usr/lib/x86_64-linux-gnu/libboost_python3.so  ]; then
@@ -46,7 +46,9 @@ sudo chown -R "$USER":"$USER" /etc/aamksconf.json
 echo "Check if aamks is download in /home/USER directory..."
 cd || exit
 [ -d aamks ] || { git clone https://github.com/aamks/aamks; }
-
+cd aamks || exit
+git switch dev
+cd || exit
 # clear $AAMKS_PATH if there is already any content
 if [ -d "$AAMKS_PATH" ]; then
 	sudo rm -r "$AAMKS_PATH"
@@ -58,9 +60,8 @@ fi
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
 
 # RVO2
-pip list | grep pyrvo2
-if [ $? -ne 0 ];then 
-	echo "pyrvo2 installed"
+if python3 -c "import rvo2" &> /dev/null; then
+    echo 'RVO2 already installed'
 else
 	echo; echo; echo "Installing RVO2 (agents collisions library) ..."; echo; echo;
 	[ -d Python-RVO2 ] && { git -C Python-RVO2 pull; } || { git clone https://github.com/sybrenstuvel/Python-RVO2; }
@@ -138,24 +139,22 @@ echo "export AAMKS_PATH='$AAMKS_PATH'" >> "$temp"
 echo "export AAMKS_WORKER='$AAMKS_WORKER'" >> "$temp"
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> "$temp"
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> "$temp"
-echo "export AAMKS_USE_GMAIL='$AAMKS_USE_GMAIL'" >> "$temp"
-echo "export AAMKS_GMAIL_USERNAME='$AAMKS_GMAIL_USERNAME'" >> "$temp"
-echo "export AAMKS_GMAIL_PASSWORD='$AAMKS_GMAIL_PASSWORD'" >> "$temp"
+echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> "$temp"
+echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> "$temp"
 echo "export PYTHONPATH='$PYTHONPATH'" >> "$temp"
 sudo cp "$temp" /etc/apache2/envvars
 rm "$temp"
 
 temp=$(mktemp)
-sudo cat ~/.bashrc | grep -v AAMKS_ | grep -v umask  | grep -v USER | grep -v LOGNAME | grep -v HOSTNAME > "$temp"
+sudo cat ~/.bashrc | grep -v AAMKS_ | grep -v umask  | grep -v USER | grep -v LOGNAME | grep -v HOSTNAME | grep -v aamks | grep -vw AA | grep -vw AP > "$temp"
 echo "umask 0002" >> "$temp"
 echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> "$temp"
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> "$temp"
 echo "export AAMKS_WORKER='$AAMKS_WORKER'" >> "$temp"
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> "$temp"
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> "$temp"
-echo "export AAMKS_USE_GMAIL='$AAMKS_USE_GMAIL'" >> "$temp"
-echo "export AAMKS_GMAIL_USERNAME='$AAMKS_GMAIL_USERNAME'" >> "$temp"
-echo "export AAMKS_GMAIL_PASSWORD='$AAMKS_GMAIL_PASSWORD'" >> "$temp"
+echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> "$temp"
+echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> "$temp"
 echo "export PYTHONPATH='$PYTHONPATH'" >> "$temp"
 echo "export PYTHONIOENCODING='UTF-8'" >> "$temp"
 echo "export AAMKS_PROJECT='$AAMKS_PROJECT'" >> "$temp"
@@ -173,7 +172,12 @@ echo "alias AP='cd $AAMKS_PROJECT'" >> "$temp"
 echo "Add some variables to your .bashrc"
 sudo cp "$temp" ~/.bashrc
 rm "$temp"
-
+[ "X$AAMKS_USE_MAIL" == "X1" ] && { 
+	# TODO - instructables for sending mail via mail
+	sudo apt-get --yes install composer
+	cd $AAMKS_PATH/gui
+	composer install
+}
 echo; echo; echo  "sudo service apache2 restart..."
 sudo service apache2 restart
 
@@ -190,9 +194,10 @@ sudo chmod -R g+s /home/aamks_users
 sudo ln -sf /home/aamks_users /var/www/ssl/
 sudo find /home/aamks_users -type f -exec chmod 664 {} \;
 
-cd "/usr/local/aamks/installer" || exit;
+chmod -R o=rx $AAMKS_PATH
+cd $AAMKS_PATH/installer || exit;
 sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname = 'aamks'" | grep -q 1 || sudo -u postgres psql -c "CREATE DATABASE aamks"
-sudo -u postgres psql -tc "SELECT 1 FROM pg_user WHERE usename = 'aamks'" | grep -q 1 || psql -U postgres -c "CREATE USER aamks WITH PASSWORD '$AAMKS_PG_PASS'";
+sudo -u postgres psql -tc "SELECT 1 FROM pg_user WHERE usename = 'aamks'" | grep -q 1 || sudo -u postgres psql -c "CREATE USER aamks WITH PASSWORD '$AAMKS_PG_PASS'";
 sudo -u postgres psql -f sql.sql
 
 # Generate database tables 
@@ -204,4 +209,6 @@ sudo a2ensite default-ssl.conf
 sudo sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/ssl/' /etc/apache2/sites-available/000-default.conf
 sudo systemctl restart apache2
 echo "AAMKS installed successfully. You can start using it at http://127.0.0.1/aamks"
-echo "Logout and Login to reload USER group settings"
+echo "Default user email: demo@aamks"
+echo "Password: AAMKSisthe1!"
+echo "Log out and log in to reload USER group settings"

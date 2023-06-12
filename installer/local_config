@@ -4,9 +4,8 @@ AAMKS_WORKER="local"; # 'none': no worker, don't run fire and evacuation simulat
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
 AAMKS_SALT='aamksisthebest'
-AAMKS_USE_GMAIL=0											# needed if we allow users to register accounts
-AAMKS_GMAIL_PASSWORD='none'									# needed if we allow users to register accounts
-AAMKS_GMAIL_USERNAME='none'									# needed if we allow users to register accounts
+AAMKS_USE_MAIL=1											# needed if we allow users to register accounts and reset passwords
+AAMKS_MAIL_API_KEY='none'								    # check documentation on github
 
 # Aamks uses postgres (user:aamks, db:aamks) for collecting the simulations data.
 
