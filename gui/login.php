@@ -1,6 +1,13 @@
 <?php
 function sendMail($to, $subject, $fields, $template_name) { #{{{
-	if(getenv("AAMKS_USE_MAIL")==0) { die("mail() not configured on this server"); }
+	if(getenv("AAMKS_USE_MAIL")==0) {
+		 echo "<br><h2>You don't have configured email server. To continue go to url presented below.</h2><br>";
+		 echo "<h3>Email would be sent to: ", $to, "</h3><br>";
+		 echo "<h3>With subject: ", $subject, "</h3><br>";
+		 echo "<h3>Used template name: ", $template_name, "</h3><br>";
+		 echo "<h3>Sending fields:", "</h3><br>";
+		 echo '<h3><pre>'; print_r($fields); echo '</pre></h3>';
+		}
 	require_once 'vendor/autoload.php';
 
 	// Configure API key authorization: apikey
@@ -114,7 +121,7 @@ function do_register(){/*{{{*/
 	sendMail($email,"AAMKS activation account",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token"], "activation");
 	
 	//echo "<br>activation account <a href=login.php?activation_token=$token>Click here</a>";  
-	header("Location: login.php"); // Finland only
+	//header("Location: login.php"); // Finland only
 }/*}}}*/
 function do_logout() { #{{{
 
@@ -177,7 +184,7 @@ function activate_user(){/*{{{*/
 		");
 		//$_SESSION['nn']->ch_main_vars($ret[0]);
 		$_SESSION['nn']->msg("Account activated! You can login now!");
-		header("location:/aamks/login.php"); 
+		//header("location:/aamks/login.php"); 
 	}
 
 	# psql aamks -c 'select * from users';
@@ -213,7 +220,6 @@ function reset_password(){/*{{{*/
 				header("location:/aamks/login.php"); 
 				exit();
 			}else{
-				echo $result;
 				$ret=$_SESSION['nn']->query("UPDATE users SET reset_token = $1, access_time = $2 where email = $3 returning id", array($token, $expDate, $reset_email));
 				sendMail($reset_email,"AAMKS reset password",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token"], "password_reset");
 				$_SESSION['nn']->msg("Email sent, check inbox or spam folder for reset link!");
