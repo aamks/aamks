@@ -109,10 +109,10 @@ class GetData:
         return r
 
     def min_vis_cor(self):
-        r = self._quering('min_vis_cor', wheres=['min_vis_cor < 60'], typ='float')
-    
-        self.raw['min_vis_cor'] = r
-        return r
+            r = self._quering('min_vis_cor', wheres=['min_vis_cor < 60'], typ='float')
+        
+            self.raw['min_vis_cor'] = r
+            return r
 
     def max_temp(self):
         data = self._quering('max_temp', wheres=['dcbe_time is not null', 'max_temp < 900'], typ='float')
@@ -340,6 +340,7 @@ class RiskIteration:
         return fn_c
 
     # integral of pdf_fn multiplied by aversion-of-risk factor (ranges from 1 to 2, default 1.4 [Jokman et al. 2003])
+    # RI_COMAH
     def societal(self, aversion=1.4):
         if 'pdf_fn' not in self.risks.keys():
             self.pdf_fn()
@@ -362,13 +363,11 @@ class RiskIteration:
         return awr_val
 
     # scaled risk integral [time of area beeing occupied by self.n people]
-    def sri(self, time):
-        pass    # to be developed
-
+    def sri(self, time=1):
         if 'individual' not in self.risks.keys():
             self.individual()
 
-        sri_val = (self.n + self.n ** 2) / 2 * self.risks['individual'] * time * self.risks['area']
+        sri_val = (self.n + self.n ** 2) / 2 * self.risks['individual'] #* time * area
 
         self.risks['sri'] = sri_val
         return sri_val
@@ -383,7 +382,7 @@ class RiskIteration:
         self.fn_curve()
         self.societal()
         self.awr()
-        #self.sri()
+        self.sri()
         
         return self.risks
     
@@ -411,6 +410,106 @@ class Heatmap:
             self.plot['range'] = max(df['data'].max(), self.plot['range'])
 
         return self.plot
+
+
+'''Event Tree class'''
+class EventTreeFED:
+    def __init__(self, scenario_dir):
+        self.dir = scenario_dir
+        self.branches = {
+                'ignition': ['Fire ignition', 1e-5],
+                'selfputout': ['Early suppresion', 0.05],
+                'fat': ['Fatalities?', 0.01],
+                'fat10': ['>10 fatalities?', 0.002],
+                'fat100': ['>100 fatalities?', 0.0004]
+                }
+
+
+    def draw(self):
+        fig = plt.figure(figsize=(10, 5))
+        ax = fig.add_axes([0, 0, 1.0, 1])
+
+        # add frame
+        p = rect((0.05, 0.1), 0.765, 0.693, fill=False, transform=ax.transAxes, clip_on=False)
+        ax.add_patch(p)
+
+        # add headers
+        for i, head in enumerate(self.branches.keys()):
+            left, width = .05+i/6.5, .15
+            bottom, height = .8, .10
+            right = left + width
+            top = bottom + height
+
+            p = rect((left, bottom), width, height, fill=False, transform=ax.transAxes, clip_on=False)
+            ax.text(0.5 * (left + right), 0.5 * (bottom + top), self.branches[head][0], horizontalalignment='center', verticalalignment='center',
+                    fontsize=12, color='blue', transform=ax.transAxes)
+            ax.add_patch(p)
+
+        # add latest column
+        p = rect((0.818, 0.8), 0.16, 0.10, fill=False, transform=ax.transAxes, clip_on=False)
+        ax.text(0.5 * 1.8, 0.5 * 1.7, 'Probability', horizontalalignment='center', verticalalignment='center',
+                    fontsize=12, color='black', transform=ax.transAxes)
+        ax.add_patch(p)
+
+
+        general = [[0.1, 1.1], [0.3, 0.3], 'P = {}'.format(self.branches['ignition'][1])]
+        ax.plot(general[0], general[1], linewidth=2)
+        ax.text(0.3, 0.32, 'YES')
+        ax.text(0.3, 0.25, general[2])
+
+        simple_div = [[1.1, 1.1], [0.1, 0.5]]
+        ax.plot(simple_div[0], simple_div[1], color='b', linewidth=2)
+
+        suppressed = [[1.1, 4.4], [0.5, 0.5], 'P = {}'.format(self.branches['selfputout'][1])]
+        ax.plot(suppressed[0], suppressed[1], linewidth=2, color='g')
+        ax.text(1.5, 0.52, 'YES')
+        ax.text(1.5, 0.45, suppressed[2])
+
+        suppressed = [[1.1, 2.2], [0.1, 0.1], 'P = {}'.format(1-self.branches['selfputout'][1])]
+        ax.plot(suppressed[0], suppressed[1], linewidth=2, color='b')
+        ax.text(1.5, 0.12, 'NO')
+        ax.text(1.5, 0.05, suppressed[2])
+
+        simple_div = [[2.2, 2.2], [-0.1, 0.3]]
+        ax.plot(simple_div[0], simple_div[1], color='b', linewidth=2)
+
+        dcbe = [[2.2, 4.4], [0.3, 0.3], 'P = {}'.format('%.3f' % (self.branches['fat'][1]))]
+        ax.plot(dcbe[0], dcbe[1], linewidth=2, color='g')
+        ax.text(2.5, 0.32, 'YES')
+        ax.text(2.5, 0.25, dcbe[2])
+
+        dcbe = [[2.2, 3.3], [-0.1, -0.1], 'P = {}'.format(1-self.branches['fat'][1])]
+        ax.plot(dcbe[0], dcbe[1], linewidth=2, color='b')
+        ax.text(2.5, -0.08, 'NO')
+        ax.text(2.5, -0.15, dcbe[2])
+
+        simple_div = [[3.3, 3.3], [-0.325, 0.115]]
+        ax.plot(simple_div[0], simple_div[1], color='b', linewidth=2)
+
+
+
+#        c = patches.Ellipse(xy=(0.671, 0.159), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='b')
+#        ax.add_patch(c)
+#        p1 = float(self.p_general) * self.p_develop * self.p_dcbe * fed
+#        ax.text(4.65, -0.335, r'$P_4 =  %.2E$' % Decimal(p1))
+#
+#        c = patches.Ellipse(xy=(0.671, 0.442), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='g')
+#        ax.add_patch(c)
+#        p = float(self.p_general) * self.p_develop * self.p_dcbe * (1- self.p_fed_f)
+#        ax.text(4.65, 0.094, r'$P_3 =  %.2E$' % Decimal(p))
+#
+#        c = patches.Ellipse(xy=(0.671, 0.562), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='g')
+#        ax.add_patch(c)
+#        p2 = float(self.p_general) * self.p_develop * (1 - self.p_dcbe) 
+#        ax.text(4.65, 0.29, r'$P_2 =  %.2E$' % Decimal(p2))
+#
+#        c = patches.Ellipse(xy=(0.671, 0.687), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='g')
+#        ax.add_patch(c)
+#        p = float(self.p_general) * (1 - self.p_develop)
+#        ax.text(4.65, 0.48, r'$P_1 =  %.2E$' % Decimal(p))
+
+        fig.savefig(os.path.join(self.dir, 'picts', 'tree.png'))
+
 
 
 '''Basic plot class, containes all types of plots we use and their settings'''
@@ -554,11 +653,11 @@ class PostProcess:
                     {'name':'wcbe_r','lab':['Required Safe Egress Time - Run Time [s]', 'PDF [-]']}
                     ], 
                 'pdf_n':[
-                    {'name':'pdf_fn', 'lab':['Number of fatalities', 'PDF [-]']},
+                    {'name':'pdf_fn', 'lab':['Number of fatalities [-]', 'Density [-]']},
                     ], 
                 'cdf':[
                     {'name':'dcbe', 'lab':['Available Safe Egress Time [s]', 'CDF [-]']},
-                    {'name':'wcbe', 'lab':['Required Safe Egress Time', 'CDF [-]']},
+                    {'name':'wcbe', 'lab':['Required Safe Egress Time [s]', 'CDF [-]']},
                     {'name':'min_hgt', 'lab':['Minimum Upper Layer Height [cm]', 'CDF [-]']},
                     {'name':'min_hgt_cor', 'lab':['Minimum Upper Layer Height in Corridors [cm]', 'CDF [-]']},
                     {'name':'min_vis', 'lab':['Minimum Visibility [m]', 'CDF [-]']},
@@ -566,53 +665,112 @@ class PostProcess:
                     {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'CDF [-]']}
                     ], 
                 'fn_curve':[
-                    {'name':'fn_curve', 'lab':['Number of fatalities', 'Frequency']}
+                    {'name':'fn_curve', 'lab':['Number of fatalities [-]', 'Frequency [-]']}
                     ]
                 }
 
 
     # draw ETA for fatalities
     def plant(self):
-        fig = plt.figure()
-        plt.plot([0],[0])
-        fig.savefig(os.path.join(self.dir, 'picts', 'tree_f.png'))
-        return 0 
-
-        t = EventTreeFED(building=post.dir, p_general=post.probs[0], p_develop=post.probs[2], p_dcbe=post.probs[1], p_fed_f=post.probs[3], mode='f')
+        t = EventTreeFED(self.dir)
         t.draw()
 
     # save data
     def save(self):
         self.gd.to_csv()
-        self.to_txt()
+        self._summarize()
+        self._to_txt()
 
     # add some summaries to self.data
-    def summarize(self):
-        pass
+    def _summarize(self):
+        # https://stats.stackexchange.com/questions/267432/coefficient-of-overlapping-ovl-for-two-distributions
+        def ovl(samp1, samp2, number_bins=1000):
+            arr1 = stat.gaussian_kde(samp1)
+            arr2 = stat.gaussian_kde(samp2)
+
+            positions = np.arange(int(max(*samp1, *samp2)*1.2))
+            arr1(positions)
+            arr2(positions)
+            fig, ax = plt.subplots()
+            sax = ax.twinx()
+            ax.hist(samp1, color='lightcoral', label='RSET')
+            sax.plot(positions, arr1(positions), color='darkred', label='RSET')
+            ax.hist(samp2, color='lightskyblue', label='ASET')
+            sax.plot(positions, arr2(positions), color='dodgerblue', label='ASET')
+            ax.legend()
+            sax.legend(framealpha=0)
+            ax.set_xlabel('Time [s]')
+            sax.set_ylabel('KDE [-]')
+            ax.set_ylabel('Frequency [-]')
+            fig.tight_layout()
+            fig.savefig(os.path.join(self.dir, 'picts', 'overlap.png'))
+            
+
+            # Determine the range over which the integration will occur
+            min_value = np.min((samp1.min(), samp2.min()))
+            max_value = np.min((samp1.max(), samp2.max()))
+
+            # Determine the bin width
+            bin_width = (max_value-min_value)/number_bins
+            #For each bin, find min frequency
+            lower_bound = min_value #Lower bound of the first bin is the min_value of both arrays
+            min_arr = np.empty(number_bins) #Array that will collect the min frequency in each bin
+            for b in range(number_bins):
+                higher_bound = lower_bound + bin_width #Set the higher bound for the bin
+
+                #Determine the share of samples in the interval
+                min_arr[b] = min(*[i.integrate_box_1d(lower_bound, higher_bound) for i in [arr1, arr2]])
+                #Conserve the lower frequency
+                lower_bound = higher_bound #To move to the next range
+            return min_arr.sum()    
+
+        def stats(x_smp: list):
+            return np.mean(x_smp), np.std(x_smp)
+
+        self.data['summary'] = {
+                'date': time.time,
+                'rset': stats(self.data['wcbe']),
+                'aset': stats(self.data['dcbe']),
+                'ovl': ovl(self.data['wcbe'], self.data['dcbe']),
+                'height': stats(self.data['min_hgt']),
+                'hgt': stats(self.data['max_temp']),
+                'vis': stats(self.data['min_vis'])
+                }
 
     # save data to TXT file
-    def to_txt(self):
+    def _to_txt(self):
+        to_write = [
+                '# MULTISIMULATION RESULTS SUMMARY',
+                f'## Number of iterations: {self.n}',
+                #f'##This multisimulation was launched at {self.data["summary"]["date"]}',
+                '# RISK INDICIES',
+                '## all those can be furhter multiplied by probability of fire [1/year]',
+                '##Individual [-]',
+                f'{self.data["individual"]}',
+                '## Societal (WRI) [fatalities]',
+                f'{self.data["societal"]}',
+                '## Societal (AWR) [fatalities]',
+                f'{self.data["awr"]}',
+                '## Societal (SRI) - T=1 [(fatalities + fatalities^2)/(m^2 * year)] (to be multiplied by time share)',
+                f'{self.data["sri"]/self.data["geometry"]["area"]}',
+                '# EVACUATION TIME',
+                '## RSET mean and standard deviation value [s]',
+                f'{self.data["summary"]["rset"][0]},{self.data["summary"]["rset"][1]}',
+                '## ASET mean and standard deviation value [s]',
+                f'{self.data["summary"]["aset"][0]},{self.data["summary"]["aset"][1]}',
+                '## Overlapping Index of ASET and RSET distributions',
+                f'{self.data["summary"]["ovl"]}',
+                '# FIRE CHARACTERISTICS',
+                '## Maximum upper gas layer temperature mean and standard deviation value [°C]',
+                f'{self.data["summary"]["hgt"][0]},{self.data["summary"]["hgt"][1]}',
+                '## Minimum neutral plane height mean and standard deviation value [cm]',
+                f'{self.data["summary"]["height"][0]},{self.data["summary"]["height"][1]}',
+                '## Minimum visibility mean and standard deviation value [m]',
+                f'{self.data["summary"]["vis"][0]},{self.data["summary"]["vis"][1]}',
+                ]
+
         with open(os.path.join(self.dir, 'picts', 'data.txt'), 'w') as g: 
-#            dcbe_val = p.dcbe_values()
-#            g.write("DCBE - PER: {}, MEAN: {}".format(dcbe_val[0], dcbe_val[1]))
-#            #wcbe_val = p.wcbe_values()
-#            #g.write("WCBE -  MEAN: {} s, {} min".format(wcbe_val, wcbe_val/60))
-#            min_height_val = p.min_height_values()
-#            g.write("MIN_HEIGHT - PER: {}, MEAN: {}".format(min_height_val[0], min_height_val[1]))
-#            min_vis = p.vis_values()
-#            g.write("MIN_VISIBILITY - PER: {}, MEAN: {}".format(min_vis[0], min_vis[1]))
-#            temp_val = p.temp_values()
-#            g.write("MAX_TEMP - PER: {}, MEAN: {}".format(temp_val[0], temp_val[1]))
-#            g.write('P_dcbe: {}'.format(p_dcbe*bar*p_ext))
-#            g.write('DEAD RATIO: {}'.format(sum(p.losses['d'])/p.total))
-#            g.write('DEAD FACTOR: {}'.format(sum(p.losses['d'])/len(p.losses['d'])))
-#            g.write('HEAVY FACTOR: {}'.format(sum(p.losses['h'])/len(p.losses['h'])))
-#            print('DEAD FACTOR: {}'.format(sum(p.losses['d'])/len(p.losses['d'])))
-#            print('HEAVY FACTOR: {}'.format(sum(p.losses['h'])/len(p.losses['h'])))
-#            print('P_DCBE: {}'.format(len(p.dcbe)/p.total))
-#            print('P_FED_F: {}'.format(fed_f))
-#
-            g.write('Summary data will be saved here.')
+            g.write('\n'.join(to_write))
 
     # produce standard postprocess content
     def produce(self):
@@ -625,22 +783,22 @@ class PostProcess:
             self.t = time.time()
         p = Plot(self.dir)
         tm('Plot')
-        h = Heatmap(self.data['fed_der_df'], self.data['geometry'], self.n)
-        tm('Heatmap')
-        h.calc()
-        tm('heatmap calc')
-        p.heatmap(h)
-        tm('plot heat')
-        [p.cdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['cdf']]
-        tm('plot cdf')
-        [p.pdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf']]
-        tm('plot pdf')
-        [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
-        tm('plot pdf_n')
-        [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
-        tm('plot fn_curve')
-        p.pie(self.data['pdf_fn'][0])
-        tm('plot pie')
+#        h = Heatmap(self.data['fed_der_df'], self.data['geometry'], self.n)
+#        tm('Heatmap')
+#        h.calc()
+#        tm('heatmap calc')
+#        p.heatmap(h)
+#        tm('plot heat')
+#        [p.cdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['cdf']]
+#        tm('plot cdf')
+#        [p.pdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf']]
+#        tm('plot pdf')
+#        [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
+#        tm('plot pdf_n')
+#        [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
+#        tm('plot fn_curve')
+#        p.pie(self.data['pdf_fn'][0])
+#        tm('plot pie')
 
         self.plant()
         tm('plant trees')
