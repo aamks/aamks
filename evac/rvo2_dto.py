@@ -205,18 +205,26 @@ class EvacEnv:
                 self.evacuees.update_speed_of_pedestrian(i)
                 self.sim.setAgentMaxSpeed(i, self.evacuees.get_speed_of_pedestrian(i))
 
+    def save_feds(self, step):
+        with open('fed.csv', 'a') as file:
+            for i in range(self.evacuees.get_number_of_pedestrians()):
+                old = self.smoke_query.get_fed_deprecated(self.evacuees.get_position_of_pedestrian(i))
+                purs = self.smoke_query.get_fed_purser(self.evacuees.get_position_of_pedestrian(i))
+                sfpe = self.smoke_query.get_fed_sfpe(self.evacuees.get_position_of_pedestrian(i))
+                file.write(f'{step},{i},{old},{purs},{sfpe}\n')
+
     def update_fed(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
             else:
-                try:
-                    fed = self.smoke_query.get_fed(self.evacuees.get_position_of_pedestrian(i))
-                    if i == 0:
-                        self.elog.debug('FED calculated: {}'.format(fed))
-                except:
-                    self.elog.warning('Simulation without FED')
-                    fed = 0.0
+                #try:
+                fed = self.smoke_query.get_fed_sfpe(self.evacuees.get_position_of_pedestrian(i))
+                if i == 0:
+                    self.elog.debug('FED calculated: {}'.format(fed))
+                #except:
+                #    self.elog.warning('Simulation without FED')
+                #    fed = 0.0
                 self.evacuees.update_fed_of_pedestrian(i, fed * self.config['SMOKE_QUERY_RESOLUTION'])
 
         fed = [self.evacuees.get_fed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
@@ -322,6 +330,7 @@ class EvacEnv:
         #self.elog.info(self.current_time)
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
             self.update_fed()
+            self.save_feds(step)
         if self.dfed.n_agents == 0:
             self.dfed.n_agents = self.get_number_of_evacuees()
             self.dfed.fed = [0 for i in range(self.dfed.n_agents)]

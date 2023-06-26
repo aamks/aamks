@@ -783,22 +783,22 @@ class PostProcess:
             self.t = time.time()
         p = Plot(self.dir)
         tm('Plot')
-#        h = Heatmap(self.data['fed_der_df'], self.data['geometry'], self.n)
-#        tm('Heatmap')
-#        h.calc()
-#        tm('heatmap calc')
-#        p.heatmap(h)
-#        tm('plot heat')
-#        [p.cdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['cdf']]
-#        tm('plot cdf')
-#        [p.pdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf']]
-#        tm('plot pdf')
-#        [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
-#        tm('plot pdf_n')
-#        [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
-#        tm('plot fn_curve')
-#        p.pie(self.data['pdf_fn'][0])
-#        tm('plot pie')
+        h = Heatmap(self.data['fed_der_df'], self.data['geometry'], self.n)
+        tm('Heatmap')
+        h.calc()
+        tm('heatmap calc')
+        p.heatmap(h)
+        tm('plot heat')
+        [p.cdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['cdf']]
+        tm('plot cdf')
+        [p.pdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf']]
+        tm('plot pdf')
+        [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
+        tm('plot pdf_n')
+        [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
+        tm('plot fn_curve')
+        p.pie(self.data['pdf_fn'][0])
+        tm('plot pie')
 
         self.plant()
         tm('plant trees')

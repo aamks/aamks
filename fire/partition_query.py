@@ -270,7 +270,8 @@ class PartitionQuery:
         else:
             return conditions['ULOD'], conditions['COMPA']
 # }}}
-    def get_fed(self, position):# {{{
+    # deprecated
+    def get_fed_deprecated(self, position):# {{{
         conditions = self.get_conditions(position)
 
         # when position of evacuee is outside the building we assume no FED absorbed
@@ -293,6 +294,113 @@ class PartitionQuery:
         hv_co2 = exp(0.1903 * conditions[layer+'LCO2'] + 2.0004) / 7.1
         fed_total = (fed_co + fed_hcn + fed_hcl) * hv_co2 + fed_o2
 
+        return fed_total
+# }}}
+
+    # source: Purser, D. Application of human and animal exposure studies [in:] Stec, A. and Hull, T. Fire Toxicity, 2010
+    def get_fed_purser(self, position):# {{{
+        def ppm(x): return x*1e4    # %mol to ppm conversion
+        conditions = self.get_conditions(position)
+
+        # when position of evacuee is outside the building we assume no FED absorbed
+        if conditions['COMPA'] == 'outside':
+            return 0.
+
+        hgt = conditions['HGT']
+        if hgt == None:
+            return 0.
+
+        if hgt > self.config['LAYER_HEIGHT']:
+            layer = 'L'
+        else:
+            layer = 'U'
+
+        # doses of chemical compunds lethal for 50% of populations over 30 min period + 14 days = LC_50 * 30 min [ppm*min]
+        lc50_30 = {     
+                'co': 162000,     #LC_50 = 5400
+                'hcn': 4950,    #LC_50 = 165
+                'hcl': 114000,    #LC_50 = 3800
+                }
+
+        # actual concentrations of compunds from CFAST
+        c = {       
+                'co2': conditions[layer+'LCO2'], 
+                'o2': conditions[layer+'LO2'], 
+                'co': conditions[layer+'LCO'],
+                'hcn': conditions[layer+'LHCN'],
+                'hcl': conditions[layer+'LHCL']
+                }
+
+        # hiperventilation coefficient
+        v_co2 = 1 + (exp(0.14 * c['co2']) - 1) / 2      
+        
+        # fractional doses for species
+        dt = self.config['TIME_STEP'] / 60    #[min]
+        feds = {}
+        for spec in ['co', 'hcn', 'hcl']:
+            feds[spec] = ppm(c[spec]) * dt / lc50_30[spec]
+
+        hypoxia = dt / exp(8.13 - 0.54 * (21 - c['o2']))
+
+        # acidosis factor
+        af = c['co2'] * 0.05 - 0.02
+
+        # total FED absorbed in time step dt
+        fed_total = (feds['co'] + feds['hcn'] + feds['hcl']) * v_co2 + hypoxia + af
+
+        return fed_total
+# }}}
+
+    # source: Purser, D. and McAllister J. Assesment of Hazards to Occupants from Smoke, Toxic Gases and Heat [in:] Hurley, M. et al. SFPE Handbook of Fire Protection Engineering, vol. 3, 5th ed., 2016
+    # activity_levels: 0 -> rest/sleep; 1 -> light work/walking; 2 -> heavy work/slow run/climbing the stairs
+    def get_fed_sfpe(self, position, activity_level=1):# {{{
+        def ppm(x): return x*1e4    # %mol to ppm conversion
+
+        conditions = self.get_conditions(position)
+
+        # when position of evacuee is outside the building we assume no FED absorbed
+        if conditions['COMPA'] == 'outside':
+            return 0.
+
+        hgt = conditions['HGT']
+        if hgt == None:
+            return 0.
+
+        if hgt > self.config['LAYER_HEIGHT']:
+            layer = 'L'
+        else:
+            layer = 'U'
+
+        # actual concentrations of compunds from CFAST [mol %]
+        c = {       
+                'co2': conditions[layer+'LCO2'], 
+                'o2': conditions[layer+'LO2'], 
+                'co': conditions[layer+'LCO'],
+                'hcn': conditions[layer+'LHCN'],
+                'hcl': conditions[layer+'LHCL']
+                }
+
+        # hiperventilation coefficient
+        v_co2 = exp(0.1903 * c['co2'] + 2.0004) / 7.1
+        
+        # fractional doses for species
+        dt = self.config['TIME_STEP'] / 60    #[min]
+
+        feds = {}
+        cohb_threshold = [40, 30, 20] #[%v/v]
+        feds['co'] = 3.317e-5 * ppm(c['co'])**1.036 * dt / cohb_threshold[activity_level]    # stewart equation
+        feds['hcn'] = ppm(c['hcn'])**2.36 / 1.2e6    # expotential HCN relation from experiments on primates
+        feds['hcl'] = c['hcl'] * dt / 60000     # 12000 ppm * 5 min is incapacitating dose for HCl
+
+        hypoxia = dt / exp(8.13 - 0.54 * (20.9 - c['o2']))
+
+        # breathing rate [l/min]
+        v_e = [8.5, 25, 50]
+
+        # total FED absorbed in time step dt
+        fed_total = sum(feds.values()) * v_e[activity_level] * v_co2 + hypoxia 
+
+        print(f'SFPE: {fed_total}\nPurser: {self.get_fed_purser(position)}\nFDS+Evac: {self.get_fed_deprecated(position)}\n')
         return fed_total
 # }}}
 
