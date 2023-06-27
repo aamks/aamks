@@ -338,7 +338,7 @@ class PartitionQuery:
         c_const = 5
         # min(ULOD_COR)
         ul_od_cor = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='c' AND param='ULOD'")[0]['MAX(value)']
-        if ul_od_cor == 0:
+        if ul_od_cor == 0 or ul_od_cor is None:
             finals['min_vis_cor'] = 30
         else:
             finals['min_vis_cor'] = c_const / (ul_od_cor * 2.303)
