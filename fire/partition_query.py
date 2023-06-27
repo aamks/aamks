@@ -293,11 +293,11 @@ class PartitionQuery:
         # when position of evacuee is outside the building we assume no FED absorbed
         if conditions['COMPA'] == 'outside':
             return 0.
-
-        if re.search(r'(s\d+)', conditions['COMPA']):
-            return conditions['ULOD'], conditions['COMPA']
         
         hgt = conditions['HGT']
+        if re.search(r'(s\d+)', conditions['COMPA']):
+            hgt = self.config['LAYER_HEIGHT']
+        
         if hgt == None:
             return 0.
 
