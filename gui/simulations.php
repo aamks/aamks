@@ -9,9 +9,7 @@ function listing() {/*{{{*/
 	echo "<form method='POST' action=''>
 			<input type='submit' name='btn-beck' value='Launch post-processing'>
 		</form>";
-	echo "<form method='POST' action=''>
-		<input type='submit' name='btn-images' value='Reload images'>
-	</form>";
+
 
 }
 /*}}}*/
@@ -25,6 +23,12 @@ function status() {/*{{{*/
 	$total=$r[0]['total'];
 	echo "<br>Complete: $finished of $total";
 	echo "&nbsp; &nbsp; Get your detailed data: <a href=$f/picts/data.csv><wheat>Download CSV</wheat></a>";
+    echo "&nbsp;&nbsp;Postprocess finished at: ";
+    if (array_key_exists('pp_time', $_SESSION)) {
+        echo date('Y-m-d H:i:s', $_SESSION['pp_time']);
+    } else {
+        echo 'No time of last postprocessing found';
+        }
 }
 /*}}}*/
 
@@ -38,10 +42,14 @@ function make_pictures() {/*{{{*/
 	$cmd="cd $aamks/results; python3 beck_new.py $f 2>&1";
     // Output a 'waiting message'
 	$z=shell_exec("$cmd");
-    show_data();
-    show_pictures();
-
+    $_SESSION['pp_time'] =  $_SERVER['REQUEST_TIME'];
+    $URL = "/aamks/simulations.php";
+    echo '<META HTTP-EQUIV="refresh" content="0;URL=' . $URL . '">';
 /*}}}*/
+}
+
+function prevNext($k, $t, $d) {
+    return ($r=($k+$d)%$t)>=0?$r:$r+=$t;
 }
 
 function show_pictures() {/*{{{*/
@@ -63,40 +71,61 @@ function show_pictures() {/*{{{*/
         //array('tree_f','Event tree for fatalities due to toxic gases')
     );
 
-    echo "<br><br><br><font size=5><strong>Figures</strong></font><br><br>";
+    // find how many heatmaps are in picts
+        
+        $path = $f."/picts/";
+		$cmd = "cd $path; ls -d floor* 2>&1";
+		$result=shell_exec("$cmd");
+		$result_array=explode("\n",$result);
+	    //$floor = 0;
+		foreach ($result_array as $pic) {
+			if (strpos($pic, "floor") !== false) {
+	            array_push($pictures_list, array(substr($pic, 0, -4), 'Spatial distribution of total FED absorbtion' ));//(level'.$floor.')'));
+	            //$floor += 1;
+	        }
+	    }
+   
+    //total array size
+    $total = sizeof($pictures_list)-1;
 
-	foreach($pictures_list as $picture) {
-		$file=$f."/picts/".$picture[0].".png";
-		$size_info=getimagesize($file);
-		$data64=shell_exec("base64 $file");
-		echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
-		echo "<p>Figure ". $counter .". <strong>".$picture[1]."</strong></p><br>";
-		$counter += 1;
-	}
-	$path = $f."/picts/";
-	$cmd = "cd $path; ls -d floor* 2>&1";
-	$result=shell_exec("$cmd");
-	$result_array=explode("\n",$result);
-	foreach ($result_array as $pic) {
-		if (strpos($pic, "floor") !== false) {
-			$file=$f."/picts/".$pic;
-			$size_info=getimagesize($file);
-			$data64=shell_exec("base64 $file");
-			echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
-			echo "<p>Figure ". $counter .". <strong>Spatial distribution of total FED absorbtion</strong></p>";
-			$counter += 1;
-		}
-	}
+    //current position in the array
+    $k = 0;
+
+    //displays left and right navigation buttons which execute prev/nextImage functions
+    $button_left='<<< Previous figure';
+    $button_right='Next figure >>>';
+
+
+    //displays the current image
+    if(isset($_GET['pid'])){
+        $k = $_GET['pid'];
+    }else{
+        $_GET['pid'] = $k;
+        }
+        
+        echo "<br><br><br><font size=4><strong>Figures</strong></font><br><br>";
+        echo '<br><a href="simulations.php?pid='.prevNext($k, $total, -1).'"><button>', $button_left, '</button></a>';
+        echo '    <a href="simulations.php?pid='.prevNext($k, $total, 1).'"><button>', $button_right, '</button></a>';
+        $file=$f."/picts/".$pictures_list[$k][0].".png";
+        $size_info=getimagesize($file);
+        $data64=shell_exec("base64 $file");
+        echo "<br><p>Figure ". ($k+1) .". <strong>".$pictures_list[$k][1]."</strong></p>";
+        echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
+
+    show_data();
+
+
+
 }
-function show_data() {/*{{{*/
-	$f=$_SESSION['main']['working_home'];
-    function startsWith( $haystack, $needle ) {
+
+function startsWith( $haystack, $needle ) {
      $length = strlen( $needle );
      return substr( $haystack, 0, $length ) === $needle;
 }
 
-    echo "<br>Results loaded at: ";
-    echo  date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']);
+function show_data() {/*{{{*/
+	$f=$_SESSION['main']['working_home'];
+
 
     // to be loaded from txt file in the future
     $txt_file = file_get_contents($f."/picts/data.txt");
@@ -108,7 +137,7 @@ function show_data() {/*{{{*/
         };
     };
 
-    echo "<br><br><br><font size=5><strong>Risk indices</strong></font><br><br>";
+    echo "<br><br><br><font size=4><strong>Risk indices</strong></font><br><br>";
 
 	echo "<form method='POST' action=''>
 		<input autocomplete=off type=text placeholder='fire probability [1/year]' name=fire_prob required  title='fire probability [1/year]'> 
@@ -127,7 +156,7 @@ function show_data() {/*{{{*/
     echo "<tr><td>Societal risk (SRI)</td><td>(fatalities+fatalities<sup>2</sup>)/m<sup>2</sup></td><td>".$sri."</td>";
     echo "</table>";
 
-    echo "<br><br><br><font size=5><strong>Multisimulation output</strong></font><br><br>";
+    echo "<br><br><br><font size=4><strong>Multisimulation output</strong></font><br><br>";
 
     $rset = explode(",", $data[4]);
     $aset = explode(",", $data[5]);
@@ -153,17 +182,12 @@ function main() {/*{{{*/
 	$_SESSION['nn']->menu('Multisimulation results');
 	listing();
 	status();
-	//show_pictures();
-    //make_pictures();
+	show_pictures();
 
 	if (isset($_POST['btn-beck'])) {
 		make_pictures();
-	}
+    }
 
-	if (isset($_POST['btn-images'])) {
-        show_data();
-		show_pictures();
-	}
 }
 /*}}}*/
 
