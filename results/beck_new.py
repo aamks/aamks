@@ -248,7 +248,7 @@ class RiskIteration:
         for fed in feds.values():
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
-                cdfs.extend(stat.norm.logcdf(np.log(fed)))
+                cdfs.extend(stat.norm.cdf(np.log(fed)))
                 
         return cdfs
 

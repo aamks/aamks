@@ -244,6 +244,10 @@ class EvacEnv:
             fed_symbilic.append(c)
         self.fed_symbolic = fed_symbilic
 
+        # return True if at least one agent has FED=1 (ASET criterion)
+        return True if max(fed) >= 1 else False
+            
+
     def process_obstacle(self, obstacles):
         for i in range(len(obstacles)):
             obst = list()
@@ -311,14 +315,7 @@ class EvacEnv:
         if all(x == 0 for x in self.finished) and self.rset == 0:
             self.rset = self.current_time + 30
 
-    def calculate_individual_risk(self):
-        # deprecated function
-        # all risk calculations are proceeded with results.beck_new.py now
-        # possibly to be changed due to parallelization 
-        return -1
-
-
-    def do_simulation(self, step):
+    def do_simulation(self, step, time):
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
             self.set_goal()
             self.update_speed()
@@ -328,16 +325,16 @@ class EvacEnv:
         self.update_agents_position()
         self.update_time()
         #self.elog.info(self.current_time)
-        if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
-            self.update_fed()
-            self.save_feds(step)
+        #if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
+        aset_bool = self.update_fed()
+        #self.save_feds(step)
         if self.dfed.n_agents == 0:
             self.dfed.n_agents = self.get_number_of_evacuees()
             self.dfed.fed = [0 for i in range(self.dfed.n_agents)]
         self.dfed.update_dfed(self.config['TIME_STEP'], self.positions, self.fed)
         if self.rset == 0:
             self.get_rset_time()
-
+        return aset_bool
 
 # Total FED growth spatial function (per floor)
 class FEDDerivative:

@@ -18,7 +18,7 @@ class PartitionQuery:
         * We are getting read_cfast_record(T) calls in say 10s intervals:
           We only store this single T'th record in a dict.
         * We are getting lots of get_conditions((x,y),param) calls after
-          read_cfast_record(T) returns the needed CFAST record.
+self.project_conf['simulation_time']        read_cfast_record(T) returns the needed CFAST record.
 
         Sqlite sends: 
             a) cell2compa:
@@ -54,6 +54,8 @@ class PartitionQuery:
             for room,data in self.compa_conditions.items():
                 for k,v in data.items():
                     self.compa_conditions[room][k]=0
+
+
 # }}}
     def _sqlite_query_vertices(self):# {{{
         ''' 
@@ -420,17 +422,17 @@ class PartitionQuery:
         finals=OrderedDict()
         #dd(self.sf.query('SELECT * from finals order by param,value'))
 
-        # min(time) for HGT_COR < 1.8
-        hgt = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='HGT' AND value < 1.8")[0]['MIN(time)']
-        if hgt == None:
-            hgt = 9999
-        ulod = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='ULOD' AND value > 0")[0]['MIN(time)']
-        if ulod == None:
-            ulod = 9999
-        ult = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='ULT' AND value > 60")[0]['MIN(time)']
-        if ult == None:
-            ult = 9999
-        finals['dcbe']=max(hgt, ulod, ult)
+#        # min(time) for HGT_COR < 1.8
+#        hgt = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='HGT' AND value < 1.8")[0]['MIN(time)']
+#        if hgt == None:
+#            hgt = 9999
+#        ulod = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='ULOD' AND value > 0")[0]['MIN(time)']
+#        if ulod == None:
+#            ulod = 9999
+#        ult = self.sf.query("SELECT MIN(time) FROM finals WHERE compa_type='c' AND param='ULT' AND value > 60")[0]['MIN(time)']
+#        if ult == None:
+#            ult = 9999
+#        finals['dcbe']=max(hgt, ulod, ult)
 
         # min(HGT_COR) 
         finals['min_hgt_cor']=self.sf.query("SELECT MIN(value) FROM finals WHERE compa_type='c' AND param='HGT'")[0]['MIN(value)']

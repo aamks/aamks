@@ -265,6 +265,7 @@ class Worker:
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
+                aset = 604800
                 for i in self.floors:
                     try:
                         i.read_cfast_record(time_frame)
@@ -275,10 +276,12 @@ class Worker:
                     first_evacuue.append(i.evacuees.get_first_evacuees_time())
 
                 for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
+                    current_time = time_frame - 10 + step * self.floors[0].config['TIME_STEP']
                     time_row = dict()
                     smoke_row = dict()
                     for i in self.floors:
-                        i.do_simulation(step)
+                        if i.do_simulation(step, current_time) and aset > current_time:
+                            aset = current_time
                         if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})
@@ -290,19 +293,20 @@ class Worker:
                     rsets.append(i.rset)
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
                 time_frame += 10
+                self.wlogger.info('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
+                if time_frame > (self.vars['conf']['simulation_time'] - 10):
+                    self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
+                    break
+                if prod(array(rsets)) > 0:
+                    self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(rsets))
+                    self.simulation_time = max(rsets)
+                    self.time_shift = 0
+                    break
             else:
                 self.wlogger.error(f'There was no data found at {time_frame} s in CFAST results.')
                 break
-            self.wlogger.info('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
-            if time_frame > (self.vars['conf']['simulation_time'] - 10):
-                self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
-                break
-            if prod(array(rsets)) > 0:
-                self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(rsets))
-                self.simulation_time = max(rsets)
-                self.time_shift = 0
-                break
         self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
+        self.cross_building_results['dcbe'] = aset
         self.wlogger.info('Final results gathered')
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
 
