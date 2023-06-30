@@ -288,8 +288,8 @@ class PartitionQuery:
             layer = 'U'
 
         fed_co = 2.764e-5 * ((conditions[layer+'LCO'] * 1000000) ** 1.036) * (self.config['TIME_STEP'] / 60)
-        fed_hcn = (exp((conditions[layer+'LHCN'] * 10000) / 43) / 220 - 0.0045) * (self.config['TIME_STEP'] / 60)
-        fed_hcl = ((conditions[layer+'LHCL'] * 1000000) / 1900) * self.config['TIME_STEP']
+        fed_hcn = (exp((conditions[layer+'LHCN'] * 10000) / 43) / 220 - 0.0045) * (self.config['TIME_STEP'] / 60)  # units convertion error
+        fed_hcl = ((conditions[layer+'LHCL'] * 1000000) / 1900) * self.config['TIME_STEP']  # time units convertion error
         fed_o2 = (self.config['TIME_STEP'] / 60) / (60 * exp(8.13 - 0.54 * (20.9 - conditions[layer+'LO2'])))
         hv_co2 = exp(0.1903 * conditions[layer+'LCO2'] + 2.0004) / 7.1
         fed_total = (fed_co + fed_hcn + fed_hcl) * hv_co2 + fed_o2
@@ -337,16 +337,18 @@ class PartitionQuery:
         # fractional doses for species
         dt = self.config['TIME_STEP'] / 60    #[min]
         feds = {}
-        for spec in ['co', 'hcn', 'hcl']:
+        for spec in lc50_30.keys():
             feds[spec] = ppm(c[spec]) * dt / lc50_30[spec]
 
         hypoxia = dt / exp(8.13 - 0.54 * (21 - c['o2']))
 
-        # acidosis factor
-        af = c['co2'] * 0.05 - 0.02
+        # acidosis factor [possible mistake in the source - 400 ppm is approx. concentration of CO2 in the air]
+        # it gives 0.002 (in the source 0.02) for normal conditions.
+        # However, CFAST default CO2 concentration is 0.0, so any positive concentration is for extensive CO2
+        af = c['co2'] * 0.05
 
         # total FED absorbed in time step dt
-        fed_total = (feds['co'] + feds['hcn'] + feds['hcl']) * v_co2 + hypoxia + af
+        fed_total = sum(feds.values()) * v_co2 + hypoxia + af
 
         return fed_total
 # }}}
@@ -389,18 +391,19 @@ class PartitionQuery:
         feds = {}
         cohb_threshold = [40, 30, 20] #[%v/v]
         feds['co'] = 3.317e-5 * ppm(c['co'])**1.036 * dt / cohb_threshold[activity_level]    # stewart equation
-        feds['hcn'] = ppm(c['hcn'])**2.36 / 1.2e6    # expotential HCN relation from experiments on primates
-        feds['hcl'] = c['hcl'] * dt / 60000     # 12000 ppm * 5 min is incapacitating dose for HCl
+        feds['hcn'] = ppm(c['hcn'])**2.36 * dt / 2.43e7     # from experiments on primates - general case 
+        feds['hcl'] = ppm(c['hcl']) * dt / 60000     # 12000 ppm * 5 min is incapacitating dose for HCl
 
         hypoxia = dt / exp(8.13 - 0.54 * (20.9 - c['o2']))
 
         # breathing rate [l/min]
         v_e = [8.5, 25, 50]
+        breath = min(v_e[activity_level] * v_co2, 70)   # 70 l/min is recommended upper limit
 
         # total FED absorbed in time step dt
-        fed_total = sum(feds.values()) * v_e[activity_level] * v_co2 + hypoxia 
+        fed_total = sum(feds.values()) * breath + hypoxia 
 
-        print(f'SFPE: {fed_total}\nPurser: {self.get_fed_purser(position)}\nFDS+Evac: {self.get_fed_deprecated(position)}\n')
+        #print(f'SFPE: {fed_total}\nPurser: {self.get_fed_purser(position)}\nFDS+Evac: {self.get_fed_deprecated(position)}\n')
         return fed_total
 # }}}
 
