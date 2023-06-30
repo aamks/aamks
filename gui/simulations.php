@@ -86,7 +86,7 @@ function show_pictures() {/*{{{*/
 	    }
    
     //total array size
-    $total = sizeof($pictures_list)-1;
+    $total = sizeof($pictures_list);
 
     //current position in the array
     $k = 0;

@@ -1,15 +1,15 @@
 import matplotlib as mtl
 mtl.use('Agg') 
-import json
-from collections import OrderedDict
-import psycopg2
-import seaborn as sns
-import numpy as np
+import matplotlib.ticker as tic
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
 from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle as rect
+import json
+from collections import OrderedDict
+import seaborn as sns
+import numpy as np
 from statsmodels.distributions.empirical_distribution import ECDF as ecdf
-import matplotlib.ticker as tic
 import sys
 sys.path.insert(0, '/usr/local/aamks')
 import os
@@ -18,15 +18,10 @@ import shutil
 #from event_tree_en import EventTreeFED
 #from event_tree_en import EventTreeSteel
 import scipy.stats as stat
-import collections
-from include import Sqlite
-from include import Psql
-from matplotlib.patches import Rectangle as rect
-import csv
-from include import Dump as dd
-from math import sqrt
+from include import Sqlite, Psql
 import warnings
 import pandas as pd
+
 
 
 
@@ -205,11 +200,6 @@ Basic references: Krasuski A., "Multisimulation: Stochastic simulations for the 
 
 class RiskScenario:
     def __init__(self, results_from_psql: list, fire_prob=1):
-        #self.feds = results_from_psql # raw FEDs for each iteration, floor and agent
-        #print('[OK] FED imported')
-
-      #  self.cdffeds = self._rawFED2CDF() # number of death probabilities per agent per iteration (NO FLOOR)
-        #print('[OK] CDF of FED calculated')
         self.iterations = results_from_psql    # list of iterations (results from RiskIteration)
         self.n = len(self.iterations) # number of iterations
         self.risks = {}
@@ -240,13 +230,6 @@ class RiskScenario:
 
         return self.risks
 
-#    def all(self):
-#        # calculate values for iterations if necessary
-#        for i in self.iterations:
-#            i.all() if not i.risks else None
-#        [self.calc_scenario(k) for k in self.iterations[0].risks.keys()]    # calculate values for scenario
-#        return self.risks
-                        
 
 class RiskIteration:
     def __init__(self, feds_per_floor: list(), calculate=False):
@@ -256,13 +239,16 @@ class RiskIteration:
         if calculate:
             self.all()
 
-    # remove floor division in FED data and process it to P(death) = CDF(ln(FED))
+    # remove floor division in FED data and process it to P(death) 
+        # we assume that incapacitation during evacuation results in serious injuries or death
+        # acc. Purser 2010, we assume that FED=1 results in incapacitation in 50% of poulation, but FED=0.3 only in 11.3%
+        # P_inc(FED) is lognorm distribution (Purser 2010, more?)
     def _rawFED2CDF(self, feds: dict):
         cdfs = []
         for fed in feds.values():
-            with warnings.catch_warnings():     # FED = 0 is interpreted as 0 probability of death
+            with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
-                cdfs.extend(stat.norm.cdf(np.log(fed)))
+                cdfs.extend(stat.norm.logcdf(np.log(fed)))
                 
         return cdfs
 
@@ -283,7 +269,7 @@ class RiskIteration:
 
     # assess the probability of x deads in fire with MC sampling
     def _pdf_fn_mc(self, rmse_threshold=0.01):
-        def calc_rmse(p: float, n: float): return sqrt(p * (1 - p) / n)
+        def calc_rmse(p: float, n: float): return np.sqrt(p * (1 - p) / n)
         def ask_the_moirai(feds: list): return np.random.binomial(1, p=feds)
 
         #print('MonteCarlo assesment of PDF for FN in progress...', end='\r')
@@ -598,9 +584,9 @@ class Plot:
             ax = fig.add_subplot(111)
 
             # colors
-            my_cmap = mtl.colors.LinearSegmentedColormap.from_list('', ['white', 'coral', 'darkred'])
+            my_cmap = clr.LinearSegmentedColormap.from_list('', ['white', 'coral', 'darkred'])
             colors = {'ROOM': '#8C9DCE', 'COR': '#385195', 'HALL': '#DBB55B', 'CONTOUR': '#000000', 
-                    'DOOR': mtl.colors.rgb2hex(my_cmap(0)), 'OBSTACLE': '#707070'}
+                    'DOOR': clr.rgb2hex(my_cmap(0)), 'OBSTACLE': '#707070'}
             
             # plot fed growth data
             dat = hm.plot['floors'][f]
@@ -670,10 +656,10 @@ class PostProcess:
                 }
 
 
-    # draw ETA for fatalities
-    def plant(self):
-        t = EventTreeFED(self.dir)
-        t.draw()
+    ## draw ETA for fatalities
+    #def plant(self):
+    #    t = EventTreeFED(self.dir)
+    #    t.draw()
 
     # save data
     def save(self):
@@ -799,9 +785,6 @@ class PostProcess:
         tm('plot fn_curve')
         p.pie(self.data['pdf_fn'][0])
         tm('plot pie')
-
-        self.plant()
-        tm('plant trees')
 
         self.save()
         tm('save')
