@@ -8,6 +8,7 @@ set -ueo pipefail
 source local_config
 
 USER=$(id -ru)
+USERNAME=$(id -nu)
 [ "X$USER" == "X0" ] && { echo "Don't run as root / sudo"; exit; }
 
 if [[ ! -v PYTHONPATH ]] 
@@ -27,6 +28,7 @@ echo "AAMKS_WORKER: $AAMKS_WORKER"
 echo "AAMKS_SALT: $AAMKS_SALT"
 echo "AAMKS_USE_MAIL: $AAMKS_USE_MAIL"
 echo "AAMKS_MAIL_API_KEY: $AAMKS_MAIL_API_KEY"
+echo "AAMKS_MAIL_SENDER: $AAMKS_MAIL_SENDER"
 echo "PYTHONPATH: $PYTHONPATH"
 echo; echo;
 echo "<Enter> accepts, <ctrl+c> cancels";
@@ -156,14 +158,14 @@ echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> "$temp"
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> "$temp"
 echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> "$temp"
 echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> "$temp"
-echo "export AAMKS_MAIL_SENDER='$AAMKS_MAIL_SENDER'" >> 
+echo "export AAMKS_MAIL_SENDER='$AAMKS_MAIL_SENDER'" >> "$temp" 
 echo "export PYTHONPATH='$PYTHONPATH'" >> "$temp"
 echo "export PYTHONIOENCODING='UTF-8'" >> "$temp"
 echo "export AAMKS_PROJECT='$AAMKS_PROJECT'" >> "$temp"
 echo "export AAMKS_USER_ID=1" >> "$temp"
 echo "export AAMKS_USE_GEARMAN=0" >> "$temp"
-echo "export USER='$(id -un)'" >> "$temp"
-echo "export USERNAME='$(id -un)'" >> "$temp"
+echo "export USER='$USER'" >> "$temp"
+echo "export USERNAME='$USERNAME'" >> "$temp"
 echo "export LOGNAME='$(id -un)'" >> "$temp"
 echo "export HOSTNAME='$HOSTNAME'" >> "$temp"
 echo "alias aamks='cd /usr/local/aamks/'" >> "$temp"
