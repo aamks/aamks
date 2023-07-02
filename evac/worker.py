@@ -38,7 +38,9 @@ class Worker:
         self.json=Json()
         self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
         self.start_time = time.time()
-        self.url=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
+        self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
+        self.project_dir=self.working_dir.split("/workers/")[0]
+        os.chdir(self.working_dir)
         self.vars = OrderedDict()
         self.results = dict()
         self.obstacles = None
@@ -51,13 +53,6 @@ class Worker:
         self.start_time = time.time()
         self.floors = list()
         self.host_name = os.uname()[1]
-        os.chdir('/home/aamks_users')
-        os.environ["AAMKS_PROJECT"] = '/home/aamks_users/'+self.url.split('aamks_users/')[1].split('/workers/')[0]
-        if self.url.split('aamks_users/')[1][0] == "/":
-            self.working_dir = self.url.split('aamks_users/')[1][1:]
-        else:
-            self.working_dir = self.url.split('aamks_users/')[1]
-
         self.cross_building_results = None
         self.simulation_time = None
         self.time_shift = None
@@ -82,7 +77,7 @@ class Worker:
         logger.addHandler(file_handler)
         logger.propagate = False
         ch = logging.StreamHandler()
-        ch.setLevel(logging.ERROR)
+        ch.setLevel(logging.INFO)
         ch.setFormatter(FORMATTER)
         logger.addHandler(ch)
 
@@ -173,7 +168,7 @@ class Worker:
 
     def create_geom_database(self):
 
-        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
         #self.s.dumpall()
         doors = self.s.query('SELECT floor, name, center_x, center_y, terminal_door from aamks_geom WHERE terminal_door IS NOT NULL')
         self.vars['conf']['doors'] = doors
@@ -321,12 +316,12 @@ class Worker:
         self._write_animation_zips()
         self._write_meta()
 
-        if os.environ['AAMKS_WORKER'] == 'gearman':
-            Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
-            self.wlogger.info('aOut launched successfully')
-        else:
-            command = "python3 {}/manager/results_collector.py {} {} {}".format(os.environ['AAMKS_PATH'], self.host_name, self.meta_file, self.sim_id)
-            os.system(command)
+        # if os.environ['AAMKS_WORKER'] == 'gearman':
+        #     Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
+        #     self.wlogger.info('aOut launched successfully')
+        # else:
+        #     command = "python3 {}/manager/results_collector.py {} {} {}".format(os.environ['AAMKS_PATH'], self.host_name, self.meta_file, self.sim_id)
+        #     os.system(command)
 
     # }}}
     def _write_animation_zips(self):# {{{
@@ -371,7 +366,7 @@ class Worker:
         report['sim_id'] = self.sim_id
         report['scenario_id'] = self.vars['conf']['scenario_id']
         report['project_id'] = self.vars['conf']['project_id']
-        report['path_to_project'] = '/home/aamks_users/'+self.working_dir.split('workers')[0]
+        report['path_to_project'] = self.project_dir
         report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
         report['highlight_geom'] = None
         report['psql'] = dict()
@@ -398,7 +393,7 @@ class Worker:
     # }}}
 
     def create_fed_mesh_db(self):
-        aamks_sqlite = Sqlite(os.environ['AAMKS_PROJECT']  + "/aamks.sqlite")
+        aamks_sqlite = Sqlite("{}/aamks.sqlite".format(self.project_dir))
         self.position_fed_tables_information = [[]for k in range (len(self.floors))]
         for floor in range(0,(len(self.floors))):
 
@@ -451,8 +446,8 @@ class Worker:
             self.floors[floor].position_fed_tables_information = self.position_fed_tables_information[floor]
 
     def main(self):
-        self._create_workspace()
-        self.download_inputs()
+        #self._create_workspace()
+        #self.download_inputs()
         self.get_config()
         self.create_geom_database()
         if self.run_cfast_simulations():
@@ -464,7 +459,6 @@ class Worker:
             self.wlogger.info('Simulation ended successfully')
 
     def test(self):
-        os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
         self.prepare_simulations()
@@ -473,8 +467,6 @@ class Worker:
         self.send_report()
 
     def local_worker(self):
-
-        os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
         if self.run_cfast_simulations():

@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from subprocess import Popen,PIPE
+import subprocess
 import time
 import sys
 import os
@@ -154,19 +155,19 @@ class OnEnd():
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
                 logger.info('start worker.py sim - %s', i)
-                exit_status = os.WEXITSTATUS(os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)))
-                if exit_status != 0:
+                exit_status = subprocess.run(["python3", "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                if exit_status.returncode != 0:
                     logger.error('worker exit status - %s', exit_status)
                 else:
-                    logger.info('finished worker.py')
+                    logger.info('finished worker.py sim - %s', i)
             return
 
         if os.environ['AAMKS_WORKER']=='gearman':
             try:
                 for i in range(*si.get()):
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                    worker = worker.replace("/home","")
-                    gearman="gearman -b -f aRun 'https://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
+                    worker = worker.replace("/home","/mnt")
+                    gearman="gearman -b -f aRun '{}'".format(worker)
                     os.system(gearman)
             except Exception as e:
                 print('OnEnd: {}'.format(e))
