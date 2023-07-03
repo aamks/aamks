@@ -1,5 +1,5 @@
 import matplotlib as mtl
-mtl.use('Agg') 
+#mtl.use('Agg') 
 import matplotlib.ticker as tic
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
@@ -504,21 +504,27 @@ class Plot:
         self.dir = scenario_dir
 
     # when data is list of P(N) and indexes are N values
-    def pdf_n(self, data, path=None, label=None):
-        fig, ax = plt.subplots()
-        ax.bar(range(len(data)), data)
+    def pdf_n(self, data, path=None, label=None, n_bins=40):
+        # draw data form P(N) distribution
+        max_fat = len(data)
+        binwdth = max(int(max_fat / n_bins), 2)
+        sample = [np.random.choice(np.arange(max_fat), p=data) for i in range(1000)]
+                    
+        plot = sns.histplot(sample, stat='density', kde=True, binwidth=binwdth)
 
-        ax.set_xlabel(label[0])
-        ax.set_ylabel(label[1])
+        if label:
+            plot.set(xlabel=label[0])
 
+        fig = plot.figure
         fig.tight_layout()
+
         if path:
             fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
         plt.clf()
 
     # PDF from datapoints
     def pdf(self, data, path=None, label=None):
-        plot = sns.displot(data, cumulative=False, stat='density', bins=50)
+        plot = sns.displot(data, cumulative=False, stat='density', bins=25)
         if label:
             plot.set_axis_labels(*label)
         fig = plot.fig
@@ -529,7 +535,8 @@ class Plot:
 
     # CDF  of data
     def cdf(self, data, path=None, label=None):
-        plot = sns.displot(data, cumulative=True, kde=True, stat='density', bins=50, fill=True, kde_kws={'cut': 2})
+        plot = sns.displot(data, cumulative=True, kde=True, stat='density', bins=25, fill=True,
+                kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1.1 * max(data)]})
         if label:
             plot.set_axis_labels(*label)
         fig = plot.fig
@@ -639,7 +646,7 @@ class PostProcess:
                     {'name':'wcbe_r','lab':['Required Safe Egress Time - Run Time [s]', 'PDF [-]']}
                     ], 
                 'pdf_n':[
-                    {'name':'pdf_fn', 'lab':['Number of fatalities [-]', 'Density [-]']},
+                    {'name':'pdf_fn', 'lab':['Number of fatalities [-]', 'Probability [-]']},
                     ], 
                 'cdf':[
                     {'name':'dcbe', 'lab':['Available Safe Egress Time [s]', 'CDF [-]']},
@@ -677,6 +684,18 @@ class PostProcess:
             positions = np.arange(int(max(*samp1, *samp2)*1.2))
             arr1(positions)
             arr2(positions)
+
+            plot = sns.histplot([samp1, samp2])
+
+            fig = plot.figure
+            fig.savefig(os.path.join(self.dir, 'picts', 'overlap_n.png'))
+            plt.clf()
+
+
+
+
+
+
             fig, ax = plt.subplots()
             sax = ax.twinx()
             ax.hist(samp1, color='lightcoral', label='RSET')
@@ -687,7 +706,7 @@ class PostProcess:
             sax.legend(framealpha=0)
             ax.set_xlabel('Time [s]')
             sax.set_ylabel('KDE [-]')
-            ax.set_ylabel('Frequency [-]')
+            ax.set_ylabel('Count [-]')
             fig.tight_layout()
             fig.savefig(os.path.join(self.dir, 'picts', 'overlap.png'))
             

@@ -58,7 +58,7 @@ function show_pictures() {/*{{{*/
 	$counter = 1;
     $pictures_list = array(
         array('pie_fault','The share of iterations with failure of safety systems (at least one fatality)'),
-        array('pdf_fn','Fatalities histogram'), 
+        array('pdf_fn','Fatalities histogram (PDF)'), 
         array('fn_curve','FN curve for the scenario'), 
         array('dcbe','Cumulative distribution function of ASET'), 
         array('wcbe','Cumulative distribution function of RSET'), 
@@ -150,10 +150,10 @@ function show_data() {/*{{{*/
 
 
     echo "<table><tr><th><strong>Parameter</strong></th><th><strong>Unit</strong></th><th><strong>Value</strong></th></tr>";
-    echo "<tr><td>Individual risk</td><td>-</td><td>".$ir."</td>";
-    echo "<tr><td>Societal risk (WRI)</td><td>fatalities</td><td>".$wri."</td>";
-    echo "<tr><td>Societal risk (AWR)</td><td>fatalities</sup></td><td>".$awr."</td>";
-    echo "<tr><td>Societal risk (SRI)</td><td>(fatalities+fatalities<sup>2</sup>)/m<sup>2</sup></td><td>".$sri."</td>";
+    echo "<tr><td>Individual risk</td><td>-</td><td>".round($ir, 5)."</td>";
+    echo "<tr><td>Societal risk (WRI)</td><td>fatalities</td><td>".round($wri, 5)."</td>";
+    echo "<tr><td>Societal risk (AWR)</td><td>fatalities</sup></td><td>".round($awr, 5)."</td>";
+    echo "<tr><td>Societal risk (SRI)</td><td>(fatalities+fatalities<sup>2</sup>)/m<sup>2</sup></td><td>".round($sri, 5)."</td>";
     echo "</table>";
 
     echo "<br><br><br><font size=4><strong>Multisimulation output</strong></font><br><br>";
@@ -166,12 +166,12 @@ function show_data() {/*{{{*/
     $min_vis = explode(",", $data[9]);
 
     echo "<table><tr><th><strong>Parameter</strong></th><th><strong>Mean value</strong></th><th><strong>Std Dev</strong></th><th><strong>Unit</strong></th></tr>";
-    echo "<tr><td>RSET</td><td>".$rset[0]."</td><td>".$rset[1]."</td><td>s</td>";
-    echo "<tr><td>ASET</td><td>".$aset[0]."</td><td>".$aset[1]."</td><td>s</td>";
-    echo "<tr><td>Overlapping index</td><td>".$ovl."</td><td></td><td>s</td>";
-    echo "<tr><td>Maximum temperature</td><td>".$max_hgt[0]."</td><td>".$max_hgt[1]."</td><td>°C</td>";
-    echo "<tr><td>Minimum neutral plane level</td><td>".$min_lvl[0]."</td><td>".$min_lvl[1]."</td><td>cm</td>";
-    echo "<tr><td>Minimum visibility</td><td>".$min_vis[0]."</td><td>".$min_vis[1]."</td><td>m</td>";
+    echo "<tr><td>RSET</td><td>".round($rset[0], 1)."</td><td>".round($rset[1], 1)."</td><td>s</td>";
+    echo "<tr><td>ASET</td><td>".round($aset[0], 1)."</td><td>".round($aset[1], 1)."</td><td>s</td>";
+    echo "<tr><td>Overlapping index</td><td>".round($ovl, 4)."</td><td></td><td>s</td>";
+    echo "<tr><td>Maximum temperature</td><td>".round($max_hgt[0], 1)."</td><td>".round($max_hgt[1], 1)."</td><td>°C</td>";
+    echo "<tr><td>Minimum neutral plane level</td><td>".round($min_lvl[0], 1)."</td><td>".round($min_lvl[1], 1)."</td><td>cm</td>";
+    echo "<tr><td>Minimum visibility</td><td>".round($min_vis[0], 3)."</td><td>".round($min_vis[1], 3)."</td><td>m</td>";
     echo "</table>";
 
 }
