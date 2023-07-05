@@ -168,7 +168,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         if self.project_conf['fire_model'] == 'None':
             return 1
 
-        needed_record_id = int(time / self.config['SMOKE_QUERY_RESOLUTION']) + 1
+        needed_record_id = int(time / self.config['SMOKE_QUERY_RESOLUTION'])
         with open('cfast_compartments.csv') as f:
             num_data_records = sum(1 for _ in f) - 4
         if num_data_records > needed_record_id:

@@ -219,7 +219,16 @@ class EvacEnv:
                 continue
             else:
                 #try:
-                fed = self.smoke_query.get_fed_sfpe(self.evacuees.get_position_of_pedestrian(i))
+                # find activity level
+                activity = 1
+                position = self.evacuees.get_position_of_pedestrian(i)
+                if self.evacuees.get_velocity_of_pedestrian(i) == (0, 0):
+                    activity = 0
+                elif 's' in self.smoke_query.xy2room(position):
+                    activity = 2
+
+                print(activity) if activity == 0 else None
+                fed = self.smoke_query.get_fed_sfpe(position, activity_level=activity)
                 if i == 0:
                     self.elog.debug('FED calculated: {}'.format(fed))
                 #except:
