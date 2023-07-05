@@ -7,7 +7,7 @@ function listing() {/*{{{*/
 	extract($_SESSION['main']);
 	$sim="$project_id/$scenario_id";
 	echo "<form method='POST' action=''>
-			<input type='submit' name='btn-beck' value='Launch post-processing'>
+			<input type='submit' style='font-size:12pt; font-weight: bold' name='btn-beck' value='Launch post-processing'>
 		</form>";
 
 
@@ -22,13 +22,25 @@ function status() {/*{{{*/
 	$r=$_SESSION['nn']->query("SELECT count(*) AS total FROM simulations WHERE project = $project_id and scenario_id = $scenario_id");
 	$total=$r[0]['total'];
 	echo "<br>Complete: $finished of $total";
-	echo "&nbsp; &nbsp; Get your detailed data: <a href=$f/picts/data.csv><wheat>Download CSV</wheat></a>";
-    echo "&nbsp;&nbsp;Postprocess finished at: ";
+    echo "&nbsp;&nbsp; <br>Postprocess finished at: ";
     if (array_key_exists('pp_time', $_SESSION)) {
         echo date('Y-m-d H:i:s', $_SESSION['pp_time']);
     } else {
         echo 'No time of last postprocessing found';
         }
+}
+/*}}}*/
+
+/*}}}*/
+function downloads() {/*{{{*/
+	$f=$_SESSION['main']['working_home'];
+	$f = substr($f, strpos($f, '/', 1));
+    echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
+	echo "&nbsp; &nbsp;  <a href=$f/picts/data.txt download><button>Summary file (.TXT)</button></a>";
+	echo "&nbsp; &nbsp;  <a href=$f/picts/picts.zip download><button>Pictures (.ZIP)</button></a>";
+    echo "&nbsp; &nbsp;  <a href=$f/picts/data.csv download><button>Detailed database (.CSV)</button></a>";
+	echo "&nbsp; &nbsp;  <a href=$f/picts/data.zip download><button>Full results (.ZIP)</button></a>";
+    echo "<br><br><br><br>";
 }
 /*}}}*/
 
@@ -62,7 +74,7 @@ function show_pictures() {/*{{{*/
         array('fn_curve','FN curve for the scenario'), 
         array('dcbe','Cumulative distribution function of ASET'), 
         array('wcbe','Cumulative distribution function of RSET'), 
-        array('overlap','Histograms and kernel density functions of RSET and ASET'), 
+        array('overlap','Probability density functions of RSET and ASET'), 
         array('min_hgt','Cumulative distribution function of minimal hot layer height in '), 
         array('min_hgt_cor','Cumulative distribution function of minimal hot layer height on the evacuation routes'), 
         array('max_temp','Cumulative distribution function of maximal temperature'), 
@@ -183,6 +195,7 @@ function main() {/*{{{*/
 	listing();
 	status();
 	show_pictures();
+    downloads();
 
 	if (isset($_POST['btn-beck'])) {
 		make_pictures();

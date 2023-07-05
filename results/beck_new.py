@@ -21,6 +21,7 @@ import scipy.stats as stat
 from include import Sqlite, Psql
 import warnings
 import pandas as pd
+from zipfile import ZipFile
 
 
 
@@ -524,7 +525,7 @@ class Plot:
 
     # PDF from datapoints
     def pdf(self, data, path=None, label=None):
-        plot = sns.displot(data, cumulative=False, stat='density', bins=25)
+        plot = sns.displot(data, kde=True, stat='density')
         if label:
             plot.set_axis_labels(*label)
         fig = plot.fig
@@ -533,10 +534,28 @@ class Plot:
             fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
         plt.clf()
 
+    # CDF  of ASET/RSET data
+    def cdf_ovl(self, data, path=None, label=None):
+        def cdf(d): return np.array(d).cumsum() / d.sum()
+        def ccdf(d): return 1 - cdf(d)
+
+        fig, ax = plt.subplots()
+        r = plt.plot(cdf(data['ASET']), label='ASET')
+        a = plt.plot(ccdf(data['RSET']), label='RSET')
+
+        if label:
+            plt.xlabel(label[0])
+            plt.ylabel(label[1])
+        plt.legend()
+        fig.tight_layout()
+        if path:
+            fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
+        plt.clf()
+
     # CDF  of data
     def cdf(self, data, path=None, label=None):
         plot = sns.displot(data, cumulative=True, kde=True, stat='density', bins=25, fill=True,
-                kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1.1 * max(data)]})
+                kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1e6]})
         if label:
             plot.set_axis_labels(*label)
         fig = plot.fig
@@ -673,6 +692,8 @@ class PostProcess:
         self.gd.to_csv()
         self._summarize()
         self._to_txt()
+        self._zip_pictures()
+        self._zip_full()
 
     # add some summaries to self.data
     def _summarize(self):
@@ -684,32 +705,6 @@ class PostProcess:
             positions = np.arange(int(max(*samp1, *samp2)*1.2))
             arr1(positions)
             arr2(positions)
-
-            plot = sns.histplot([samp1, samp2])
-
-            fig = plot.figure
-            fig.savefig(os.path.join(self.dir, 'picts', 'overlap_n.png'))
-            plt.clf()
-
-
-
-
-
-
-            fig, ax = plt.subplots()
-            sax = ax.twinx()
-            ax.hist(samp1, color='lightcoral', label='RSET')
-            sax.plot(positions, arr1(positions), color='darkred', label='RSET')
-            ax.hist(samp2, color='lightskyblue', label='ASET')
-            sax.plot(positions, arr2(positions), color='dodgerblue', label='ASET')
-            ax.legend()
-            sax.legend(framealpha=0)
-            ax.set_xlabel('Time [s]')
-            sax.set_ylabel('KDE [-]')
-            ax.set_ylabel('Count [-]')
-            fig.tight_layout()
-            fig.savefig(os.path.join(self.dir, 'picts', 'overlap.png'))
-            
 
             # Determine the range over which the integration will occur
             min_value = np.min((samp1.min(), samp2.min()))
@@ -777,6 +772,22 @@ class PostProcess:
         with open(os.path.join(self.dir, 'picts', 'data.txt'), 'w') as g: 
             g.write('\n'.join(to_write))
 
+    def _zip_pictures(self):
+        with ZipFile(os.path.join(self.dir, 'picts', 'picts.zip'), 'w') as zf:
+            for f in os.scandir(os.path.join(self.dir, 'picts')):
+                if f.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    zf.write(f.path, arcname=f.name)
+
+    def _zip_full(self):
+        with ZipFile(os.path.join(self.dir, 'picts', 'data.zip'), 'w') as zf:
+            for f in os.scandir(os.path.join(self.dir, 'picts')):
+                if not f.name.lower().endswith('.zip'):
+                    zf.write(f.path, arcname=f.name)
+            try:
+                zf.write('/home/aamks_users/aamks.log')
+            except FileNotFoundError:
+                print('[WARNING] No log file found')
+                
     # produce standard postprocess content
     def produce(self):
         if os.path.exists(f'{self.dir}/picts'):
@@ -800,6 +811,9 @@ class PostProcess:
         tm('plot pdf')
         [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
         tm('plot pdf_n')
+        p.pdf({'ASET': self.data['dcbe'], 'RSET': self.data['wcbe']}, label=['Time [s]', 'Density [-]'], path='overlap')
+        p.cdf_ovl({'RSET': np.array(self.data['wcbe']), 'ASET': self.data['dcbe']}, label=['Time [s]', 'Density [-]'], path='overlap_n')
+        tm('plot overlap')
         [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
         tm('plot fn_curve')
         p.pie(self.data['pdf_fn'][0])
