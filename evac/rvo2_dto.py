@@ -315,8 +315,9 @@ class EvacEnv:
         if all(x == 0 for x in self.finished) and self.rset == 0:
             self.rset = self.current_time + 30
 
-    def do_simulation(self, step, time):
+    def do_simulation(self, step):
         if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
+            # every 10th (by default) step (?)
             self.set_goal()
             self.update_speed()
         self.update_agents_velocity()
@@ -327,7 +328,6 @@ class EvacEnv:
         #self.elog.info(self.current_time)
         #if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
         aset_bool = self.update_fed()
-        #self.save_feds(step)
         if self.dfed.n_agents == 0:
             self.dfed.n_agents = self.get_number_of_evacuees()
             self.dfed.fed = [0 for i in range(self.dfed.n_agents)]

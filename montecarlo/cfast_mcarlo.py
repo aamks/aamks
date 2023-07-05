@@ -37,6 +37,7 @@ class CfastMcarlo():
         self._sim_id = sim_id
         self._new_psql_log()
         seed(self._sim_id)
+        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
 
     def read_json(self):
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -345,7 +346,7 @@ class CfastMcarlo():
 
         txt=(
         "&HEAD VERSION = 7500, TITLE = 'P_ID_{}_S_ID_{}' /".format(project_id, scenario_id),
-        '&TIME SIMULATION = {}, PRINT = 100, SMOKEVIEW = 100, SPREADSHEET = 10 /'.format(simulation_time),
+        f'&TIME SIMULATION = {simulation_time}, PRINT = 100, SMOKEVIEW = 100, SPREADSHEET = {self.config["SMOKE_QUERY_RESOLUTION"]} /',
         '&INIT PRESSURE = {} RELATIVE_HUMIDITY = {} INTERIOR_TEMPERATURE = {} EXTERIOR_TEMPERATURE = {} /'.format(pressure, humidity, indoor_temp, outdoor_temp),
         '&MISC LOWER_OXYGEN_LIMIT = {} /'.format(o_limit),
         '',

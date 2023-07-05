@@ -162,16 +162,15 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
     def cfast_has_time(self,time):# {{{
         ''' 
         CFAST dumps 4 header records and then data records. 
-        Data records are indexed by time with delta=10s.
-        AAMKS has this delta hardcoded: CFAST dumps data in 10s intervals.
+        Data records are indexed by time with delta='SMOKE_QUERY_RESOLUTION' from self.config (default 10s).
         '''
 
         if self.project_conf['fire_model'] == 'None':
             return 1
 
-        needed_record_id=int(time/10)+1
+        needed_record_id = int(time / self.config['SMOKE_QUERY_RESOLUTION']) + 1
         with open('cfast_compartments.csv') as f:
-            num_data_records=sum(1 for _ in f)-4
+            num_data_records = sum(1 for _ in f) - 4
         if num_data_records > needed_record_id:
             return 1
         else:

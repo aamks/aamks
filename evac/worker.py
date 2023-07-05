@@ -258,10 +258,20 @@ class Worker:
 
     def do_simulation(self):
         self.wlogger.info('Starting simulations')
-        time_frame = 10
+        cfast_step = self.floors[0].config['SMOKE_QUERY_RESOLUTION']
+        aevac_step = self.floors[0].config['TIME_STEP']
+        time_frame = 0
         first_evacuue = []
+        # iterate over CFAST time frames (results saving interval)
         while 1:
-            self.floors[0].smoke_query.cfast_has_time(time_frame)
+            time_frame += cfast_step    # increase upper limit of time_frame
+            # check for user time limit
+            if time_frame > (self.vars['conf']['simulation_time']):
+                self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
+                break
+
+            #self.floors[0].smoke_query.cfast_has_time(time_frame)
+            # read CFAST results at given time_frame if they exist
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
@@ -275,28 +285,27 @@ class Worker:
                         break
                     first_evacuue.append(i.evacuees.get_first_evacuees_time())
 
-                for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
-                    current_time = time_frame - 10 + step * self.floors[0].config['TIME_STEP']
+                # iterate with AEvac time step over CFAST time_frame
+                for step_no in range(0, int(cfast_step / aevac_step)):
                     time_row = dict()
                     smoke_row = dict()
                     for i in self.floors:
-                        if i.do_simulation(step, current_time) and aset > current_time:
-                            aset = current_time
-                        if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
+                        if i.do_simulation(step_no) and aset > i.current_time:
+                            aset = i.current_time
+                        if (step_no % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})
                     if len(time_row) > 0:
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
 
+                # update some data after this time_frame
                 for i in self.floors:
                     rsets.append(i.rset)
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
-                time_frame += 10
-                self.wlogger.info('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
-                if time_frame > (self.vars['conf']['simulation_time'] - 10):
-                    self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
-                    break
+                self.wlogger.info(f'Progress: {round(time_frame/self.vars["conf"]["simulation_time"] * 100, 1)}%')
+
+                # check if all agents egressed and determine RSET
                 if prod(array(rsets)) > 0:
                     self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(rsets))
                     self.simulation_time = max(rsets)
@@ -305,6 +314,8 @@ class Worker:
             else:
                 self.wlogger.error(f'There was no data found at {time_frame} s in CFAST results.')
                 break
+
+        # gather results of the whole simulation (multisimulation iteration)
         self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
         self.cross_building_results['dcbe'] = aset
         self.wlogger.info('Final results gathered')
