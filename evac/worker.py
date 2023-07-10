@@ -157,7 +157,7 @@ class Worker:
     def run_cfast_simulations(self):
         if self.project_conf['fire_model'] == 'CFAST':
             try:
-                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=30)
+                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=600)
             except subprocess.TimeoutExpired:
                 p.kill()
             except Exception as e:
@@ -224,7 +224,8 @@ class Worker:
                 coords = list()
                 for coord in obst:
                     coords.append(tuple(coord))
-                coords.append(tuple(obst[1]))
+                if len(obst) > 1:
+                    coords.append(tuple(obst[1]))
                 obstacles.append(coords)
             if str(floor) in self.obstacles['fire']:
                 obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0, 1, 2, 3, 4, 1]]])
