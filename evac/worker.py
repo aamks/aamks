@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import subprocess
 import sys
 sys.path.insert(1, '/usr/local/aamks')
 from numpy import array
@@ -37,7 +38,6 @@ class Worker:
     def __init__(self):
         self.json=Json()
         self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
-        self.start_time = time.time()
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
         self.project_dir=self.working_dir.split("/workers/")[0]
         os.chdir(self.working_dir)
@@ -315,13 +315,17 @@ class Worker:
         '''
         self._write_animation_zips()
         self._write_meta()
-
-        # if os.environ['AAMKS_WORKER'] == 'gearman':
-        #     Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
-        #     self.wlogger.info('aOut launched successfully')
-        # else:
-        #     command = "python3 {}/manager/results_collector.py {} {} {}".format(os.environ['AAMKS_PATH'], self.host_name, self.meta_file, self.sim_id)
-        #     os.system(command)
+            
+        if os.environ['AAMKS_WORKER'] == 'gearman':
+            Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
+            self.wlogger.info('aOut launched successfully')
+        else:
+            self.wlogger.info('Run results_collector.py')
+            exit_status = subprocess.run(["python3", "{}/manager/results_collector.py".format(os.environ['AAMKS_PATH']), self.host_name, self.meta_file, str(self.sim_id)])
+            if exit_status.returncode != 0:
+                self.wlogger.error('results_collector.py exit status - %s', exit_status)
+            else:
+                self.wlogger.info('finished results_collector.py')
 
     # }}}
     def _write_animation_zips(self):# {{{
