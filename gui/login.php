@@ -1,12 +1,17 @@
 <?php
 function sendMail($to, $subject, $fields, $template_name) { #{{{
 	if(getenv("AAMKS_USE_MAIL")==0) {
-		 echo "<br><h2>You don't have configured email server. To continue go to url presented below.</h2><br>";
-		 echo "<h3>Email would be sent to: ", $to, "</h3><br>";
-		 echo "<h3>With subject: ", $subject, "</h3><br>";
-		 echo "<h3>Used template name: ", $template_name, "</h3><br>";
-		 echo "<h3>Sending fields:", "</h3><br>";
-		 echo '<h3><pre>'; print_r($fields); echo '</pre></h3>';
+		$url = $fields['url'];
+		$msg="<h3>You don't have configured email server. To continue go to url presented below.</h3><br>";
+		$msg .= "<h4><a href=$url>Click link here</a></h4><br>";
+		$msg .= "<h4>Email would be sent to: $to, </h4><br>";
+		$msg .= "<h4>With subject: $subject, </h4><br>";
+		$msg .= "<h4>Used template name: $template_name,</h4><br>";
+		$msg .= "<h4>Sending fields:</h4><br>";
+		foreach ($fields as $key => $value) {
+			$msg .= "$key: $value\n";
+		}
+		$_SESSION['nn']->fatal($msg);
 		}
 	require_once 'vendor/autoload.php';
 
@@ -221,9 +226,9 @@ function reset_password(){/*{{{*/
 				exit();
 			}else{
 				$ret=$_SESSION['nn']->query("UPDATE users SET reset_token = $1, access_time = $2 where email = $3 returning id", array($token, $expDate, $reset_email));
-				sendMail($reset_email,"AAMKS reset password",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token"], "password_reset");
 				$_SESSION['nn']->msg("Email sent, check inbox or spam folder for reset link!");
 				$_SESSION['reset_email'] = $reset_email;
+				sendMail($reset_email,"AAMKS reset password",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token"], "password_reset");
 				//echo "Email sent to $reset_email" ;
 				//echo " <a href=".loginphp()."?reset=$token>HERE</a>";
 			}
