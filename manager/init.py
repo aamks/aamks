@@ -97,7 +97,7 @@ class OnInit():
         ''' Simulation dir maps to id from psql's simulations table'''
 
         workers_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        os.makedirs(workers_dir, exist_ok=True)
+        os.makedirs(workers_dir, mode = 0o776, exist_ok=True)
 
         irange=self._create_iterations_sequence()
         for i in range(*irange):

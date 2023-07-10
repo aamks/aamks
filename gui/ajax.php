@@ -184,6 +184,7 @@ function ajaxApainterExport() { /*{{{*/
 	$src=$_POST['data'];
 	$dest=$_SESSION['main']['working_home']."/cad.json";
 	$z=file_put_contents($dest, $src);
+	chmod($filename, 0666);
 
 	if($z>0) { 
 		echo json_encode(array("msg"=>"File saved", "err"=>0, "data"=>""));
