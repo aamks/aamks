@@ -10,6 +10,7 @@ from numpy.random import gamma
 from numpy.random import triangular
 from numpy.random import seed
 from numpy import array as npa
+from numpy import full as npf
 from scipy.stats import pareto
 from include import Sqlite
 from include import Psql
@@ -182,7 +183,7 @@ class CfastMcarlo():
 
         self.hrrpua=int(triangular(hrrpua_d['min'], hrrpua_d['mode'], hrrpua_d['max']))
         hrr_peak=int(self.hrrpua * fire_area)
-        self.alpha=int(triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])*1000)
+        self.alpha=triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])
 
         # left
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
@@ -191,11 +192,14 @@ class CfastMcarlo():
             interval = 10
         times0 = list(range(0, t_up_to_hrr_peak, interval))+[t_up_to_hrr_peak]
         hrrs0 = [int((self.alpha * t ** 2)) for t in times0]
+        hrrs0[-1] = hrr_peak
 
         # middle
         t_up_to_starts_dropping = 15 * 60
         times1 = [t_up_to_starts_dropping]
         hrrs1 = [hrr_peak]
+        times1 = []
+        hrrs1 = []
 
         # right
         t_up_to_drops_to_zero=t_up_to_starts_dropping+t_up_to_hrr_peak
@@ -203,7 +207,9 @@ class CfastMcarlo():
         if interval == 0:
             interval = 10
         times2 = list(range(t_up_to_starts_dropping, t_up_to_drops_to_zero, interval))+[t_up_to_drops_to_zero]
-        hrrs2 = [int((self.alpha * (t - t_up_to_drops_to_zero) ** 2)) for t in times2 ]
+
+        times2 = list(reversed(npf(len(times0), t_up_to_starts_dropping + max(times0)) - npa(times0)))
+        hrrs2 = list(reversed(hrrs0))
 
         times = list(times0 + times1 + times2)
         hrrs = list(hrrs0 + hrrs1 + hrrs2)
