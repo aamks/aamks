@@ -25,6 +25,9 @@ from zipfile import ZipFile
 
 
 
+def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
+
+
 
 '''Import all necessary low-level results from DB'''
 class GetData:
@@ -399,106 +402,6 @@ class Heatmap:
         return self.plot
 
 
-'''Event Tree class'''
-class EventTreeFED:
-    def __init__(self, scenario_dir):
-        self.dir = scenario_dir
-        self.branches = {
-                'ignition': ['Fire ignition', 1e-5],
-                'selfputout': ['Early suppresion', 0.05],
-                'fat': ['Fatalities?', 0.01],
-                'fat10': ['>10 fatalities?', 0.002],
-                'fat100': ['>100 fatalities?', 0.0004]
-                }
-
-
-    def draw(self):
-        fig = plt.figure(figsize=(10, 5))
-        ax = fig.add_axes([0, 0, 1.0, 1])
-
-        # add frame
-        p = rect((0.05, 0.1), 0.765, 0.693, fill=False, transform=ax.transAxes, clip_on=False)
-        ax.add_patch(p)
-
-        # add headers
-        for i, head in enumerate(self.branches.keys()):
-            left, width = .05+i/6.5, .15
-            bottom, height = .8, .10
-            right = left + width
-            top = bottom + height
-
-            p = rect((left, bottom), width, height, fill=False, transform=ax.transAxes, clip_on=False)
-            ax.text(0.5 * (left + right), 0.5 * (bottom + top), self.branches[head][0], horizontalalignment='center', verticalalignment='center',
-                    fontsize=12, color='blue', transform=ax.transAxes)
-            ax.add_patch(p)
-
-        # add latest column
-        p = rect((0.818, 0.8), 0.16, 0.10, fill=False, transform=ax.transAxes, clip_on=False)
-        ax.text(0.5 * 1.8, 0.5 * 1.7, 'Probability', horizontalalignment='center', verticalalignment='center',
-                    fontsize=12, color='black', transform=ax.transAxes)
-        ax.add_patch(p)
-
-
-        general = [[0.1, 1.1], [0.3, 0.3], 'P = {}'.format(self.branches['ignition'][1])]
-        ax.plot(general[0], general[1], linewidth=2)
-        ax.text(0.3, 0.32, 'YES')
-        ax.text(0.3, 0.25, general[2])
-
-        simple_div = [[1.1, 1.1], [0.1, 0.5]]
-        ax.plot(simple_div[0], simple_div[1], color='b', linewidth=2)
-
-        suppressed = [[1.1, 4.4], [0.5, 0.5], 'P = {}'.format(self.branches['selfputout'][1])]
-        ax.plot(suppressed[0], suppressed[1], linewidth=2, color='g')
-        ax.text(1.5, 0.52, 'YES')
-        ax.text(1.5, 0.45, suppressed[2])
-
-        suppressed = [[1.1, 2.2], [0.1, 0.1], 'P = {}'.format(1-self.branches['selfputout'][1])]
-        ax.plot(suppressed[0], suppressed[1], linewidth=2, color='b')
-        ax.text(1.5, 0.12, 'NO')
-        ax.text(1.5, 0.05, suppressed[2])
-
-        simple_div = [[2.2, 2.2], [-0.1, 0.3]]
-        ax.plot(simple_div[0], simple_div[1], color='b', linewidth=2)
-
-        dcbe = [[2.2, 4.4], [0.3, 0.3], 'P = {}'.format('%.3f' % (self.branches['fat'][1]))]
-        ax.plot(dcbe[0], dcbe[1], linewidth=2, color='g')
-        ax.text(2.5, 0.32, 'YES')
-        ax.text(2.5, 0.25, dcbe[2])
-
-        dcbe = [[2.2, 3.3], [-0.1, -0.1], 'P = {}'.format(1-self.branches['fat'][1])]
-        ax.plot(dcbe[0], dcbe[1], linewidth=2, color='b')
-        ax.text(2.5, -0.08, 'NO')
-        ax.text(2.5, -0.15, dcbe[2])
-
-        simple_div = [[3.3, 3.3], [-0.325, 0.115]]
-        ax.plot(simple_div[0], simple_div[1], color='b', linewidth=2)
-
-
-
-#        c = patches.Ellipse(xy=(0.671, 0.159), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='b')
-#        ax.add_patch(c)
-#        p1 = float(self.p_general) * self.p_develop * self.p_dcbe * fed
-#        ax.text(4.65, -0.335, r'$P_4 =  %.2E$' % Decimal(p1))
-#
-#        c = patches.Ellipse(xy=(0.671, 0.442), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='g')
-#        ax.add_patch(c)
-#        p = float(self.p_general) * self.p_develop * self.p_dcbe * (1- self.p_fed_f)
-#        ax.text(4.65, 0.094, r'$P_3 =  %.2E$' % Decimal(p))
-#
-#        c = patches.Ellipse(xy=(0.671, 0.562), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='g')
-#        ax.add_patch(c)
-#        p2 = float(self.p_general) * self.p_develop * (1 - self.p_dcbe) 
-#        ax.text(4.65, 0.29, r'$P_2 =  %.2E$' % Decimal(p2))
-#
-#        c = patches.Ellipse(xy=(0.671, 0.687), width=0.02, height=0.04, fill=True, transform=ax.transAxes, clip_on=False, color='g')
-#        ax.add_patch(c)
-#        p = float(self.p_general) * (1 - self.p_develop)
-#        ax.text(4.65, 0.48, r'$P_1 =  %.2E$' % Decimal(p))
-
-        fig.savefig(os.path.join(self.dir, 'picts', 'tree.png'))
-
-
-
 '''Basic plot class, containes all types of plots we use and their settings'''
 class Plot:
     def __init__(self, scenario_dir):
@@ -507,11 +410,16 @@ class Plot:
     # when data is list of P(N) and indexes are N values
     def pdf_n(self, data, path=None, label=None, n_bins=40):
         # draw data form P(N) distribution
-        max_fat = len(data)
-        binwdth = max(int(max_fat / n_bins), 2)
-        sample = [np.random.choice(np.arange(max_fat), p=data) for i in range(1000)]
-                    
-        plot = sns.histplot(sample, stat='density', kde=True, binwidth=binwdth)
+        if type(data) != dict:
+            data = {'Fatalities': data}
+
+        samples = {}
+        for k, v in data.items():
+            max_fat = len(v)
+            binwdth = max(int(max_fat / n_bins), 1)
+            samples[k] = [np.random.choice(np.arange(max_fat), p=v) for i in range(1000)]
+                
+        plot = sns.histplot(samples, stat='density', kde=True, binwidth=binwdth)
 
         if label:
             plot.set(xlabel=label[0])
@@ -521,18 +429,20 @@ class Plot:
 
         if path:
             fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
-        plt.clf()
+        plt.close(fig)
+        
 
     # PDF from datapoints
     def pdf(self, data, path=None, label=None):
         plot = sns.displot(data, kde=True, stat='density')
+
         if label:
             plot.set_axis_labels(*label)
         fig = plot.fig
         fig.tight_layout()
         if path:
             fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
-        plt.clf()
+        plt.close(fig)
 
     # CDF  of ASET/RSET data
     def cdf_ovl(self, data, path=None, label=None):
@@ -550,60 +460,92 @@ class Plot:
         fig.tight_layout()
         if path:
             fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
-        plt.clf()
+        plt.close(fig)
 
     # CDF  of data
     def cdf(self, data, path=None, label=None):
-        plot = sns.displot(data, cumulative=True, kde=True, stat='density', bins=25, fill=True,
-                kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1e6]})
+        if type(data) != dict:
+            data = {'CDF': data}
+
+        fig, ax = plt.subplots()
+
+        for k in data.keys():
+            sns.histplot(data[k], cumulative=True, kde=True, stat='probability', bins=25, fill=True,
+                kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1e6]}, ax=ax, label=k)
+
+        #labels
         if label:
-            plot.set_axis_labels(*label)
-        fig = plot.fig
+            plt.xlabel(label[0])
+            plt.ylabel(label[1])
+        plt.legend()
+
         fig.tight_layout()
         if path:
             fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
-        plt.clf()
+        plt.close(fig)
 
     # FN_curve of data set x
     def fn_curve(self, data, path=None, label=None):
         #lims = [0, 10]    #[xmax, ymin]
+        if type(data) != dict:
+            data = {'FN curve': data}
 
         fig, ax = plt.subplots()
-        ax.plot(data, '-')
+            
+        [ax.plot(v, '-', label=k) for k, v in data.items()]
 
         # axis labels
         ax.set_xlabel(label[0])
         ax.set_ylabel(label[1])
-        
+        plt.legend()
+
         # axis formatting
         ax.semilogx()
         ax.semilogy()
         ax.grid(which='both')
         ax.yaxis.set_major_formatter('{x}')
         ax.xaxis.set_major_formatter(tic.ScalarFormatter())
-        ax.set_xlim(left=1, right=len(data))
-        ax.set_ylim(bottom=min([i if i>0 else 2 for i in data]), top=1)
+        maxx = max(*[len(i) for i in data.values()]*2)
+        ax.set_xlim(left=1, right=maxx)
+        miny=1
+        for d in data.values():
+            for j in d:
+                miny = j if 0<j<miny else miny
+                
+        ax.set_ylim(bottom=miny, top=1)
         fig.tight_layout()
 
         if path:
             fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
         
-        plt.clf()
+        plt.close(fig)
 
     # pie chart
-    def pie(self, fatal_scenarios_rate):
-        fig = plt.figure()
-        sizes = [1 - fatal_scenarios_rate, fatal_scenarios_rate]
-        labels = ['Failure', 'Success']
+    def pie(self, pdf_fn, legend=None):
+        fig, ax = plt.subplots()
         colors = ['lightcoral', 'lightskyblue']
-        explode = (0.1, 0)
-        plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True)
-        plt.axis('equal')
+        try:
+            fatal_scenarios_rate = pdf_fn
+            sizes = [1 - fatal_scenarios_rate, fatal_scenarios_rate]
+            labels = ['Failure', 'Success']
+            explode = (0.1, 0)
+            plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True)
+            plt.axis('equal')
+        except TypeError:
+            s = np.array([i[0] for i in pdf_fn.values()])
+            f = 1 - s
+            b = np.zeros(len(pdf_fn))
+            for e, i in enumerate([s, f]):
+                a = ax.bar(legend, i, color=colors[1-e], bottom=b)
+                b += i
+                ax.bar_label(a, label_type='center')
+
+
         fig.savefig(os.path.join(self.dir, 'picts', 'pie_fault.png'))
-        plt.clf()
+        plt.close(fig)
 
     # plot heatmap of FED absorption
-    def heatmap(self, hm: Heatmap, lab='Total FED absorbed in cell [-]'):
+    def heatmap(self, hm: Heatmap, lab='Average FED absorbed in cell [-]'):
         for f in range(hm.geom['floors']+1):
             # initial figure definition
             fig = plt.figure()
@@ -648,13 +590,16 @@ class Plot:
             
             # save figure
             fig.savefig(os.path.join(self.dir, 'picts', f'floor_{f}.png'))#, dpi=170)
-            plt.clf()
+            plt.close(fig)
 
 
 '''Generating plots and results visualization - the head class'''
 class PostProcess:
-    def __init__(self):
-        self.dir = sys.argv[1] if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT')
+    def __init__(self, scen_dir=None):
+        if scen_dir:
+            self.dir = scen_dir
+        else:
+            self.dir = sys.argv[1] if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT')
         self.gd = GetData(self.dir)
         self.data = {**self.gd.drop(with_fed=False), **RiskScenario(self.gd.raw['results']).all()} # results for THE SCENARIO
         self.n = len(self.gd.raw['feds'])  # number of finished iterations taken for results analysis
@@ -662,7 +607,14 @@ class PostProcess:
 
         self.plot_type = {
                 'pdf':[
-                    {'name':'wcbe_r','lab':['Required Safe Egress Time - Run Time [s]', 'PDF [-]']}
+                    {'name':'wcbe_r','lab':['Required Safe Egress Time - Run Time [s]', 'PDF [-]']},
+                    {'name':'dcbe', 'lab':['Available Safe Egress Time [s]', 'PDF [-]']},
+                    {'name':'wcbe', 'lab':['Required Safe Egress Time [s]', 'PDF [-]']},
+                    {'name':'min_hgt', 'lab':['Minimum Upper Layer Height [cm]', 'PDF [-]']},
+                    {'name':'min_hgt_cor', 'lab':['Minimum Upper Layer Height in Corridors [cm]', 'PDF [-]']},
+                    {'name':'min_vis', 'lab':['Minimum Visibility [m]', 'PDF [-]']},
+                    {'name':'min_vis_cor', 'lab':['Minimum Visibility in Corridors [m]', 'PDF [-]']},
+                    {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'PDF [-]']}
                     ], 
                 'pdf_n':[
                     {'name':'pdf_fn', 'lab':['Number of fatalities [-]', 'Probability [-]']},
@@ -681,19 +633,14 @@ class PostProcess:
                     ]
                 }
 
-
-    ## draw ETA for fatalities
-    #def plant(self):
-    #    t = EventTreeFED(self.dir)
-    #    t.draw()
-
     # save data
-    def save(self):
+    def save(self, no_zip=False):
         self.gd.to_csv()
         self._summarize()
         self._to_txt()
-        self._zip_pictures()
-        self._zip_full()
+        if not no_zip:
+            self._zip_pictures()
+            self._zip_full()
 
     # add some summaries to self.data
     def _summarize(self):
@@ -784,7 +731,7 @@ class PostProcess:
                 if not f.name.lower().endswith('.zip'):
                     zf.write(f.path, arcname=f.name)
             try:
-                zf.write('/home/aamks_users/aamks.log')
+                zf.write('/home/aamks_users/aamks.log', arcname='aamks.log')
             except FileNotFoundError:
                 print('[WARNING] No log file found')
                 
@@ -805,11 +752,11 @@ class PostProcess:
         tm('heatmap calc')
         p.heatmap(h)
         tm('plot heat')
-        [p.cdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['cdf']]
+        [p.cdf(self.data[d['name']], path=f"{d['name']}_cdf", label=d['lab']) for d in self.plot_type['cdf']]
         tm('plot cdf')
-        [p.pdf(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf']]
+        [p.pdf(self.data[d['name']], path=f"{d['name']}_pdf", label=d['lab']) for d in self.plot_type['pdf']]
         tm('plot pdf')
-        [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
+        [p.pdf_n(self.data[d['name']], path=f"{d['name']}", label=d['lab']) for d in self.plot_type['pdf_n']]
         tm('plot pdf_n')
         p.pdf({'ASET': self.data['dcbe'], 'RSET': self.data['wcbe']}, label=['Time [s]', 'Density [-]'], path='overlap')
         p.cdf_ovl({'RSET': np.array(self.data['wcbe']), 'ASET': self.data['dcbe']}, label=['Time [s]', 'Density [-]'], path='overlap_n')
@@ -821,12 +768,133 @@ class PostProcess:
 
         self.save()
         tm('save')
+
+
+'''Produce results of multiple scenarios on each plot'''
+class Comparison:
+    def __init__(self, scenarios):
+        self.project_path = go_back(os.getenv('AAMKS_PROJECT'))
+        self.scen_names = sorted(scenarios)
+        self.dir = os.path.join(self.project_path, '_comp', '-'.join(self.scen_names), 'picts')
+        self.scens = self._scen_init(scenarios)
+        self.data = self._merge_scens()
+        self.t = 0
+        self.plot_type = {
+                'pdf':[
+                    {'name':'wcbe_r','lab':['Required Safe Egress Time - Run Time [s]', 'PDF [-]']},
+                    {'name':'dcbe', 'lab':['Available Safe Egress Time [s]', 'PDF [-]']},
+                    {'name':'wcbe', 'lab':['Required Safe Egress Time [s]', 'PDF [-]']},
+                    {'name':'min_hgt', 'lab':['Minimum Upper Layer Height [cm]', 'PDF [-]']},
+                    {'name':'min_hgt_cor', 'lab':['Minimum Upper Layer Height in Corridors [cm]', 'PDF [-]']},
+                    {'name':'min_vis', 'lab':['Minimum Visibility [m]', 'PDF [-]']},
+                    {'name':'min_vis_cor', 'lab':['Minimum Visibility in Corridors [m]', 'PDF [-]']},
+                    {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'PDF [-]']}
+                    ], 
+                'pdf_n':[
+                    {'name':'pdf_fn', 'lab':['Number of fatalities [-]', 'Probability [-]']},
+                    ], 
+                'cdf':[
+                    {'name':'dcbe', 'lab':['Available Safe Egress Time [s]', 'CDF [-]']},
+                    {'name':'wcbe', 'lab':['Required Safe Egress Time [s]', 'CDF [-]']},
+                    {'name':'min_hgt', 'lab':['Minimum Upper Layer Height [cm]', 'CDF [-]']},
+                    {'name':'min_hgt_cor', 'lab':['Minimum Upper Layer Height in Corridors [cm]', 'CDF [-]']},
+                    {'name':'min_vis', 'lab':['Minimum Visibility [m]', 'CDF [-]']},
+                    {'name':'min_vis_cor', 'lab':['Minimum Visibility in Corridors [m]', 'CDF [-]']},
+                    {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'CDF [-]']}
+                    ], 
+                'fn_curve':[
+                    {'name':'fn_curve', 'lab':['Number of fatalities [-]', 'Frequency [-]']}
+                    ]
+                }
+        
+    def _scen_init(self, args):
+        scens = {}
+
+        if 'all' in args:
+            for i in os.scandir(self.project_path):
+                scens[i.name] = PostProcess(scen_dir=i.path)
+        else:
+            for i in args:
+                scens[i] = PostProcess(scen_dir=os.path.join(self.project_path, i))
+
+        return scens
+
+    def _merge_scens(self):
+        data = {}
+        for k in self.scens[self.scen_names[0]].data.keys():
+            this_key = {}
+            for s in self.scen_names:
+                this_key[s] = self.scens[s].data[k]
+            data[k] = this_key
+
+        return data
+    
+    # save data
+    def save(self):
+        self._summarize_all()
+        [self._zip_ext(i) for i in [('txt', '.txt'), ('picts', '.png', '.jpg', '.jpeg'), ('csv', '.csv')]]
+        self._zip_full()
+
+    # run summarize across all scenarios and copy data
+    def _summarize_all(self):
+        for name, scen in self.scens.items():
+            scen.save(no_zip=True)
+            [shutil.copyfile(os.path.join(scen.dir, 'picts', f), os.path.join(self.dir, f'{name}_{f}')) for f in ('data.txt', 'data.csv')]
+
+
+    def _zip_ext(self, ext: tuple):
+        with ZipFile(os.path.join(self.dir, f'{ext[0]}.zip'), 'w') as zf:
+            for f in os.scandir(os.path.join(self.dir)):
+                if f.name.lower().endswith(ext):
+                    zf.write(f.path, arcname=f.name)
+
+    def _zip_full(self):
+        with ZipFile(os.path.join(self.dir, 'data.zip'), 'w') as zf:
+            for f in os.scandir(os.path.join(self.dir)):
+                if not f.name.lower().endswith('.zip'):
+                    zf.write(f.path, arcname=f.name)
+            try:
+                zf.write('/home/aamks_users/aamks.log', arcname='aamks.log')
+            except FileNotFoundError:
+                print('[WARNING] No log file found')
+
+            
+    def produce(self):
+        # plot together
+        if os.path.exists(self.dir):
+            shutil.rmtree(self.dir)
+        os.makedirs(self.dir)
+
+        def tm(x): 
+            print(f'{x}: {time.time() - self.t}')
+            self.t = time.time()
+        p = Plot(go_back(self.dir))
+        tm('Plot')
+        [p.cdf(self.data[d['name']], path=f"{d['name']}_cdf", label=d['lab']) for d in self.plot_type['cdf']]
+        tm('plot cdf')
+        [p.pdf(self.data[d['name']], path=f"{d['name']}_pdf", label=d['lab']) for d in self.plot_type['pdf']]
+        tm('plot pdf')
+        [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
+        tm('plot pdf_n')
+        [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
+        tm('plot fn_curve')
+        p.pie(self.data['pdf_fn'], legend=self.scen_names)
+        tm('plot pie')
+        
+        self.save()
+        tm('save')
+        
         
 
 if __name__ == '__main__':
-    pp = PostProcess()
-    pp.t = time.time()
-    pp.produce()
+    if len(sys.argv) > 2:
+        print(sys.argv[2:])
+        comp = Comparison(sys.argv[2:])
+        comp.produce()
+    else:
+        pp = PostProcess()
+        pp.t = time.time()
+        pp.produce()
 
     
 
