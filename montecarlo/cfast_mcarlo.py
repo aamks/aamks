@@ -28,6 +28,24 @@ class CfastMcarlo():
             'brick': {'CONDUCTIVITY': 0.3, 'SPECIFIC_HEAT': 0.9, 'DENSITY': 840., 'EMISSIVITY': 0.85, 'THICKNESS': 0.2}
             }
     CHEM = {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5}
+    FUELS = {
+            "WOOD": {"CHEM":{ "CARBON": 1, "CHLORINE": 0, "HYDROGEN": 1.7, "NITROGEN": 0.001, "OXYGEN": 0.72},
+                    "HEAT": 17.1, "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}},
+            "PP": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+            "PE": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+            "PS": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+            "PU": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+            "PVC": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+            "PMMA": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+                    }
+
+
 
     def __init__(self, sim_id):# {{{
         ''' Generate montecarlo cfast.in. Log what was drawn to psql. '''
@@ -147,8 +165,8 @@ class CfastMcarlo():
     def _draw_fire_chem(self):# {{{
         z = self.s.query("SELECT f_id, name FROM fire_origin")
 
-        heat_of_combustion = round(uniform(self.conf['heatcom']['min'], self.conf['heatcom']['max'])/1000, 0)
-        self._psql_log_variable('heat_of_combustion', heat_of_combustion)
+        heat_of_combustion = round(uniform(self.conf['heatcom']['min'], self.conf['heatcom']['max']), 0)     #[kJ/kg]
+        self._psql_log_variable('heat_of_combustion', heat_of_combustion/1000)  #[MJ/kg]
 
         rad_frac = round(gamma(self.conf['radfrac']['k'], self.conf['radfrac']['theta']), 3)#TODO LOW VARIABILITY, CHANGE DIST
         self._psql_log_variable('rad_frac', rad_frac)
@@ -354,7 +372,7 @@ class CfastMcarlo():
         "&HEAD VERSION = 7500, TITLE = 'P_ID_{}_S_ID_{}' /".format(project_id, scenario_id),
         f'&TIME SIMULATION = {simulation_time}, PRINT = 100, SMOKEVIEW = 100, SPREADSHEET = {self.config["SMOKE_QUERY_RESOLUTION"]} /',
         '&INIT PRESSURE = {} RELATIVE_HUMIDITY = {} INTERIOR_TEMPERATURE = {} EXTERIOR_TEMPERATURE = {} /'.format(pressure, humidity, indoor_temp, outdoor_temp),
-        '&MISC LOWER_OXYGEN_LIMIT = {} /'.format(o_limit),
+        '&MISC LOWER_OXYGEN_LIMIT = {}, MAX_TIME_STEP = 0.1/'.format(o_limit),
         '',
         )
         return "\n".join(txt)
