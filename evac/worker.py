@@ -275,7 +275,7 @@ class Worker:
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
-                aset = 604800
+                aset = self.vars['conf']['simulation_time']
                 for i in self.floors:
                     try:
                         i.read_cfast_record(time_frame)

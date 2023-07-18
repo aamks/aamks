@@ -772,8 +772,8 @@ class PostProcess:
 
 '''Produce results of multiple scenarios on each plot'''
 class Comparison:
-    def __init__(self, scenarios):
-        self.project_path = go_back(os.getenv('AAMKS_PROJECT'))
+    def __init__(self, scenarios, path=None):
+        self.project_path = go_back(os.getenv('AAMKS_PROJECT') if not path else path)
         self.scen_names = sorted(scenarios)
         self.dir = os.path.join(self.project_path, '_comp', '-'.join(self.scen_names), 'picts')
         self.scens = self._scen_init(scenarios)
@@ -888,8 +888,7 @@ class Comparison:
 
 if __name__ == '__main__':
     if len(sys.argv) > 2:
-        print(sys.argv[2:])
-        comp = Comparison(sys.argv[2:])
+        comp = Comparison(sys.argv[2:], path=sys.argv[1])
         comp.produce()
     else:
         pp = PostProcess()
