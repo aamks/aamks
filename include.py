@@ -305,6 +305,8 @@ class Vis:# {{{
         self.json.write(OrderedDict([('world_meta', self._world_meta), ('floors', self._static_floors)]), '{}/workers/static.json'.format(os.environ['AAMKS_PROJECT'])) 
         cae=CreateAnimEntry()
         cae.save(self.params, "{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
+        os.chmod("{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']), 777)
+        os.chmod("{}/workers/static.json".format(os.environ['AAMKS_PROJECT']), 777)
 # }}}
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''

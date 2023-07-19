@@ -97,12 +97,12 @@ class OnInit():
         ''' Simulation dir maps to id from psql's simulations table'''
 
         workers_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        os.makedirs(workers_dir, mode = 0o776, exist_ok=True)
+        os.makedirs(workers_dir, mode = 0o777, exist_ok=True)
 
         irange=self._create_iterations_sequence()
         for i in range(*irange):
             sim_dir="{}/{}".format(workers_dir,i)
-            os.makedirs(sim_dir, exist_ok=True)
+            os.makedirs(sim_dir, mode=0o777, exist_ok=True)
             self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
 
 # }}}
