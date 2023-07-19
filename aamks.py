@@ -34,7 +34,6 @@ logger.addHandler(ch)
 
 logger.warning('Start AAMKS application. Read conf.json')
 
-#os.environ['AAMKS_PROJECT']='/home/aamks_users/mimoohowy@gmail.com/demo/navmesh'
 json = Json()
 if len(sys.argv) > 1:
     conf = json.read("{}/conf.json".format(sys.argv[1]))

@@ -18,6 +18,8 @@ class Evacuee:
         self.exit_door = None
         self.blocked_exits = list()
         self.fed = 0
+        self.symbolic_fed = 'N'
+        self.previous_step_fed = 0
         self.distance = 1
         self.velocity = (0, 0)
         self.speed = 0
@@ -27,12 +29,16 @@ class Evacuee:
         self.node_radius = node_radius
         self.pre_evacuation_time = pre_evacuation
         self.optical_density_at_position = 0.0
+        self.unique_agent_id_on_different_floors = None
+        self.target_teleport_coordinates = None
 
         self.alpha_v = alpha_v
         self.beta_v = beta_v
         self.max_speed = h_speed
         self.num_of_obstacle_neighbours = 0
         self.num_of_orca_lines = 0
+        self.agent_has_no_escape = 0
+        self.dst_coordinates = None
 
         logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
                             format='%(asctime)s %(levelname)s: %(message)s')
@@ -51,10 +57,31 @@ class Evacuee:
         assert isinstance(thermal_injury, float), '%thermal_injury is not a float'
         self.thermal_injury = thermal_injury
 
-    def set_goal(self, goal):
+
+    def set_position_to_pedestrian(self, position: tuple):
+        """
+        :type position: tuple
+        """
+        assert isinstance(position, tuple), "%position is not a list"
+        self.position = position
+
+    def get_teleport_reached_by_agent(self, current_floor_teleports):
+        for teleport in current_floor_teleports:
+            if cdist([tuple([teleport['center_x'], teleport['center_y']])], [self.position], 'euclidean') < 130:
+                return [teleport['center_x'], teleport['center_y']]
+        return None
+
+
+    def has_agent_reached_teleport(self):
+        dist_coordinates = cdist([self.position], [self.dst_coordinates], 'euclidean')
+        if dist_coordinates < 15 and self.agent_has_no_escape == 0 and self.target_teleport_coordinates is not None:
+            self.finished = 0
+
+    def set_goal(self, floor, goal):
         assert isinstance(goal, list), '%goal is not a list'
-        dist = cdist([self.position], [goal[-1]], 'euclidean')
-        if dist < 50:
+        dist_navmesh = cdist([self.position], [goal[-1]], 'euclidean')
+        dist_coordinates = cdist([self.position], [self.dst_coordinates], 'euclidean')
+        if (dist_coordinates < 15 or dist_navmesh < 50) and self.agent_has_no_escape == 0:
             self.finished = 0
             self.goal = [int(goal[0][0]), int(goal[0][1])]
         else:

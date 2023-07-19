@@ -189,6 +189,7 @@ class PartitionQuery:
                 self.compa_conditions[room]['ULO2']=20
             return
         # 'letter' can be changed to name - missleading
+        needed_record = None
         for letter in ['compartments','devices','vents','walls']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
@@ -273,10 +274,6 @@ class PartitionQuery:
     def get_fed(self, position):# {{{
         conditions = self.get_conditions(position)
 
-        # when position of evacuee is outside the building we assume no FED absorbed
-        if conditions['COMPA'] == 'outside':
-            return 0.
-
         hgt = conditions['HGT']
         if hgt == None:
             return 0.
@@ -338,7 +335,7 @@ class PartitionQuery:
         c_const = 5
         # min(ULOD_COR)
         ul_od_cor = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='c' AND param='ULOD'")[0]['MAX(value)']
-        if ul_od_cor == 0 or ul_od_cor is None:
+        if ul_od_cor == 0:
             finals['min_vis_cor'] = 30
         else:
             finals['min_vis_cor'] = c_const / (ul_od_cor * 2.303)
