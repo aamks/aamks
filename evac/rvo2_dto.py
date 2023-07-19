@@ -29,7 +29,7 @@ class EvacEnv:
         self.velocity_vector = []
         self.speed_vec = []
         self.fed = []
-        self.fed_nummeric = []
+        self.fed_symbolic = []
         self.fed_vec = []
         self.finished = []
         self.finished_vec = []
@@ -140,7 +140,7 @@ class EvacEnv:
     def get_data_for_visualization(self):
         data_row=[]
         for n in range(self.sim.getNumAgents()):
-            data_row.append([int(self.positions[n][0]), int(self.positions[n][1]), self.velocities[n][0], self.velocities[n][1], self.fed[n], self.finished[n]])
+            data_row.append([int(self.positions[n][0]), int(self.positions[n][1]), self.velocities[n][0], self.velocities[n][1], self.fed_symbolic[n], self.finished[n]])
         return data_row
 
     def update_agents_position(self):
@@ -216,8 +216,9 @@ class EvacEnv:
                 self.evacuees.update_fed_of_pedestrian(i, fed * self.config['SMOKE_QUERY_RESOLUTION'])
 
         fed = [self.evacuees.get_fed_of_pedestrian(i) for i in range(self.sim.getNumAgents())]
-        self.fed_nummeric = fed
+        self.fed = fed
         c = None
+        # symbolic notation is used for visualization purposes only
         fed_symbilic = []
         for i in fed:
             if i < 0.01:
@@ -229,7 +230,7 @@ class EvacEnv:
             else:
                 c = 'H'
             fed_symbilic.append(c)
-        self.fed = fed_symbilic
+        self.fed_symbolic = fed_symbilic
 
     def process_obstacle(self, obstacles):
         for i in range(len(obstacles)):
@@ -299,18 +300,15 @@ class EvacEnv:
             self.rset = self.current_time + 30
 
     def calculate_individual_risk(self):
-        p = list()
-        for i in self.fed_nummeric:
-            if i == 0:
-                i = 1e-7
-            p.append(1 - norm.cdf(log(i)))
-        return 1 - prod(array(p))
+        # deprecated function
+        # all risk calculations are proceeded with results.beck_new.py now
+        return -1
 
     def save_positions_with_fed(self):
         if len(self.prev_fed) == 0:
             self.prev_fed = [0 for i in range(self.sim.getNumAgents())]
         for i in range(self.sim.getNumAgents()):
-            fed = self.fed_nummeric[i]
+            fed = self.fed[i]
             x = int(self.positions[i][0])
             y = int(self.positions[i][1])
             fed_growth = round((fed - self.prev_fed[i]),2)

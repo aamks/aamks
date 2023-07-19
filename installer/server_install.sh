@@ -22,9 +22,9 @@ AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple"
 AAMKS_PG_PASS='hulakula' 
 AAMKS_WORKER='gearman'										# 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'gearman': dispatch simulations over a network (grid/cluster environment)
 AAMKS_SALT='aamksisthebest'
-AAMKS_USE_GMAIL=0											# needed if we allow users to register accounts
-AAMKS_GMAIL_PASSWORD='none'									# needed if we allow users to register accounts
-AAMKS_GMAIL_USERNAME='none'									# needed if we allow users to register accounts
+AAMKS_USE_MAIL=0											# needed if we allow users to register accounts
+AAMKS_MAIL_API_KEY='none'									# needed if we allow users to register accounts
+AAMKS_MAIL_SENDER='none'									# needed if we allow users to register accounts
 PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
 # END OF CONFIGURATION
 
@@ -39,9 +39,9 @@ echo "AAMKS_PROJECT: $AAMKS_PROJECT"
 echo "AAMKS_PG_PASS: $AAMKS_PG_PASS"
 echo "AAMKS_WORKER: $AAMKS_WORKER"
 echo "AAMKS_SALT: $AAMKS_SALT"
-echo "AAMKS_USE_GMAIL: $AAMKS_USE_GMAIL"
-echo "AAMKS_GMAIL_USERNAME: $AAMKS_GMAIL_USERNAME"
-echo "AAMKS_GMAIL_PASSWORD: $AAMKS_GMAIL_PASSWORD"
+echo "AAMKS_USE_MAIL: $AAMKS_USE_MAIL"
+echo "AAMKS_MAIL_API_KEY: $AAMKS_MAIL_API_KEY"
+echo "AAMKS_MAIL_SENDER: $AAMKS_MAIL_SENDER"
 echo "PYTHONPATH: $PYTHONPATH"
 echo; echo;
 echo "<Enter> accepts, <ctrl+c> cancels"
@@ -139,9 +139,9 @@ echo "export AAMKS_PATH='$AAMKS_PATH'" >> $temp
 echo "export AAMKS_WORKER='$AAMKS_WORKER'" >> $temp
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> $temp
-echo "export AAMKS_USE_GMAIL='$AAMKS_USE_GMAIL'" >> $temp
-echo "export AAMKS_GMAIL_USERNAME='$AAMKS_GMAIL_USERNAME'" >> $temp
-echo "export AAMKS_GMAIL_PASSWORD='$AAMKS_GMAIL_PASSWORD'" >> $temp
+echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> $temp
+echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> $temp
+echo "export AAMKS_MAIL_SENDER='$AAMKS_MAIL_SENDER'" >> $temp
 echo "export PYTHONPATH='$PYTHONPATH'" >> $temp
 sudo cp $temp /etc/apache2/envvars
 
@@ -158,11 +158,11 @@ sudo cp -r $AAMKS_PATH/installer/aamksconf.json /etc/
 sudo chown -R $USER:$USER /etc/aamksconf.json
 
 
-[ "X$AAMKS_USE_GMAIL" == "X1" ] && { 
-	# TODO - instructables for sending mail via Gmail
+[ "X$AAMKS_USE_MAIL" == "X1" ] && { 
+	# TODO - instructables for sending mail
 	sudo apt-get --yes install composer
-	composer require phpmailer/phpmailer
-	mv vendor $AAMKS_PATH/gui
+	cd $AAMKS_PATH/gui
+	composer install
 }
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.

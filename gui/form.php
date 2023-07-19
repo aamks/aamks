@@ -203,17 +203,31 @@ function alarming_defaults($x) {/*{{{*/
 	return array('mean' =>  0, 'sd' =>  0) ;  # In case none of the alarming is chosen
 }
 /*}}}*/
-function update_form_easy() {/*{{{*/
-	if(empty($_POST['update_form_easy'])) { return; }
-	$out=$_POST['post'];
-	$out+=get_template_defaults('setup1');
-	$z=calculate_profile($_POST['post']['building_profile']);
+function update_form_buildings_param() {
+	echo "<form method=post>";
+	echo "<input autocomplete=off style='float:left; margin-top: 20px;' type=submit name=update_buildings_param value='Calculate building profile parameters'>";
+	echo "</form>";
+}
+function update_buildings_param(){
+	if(empty($_POST['update_buildings_param'])) { return; }
+	$out = read_aamks_conf_json();
+	$z=calculate_profile($out['building_profile']);
 	$out['alarming']=alarming_defaults($out['building_profile']['alarming']);
 	$out['evacuees_density']=$z['evacuees_density'];
 	$out['hrr_alpha']['mode']=$z['hrr_alpha_mode'];
 	$out['hrrpua']['mode']=$z['hrrpua_mode'];
 	$out['pre_evac']=$z['pre_evac'];
 	$out['pre_evac_fire_origin']=$z['pre_evac_fire_origin'];
+	$s=json_encode($out, JSON_NUMERIC_CHECK);
+	$_SESSION['nn']->write_scenario($s);
+	$_SESSION['nn']->msg("Alarming time, evacuees density, hrr_alpha, hrrpua, pre-evacuation and pre-evacuation
+	in fire origin updated!");
+
+}
+function update_form_easy() {/*{{{*/
+	if(empty($_POST['update_form_easy'])) { return; }
+	$out=$_POST['post'];
+	$out+=get_template_defaults('setup1');
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
 	$_SESSION['nn']->write_scenario($s);
 }
@@ -406,7 +420,7 @@ function main() {/*{{{*/
 
 	if(isset($_GET['edit'])) { 
 		$e=$_SESSION['prefs']['apainter_editor'];
-		if($e=='easy')     { update_form_easy()     ; form_fields_easy()     ; }
+		if($e=='easy')     { update_form_easy()     ; form_fields_easy()     ; update_form_buildings_param(); 		update_buildings_param();}
 		if($e=='advanced') { update_form_advanced() ; form_fields_advanced() ; }
 		if($e=='text')     { update_form_text()     ; form_text()            ; }
 		form_delete();
