@@ -25,7 +25,7 @@ from include import Json
 import json
 from collections import OrderedDict
 from subprocess import Popen, run
-import subproces
+import subprocess
 import zipfile
 import multiprocessing
 
@@ -574,7 +574,7 @@ class Worker:
 
 w = Worker()
 #print(os.environ['AAMKS_WORKER'])
-os.environ['AAMKS_WORKER'] = 'local'
+os.environ['AAMKS_WORKER'] = 'gearman'
 os.environ['AAMKS_PATH'] = '/usr/local/aamks'
 os.environ['AAMKS_SERVER'] = '192.168.0.185'
 
