@@ -93,7 +93,6 @@ function compare() {/*{{{*/
     $sep = implode('<>', $_POST['comp']);
 
     $cmd = "cd $aamks/results; python3 beck_new.py $f ".$scens." 2>&1";
-    echo $cmd;
 
     // Output a 'waiting message'
 	$z=shell_exec("$cmd");

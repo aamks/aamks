@@ -242,7 +242,7 @@ class CfastMcarlo():
         co_yield = [round(uniform(self.conf['co_yield']['min'], self.conf['co_yield']['max']), 3)] * steps
         soot_yield = [round(uniform(self.conf['soot_yield']['min'], self.conf['soot_yield']['max']), 3)] * steps
         hcn_yield = [round(uniform(self.conf['hcn_yield']['min'], self.conf['hcn_yield']['max']), 3)] * steps
-        hcl_yield = [round(uniform(self.conf['hcl_yield']['min'], self.conf['hcl_yield']['max']), 3)] * steps
+        hcl_yield = [0] * steps #[round(uniform(self.conf['hcl_yield']['min'], self.conf['hcl_yield']['max']), 3)] * steps
         height = [h] * steps
         trace_yield = [0] * steps
         params = {"TIME": times, "HRR": hrrs, "HEIGHT": height, "AREA": area, "CO_YIELD": co_yield, "SOOT_YIELD": soot_yield, "HCN_YIELD": hcn_yield, "HCL_YIELD": hcl_yield, "TRACE_YIELD": trace_yield}

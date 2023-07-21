@@ -159,7 +159,7 @@ class Worker:
         if self.project_conf['fire_model'] == 'CFAST':
             err = False
             try:
-                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=30, capture_output=True, text=True)
+                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=600, capture_output=True, text=True)
             except TimeoutExpired as e:
                 self.wlogger.error(e)
                 err = True

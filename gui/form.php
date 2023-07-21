@@ -267,6 +267,8 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td><a class='rlink switch' id='NSHEVS'>NSHEVS</a>".get_help('NSHEVS')."<td>".form_plain_arr_switchable('NSHEVS',$NSHEVS); 
 	echo "<tr><td>".get_help('c_const')."<td><input autocomplete=off type=text automplete=off size=10 name=post[c_const] value='$c_const'>"; 
 	echo "<tr><td>".get_help('fire_starts_in_a_room')."<td><input autocomplete=off type=text automplete=off size=10 name=post[fire_starts_in_a_room] value='$fire_starts_in_a_room'>"; 
+	echo "<tr><td>".get_help('hrrpua')."<td>".form_assoc('hrrpua',$hrrpua); 
+	echo "<tr><td>".get_help('hrr_alpha')."<td>".form_assoc('hrr_alpha',$hrr_alpha); 
 	echo "<tr><td>".get_help('fire_area')."<td>".form_assoc('fire_area',$fire_area); 
 	echo "<tr><td>".get_help('radfrac')."<td>".form_assoc('radfrac',$radfrac); 
 	echo "<tr><td>".get_help('heatcom')."<td>".form_assoc('heatcom',$heatcom); 

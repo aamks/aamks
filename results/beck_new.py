@@ -415,9 +415,13 @@ class Plot:
 
         samples = {}
         for k, v in data.items():
-            max_fat = len(v)
+            max_fat = 0
+            for i, j in enumerate(reversed(v)):
+                if j > 0:
+                    max_fat = len(v) - i
+                    break
             binwdth = max(int(max_fat / n_bins), 1)
-            samples[k] = [np.random.choice(np.arange(max_fat), p=v) for i in range(1000)]
+            samples[k] = [np.random.choice(np.arange(max_fat), p=v[:max_fat]) for i in range(1000)]
                 
         plot = sns.histplot(samples, stat='density', kde=True, binwidth=binwdth)
 
@@ -645,9 +649,15 @@ class PostProcess:
     # add some summaries to self.data
     def _summarize(self):
         # https://stats.stackexchange.com/questions/267432/coefficient-of-overlapping-ovl-for-two-distributions
+        def try_kde(sample):
+            try:
+                return stat.gaussian_kde(sample)
+            except np.linalg.LinAlgError:
+                return stat.gaussian_kde(np.insert(sample[1:], 0, sample[0]*0.99999))
+
         def ovl(samp1, samp2, number_bins=1000):
-            arr1 = stat.gaussian_kde(samp1)
-            arr2 = stat.gaussian_kde(samp2)
+            arr1 = try_kde(samp1)
+            arr2 = try_kde(samp2)
 
             positions = np.arange(int(max(*samp1, *samp2)*1.2))
             arr1(positions)

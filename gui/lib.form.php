@@ -56,8 +56,8 @@ function make_help() { /*{{{*/
 	$help["management"]			     = ["Management lvl"                   , "Referring to PD 7974-6" ]                                                     ;
 	$help["complexity"]			     = ["Complexity lvl"                   , "Referring to  PD 7974-6" ]                                                     ;
 	$help["alarmingb"]			     = ["Alarming lvl"                     , "Referring to PD 7974-6" ]                                                     ;
-	$help["evacuees_max_h_speed"]    = ["Horizontal speed"                 , "Parameters of normal distribution of nominal horizontal speed [m/s]"]                                                              ;
-	$help["evacuees_max_v_speed"]    = ["Vertical speed"                   , "Parameters of normal distribution of nominal vertical speed [m/s] !!!currently not used!!!"]                                                              ;
+	$help["evacuees_max_h_speed"]    = ["Horizontal speed"                 , "Parameters of normal distribution of nominal horizontal speed [cm/s]"]                                                              ;
+	$help["evacuees_max_v_speed"]    = ["Vertical speed"                   , "Parameters of normal distribution of nominal vertical speed [cm/s] !!!currently not used!!!"]                                                              ;
 	$help["evacuees_alpha_v"]        = ["Alpha speed"                      , "Parameters of normal distribution of alpha (used for speed reduction in somke) [-]"]                                                              ;
 	$help["evacuees_beta_v"]         = ["Beta speed"                       , "Parameters of normal distribution of beta (used for speed rduction in smoke) [-]"]                                                              ;
 
@@ -474,8 +474,8 @@ function get_template_defaults($q) {/*{{{*/
       "max": 0.05
     },
     "heatcom": {
-      "mean": 17100,
-      "sd": 2000
+      "min": 17100,
+      "max": 20000
     },
     "radfrac": {
       "k": 124.48,
