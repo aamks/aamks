@@ -187,8 +187,8 @@ class CfastMcarlo():
         z = self.s.query("SELECT f_id, name FROM fire_origin")
         fire_origin = z[0]['name']
         orig_area = self.s.query("SELECT (width * depth)/10000 as area FROM aamks_geom WHERE name='{}'".format(fire_origin))[0]['area']
-        hrrpua_d=self.conf['hrrpua']
-        hrr_alpha=self.conf['hrr_alpha']
+        hrrpua_d=self.conf['hrrpua']    # [kW/m2]
+        hrr_alpha=self.conf['hrr_alpha']    # [kW/s2]
 
         '''
         Fire area is draw from pareto distrubution regarding the BS PD-7974-7. 
