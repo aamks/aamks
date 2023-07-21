@@ -423,7 +423,17 @@ class Plot:
             binwdth = max(int(max_fat / n_bins), 1)
             samples[k] = [np.random.choice(np.arange(max_fat), p=v[:max_fat]) for i in range(1000)]
                 
-        plot = sns.histplot(samples, stat='density', kde=True, binwidth=binwdth)
+        try:
+            plot = sns.histplot(samples, stat='density', kde=True, binwidth=binwdth)
+        except np.linalg.LinAlgError:
+            fig = plt.figure()
+            plt.text(0.5, 0.5, f'No valid data available for histogram',
+                    horizontalalignment='center', verticalalignment='center',
+                    bbox=dict(facecolor='red', alpha=0.5))
+            if path:
+                fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
+            plt.close(fig)
+            return 1
 
         if label:
             plot.set(xlabel=label[0])
@@ -599,6 +609,33 @@ class Plot:
 
 '''Generating plots and results visualization - the head class'''
 class PostProcess:
+    plot_type = {
+        'pdf':[
+            {'name':'wcbe_r','lab':['Required Safe Egress Time - Run Time [s]', 'PDF [-]']},
+                {'name':'dcbe', 'lab':['Available Safe Egress Time [s]', 'PDF [-]']},
+                {'name':'wcbe', 'lab':['Required Safe Egress Time [s]', 'PDF [-]']},
+                {'name':'min_hgt', 'lab':['Minimum Upper Layer Height [cm]', 'PDF [-]']},
+                {'name':'min_hgt_cor', 'lab':['Minimum Upper Layer Height in Corridors [cm]', 'PDF [-]']},
+                {'name':'min_vis', 'lab':['Minimum Visibility [m]', 'PDF [-]']},
+                {'name':'min_vis_cor', 'lab':['Minimum Visibility in Corridors [m]', 'PDF [-]']},
+                {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'PDF [-]']}
+                ], 
+            'pdf_n':[
+                {'name':'pdf_fn', 'lab':['Number of fatalities [-]', 'Probability [-]']},
+                ], 
+            'cdf':[
+                {'name':'dcbe', 'lab':['Available Safe Egress Time [s]', 'CDF [-]']},
+                {'name':'wcbe', 'lab':['Required Safe Egress Time [s]', 'CDF [-]']},
+                {'name':'min_hgt', 'lab':['Minimum Upper Layer Height [cm]', 'CDF [-]']},
+                {'name':'min_hgt_cor', 'lab':['Minimum Upper Layer Height in Corridors [cm]', 'CDF [-]']},
+                {'name':'min_vis', 'lab':['Minimum Visibility [m]', 'CDF [-]']},
+                {'name':'min_vis_cor', 'lab':['Minimum Visibility in Corridors [m]', 'CDF [-]']},
+                {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'CDF [-]']}
+                ], 
+            'fn_curve':[
+                {'name':'fn_curve', 'lab':['Number of fatalities [-]', 'Frequency [-]']}
+                ]}
+
     def __init__(self, scen_dir=None):
         if scen_dir:
             self.dir = scen_dir
@@ -609,33 +646,6 @@ class PostProcess:
         self.n = len(self.gd.raw['feds'])  # number of finished iterations taken for results analysis
         self.probs = []#{}
 
-        self.plot_type = {
-                'pdf':[
-                    {'name':'wcbe_r','lab':['Required Safe Egress Time - Run Time [s]', 'PDF [-]']},
-                    {'name':'dcbe', 'lab':['Available Safe Egress Time [s]', 'PDF [-]']},
-                    {'name':'wcbe', 'lab':['Required Safe Egress Time [s]', 'PDF [-]']},
-                    {'name':'min_hgt', 'lab':['Minimum Upper Layer Height [cm]', 'PDF [-]']},
-                    {'name':'min_hgt_cor', 'lab':['Minimum Upper Layer Height in Corridors [cm]', 'PDF [-]']},
-                    {'name':'min_vis', 'lab':['Minimum Visibility [m]', 'PDF [-]']},
-                    {'name':'min_vis_cor', 'lab':['Minimum Visibility in Corridors [m]', 'PDF [-]']},
-                    {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'PDF [-]']}
-                    ], 
-                'pdf_n':[
-                    {'name':'pdf_fn', 'lab':['Number of fatalities [-]', 'Probability [-]']},
-                    ], 
-                'cdf':[
-                    {'name':'dcbe', 'lab':['Available Safe Egress Time [s]', 'CDF [-]']},
-                    {'name':'wcbe', 'lab':['Required Safe Egress Time [s]', 'CDF [-]']},
-                    {'name':'min_hgt', 'lab':['Minimum Upper Layer Height [cm]', 'CDF [-]']},
-                    {'name':'min_hgt_cor', 'lab':['Minimum Upper Layer Height in Corridors [cm]', 'CDF [-]']},
-                    {'name':'min_vis', 'lab':['Minimum Visibility [m]', 'CDF [-]']},
-                    {'name':'min_vis_cor', 'lab':['Minimum Visibility in Corridors [m]', 'CDF [-]']},
-                    {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'CDF [-]']}
-                    ], 
-                'fn_curve':[
-                    {'name':'fn_curve', 'lab':['Number of fatalities [-]', 'Frequency [-]']}
-                    ]
-                }
 
     # save data
     def save(self, no_zip=False):
@@ -766,6 +776,7 @@ class PostProcess:
         tm('plot cdf')
         [p.pdf(self.data[d['name']], path=f"{d['name']}_pdf", label=d['lab']) for d in self.plot_type['pdf']]
         tm('plot pdf')
+        breakpoint()
         [p.pdf_n(self.data[d['name']], path=f"{d['name']}", label=d['lab']) for d in self.plot_type['pdf_n']]
         tm('plot pdf_n')
         p.pdf({'ASET': self.data['dcbe'], 'RSET': self.data['wcbe']}, label=['Time [s]', 'Density [-]'], path='overlap')
