@@ -412,7 +412,7 @@ class Plot:
 
         samples = {}
         for k, v in data.items():
-            max_fat = 0
+            max_fat = 1
             for i, j in enumerate(reversed(v)):
                 if j > 0:
                     max_fat = len(v) - i
@@ -421,17 +421,19 @@ class Plot:
             samples[k] = [np.random.choice(np.arange(max_fat), p=v[:max_fat]) for i in range(1000)]
 
         try:
-            plot = sns.histplot(samples, stat='density', kde=True, binwidth=binwdth)
-        except np.linalg.LinAlgError:
-            plot = sns.histplot(samples, stat='density', kde=False, binwidth=binwdth)
-#            fig = plt.figure()
-#            plt.text(0.5, 0.5, f'No valid data available for histogram',
-#                    horizontalalignment='center', verticalalignment='center',
-#                    bbox=dict(facecolor='red', alpha=0.5))
-#            if path:
-#                fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
-#            plt.close(fig)
-#            return 1
+            try:
+                plot = sns.histplot(samples, stat='density', kde=True, binwidth=binwdth)
+            except np.linalg.LinAlgError:
+                plot = sns.histplot(samples, stat='density', kde=False, binwidth=binwdth)
+        except ValueError:
+            fig = plt.figure()
+            plt.text(0.5, 0.5, f'No valid data available for histogram',
+                    horizontalalignment='center', verticalalignment='center',
+                    bbox=dict(facecolor='red', alpha=0.5))
+            if path:
+                fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
+            plt.close(fig)
+            return 1
 
         if label:
             plot.set(xlabel=label[0])
