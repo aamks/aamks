@@ -166,9 +166,10 @@ class OnEnd():
         if os.environ['AAMKS_WORKER']=='gearman':
             try:
                 for i in range(*si.get()):
-                    worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                    worker = worker.replace("/home","")
+                    worker=os.path.join(os.environ['AAMKS_PROJECT'], "workers", i)
+                    worker = worker[6:]
                     gearman="gearman -b -f aRun 'https://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
+                    print(gearman)
                     os.system(gearman)
             except Exception as e:
                 print('OnEnd: {}'.format(e))
