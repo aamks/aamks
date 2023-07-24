@@ -156,7 +156,7 @@ class GetData:
         geom_data['floors'] = int(max(self._quering('DISTINCT floor', tab='fed_growth_cells_data', raw=True)))
         geom_data['area'] = self.s.query('SELECT sum(room_area) as total FROM aamks_geom')[0]['total'] / 10000
         
-        for label, prefixes in {'rooms':['r', 'c', 'a'], 'doors':['d'], 'obsts':['t']}.items():
+        for label, prefixes in {'rooms':['r', 'c', 'a', 's'], 'doors':['d'], 'obsts':['t']}.items():
             geom_data[label] = []
             for f in range(geom_data['floors']+1):
                 g = []
@@ -247,13 +247,10 @@ class RiskIteration:
         # we assume that incapacitation during evacuation results in serious injuries or death
         # acc. Purser 2010, we assume that FED=1 results in incapacitation in 50% of poulation, but FED=0.3 only in 11.3%
         # P_inc(FED) is lognorm distribution (Purser 2010, more?)
-    def _rawFED2CDF(self, feds: dict):
-        cdfs = []
-        for fed in feds.values():
-            with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                cdfs.extend(stat.norm.cdf(np.log(fed)))
-                
+    def _rawFED2CDF(self, feds: list):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            cdfs = stat.norm.cdf(np.log(feds))
         return cdfs
 
     # probability of randomly taken person been found dead in case of fire
@@ -422,18 +419,19 @@ class Plot:
                     break
             binwdth = max(int(max_fat / n_bins), 1)
             samples[k] = [np.random.choice(np.arange(max_fat), p=v[:max_fat]) for i in range(1000)]
-                
+
         try:
             plot = sns.histplot(samples, stat='density', kde=True, binwidth=binwdth)
         except np.linalg.LinAlgError:
-            fig = plt.figure()
-            plt.text(0.5, 0.5, f'No valid data available for histogram',
-                    horizontalalignment='center', verticalalignment='center',
-                    bbox=dict(facecolor='red', alpha=0.5))
-            if path:
-                fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
-            plt.close(fig)
-            return 1
+            plot = sns.histplot(samples, stat='density', kde=False, binwidth=binwdth)
+#            fig = plt.figure()
+#            plt.text(0.5, 0.5, f'No valid data available for histogram',
+#                    horizontalalignment='center', verticalalignment='center',
+#                    bbox=dict(facecolor='red', alpha=0.5))
+#            if path:
+#                fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
+#            plt.close(fig)
+#            return 1
 
         if label:
             plot.set(xlabel=label[0])
@@ -448,7 +446,10 @@ class Plot:
 
     # PDF from datapoints
     def pdf(self, data, path=None, label=None):
-        plot = sns.displot(data, kde=True, stat='density')
+        try:
+            plot = sns.displot(data, kde=True, stat='density')
+        except np.linalg.LinAlgError:
+            plot = sns.displot(data, kde=False, stat='density')
 
         if label:
             plot.set_axis_labels(*label)
@@ -582,6 +583,8 @@ class Plot:
 
             for room in hm.geom['rooms'][f]:
                 patches.append(rect(*pts2rect(room['points']), lw=1.5, edgecolor=colors['CONTOUR'], fill=None))
+            for room in hm.geom['rooms'][f]:
+                patches.append(rect(*pts2rect(room['points']), lw=1.5, edgecolor=colors['CONTOUR'], fill=None))
             for door in hm.geom['doors'][f]:
                 patches.append(rect(*pts2rect(door['points']), lw=1.5, edgecolor=None, facecolor=colors['DOOR']))
             for obst in hm.geom['obsts'][f]:
@@ -599,6 +602,7 @@ class Plot:
             ax.set_xlabel('x axis')
             ax.set_ylabel('y axis')
             plt.gca().set_aspect('equal', adjustable='box')
+            c.set_clim(vmin=0)
             fig.colorbar(c, ax=ax, fraction=0.03, pad=0.04, label=lab)
             fig.tight_layout()
             
@@ -776,7 +780,6 @@ class PostProcess:
         tm('plot cdf')
         [p.pdf(self.data[d['name']], path=f"{d['name']}_pdf", label=d['lab']) for d in self.plot_type['pdf']]
         tm('plot pdf')
-        breakpoint()
         [p.pdf_n(self.data[d['name']], path=f"{d['name']}", label=d['lab']) for d in self.plot_type['pdf_n']]
         tm('plot pdf_n')
         p.pdf({'ASET': self.data['dcbe'], 'RSET': self.data['wcbe']}, label=['Time [s]', 'Density [-]'], path='overlap')

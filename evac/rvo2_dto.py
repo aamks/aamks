@@ -29,9 +29,6 @@ class EvacEnv:
         self.velocities = []
         self.velocity_vector = []
         self.speed_vec = []
-        self.fed = []
-        self.fed_symbolic = []
-        self.fed_vec = []
         self.finished = []
         self.finished_vec = []
         self.trajectory = []
@@ -54,10 +51,10 @@ class EvacEnv:
 
         self.general = aamks_vars
 
-        self.sim = rvo2.PyRVOSimulator(self.config['TIME_STEP'], self.config['NEIGHBOR_DISTANCE'],
-                                       self.config['MAX_NEIGHBOR'], self.config['TIME_HORIZON'],
-                                       self.config['TIME_HORIZON_OBSTACLE'], self.config['RADIUS'],
-                                       self.max_speed)
+#        self.sim = rvo2.PyRVOSimulator(self.config['TIME_STEP'], self.config['NEIGHBOR_DISTANCE'],
+#                                       self.config['MAX_NEIGHBOR'], self.config['TIME_HORIZON'],
+#                                       self.config['TIME_HORIZON_OBSTACLE'], self.config['RADIUS'],
+#                                       self.max_speed)
 
         self.simulator = RVOSimulator(neighbor_dist=self.config['NEIGHBOR_DISTANCE'],
                                      max_neighbors=self.config['MAX_NEIGHBOR'],
@@ -69,13 +66,7 @@ class EvacEnv:
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
 
-        self.dfed = FEDDerivative(floor=self.floor)
-
-        self.prev_fed = [] 
-        self.position_fed_tables_information = []
-        self.position_fed_to_insert = []
-        self.steps_fed_positions_data = []
-        self.fed_growth_grouped_by_cell = []
+        self.dfed = FEDDerivative(self.floor)
         #simulation_id = 1 #przykladowa symulacja
         #self.evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
         #self.all_evac = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]
@@ -290,15 +281,16 @@ class EvacEnv:
                 self.evacuees.update_speed_of_pedestrian(i)
                 RVOSimulator.set_agent_max_speed(self.simulator, i, self.evacuees.get_speed_of_pedestrian(i))
 
-    def save_feds(self, step):
+    def save_feds(self, time):
         with open('fed.csv', 'a') as file:
             for i in range(self.evacuees.get_number_of_pedestrians()):
                 old = self.smoke_query.get_fed_deprecated(self.evacuees.get_position_of_pedestrian(i))
                 purs = self.smoke_query.get_fed_purser(self.evacuees.get_position_of_pedestrian(i))
                 sfpe = self.smoke_query.get_fed_sfpe(self.evacuees.get_position_of_pedestrian(i))
-                file.write(f'{step},{i},{old},{purs},{sfpe}\n')
+                file.write(f'{time},{i},{old},{purs},{sfpe}\n')
 
     def update_fed(self):
+        fed_over_1 = False
         for i in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
                 continue
@@ -312,18 +304,17 @@ class EvacEnv:
                 elif 's' in self.smoke_query.xy2room(position):
                     activity = 2
 
-                fed = self.smoke_query.get_fed_sfpe(position, activity_level=activity)
+                dfed = self.smoke_query.get_fed_sfpe(position, activity_level=activity)
                 if i == 0:
-                    self.elog.debug('FED calculated: {}'.format(fed))
+                    self.elog.debug('FED calculated: {}'.format(dfed))
                 #except:
                 #    self.elog.warning('Simulation without FED')
                 #    fed = 0.0
-                self.evacuees.update_fed_of_pedestrian(i, fed * self.config['SMOKE_QUERY_RESOLUTION'])
+                fed_over_1 = False if self.evacuees.update_fed_of_pedestrian(i, dfed) < 1 else True
                 self.evacuees.update_symbolic_fed_of_pedestrian(i)
-        fed = [self.evacuees.get_fed_of_pedestrian(i) for i in range(self.evacuees.get_number_of_pedestrians())]
-        self.fed = fed
+
         # return True if at least one agent has FED=1 (ASET criterion)
-        return True if max(fed) >= 1 else False
+        return  fed_over_1
             
     def get_list_of_symbolic_feds(self):
         return [self.evacuees.get_symbolic_fed_of_pedestrian(i) for i in range(self.evacuees.get_number_of_pedestrians())]
@@ -379,27 +370,26 @@ class EvacEnv:
             else:
                 return (30-vis)/30
 
-    def get_number_of_evacuees(self):
-        return self.sim.getNumAgents()
-
     def update_time(self):
         self.current_time += self.config['TIME_STEP']
 
     def get_simulation_time(self):
-        return self.sim.getGlobalTime()
+        return self.simulator.getGlobalTime()
 
     def get_rset_time(self) -> None:
         finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.evacuees.get_number_of_pedestrians())]
         exited = finished.count(0)
+        # if 98% egressed in simulation time but up to 2% stuck (RVO error)
         if (exited > len(finished) * 0.98) and self.per_9 == 0:
             self.rset = self.current_time + 30
+        # all egressed but ...?
         if all(x == 0 for x in finished) and self.rset == 0:
             self.rset = self.current_time + 30
 
     def do_simulation(self, step):
-
         self.step = step
-        if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
+        # update goal and speed every 10th step
+        if (step % 10) == 0:
             self.set_goal()
             self.update_speed()
         else:
@@ -412,10 +402,7 @@ class EvacEnv:
         #self.elog.info(self.current_time)
         #if (step % self.config['SMOKE_QUERY_RESOLUTION']) == 0:
         aset_bool = self.update_fed()
-        if self.dfed.n_agents == 0:
-            self.dfed.n_agents = self.get_number_of_evacuees()
-            self.dfed.fed = [0 for i in range(self.dfed.n_agents)]
-        self.dfed.update_dfed(self.config['TIME_STEP'], self.positions, self.fed)
+        self.dfed.update_dfed(self.config['TIME_STEP'], self.evacuees)
         if self.rset == 0:
             self.get_rset_time()
         return aset_bool
@@ -438,7 +425,6 @@ class EvacEnv:
 # Total FED growth spatial function (per floor)
 class FEDDerivative:
     def __init__(self, floor: int):
-        self.n_agents = 0
         self.floor = floor
         self.dim = self._find_2dims()
 
@@ -448,15 +434,13 @@ class FEDDerivative:
         self.cell_size = [50, 50]    # fixed cell size [dx,dy] [cm]
         self.celled = self._meshing()
         self.celled_df = pd.DataFrame(self.celled)
-        
-        self.fed = []
 
     # find dimensions of the plane returns list: [[xmin, ymin], [xmax, ymax]]
     def _find_2dims(self):
         aamks_sqlite = Sqlite(os.environ['AAMKS_PROJECT']  + "/aamks.sqlite")
         dims = []
         q = aamks_sqlite.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
-                (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%');")
+                (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%' or a.name LIKE 's%');")
         def minmax(pts):
             ret = []
             xys = list(zip(*pts))
@@ -495,12 +479,11 @@ class FEDDerivative:
         else:
             return cell_no
 
-    def update_dfed(self, dt: float,  positions: list, fed_table: list):
-        for i in range(self.n_agents):
-            x = int(positions[i][0])
-            y = int(positions[i][1])
-            dfed = fed_table[i] - self.fed[i] 
-
+    def update_dfed(self, dt: float, evacuees):
+        # iterate over agents that are present on the floor at the moment
+        for agent in evacuees.pedestrians:
+            x, y = agent.position
+            dfed = agent.dfed
             if dfed > 0:
                 self.raw.append({'x':x, 'y':y, 'dfed/dt':dfed/dt})
                 try:
@@ -508,8 +491,6 @@ class FEDDerivative:
                 except IndexError:
                     # evacuee outside the building
                     pass
-
-        self.fed = fed_table
         
     # exporting non-zero dfed cells
     def export(self):

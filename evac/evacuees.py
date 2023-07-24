@@ -152,8 +152,8 @@ class Evacuees:
     def update_speed_of_pedestrian(self, ped_no):
         self.pedestrians[ped_no].update_speed()
 
-    def update_fed_of_pedestrian(self, ped_no, fed):
-        self.pedestrians[ped_no].update_fed(fed)
+    def update_fed_of_pedestrian(self, ped_no, dfed):
+        return self.pedestrians[ped_no].update_fed(dfed)
 
     def update_previous_fed_of_pedestrian(self, ped_no, fed):
         self.pedestrians[ped_no].previous_step_fed = fed
@@ -171,6 +171,10 @@ class Evacuees:
     def get_fed_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].fed
+
+    def get_dfed_of_pedestrian(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].dfed
 
     def get_symbolic_fed_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
@@ -198,3 +202,5 @@ class Evacuees:
     def set_num_of_orca_lines(self, ped_no, num_of_lines):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].num_of_orca_lines = num_of_lines
+
+

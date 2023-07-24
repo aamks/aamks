@@ -462,20 +462,20 @@ function get_template_defaults($q) {/*{{{*/
         "max": 0.188
     },
     "co_yield": {
-      "min": 0.04,
-      "max": 0.01
+      "min": 0.01,
+      "max": 0.43
     },
     "hcn_yield": {
-      "min": 0.04,
-      "max": 0.01
+      "min": 0.01,
+      "max": 0.43
     },
     "soot_yield": {
-      "min": 0.15,
-      "max": 0.05
+      "min": 0.11,
+      "max": 0.17
     },
     "heatcom": {
-      "min": 17100,
-      "max": 20000
+      "min": 16400,
+      "max": 27000
     },
     "radfrac": {
       "k": 124.48,

@@ -248,7 +248,8 @@ class Worker:
                 coords = list()
                 for coord in obst:
                     coords.append(tuple(coord))
-                coords.append(tuple(obst[1]))
+                if len(obst) > 1:
+                    coords.append(tuple(obst[1]))
                 obstacles.append(coords)
             if str(floor) in self.obstacles['fire']:
                 obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0, 1, 2, 3, 4, 1]]])
@@ -297,7 +298,7 @@ class Worker:
         cfast_step = self.floors[0].config['SMOKE_QUERY_RESOLUTION']
         aevac_step = self.floors[0].config['TIME_STEP']
         time_frame = 0
-        first_evacuue = []
+        #first_evacuue = []
         # iterate over CFAST time frames (results saving interval)
         while 1:
             time_frame += cfast_step    # increase upper limit of time_frame
@@ -319,19 +320,22 @@ class Worker:
                         self.wlogger.error(f'Unable to read CFAST results at {time_frame} s')
                         #TODO: mark simulation as broken/not finished due to CFAST
                         break
-                    first_evacuue.append(i.evacuees.get_first_evacuees_time())
+                    #first_evacuue.append(i.evacuees.get_first_evacuees_time())
 
                 # iterate with AEvac time step over CFAST time_frame
                 for step_no in range(0, int(cfast_step / aevac_step)):
                     time_row = dict()
                     smoke_row = dict()
+                    # do single AEvac step on all floors
                     for i in self.floors:
                         if i.do_simulation(step_no) and aset > i.current_time:
                             aset = i.current_time
 
+                    # move agents downstairs
                     self.process_agents_queuing_when_moving_downstairs() 
                     self.process_agents_downstairs_movement(step_no, time_frame)
 
+                    # prepare visualization on all floors
                     for i in self.floors:       
                         if (step_no % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
@@ -340,12 +344,13 @@ class Worker:
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
 
+                # determine RSET and smoke on all floors
                 for i in self.floors:
                     rsets.append(i.rset)
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
                 self.wlogger.info(f'Progress: {round(time_frame/self.vars["conf"]["simulation_time"] * 100, 1)}%')
 
-                # check if all agents egressed and determine RSET
+                # check if all agents egressed and determine RSET for the building
                 if prod(array(rsets)) > 0:
                     self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(rsets))
                     self.simulation_time = max(rsets)
@@ -480,8 +485,8 @@ class Worker:
         report['psql']['runtime'] = int(time.time() - self.start_time)
         report['psql']['cross_building_results'] = self.cross_building_results
         for i in self.floors:
-            report['psql']['fed'][i.floor] = i.fed
-            report['psql']['fed_symbolic'][i.floor] = i.fed_symbolic
+            report['psql']['fed'] = self._collect_evac_data('fed')
+            report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
             report['psql']['rset'][i.floor] = int(i.rset)
             report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
         for num_floor in range(len(self.floors)):
@@ -493,6 +498,23 @@ class Worker:
         j.write(report, self.meta_file)
         self.wlogger.info('Metadata prepared successfully')
     # }}}
+
+    # gather data across all floors
+    def _collect_evac_data(self, parameter):
+        collected = []
+        for evacenv in self.floors:
+            collected.extend([ped.__dict__[parameter] for ped in evacenv.evacuees.pedestrians])
+
+        return collected
+
+    def _collect_fed_data(self):
+        collected_fed = []
+        for evacenv in self.floors:
+            collected_fed.extend([ped.fed for ped in evacenv.evacuees.pedestrians])
+
+        return collected_fed
+
+
 
     def main(self):
         self._create_workspace()
