@@ -10,7 +10,6 @@ from numpy import insert
 from numpy import cumsum
 import pathfinder.pyrvo as rvo
 
-from results.beck_new import RiskIteration as RI
 from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
@@ -25,7 +24,8 @@ import ssl
 from include import Json
 import json
 from collections import OrderedDict
-from subprocess import Popen, run, TimeoutExpired
+from subprocess import Popen, run
+import subprocess
 import zipfile
 import multiprocessing
 
@@ -37,6 +37,7 @@ if 'AAMKS_SKIP_CFAST' in os.environ:
 class Worker:
 
     def __init__(self):
+
         self.json=Json()
         self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
         self.start_time = time.time()
@@ -143,7 +144,6 @@ class Worker:
 
         self.sim_id = self.vars['conf']['SIM_ID']
         self.host_name = os.uname()[1]
-        #print('Starting simulations id: {}'.format(self.sim_id))
         self.wlogger=self.get_logger('worker.py')
         self.vars['conf']['logger'] = self.get_logger('evac.py')
 
@@ -158,20 +158,18 @@ class Worker:
 
     def run_cfast_simulations(self):
         if self.project_conf['fire_model'] == 'CFAST':
-            err = False
             try:
-                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=600, capture_output=True, text=True)
-            except TimeoutExpired as e:
+                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=600)
+            except subprocess.TimeoutExpired:
+                p.kill()
+            except Exception as e:
                 self.wlogger.error(e)
-                err = True
+                cfast_log = open('cfast.log', 'r')
+                for line in cfast_log.readlines():
+                    if line.startswith("***Error:"):
+                        self.wlogger.error(Exception(line))
             else:
-                for line in p.stdout.split('\n'):
-                    if line.startswith("***Error") or err:
-                        err = True
-                        self.wlogger.error(Exception(f'CFAST:{line}'))
-            inf = 'Iteration skipped due to CFAST error' if err else 'CFAST simulation calculated with success' 
-            self.wlogger.info(inf)
-            return not err
+                self.wlogger.info('CFAST simulation calculated with success')
 
     def create_geom_database(self):
 
@@ -255,9 +253,9 @@ class Worker:
                 obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0, 1, 2, 3, 4, 1]]])
 
             eenv.obstacle = obstacles
-            num_of_vertices = eenv.process_obstacle(obstacles)
+            num_of_obstacles = eenv.process_obstacle(obstacles)
             eenv.generate_nav_mesh()
-            self.wlogger.debug('Added obstacles on floor: {}, number of vercites: {}'.format(1, num_of_vertices))
+            self.wlogger.debug('Added obstacles on floor: {}, number of obstacles: {}'.format(1, num_of_obstacles))
 
             e = self._create_evacuees(floor)
             self.wlogger.info('Evacuees placed on floor: {}'.format(floor))
@@ -295,74 +293,56 @@ class Worker:
 
     def do_simulation(self):
         self.wlogger.info('Starting simulations')
-        cfast_step = self.floors[0].config['SMOKE_QUERY_RESOLUTION']
-        aevac_step = self.floors[0].config['TIME_STEP']
-        time_frame = 0
-        #first_evacuue = []
-        # iterate over CFAST time frames (results saving interval)
+        time_frame = 10
         while 1:
-            time_frame += cfast_step    # increase upper limit of time_frame
-            # check for user time limit
-            if time_frame > (self.vars['conf']['simulation_time']):
-                self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
-                break
-
-            #self.floors[0].smoke_query.cfast_has_time(time_frame)
-            # read CFAST results at given time_frame if they exist
+            self.floors[0].smoke_query.cfast_has_time(time_frame) 
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
-                aset = self.vars['conf']['simulation_time']
                 for i in self.floors:
-                    try:
-                        i.read_cfast_record(time_frame)
-                    except IndexError:
-                        self.wlogger.error(f'Unable to read CFAST results at {time_frame} s')
-                        #TODO: mark simulation as broken/not finished due to CFAST
-                        break
-                    #first_evacuue.append(i.evacuees.get_first_evacuees_time())
+                    i.read_cfast_record(time_frame)
 
-                # iterate with AEvac time step over CFAST time_frame
-                for step_no in range(0, int(cfast_step / aevac_step)):
+                for step in range(0, int(10 / self.floors[0].config['TIME_STEP'])):
+
                     time_row = dict()
                     smoke_row = dict()
-                    # do single AEvac step on all floors
+                    
                     for i in self.floors:
-                        if i.do_simulation(step_no) and aset > i.current_time:
-                            aset = i.current_time
+                        i.do_simulation(step)
+            
+                    self.process_agents_queuing_when_moving_downstairs()
+                    self.process_agents_downstairs_movement(step, time_frame)
 
-                    # move agents downstairs
-                    self.process_agents_queuing_when_moving_downstairs() 
-                    self.process_agents_downstairs_movement(step_no, time_frame)
-
-                    # prepare visualization on all floors
-                    for i in self.floors:       
-                        if (step_no % i.config['VISUALIZATION_RESOLUTION']) == 0:
+                    for i in self.floors:
+                        if (step % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})
+
                     if len(time_row) > 0:
+
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
 
-                # determine RSET and smoke on all floors
+
                 for i in self.floors:
                     rsets.append(i.rset)
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
-                self.wlogger.info(f'Progress: {round(time_frame/self.vars["conf"]["simulation_time"] * 100, 1)}%')
-
-                # check if all agents egressed and determine RSET for the building
-                if prod(array(rsets)) > 0:
-                    self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(rsets))
-                    self.simulation_time = max(rsets)
-                    self.time_shift = 0
-                    break
+                time_frame += 10
             else:
-                self.wlogger.error(f'There was no data found at {time_frame} s in CFAST results.')
+                # TODO: endless loop, propably cfast error
+                time.sleep(1)
+            self.wlogger.info('Progress: {}%'.format(round(time_frame/self.vars['conf']['simulation_time'] * 100), 1))
+            if time_frame > (self.vars['conf']['simulation_time'] - 10):
+                self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
                 break
-
-        # gather results of the whole simulation (multisimulation iteration)
+            if prod(array(rsets)) > 0:
+                self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(rsets))
+                self.simulation_time = max(rsets)
+                self.time_shift = 0
+                break
+        for i in self.floors:
+            i.prepare_for_inserting_into_db()
         self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
-        self.cross_building_results['dcbe'] = aset
         self.wlogger.info('Final results gathered')
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
 
@@ -479,75 +459,117 @@ class Worker:
         report['highlight_geom'] = None
         report['psql'] = dict()
         report['psql']['fed'] = dict()
-        report['psql']['fed_symbolic'] = dict()
         report['psql']['rset'] = dict()
-        report['psql']['dfed'] = dict()
+        report['psql']['i_risk'] = dict()
+        report['psql']['fed_heatmaps_table_schema'] = dict()
+        report['psql']['fed_heatmaps_data_to_insert'] = dict()
         report['psql']['runtime'] = int(time.time() - self.start_time)
         report['psql']['cross_building_results'] = self.cross_building_results
         for i in self.floors:
-            report['psql']['fed'] = self._collect_evac_data('fed')
-            report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
+            # report['psql']['fed'][i.floor] = i.fed
+            # report['psql']['fed'][i.floor] = [i.evacuees.get_fed_of_pedestrian(j) for j in range(i.sim.getNumAgents())]
+            report['psql']['fed'][i.floor] = [i.evacuees.get_fed_of_pedestrian(j) for j in range(rvo.get_agents_count(i.simulator))]
             report['psql']['rset'][i.floor] = int(i.rset)
-            report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
+            report['psql']['i_risk'][i.floor] = round(i.calculate_individual_risk(), 2)
+            report['psql']['fed_heatmaps_table_schema'][i.floor] = self.position_fed_tables_information[int(i.floor)]
+            report['psql']['fed_heatmaps_data_to_insert'][i.floor] = self.floors[int(i.floor)].fed_growth_grouped_by_cell
         for num_floor in range(len(self.floors)):
             report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
             report['floor'] = num_floor
-        report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
 
         self.meta_file = "meta_{}.json".format(self.sim_id)
         j.write(report, self.meta_file)
         self.wlogger.info('Metadata prepared successfully')
     # }}}
 
-    # gather data across all floors
-    def _collect_evac_data(self, parameter):
-        collected = []
-        for evacenv in self.floors:
-            collected.extend([ped.__dict__[parameter] for ped in evacenv.evacuees.pedestrians])
+    def create_fed_mesh_db(self):
+        aamks_sqlite = Sqlite(os.environ['AAMKS_PROJECT']  + "/aamks.sqlite")
+        self.position_fed_tables_information = [[]for k in range (len(self.floors))]
+        for floor in range(0,(len(self.floors))):
 
-        return collected
+            rooms = aamks_sqlite.query("SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{}' and (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%');".format(floor))
+            x_set_fed_whole_floor = list(x[0] for x in sum([json.loads(t['points']) for t in rooms],[]))
+            y_set_fed_whole_floor = list(x[1] for x in sum([json.loads(t['points']) for t in rooms],[]))
 
-    def _collect_fed_data(self):
-        collected_fed = []
-        for evacenv in self.floors:
-            collected_fed.extend([ped.fed for ped in evacenv.evacuees.pedestrians])
+            x_min = min(x_set_fed_whole_floor)
+            x_max = max(x_set_fed_whole_floor)
+            y_min = min(y_set_fed_whole_floor)
+            y_max = max(y_set_fed_whole_floor)
 
-        return collected_fed
+            width = x_max - x_min
+            height = y_max - y_min
 
+            mesh_size_x = int((self.config['APPROXIMATE_NUMBER_OF_CELLS_PER_FLOOR']*width/height)**0.5)
 
+            mesh_size_y = int((self.config['APPROXIMATE_NUMBER_OF_CELLS_PER_FLOOR']*height/width)**0.5)
+
+            # divide x axis
+            num = x_max - x_min
+            x_points = ([num // mesh_size_x + (1 if x < num % mesh_size_x else 0) for x in range(mesh_size_x)])
+            x_points = cumsum(x_points)
+            x_points = insert(x_points, 0, 0, axis=0)
+            x_points = [x + x_min for x in x_points]
+            x_points = list(x_points)
+            # divide y axis
+            num = y_max - y_min
+            y_points = ([num // mesh_size_y + (1 if x < num % mesh_size_y else 0) for x in range(mesh_size_y)])
+            y_points = cumsum(y_points)
+            y_points = insert(y_points, 0, 0, axis=0)
+            y_points = [y + y_min for y in y_points]
+            y_points = list(y_points)
+            
+            self.position_fed_tables_information[floor] = [[0 for i in range(mesh_size_y)] for j in range(mesh_size_x)]
+            
+            for i in range(len(x_points)-1):
+                for j in range(len(y_points)-1):
+                    self.position_fed_tables_information[floor][i][j] = {
+                                    'number': j+i*(len(y_points)-1),
+                                    'floor': floor,
+                                    'y_min': int(y_points[j]),
+                                    'y_max': int(y_points[j+1]),
+                                    'x_min': int(x_points[i]),
+                                    'x_max': int(x_points[i+1]),
+                                    'fed_growth_sum':0.0,
+                                    'samples_count':0
+                                    }
+
+            self.floors[floor].position_fed_tables_information = self.position_fed_tables_information[floor]
 
     def main(self):
         self._create_workspace()
         self.download_inputs()
         self.get_config()
         self.create_geom_database()
-        if self.run_cfast_simulations():
-            self.prepare_simulations()
-            self.connect_rvo2_with_smoke_query()
-            self.do_simulation()
-            self.send_report()
-            self.wlogger.info('Simulation ended successfully')
+        self.run_cfast_simulations()
+        self.prepare_simulations()
+        self.create_fed_mesh_db()
+        self.connect_rvo2_with_smoke_query()
+        self.do_simulation()
+        self.send_report()
+        self.wlogger.info('Simulation ended')
 
     def test(self):
         os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
         self.prepare_simulations()
+        self.create_fed_mesh_db()
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
 
     def local_worker(self):
+
         os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
-        if self.run_cfast_simulations():
-            self.prepare_staircases()
-            self.prepare_simulations()
-            self.connect_rvo2_with_smoke_query()
-            self.do_simulation()
-            self.send_report()
-            self.wlogger.info('Simulation ended successfully')
+        self.run_cfast_simulations()
+        self.prepare_staircases()
+        self.prepare_simulations()
+        self.create_fed_mesh_db()
+        self.connect_rvo2_with_smoke_query()
+        self.do_simulation()
+        self.send_report()
 
 
 w = Worker()
@@ -555,6 +577,9 @@ w = Worker()
 os.environ['AAMKS_WORKER'] = 'gearman'
 os.environ['AAMKS_PATH'] = '/usr/local/aamks'
 os.environ['AAMKS_SERVER'] = '192.168.0.185'
+
+# SIMULATION_TYPE = 'NO_CFAST'
+
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()

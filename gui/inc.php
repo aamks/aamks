@@ -114,7 +114,7 @@ class Aamks {/*{{{*/
 		$menu.="<a class=blink href=/aamks/projects.php?projects_list>Projects</a><br>";
 		$menu.="<a class=blink href=/aamks/apainter/index.php>Apainter</a><br>";
 		$menu.="<a class=blink href=/aamks/animator/index.php>Animator</a><br>";
-		$menu.="<a class=blink href=/aamks/simulations.php>Summary</a><br>";
+		$menu.="<a class=blink href=/aamks/simulations.php>Simulations</a><br>";
 		$menu.="<a class=blink id=launch_simulation>Launch</a><br>";
 		$menu.="<br>";
 		$menu.="Scenario<br><select id='choose_scenario'>\n";

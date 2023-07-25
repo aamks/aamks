@@ -18,7 +18,6 @@ class Evacuee:
         self.exit_door = None
         self.blocked_exits = list()
         self.fed = 0
-        self.dfed = 0
         self.symbolic_fed = 'N'
         self.previous_step_fed = 0
         self.distance = 1
@@ -50,11 +49,9 @@ class Evacuee:
     def __setattr__(self, key, value):
         self.__dict__[key] = value
 
-    def update_fed(self, dfed):
-        assert isinstance(dfed, float), '%fed is not required type float'
-        self.dfed = dfed
-        self.fed += dfed
-        return self.fed
+    def update_fed(self, fed):
+        assert isinstance(fed, float), '%fed is not required type float'
+        self.fed += fed
 
     def update_thermal_injury(self, thermal_injury):
         assert isinstance(thermal_injury, float), '%thermal_injury is not a float'
