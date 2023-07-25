@@ -10,6 +10,7 @@ from numpy.random import gamma
 from numpy.random import triangular
 from numpy.random import seed
 from numpy import array as npa
+from numpy import full as npf
 from scipy.stats import pareto
 from include import Sqlite
 from include import Psql
@@ -27,6 +28,24 @@ class CfastMcarlo():
             'brick': {'CONDUCTIVITY': 0.3, 'SPECIFIC_HEAT': 0.9, 'DENSITY': 840., 'EMISSIVITY': 0.85, 'THICKNESS': 0.2}
             }
     CHEM = {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5}
+    FUELS = {
+            "WOOD": {"CHEM":{ "CARBON": 1, "CHLORINE": 0, "HYDROGEN": 1.7, "NITROGEN": 0.001, "OXYGEN": 0.72},
+                    "HEAT": 17.1, "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}},
+            "PP": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+            "PE": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+            "PS": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+            "PU": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+            "PVC": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+            "PMMA": {"CHEM": {"CARBON": 6, "CHLORINE": 0, "HYDROGEN": 10, "NITROGEN": 0, "OXYGEN": 5},
+                    "YIELDS": {"SOOT": 0, "CO": 0, "HCN": 0}, "HEAT": 43.4},
+                    }
+
+
 
     def __init__(self, sim_id):# {{{
         ''' Generate montecarlo cfast.in. Log what was drawn to psql. '''
@@ -37,6 +56,7 @@ class CfastMcarlo():
         self._sim_id = sim_id
         self._new_psql_log()
         seed(self._sim_id)
+        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
 
     def read_json(self):
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -145,8 +165,8 @@ class CfastMcarlo():
     def _draw_fire_chem(self):# {{{
         z = self.s.query("SELECT f_id, name FROM fire_origin")
 
-        heat_of_combustion = round(uniform(self.conf['heatcom']['min'], self.conf['heatcom']['max'])/1000, 0)
-        self._psql_log_variable('heat_of_combustion', heat_of_combustion)
+        heat_of_combustion = round(uniform(self.conf['heatcom']['min'], self.conf['heatcom']['max']), 0)     #[kJ/kg]
+        self._psql_log_variable('heat_of_combustion', heat_of_combustion/1000)  #[MJ/kg]
 
         rad_frac = round(gamma(self.conf['radfrac']['k'], self.conf['radfrac']['theta']), 3)#TODO LOW VARIABILITY, CHANGE DIST
         self._psql_log_variable('rad_frac', rad_frac)
@@ -167,8 +187,8 @@ class CfastMcarlo():
         z = self.s.query("SELECT f_id, name FROM fire_origin")
         fire_origin = z[0]['name']
         orig_area = self.s.query("SELECT (width * depth)/10000 as area FROM aamks_geom WHERE name='{}'".format(fire_origin))[0]['area']
-        hrrpua_d=self.conf['hrrpua']
-        hrr_alpha=self.conf['hrr_alpha']
+        hrrpua_d=self.conf['hrrpua']    # [kW/m2]
+        hrr_alpha=self.conf['hrr_alpha']    # [kW/s2]
 
         '''
         Fire area is draw from pareto distrubution regarding the BS PD-7974-7. 
@@ -181,7 +201,7 @@ class CfastMcarlo():
 
         self.hrrpua=int(triangular(hrrpua_d['min'], hrrpua_d['mode'], hrrpua_d['max']))
         hrr_peak=int(self.hrrpua * fire_area)
-        self.alpha=int(triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])*1000)
+        self.alpha=triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])
 
         # left
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
@@ -190,11 +210,14 @@ class CfastMcarlo():
             interval = 10
         times0 = list(range(0, t_up_to_hrr_peak, interval))+[t_up_to_hrr_peak]
         hrrs0 = [int((self.alpha * t ** 2)) for t in times0]
+        hrrs0[-1] = hrr_peak
 
         # middle
         t_up_to_starts_dropping = 15 * 60
         times1 = [t_up_to_starts_dropping]
         hrrs1 = [hrr_peak]
+        times1 = []
+        hrrs1 = []
 
         # right
         t_up_to_drops_to_zero=t_up_to_starts_dropping+t_up_to_hrr_peak
@@ -202,7 +225,9 @@ class CfastMcarlo():
         if interval == 0:
             interval = 10
         times2 = list(range(t_up_to_starts_dropping, t_up_to_drops_to_zero, interval))+[t_up_to_drops_to_zero]
-        hrrs2 = [int((self.alpha * (t - t_up_to_drops_to_zero) ** 2)) for t in times2 ]
+
+        times2 = list(reversed(npf(len(times0), t_up_to_starts_dropping + max(times0)) - npa(times0)))
+        hrrs2 = list(reversed(hrrs0))
 
         times = list(times0 + times1 + times2)
         hrrs = list(hrrs0 + hrrs1 + hrrs2)
@@ -217,7 +242,7 @@ class CfastMcarlo():
         co_yield = [round(uniform(self.conf['co_yield']['min'], self.conf['co_yield']['max']), 3)] * steps
         soot_yield = [round(uniform(self.conf['soot_yield']['min'], self.conf['soot_yield']['max']), 3)] * steps
         hcn_yield = [round(uniform(self.conf['hcn_yield']['min'], self.conf['hcn_yield']['max']), 3)] * steps
-        hcl_yield = [round(uniform(self.conf['hcl_yield']['min'], self.conf['hcl_yield']['max']), 3)] * steps
+        hcl_yield = [0] * steps #[round(uniform(self.conf['hcl_yield']['min'], self.conf['hcl_yield']['max']), 3)] * steps
         height = [h] * steps
         trace_yield = [0] * steps
         params = {"TIME": times, "HRR": hrrs, "HEIGHT": height, "AREA": area, "CO_YIELD": co_yield, "SOOT_YIELD": soot_yield, "HCN_YIELD": hcn_yield, "HCL_YIELD": hcl_yield, "TRACE_YIELD": trace_yield}
@@ -345,9 +370,9 @@ class CfastMcarlo():
 
         txt=(
         "&HEAD VERSION = 7500, TITLE = 'P_ID_{}_S_ID_{}' /".format(project_id, scenario_id),
-        '&TIME SIMULATION = {}, PRINT = 100, SMOKEVIEW = 100, SPREADSHEET = 10 /'.format(simulation_time),
+        f'&TIME SIMULATION = {simulation_time}, PRINT = 100, SMOKEVIEW = 100, SPREADSHEET = {self.config["SMOKE_QUERY_RESOLUTION"]} /',
         '&INIT PRESSURE = {} RELATIVE_HUMIDITY = {} INTERIOR_TEMPERATURE = {} EXTERIOR_TEMPERATURE = {} /'.format(pressure, humidity, indoor_temp, outdoor_temp),
-        '&MISC LOWER_OXYGEN_LIMIT = {} /'.format(o_limit),
+        '&MISC LOWER_OXYGEN_LIMIT = {}, MAX_TIME_STEP = 0.1/'.format(o_limit),
         '',
         )
         return "\n".join(txt)
