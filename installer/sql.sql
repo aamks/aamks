@@ -109,7 +109,7 @@ CREATE TABLE scenarios (---{{{
 CREATE TABLE fed_growth_cells_data (---{{{
     cell_id integer,
     floor smallint, 
-    project_id integer,
+    project integer,
     scenario_id integer,
     x_min integer, 
     x_max integer,
