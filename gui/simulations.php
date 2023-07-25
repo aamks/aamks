@@ -123,7 +123,7 @@ function prevNext($k, $t, $d) {
     return ($r=($k+$d)%$t)>=0?$r:$r+=$t;
 }
 
-function show_pictures() {/*{{{*/
+function show_results() {/*{{{*/
     if (isset($_GET['comp'])){ 
         $scens = explode('<>', $_GET['comp']);
         $dir = implode('-', $scens);
@@ -148,6 +148,11 @@ function show_pictures() {/*{{{*/
 
     }else{
         $f=$_SESSION['main']['working_home'];
+	$path = $f."/picts/";
+	if (!is_dir($path)) {
+		echo '<br><br><font size=4><strong>No data available. Launch postprocessing first.</font></strong>';
+		return False;
+	}
 
         $pictures_list = array(
             array('pie_fault','The share of iterations with failure of safety systems (at least one fatality)'),
@@ -165,7 +170,6 @@ function show_pictures() {/*{{{*/
 
         // find how many heatmaps are in picts
             
-            $path = $f."/picts/";
             $cmd = "cd $path; ls -d floor* 2>&1";
             $result=shell_exec("$cmd");
             $result_array=explode("\n",$result);
@@ -211,7 +215,8 @@ function show_pictures() {/*{{{*/
         echo "<br><p>Figure ". ($k+1) .". <strong>".$pictures_list[$k][1]."</strong></p>";
         echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
 
-    show_data();
+	show_data();
+	downloads();
 
 
 
@@ -316,8 +321,7 @@ function main() {/*{{{*/
 		last_log();
     }
 
-	show_pictures();
-    downloads();
+	show_results();
 
 	if (isset($_POST['btn-beck'])) {
 		make_pictures();
