@@ -149,7 +149,7 @@ function show_results() {/*{{{*/
     }else{
         $f=$_SESSION['main']['working_home'];
 	$path = $f."/picts/";
-	if (!is_dir($path)) {
+	if (!file_exists($path.'data.txt')) {
 		echo '<br><br><font size=4><strong>No data available. Launch postprocessing first.</font></strong>';
 		return False;
 	}
