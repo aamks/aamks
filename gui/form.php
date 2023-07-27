@@ -96,6 +96,21 @@ function droplist_management($in) { /*{{{*/
 	return $select;
 }
 /*}}}*/
+function droplist_fuel($in) { /*{{{*/
+	$select="<select required name=post[fuel]>";
+	$select.="<option value='$in'>$in</option>";
+	$select.="<option value='PE'>PE</option>";
+	$select.="<option value='PU'>PU</option>";
+	$select.="<option value='PS'>PS</option>";
+	$select.="<option value='PP'>PP</option>";
+	$select.="<option value='PMMA'>PMMA</option>";
+	$select.="<option value='PVC'>PVC</option>";
+    $select.="<option value='WOOD'>wood</option>";
+	$select.="<option value='user'>user-defined</option>";
+	$select.="</select>";
+	return $select;
+}
+/*}}}*/
 
 function get_help($k) { # {{{
 	if(isset($_SESSION['help'][$k])) { 
@@ -121,16 +136,35 @@ function form_material($json) { #{{{
 function form_plain_arr_switchable($key,$arr) { #{{{
 	$z='';
 	if(strlen(implode("", $arr))>0) {
-		$z.="<div id=$key-switch class='grey no-display'>none</div>";
+		$z.="<div id=$key-switch class='grey no-display'>None</div>";
 		$z.="<table id='$key-table' class='noborder'>";
 	} else {
-		$z.="<div id=$key-switch class='grey'>none</div>";
+		$z.="<div id=$key-switch class='grey'>None</div>";
 		$z.="<table id='$key-table' class='noborder no-display'>";
 	}
 	$z.="<tr>";
 	foreach($arr as $k => $v) { 
 		$z.="<td>".get_help($k)."<br><input autocomplete=off size=8 type=text name=post[$key][$k] value='$v'>";
 	}
+	$z.="</table>";
+	return $z;
+}
+/*}}}*/
+function form_plain_arr_switchable2($key,$arr) { #{{{
+	$z='';
+    $z.="<div id=$key-switch class='grey'>From fuel</div>";
+    $z.="<table id='$key-table' class='noborder no-display'>";
+	
+	$z.="<tr>";
+    foreach($arr as $spec => $vspec)  { 
+        if (is_array($vspec)){
+            foreach($vspec as $k => $v) { 
+                $z.="<td>".get_help($spec)."&nbsp".get_help($k)."<br><input autocomplete=off size=8 type=text name=post[$key][$spec][$k] value='$v'>";
+            };
+        }else{
+            $z.="<td>".get_help($spec)."<br><input autocomplete=off size=8 type=text name=post[$key][$spec] value='$vspec'>";
+                }
+    }
 	$z.="</table>";
 	return $z;
 }
@@ -267,10 +301,10 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('fire_model')."<td>".droplist_fire_model($fire_model); 
 
     echo "<tr><td>&nbsp;</td></tr><tr><th><strong>FIRE SUBMODEL</strong></th>";
-	echo "<tr><td>".get_help('indoor_temperature')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_temperature] value='$indoor_temperature'>"; 
+	echo "<tr><td>".get_help('indoor_temperature')."<td>".form_assoc('indoor_temperature',$indoor_temperature); 
 	echo "<tr><td>".get_help('outdoor_temperature')."<td>".form_assoc('outdoor_temperature',$outdoor_temperature); 
-	echo "<tr><td>".get_help('indoor_pressure')."<td><input autocomplete=off type=text automplete=off size=10 name=post[indoor_pressure] value='$indoor_pressure'>"; 
-	echo "<tr><td>".get_help('humidity')."<td><input autocomplete=off type=text automplete=off size=10 name=post[humidity] value='$humidity'>"; 
+	echo "<tr><td>".get_help('pressure')."<td>".form_assoc('pressure',$pressure); 
+	echo "<tr><td>".get_help('humidity')."<td>".form_assoc('humidity',$humidity); 
 	echo building_fields($building_profile, 'advanced');
 	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
 	echo "<tr><td>".get_help('windows')."<td>".form_arr('windows',$windows); 
@@ -285,12 +319,10 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('hrr_alpha')."<td>".form_assoc('hrr_alpha',$hrr_alpha); 
 	echo "<tr><td>".get_help('fire_area')."<td>".form_assoc('fire_area',$fire_area); 
 	echo "<tr><td>".get_help('radfrac')."<td>".form_assoc('radfrac',$radfrac); 
-	echo "<tr><td>".get_help('heatcom')."<td>".form_assoc('heatcom',$heatcom); 
-//	echo "<tr><td>".get_help('molecule')."<td>".form_assoc('molecule',$molecule); 
-	echo "<tr><td>".get_help('co_yield')."<td>".form_assoc('co_yield',$co_yield); 
-	//echo "<tr><td>".get_help('hcl_yield')."<td>".form_assoc('hcl_yield',$hcl_yield); 
-	echo "<tr><td>".get_help('hcn_yield')."<td>".form_assoc('hcn_yield',$hcn_yield); 
-	echo "<tr><td>".get_help('soot_yield')."<td>".form_assoc('soot_yield',$soot_yield); 
+	echo "<tr><td>".get_help('fuel')."<td>".droplist_fuel($fuel); 
+	echo "<tr><td><a class='rlink switch' id='molecule'>Molecule</a>".get_help('molecule')."<td>".form_plain_arr_switchable2('molecule',$molecule); 
+	echo "<tr><td><a class='rlink switch' id='heatcom'>Heat of combustion</a>".get_help('heatcom')."<td>".form_plain_arr_switchable2('heatcom',$heatcom); 
+	echo "<tr><td><a class='rlink switch' id='yields'>Yields</a>".get_help('yields')."<td>".form_plain_arr_switchable2('yields',$yields); 
 
     echo "<tr><td>&nbsp;</td></tr><tr><th><strong>EVACUATION SUBMODEL</strong></th>";
 	echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($dispatch_evacuees); 

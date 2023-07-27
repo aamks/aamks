@@ -7,41 +7,42 @@ function make_help() { /*{{{*/
 	$help["simulation_time"]         = ["Simulation time"                  , "Prescribed duration of single simulation (iteration) [s]"]                                                              ;
 	$help["fire_model"]				 = ["Fire model"                       , "CFAST | FDS | None !!!currently only CFAST available!!!"]                                                              ;
     //FIRE MODEL
-	$help["indoor_temperature"]      = ["Initial indoor temperature"               , "Initial value of indoor temperature [°C] !!!currently fixed to 20°C!!!"]                                                              ;
+	$help["indoor_temperature"]      = ["Initial indoor temperature"               , "Parameters of normal distribution of initial indoor temperature [°C]"]                                                              ;
 	$help["outdoor_temperature"]     = ["Initial outdoor temperature"              , "Parameters of normal distribution of initial outdoor temperature [°C]"]                                                              ;
-	$help["indoor_pressure"]         = ["Initial pressure"                  , "Initial indoor and outdoor pressure [Pa] !!!currently fixed to 101325 Pa!!!"]                                                              ;
-	$help["humidity"]                = ["Humidity"                         , "Humidity [%RH] !!!currently fixed to 50%RH!!!"]                                                              ;
+	$help["pressure"]                = ["Initial pressure"                  , "Parameters of normal distribution of initial pressure [Pa]"]                                                              ;
+	$help["humidity"]                = ["Initial humidity"                         , "Parameters of normal distribution of initial humidity [%RH]"]                                                              ;
 	$help["material"]				 = ["Materials"                         , "Construction materials in the building. Those are uniform across walls, ceilings and floors respectively. Thickness unit is meter [m] !!!currently fixed acc. to the table!!!. <br><table><tr><th>Material</th><th>Specific heat [kJ/(kg&middot;K)]</th><th>Conductivity [kW/(m&middot;K)]</th><th>Density [kg/m<sup>3</sup>]</th><th>Emissivity [-]</th><th>Fixed thickness [m]</th></tr><tr><td>Concrete</td><td>1.0</td><td>1.75</td><td>2200</td><td>0.94</td><td>0.15</td></tr><tr><td>Gypsum</td><td>1.09</td><td>0.3</td><td>1000</td><td>0.85</td><td>0.03</td></tr><tr><td>Brick</td><td>0.9</td><td>0.3</td><td>840</td><td>0.85</td><td>0.2</td></tr></table>" ] ;
 	//$help["ceiling"]				 = ["ceiling"                          , "write me..."]                                                              ;
 	//$help["floor"]          		 = ["floor"                            , "write me..."]                                                              ;
 	//$help["wall"]           		 = ["wall"                             , "write me..."]                                                              ;
-	$help["heat_detectors"]        	 = [""                                 , "Heat detectors - temperature of activation [°C] (press to switch on/off) !!!currently fixed values: RTI=5!!!"]                                                              ;
-	$help["smoke_detectors"]      	 = [""                                 , "Smoke detectors - temperature rise of activation [°C] (press to switch on/off)"]                                                              ;
+	$help["heat_detectors"]        	 = [""                                 , "Heat detectors - temperature of activation [°C] (press to switch on/off)"]                                                              ;
+	$help["smoke_detectors"]      	 = [""                                 , "Smoke detectors - obscuration of activation [%/m] (press to switch on/off)"]                                                              ;
 	$help["sprinklers"]         	 = [""                                 , "Sprinklers (press to switch on/off) !!!currently fixed values: RTI=100, SprayDensity=7e-5!!!"]                                                              ;
 	$help["density_mean"]         	 = ["SprayDensity_m"                   , "Mean of spray density normal distribution [m/s]"]                                                              ;
 	$help["density_sd"]         	 = ["SprayDensity_sd"                  , "Standard deviation of spray density normal distribution [m/s]"]                                                              ;
 	$help["temp_mean"]			     = ["temp_mean"                        , "Mean of activation temperature normal distribution" ]                                                      ;
+	$help["obsc_sd"]			     = ["obsc_sd"                          , "Standard deviation of activation obscuration normal distribution" ]                                                      ;
+	$help["obsc_mean"]			     = ["obsc_mean"                        , "Mean of activation obscuration normal distribution" ]                                                      ;
 	$help["temp_sd"]			     = ["temp_sd"                          , "Standard deviation of activation temperature normal distribution" ]                                                      ;
 	$help["not_broken"]	             = ["reliability"                      , "Probability of proper functioning"]                                                              ;
 	$help["RTI"]	                 = ["RTI"                              , "Response Time Index [(m&middot;s)<sup>1/2</sup>]"]                                                              ;
 	$help["NSHEVS"]	                 = [""                                 , "Mechanical ventilation systems (press to switch on/off) !!!currently always FULLY ON!!!"]                                                              ;
 	$help["activation_time"]	     = ["activation time"                  , "Time to fans' start"]                                                              ;
+	$help["startup_time"]	         = ["start-up"                         , "Fans' start-up time"]                                                              ;
 	$help["windows"]				 = ["Windows openness"                 , "Each row defines probabilities of certain window state in given temperature range:<br> min - lower temperature for this row<br>max - upper temperature for this row<br>quarter - probability of window being partially (0.25) open<br>full - probability of window being fully open" ]  ;
 	$help["vents_open"]	             = ["Openings"                         , "Probability of openness for different opening types"]                                                              ;
 	$help["DELECTR"]	             = ["DELECTR"                          , "Door with electromagnetic holder and automatic closer"]                                                              ;
 	$help["DCLOSER"]	             = ["DCLOSER"                          , "Door with automatic closer"]                                                              ;
 	$help["DOOR"]	                 = ["DOOR"                             , "Regular door"]                                                              ;
 	$help["VVENT"]	                 = ["VVENT"                            , "Vertical openings"]                                                              ;
-	$help["c_const"]        	     = ["C constant"                       , "Constant value used for visibility calculations !!!currently fixed to 5!!!"]                                                              ;
+	$help["c_const"]        	     = ["C constant"                       , "Constant value used for visibility calculations !!!currently used only in animation anywhere else fixed to 5!!!"]                                                              ;
 	$help["fire_starts_in_a_room"]	 = ["Fire in 'ROOM'?"                  , "Probability of fire initialized in 'ROOM' (rX) compartment type"]                                                              ;
 	$help["hrrpua"]        	         = ["HRRPUA"                           , "Parameters of triangular distribution of Heat Release Rate Per Unit Area [kW/m<sup>2</sup>]"]                                                              ;
 	$help["hrr_alpha"]    	         = ["Fire growth rate"                 , "Parameters of triangular distribution of Fire growth rate [kW/s<sup>2</sup>]"]                                                              ;
-	$help["fuel"]    	             = ["Fuel"                             , "Fuel for CFAST combustion model. More information can be found on wiki page"]                                                              ;
-	$help["molecule"]    	         = ["Fuel molecule formula"            , "User-defined formula of fuel molecule"]                                                              ;
-	$help["heatcom"]             	 = ["Heat of combustion"               , "User-defined parameters of heat of combustion uniform distribution [kJ/kg]"]                                                              ;
-	$help["co_yield"]    	         = ["CO yield"                         , "User-defined parameters of CO yield uniform distribution [g/g]"]                                                              ;
-	$help["hcn_yield"]    	         = ["HCN yield"                        , "User-defined parameters of HCN yield uniform distribution [g/g]"]                                                              ;
-	$help["soot_yield"]    	         = ["Soot yield"                       , "User-defined parameters of soot yield uniform distribution [g/g]"]                                                              ;
+	$help["fuel"]    	             = ["Fuel"                             , "Fuel for CFAST combustion model. More information can be found on wiki page. Remember to set <i>Molecule</i>, <i>Heat of combustion</i>, <i>Yields</i> if <i>Fuel</i> is <b><i>user-defined</i></b>"]                                                              ;
+	$help["molecule"]    	         = [""                                 , "<b>User-defined</b> formula of fuel molecule."]                                                              ;
+	$help["heatcom"]             	 = [""                                 , "<b>User-defined</b> parameters of heat of combustion normal distribution [kJ/kg]"]                                                              ;
+	$help["yields"]    	             = [""                                 , "<b>User-defined</b> parameters of species yields normal distribution [g/g]"]                                                              ;
 	$help["radfrac"]    	         = ["Radiative fraction"               , "Parameters of gamma distribution of radiative fraction of HRR [-]"]                                                              ;
 	$help["fire_area"]    	         = ["Fire area"                        , "Parameters of pareto distribution of fire area [m<sup>2</sup>]"]                                                              ;
 
@@ -354,8 +355,14 @@ function get_template_defaults($q) {/*{{{*/
     "dispatch_evacuees": "manual+probabilistic",
     "number_of_simulations": 1,
     "simulation_time": 100,
-    "indoor_temperature": 20,
-    "humidity": 40,
+    "indoor_temperature": {
+        "mean": 22,
+        "sd": 2
+    },
+    "humidity": {
+        "mean": 40,
+        "sd": 5
+    },
     "building_profile": {
         "type": "Bank",
         "management": "M1",
@@ -375,32 +382,36 @@ function get_template_defaults($q) {/*{{{*/
         "thickness": 0.3
     },
     "heat_detectors": {
-        "temp_mean": "",
-        "temp_sd": "",
+        "mean": "",
+        "sd": "",
         "RTI": "",
         "not_broken": ""
     },
     "smoke_detectors": {
-        "temp_mean": "",
-        "temp_sd": "",
+        "mean": "",
+        "sd": "",
         "not_broken": ""
     },
     "sprinklers": {
-        "temp_mean": 3,
-        "temp_sd": 4,
-        "density_mean": 1,
-        "density_sd": 2,
-        "RTI": 3,
-        "not_broken": 0.5
+        "mean": 60,
+        "sd": 2,
+        "density_mean": 0.0001,
+        "density_sd": 0.00001,
+        "RTI": 100,
+        "not_broken": 0.95
     },
     "NSHEVS": {
-        "activation_time": ""
+        "activation_time": "",
+        "startup_time": ""
     },
     "outdoor_temperature": {
         "mean": 25,
         "sd": 2
     },
-    "indoor_pressure": 101325,
+    "pressure": {
+        "mean": 101325,
+        "sd": 1000
+    },
     "windows": [
         {
             "min": -99999,
@@ -461,22 +472,32 @@ function get_template_defaults($q) {/*{{{*/
         "mode": 0.0029,
         "max": 0.188
     },
-    "co_yield": {
-      "min": 0.01,
-      "max": 0.43
-    },
-    "hcn_yield": {
-      "min": 0.01,
-      "max": 0.43
-    },
-    "soot_yield": {
-      "min": 0.11,
-      "max": 0.17
-    },
+    "yields":
+    {
+        "co": {
+          "mean": 0.2,
+          "sd": 0.05
+        },
+        "hcn": {
+          "mean": 0.05,
+          "sd": 0.02
+        },
+        "soot": {
+          "mean": 0.15,
+          "sd": 0.05
+    }},
     "heatcom": {
-      "min": 16400,
-      "max": 27000
+      "mean": 17100,
+      "sd": 2000
     },
+    "molecule": {
+      "C": "",
+      "H": "",
+      "O": "",
+      "N": "",
+      "Cl": ""
+    },
+    "fuel": "random",
     "radfrac": {
       "k": 124.48,
       "theta": 0.00217
