@@ -41,7 +41,7 @@ function make_help() { /*{{{*/
 	$help["hrr_alpha"]    	         = ["Fire growth rate"                 , "Parameters of triangular distribution of Fire growth rate [kW/s<sup>2</sup>]"]                                                              ;
 	$help["fuel"]    	             = ["Fuel"                             , "Fuel for CFAST combustion model. More information can be found on wiki page. Remember to set <i>Molecule</i>, <i>Heat of combustion</i>, <i>Yields</i> if <i>Fuel</i> is <b><i>user-defined</i></b>"]                                                              ;
 	$help["molecule"]    	         = [""                                 , "<b>User-defined</b> formula of fuel molecule."]                                                              ;
-	$help["heatcom"]             	 = [""                                 , "<b>User-defined</b> parameters of heat of combustion normal distribution [kJ/kg]"]                                                              ;
+	$help["heatcom"]             	 = [""                                 , "<b>User-defined</b> parameters of heat of combustion normal distribution [MJ/kg]"]                                                              ;
 	$help["yields"]    	             = [""                                 , "<b>User-defined</b> parameters of species yields normal distribution [g/g]"]                                                              ;
 	$help["radfrac"]    	         = ["Radiative fraction"               , "Parameters of gamma distribution of radiative fraction of HRR [-]"]                                                              ;
 	$help["fire_area"]    	         = ["Fire area"                        , "Parameters of pareto distribution of fire area [m<sup>2</sup>]"]                                                              ;
@@ -405,8 +405,8 @@ function get_template_defaults($q) {/*{{{*/
         "startup_time": ""
     },
     "outdoor_temperature": {
-        "mean": 25,
-        "sd": 2
+        "mean": 10,
+        "sd": 10
     },
     "pressure": {
         "mean": 101325,
@@ -416,26 +416,26 @@ function get_template_defaults($q) {/*{{{*/
         {
             "min": -99999,
             "max": -5,
-            "quarter": -5,
-            "full": 0.11
+            "quarter": 0.05,
+            "full": 0.01
         },
         {
             "min": -5,
             "max": 15,
-            "quarter": 0,
-            "full": 0.5
+            "quarter": 0.1,
+            "full": 0.05
         },
         {
             "min": 15,
             "max": 27,
-            "quarter": 0,
-            "full": 0.5
+            "quarter": 0.15,
+            "full": 0.2
         },
         {
             "min": 27,
             "max": 99999,
-            "quarter": 0,
-            "full": 0.5
+            "quarter": 0.2,
+            "full": 0.3
         }
     ],
     "vents_open": {
@@ -461,7 +461,7 @@ function get_template_defaults($q) {/*{{{*/
         "mean": -0.057,
         "sd": 0.015
     },
-    "fire_starts_in_a_room": 0.8,
+    "fire_starts_in_a_room": 0.9,
     "hrrpua": {
         "min": 300,
         "mode": 500,
@@ -474,17 +474,17 @@ function get_template_defaults($q) {/*{{{*/
     },
     "yields":
     {
+        "soot": {
+          "mean": 0,
+          "sd": 0
+        },
         "co": {
-          "mean": 0.2,
-          "sd": 0.05
+          "mean": 0,
+          "sd": 0
         },
         "hcn": {
-          "mean": 0.05,
-          "sd": 0.02
-        },
-        "soot": {
-          "mean": 0.15,
-          "sd": 0.05
+          "mean": 0,
+          "sd": 0
     }},
     "heatcom": {
       "mean": 17100,
@@ -521,8 +521,8 @@ function get_template_defaults($q) {/*{{{*/
         "sd": 8.87
     },
     "pre_evac_fire_origin": {
-        "mean": 59.85,
-        "sd": 1.48
+        "mean": 15,
+        "sd": 5
     }
 }';
 

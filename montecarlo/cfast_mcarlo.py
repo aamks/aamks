@@ -126,7 +126,7 @@ class CfastMcarlo():
 # }}}
     def _section_preamble(self):# {{{
         txt=(
-        f"&HEAD VERSION = 7500, TITLE = 'P_ID_{self.conf['project_id']}_S_ID_{self.conf['scenario_id']}' /",
+        f"&HEAD VERSION = 7724, TITLE = 'P_ID_{self.conf['project_id']}_S_ID_{self.conf['scenario_id']}' /",
         f"&TIME SIMULATION = {self.conf['simulation_time']}, PRINT = 100, SMOKEVIEW = 100, SPREADSHEET = {self.config['SMOKE_QUERY_RESOLUTION']} /",
         self._cfast_record('INIT'),
         f"&MISC LOWER_OXYGEN_LIMIT = 0.15, MAX_TIME_STEP = 0.1/",
@@ -277,7 +277,7 @@ class CfastMcarlo():
             collect.append("FLOW = {}".format(abs(v['mvent_throughput'])))
             collect.append("CUTOFFS = 200, 300")
             collect.append("ORIENTATIONS = '{}'".format(orientation))
-            collect.append("OFFSETS = {}, {} /".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))
+            collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))
             # TODO add detection time to running mechanical ventilation
             activation_delay = self.conf['NSHEVS']['activation_time']
             start_up = self.conf['NSHEVS']['startup_time']
@@ -321,13 +321,13 @@ class CfastMcarlo():
 
         txt = (
             '!! SECTION FIRE',
-            '',
+            '\n',
             fire_preamble,
             self._cfast_record('CHEM'),
             self._cfast_record('TABL'),
             ''
         )
-        return "\n".join(txt)+"\n"
+        return "".join(txt)+"\n"
 # }}}
     def _section_heat_detectors(self):# {{{
         txt=['!! HEAT DETECTORS']
@@ -505,7 +505,8 @@ class DrawAndLog:
         # [WK] why not random but in the middle?
         x=int(compa['x0']+compa['width']/2.0)
         y=int(compa['y0']+compa['depth']/2.0)
-        z=int(compa['height'] * (1-math.log10(uniform(1,10))))
+        self._fire_height = round((compa['height'] * (1-math.log10(uniform(1,10)))) / 100, 2)
+        z = int(self._fire_height * 100) + compa['height'] * int(compa['floor'])
 
         location['global'] = [x,y,z]    #[cm]
         location['local'] = [round(lc/100, 2) for lc in [int(compa['width']/2), int(compa['depth']/2)]]   #[m]
@@ -513,7 +514,6 @@ class DrawAndLog:
         location['fire_id'] = "f{}".format(compa['global_type_id'])
         self._fire_id = location['fire_id']
 
-        self._fire_height = round((z - compa['height']) / 100, 2)
         self._psql_log_variable('heigh', self._fire_height)
 
         return location
@@ -621,7 +621,7 @@ class DrawAndLog:
         flash_index = times.index(flash)
         for t in times:
             multiplier = {'soot': 2.5, 'co': 50, 'hcn': 200} if t > flash else {'soot': 1, 'co': 1, 'hcn': 1}
-            [yields_tab[k].append(max([round(normal(v['mean'], v['sd'])*multiplier[k], 5), 0])) for k, v in self._scen_fuel['yields'].items()]      #[g/g]
+            [yields_tab[k].append(max([round(normal(v['mean'], v['sd']) * multiplier[k], 5), 0])) for k, v in self._scen_fuel['yields'].items()]      #[g/g]
 
         self._psql_log_variables([('co_yield', mean(yields_tab['co'])),
                                 ('soot_yield', mean(yields_tab['soot'])),
@@ -665,8 +665,6 @@ class DrawAndLog:
                     else:
                         how_much_open=0 
             self.sections['windows'].append((how_much_open, v['name']))
-            if how_much_open == 0:
-                continue
 
             self._psql_log_variable('w',how_much_open)
 

@@ -107,6 +107,7 @@ function droplist_fuel($in) { /*{{{*/
 	$select.="<option value='PVC'>PVC</option>";
     $select.="<option value='WOOD'>wood</option>";
 	$select.="<option value='user'>user-defined</option>";
+	$select.="<option value='random'>random</option>";
 	$select.="</select>";
 	return $select;
 }
@@ -150,10 +151,15 @@ function form_plain_arr_switchable($key,$arr) { #{{{
 	return $z;
 }
 /*}}}*/
-function form_plain_arr_switchable2($key,$arr) { #{{{
+function form_plain_arr_switchable2($key,$arr,$display) { #{{{
 	$z='';
-    $z.="<div id=$key-switch class='grey'>From fuel</div>";
-    $z.="<table id='$key-table' class='noborder no-display'>";
+    if($display){
+        $z.="<div id=$key-switch class='grey no-display'>From fuel</div>";
+        $z.="<table id='$key-table' class='noborder'>";
+    }else{
+        $z.="<div id=$key-switch class='grey'>From fuel</div>";
+        $z.="<table id='$key-table' class='noborder no-display'>";
+    }
 	
 	$z.="<tr>";
     foreach($arr as $spec => $vspec)  { 
@@ -320,9 +326,10 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('fire_area')."<td>".form_assoc('fire_area',$fire_area); 
 	echo "<tr><td>".get_help('radfrac')."<td>".form_assoc('radfrac',$radfrac); 
 	echo "<tr><td>".get_help('fuel')."<td>".droplist_fuel($fuel); 
-	echo "<tr><td><a class='rlink switch' id='molecule'>Molecule</a>".get_help('molecule')."<td>".form_plain_arr_switchable2('molecule',$molecule); 
-	echo "<tr><td><a class='rlink switch' id='heatcom'>Heat of combustion</a>".get_help('heatcom')."<td>".form_plain_arr_switchable2('heatcom',$heatcom); 
-	echo "<tr><td><a class='rlink switch' id='yields'>Yields</a>".get_help('yields')."<td>".form_plain_arr_switchable2('yields',$yields); 
+    if ($fuel=='user'){$disp = True;}else{$disp = False;}
+	echo "<tr><td><a class='rlink switch' id='molecule'>Molecule</a>".get_help('molecule')."<td>".form_plain_arr_switchable2('molecule',$molecule,$disp); 
+	echo "<tr><td><a class='rlink switch' id='heatcom'>Heat of combustion</a>".get_help('heatcom')."<td>".form_plain_arr_switchable2('heatcom',$heatcom,$disp); 
+	echo "<tr><td><a class='rlink switch' id='yields'>Yields</a>".get_help('yields')."<td>".form_plain_arr_switchable2('yields',$yields,$disp); 
 
     echo "<tr><td>&nbsp;</td></tr><tr><th><strong>EVACUATION SUBMODEL</strong></th>";
 	echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($dispatch_evacuees); 
