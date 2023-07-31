@@ -644,7 +644,7 @@ class DrawAndLog:
         hrrs = list(hrrs0 + hrrs1 + hrrs2)
         times, hrrs = self._fuel_control(times, hrrs, fire_area)   # limit acc. to fire load
         areas = list(npround(npa(hrrs) / hrr_peak * fire_area, 2))
-        self._psql_log_variables([('hrrpeak', hrr_peak), ('alpha', self.alpha/1000.0), ('max_area', fire_area)])
+        self._psql_log_variables([('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
 
         return times, hrrs, areas, t_up_to_hrr_peak
 
