@@ -330,6 +330,7 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td><a class='rlink switch' id='molecule'>Molecule</a>".get_help('molecule')."<td>".form_plain_arr_switchable2('molecule',$molecule,$disp); 
 	echo "<tr><td><a class='rlink switch' id='heatcom'>Heat of combustion</a>".get_help('heatcom')."<td>".form_plain_arr_switchable2('heatcom',$heatcom,$disp); 
 	echo "<tr><td><a class='rlink switch' id='yields'>Yields</a>".get_help('yields')."<td>".form_plain_arr_switchable2('yields',$yields,$disp); 
+	echo "<tr><td><a class='rlink switch' id='fire_load'>Fire load</a>".get_help('fire_load')."<td>".form_plain_arr_switchable2('fire_load',$fire_load,True); 
 
     echo "<tr><td>&nbsp;</td></tr><tr><th><strong>EVACUATION SUBMODEL</strong></th>";
 	echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($dispatch_evacuees); 

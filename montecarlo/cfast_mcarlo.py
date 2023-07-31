@@ -5,6 +5,7 @@ from collections import OrderedDict
 from numpy.random import choice
 from numpy.random import uniform
 from numpy.random import normal
+from numpy.random import lognormal
 from numpy.random import binomial
 from numpy.random import gamma
 from numpy.random import triangular
@@ -12,7 +13,7 @@ from numpy.random import seed
 from numpy import array as npa
 from numpy import full as npf
 from numpy import round as npround
-from numpy import mean
+from numpy import mean, trapz
 from scipy.stats import pareto
 from include import Sqlite
 from include import Psql
@@ -127,7 +128,7 @@ class CfastMcarlo():
     def _section_preamble(self):# {{{
         txt=(
         f"&HEAD VERSION = 7724, TITLE = 'P_ID_{self.conf['project_id']}_S_ID_{self.conf['scenario_id']}' /",
-        f"&TIME SIMULATION = {self.conf['simulation_time']}, PRINT = 100, SMOKEVIEW = 100, SPREADSHEET = {self.config['SMOKE_QUERY_RESOLUTION']} /",
+        f"&TIME SIMULATION = {self.conf['simulation_time']}, PRINT = {self.config['SMOKE_QUERY_RESOLUTION']}, SMOKEVIEW = {self.config['SMOKE_QUERY_RESOLUTION']}, SPREADSHEET = {self.config['SMOKE_QUERY_RESOLUTION']} /",
         self._cfast_record('INIT'),
         f"&MISC LOWER_OXYGEN_LIMIT = 0.15, MAX_TIME_STEP = 0.1/",
         '',
@@ -436,6 +437,7 @@ class DrawAndLog:
         self._scen_fuel = {}
         self._fire_id = ''
         self._fire_height = 0
+        self._comp_type = ''
 
         self.sections = {}
 
@@ -494,6 +496,7 @@ class DrawAndLog:
         else:
             comp['name'] = str(choice(all_corridors_and_halls))
             comp['type'] = 'non_room'
+        self._comp_type = comp['type']
 
         return comp
     
@@ -505,7 +508,7 @@ class DrawAndLog:
         # [WK] why not random but in the middle?
         x=int(compa['x0']+compa['width']/2.0)
         y=int(compa['y0']+compa['depth']/2.0)
-        self._fire_height = round((compa['height'] * (1-math.log10(uniform(1,10)))) / 100, 2)
+        self._fire_height = round((compa['height'] * (1-math.log10(uniform(1,9)))) / 100, 2)
         z = int(self._fire_height * 100) + compa['height'] * int(compa['floor'])
 
         location['global'] = [x,y,z]    #[cm]
@@ -571,6 +574,32 @@ class DrawAndLog:
             fire_area = orig_area
         return fire_area
 
+    def _fuel_control(self, times, hrrs, fire_area):
+        fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
+        load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
+        print(f'{load_density} MJ/m2 {self._comp_type}')
+        fire_load = load_density * fire_area * 1000 #[kW]
+
+        q = 0
+        i_sym = 0
+        prev = [0, 0]
+        # trapezoidal integration rule
+        for i in range(1, len(times)):
+            dt = times[i] - prev[0]
+            dq = (hrrs[i] + prev[1]) * dt / 2
+            q += dq
+            if q > fire_load / 2:
+                i_sym = i
+                break
+
+        # limit HRR if fuel-controlled
+        if i_sym:
+            times = times[:i_sym+1] # ascending
+            times += [2 * times[-1] - t for t in reversed(times)][:-1] # descending
+            hrrs = hrrs[:i_sym+1] + list(reversed(hrrs[:i_sym]))
+
+        return times, hrrs
+
     def _draw_hrr_area(self):
         '''
         Generate fire. Alpha t square on the left, then constant in the
@@ -583,6 +612,7 @@ class DrawAndLog:
         hrrpua = int(triangular(hrrpua_d['min'], hrrpua_d['mode'], hrrpua_d['max']))
         self.alpha = triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])
         hrr_peak = int(hrrpua * fire_area)
+        
 
         # left
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
@@ -609,8 +639,10 @@ class DrawAndLog:
         times2 = list(reversed(npf(len(times0), t_up_to_starts_dropping + max(times0)) - npa(times0)))
         hrrs2 = list(reversed(hrrs0))
 
+
         times = list(times0 + times1 + times2)
         hrrs = list(hrrs0 + hrrs1 + hrrs2)
+        times, hrrs = self._fuel_control(times, hrrs, fire_area)   # limit acc. to fire load
         areas = list(npround(npa(hrrs) / hrr_peak * fire_area, 2))
         self._psql_log_variables([('hrrpeak', hrr_peak), ('alpha', self.alpha/1000.0), ('max_area', fire_area)])
 
@@ -618,9 +650,8 @@ class DrawAndLog:
 
     def _draw_yields(self, times, flash):
         yields_tab = {'co': [], 'soot': [], 'hcn': []}
-        flash_index = times.index(flash)
         for t in times:
-            multiplier = {'soot': 2.5, 'co': 50, 'hcn': 200} if t > flash else {'soot': 1, 'co': 1, 'hcn': 1}
+            multiplier = {'soot': 2.5, 'co': 10, 'hcn': 20} if t > flash else {'soot': 1, 'co': 1, 'hcn': 1}
             [yields_tab[k].append(max([round(normal(v['mean'], v['sd']) * multiplier[k], 5), 0])) for k, v in self._scen_fuel['yields'].items()]      #[g/g]
 
         self._psql_log_variables([('co_yield', mean(yields_tab['co'])),

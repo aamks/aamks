@@ -44,7 +44,8 @@ function make_help() { /*{{{*/
 	$help["heatcom"]             	 = [""                                 , "<b>User-defined</b> parameters of heat of combustion normal distribution [MJ/kg]"]                                                              ;
 	$help["yields"]    	             = [""                                 , "<b>User-defined</b> parameters of species yields normal distribution [g/g]"]                                                              ;
 	$help["radfrac"]    	         = ["Radiative fraction"               , "Parameters of gamma distribution of radiative fraction of HRR [-]"]                                                              ;
-	$help["fire_area"]    	         = ["Fire area"                        , "Parameters of pareto distribution of fire area [m<sup>2</sup>]"]                                                              ;
+    $help["fire_area"]    	         = ["Fire area"                        , "Parameters of pareto distribution of fire area [m<sup>2</sup>]"]                                                              ;
+	$help["fire_load"]    	         = [""                                 , "Parameters of log-normal distribution of fire load in ROOM and other comprtments types [MJ/m<sup>2</sup>]"]                                                              ;
 
     //EVACUTAION MODEL
 	//$help["evac_clusters"]		     = ["evac_clusters"					   , "follow the leader, etc (TODO)."];                                                              ;
@@ -498,6 +499,16 @@ function get_template_defaults($q) {/*{{{*/
       "Cl": ""
     },
     "fuel": "random",
+    "fire_load":
+    {
+        "room": {
+          "mean": 6.33,
+          "sd": 1.13
+        },
+        "non_room": {
+          "mean": 4,
+          "sd": 0.5
+    }},
     "radfrac": {
       "k": 124.48,
       "theta": 0.00217
