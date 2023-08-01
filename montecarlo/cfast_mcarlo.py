@@ -427,7 +427,7 @@ class DrawAndLog:
         #TODO to be imported from postgres
     PSQL_HEADERS = ['fireorig', 'fireorigname', 'heat_detectors', 'smoke_detectors', 'hrrpeak', 'soot_yield',
              'co_yield', 'hcl_yield', 'hcn_yield', 'alpha', 'trace', 'max_area', 'heigh', 'w', 'outdoor_temp',
-             'dcloser', 'door', 'sprinklers', 'heat_of_combustion', 'delectr', 'vvent', 'rad_frac']
+             'dcloser', 'door', 'sprinklers', 'heat_of_combustion', 'delectr', 'vvent', 'rad_frac', 'fireload']
 
     def __init__(self, sim_id):
         self.json = Json()
@@ -596,6 +596,8 @@ class DrawAndLog:
             times = times[:i_sym+1] # ascending
             times += [2 * times[-1] - t for t in reversed(times)][:-1] # descending
             hrrs = hrrs[:i_sym+1] + list(reversed(hrrs[:i_sym]))
+
+        self._psql_log_variable('fireload', load_density)
 
         return times, hrrs
 

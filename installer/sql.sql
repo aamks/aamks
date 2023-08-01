@@ -50,6 +50,7 @@ CREATE TABLE simulations ( ---{{{
     alpha text,
     trace text,
     max_area text,
+    fireload int,
     heigh text,
     heat_of_combustion text,
     rad_frac text,
