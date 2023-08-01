@@ -577,7 +577,6 @@ class DrawAndLog:
     def _fuel_control(self, times, hrrs, fire_area):
         fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
         load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
-        print(f'{load_density} MJ/m2 {self._comp_type}')
         fire_load = load_density * fire_area * 1000 #[kW]
 
         q = 0
