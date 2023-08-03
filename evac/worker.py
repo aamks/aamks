@@ -157,10 +157,14 @@ class Worker:
             print('Workspace created')
 
     def run_cfast_simulations(self):
+        cfast_file = 'cfast7_linux_64'
+        compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
+        cfast_file = 'cfast_775-1000-i' if compa_no > 100 else 'cfast_775-100-i'
+            
         if self.project_conf['fire_model'] == 'CFAST':
             err = False
             try:
-                p = run(["/usr/local/aamks/fire/cfast7_linux_64","cfast.in"], timeout=600, capture_output=True, text=True)
+                p = run([f"/usr/local/aamks/fire/{cfast_file}","cfast.in"], timeout=600, capture_output=True, text=True)
             except TimeoutExpired as e:
                 self.wlogger.error(e)
                 err = True

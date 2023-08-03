@@ -13,8 +13,9 @@ from numpy.random import seed
 from numpy import array as npa
 from numpy import full as npf
 from numpy import round as npround
-from numpy import mean, trapz
+from numpy import mean, trapz, linspace
 from scipy.stats import pareto
+from scipy.interpolate import interp1d
 from include import Sqlite
 from include import Psql
 from include import Json
@@ -427,7 +428,7 @@ class DrawAndLog:
         #TODO to be imported from postgres
     PSQL_HEADERS = ['fireorig', 'fireorigname', 'heat_detectors', 'smoke_detectors', 'hrrpeak', 'soot_yield',
              'co_yield', 'hcl_yield', 'hcn_yield', 'alpha', 'trace', 'max_area', 'heigh', 'w', 'outdoor_temp',
-             'dcloser', 'door', 'sprinklers', 'heat_of_combustion', 'delectr', 'vvent', 'rad_frac']
+             'dcloser', 'door', 'sprinklers', 'heat_of_combustion', 'delectr', 'vvent', 'rad_frac', 'fireload']
 
     def __init__(self, sim_id):
         self.json = Json()
@@ -577,28 +578,43 @@ class DrawAndLog:
     def _fuel_control(self, times, hrrs, fire_area):
         fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
         load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
-        print(f'{load_density} MJ/m2 {self._comp_type}')
         fire_load = load_density * fire_area * 1000 #[kW]
 
         q = 0
-        i_sym = 0
+        dt = 1
+        sym_values = [0, 0]
         prev = [0, 0]
-        # trapezoidal integration rule
-        for i in range(1, len(times)):
-            dt = times[i] - prev[0]
-            dq = (hrrs[i] + prev[1]) * dt / 2
+        new_times = []
+        new_hrrs = []
+        interpolated = interp1d(times, hrrs, kind='linear')
+        times_i = linspace(0, times[-1], int(times[-1]/dt))
+        hrrs_i = interpolated(times_i).astype(int)
+        # trapezoidal integration rule with dt
+        for t, hrr_t in enumerate(hrrs_i):
+            dt = t - prev[0]
+            dq = (hrr_t + prev[1]) * dt / 2
+            prev = [t, hrr_t]
             q += dq
             if q > fire_load / 2:
-                i_sym = i
+                sym_values = [t, hrr_t]
+                new_times.append(t)
+                new_hrrs.append(hrr_t)
                 break
-
+            elif t in times:
+                new_times.append(t)
+                new_hrrs.append(hrr_t)
+        
         # limit HRR if fuel-controlled
-        if i_sym:
-            times = times[:i_sym+1] # ascending
-            times += [2 * times[-1] - t for t in reversed(times)][:-1] # descending
-            hrrs = hrrs[:i_sym+1] + list(reversed(hrrs[:i_sym]))
+        if sym_values[0]:
+            new_times += [2 * new_times[-1] - t for t in reversed(new_times[:-1])] # mirror time
+            new_hrrs += list(reversed(new_hrrs[:-1])) # mirror HRR
+        else:
+            new_times = times
+            new_hrrs = hrrs
 
-        return times, hrrs
+        self._psql_log_variable('fireload', load_density)
+
+        return new_times, new_hrrs
 
     def _draw_hrr_area(self):
         '''
@@ -619,29 +635,29 @@ class DrawAndLog:
         interval = int(round(t_up_to_hrr_peak/10))
         if interval == 0:
             interval = 10
-        times0 = list(range(0, t_up_to_hrr_peak, interval)) + [t_up_to_hrr_peak]
-        hrrs0 = [int((self.alpha * t ** 2)) for t in times0]
-        hrrs0[-1] = hrr_peak
-
-        # middle
-        # TODO to be fire load dependent
-        t_up_to_starts_dropping = 15 * 60
-        times1 = [t_up_to_starts_dropping]
-        hrrs1 = [hrr_peak]
-        times1 = []
-        hrrs1 = []
-
-        # right
-        t_up_to_drops_to_zero=t_up_to_starts_dropping+t_up_to_hrr_peak
-        interval = int(round((t_up_to_drops_to_zero - t_up_to_starts_dropping)/10))
-        if interval == 0:
-            interval = 10
-        times2 = list(reversed(npf(len(times0), t_up_to_starts_dropping + max(times0)) - npa(times0)))
-        hrrs2 = list(reversed(hrrs0))
-
-
-        times = list(times0 + times1 + times2)
-        hrrs = list(hrrs0 + hrrs1 + hrrs2)
+        times = list(range(0, t_up_to_hrr_peak, interval)) + [t_up_to_hrr_peak]
+        hrrs = [int((self.alpha * t ** 2)) for t in times]
+        hrrs[-1] = hrr_peak
+        # plateo
+        times.append(self.conf['simulation_time'])
+        hrrs.append(hrr_peak)
+#        t_up_to_starts_dropping = 15 * 60
+#        times1 = [t_up_to_starts_dropping]
+#        hrrs1 = [hrr_peak]
+#        times1 = []
+#        hrrs1 = []
+#
+#        # right
+#        t_up_to_drops_to_zero=t_up_to_starts_dropping+t_up_to_hrr_peak
+#        interval = int(round((t_up_to_drops_to_zero - t_up_to_starts_dropping)/10))
+#        if interval == 0:
+#            interval = 10
+#        times2 = list(reversed(npf(len(times0), t_up_to_starts_dropping + max(times0)) - npa(times0)))
+#        hrrs2 = list(reversed(hrrs0))
+#
+#
+#        times = list(times0 + times1 + times2)
+#        hrrs = list(hrrs0 + hrrs1 + hrrs2)
         times, hrrs = self._fuel_control(times, hrrs, fire_area)   # limit acc. to fire load
         areas = list(npround(npa(hrrs) / hrr_peak * fire_area, 2))
         self._psql_log_variables([('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
