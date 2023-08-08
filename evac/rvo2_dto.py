@@ -163,12 +163,13 @@ class EvacEnv:
 
     def place_evacuees(self, evacuees):
         assert isinstance(evacuees, Evacuees), '%evacuees is not type of Evacuees'
+        
+        [self.add_unique_agent_id_on_floor(evacuees.get_pedestrian(i), i)
+         for (i) in range(evacuees.get_number_of_pedestrians())]
+        self.unique_agent_id_on_floor = evacuees.get_number_of_pedestrians()-1
         self.evacuees = evacuees
         self.add_evacuees_to_navmesh(self.evacuees)
 
-        [self.add_unique_agent_id_on_floor(evacuees.get_pedestrian(i), i)
-         for (i) in range(evacuees.get_number_of_pedestrians())]
-        self.unique_agent_id_on_floor = evacuees.get_number_of_pedestrians()
 
     def append_evacuees(self, evacuees_to_append):
         new_evacuees = Evacuees()
@@ -179,20 +180,24 @@ class EvacEnv:
 
     def add_evacuees_to_navmesh(self, evacuees):
         assert isinstance(evacuees, Evacuees), '%evacuees is not type of Evacuees' 
-        [RVOSimulator.add_agent(self.simulator, evacuees.get_position_of_pedestrian(i))
-         for (i) in range(evacuees.get_number_of_pedestrians())]
+
+        for i in range(evacuees.get_number_of_pedestrians()):
+            evacuee = evacuees.get_pedestrian(i)
+            RVOSimulator.add_agent(self.simulator, evacuee.unique_agent_id_on_different_floors, evacuee.position)
         [RVOSimulator.set_agent_pref_velocity(self.simulator, i, evacuees.get_velocity_of_pedestrian(i))
          for (i) in range(evacuees.get_number_of_pedestrians())]
         [RVOSimulator.set_agent_max_speed(self.simulator, i, evacuees.get_speed_max_of_pedestrian(i))
          for i in range(evacuees.get_number_of_pedestrians())]
 
     def delete_agents_from_floor(self,agents_indexes_to_delete):
-        indexes_to_remove = []
-        for index in agents_indexes_to_delete:
-            indexes_to_remove.append(index)
-        for index in sorted(indexes_to_remove, reverse=True):
+        unique_agents_ids_on_floor = []
+        for index in sorted(agents_indexes_to_delete, reverse=True):
+            evacuee = self.evacuees.get_pedestrian(index)
+            unique_agents_ids_on_floor.append(evacuee.unique_agent_id_on_different_floors)
             self.evacuees.remove_pedestrian(index)
-        RVOSimulator.delete_agents(self.simulator, indexes_to_remove)
+
+        rvo_agent_indexes_to_remove = RVOSimulator.get_agent_indexes_by_unique_agent_id_on_floor(self.simulator,unique_agents_ids_on_floor)
+        RVOSimulator.delete_agents(self.simulator, sorted(rvo_agent_indexes_to_remove, reverse=False))
 
 
     @staticmethod
@@ -202,7 +207,7 @@ class EvacEnv:
     def get_data_for_visualization(self):
         data_row={}
         finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.evacuees.get_number_of_pedestrians())]
-        for n in range(RVOSimulator.get_agents_count(self.simulator)):
+        for n in range(self.evacuees.get_number_of_pedestrians()):
             position = self.evacuees.get_position_of_pedestrian(n)
             velocity = self.evacuees.get_velocity_of_pedestrian(n)
             fed = self.evacuees.get_symbolic_fed_of_pedestrian(n)

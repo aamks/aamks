@@ -19,7 +19,9 @@ class RVOSimulator:
         self._obstacles: List[Obstacle] = []  # also for obstacles
         self._force_update_agents = True
 
-    def add_agent(self, position: Tuple[float, float],
+    def add_agent(self, 
+                  unique_agent_id_on_floor: int,
+                  position: Tuple[float, float], 
                   radius: Optional[float] = None,
                   velocity: Tuple[float, float] = (0.0, 0.0),
                   neighbor_dist: Optional[float] = None,
@@ -27,10 +29,19 @@ class RVOSimulator:
                   time_horizon: Optional[float] = None,
                   time_horizon_obst: Optional[float] = None,
                   max_speed: Optional[float] = None) -> int:
-        agent = Agent(self, len(self._agents), self._default_agent, position, velocity, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, radius, max_speed)
+        agent = Agent(self, unique_agent_id_on_floor, self._default_agent, position, velocity, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, radius, max_speed)
         self._agents.append(agent)
         self._force_update_agents = True
         return len(self._agents) - 1
+
+    def get_agent_indexes_by_unique_agent_id_on_floor(self, unique_agents_ids_on_floor: List[int]):
+        agent_indexes = []
+        for unique_agent_id in unique_agents_ids_on_floor:
+            for i in range(len(self._agents)):
+                if self._agents[i]._id == unique_agent_id:
+                    agent_indexes.append(i)
+                    break
+        return agent_indexes
 
     def delete_agents(self, agent_indexes: List[int]):
         for i in range(len(agent_indexes)):

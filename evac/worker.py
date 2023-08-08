@@ -182,7 +182,7 @@ class Worker:
         self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         #self.s.dumpall()
         outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, terminal_door from aamks_geom WHERE terminal_door IS NOT NULL')
-        floor_teleports = self.s.query("SELECT floor, name, teleport_from, teleport_to from aamks_geom WHERE name LIKE 'n%'")
+        floor_teleports = self.s.query("SELECT floor, name, teleport_from, teleport_to from aamks_geom WHERE name LIKE 'k%'")
 
         self.vars['conf']['agents_destination'] = []
 
@@ -314,6 +314,7 @@ class Worker:
             #self.floors[0].smoke_query.cfast_has_time(time_frame)
             # read CFAST results at given time_frame if they exist
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
+
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
                 aset = self.vars['conf']['simulation_time']
@@ -412,9 +413,9 @@ class Worker:
             for agent in current_floor_new_agents:
                 agent.finished = 1
                 agent.target_teleport_coordinates = None
-            self.floors[num_floor].append_evacuees(current_floor_new_agents)
             self.floors[num_floor+1].delete_agents_from_floor(current_floor_new_agents_indexes)
             self.floors[num_floor+1].agents_to_move_downstairs = []
+            self.floors[num_floor].append_evacuees(current_floor_new_agents)
 
     def send_report(self): # {{{
         '''

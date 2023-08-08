@@ -154,9 +154,9 @@ class OnEnd():
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
                 logger.info('start worker.py sim - %s', i)
-               
-                exit_status = os.WEXITSTATUS(os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)))
-
+                # os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1281@wp.pl/test18/49'
+                #exit_status = os.WEXITSTATUS(os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)))
+                exit_status = subprocess.run(["python3", "worker.py", "http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
                 if exit_status != 0:
                    logger.error('worker exit status - %s', exit_status)
                 else:

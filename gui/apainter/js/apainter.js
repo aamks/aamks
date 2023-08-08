@@ -746,7 +746,7 @@ function cgStartDrawing() {//{{{
 	$('right-menu-box').fadeOut(0); 
 	legend();
 	$('#legend_'+activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
-	if (activeLetter == 'n')
+	if (activeLetter == 'k')
 	{
 		floor_teleport_direction+=1;
 		content = "";
