@@ -313,6 +313,8 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('humidity')."<td>".form_assoc('humidity',$humidity); 
 	echo building_fields($building_profile, 'advanced');
 	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
+	echo "<tr><td><a class='rlink switch' id='rescue'>RESCUE</a><td>".form_assoc('RESCUE',$RESCUE);
+	echo "<tr><td><a class='rlink switch' id='NOZZLES'>NOZZLES</a><td>".form_assoc('NOZZLES',$NOZZLES);	
 	echo "<tr><td>".get_help('windows')."<td>".form_arr('windows',$windows); 
 	echo "<tr><td>".get_help('vents_open')."<td>".form_assoc('vents_open',$vents_open); 
 	echo "<tr><td><a class='rlink switch' id='heat_detectors'>Heat detectors</a>".get_help('heat_detectors')."<td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 

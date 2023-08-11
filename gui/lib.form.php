@@ -63,6 +63,22 @@ function make_help() { /*{{{*/
 	$help["evacuees_alpha_v"]        = ["Alpha speed"                      , "Parameters of normal distribution of alpha (used for speed reduction in somke) [-]"]                                                              ;
 	$help["evacuees_beta_v"]         = ["Beta speed"                       , "Parameters of normal distribution of beta (used for speed rduction in smoke) [-]"]                                                              ;
 
+    //RESCUE MODEL 
+	$help["is_rescue"]			     = ["is rescue?"                        , "is rescue module used? 1/0" ]                                                      ;
+	$help["electronic"]			     = ["electronic/phone"                       , "Electronic =1, phone call = 0" ]                                                      ;
+	$help["detection"]			     = ["detection"                       , "Input detection time in seconds [s]" ]                                                      ;
+	$help["t1"]			     = ["t1"                       , "Time T1- only with electronic [s]" ]                                                      ;
+	$help["t2"]			     = ["t2"                       , "Time T2- only with electronic [s]" ]                                                      ;
+	$help["CPR"]			     = ["CPR"                       , "Phone call time - only with electronic [s]" ]                                                      ;
+	$help["dist_short"]			     = ["dist short"                       , "Distance to the nearest Fire Department [km]" ]                                                      ;
+	$help["dist_long"]			     = ["dist long"                       , "Distance to the second Fire Department [km]" ]                                                      ;
+	$help["fire_distance_horizontal"]			     = ["horizontal to fire"                       , "Longest distance beetween fire origin and entrance to the building in horizontal plane [m]" ]                                                      ;
+	$help["fire_distance_vertical"]			     = ["vertical to fire"                       , "Longest distance beetween fire origin and entrance to the building in vertical plane [m]" ]                                                      ;
+	$help["time_1"]			     = ["t1"                       , "Time from arrival to start putting fire from 1st nozzle [s]" ]                                                      ;
+	$help["time_2"]			     = ["t2"                       , "Time from arrival to start putting fire from 2nd nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;
+	$help["time_3"]			     = ["t3"                       , "Time from arrival to start putting fire from 3rd nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;	
+	$help["time_4"]			     = ["t4"                       , "Time from arrival to start putting fire from 4th nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;
+
 	foreach($help as $k=>$v) { 
 		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
 	}
@@ -405,6 +421,25 @@ function get_template_defaults($q) {/*{{{*/
         "activation_time": "",
         "startup_time": ""
     },
+    "RESCUE": {
+        "is_rescue": 0,
+        "electronic": 0,
+        "detection": 20,
+        "t1": 20,
+        "t2": 20,
+	"CPR": 1, 
+        "dist_short": 4,
+        "dist_long": 8,
+        "fire_distance_horizontal": 20,
+        "fire_distance_vertical":5
+    },
+    "NOZZLES": {
+	"time_1" : 0,
+	"time_2": 40,
+	"time_3": 80,
+	"time_4": -1
+    },
+	        
     "outdoor_temperature": {
         "mean": 10,
         "sd": 10
