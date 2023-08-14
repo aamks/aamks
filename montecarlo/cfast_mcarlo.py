@@ -21,6 +21,7 @@ from include import Psql
 from include import Json
 from collections import OrderedDict
 from rescue_module.rescue import *
+import warnings
 
 # }}}
 def join2str(l, sep, quotes=False, force=False):
@@ -681,6 +682,54 @@ class DrawAndLog:
 
         return times, hrrs, areas, t_up_to_hrr_peak
 
+    def _draw_hrr_area_cont_func(self):
+        '''
+        Generate fire. Alpha t square on the left, then constant in the
+        middle, then fading on the right. At the end read hrrs at given times.
+        '''
+        hrrpua_d = self.conf['hrrpua']    # [kW/m2]
+        hrr_alpha = self.conf['hrr_alpha']    # [kW/s2]
+        fire_area = self._draw_fire_maxarea()
+
+        hrrpua = int(triangular(hrrpua_d['min'], hrrpua_d['mode'], hrrpua_d['max']))
+        self.alpha = triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])
+        hrr_peak = int(hrrpua * fire_area)
+
+        fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
+        load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
+        self._psql_log_variable('fireload', load_density)
+        
+       # left
+        t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
+        hrr = HRR(self.conf['simulation_time']
+        hrr.fuel_control(load_density * fire_area)
+        hrr.vent_control(load_density * fire_area)
+        #[WK]
+        
+        self.conf["RESCUE"]["is_rescue"] = 1
+        try:
+            # Trying to get rescue parameter which old projects don't have 
+            is_rescue = bool(int(self.conf["RESCUE"]["is_rescue"]))
+        except KeyError:
+            print("KeyError. is_rescue not set")
+            is_rescue = False
+        except ValueError:
+            print("ValueError. Wrong value given ")
+            is_rescue = False
+        except Exception as e:
+            print(f"Error during getting rescue parameter: {e}")
+            is_rescue = False
+        
+        if is_rescue:
+            rescue_launcher = LaunchRescueModule(self.conf, self._sim_id, self.alpha, hrr_peak , times, hrrs)
+            rescue_launcher.main()
+            times, hrrs = rescue_launcher.calculate_impact_of_nozzles()
+
+        areas = list(npround(npa(hrrs) / hrr_peak * fire_area, 2))
+        self._psql_log_variables([('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
+
+        return times, hrrs, areas, t_up_to_hrr_peak
+
     def _draw_yields(self, times, flash):
         yields_tab = {'co': [], 'soot': [], 'hcn': []}
         for t in times:
@@ -802,3 +851,100 @@ class DrawAndLog:
         #&DEVC
         [self._draw_triggers(d) for d in ['heat_detectors', 'smoke_detectors', 'sprinklers']]
         
+
+class HRR:
+    def __init__(self, sim_time):
+        self.sim_time = sim_time
+        self.hrr = {'t': np.array([0, sim_time), 'f': np.array([])}    #t = [t0, t1] are time domains for functions f = [c, b, a] for f(t) = at^2 + bt +c
+        self.domains = self.functions['t']
+        self.functions = self.functions['f']
+
+    def _break_domains(self, t):
+        for i, domain in np.ndenumerate(self.domains):
+            # break at the beginning of new domain if necessary
+            if domain[0] < t[0] < domain[1]:
+                self.domains[i][1] = t[0]
+                np.insert(self.domains, i+1, t)
+                np.insert(self.functions, i+1, self.functions[i])
+            # break at the end of new domain if necessary
+            if domain[0] < t[1] < domain[1]:
+                self.domains[i][0] = t[1]
+                np.insert(self.domains, i, t)
+                np.insert(self.functions, i, , self.functions[i])
+
+    def _update_funcs(self, t, f):
+        for i, domain in np.ndenumerate(self.domains):
+            # update function if existing domain is in updated function domain
+            if t[0] <= domain[0] and domain[1] <= t[1]:
+                self.functions[i] += f
+
+    def _check_for_sim_time(self):
+        warnings.warn('No limitation of time yet. CFAST will interpolate over your function anyway.')
+        pass
+
+    def add(self, domain, function):
+        new_f = function
+        self._break_domains(domain)
+        self._update_funcs(domain, function)
+                
+    def subtract(self, domain, function):
+        function *= -1
+        self.add(domain, function)
+
+    def add_const(self, domain, const):
+        self.add(domain, np.array([const, 0, 0]))
+
+    def subtract_const(self, domain, const):
+        self.subtract(domain, np.array([const, 0, 0]))
+
+    def add_t_squared(self, domain, alpha, rising=True):
+        if rising:
+            f = np.array([0, 0, alpha])
+        else:
+            f = np.array([alpha * t[1] ** 2, 2 * alpha * t[1], alpha])
+
+        self.add(domain, f)
+
+    def add_inversed_t_squared(self, domain, alpha, rising=True):
+        alpha *= -1
+        self.add_t_squared(domain, alpha, rising=rising)
+
+    def get_area(self, hrrpua):
+        return {'t': self.domains, 'f': self.functions / hrrpua}
+
+    def vent_control(self, openings):
+        warnings.warn('A priori ventilation control not available. CFAST will limit HRR anyway')
+        pass
+
+    def _mirror_domains(self, t):
+        self._break_domains([t, self.sim_time])
+        for i, t in np.ndenumerate(self.domains):
+            if t[1] = t:
+                self.domains = self.domains[:i+1] + [d + [t, t] for d in self.domains[:i][::-1]]
+                self.functions = self.functions[:i+1] + self.functions[:i][::-1]
+                break
+
+    def fuel_control(self, fireload):
+        def df_dt(f): return np.array([f[1], 2*f[2]])
+        def int_d(f, d, c=0): return sum([c, f[0] * (d[1]-d[0]), f[1] * (d[1]**2-d[0]**2), f[2] * (d[1]**3-d[0]**3)])
+
+        fireload *= 1000 #[kW]
+        
+        sum_q = 0
+        for i, t in self.domains:
+            len_t = (t[1] - t[0]) * 2
+            while True:
+                new_t = [t[0] + len_t / 2]
+                tot_q = int_d(self.functions[i], t, sum_q)
+                if tot_q > fireload/2:
+                        tot_q = int_d(self.functions[i], t, sum_q)
+                else:
+                    sum_q = tot_q
+                if len_t < 1:
+                    self.mirror_domains(int(new_t[0]))
+            if half_time:
+                break
+
+        return new_times, new_hrrs
+
+
