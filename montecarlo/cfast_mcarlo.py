@@ -613,75 +613,6 @@ class DrawAndLog:
         self._psql_log_variable('fireload', load_density)
         return new_times, new_hrrs
 
-    def _draw_hrr_area(self):
-        '''
-        Generate fire. Alpha t square on the left, then constant in the
-        middle, then fading on the right. At the end read hrrs at given times.
-        '''
-        hrrpua_d = self.conf['hrrpua']    # [kW/m2]
-        hrr_alpha = self.conf['hrr_alpha']    # [kW/s2]
-        fire_area = self._draw_fire_maxarea()
-
-        hrrpua = int(triangular(hrrpua_d['min'], hrrpua_d['mode'], hrrpua_d['max']))
-        self.alpha = triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])
-        hrr_peak = int(hrrpua * fire_area)
-        
-       # left
-        t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
-        interval = int(round(t_up_to_hrr_peak/10))
-        if interval == 0:
-            interval = 10
-        times = list(range(0, t_up_to_hrr_peak, interval)) + [t_up_to_hrr_peak]
-        hrrs = [int((self.alpha * t ** 2)) for t in times]
-        hrrs[-1] = hrr_peak
-        # plateo
-        times.append(self.conf['simulation_time'])
-        hrrs.append(hrr_peak)
-#        t_up_to_starts_dropping = 15 * 60
-#        times1 = [t_up_to_starts_dropping]
-#        hrrs1 = [hrr_peak]
-#        times1 = []
-#        hrrs1 = []
-#
-#        # right
-#        t_up_to_drops_to_zero=t_up_to_starts_dropping+t_up_to_hrr_peak
-#        interval = int(round((t_up_to_drops_to_zero - t_up_to_starts_dropping)/10))
-#        if interval == 0:
-#            interval = 10
-#        times2 = list(reversed(npf(len(times0), t_up_to_starts_dropping + max(times0)) - npa(times0)))
-#        hrrs2 = list(reversed(hrrs0))
-#
-#
-#        times = list(times0 + times1 + times2)
-#        hrrs = list(hrrs0 + hrrs1 + hrrs2)
-     
-     
-        times, hrrs = self._fuel_control(times, hrrs, fire_area)   # limit acc. to fire load
-        
-        self.conf["RESCUE"]["is_rescue"] = 1
-        try:
-            # Trying to get rescue parameter which old projects don't have 
-            is_rescue = bool(int(self.conf["RESCUE"]["is_rescue"]))
-        except KeyError:
-            print("KeyError. is_rescue not set")
-            is_rescue = False
-        except ValueError:
-            print("ValueError. Wrong value given ")
-            is_rescue = False
-        except Exception as e:
-            print(f"Error during getting rescue parameter: {e}")
-            is_rescue = False
-        
-        if is_rescue:
-            rescue_launcher = LaunchRescueModule(self.conf, self._sim_id, self.alpha, hrr_peak , times, hrrs)
-            rescue_launcher.main()
-            times, hrrs = rescue_launcher.calculate_impact_of_nozzles()
-
-        areas = list(npround(npa(hrrs) / hrr_peak * fire_area, 2))
-        self._psql_log_variables([('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
-
-        return times, hrrs, areas, t_up_to_hrr_peak
-
     def _draw_hrr_area_cont_func(self):
         hrrpua_d = self.conf['hrrpua']    # [kW/m2]
         hrr_alpha = self.conf['hrr_alpha']    # [kW/s2]
@@ -701,12 +632,9 @@ class DrawAndLog:
         hrr.add_const([t_up_to_hrr_peak, self.conf['simulation_time']], hrr_peak)
         hrr.fuel_control(load_density * fire_area)
         hrr.vent_control(None)
-        
-        #[WK] NO RESCUE IMPLEMENTED WHEN CONSTINUOUS FIRE CURVES
-        #[WK] RESCUE SHOULD BE IMPLEMENTED IN HRR.firefighting
-        hrr.firefighting(None)
+        hrr.firefighting()
 
-        times, hrrs = hrr.get_old_format()
+        times, hrrs = hrr.get_old_format(plot=True)
         areas = list(npround(npa(hrrs) / hrrpua, 2))
 
         self._psql_log_variables([('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
@@ -838,27 +766,9 @@ class DrawAndLog:
 class HRR:
     def __init__(self, sim_time):
         self.sim_time = sim_time
-        self.domains = npa([[0, sim_time]])
+        self.domains = npa([[.0, float(sim_time)]])
         self.functions = npa([[.0, .0, .0]])
         #self.test()
-
-    def test(self):
-        self.add_const([0,self.sim_time], 1000)
-        self.add_tsquared([0,200],0.01)
-        self.add_inversed_tsquared([200,400],0.01)
-        self.subtract_tsquared([400,600],0.01)
-        self.subtract_inversed_tsquared([600,800],0.01)
-        self.add_const([800,900], -100)
-        self.subtract_const([900,1000], 100)
-        #self.subtract_const([200, 700], 100)
-        #self.add_const([700, 1000], 100)
-        #self.add_tsquared([800,1000],0.05)
-        import matplotlib.pyplot as plt
-        t, hs = self.get_old_format()
-        plt.plot(t, hs)
-        plt.show()
-        exit()
-
 
     def all(self): return {'t': self.domains, 'f': self.functions}#, 'a': self.areas}    #t = [t0, t1] are time domains for functions f = [c, b, a] for f(t) = at^2 + bt +c
 
@@ -935,10 +845,10 @@ class HRR:
                 break
 
     def fuel_control(self, fireload):
-        def df_dt(f): return npa([f[1], 2*f[2]])
-        def int_d(f, d, c=0): return sum([c, f[0] * (d[1]-d[0]), f[1] * (d[1]**2-d[0]**2), f[2] * (d[1]**3-d[0]**3)])
+        def df_dt(f): return npa([n * x**(n-1) for n, x in enumerate(f)])
+        # c is initial value always added to the integral of f over d
+        def int_d(f, d, c=0): return sum([c] + [x * (d[1]**(n+1)-d[0]**(n+1)) / (n+1) for n, x in enumerate(f)])
 
-        print(fireload)
         fireload *= 1000 #[kJ]
         
         sum_q = 0
@@ -957,9 +867,13 @@ class HRR:
                         len_t = (subdomain[1] - subdomain[0])/2
                         new_t = [[subdomain[0], subdomain[0] + len_t], [subdomain[1] - len_t, subdomain[1]]]
                         break
-                #   - continue dividing until len_t < 1 s
+
                 if len_t < 1:
-                    self.mirror_domains(int(new_t[0]))
+                    # - mirror if you know exactly where
+                    self._mirror_domains(int(new_t[0][1]))
+                elif tot_q > fireload/2:
+                    #   - continue dividing until len_t < 1 s
+                    continue
                 else:
                     # if less than half of fireload is burnt:
                     #   - add heat released in the domain to sum
@@ -970,9 +884,25 @@ class HRR:
             if len_t < 1:
                 break
 
-    def firefighting(self, rescue):
+    def _nozzle(self, t, q):
+        a = uniform(0.1,0.5)
+        dt = (q/a)**0.5
+        self.subtract_tsquared([t,t+dt], a)
+        self.subtract_const([t+dt,self.sim_time], q)
+
+    def firefighting(self):
         warnings.warn('Firefighting module is not available yet. No firefighting-related reductions to HRR will be applied')
+
+        #vvvvvvvvvvvvvvvvvvvvvvv @zarooba vvvvvvvvvvvvvvvvvvvvvvvv
         pass
+
+        def is_rescue(): return True
+
+        if is_rescue():
+            #rescue_launcher = LaunchRescueModule(self.conf, self._sim_id, self.alpha, hrr_peak , times, hrrs)
+            #q_and_t_tuples = rescue_launcher.main()    #[(nozzle_1_t, nozzle_1_q), (nozzle_2_t, nozzle_2_q)...]
+            q_and_t_tuples = [(100, 500), (150, 400)]    #[(nozzle_1_t, nozzle_1_q), (nozzle_2_t, nozzle_2_q)...]
+            [self._nozzle(t, q) for t, q in q_and_t_tuples]
 
 #        self.conf["RESCUE"]["is_rescue"] = 1
 #        try:
@@ -992,28 +922,32 @@ class HRR:
 #            rescue_launcher = LaunchRescueModule(self.conf, self._sim_id, self.alpha, hrr_peak , times, hrrs)
 #            rescue_launcher.main()
 #            times, hrrs = rescue_launcher.calculate_impact_of_nozzles()
+
+        #^^^^^^^^^^^^^^^^^ @zarooba ^^^^^^^^^^^^^^^^^^^^^^^^
     
     def _val(self, t, lim=0):
         for i, domain in enumerate(self.domains):
-            print(t, domain)
-            print([domain[0] > t or t > domain[1], t == domain[1] and lim>0, t == domain[0] and lim<0])
             if any([domain[0] > t or t > domain[1], t == domain[1] and lim>0, t == domain[0] and lim<0]):
                 continue
             else:
-                print(self.functions[i])
                 return int(sum([j * t ** p for p, j in enumerate(self.functions[i])]))
 
     def _is_linear(self, f):
         return True if sum(f[2:]) == 0 else False
                 
-    def get_old_format(self, resolution=5, hrrpua=None):
+    def get_old_format(self, resolution=5, plot=False):
+        def pl(t, hs):
+            import matplotlib.pyplot as plt
+            plt.plot(t, hs)
+            plt.savefig('hrr.png')
+
         times, hrrs = [], []
         for i, domain in enumerate(self.domains):
             if self._is_linear(self.functions[i]):
                 times.extend(domain)
                 hrrs.extend([self._val(domain[0], lim=1), self._val(domain[1], lim=-1)])
             else:
-                for j in range(domain[0], domain[1], resolution):
+                for j in range(int(npround(domain[0])), int(npround(domain[1])), resolution):
                     times.append(j)
                     hrrs.append(self._val(j))
 
@@ -1023,6 +957,7 @@ class HRR:
                 times, hrrs = self.get_old_format(resolution=resolution*2, hrrpua=hrrpua)
             else:
                 break
+        pl(times,hrrs) if plot else None
         return times, hrrs
 
 
