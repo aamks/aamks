@@ -578,6 +578,16 @@ class DrawAndLog:
             fire_area = orig_area
         return fire_area
 
+    def _flashover_q(self, model='Thomas'):
+        fire_room = self.s.query("SELECT width, depth, height FROM aamks_geom WHERE name=(SELECT name FROM fire_origin)")[0]
+        a_o = sum([math.prod(o) for o in self._fire_openings]) / 1e4    # because dimensions in cm
+        a_t = (2 * (fire_room['width'] + fire_room['depth']) * fire_room['height']) / 1e4 - a_o    # because dimensions in cm 
+        h_o = sum([o[1] for o in self._fire_openings]) / 100    # because dimensions in cm
+        if model == 'Thomas':
+            return 7.83 * a_t + 378 * a_o * h_o ** 0.5
+        elif model == 'Babrauskass':
+            return 750 * a_o * h_o ** 0.5
+
     def _draw_hrr_area_cont_func(self):
         hrrpua_d = self.conf['hrrpua']    # [kW/m2]
         hrr_alpha = self.conf['hrr_alpha']    # [kW/s2]
@@ -587,11 +597,11 @@ class DrawAndLog:
 
         def find_peak_hrr():
             well_vent = hrrpua * fire_area 
-            under_vent = 750 * sum([math.prod(o) for o in self._fire_openings]) * (sum([o[1] for o in self._fire_openigs])) ** 0.5
+            under_vent = self._flashover_q()
             if well_vent < under_vent:
-                return well_vent, False
+                return int(well_vent), False
             else:
-                return under_vent, True
+                return int(under_vent), True
         hrr_peak, flashover = find_peak_hrr()
 
         fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
@@ -663,7 +673,7 @@ class DrawAndLog:
             self.sections['windows'].append((how_much_open, v['name']))
 
             if how_much_open and (v['vent_from'] == int(self._fire_id[1:]) or v['vent_to'] == int(self._fire_id[1:])):
-                self._fire_openings.append((v['width'], v['height'], how_much_open))
+                self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
 
             self._psql_log_variable('w',how_much_open)
 
@@ -689,7 +699,7 @@ class DrawAndLog:
             self.sections['hvents'].append((how_much_open, v['name']))
 
             if how_much_open and (v['vent_from'] == int(self._fire_id[1:]) or v['vent_to'] == int(self._fire_id[1:])):
-                self._fire_openings.append((v['width'], v['height'], how_much_open))
+                self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
 
         return self.sections['hvents']
 # }}}
@@ -703,9 +713,6 @@ class DrawAndLog:
             self._psql_log_variable(Type.lower(),how_much_open)
 
             self.sections['vvents'].append((how_much_open, v['name']))
-
-            if how_much_open and (v['vent_from'] == int(self._fire_id[1:]) or v['vent_to'] == int(self._fire_id[1:])):
-                self._fire_openings.append((v['width'], v['height'], how_much_open))
 
         return self.sections['vvents']
 
@@ -748,15 +755,17 @@ class HRR:
     def __init__(self, conf):
         self.conf = conf
         self.sim_time = conf['simulation_time']
-        self.domains = npa([[.0, float(sim_time)]])
+        self.domains = npa([[.0, float(self.sim_time)]])
         self.functions = npa([[.0, .0, .0]])
 
     def all(self): return {'t': self.domains, 'f': self.functions}#, 'a': self.areas}    #t = [t0, t1] are time domains for functions f = [c, b, a] for f(t) = at^2 + bt +c
 
     def _break_domains(self, t):
         if t[0] > t[1]:
+            breakpoint()
             raise ValueError(f'Lower limit must be lower than upper limit {t}')
         elif t[0] == t[1]:
+            breakpoint()
             raise ValueError(f'Lower and upper limits must not be equal {t}')
 
         add_i = 0 
@@ -814,6 +823,7 @@ class HRR:
         self.add_inversed_tsquared(domain, alpha, rising=rising)
 
     def _mirror_domains(self, t):
+        print('mirror', t)
         self._break_domains([t, self.sim_time])
         for i, db in ndenumerate(self.domains):
             if db == t:
@@ -909,7 +919,6 @@ class HRR:
         def pl(t, hs):
             import matplotlib.pyplot as plt
             plt.plot(t, hs)
-            print(os.getcwd())
             plt.savefig('hrr.png')
 
         times, hrrs = [], []
@@ -925,7 +934,7 @@ class HRR:
         #CFAST has 199 records limit
         while True:
             if len(times) > 199:
-                times, hrrs = self.get_old_format(resolution=resolution*2, hrrpua=hrrpua)
+                times, hrrs = self.get_old_format(resolution=resolution*2)
             else:
                 break
         pl(times,hrrs) if plot else None
