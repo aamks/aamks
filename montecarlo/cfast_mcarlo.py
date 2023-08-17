@@ -626,7 +626,7 @@ class DrawAndLog:
         load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
         self._psql_log_variable('fireload', load_density)
         
-        hrr = HRR(self.conf['simulation_time'])
+        hrr = HRR(self.conf['simulation_time'], self.conf)
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
         hrr.add_tsquared([0, t_up_to_hrr_peak], self.alpha)
         hrr.add_const([t_up_to_hrr_peak, self.conf['simulation_time']], hrr_peak)
@@ -764,10 +764,11 @@ class DrawAndLog:
         
 
 class HRR:
-    def __init__(self, sim_time):
+    def __init__(self, sim_time, conf):
         self.sim_time = sim_time
         self.domains = npa([[.0, float(sim_time)]])
         self.functions = npa([[.0, .0, .0]])
+        self.conf = conf
         #self.test()
 
     def all(self): return {'t': self.domains, 'f': self.functions}#, 'a': self.areas}    #t = [t0, t1] are time domains for functions f = [c, b, a] for f(t) = at^2 + bt +c
@@ -891,39 +892,32 @@ class HRR:
         self.subtract_const([t+dt,self.sim_time], q)
 
     def firefighting(self):
-        warnings.warn('Firefighting module is not available yet. No firefighting-related reductions to HRR will be applied')
-
-        #vvvvvvvvvvvvvvvvvvvvvvv @zarooba vvvvvvvvvvvvvvvvvvvvvvvv
-        pass
-
-        def is_rescue(): return True
+        # warnings.warn('Firefighting module is not available yet. No firefighting-related reductions to HRR will be applied')
+        def is_rescue(): 
+            try:
+            # Trying to get rescue parameter which old projects don't have 
+                is_rescue = bool(int(self.conf["RESCUE"]["is_rescue"]))
+                return is_rescue
+            except KeyError:
+                print("KeyError. is_rescue not set")
+                is_rescue = False
+                return False
+            except ValueError:
+                print("ValueError. Wrong value given ")
+                is_rescue = False
+                return False
+            except Exception as e:
+                print(f"Error during getting rescue parameter: {e}")
+                is_rescue = False
+                return False
 
         if is_rescue():
-            #rescue_launcher = LaunchRescueModule(self.conf, self._sim_id, self.alpha, hrr_peak , times, hrrs)
-            #q_and_t_tuples = rescue_launcher.main()    #[(nozzle_1_t, nozzle_1_q), (nozzle_2_t, nozzle_2_q)...]
-            q_and_t_tuples = [(100, 500), (150, 400)]    #[(nozzle_1_t, nozzle_1_q), (nozzle_2_t, nozzle_2_q)...]
-            [self._nozzle(t, q) for t, q in q_and_t_tuples]
-
-#        self.conf["RESCUE"]["is_rescue"] = 1
-#        try:
-#            # Trying to get rescue parameter which old projects don't have 
-#            is_rescue = bool(int(self.conf["RESCUE"]["is_rescue"]))
-#        except KeyError:
-#            print("KeyError. is_rescue not set")
-#            is_rescue = False
-#        except ValueError:
-#            print("ValueError. Wrong value given ")
-#            is_rescue = False
-#        except Exception as e:
-#            print(f"Error during getting rescue parameter: {e}")
-#            is_rescue = False
-#        
-#        if is_rescue:
-#            rescue_launcher = LaunchRescueModule(self.conf, self._sim_id, self.alpha, hrr_peak , times, hrrs)
-#            rescue_launcher.main()
-#            times, hrrs = rescue_launcher.calculate_impact_of_nozzles()
-
-        #^^^^^^^^^^^^^^^^^ @zarooba ^^^^^^^^^^^^^^^^^^^^^^^^
+            rescue_launcher = LaunchRescueModule(self.conf)
+            rescue_launcher.main()
+            q_and_t_tuples = rescue_launcher.q_and_t_tuples
+            for (time, q) in q_and_t_tuples:
+                print(time, q)
+                self._nozzle(time, q)
     
     def _val(self, t, lim=0):
         for i, domain in enumerate(self.domains):
