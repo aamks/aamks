@@ -442,6 +442,8 @@ class DrawAndLog:
         self._fire_id = ''
         self._fire_height = 0
         self._comp_type = ''
+        self._fire_room_name = ''
+        self._fire_openings = []
 
         self.sections = {}
 
@@ -501,6 +503,7 @@ class DrawAndLog:
             comp['name'] = str(choice(all_corridors_and_halls))
             comp['type'] = 'non_room'
         self._comp_type = comp['type']
+        self._fire_room_name = comp['name']
 
         return comp
     
@@ -577,32 +580,50 @@ class DrawAndLog:
             fire_area = orig_area
         return fire_area
 
+    def _flashover_q(self, model='Thomas'):
+        fire_room = self.s.query(f"SELECT width, depth, height FROM aamks_geom WHERE name='{self._fire_room_name}'")[0]
+        a_o = sum([math.prod(o) for o in self._fire_openings]) / 1e4    # because dimensions in cm
+        a_t = (2 * (fire_room['width'] + fire_room['depth']) * fire_room['height']) / 1e4 - a_o    # because dimensions in cm 
+        h_o = sum([o[1] for o in self._fire_openings]) / 100    # because dimensions in cm
+        if model == 'Thomas':
+            return 7.83 * a_t + 378 * a_o * h_o ** 0.5
+        elif model == 'Babrauskass':
+            return 750 * a_o * h_o ** 0.5
+
     def _draw_hrr_area_cont_func(self):
         hrrpua_d = self.conf['hrrpua']    # [kW/m2]
         hrr_alpha = self.conf['hrr_alpha']    # [kW/s2]
         fire_area = self._draw_fire_maxarea()
-
         hrrpua = int(triangular(hrrpua_d['min'], hrrpua_d['mode'], hrrpua_d['max']))
         self.alpha = triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])
-        hrr_peak = int(hrrpua * fire_area)
+
+        def find_peak_hrr():
+            well_vent = hrrpua * fire_area 
+            under_vent = self._flashover_q()
+            if well_vent < under_vent:
+                return int(well_vent), False
+            else:
+                return int(under_vent), True
+        hrr_peak, flashover = find_peak_hrr()
 
         fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
         load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
+        self._psql_log_variable('fireload', load_density)
         
-        hrr = HRR(self.conf['simulation_time'], self.conf)
+        hrr = HRR(self.conf)
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
         hrr.add_tsquared([0, t_up_to_hrr_peak], self.alpha)
         hrr.add_const([t_up_to_hrr_peak, self.conf['simulation_time']], hrr_peak)
         hrr.fuel_control(load_density * fire_area)
-        hrr.vent_control(None)
         hrr.firefighting()
 
-        times, hrrs = hrr.get_old_format(plot=False)
+        times, hrrs = hrr.get_old_format(plot=True)
         areas = list(npround(npa(hrrs) / hrrpua, 2))
+        flashover = t_up_to_hrr_peak if flashover else self.conf['simulation_time']*2
 
-        self._psql_log_variables([('fireload', load_density), ('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
+        self._psql_log_variables([('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
 
-        return times, hrrs, areas, t_up_to_hrr_peak
+        return times, hrrs, areas, flashover
 
     def _draw_yields(self, times, flash):
         yields_tab = {'co': [], 'soot': [], 'hcn': []}
@@ -617,11 +638,11 @@ class DrawAndLog:
         
     def _draw_fire_table(self):# {{{
         # fire curve
-        times, hrrs, areas, fully_dev_time = self._draw_hrr_area_cont_func()
+        times, hrrs, areas, flash_time = self._draw_hrr_area_cont_func()
 
         # gather parameters
         heights = [self._fire_height] * len(times)  #constant
-        yields = self._draw_yields(times, fully_dev_time)
+        yields = self._draw_yields(times, flash_time)
         params = {"TIME": times, "HRR": hrrs, "HEIGHT": heights, "AREA": areas, "CO_YIELD": yields['co'], "SOOT_YIELD": yields['soot'], "HCN_YIELD": yields['hcn']}
 
         self.sections['TABL'] = [{'ID': self._fire_id, 'LABELS': list(params)}]
@@ -653,6 +674,9 @@ class DrawAndLog:
                         how_much_open=0 
             self.sections['windows'].append((how_much_open, v['name']))
 
+            if how_much_open and (v['vent_from'] == int(self._fire_id[1:]) or v['vent_to'] == int(self._fire_id[1:])):
+                self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
+
             self._psql_log_variable('w',how_much_open)
 
         return self.sections['windows']
@@ -676,11 +700,14 @@ class DrawAndLog:
 
             self.sections['hvents'].append((how_much_open, v['name']))
 
+            if how_much_open and (v['vent_from'] == int(self._fire_id[1:]) or v['vent_to'] == int(self._fire_id[1:])):
+                self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
+
         return self.sections['hvents']
 # }}}
     def _draw_vvents_opening(self):# {{{
         self.sections['vvents'] = []
-        for v in self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to"):
+        for v in self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to"):
             vents = self.conf['vents_open']
             Type = v['type_sec']
 
@@ -714,32 +741,33 @@ class DrawAndLog:
         #&FIRE
         self._draw_fire_preamble()
         self.__draw_fuel()
-        #&CHEM
-        self._draw_fire_chem()
-        #&TABL
-        self._draw_fire_table()
         #&VENTS
         self._draw_windows_opening()
         self._draw_doors_and_holes_opening()
         self._draw_vvents_opening()
+        #&CHEM
+        self._draw_fire_chem()
+        #&TABL
+        self._draw_fire_table()
         #&DEVC
         [self._draw_triggers(d) for d in ['heat_detectors', 'smoke_detectors', 'sprinklers']]
         
 
 class HRR:
-    def __init__(self, sim_time, conf):
-        self.sim_time = sim_time
-        self.domains = npa([[.0, float(sim_time)]])
-        self.functions = npa([[.0, .0, .0]])
+    def __init__(self, conf):
         self.conf = conf
-        #self.test()
+        self.sim_time = conf['simulation_time']
+        self.domains = npa([[.0, float(self.sim_time)]])
+        self.functions = npa([[.0, .0, .0]])
 
-    def all(self): return {'t': self.domains, 'f': self.functions}#, 'a': self.areas}    #t = [t0, t1] are time domains for functions f = [c, b, a] for f(t) = at^2 + bt +c
+    def all(self): return {'t': self.domains, 'f': self.functions}    #t = [t0, t1] are time domains for functions f = [c, b, a] for f(t) = at^2 + bt +c
 
     def _break_domains(self, t):
         if t[0] > t[1]:
+            print(self.domains)
             raise ValueError(f'Lower limit must be lower than upper limit {t}')
         elif t[0] == t[1]:
+            print(self.domains)
             raise ValueError(f'Lower and upper limits must not be equal {t}')
 
         add_i = 0 
@@ -761,11 +789,14 @@ class HRR:
     def _check_for_sim_time(self):
         for i, d in enumerate(self.domains):
             if d[0] > self.sim_time:
-                self.domains = self.domains[:1]
-                self.functions = self.functions[:1]
+                self.domains = self.domains[:i]
+                self.functions = self.functions[:i]
                 return True
             elif d[1] > self.sim_time:
                 self._break_domains([self.sim_time,d[1]])
+                self.domains = self.domains[:i+1]
+                self.functions = self.functions[:i+1]
+                return True
         return False
             
     def _check_for_positive(self):
@@ -817,13 +848,8 @@ class HRR:
         alpha *= -1
         self.add_inversed_tsquared(domain, alpha, rising=rising)
 
-    def vent_control(self, openings):
-        warnings.warn('A priori ventilation control not available. CFAST will limit HRR anyway')
-        pass
-
     def _mirror(self, t): 
         self._mirror_functions(self._mirror_domains(t))
-        self._check_for_sim_time()
 
     def _mirror_domains(self, t):
         self._break_domains([t, self.sim_time])
@@ -860,6 +886,7 @@ class HRR:
         # iterate over time domains
         for i, domain in enumerate(self.domains):
             new_t = [domain]
+            len_t = domain[1] - domain[0]
             while True:
                 tot_q = 0
                 # iterate over subdomains (whole domain in the first iteration)
@@ -891,9 +918,9 @@ class HRR:
     def _nozzle(self, t, q):
         a = uniform(0.1,0.5)    #alpha values to be confirmed
         dt = (q/a)**0.5
-        if t > self.sim_time:
+        if t >= self.sim_time:
             return False
-        elif t + dt > self.sim_time:
+        elif t + dt >= self.sim_time:
             self.subtract_tsquared([t,self.sim_time], a)
             return True
         else:
@@ -923,7 +950,9 @@ class HRR:
             for (time, q) in q_and_t_tuples:
                 self._nozzle(time, q)
 
+        self._check_for_sim_time()
         self._check_for_positive()
+
     
     def _val(self, t, lim=0):
         for i, domain in enumerate(self.domains):
@@ -959,16 +988,5 @@ class HRR:
                 break
         pl(times,hrrs) if plot else None
         return times, hrrs
-
-
-
-
-
-
-
-
-
-        
-        
 
 
