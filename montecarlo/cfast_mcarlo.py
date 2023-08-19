@@ -764,8 +764,10 @@ class HRR:
 
     def _break_domains(self, t):
         if t[0] > t[1]:
+            print(self.domains)
             raise ValueError(f'Lower limit must be lower than upper limit {t}')
         elif t[0] == t[1]:
+            print(self.domains)
             raise ValueError(f'Lower and upper limits must not be equal {t}')
 
         add_i = 0 
@@ -787,11 +789,14 @@ class HRR:
     def _check_for_sim_time(self):
         for i, d in enumerate(self.domains):
             if d[0] > self.sim_time:
-                self.domains = self.domains[:1]
-                self.functions = self.functions[:1]
+                self.domains = self.domains[:i]
+                self.functions = self.functions[:i]
                 return True
             elif d[1] > self.sim_time:
                 self._break_domains([self.sim_time,d[1]])
+                self.domains = self.domains[:i+1]
+                self.functions = self.functions[:i+1]
+                return True
         return False
             
     def _check_for_positive(self):
@@ -845,7 +850,6 @@ class HRR:
 
     def _mirror(self, t): 
         self._mirror_functions(self._mirror_domains(t))
-        self._check_for_sim_time()
 
     def _mirror_domains(self, t):
         self._break_domains([t, self.sim_time])
@@ -948,6 +952,7 @@ class HRR:
 
         self._check_for_sim_time()
         self._check_for_positive()
+
     
     def _val(self, t, lim=0):
         for i, domain in enumerate(self.domains):
