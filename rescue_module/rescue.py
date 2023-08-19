@@ -21,9 +21,8 @@ import openpyxl
 from scipy import stats
 
 class Rescue():
-    def __init__(self, conf, sim_id):
+    def __init__(self, conf):
         self.conf = conf
-        self.sim_id = sim_id
         self.electronic = bool(int(self.conf["RESCUE"]["electronic"]))  # electronic/phone_call 1/0
         self.distance_short = self.conf["RESCUE"]["dist_short"] # distance from nearest fire department
         self.distance_long = self.conf["RESCUE"]["dist_long"] # distance from second nearest fire department
@@ -34,7 +33,6 @@ class Rescue():
         self.get_pre_intervention_time()        
         self.get_intervention_time() 
         self.get_all_times() 
-        self.save_params()
 
     def get_pre_intervention_time(self):
         if self.electronic == True:
@@ -242,267 +240,48 @@ class Rescue():
     def uncertain(self, main, uncert):
         return round(uniform(main-uncert, main+uncert), 5)
 
-    def save_params(self):
-        rescue_txt_pwd = os.path.join(os.environ['AAMKS_PROJECT'], 'workers', str(self.sim_id), "rescue.txt")
-        with open (rescue_txt_pwd,"a") as file:
-            file.write("--- Time parameters --- \n")
-            for (k,v) in self.data.items():
-                line = str(str(k)+ " : " +str(v)+ "\n")
-                file.write(line)
-            file.write("\n")
-
 
 class Nozzles:
-    def __init__(self, conf, sim_id, alpha, hrr_peak):
-        self.conf = conf
-        self.sim_id = sim_id
-        self.dh = self.conf["RESCUE"]["fire_distance_horizontal"]
-        self.dv = self.conf["RESCUE"]["fire_distance_vertical"]
-        self.pressure_after_drop = 0.6 - (self.dh/1000 + self.dv/100) 
-        self.k = 175
-        self.alpha = alpha
-        self.hrr_peak = hrr_peak
-        self.water_flow = self.k * (10*self.pressure_after_drop)**(1/2) / 60   
-        self.power = round(self.water_flow *2.6 *1000 *0.5, 0)     
-        self.times = []
-        self.data = OrderedDict()
-        self.data['alpha'] = self.alpha
+    def __init__(self, conf):
+        self.dh = conf["RESCUE"]["fire_distance_horizontal"]
+        self.dv = conf["RESCUE"]["fire_distance_vertical"]
+        self.nozzles_data = conf["NOZZLES"]
+
+    def main(self):
+        self.get_times()
+        self.get_power()
 
     def get_times(self):
         self.nozzles_times = []
-        for time in self.conf["NOZZLES"].values():     
+        for time in self.nozzles_data.values():     
             if time >= 0:     
                 self.nozzles_times.append(time)
-        self.t_start = min(self.nozzles_times)
  
-    def get_times_and_powers(self):
-        time = 0
-        powers = []
-        times = []
-        while self.alpha*time**2 < self.power:
-            times.append(time)
-            powers.append(self.alpha*time**2)
-            time+=1
-        powers.append(self.power)
-        times.append(time)
-        tab_p_diff = []
-        for i in range(len(powers)-1):
-            p_diff = powers[i+1]-powers[i]
-            tab_p_diff.append(round(p_diff,2))
-       
-        self.tab_p_diff = [0] + tab_p_diff
-        self.nozzle_worktime = times
-        self.t_end = max(self.nozzles_times)+ self.nozzle_worktime[-1]
+    def get_power(self):
+        k = 175
+        pressure_after_drop = 0.6 - (self.dh/1000 + self.dv/100) 
+        water_flow = k * (10*pressure_after_drop)**(1/2) / 60   
+        self.power = round(water_flow *2.6 *1000 *0.5, 0)  
 
-
-    def get_action_time(self):
-        self.action_time = [x for x in range(self.t_start, self.t_end+1)]
-
-    def get_all_worktimes(self):
-        self.time_tabs = []
-        for nozzle_time in self.nozzles_times:
-            times = [time+nozzle_time for time in self.nozzle_worktime]
-            self.time_tabs.append(times)
-
-    def create_power_absorb_table(self):
-        times = []
-        hrrs = []
-        hrr_fire = self.hrr_peak
-        for block in self.time_tabs:
-            for time, hrr in zip(block, self.tab_p_diff):
-                if hrr_fire>0:
-                    hrr_fire -= hrr
-                    if hrr_fire >0:
-                        times.append(time)
-                        hrrs.append(hrr_fire)
-                else:
-                    times.append(time)
-                    hrrs.append(0)
-                    self.all_hrrs = hrrs
-                    self.all_times = times
-                    return times, hrrs
-    
-    def create_fire_table(self):
-        times = []
-        hrrs = []
-        # print("tab p diff",self.tab_p_diff)
-        for block in self.time_tabs:
-            #print(block)
-            for time, hrr in zip(block, self.tab_p_diff):
-                #print(time, hrr)
-                times.append(time)
-                hrrs.append(hrr)
-        self.all_hrrs = hrrs
-        self.all_times = times
-        self.dic = {}
-        self.final_nozzles_times = []
-        self.final_nozzles_hrrs = []
-        for t in self.action_time:
-            self.dic[t]=0
-        for block in self.time_tabs:
-            for elem in range(len(block)):
-                self.dic[block[elem]] += self.tab_p_diff[elem]
-        for key,value in self.dic.items():
-            self.final_nozzles_times.append(key)
-            self.final_nozzles_hrrs.append(value)
         
-
-
-    def merge_arrays_last_occurrence(self, array1, array2):
-        merged_pairs = {}
-        for val1, val2 in zip(array1, array2):
-            merged_pairs[val1] = val2
-        unique_values = set(array1)
-        self.final_pairs = [(val1, merged_pairs[val1]) for val1 in unique_values]
-        # for val1, val2 in self.final_pairs:
-        #     print(val1,": ", val2)
-    
-    def generate_final_times_and_hrrs(self):
-        self.calculated_times = []
-        self.calculated_hrrs= []
-        for time, hrr in self.final_pairs:
-            self.calculated_times.append(time)
-            self.calculated_hrrs.append(hrr)
-        # print("calc times",self.calculated_times)
-        # print("calc hrrs ",self.calculated_hrrs)
-        
-    def prepare_data(self):
-        self.data['Nozzle times'] = self.nozzles_times
-        self.data['Nozzle Power'] = self.power
-        self.data['Time start'] = self.t_start
-        self.data['Time end'] = self.t_end
-        self.data['Nozzle working time table'] = self.nozzle_worktime
-        self.data['Table of consumed power for one nozzle'] = self.tab_p_diff
-        self.data['Table of nozzles times'] = self.time_tabs
-        self.data['All times'] = self.all_times
-        self.data['All hrrs'] = self.all_hrrs  
-        self.data['Sum of powers'] = sum(self.tab_p_diff)  
-
-
-    def save_params(self):
-        rescue_txt_pwd = os.path.join(os.environ['AAMKS_PROJECT'], 'workers', str(self.sim_id), "rescue.txt")
-        with open (rescue_txt_pwd,"a") as file:
-            file.write("--- Nozzle Parameters --- \n")
-            for (k,v) in self.data.items():
-                line = str(str(k)+ " : " +str(v)+ "\n")
-                file.write(line)
-            file.write("\n")
-            
-    def main(self):
-        self.get_times()
-        self.get_times_and_powers()
-        self.get_action_time()
-        self.get_all_worktimes()
-        #self.create_power_absorb_table()
-        self.create_fire_table()
-        self.merge_arrays_last_occurrence(self.all_times, self.all_hrrs)
-        self.prepare_data()
-        self.save_params()
-        self.generate_final_times_and_hrrs()
-
-
 class LaunchRescueModule:
-    def __init__(self, conf, sim_id, alpha, hrr_peak, times, hrrs):
+    def __init__(self, conf):
         self.conf = conf
-        self.alpha = alpha
-        self.sim_id = sim_id
-        self.hrr_peak = hrr_peak
-        self.main_dir = os.path.join(os.environ['AAMKS_PROJECT'], "rescue_results") # for creating rescue results
-        self.data = OrderedDict()
-        self.raw_times = times
-        self.raw_hrrs = hrrs
-
+        self.q_and_t_tuples = []
 
     def main(self):
-        self.rescue = Rescue(self.conf, self.sim_id)
-        self.rescue.main()
-        self.nozzles = Nozzles(self.conf, self.sim_id, self.alpha, self.hrr_peak)
-        self.nozzles.main()
-        #self.connect_estinguish_times_and_hrrs()
-        self.save_params()
-        #self.calculate_impact_of_nozzles()
-        #self.make_plot()
+        rescue = Rescue(self.conf)
+        rescue.main()
+        nozzles = Nozzles(self.conf)
+        nozzles.main()
+        self.prepare_data(rescue, nozzles)
 
-    def connect_estinguish_times_and_hrrs(self):
-        # left
-        t_up_to_hrr_peak = int((self.hrr_peak/self.alpha)**0.5)
-        interval = int(round(t_up_to_hrr_peak/10))
-        if interval == 0:
-            interval = 10
-        times0 = list(range(0, t_up_to_hrr_peak, interval))+[t_up_to_hrr_peak]
-        hrrs0 = [int((self.alpha * t ** 2)) for t in times0]
-        # middle
-        t_up_to_starts_dropping = self.rescue.total_time
-        times1 = [t_up_to_starts_dropping]
-        hrrs1 = [self.hrr_peak]
-        #right
-        times2 = [time+self.rescue.total_time+1 for time in self.nozzles.calculated_times]
-        hrrs2 = self.nozzles.calculated_hrrs
+    def prepare_data(self, rescue, nozzles):
+        rescue_time = rescue.total_time
+        nozzles_times = nozzles.nozzles_times
+        power = nozzles.power
+        for t in nozzles_times:
+            self.q_and_t_tuples.append((rescue_time+t, power))
         
-        #all times
-        self.all_times= [times0, times1, times2]
-        self.all_hrrs = [hrrs0, hrrs1, hrrs2]
-        self.data["Fire Times"] = self.all_times
-        self.data["Fire HRRS"] = self.all_hrrs
+    
 
-    def calculate_impact_of_nozzles(self):
-        self.corrected_times = [time+self.rescue.total_time for time in self.nozzles.final_nozzles_times]
-        self.corrected_hrrs = self.nozzles.final_nozzles_hrrs
-        self.dic = self.nozzles.dic
-        new_dic ={}
-        for t,hrr in zip(self.corrected_times, self.corrected_hrrs):
-            new_dic[t] = hrr
-        if self.corrected_times[0] > self.raw_times[-1]:
-            result = "".join(["No impact due to rescue model:", str(self.corrected_times[0]), ">(", str(self.raw_times[-1])])
-            self.data["Result"] = result
-            self.make_plot(self.raw_times, self.raw_hrrs)
-            return self.raw_times, self.raw_hrrs
-        else:
-            self.data["Result"] = "Rescue model has done changes in hrrs"
-            for time,hrr in zip(self.raw_times, self.raw_hrrs):
-                for t,h in new_dic.items():
-                    if t==time:
-                        power = new_dic[t]
-                        for i in range(t-1, len(self.raw_hrrs)):
-                            self.raw_hrrs[i] -= power
-            ts = []
-            hs = []
-            for t, h in zip(self.raw_times, self.raw_hrrs):
-                if h>=0:
-                    ts.append(t)
-                    hs.append(round(h,2))
-                else:
-                    ts.append(t)
-                    hs.append(0)
-                    break
-            print(self.rescue.total_time, self.raw_hrrs[self.rescue.total_time])
-            self.make_plot_rescue(ts,hs, self.rescue.total_time, self.raw_hrrs[self.rescue.total_time])
-            return ts, hs
-
-    def save_params(self):
-        rescue_txt_pwd = os.path.join(os.environ['AAMKS_PROJECT'], 'workers', str(self.sim_id), "rescue.txt")
-        with open (rescue_txt_pwd,"a") as file:
-            file.write("--- Fire parameters --- \n")
-            for (k,v) in self.data.items():
-                line = str(str(k)+ " : " +str(v)+ "\n")
-                file.write(line)
-
-    def make_plot(self,x,y):
-        worker_dir = os.path.join(os.environ['AAMKS_PROJECT'], 'workers', str(self.sim_id))
-        # flat_times = [time for sublist in self.all_times for time in sublist]  #[a],[b],[c]] -> [*a,*b,*c]
-        # flat_hrrs = [hrr for sublist in self.all_hrrs for hrr in sublist]
-        plt.plot(x,y)
-        plt.xlabel('Time (s)')
-        plt.ylabel('HRR (W)')
-        plt.savefig(os.path.join(worker_dir, "HRR.png"))
-
-    def make_plot_rescue(self,x,y,px,py):
-        worker_dir = os.path.join(os.environ['AAMKS_PROJECT'], 'workers', str(self.sim_id))
-        # flat_times = [time for sublist in self.all_times for time in sublist]  #[a],[b],[c]] -> [*a,*b,*c]
-        # flat_hrrs = [hrr for sublist in self.all_hrrs for hrr in sublist]
-        plt.plot(x,y)
-        text =  "("+str(px)+","+str(py)+")"+" Fire Brigade Arrived"
-        plt.text(px,py, text,horizontalalignment='left')
-        plt.xlabel('Time (s)')
-        plt.ylabel('HRR (W)')
-        plt.savefig(os.path.join(worker_dir, "HRR.png"))

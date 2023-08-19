@@ -12,8 +12,9 @@ from numpy.random import triangular
 from numpy.random import seed
 from numpy import array as npa
 from numpy import full as npf
+from numpy import insert as npins
 from numpy import round as npround
-from numpy import mean, trapz, linspace
+from numpy import mean, trapz, linspace, ndenumerate
 from scipy.stats import pareto
 from scipy.interpolate import interp1d
 from include import Sqlite
@@ -21,6 +22,7 @@ from include import Psql
 from include import Json
 from collections import OrderedDict
 from rescue_module.rescue import *
+import warnings
 
 # }}}
 def join2str(l, sep, quotes=False, force=False):
@@ -507,7 +509,6 @@ class DrawAndLog:
         # locate fire in compartment
         compa = self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_room, ))[0]
 
-        # [WK] why not random but in the middle?
         x=int(compa['x0']+compa['width']/2.0)
         y=int(compa['y0']+compa['depth']/2.0)
         self._fire_height = round((compa['height'] * (1-math.log10(uniform(1,9)))) / 100, 2)
@@ -576,47 +577,7 @@ class DrawAndLog:
             fire_area = orig_area
         return fire_area
 
-    def _fuel_control(self, times, hrrs, fire_area):
-        fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
-        load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
-        fire_load = load_density * fire_area * 1000 #[kW]
-
-        q = 0
-        dt = 1
-        sym_values = [0, 0]
-        prev = [0, 0]
-        new_times = []
-        new_hrrs = []
-        interpolated = interp1d(times, hrrs, kind='linear')
-        times_i = linspace(0, times[-1], int(times[-1]/dt))
-        hrrs_i = interpolated(times_i).astype(int)
-        # trapezoidal integration rule with dt
-        for t, hrr_t in enumerate(hrrs_i):
-            dt = t - prev[0]
-            dq = (hrr_t + prev[1]) * dt / 2
-            prev = [t, hrr_t]
-            q += dq
-            if q > fire_load / 2:
-                sym_values = [t, hrr_t]
-                new_times.append(t)
-                new_hrrs.append(hrr_t)
-                break
-            else:
-                new_times.append(t)
-                new_hrrs.append(hrr_t)
-        # limit HRR if fuel-controlled
-        if sym_values[0]:
-            new_times += [2 * new_times[-1] - t for t in reversed(new_times[:-1])] # mirror time
-            new_hrrs += list(reversed(new_hrrs[:-1])) # mirror HRR
-            
-        self._psql_log_variable('fireload', load_density)
-        return new_times, new_hrrs
-
-    def _draw_hrr_area(self):
-        '''
-        Generate fire. Alpha t square on the left, then constant in the
-        middle, then fading on the right. At the end read hrrs at given times.
-        '''
+    def _draw_hrr_area_cont_func(self):
         hrrpua_d = self.conf['hrrpua']    # [kW/m2]
         hrr_alpha = self.conf['hrr_alpha']    # [kW/s2]
         fire_area = self._draw_fire_maxarea()
@@ -624,60 +585,22 @@ class DrawAndLog:
         hrrpua = int(triangular(hrrpua_d['min'], hrrpua_d['mode'], hrrpua_d['max']))
         self.alpha = triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])
         hrr_peak = int(hrrpua * fire_area)
-        
-       # left
-        t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
-        interval = int(round(t_up_to_hrr_peak/10))
-        if interval == 0:
-            interval = 10
-        times = list(range(0, t_up_to_hrr_peak, interval)) + [t_up_to_hrr_peak]
-        hrrs = [int((self.alpha * t ** 2)) for t in times]
-        hrrs[-1] = hrr_peak
-        # plateo
-        times.append(self.conf['simulation_time'])
-        hrrs.append(hrr_peak)
-#        t_up_to_starts_dropping = 15 * 60
-#        times1 = [t_up_to_starts_dropping]
-#        hrrs1 = [hrr_peak]
-#        times1 = []
-#        hrrs1 = []
-#
-#        # right
-#        t_up_to_drops_to_zero=t_up_to_starts_dropping+t_up_to_hrr_peak
-#        interval = int(round((t_up_to_drops_to_zero - t_up_to_starts_dropping)/10))
-#        if interval == 0:
-#            interval = 10
-#        times2 = list(reversed(npf(len(times0), t_up_to_starts_dropping + max(times0)) - npa(times0)))
-#        hrrs2 = list(reversed(hrrs0))
-#
-#
-#        times = list(times0 + times1 + times2)
-#        hrrs = list(hrrs0 + hrrs1 + hrrs2)
-     
-     
-        times, hrrs = self._fuel_control(times, hrrs, fire_area)   # limit acc. to fire load
-        
-        self.conf["RESCUE"]["is_rescue"] = 1
-        try:
-            # Trying to get rescue parameter which old projects don't have 
-            is_rescue = bool(int(self.conf["RESCUE"]["is_rescue"]))
-        except KeyError:
-            print("KeyError. is_rescue not set")
-            is_rescue = False
-        except ValueError:
-            print("ValueError. Wrong value given ")
-            is_rescue = False
-        except Exception as e:
-            print(f"Error during getting rescue parameter: {e}")
-            is_rescue = False
-        
-        if is_rescue:
-            rescue_launcher = LaunchRescueModule(self.conf, self._sim_id, self.alpha, hrr_peak , times, hrrs)
-            rescue_launcher.main()
-            times, hrrs = rescue_launcher.calculate_impact_of_nozzles()
 
-        areas = list(npround(npa(hrrs) / hrr_peak * fire_area, 2))
-        self._psql_log_variables([('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
+        fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
+        load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
+        
+        hrr = HRR(self.conf['simulation_time'], self.conf)
+        t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
+        hrr.add_tsquared([0, t_up_to_hrr_peak], self.alpha)
+        hrr.add_const([t_up_to_hrr_peak, self.conf['simulation_time']], hrr_peak)
+        hrr.fuel_control(load_density * fire_area)
+        hrr.vent_control(None)
+        hrr.firefighting()
+
+        times, hrrs = hrr.get_old_format(plot=False)
+        areas = list(npround(npa(hrrs) / hrrpua, 2))
+
+        self._psql_log_variables([('fireload', load_density), ('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
 
         return times, hrrs, areas, t_up_to_hrr_peak
 
@@ -694,7 +617,7 @@ class DrawAndLog:
         
     def _draw_fire_table(self):# {{{
         # fire curve
-        times, hrrs, areas, fully_dev_time = self._draw_hrr_area()
+        times, hrrs, areas, fully_dev_time = self._draw_hrr_area_cont_func()
 
         # gather parameters
         heights = [self._fire_height] * len(times)  #constant
@@ -802,3 +725,250 @@ class DrawAndLog:
         #&DEVC
         [self._draw_triggers(d) for d in ['heat_detectors', 'smoke_detectors', 'sprinklers']]
         
+
+class HRR:
+    def __init__(self, sim_time, conf):
+        self.sim_time = sim_time
+        self.domains = npa([[.0, float(sim_time)]])
+        self.functions = npa([[.0, .0, .0]])
+        self.conf = conf
+        #self.test()
+
+    def all(self): return {'t': self.domains, 'f': self.functions}#, 'a': self.areas}    #t = [t0, t1] are time domains for functions f = [c, b, a] for f(t) = at^2 + bt +c
+
+    def _break_domains(self, t):
+        if t[0] > t[1]:
+            raise ValueError(f'Lower limit must be lower than upper limit {t}')
+        elif t[0] == t[1]:
+            raise ValueError(f'Lower and upper limits must not be equal {t}')
+
+        add_i = 0 
+        for i, domain in enumerate(self.domains):
+            # break the domain in two if necessary (be careful about indexes here)
+            for tb in t:
+                if domain[0] < tb < domain[1]:
+                    self.domains = npins(self.domains, i+add_i+1, [tb, domain[1]], axis=0)
+                    self.functions = npins(self.functions, i+add_i+1, self.functions[i+add_i], axis=0)
+                    self.domains[i+add_i][1] = tb
+                    add_i += 1
+
+    def _update_funcs(self, t, f):
+        for i, domain in enumerate(self.domains):
+            # update function if existing domain is in updated function domain
+            if t[0] <= domain[0] and domain[1] <= t[1]:
+                self.functions[i] += f
+
+    def _check_for_sim_time(self):
+        for i, d in enumerate(self.domains):
+            if d[0] > self.sim_time:
+                self.domains = self.domains[:1]
+                self.functions = self.functions[:1]
+                return True
+            elif d[1] > self.sim_time:
+                self._break_domains([self.sim_time,d[1]])
+        return False
+            
+    def _check_for_positive(self):
+        for i, f in enumerate(self.functions):
+            roots = np.roots(f[::-1])
+            real_roots = roots[np.isreal(roots)].real
+            for r in real_roots:
+                if self.domains[i][0] < r < self.domains[i][1]:
+                    self.clear([r, self.sim_time])
+                    return r 
+
+    def clear(self, domain):
+        self._break_domains(domain)
+        for i, d in enumerate(self.domains):
+            if domain[0] <= d[0] and d[1] <= domain[1]:
+                self.functions[i] = [0,0,0]
+
+    def add(self, domain, function):
+        new_f = function
+        self._break_domains(domain)
+        self._update_funcs(domain, function)
+                
+    def subtract(self, domain, function):
+        function *= -1
+        self.add(domain, function)
+
+    def add_const(self, domain, const):
+        self.add(domain, npa([const, 0, 0]))
+
+    def subtract_const(self, domain, const):
+        self.subtract(domain, npa([const, 0, 0]))
+
+    def add_tsquared(self, domain, alpha, rising=True):
+        if rising:
+            f = npa([alpha * domain[0] ** 2, -2 * alpha * domain[0], alpha])
+        else:
+            f = npa([alpha * (domain[1]) ** 2, -2 * alpha * (domain[1]), alpha])
+
+        self.add(domain, f)
+
+    def add_inversed_tsquared(self, domain, alpha, rising=True):
+        self.add_tsquared(domain, alpha, rising=not rising)
+
+    def subtract_tsquared(self, domain, alpha, rising=True):
+        alpha *= -1
+        self.add_tsquared(domain, alpha, rising=rising)
+
+    def subtract_inversed_tsquared(self, domain, alpha, rising=True):
+        alpha *= -1
+        self.add_inversed_tsquared(domain, alpha, rising=rising)
+
+    def vent_control(self, openings):
+        warnings.warn('A priori ventilation control not available. CFAST will limit HRR anyway')
+        pass
+
+    def _mirror(self, t): 
+        self._mirror_functions(self._mirror_domains(t))
+        self._check_for_sim_time()
+
+    def _mirror_domains(self, t):
+        self._break_domains([t, self.sim_time])
+        # i - index of the first domain to be changed
+        for i, d in enumerate(self.domains):
+            if d[0] == t:
+                self.domains = self.domains[:i]
+                for x in self.domains[::-1]:
+                    t_0 = self.domains[-1][1]
+                    dt = x[1] - x[0]
+                    self.domains = np.append(self.domains, [[t_0, t_0+dt]], axis=0)
+                return i
+
+    # i - index of the first domain to be changed
+    def _mirror_functions(self, i):
+        self.functions = np.vstack((self.functions[:i], np.zeros(self.functions[:i].shape)))
+        for j, f in enumerate(self.functions[:i]):
+            if f[0]:
+                self.add_const(self.domains[-j-1], f[0])
+            if f[1]:
+                self.add(self.domains[-j-1], [0, -f[1], 0])
+            if f[2]:
+                self.add_inversed_tsquared(self.domains[-j-1], f[2])
+            # HRR functions are limited to second degree 
+
+    def fuel_control(self, fireload):
+        def df_dt(f): return npa([n * x**(n-1) for n, x in enumerate(f)])
+        # c is initial value always added to the integral of f over d
+        def int_d(f, d, c=0): return sum([c] + [x * (d[1]**(n+1)-d[0]**(n+1)) / (n+1) for n, x in enumerate(f)])
+
+        fireload *= 1000 #[kJ]
+        
+        sum_q = 0
+        # iterate over time domains
+        for i, domain in enumerate(self.domains):
+            new_t = [domain]
+            while True:
+                tot_q = 0
+                # iterate over subdomains (whole domain in the first iteration)
+                for subdomain in new_t:
+                    tot_q += int_d(self.functions[i], subdomain, c=sum_q)
+                    if tot_q > fireload/2:
+                        # - break (sub)domain where half of fireload is burnt
+                        len_t = (subdomain[1] - subdomain[0])/2
+                        new_t = [[subdomain[0], subdomain[0] + len_t], [subdomain[1] - len_t, subdomain[1]]]
+                        break
+                    else:
+                        #   - add heat released in the domain to sum
+                        sum_q = tot_q
+                if len_t < 1:
+                    # - mirror if you know exactly where (subdomain's length < 1s)
+                    self._mirror(int(new_t[0][1]))
+                    break
+                elif tot_q > fireload/2:
+                    #   - continue the loop until length of subdomain is < 1 s
+                    continue
+                else:
+                    # if less than half of fireload is burnt in the domain:
+                    #   - continue to the next domain
+                    break
+            # break out the domain loop if you already mirrored HRR curve
+            if len_t < 1:
+                break
+
+    def _nozzle(self, t, q):
+        a = uniform(0.1,0.5)    #alpha values to be confirmed
+        dt = (q/a)**0.5
+        if t > self.sim_time:
+            return False
+        elif t + dt > self.sim_time:
+            self.subtract_tsquared([t,self.sim_time], a)
+            return True
+        else:
+            self.subtract_tsquared([t,t+dt], a)
+            self.subtract_const([t+dt,self.sim_time], q)
+            return True
+
+    def firefighting(self):
+        def is_rescue(): 
+            # Trying to get rescue parameter which old projects don't have 
+            try:
+                return bool(int(self.conf["RESCUE"]["is_rescue"]))
+            except KeyError:
+                print("KeyError. is_rescue not set")
+                return False
+            except ValueError:
+                print("ValueError. Wrong value given ")
+                return False
+            except Exception as e:
+                print(f"Error during getting rescue parameter: {e}")
+                return False
+
+        if is_rescue():
+            rescue_launcher = LaunchRescueModule(self.conf)
+            rescue_launcher.main()
+            q_and_t_tuples = rescue_launcher.q_and_t_tuples
+            for (time, q) in q_and_t_tuples:
+                self._nozzle(time, q)
+
+        self._check_for_positive()
+    
+    def _val(self, t, lim=0):
+        for i, domain in enumerate(self.domains):
+            if any([domain[0] > t or t > domain[1], t == domain[1] and lim>0, t == domain[0] and lim<0]):
+                continue
+            else:
+                return int(sum([j * t ** p for p, j in enumerate(self.functions[i])]))
+
+    def _is_linear(self, f):
+        return True if sum(f[2:]) == 0 else False
+                
+    def get_old_format(self, resolution=5, plot=False):
+        def pl(t, hs):
+            import matplotlib.pyplot as plt
+            plt.plot(t, hs)
+            plt.savefig('hrr.png')
+
+        times, hrrs = [], []
+        for i, domain in enumerate(self.domains):
+            if self._is_linear(self.functions[i]):
+                times.extend(domain)
+                hrrs.extend([self._val(domain[0], lim=1), self._val(domain[1], lim=-1)])
+            else:
+                for j in range(int(npround(domain[0])), int(npround(domain[1])), resolution):
+                    times.append(j)
+                    hrrs.append(self._val(j))
+
+        #CFAST has 199 records limit
+        while True:
+            if len(times) > 199:
+                times, hrrs = self.get_old_format(resolution=resolution*2)
+            else:
+                break
+        pl(times,hrrs) if plot else None
+        return times, hrrs
+
+
+
+
+
+
+
+
+
+        
+        
+
+
