@@ -613,7 +613,7 @@ class DrawAndLog:
         hrr = HRR(self.conf)
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
         hrr.add_tsquared([0, t_up_to_hrr_peak], self.alpha)
-        hrr.add_const([t_up_to_hrr_peak, self.conf['simulation_time']], hrr_peak)
+        hrr.add_const([t_up_to_hrr_peak, hrr.sim_time], hrr_peak)
         hrr.fuel_control(load_density * fire_area)
         hrr.firefighting()
 
@@ -762,11 +762,19 @@ class HRR:
 
     def all(self): return {'t': self.domains, 'f': self.functions}    #t = [t0, t1] are time domains for functions f = [c, b, a] for f(t) = at^2 + bt +c
 
-    def _break_domains(self, t):
-        if t[0] > t[1]:
+    def _break_domains(self, t, v=False):
+        if t[0] > self.sim_time:
+            if not v:
+                return False
+            raise ValueError(f'Lower limit {t[0]} must not be greater than simulation time {self.sim_time}')
+        elif t[0] > t[1]:
+            if not v:
+                return False
             print(self.domains)
             raise ValueError(f'Lower limit must be lower than upper limit {t}')
         elif t[0] == t[1]:
+            if not v:
+                return False
             print(self.domains)
             raise ValueError(f'Lower and upper limits must not be equal {t}')
 
@@ -780,7 +788,22 @@ class HRR:
                     self.domains[i+add_i][1] = tb
                     add_i += 1
 
-    def _update_funcs(self, t, f):
+    def _update_funcs(self, t, f, v=False):
+        if t[0] > self.sim_time:
+            if not v:
+                return False
+            raise ValueError(f'Lower limit {t[0]} must not be greater than simulation time {self.sim_time}')
+        elif t[0] > t[1]:
+            if not v:
+                return False
+            print(self.domains)
+            raise ValueError(f'Lower limit must be lower than upper limit {t}')
+        elif t[0] == t[1]:
+            if not v:
+                return False
+            print(self.domains)
+            raise ValueError(f'Lower and upper limits must not be equal {t}')
+
         for i, domain in enumerate(self.domains):
             # update function if existing domain is in updated function domain
             if t[0] <= domain[0] and domain[1] <= t[1]:
