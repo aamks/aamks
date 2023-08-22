@@ -210,7 +210,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
             for m in range(len(needed_record)):
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
                     self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
-           
+                
 
 
 
@@ -248,13 +248,26 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         y=self.floors_meta[self.floor]['miny'] + self._square_side * int((q[1]-self.floors_meta[self.floor]['miny'])/self._square_side)
 
         if len(self._query_vertices[x,y]['x'])==1:
-            return self.compa_conditions[self._cell2compa[(x,y)]] if (x,y) in self._cell2compa else {'COMPA': 'outside'} 
+            if (x,y) in self._cell2compa:
+                attempt_room = self._cell2compa[(x,y)]
+                room = re.search(r'(s\d+)(\.\d+)?', attempt_room).group(1) if attempt_room.startswith("s") else attempt_room
+            else:
+                room = None
+            conditions = self.compa_conditions[room] if room != None else {'COMPA': 'outside'}
+            return conditions
         else:
             for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
                 if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
                     rx=self._query_vertices[(x,y)]['x'][i-1]
                     ry=self._query_vertices[(x,y)]['y'][i-1]
-                    return self.compa_conditions[self._cell2compa[(rx,ry)]] if (rx,ry) in self._cell2compa else {'COMPA': 'outside'} 
+                    if (rx,ry) in self._cell2compa:
+                        attempt_room = self._cell2compa[(rx,ry)]
+                        room = re.search(r'(s\d+)(\.\d+)?', attempt_room).group(1) if attempt_room.startswith("s") else attempt_room
+                    else:
+                        room = None
+                    conditions = self.compa_conditions[room] if room != None else {'COMPA': 'outside'}
+                    return conditions
+                    #return self.compa_conditions[self._cell2compa[(rx,ry)]] if (rx,ry) in self._cell2compa else {'COMPA': 'outside'} \
         return {'COMPA': 'outside'} 
 # }}}
     def get_visibility(self, position):# {{{
@@ -263,6 +276,10 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
 
         if conditions == 'outside':
             print('outside')
+
+        if re.search(r'(s\d+)', conditions['COMPA']):
+            return conditions['ULOD'], conditions['COMPA']
+        
         hgt = conditions['HGT']
         if hgt == None:
             return 0, conditions['COMPA']
@@ -303,8 +320,11 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         # when position of evacuee is outside the building we assume no FED absorbed
         if conditions['COMPA'] == 'outside':
             return 0.
-
+        
         hgt = conditions['HGT']
+        if re.search(r'(s\d+)', conditions['COMPA']):
+            hgt = self.config['LAYER_HEIGHT']
+        
         if hgt == None:
             return 0.
 
