@@ -89,17 +89,22 @@ class EvacMcarlo():
         self.s.query("UPDATE obstacles SET json=?", (json.dumps(obstacles),)) 
 
 # }}}
+    def _get_alarming_time(self):
+        return round(normal(loc=self.conf['alarming']['mean'], scale=self.conf['alarming']['sd']), 2)
+
     def _make_pre_evacuation(self,room,type_sec):# {{{
         ''' 
         An evacuee pre_evacuates from either ordinary room or from the room of
         fire origin; type_sec is for future development.
+        Detection from CFAST or config when no detectors in worker.py
+        Alarming form config
         '''
 
         if room != self._evac_conf['FIRE_ORIGIN']:
             pe=self.conf['pre_evac']
         else:
             pe=self.conf['pre_evac_fire_origin']
-        return round(lognorm(s=1, loc=pe['mean'], scale=pe['sd']).rvs(), 2)
+        return self._get_alarming_time() + round(lognorm(s=1, loc=pe['mean'], scale=pe['sd']).rvs(), 2)
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
         ''' 
