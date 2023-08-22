@@ -371,10 +371,10 @@ class CfastMcarlo():
 # }}}
     def _section_sprinklers(self):# {{{
         txt=['!! SECTION SPRINKLERS']
-        for v in self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1"):
+        for i, v in enumerate(self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1")):
             try:
-                temp, dens = self.samples['sprinklers']    # ACTIVATION_TEMPERATURE,
-            except ValueError:
+                temp, dens = self.samples['sprinklers'][i]    # ACTIVATION_TEMPERATURE,
+            except TypeError:
                 collect =[]
             else: 
                 collect=[]
