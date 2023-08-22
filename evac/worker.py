@@ -220,6 +220,7 @@ class Worker:
         try:
             return det
         except NameError:
+            return 60*30
             return round(normal(loc=self.project_conf['detection']['mean'], scale=self.project_conf['detection']['sd']), 2)
 
     def _create_evacuees(self, floor):
@@ -228,10 +229,16 @@ class Worker:
         self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
         floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
+        def pre_evac_total(i):
+            if floor['EVACUEES'][i]['COMPA'] == self.vars['conf']['FIRE_ORIGIN']:
+                
+                return floor['EVACUEES'][i]['PRE_EVACUATION']
+            else:
+                return self.detection_time+floor['EVACUEES'][i]['PRE_EVACUATION']
 
         for i in floor['EVACUEES'].keys():
             evacuees.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
-                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=self.detection_time+floor['EVACUEES'][i]['PRE_EVACUATION'],
+                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=pre_evac_total(i),
                                     alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
                                     node_radius=self.config['NODE_RADIUS']))
             self.wlogger.debug('{} evacuee added'.format(i))
@@ -252,7 +259,7 @@ class Worker:
         return stair_cases
 
     def prepare_simulations(self):
-        self.detection_time = self._get_detection() #rough - with CFAST SPREADSHEET resolution
+        self.detection_time = self._get_detection_time() #rough - with CFAST SPREADSHEET resolution
 
         for floor in sorted(self.obstacles['obstacles'].keys()):
             eenv = None
@@ -516,7 +523,7 @@ class Worker:
             report['floor'] = num_floor
         report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
 
-        report['psql']['detection'] = self.detection_time
+        report['psql']['detection'] = int(self.detection_time)
 
         self.meta_file = "meta_{}.json".format(self.sim_id)
         j.write(report, self.meta_file)
@@ -562,7 +569,6 @@ class Worker:
         self.send_report()
 
     def local_worker(self):
-        print(self.working_dir)
         os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()

@@ -62,6 +62,7 @@ CREATE TABLE simulations ( ---{{{
     vnt text,
     vvent text,
     sprinklers text,
+    detection integer
     wcbe text,
     dcbe_time integer,
     dcbe_compa text,
