@@ -28,6 +28,7 @@ from collections import OrderedDict
 from subprocess import Popen, run, TimeoutExpired
 import zipfile
 import multiprocessing
+import pandas as pd
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
@@ -69,6 +70,7 @@ class Worker:
         self.position_fed_tables_information = []
         ssl._create_default_https_context = ssl._create_unverified_context
         self.rows_to_insert = []
+        self.detection_time = None
 
 
     def get_logger(self, logger_name):
@@ -206,6 +208,20 @@ class Worker:
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         self.wlogger.info('SQLite load successfully')
 
+    def _get_detection_time(self):
+        heat = any(self.project_conf['smoke_detectors'].values())
+        smoke = any(self.project_conf['heat_detectors'].values())
+        sprink = any(self.project_conf['sprinklers'].values())
+        if any([heat, smoke, sprink]):
+            df = pd.read_csv('cfast_devices.csv')[3:].astype(float)
+            if (df.filter(like='SENSACT').iloc[-1] == 1).any():
+                det = df['Time'].loc[(df.filter(like='SENSACT') == 1).idxmax().max()]
+            del df
+        try:
+            return det
+        except NameError:
+            return round(normal(loc=self.project_conf['detection']['mean'], scale=self.project_conf['detection']['sd']), 2)
+
     def _create_evacuees(self, floor):
 
         evacuees = []
@@ -215,7 +231,7 @@ class Worker:
 
         for i in floor['EVACUEES'].keys():
             evacuees.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
-                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=floor['EVACUEES'][i]['PRE_EVACUATION'],
+                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=self.detection_time+floor['EVACUEES'][i]['PRE_EVACUATION'],
                                     alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
                                     node_radius=self.config['NODE_RADIUS']))
             self.wlogger.debug('{} evacuee added'.format(i))
@@ -236,6 +252,7 @@ class Worker:
         return stair_cases
 
     def prepare_simulations(self):
+        self.detection_time = self._get_detection() #rough - with CFAST SPREADSHEET resolution
 
         for floor in sorted(self.obstacles['obstacles'].keys()):
             eenv = None
@@ -499,6 +516,8 @@ class Worker:
             report['floor'] = num_floor
         report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
 
+        report['psql']['detection'] = self.detection_time
+
         self.meta_file = "meta_{}.json".format(self.sim_id)
         j.write(report, self.meta_file)
         self.wlogger.info('Metadata prepared successfully')
@@ -543,6 +562,7 @@ class Worker:
         self.send_report()
 
     def local_worker(self):
+        print(self.working_dir)
         os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
@@ -557,9 +577,9 @@ class Worker:
 
 w = Worker()
 #print(os.environ['AAMKS_WORKER'])
-os.environ['AAMKS_WORKER'] = 'gearman'
-os.environ['AAMKS_PATH'] = '/usr/local/aamks'
-os.environ['AAMKS_SERVER'] = '192.168.0.185'
+#os.environ['AAMKS_WORKER'] = 'gearman'
+#os.environ['AAMKS_PATH'] = '/usr/local/aamks'
+#os.environ['AAMKS_SERVER'] = '192.168.0.185'
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()
