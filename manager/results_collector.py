@@ -101,7 +101,7 @@ class ResultsCollector():
         [dfed.apply(update_fed_growth, axis=1, floor=f) for f, dfed in enumerate(dfeds)]
 
         # simulations table
-        p.query(f"""UPDATE simulations SET fed = '{fed}', fed_symbolic = '{fed_symbolic}', wcbe='{rset}', 
+        p.query(f"""UPDATE simulations SET fed = '{fed}', fed_symbolic = '{fed_symbolic}', wcbe='{rset}', detection = '{self.meta['psql']['detection']}', 
                 run_time = {self.meta['psql']['runtime']}, dcbe_time = {self.meta['psql']['cross_building_results']['dcbe']},
                 min_vis_compa = {self.meta['psql']['cross_building_results']['min_vis_compa']},
                 max_temp = {self.meta['psql']['cross_building_results']['max_temp_compa']}, host = '{self.meta['worker']}',
