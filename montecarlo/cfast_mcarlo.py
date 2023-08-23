@@ -617,7 +617,7 @@ class DrawAndLog:
         hrr.fuel_control(load_density * fire_area)
         hrr.firefighting()
 
-        times, hrrs = hrr.get_old_format(plot=True)
+        times, hrrs = hrr.get_old_format(plot=False)
         areas = list(npround(npa(hrrs) / hrrpua, 2))
         flashover = t_up_to_hrr_peak if flashover else self.conf['simulation_time']*2
 
