@@ -23,6 +23,7 @@ from include import Json
 from collections import OrderedDict
 from rescue_module.rescue import *
 import warnings
+import numpy as np
 
 # }}}
 def join2str(l, sep, quotes=False, force=False):
@@ -578,6 +579,8 @@ class DrawAndLog:
         fire_area = round(p.rvs(size=1)[0], 2)
         if fire_area > orig_area:
             fire_area = orig_area
+        if HRR(self.conf, self._sim_id).is_rescue:
+            fire_area = orig_area
         return fire_area
 
     def _flashover_q(self, model='Thomas'):
@@ -610,7 +613,7 @@ class DrawAndLog:
         load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
         self._psql_log_variable('fireload', load_density)
         
-        hrr = HRR(self.conf)
+        hrr = HRR(self.conf, self._sim_id)
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
         hrr.add_tsquared([0, t_up_to_hrr_peak], self.alpha)
         hrr.add_const([t_up_to_hrr_peak, hrr.sim_time], hrr_peak)
@@ -754,11 +757,12 @@ class DrawAndLog:
         
 
 class HRR:
-    def __init__(self, conf):
+    def __init__(self, conf, _sim_id):
         self.conf = conf
         self.sim_time = conf['simulation_time']
         self.domains = npa([[.0, float(self.sim_time)]])
         self.functions = npa([[.0, .0, .0]])
+        self._sim_id = _sim_id
 
     def all(self): return {'t': self.domains, 'f': self.functions}    #t = [t0, t1] are time domains for functions f = [c, b, a] for f(t) = at^2 + bt +c
 
@@ -952,22 +956,8 @@ class HRR:
             return True
 
     def firefighting(self):
-        def is_rescue(): 
-            # Trying to get rescue parameter which old projects don't have 
-            try:
-                return bool(int(self.conf["RESCUE"]["is_rescue"]))
-            except KeyError:
-                print("KeyError. is_rescue not set")
-                return False
-            except ValueError:
-                print("ValueError. Wrong value given ")
-                return False
-            except Exception as e:
-                print(f"Error during getting rescue parameter: {e}")
-                return False
-
-        if is_rescue():
-            rescue_launcher = LaunchRescueModule(self.conf)
+        if self.is_rescue():
+            rescue_launcher = LaunchRescueModule(self.conf, self._sim_id)
             rescue_launcher.main()
             q_and_t_tuples = rescue_launcher.q_and_t_tuples
             for (time, q) in q_and_t_tuples:
@@ -975,6 +965,20 @@ class HRR:
 
         self._check_for_sim_time()
         self._check_for_positive()
+
+    def is_rescue(self): 
+        # Trying to get rescue parameter which old projects don't have 
+        try:
+            return bool(int(self.conf["RESCUE"]["is_rescue"]))
+        except KeyError:
+            print("KeyError. is_rescue not set")
+            return False
+        except ValueError:
+            print("ValueError. Wrong value given ")
+            return False
+        except Exception as e:
+            print(f"Error during getting rescue parameter: {e}")
+            return False
 
     
     def _val(self, t, lim=0):

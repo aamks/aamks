@@ -2,23 +2,14 @@ import os
 from collections import OrderedDict
 from numpy.random import choice
 from numpy.random import uniform
-from numpy.random import normal
 from numpy.random import lognormal
-from numpy.random import binomial
 from numpy.random import gamma
-from numpy.random import triangular
-from numpy.random import seed
-from numpy.random import randint
 from numpy import array as npa
 from include import Json
 from collections import OrderedDict
-from math import floor
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import statistics
-import openpyxl
-from scipy import stats
+from include import Psql
+import json
+
 
 class Rescue():
     def __init__(self, conf):
@@ -219,7 +210,6 @@ class Rescue():
                 pass
             else:  
                 distance_params = value
-                self.data["Distance_parameters" ] = distance_params
                 return distance_params
 
     def lognormal_result(self, mean, sigma, mean_uncertain, sigma_uncertain):
@@ -246,6 +236,7 @@ class Nozzles:
         self.dh = conf["RESCUE"]["fire_distance_horizontal"]
         self.dv = conf["RESCUE"]["fire_distance_vertical"]
         self.nozzles_data = conf["NOZZLES"]
+        self.data = OrderedDict()
 
     def main(self):
         self.get_times()
@@ -256,18 +247,22 @@ class Nozzles:
         for time in self.nozzles_data.values():     
             if time >= 0:     
                 self.nozzles_times.append(time)
+        self.data['Nozzles times'] = self.nozzles_times
  
     def get_power(self):
         k = 175
         pressure_after_drop = 0.6 - (self.dh/1000 + self.dv/100) 
         water_flow = k * (10*pressure_after_drop)**(1/2) / 60   
         self.power = round(water_flow *2.6 *1000 *0.5, 0)  
+        self.data['Nozzle power'] = self.power
 
         
 class LaunchRescueModule:
-    def __init__(self, conf):
+    def __init__(self, conf, sim_id):
         self.conf = conf
         self.q_and_t_tuples = []
+        self.p = Psql()
+        self._sim_id = sim_id
 
     def main(self):
         rescue = Rescue(self.conf)
@@ -275,6 +270,8 @@ class LaunchRescueModule:
         nozzles = Nozzles(self.conf)
         nozzles.main()
         self.prepare_data(rescue, nozzles)
+        self.prepare_dict(rescue, nozzles)
+        self.save_parameters_in_psql()
 
     def prepare_data(self, rescue, nozzles):
         rescue_time = rescue.total_time
@@ -282,6 +279,18 @@ class LaunchRescueModule:
         power = nozzles.power
         for t in nozzles_times:
             self.q_and_t_tuples.append((rescue_time+t, power))
-        
-    
+
+    def prepare_dict(self, rescue, nozzles):
+        all_data = OrderedDict()
+        all_data.update(rescue.data)
+        all_data.update(nozzles.data)
+        str_data= OrderedDict() #values converted to str in all_data
+        for k,v in all_data.items():
+            str_data[k]= str(v)
+        self.json_data = json.dumps(str_data)
+
+    def save_parameters_in_psql(self):
+        value = self.json_data
+        self.p.query("UPDATE simulations SET rescue_params='{}' WHERE project=%s AND scenario_id=%s AND iteration=%s".format(value),(self.conf['project_id'], self.conf['scenario_id'], self._sim_id))
+
 
