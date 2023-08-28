@@ -44,7 +44,6 @@ function make_help() { /*{{{*/
 	$help["heatcom"]             	 = [""                                 , "<b>User-defined</b> parameters of heat of combustion normal distribution [MJ/kg]"]                                                              ;
 	$help["yields"]    	             = [""                                 , "<b>User-defined</b> parameters of species yields normal distribution [g/g]"]                                                              ;
 	$help["radfrac"]    	         = ["Radiative fraction"               , "Parameters of gamma distribution of radiative fraction of HRR [-]"]                                                              ;
-    $help["fire_area"]    	         = ["Fire area"                        , "Parameters of pareto distribution of fire area [m<sup>2</sup>]"]                                                              ;
 	$help["fire_load"]    	         = [""                                 , "Parameters of log-normal distribution of fire load in ROOM and other comprtments types [MJ/m<sup>2</sup>]"]                                                              ;
 
     //EVACUTAION MODEL
@@ -78,6 +77,18 @@ function make_help() { /*{{{*/
 	$help["time_2"]			     = ["t2"                       , "Time from arrival to start putting fire from 2nd nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;
 	$help["time_3"]			     = ["t3"                       , "Time from arrival to start putting fire from 3rd nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;	
 	$help["time_4"]			     = ["t4"                       , "Time from arrival to start putting fire from 4th nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;
+
+	$help["r_is"]			     = ["Model"                       , "Simple (0) - Pareto distribution of fire area<br>Complex (1) - see Kuziora 2023" ]                                                      ;
+	$help["r_trans"]			     = ["Transmission"                       , "Phone call (0) - fire service is notified of fire via phone call<br>Automatic(1) - automatic alarm transmission from FACP" ]                                                      ;
+	$help["r_times"]			     = [""                       , "Time intervals for fire scenario [s]" ]                                                      ;
+	$help["detection"]			     = ["detection"                       , "Time from fire initiation to detection (used only within complex fire service sub-model)" ]                                                      ;
+	$help["t1"]			     = ["T1"                       , "Confirmation time"];
+	$help["t2"]			     = ["T2"                       , "Reconnaissance time"];
+	$help["processing"]			     = ["processing"                       , "Time for alarm processing"];
+    $help["r_distances"]			     = [""                       , "Distances to the nearest Fire Units [km]"];
+	$help["r_to_fire"]			     = [""                       , "Maximum length (horizontal) and hydraulic head (vertical) of firehoses system [m]"];
+	$help["r_nozzles"]			     = [""                       , "Time from fire unit arrival to application of subsequent water jets [s] (-1 if never ready)"];
+    $help["fire_area"]    	         = ["Pareto fire area"                        , "Parameters of Pareto distribution of fire area [m<sup>2</sup>]"]                                                              ;
 
 	foreach($help as $k=>$v) { 
 		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
@@ -439,6 +450,27 @@ function get_template_defaults($q) {/*{{{*/
 	"time_3": 80,
 	"time_4": -1
     },
+
+    "r_is":"0",
+    "r_trans":"0",
+    "r_times": {
+        "detection": "",
+        "t1": "",
+        "t2": "",
+        "processing": ""},
+    "r_distances": {
+        "1st": "",
+        "2nd": ""},
+    "r_to_fire": {
+        "horizontal": "",
+        "vertical": ""},
+    "r_nozzles": {
+        "1st": "",
+        "2nd": "",
+        "3rd": "",
+        "4th": ""},
+
+
 	        
     "outdoor_temperature": {
         "mean": 10,

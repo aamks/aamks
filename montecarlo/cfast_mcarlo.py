@@ -969,7 +969,7 @@ class HRR:
     def is_rescue(self): 
         # Trying to get rescue parameter which old projects don't have 
         try:
-            return bool(int(self.conf["RESCUE"]["is_rescue"]))
+            return bool(int(self.conf["r_is"]))
         except KeyError:
             print("KeyError. is_rescue not set")
             return False
