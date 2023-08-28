@@ -110,6 +110,7 @@ class Aamks {/*{{{*/
 		$menu='';
 		$menu.="<close-left-menu-box><img src=/aamks/css/close.svg></close-left-menu-box><br>";
 		$menu.="<img width=100 src=/aamks/logo.svg><br><br>";
+		$menu.="<font color='red'>ATTENTION</font><br><font size=1>This is beta-version of<br>AAMKS. Please report<br> bugs and feedback at:<br><a href='mailto:projectaamks@gmail.com'>projectaamks@gmail.com</a></font><br><br>";
 		$menu.="<a id=menu-active-scenario-label href=/aamks/form.php?edit class=bblink>".$_SESSION['main']['scenario_name']."</a><br>";
 		$menu.="<a class=blink href=/aamks/projects.php?projects_list>Projects</a><br>";
 		$menu.="<a class=blink href=/aamks/apainter/index.php>Apainter</a><br>";
