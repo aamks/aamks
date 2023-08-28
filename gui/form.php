@@ -32,6 +32,24 @@ function droplist_fire_model($in) {/*{{{*/
 	return $select;
 }
 /*}}}*/
+function droplist_rescue($in) {/*{{{*/
+	$select="<select name=post[r_is]>";
+	$select.="<option value='$in'>$in</option>";
+	$select.="<option value=0>Simple (Pareto)</option>";
+	$select.="<option value=1>Complex (Kuziora 2023)</option>";
+	$select.="</select>";
+	return $select;
+}
+/*}}}*/
+function droplist_rescue_electronic($in) {/*{{{*/
+	$select="<select name=post[r_trans]>";
+	$select.="<option value='$in'>$in</option>";
+	$select.="<option value=0>Phone call</option>";
+	$select.="<option value=1>Automatic</option>";
+	$select.="</select>";
+	return $select;
+}
+/*}}}*/
 function droplist_dipatch_evacuees($in) {/*{{{*/
 	$select="<select name=post[dispatch_evacuees]>";
 	$select.="<option value='$in'>$in</option>";
@@ -175,6 +193,23 @@ function form_plain_arr_switchable2($key,$arr,$display) { #{{{
 	return $z;
 }
 /*}}}*/
+function form_plain_arr_switchable3($key,$arr) { #{{{
+	$z='';
+	if(strlen(implode("", $arr))>0) {
+		$z.="<div id=$key-switch class='grey no-display'>Only for complex rescue sub-model</div>";
+		$z.="<table id='$key-table' class='noborder'>";
+	} else {
+		$z.="<div id=$key-switch class='grey'>Only for complex rescue sub-model</div>";
+		$z.="<table id='$key-table' class='noborder no-display'>";
+	}
+	$z.="<tr>";
+	foreach($arr as $k => $v) { 
+		$z.="<td>".get_help($k)."<br><input autocomplete=off size=8 type=text name=post[$key][$k] value='$v'>";
+	}
+	$z.="</table>";
+	return $z;
+}
+/*}}}*/
 function form_assoc($key,$arr) { #{{{
 	$z="";
 	$z.="<table class=noborder>";
@@ -304,17 +339,15 @@ function form_fields_advanced() { #{{{
 	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
 	echo "<tr><td>".get_help('number_of_simulations')."<td><input autocomplete=off type=text automplete=off size=10 name=post[number_of_simulations] value='$number_of_simulations'>"; 
 	echo "<tr><td>".get_help('simulation_time')."<td><input autocomplete=off type=text automplete=off size=10 name=post[simulation_time] value='$simulation_time'>"; 
-	echo "<tr><td>".get_help('fire_model')."<td>".droplist_fire_model($fire_model); 
 
-    echo "<tr><td>&nbsp;</td></tr><tr><th><strong>FIRE SUBMODEL</strong></th>";
+    echo "<tr><td>&nbsp;</td></tr><tr><th><strong>FIRE SUB-MODEL</strong></th>";
+	echo "<tr><td>".get_help('fire_model')."<td>".droplist_fire_model($fire_model); 
 	echo "<tr><td>".get_help('indoor_temperature')."<td>".form_assoc('indoor_temperature',$indoor_temperature); 
 	echo "<tr><td>".get_help('outdoor_temperature')."<td>".form_assoc('outdoor_temperature',$outdoor_temperature); 
 	echo "<tr><td>".get_help('pressure')."<td>".form_assoc('pressure',$pressure); 
 	echo "<tr><td>".get_help('humidity')."<td>".form_assoc('humidity',$humidity); 
 	echo building_fields($building_profile, 'advanced');
 	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
-	echo "<tr><td><a class='rlink switch' id='rescue'>RESCUE</a><td>".form_assoc('RESCUE',$RESCUE);
-	echo "<tr><td><a class='rlink switch' id='NOZZLES'>NOZZLES</a><td>".form_assoc('NOZZLES',$NOZZLES);	
 	echo "<tr><td>".get_help('windows')."<td>".form_arr('windows',$windows); 
 	echo "<tr><td>".get_help('vents_open')."<td>".form_assoc('vents_open',$vents_open); 
 	echo "<tr><td><a class='rlink switch' id='heat_detectors'>Heat detectors</a>".get_help('heat_detectors')."<td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
@@ -325,7 +358,6 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('fire_starts_in_a_room')."<td><input autocomplete=off type=text automplete=off size=10 name=post[fire_starts_in_a_room] value='$fire_starts_in_a_room'>"; 
 	echo "<tr><td>".get_help('hrrpua')."<td>".form_assoc('hrrpua',$hrrpua); 
 	echo "<tr><td>".get_help('hrr_alpha')."<td>".form_assoc('hrr_alpha',$hrr_alpha); 
-	echo "<tr><td>".get_help('fire_area')."<td>".form_assoc('fire_area',$fire_area); 
 	echo "<tr><td>".get_help('radfrac')."<td>".form_assoc('radfrac',$radfrac); 
 	echo "<tr><td>".get_help('fuel')."<td>".droplist_fuel($fuel); 
     if ($fuel=='user'){$disp = True;}else{$disp = False;}
@@ -334,7 +366,7 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td><a class='rlink switch' id='yields'>Yields</a>".get_help('yields')."<td>".form_plain_arr_switchable2('yields',$yields,$disp); 
 	echo "<tr><td><a class='rlink switch' id='fire_load'>Fire load</a>".get_help('fire_load')."<td>".form_plain_arr_switchable2('fire_load',$fire_load,True); 
 
-    echo "<tr><td>&nbsp;</td></tr><tr><th><strong>EVACUATION SUBMODEL</strong></th>";
+    echo "<tr><td>&nbsp;</td></tr><tr><th><strong>EVACUATION SUB-MODEL</strong></th>";
 	echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($dispatch_evacuees); 
 	echo "<tr><td>".get_help('alarming')."<td>".form_assoc('alarming',$alarming); 
 	echo "<tr><td>".get_help('pre_evac')."<td>".form_assoc('pre_evac',$pre_evac); 
@@ -344,6 +376,17 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('evacuees_alpha_v')."<td>".form_assoc('evacuees_alpha_v',$evacuees_alpha_v); 
 	echo "<tr><td>".get_help('evacuees_beta_v')."<td>".form_assoc('evacuees_beta_v',$evacuees_beta_v); 
 	echo "<tr><td>".get_help('evacuees_density')."<td>".form_assoc('evacuees_density',$evacuees_density); 
+
+    echo "<tr><td>&nbsp;</td></tr><tr><th><strong>RESCUE SUB-MODEL</strong></th>";
+	//echo "<tr><td><a class='rlink switch' id='rescue'>Parameters</a><td>".form_assoc('RESCUE',$RESCUE);
+	//echo "<tr><td><a class='rlink switch' id='NOZZLES'>Nozzles</a><td>".form_assoc('NOZZLES',$NOZZLES);	
+	echo "<tr><td>".get_help('r_is')."<td>".droplist_rescue($r_is); 
+	echo "<tr><td>".get_help('fire_area')."<td>".form_assoc('fire_area',$fire_area); 
+	echo "<tr><td>".get_help('r_trans')."<td>".droplist_rescue_electronic($r_trans); 
+	echo "<tr><td><a class='rlink switch' id='r_times'>Times</a>".get_help('r_times')."<td>".form_plain_arr_switchable3('r_times',$r_times); 
+	echo "<tr><td><a class='rlink switch' id='r_distances'>Fire Unit</a>".get_help('r_distances')."<td>".form_plain_arr_switchable3('r_distances',$r_distances); 
+	echo "<tr><td><a class='rlink switch' id='r_to_fire'>Firehoses</a>".get_help('r_to_fire')."<td>".form_plain_arr_switchable3('r_to_fire',$r_to_fire); 
+	echo "<tr><td><a class='rlink switch' id='r_nozzles'>Nozzles</a>".get_help('r_nozzles')."<td>".form_plain_arr_switchable3('r_nozzles',$r_nozzles); 
 	echo "</table>";
 	echo "</form>";
 }

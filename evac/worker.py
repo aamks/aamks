@@ -215,7 +215,7 @@ class Worker:
         if any([heat, smoke, sprink]):
             df = pd.read_csv('cfast_devices.csv')[3:].astype(float)
             if (df.filter(like='SENSACT').iloc[-1] == 1).any():
-                det = df['Time'].loc[(df.filter(like='SENSACT') == 1).idxmax().max()]
+                det = df['Time'][df[(df.filter(like='SENSACT') == 1) == True].idxmax().min()]
             del df
         try:
             return det

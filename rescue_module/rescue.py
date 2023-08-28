@@ -14,10 +14,10 @@ import json
 class Rescue():
     def __init__(self, conf):
         self.conf = conf
-        self.electronic = bool(int(self.conf["RESCUE"]["electronic"]))  # electronic/phone_call 1/0
-        self.distance_short = self.conf["RESCUE"]["dist_short"] # distance from nearest fire department
-        self.distance_long = self.conf["RESCUE"]["dist_long"] # distance from second nearest fire department
-        self.cpr = bool(int(self.conf["RESCUE"]["CPR"]))
+        self.electronic = bool(int(self.conf["r_trans"]))  # electronic/phone_call 1/0
+        self.distance_short = self.conf["r_distances"]["1st"] # distance from nearest fire department
+        self.distance_long = self.conf["r_distances"]["2nd"] # distance from second nearest fire department
+        self.cpr = bool(int(self.conf["r_times"]["processing"]))
         self.data = {}
 
     def main(self):
@@ -61,17 +61,17 @@ class Rescue():
 
     def get_detection(self):
         """ Detection time - user defined """
-        self.t_detection = self.conf["RESCUE"]["detection"]
+        self.t_detection = self.conf["r_times"]["detection"]
         self.data["detection"] = self.t_detection
 
     def get_t1(self):
         """ T1 time - user defined """
-        self.t_1 = self.conf["RESCUE"]["t1"]
+        self.t_1 = self.conf["r_times"]["t1"]
         self.data["T1"] = self.t_1    
     
     def get_t2(self):
         """ T2 time -- user defined """
-        self.t_2 = self.conf["RESCUE"]["t2"] 
+        self.t_2 = self.conf["r_times"]["t2"] 
         self.data["T2"] = self.t_2
 
     def get_cpr(self):
@@ -233,9 +233,9 @@ class Rescue():
 
 class Nozzles:
     def __init__(self, conf):
-        self.dh = conf["RESCUE"]["fire_distance_horizontal"]
-        self.dv = conf["RESCUE"]["fire_distance_vertical"]
-        self.nozzles_data = conf["NOZZLES"]
+        self.dh = conf["r_to_fire"]["horizontal"]
+        self.dv = conf["r_to_fire"]["vertical"]
+        self.nozzles_data = conf["r_nozzles"]
         self.data = OrderedDict()
 
     def main(self):
