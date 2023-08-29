@@ -9,6 +9,7 @@ from include import Sqlite
 from include import Json
 from math import exp
 from include import Dump as dd
+import numpy as np
 # }}}
 
 class PartitionQuery:
@@ -151,10 +152,20 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
                 for x in range(3):
                     headers.append([field.replace(' ', '') for field in next(reader)])
                     headers[x]
-                headers[0] = [re.sub("_.*", "", xx) for xx in headers[0]]
+                if letter=='compartments':
+                    headers[0], headers[1] = zip(*[xx.split('_') for xx in headers[0][1:]])
+                    headers[0] = list(headers[0])
+                    headers[1] = list(headers[1])
+                    headers[0].insert(0, 'Time')
+                    headers[1].insert(0, '')
+                else:
+                    headers[0] = [re.sub('_.*', '', xx) for xx in headers[0]]
+                    headers[1] = ['']*len(headers[1])
+
 
             self._headers[letter]=OrderedDict()
             self._headers[letter]['params']=headers[0]
+            self._headers[letter]['params_sec']=headers[1]
             self._headers[letter]['geoms']=headers[2]
         
 
@@ -464,7 +475,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         finals['min_time_detection']=self.sf.query("SELECT MIN(time) from finals where param='SENSACT' AND value>0")
 
 
-        c_const = 5
+        c_const = self.project_conf['c_const']
         # min(ULOD_COR)
         ul_od_cor = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='c' AND param='ULOD'")[0]['MAX(value)']
         if ul_od_cor == 0:
@@ -479,6 +490,11 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
             finals['min_vis_compa'] = 30
         else:
             finals['min_vis_compa'] = c_const /(ul_od_compa * 2.303)
+
+        # total heat released
+        hrrs = self.sf.query("SELECT value FROM finals WHERE param='HRR' AND param_sec='1'")
+        finals['tot_heat'] = np.trapz([hrrs[i]['value'] for i in range(len(hrrs))], dx=self.config['SMOKE_QUERY_RESOLUTION'])
+
 
         return finals
 
@@ -504,14 +520,14 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
                             if self._headers[letter]['geoms'][i] != 'outside':
                                 if self._headers[letter]['geoms'][i] != 'medium':
                                     compa=self._headers[letter]['geoms'][i][0]
-                                    finals.append((record[0], param, record[i], self._headers[letter]['geoms'][i], compa))
+                                    finals.append((record[0], param, self._headers[letter]['params_sec'][i], record[i], self._headers[letter]['geoms'][i], compa))
 
         try:
             os.remove("finals.sqlite")
         except:
             pass
         self.sf=Sqlite("finals.sqlite")
-        self.sf.query("CREATE TABLE finals('time','param','value','compa','compa_type')")
+        self.sf.query("CREATE TABLE finals('time','param','param_sec','value','compa','compa_type')")
         self.sf.executemany('INSERT INTO finals VALUES ({})'.format(','.join('?' * len(finals[0]))), finals)
         
 
