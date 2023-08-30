@@ -582,10 +582,6 @@ class Worker:
 
 
 w = Worker()
-#print(os.environ['AAMKS_WORKER'])
-#os.environ['AAMKS_WORKER'] = 'gearman'
-#os.environ['AAMKS_PATH'] = '/usr/local/aamks'
-#os.environ['AAMKS_SERVER'] = '192.168.0.185'
 if SIMULATION_TYPE == 'NO_CFAST':
     print('Working in NO_CFAST mode')
     w.test()

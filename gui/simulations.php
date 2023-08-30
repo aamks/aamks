@@ -49,10 +49,10 @@ function downloads() {/*{{{*/
 	$f=$_SESSION['main']['working_home'];
     if (isset($_GET['comp'])){ 
         $f = substr($f, strpos($f, '/', 1));
-        $f = substr($f, strpos($f, '/', -1), -1);
+        $f = substr($f, 0, strrpos($f, '/'));
         $scens = explode('<>', $_GET['comp']);
         $dir = implode('-', $scens);
-        $f = $f."_comp/".$dir;
+        $f = $f."/_comp/".$dir;
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/txt.zip download><button>Summary TXT files (.ZIP)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/picts.zip download><button>Pictures (.ZIP)</button></a>";

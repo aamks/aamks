@@ -122,6 +122,13 @@ class GetData:
 
         return np.array(data)
 
+    def tot_heat(self):
+        r = self._quering('tot_heat/1000000', wheres=['dcbe_time is not null', 'tot_heat > 0'], typ='float')
+
+        self.raw['tot_heat'] = np.array(r)
+
+        return np.array(r)
+
     def feds(self):
         r = self._quering('fed, id', wheres=['dcbe_time IS NOT NULL'], raw=True)
         self.raw['feds'] = r
@@ -180,6 +187,7 @@ class GetData:
         self.min_vis()
         self.min_vis_cor()
         self.max_temp()
+        self.tot_heat()
         self.feds()
         self.geometry()
         self.fed_der_df()
@@ -624,7 +632,8 @@ class PostProcess:
                 {'name':'min_hgt_cor', 'lab':['Minimum Upper Layer Height in Corridors [cm]', 'PDF [-]']},
                 {'name':'min_vis', 'lab':['Minimum Visibility [m]', 'PDF [-]']},
                 {'name':'min_vis_cor', 'lab':['Minimum Visibility in Corridors [m]', 'PDF [-]']},
-                {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'PDF [-]']}
+                {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'PDF [-]']},
+                {'name':'tot_heat', 'lab':['Total Heat Released in Fire [MJ]', 'PDF [-]']}
                 ], 
             'pdf_n':[
                 {'name':'pdf_fn', 'lab':['Number of fatalities [-]', 'Probability [-]']},
@@ -814,6 +823,7 @@ class Comparison:
                     {'name':'min_hgt_cor', 'lab':['Minimum Upper Layer Height in Corridors [cm]', 'PDF [-]']},
                     {'name':'min_vis', 'lab':['Minimum Visibility [m]', 'PDF [-]']},
                     {'name':'min_vis_cor', 'lab':['Minimum Visibility in Corridors [m]', 'PDF [-]']},
+                    {'name':'tot_heat', 'lab':['Total Heat Released in Fire [MJ]', 'PDF [-]']},
                     {'name':'max_temp', 'lab':['Maximum Hot Gas Temperature [°C]', 'PDF [-]']}
                     ], 
                 'pdf_n':[
