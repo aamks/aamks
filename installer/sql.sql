@@ -62,7 +62,7 @@ CREATE TABLE simulations ( ---{{{
     vnt text,
     vvent text,
     sprinklers text,
-    detection integer
+    detection integer,
     wcbe text,
     dcbe_time integer,
     dcbe_compa text,
@@ -163,7 +163,7 @@ GRANT ALL ON SEQUENCE users_id_seq TO aamks;
 
 ALTER TABLE fed_growth_cells_data OWNER TO aamks;
 ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_scenario_id FOREIGN KEY (scenario_id) REFERENCES scenarios (id) ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_project_id FOREIGN KEY (project_id) REFERENCES projects (id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_project_id FOREIGN KEY (project) REFERENCES projects (id) ON UPDATE CASCADE ON DELETE CASCADE;
 GRANT ALL ON TABLE fed_growth_cells_data TO aamks;
 
 ALTER TABLE projects OWNER TO aamks;
