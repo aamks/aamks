@@ -37,6 +37,7 @@ function droplist_rescue($in) {/*{{{*/
 	$select.="<option value='$in'>$in</option>";
 	$select.="<option value=0>Simple (Pareto)</option>";
 	$select.="<option value=1>Complex (Kuziora 2023)</option>";
+	$select.="<option value=-1>None (for developers only)</option>";
 	$select.="</select>";
 	return $select;
 }

@@ -575,12 +575,13 @@ class DrawAndLog:
         There is lack of vent condition - underventilated fires
         '''
         orig_area = math.prod([dim * 2 for dim in self.sections['FIRE']['LOCATION']]) #[m2]
-        p = pareto(b=self.conf['fire_area']['b'], scale=self.conf['fire_area']['scale'])
-        fire_area = round(p.rvs(size=1)[0], 2)
-        if fire_area > orig_area:
+        if self.conf['r_is']==1 or self.conf['r_is']==-1:
             fire_area = orig_area
-        if HRR(self.conf, self._sim_id).is_rescue:
-            fire_area = orig_area
+        else:
+            p = pareto(b=self.conf['fire_area']['b'], scale=self.conf['fire_area']['scale'])
+            fire_area = round(p.rvs(size=1)[0], 2)
+            if fire_area > orig_area:
+                fire_area = orig_area
         return fire_area
 
     def _flashover_q(self, model='Thomas'):

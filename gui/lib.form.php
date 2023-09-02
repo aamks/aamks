@@ -536,9 +536,9 @@ function get_template_defaults($q) {/*{{{*/
         "max": 1300
     },
     "hrr_alpha": {
-        "min": 0.0029,
-        "mode": 0.0029,
-        "max": 0.188
+        "min": 0.00293,
+        "mode": 0.01172,
+        "max": 0.1876
     },
     "yields":
     {
