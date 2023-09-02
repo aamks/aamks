@@ -119,6 +119,7 @@ class OnEnd():
         self.uprefs=GetUserPrefs()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.p=Psql()
         self.project_id=self.conf['project_id']
         self.scenario_id=self.conf['scenario_id']
         if self.uprefs.get_var('navmesh_debug')==1:
@@ -164,12 +165,19 @@ class OnEnd():
             return
 
         if os.environ['AAMKS_WORKER']=='gearman':
+            queue = set([q.split('\t')[0] for q in os.popen("gearadmin --show-jobs").read().split('\n')])
             try:
                 for i in range(*si.get()):
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                     worker = worker.replace("/home","")
                     gearman="gearman -b -f aRun 'https://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
                     os.system(gearman)
+                    queue_n = set([q.split('\t')[0] for q in os.popen("gearadmin --show-jobs").read().split('\n')])
+                    job_id = list(queue.symmetric_difference(queue_n))[0]
+                    queue = queue_n
+                    print(job_id)
+                    self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
+
             except Exception as e:
                 print('OnEnd: {}'.format(e))
             

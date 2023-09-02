@@ -37,6 +37,7 @@ CREATE TABLE simulations ( ---{{{
     scenario_id int,
     iteration smallint,
     host text,
+    job_id text,
     run_time smallint,
     fireorig text,
     fireorigname text,
