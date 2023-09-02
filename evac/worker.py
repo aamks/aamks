@@ -51,7 +51,6 @@ class Worker:
         self.evacuees = None
         self.fire_dto = None
         self.sim_floors = None
-        self.start_time = time.time()
         self.floors = list()
         self.host_name = os.uname()[1]
         os.chdir('/home/aamks_users')
@@ -100,6 +99,7 @@ class Worker:
             urlretrieve('{}/../../conf.json'.format(self.url), '{}/conf.json'.format(os.environ['AAMKS_PROJECT']))
 
         except Exception as e:
+            self.send_report(e={"status":12})
             print(e)
         else:
             print('conf.json fetched from server')
@@ -107,6 +107,7 @@ class Worker:
         try:
             urlretrieve('{}/evac.json'.format(self.url), 'evac.json'.format(os.environ['AAMKS_PROJECT']))
         except Exception as e:
+            self.send_report(e={"status":13})
             print(e)
         else:
             print('evac.json fetched from server')
@@ -115,6 +116,7 @@ class Worker:
             urlretrieve('{}/../../aamks.sqlite'.format(self.url), '{}/aamks.sqlite'.format(os.environ['AAMKS_PROJECT']))
 
         except Exception as e:
+            self.send_report(e={"status":14})
             print(e)
         else:
             print('Aamks.sqlite fetched from server')
@@ -122,6 +124,7 @@ class Worker:
         try:
             urlretrieve('{}/cfast.in'.format(self.url), 'cfast.in'.format(os.environ['AAMKS_PROJECT']))
         except Exception as e:
+            self.send_report(e={"status":15})
             print(e)
         else:
             print('cfast.in fetched from server')
@@ -132,6 +135,7 @@ class Worker:
             self.config = json.load(f)
         except Exception as e:
             print(e)
+            self.send_report(e={"status":16})
             sys.exit(1)
 
         try:
@@ -139,6 +143,7 @@ class Worker:
             self.vars['conf'] = json.load(f)
         except Exception as e:
             print('Cannot load evac.json from directory: {}'.format(str(e)))
+            self.send_report(e={"status":17})
             sys.exit(1)
 
         self.project_conf=self.json.read("../../conf.json")
@@ -154,6 +159,7 @@ class Worker:
             shutil.rmtree(self.working_dir, ignore_errors=True)
             os.makedirs(self.working_dir)
         except Exception as e:
+            self.send_report(e={"status":11})
             print(e)
         else:
             print('Workspace created')
@@ -169,12 +175,18 @@ class Worker:
                 p = run([f"/usr/local/aamks/fire/{cfast_file}","cfast.in"], timeout=600, capture_output=True, text=True)
             except TimeoutExpired as e:
                 self.wlogger.error(e)
+                self.send_report(e={"status":11})
                 err = True
             else:
                 for line in p.stdout.split('\n'):
                     if line.startswith("***Error") or err:
                         err = True
                         self.wlogger.error(Exception(f'CFAST:{line}'))
+                        if 'essure' in p.stdout:
+                            self.send_report(e={"status":12})
+                        else:
+                            self.send_report(e={"status":10})
+
             inf = 'Iteration skipped due to CFAST error' if err else 'CFAST simulation calculated with success' 
             self.wlogger.info(inf)
             return not err
@@ -269,6 +281,7 @@ class Worker:
                 eenv.floor = floor
             except Exception as e:
                 self.wlogger.error(e)
+                self.send_report(e={"status":31})
             else:
                 self.wlogger.info('rvo2_dto ready on {} floors'.format(floor))
 
@@ -303,6 +316,7 @@ class Worker:
                 floor.smoke_query = PartitionQuery(floor=floor.floor)
             except Exception as e:
                 self.wlogger.error(e)
+                self.send_report(e={"status":32})
                 exit(1)
             else:
                 self.wlogger.info('Smoke query connected to floor: {}'.format(floor.floor))
@@ -387,6 +401,7 @@ class Worker:
                     break
             else:
                 self.wlogger.error(f'There was no data found at {time_frame} s in CFAST results.')
+                self.send_report(e={"status":33})
                 break
 
         # gather results of the whole simulation (multisimulation iteration)
@@ -441,7 +456,7 @@ class Worker:
             self.floors[num_floor+1].agents_to_move_downstairs = []
             self.floors[num_floor].append_evacuees(current_floor_new_agents)
 
-    def send_report(self): # {{{
+    def send_report(self, e=False): # {{{
         '''
         Runs on a worker. Write /home/aamks/project/sim_id.json on each aRun
         completion. Then inform gearman server to scp to itself
@@ -450,8 +465,9 @@ class Worker:
         Gearman server will psql insert and will scp the worker's animation to
         itself.
         '''
-        self._write_animation_zips()
-        self._write_meta()
+        if not e:
+            self._write_animation_zips()
+        self._write_meta(e=e)
 
         if os.environ['AAMKS_WORKER'] == 'gearman':
             Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
@@ -496,34 +512,41 @@ class Worker:
             zf.close()
 
     # }}}   
-    def _write_meta(self):# {{{
+    def _write_meta(self, e=False):# {{{
         j=Json()
         report = OrderedDict()
         report['worker'] = self.host_name
-        report['sim_id'] = self.sim_id
-        report['scenario_id'] = self.vars['conf']['scenario_id']
-        report['project_id'] = self.vars['conf']['project_id']
         report['path_to_project'] = '/home/aamks_users/'+self.working_dir.split('workers')[0]
-        report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
-        report['highlight_geom'] = None
+        if e and e < 20:
+            report['early_error'] = self.url
+        else:
+            report['sim_id'] = self.sim_id
+            report['scenario_id'] = self.vars['conf']['scenario_id']
+            report['project_id'] = self.vars['conf']['project_id']
+            report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
+            report['highlight_geom'] = None
         report['psql'] = dict()
-        report['psql']['fed'] = dict()
-        report['psql']['fed_symbolic'] = dict()
-        report['psql']['rset'] = dict()
-        report['psql']['dfed'] = dict()
-        report['psql']['runtime'] = int(time.time() - self.start_time)
-        report['psql']['cross_building_results'] = self.cross_building_results
-        for i in self.floors:
-            report['psql']['fed'] = self._collect_evac_data('fed')
-            report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
-            report['psql']['rset'][i.floor] = int(i.rset)
-            report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
-        for num_floor in range(len(self.floors)):
-            report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
-            report['floor'] = num_floor
-        report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
+        if e:
+            report['psql'] = e
+        else:
+            report['psql']['fed'] = dict()
+            report['psql']['fed_symbolic'] = dict()
+            report['psql']['rset'] = dict()
+            report['psql']['dfed'] = dict()
+            report['psql']['runtime'] = int(time.time() - self.start_time)
+            report['psql']['cross_building_results'] = self.cross_building_results
+            for i in self.floors:
+                report['psql']['fed'] = self._collect_evac_data('fed')
+                report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
+                report['psql']['rset'][i.floor] = int(i.rset)
+                report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
+            for num_floor in range(len(self.floors)):
+                report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
+                report['floor'] = num_floor
+            report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
 
-        report['psql']['detection'] = int(self.detection_time)
+            report['psql']['detection'] = int(self.detection_time)
+            report['psql']['status'] = 0
 
         self.meta_file = "meta_{}.json".format(self.sim_id)
         j.write(report, self.meta_file)
@@ -582,14 +605,18 @@ class Worker:
 
 
 w = Worker()
-if SIMULATION_TYPE == 'NO_CFAST':
-    print('Working in NO_CFAST mode')
-    w.test()
-elif os.environ['AAMKS_WORKER'] == 'local':
-    print('Working in LOCAL MODE')
-    w.local_worker()
-elif os.environ['AAMKS_WORKER'] == 'gearman':
-    print('Working in gearman MODE')
-    w.main()
-else:
-    print('Please specify worker mode')
+try:
+    if SIMULATION_TYPE == 'NO_CFAST':
+        print('Working in NO_CFAST mode')
+        w.test()
+    elif os.environ['AAMKS_WORKER'] == 'local':
+        print('Working in LOCAL MODE')
+        w.local_worker()
+    elif os.environ['AAMKS_WORKER'] == 'gearman':
+        print('Working in gearman MODE')
+        w.main()
+    else:
+        print('Please specify worker mode')
+except:
+    # send report but with error code
+    w.send_report(e={'status': 1})

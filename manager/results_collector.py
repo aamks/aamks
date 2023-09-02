@@ -32,10 +32,13 @@ class ResultsCollector():
         if os.environ['AAMKS_WORKER'] == 'gearman':
             self._fetch_meta()
             self.meta = self.json.read(self.meta_file)
-            self._get_meta_animation()
-            self.s = Sqlite("{}/aamks.sqlite".format(self.meta['path_to_project']))
-            self._animation_save()
-            self.psql_report()
+            try:
+                self._get_meta_animation()
+                self.s = Sqlite("{}/aamks.sqlite".format(self.meta['path_to_project']))
+                self._animation_save()
+                self.psql_report()
+            except:
+                self.psql_error()
         else:
             self.meta = self.json.read(self.meta_file)
             self.s = Sqlite("{}/aamks.sqlite".format(self.meta['path_to_project']))
@@ -109,9 +112,23 @@ class ResultsCollector():
                 min_vis_cor = {self.meta['psql']['cross_building_results']['min_vis_cor']},
                 min_hgt_cor = {self.meta['psql']['cross_building_results']['min_hgt_cor']},
                 tot_heat = {self.meta['psql']['cross_building_results']['tot_heat']},
+                status = '{self.meta['psql']['status']}',
                 results = '{self.meta['psql']['i_risk']}'
                 WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
         SendMessage("Database updated")
+
+    def psql_error(self):
+        p = Psql()
+
+        # simulations table
+        if 'early_error' in self.meta.keys():
+            url_s = self.meta['early_error'].split('/')
+            self.meta['sim_id'] = url_s[-1]
+            self.meta['project_id'] = p.query(f"SELECT id FROM projects WHERE project_name='{url_s[-4]}'")
+            self.meta['scenario_id'] = p.query(f"SELECT id FROM scenarios WHERE project_id={url_s[-4]} AND scenario_name='{url_s[-3]}'")
+        p.query(f"""UPDATE simulations SET status = '{self.meta['psql']['status']}', host = '{self.meta['worker']}'
+                WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
+        SendMessage("Database updated with error status")
 
 try:
     host = sys.argv[1]

@@ -175,7 +175,6 @@ class OnEnd():
                     queue_n = set([q.split('\t')[0] for q in os.popen("gearadmin --show-jobs").read().split('\n')])
                     job_id = list(queue.symmetric_difference(queue_n))[0]
                     queue = queue_n
-                    print(job_id)
                     self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
 
             except Exception as e:
