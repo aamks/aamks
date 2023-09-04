@@ -517,8 +517,10 @@ class Worker:
         report = OrderedDict()
         report['worker'] = self.host_name
         report['path_to_project'] = '/home/aamks_users/'+self.working_dir.split('workers')[0]
-        if e and e < 20:
+        if e and 1 < e['status'] < 20:
             report['early_error'] = self.url
+            self.sim_id = self.url.split("/")[-1]
+            os.chdir(self.working_dir)
         else:
             report['sim_id'] = self.sim_id
             report['scenario_id'] = self.vars['conf']['scenario_id']
@@ -550,6 +552,8 @@ class Worker:
 
         self.meta_file = "meta_{}.json".format(self.sim_id)
         j.write(report, self.meta_file)
+        if e:
+            return 1 
         self.wlogger.info('Metadata prepared successfully')
     # }}}
 

@@ -632,7 +632,7 @@ class DrawAndLog:
     def _draw_yields(self, times, flash):
         yields_tab = {'co': [], 'soot': [], 'hcn': []}
         for t in times:
-            multiplier = {'soot': 2.5, 'co': 10, 'hcn': 20} if t > flash else {'soot': 1, 'co': 1, 'hcn': 1}
+            multiplier = {'soot': 2.5, 'co': 10, 'hcn': 20} if t >= flash else {'soot': 1, 'co': 1, 'hcn': 1}
             [yields_tab[k].append(max([round(normal(v['mean'], v['sd']) * multiplier[k], 5), 0])) for k, v in self._scen_fuel['yields'].items()]      #[g/g]
 
         self._psql_log_variables([('co_yield', mean(yields_tab['co'])),
@@ -970,7 +970,10 @@ class HRR:
     def is_rescue(self): 
         # Trying to get rescue parameter which old projects don't have 
         try:
-            return bool(int(self.conf["r_is"]))
+            if self.conf["r_is"] > 0:
+                return True
+            else:
+                return False
         except KeyError:
             print("KeyError. is_rescue not set")
             return False

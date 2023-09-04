@@ -38,16 +38,19 @@ function listing() {/*{{{*/
 	//enter scenario_id
 	// halt jobs button
 	echo "<form method='POST' action=''>
-	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-halt-cur' value='Halt current scenario'>
-	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status' value='Check status'>&nbsp;&nbsp;
+        <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-halt-cur' value='Remove jobs'><withHelp>?<help>Remove current scenario jobs from the queue</help></withHelp>&nbsp;
+	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status-cur' value='Check status'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
 	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-status' value='Status table'><br>
+        </form>
+<form method='POST' action=''>
 	Developers only:&nbsp;
-	<input autocomplete=off type=text placeholder='project ID' name=project title='project ID to be stopped'> 
-	<input autocomplete=off type=text placeholder='scenario ID' name=scenario title='scenario ID to be stopped'> 
-	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-halt' value='Halt jobs'><br>";
+	<input autocomplete=off type=text placeholder='project ID' required name=project title='project ID to be checked'> 
+	<input autocomplete=off type=text placeholder='scenario ID' required name=scenario title='scenario ID to be checked'> 
+	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-check-status' value='Check status'>
+	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-halt' value='Remove jobs'></form><br>";
 }
 
-function check_stat() {
+function check_stat_current() {
 	$r=$_SESSION['nn']->query("SELECT iteration, status FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
 	echo "<br>".$_SESSION['main']['project_id']."/".$_SESSION['main']['scenario_id']."<br>";
 	echo "<table><tr><th>Iteration</th><th>Status</th><th>Description</th></tr>";
@@ -60,7 +63,23 @@ function check_stat() {
     echo "<td>".$_SESSION['codes'][$element]."</td></tr>"; // Add a line break after each inner array
     }
     echo "</table>"; // Add a line break after each inner array
+
 }
+function check_stat() {
+	$r=$_SESSION['nn']->query("SELECT iteration, status FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
+	echo "<br>".$_POST['project']."/".$_POST['scenario']."<br>";
+	echo "<table><tr><th>Iteration</th><th>Status</th><th>Description</th></tr>";
+
+	foreach ($r as $innerArray) {
+		echo "<tr>";
+    foreach ($innerArray as $element) {
+		echo "<td align='center'>$element</td>";
+	}
+    echo "<td>".$_SESSION['codes'][$element]."</td></tr>"; // Add a line break after each inner array
+    }
+    echo "</table>"; // Add a line break after each inner array
+}
+
 
 function stop() {
 	$r=$_SESSION['nn']->query("SELECT job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
@@ -135,6 +154,10 @@ function main() {/*{{{*/
 	if (isset($_POST['btn-check-status'])) {
 		set_help();
 		check_stat();
+    }
+	if (isset($_POST['btn-check-status-cur'])) {
+		set_help();
+		check_stat_current();
     }
 	if (isset($_POST['btn-status'])) {
 		set_help(true);
