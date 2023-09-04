@@ -32,7 +32,7 @@ class OnInit():
         self.p=Psql()
         self._clear_srv_anims()
         self._clear_sqlite()
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 2)
         self._setup_simulations()
         self._create_sqlite_tables()
 # }}}

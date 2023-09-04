@@ -79,6 +79,10 @@ class Sqlite: # {{{
         must_exist=0: we are creating the database
         must_exist=1: Exception if there's no such file
         '''
+        if must_exist == 2:
+            with open(handle, "w") as file:
+                pass
+        os.chmod(handle, 0o666)
 
         if must_exist == 1:
             assert os.path.exists(handle), "Expected to find an existing sqlite file at: {}.\nCWD: {}".format(handle, os.getcwd())
@@ -305,8 +309,7 @@ class Vis:# {{{
         self.json.write(OrderedDict([('world_meta', self._world_meta), ('floors', self._static_floors)]), '{}/workers/static.json'.format(os.environ['AAMKS_PROJECT'])) 
         cae=CreateAnimEntry()
         cae.save(self.params, "{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
-        os.chmod("{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']), 777)
-        os.chmod("{}/workers/static.json".format(os.environ['AAMKS_PROJECT']), 777)
+
 # }}}
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''
@@ -433,6 +436,9 @@ class CreateAnimEntry:# {{{
         except:
             z=[]
             lowest_id=-1
+            with open(path_anims_json, "w") as file:
+                pass
+            os.chmod(path_anims_json, 0o666)
 
         anim_record=OrderedDict()
         anim_record['sort_id']=lowest_id

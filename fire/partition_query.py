@@ -381,7 +381,7 @@ class PartitionQuery:
             os.remove("finals.sqlite")
         except:
             pass
-        self.sf=Sqlite("finals.sqlite")
+        self.sf=Sqlite("finals.sqlite", 2)
         self.sf.query("CREATE TABLE finals('time','param','value','compa','compa_type')")
         self.sf.executemany('INSERT INTO finals VALUES ({})'.format(','.join('?' * len(finals[0]))), finals)
         

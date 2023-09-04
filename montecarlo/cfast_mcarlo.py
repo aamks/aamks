@@ -337,6 +337,7 @@ class CfastMcarlo():
 
         with open("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), "w") as output:
             output.write("\n".join(filter(None,txt)))
+        os.chmod("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)
 # }}}
     def _section_preamble(self, project_id, scenario_id, simulation_time, outdoor_temp, indoor_temp=20, pressure=101325, humidity=50, o_limit=0.15):# {{{
         ''' 

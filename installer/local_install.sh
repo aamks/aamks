@@ -135,7 +135,7 @@ sudo ln -sf "$AAMKS_PATH"/gui /var/www/ssl/aamks
 # www-data user needs AAMKS_PG_PASS"
 temp=$(mktemp)
 sudo cat /etc/apache2/envvars | grep -v AAMKS_ | grep -v umask | grep -v PYTHONPATH > "$temp"
-echo "umask 0002" >> "$temp"
+echo "umask 0000" >> "$temp"
 echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> "$temp"
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> "$temp"
 echo "export AAMKS_WORKER='$AAMKS_WORKER'" >> "$temp"
