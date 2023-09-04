@@ -23,7 +23,7 @@ fh = logging.FileHandler("/home/aamks_users/aamks.log")
 fh.setLevel(logging.DEBUG)
 # create console handler 
 ch = logging.StreamHandler()
-ch.setLevel(logging.ERROR)
+ch.setLevel(logging.INFO)
 # create formatter and add it to the handlers
 formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
 fh.setFormatter(formatter)

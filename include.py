@@ -82,7 +82,7 @@ class Sqlite: # {{{
         if must_exist == 2:
             with open(handle, "w") as file:
                 pass
-        os.chmod(handle, 0o666)
+            os.chmod(handle, 0o666)
 
         if must_exist == 1:
             assert os.path.exists(handle), "Expected to find an existing sqlite file at: {}.\nCWD: {}".format(handle, os.getcwd())
@@ -173,7 +173,7 @@ class Psql: # {{{
             pass
 
         try:
-            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host='127.0.0.1' password='{}'".format(os.environ['AAMKS_PG_PASS']))
+            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host='{}' password='{}'".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_PG_PASS']))
             self.psqldb=self.PSQL.cursor(cursor_factory=psycopg2.extras.DictCursor)
         except:
             raise SystemExit("Fatal: Cannot connect to postresql.")

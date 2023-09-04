@@ -169,7 +169,9 @@ class OnEnd():
                     worker = worker.replace("/home","/mnt")
                     gearman="gearman -b -f aRun '{}'".format(worker)
                     os.system(gearman)
+                    logger.info(f'send {gearman}')
             except Exception as e:
                 print('OnEnd: {}'.format(e))
+                logger.error(f'gearman error {e}')
             
 # }}}
