@@ -40,6 +40,7 @@ function listing() {/*{{{*/
 	echo "<form method='POST' action=''>
         <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-halt-cur' value='Remove jobs'><withHelp>?<help>Remove current scenario jobs from the queue</help></withHelp>&nbsp;
 	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status-cur' value='Check status'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
+	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-conv-cur' value='Check convergence'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
 	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-status' value='Status table'><br>
         </form>
 <form method='POST' action=''>
@@ -137,6 +138,40 @@ function stop_current() {
 /*}}}*/
 /*}}}*/
 
+
+function runPP() {
+	$f=$_SESSION['main']['working_home'];
+	$aamks=getenv("AAMKS_PATH");
+
+	$cmd="cd $aamks/results; python3 beck_new.py $f 2>&1";
+
+	// Output a 'waiting message'
+	$z=shell_exec("$cmd");
+	echo "Postprocess finished<br>";
+}
+
+function check_conv_current() {/*{{{*/
+        $f=$_SESSION['main']['working_home'];
+	$path = $f."/picts/";
+
+        $pictures_list = array(
+            array('conv_individual','Convergence of individual risk in subsequent iterations')
+        );
+
+        $file=$f."/picts/".$pictures_list[0][0].".png";
+	if (!file_exists($file)) {
+		echo '<br><br><font size=4>No convergence data available. Try <strong>Check convergence</strong> button.</font>';
+		return False;
+	}
+        $size_info=getimagesize($file);
+        $data64=shell_exec("base64 $file");
+        echo "<br><font size=4>".$pictures_list[0][1]."</font>";
+        echo "<img class='results-pictures' style='width:".($size_info[0]*.8)."px;height:".($size_info[1]*.8)."px;' src='data:image/png;base64, $data64'/>";
+
+
+}
+
+
 function main() {/*{{{*/
 	$_SESSION['nn']->htmlHead("Manage jobs");
 	$_SESSION['nn']->menu('Manage jobs');
@@ -146,22 +181,28 @@ function main() {/*{{{*/
 	if (isset($_POST['btn-halt'])) {
 		set_help();
 		stop();
-    }
-	if (isset($_POST['btn-halt-cur'])) {
+	}
+	elseif (isset($_POST['btn-halt-cur'])) {
 		set_help();
 		stop_current();
     }
-	if (isset($_POST['btn-check-status'])) {
+	elseif (isset($_POST['btn-check-status'])) {
 		set_help();
 		check_stat();
     }
-	if (isset($_POST['btn-check-status-cur'])) {
+	elseif (isset($_POST['btn-check-status-cur'])) {
 		set_help();
 		check_stat_current();
     }
-	if (isset($_POST['btn-status'])) {
+	elseif (isset($_POST['btn-check-conv-cur'])) {
+		runPP();
+		check_conv_current();
+    }	elseif (isset($_POST['btn-status'])) {
 		set_help(true);
+    }else{
+	    check_conv_current();
     }
+
 
 
 
