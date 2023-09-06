@@ -24,7 +24,7 @@ function set_help($show=false) {
     '33' => 'Error reading smoke query record (fires.partition_query.PartitionQuery.cfast_has_time())',
     '90' => 'Iteration halted remotely (cancelled at the queuing stage)',
     '91' => 'Iteration halted manually (also this code has to be set by hand)',
-    '' => '',
+    '' => 'Job submitted. No data has been received from worker yet',
     'halted' => 'deprecated code 90',
 ];
 	if ($show) { echo "<table><tr><th>Code</th><th>Description</th></tr>";
@@ -51,9 +51,36 @@ function listing() {/*{{{*/
 	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-halt' value='Remove jobs'></form><br>";
 }
 
-function check_stat_current() {
-	$r=$_SESSION['nn']->query("SELECT iteration, status FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
-	echo "<br>".$_SESSION['main']['project_id']."/".$_SESSION['main']['scenario_id']."<br>";
+function query_cur() { return $_SESSION['nn']->query("SELECT iteration, status FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));}
+
+function query_any() { return $_SESSION['nn']->query("SELECT iteration, status FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));}
+
+function check_stat($r) {
+	$statuses = [
+    '0' => 0,
+    '1' => 0,
+    '10' => 0,
+    '11' => 0,
+    '12' => 0,
+    '13' => 0,
+    '14' => 0,
+    '15' => 0,
+    '16' => 0,
+    '17' => 0,
+    '20' => 0,
+    '21' => 0,
+    '22' => 0,
+    '30' => 0,
+    '31' => 0,
+    '32' => 0,
+    '33' => 0,
+    '90' => 0,
+    '91' => 0,
+    '' => 0,
+    'halted' => 0,
+];
+    $sum = 0;
+    echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td>";
 	echo "<table><tr><th>Iteration</th><th>Status</th><th>Description</th></tr>";
 
 	foreach ($r as $innerArray) {
@@ -61,30 +88,21 @@ function check_stat_current() {
     foreach ($innerArray as $element) {
 		echo "<td align='center'>$element</td>";
 	}
+    $statuses[$element] .= 1;
+    $sum .= 1;
     echo "<td>".$_SESSION['codes'][$element]."</td></tr>"; // Add a line break after each inner array
     }
-    echo "</table>"; // Add a line break after each inner array
-
-}
-function check_stat() {
-	$r=$_SESSION['nn']->query("SELECT iteration, status FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
-	echo "<br>".$_POST['project']."/".$_POST['scenario']."<br>";
-	echo "<table><tr><th>Iteration</th><th>Status</th><th>Description</th></tr>";
-
-	foreach ($r as $innerArray) {
-		echo "<tr>";
-    foreach ($innerArray as $element) {
-		echo "<td align='center'>$element</td>";
-	}
-    echo "<td>".$_SESSION['codes'][$element]."</td></tr>"; // Add a line break after each inner array
-    }
-    echo "</table>"; // Add a line break after each inner array
+    echo "</table></td>"; // Add a line break after each inner array
+	 echo "<td><table><tr><td><strong>SUM</strong><td>$sum</td></tr><tr><th>Code</th><th>Number of iterations</th></tr>";
+		foreach ($statuses as $c => $d) { echo "<tr><td>$c</td><td>$d</td></tr>";}
+    echo "</table>";
+    echo "</td></tr></table>";
 }
 
 
-function stop() {
-	$r=$_SESSION['nn']->query("SELECT job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
-	echo "<br>".$_POST['project']."/".$_POST['scenario']."<br>";
+function stop($r) {
+    $sum=0;
+    echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td>";
 	echo "<table><tr><th>Job ID</th><th>Halted?</th><th>Status</th></tr>";
 
 	foreach ($r as $innerArray) {
@@ -101,12 +119,13 @@ function stop() {
 	}
 	else{	echo "<td align='center'>$z</td><td></td>"; 
 	$r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element ));
+    $sum .= 1;
 	}
     }
     //echo "<td>".$_SESSION['codes'][$element]."</td></tr>"; // Add a line break after each inner array
     echo "<tr>";
 }
-    echo "</table>"; // Add a line break after each inner array
+    echo "</table></td><td>$sum jobs removed from queue</td></tr></table>"; // Add a line break after each inner array
 
 }
 function stop_current() {
@@ -180,19 +199,19 @@ function main() {/*{{{*/
 	//if halt stop()
 	if (isset($_POST['btn-halt'])) {
 		set_help();
-		stop();
+		stop(query_any());
 	}
 	elseif (isset($_POST['btn-halt-cur'])) {
 		set_help();
-		stop_current();
+		stop(query_cur());
     }
 	elseif (isset($_POST['btn-check-status'])) {
 		set_help();
-		check_stat();
+		check_stat(query_any());
     }
 	elseif (isset($_POST['btn-check-status-cur'])) {
 		set_help();
-		check_stat_current();
+		check_stat(query_cur());
     }
 	elseif (isset($_POST['btn-check-conv-cur'])) {
 		runPP();
