@@ -89,7 +89,7 @@ function check_stat($r) {
     'halted' => 0,
 ];
     $sum = 0;
-    echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td>";
+    echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
 	echo "<table><tr><th>Iteration</th><th>Status</th><th>Description</th></tr>";
 
 	foreach ($r as $element) {
@@ -98,10 +98,10 @@ function check_stat($r) {
 	
     $statuses[$element['status']] += 1;
     $sum += 1;
-    echo "<td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
+    echo "<td>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
     }
     echo "</table></td>"; // Add a line break after each inner array
-	 echo "<td><table><tr><td><strong>SUM</strong><td>$sum</td></tr><tr><th>Code</th><th>Number of iterations</th></tr>";
+	 echo "<td valign='top'><table><tr><td><strong>SUM</strong><td>$sum</td></tr><tr><th>Code</th><th>Number of iterations</th></tr>";
 		foreach ($statuses as $c => $d) { echo "<tr><td>$c</td><td>$d</td></tr>";}
     echo "</table>";
     echo "</td></tr></table>";
@@ -110,7 +110,7 @@ function check_stat($r) {
 
 function stop($r) {
     $sum=0;
-    echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td>";
+    echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
 	echo "<table><tr><th>Job ID</th><th>Halted?</th><th>Status</th></tr>";
 
 	foreach ($r as $element) {
@@ -132,7 +132,7 @@ function stop($r) {
     //echo "<td>".$_SESSION['codes'][$element]."</td></tr>"; // Add a line break after each inner array
     echo "<tr>";
 }
-    echo "</table></td><td>$sum jobs removed from queue</td></tr></table>"; // Add a line break after each inner array
+    echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>"; // Add a line break after each inner array
 
 }
 

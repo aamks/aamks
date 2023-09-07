@@ -760,6 +760,8 @@ class PostProcess:
                 '## all those can be furhter multiplied by probability of fire [1/year]',
                 '##Individual [-]',
                 f'{self.data["individual"]}',
+                '##Individual risk RMSE [-]',
+                f'{calc_rmse(self.data["individual"], self.n)}',
                 '## Societal (WRI) [fatalities]',
                 f'{self.data["societal"]}',
                 '## Societal (AWR) [fatalities]',
