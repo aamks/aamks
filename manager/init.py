@@ -165,16 +165,13 @@ class OnEnd():
             return
 
         if os.environ['AAMKS_WORKER']=='gearman':
-            queue = set([q.split('\t')[0] for q in os.popen("gearadmin --show-jobs").read().split('\n')])
             try:
                 for i in range(*si.get()):
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                     worker = worker.replace("/home","")
-                    gearman="gearman -b -f aRun 'https://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
-                    os.system(gearman)
-                    queue_n = set([q.split('\t')[0] for q in os.popen("gearadmin --show-jobs").read().split('\n')])
-                    job_id = list(queue.symmetric_difference(queue_n))[0]
-                    queue = queue_n
+                    gearman=["gearman", "-v",  "-b", "-f", "aRun", f"'https://{os.environ['AAMKS_SERVER']}{worker}'"]
+                    job_id = subprocess.check_output(gearman, universal_newlines=True)
+                    job_id = job_id.split('Task created: ')[-1][:-1]
                     self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
 
             except Exception as e:
