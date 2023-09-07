@@ -27,6 +27,7 @@ from zipfile import ZipFile
 
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
 
+def calc_rmse(p: float, n: float): return np.sqrt(p * (1 - p) / n)
 
 
 '''Import all necessary low-level results from DB'''
@@ -239,9 +240,15 @@ class RiskScenario:
 
     def all(self):
         [self.calc_scenario(k) for k in self.iterations[0].keys()]    # calculate values for scenario
+        self.convergence('individual')
 
         return self.risks
 
+    def convergence(self, key):
+        self.risks[f'conv_{key}'] = []
+        for n, i in enumerate(self.iterations):
+            val = np.mean([self.iterations[j][key] for j in range(n+1)])
+            self.risks[f'conv_{key}'].append(val)
 
 class RiskIteration:
     def __init__(self, feds_per_floor: list(), calculate=False):
@@ -278,7 +285,6 @@ class RiskIteration:
 
     # assess the probability of x deads in fire with MC sampling
     def _pdf_fn_mc(self, rmse_threshold=0.01):
-        def calc_rmse(p: float, n: float): return np.sqrt(p * (1 - p) / n)
         def ask_the_moirai(feds: list): return np.random.binomial(1, p=feds)
 
         #print('MonteCarlo assesment of PDF for FN in progress...', end='\r')
@@ -620,6 +626,28 @@ class Plot:
             fig.savefig(os.path.join(self.dir, 'picts', f'floor_{f}.png'))#, dpi=170)
             plt.close(fig)
 
+    def conv(self, data, path=None, label=None):
+        fig, ax = plt.subplots()
+        ax.plot(data, label='IR')
+        lower = [max([d-calc_rmse(d,n+1), 0]) for n, d in enumerate(data)]
+        ax.plot(lower, ls='-.', c='black', label='IR + RMSE')
+        upper = [d+calc_rmse(d,n+1) for n, d in enumerate(data)]
+        ax.plot(upper, ls='-.', c='black', label='IR - RMSE')
+        ax.plot([data[-1]]*len(data), ls='--',c='grey', label='mean')
+        ax.fill_between(range(len(data)), lower, upper, alpha=0.2)
+
+        #labels
+        if label:
+            plt.xlabel(label[0])
+            plt.ylabel(label[1])
+        plt.legend()
+
+        fig.tight_layout()
+        if path:
+            fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
+        plt.close(fig)
+
+
 
 '''Generating plots and results visualization - the head class'''
 class PostProcess:
@@ -649,6 +677,9 @@ class PostProcess:
                 ], 
             'fn_curve':[
                 {'name':'fn_curve', 'lab':['Number of fatalities [-]', 'Frequency [-]']}
+                ],
+            'conv':[
+                {'name':'conv_individual', 'lab':['Individual risk [-]', 'Iteration [-]']}
                 ]}
 
     def __init__(self, scen_dir=None):
@@ -729,6 +760,8 @@ class PostProcess:
                 '## all those can be furhter multiplied by probability of fire [1/year]',
                 '##Individual [-]',
                 f'{self.data["individual"]}',
+                '##Individual risk RMSE [-]',
+                f'{calc_rmse(self.data["individual"], self.n)}',
                 '## Societal (WRI) [fatalities]',
                 f'{self.data["societal"]}',
                 '## Societal (AWR) [fatalities]',
@@ -787,6 +820,8 @@ class PostProcess:
         tm('heatmap calc')
         p.heatmap(h)
         tm('plot heat')
+        [p.conv(self.data[d['name']], path=f"{d['name']}", label=d['lab']) for d in self.plot_type['conv']]
+        tm('plot conv')
         [p.cdf(self.data[d['name']], path=f"{d['name']}_cdf", label=d['lab']) for d in self.plot_type['cdf']]
         tm('plot cdf')
         [p.pdf(self.data[d['name']], path=f"{d['name']}_pdf", label=d['lab']) for d in self.plot_type['pdf']]
