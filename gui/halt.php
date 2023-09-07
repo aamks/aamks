@@ -51,9 +51,18 @@ function listing() {/*{{{*/
 	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-halt' value='Remove jobs'></form><br>";
 }
 
-function query_cur() { return $_SESSION['nn']->query("SELECT iteration, status FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));}
+function query_cur() {
+	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
+	echo $_SESSION['main']['project_id']."/".$_SESSION['main']['scenario_id'];
+	return $r;
+}
 
-function query_any() { return $_SESSION['nn']->query("SELECT iteration, status FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));}
+
+function query_any() {
+	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
+	echo $_POST['project']."/".$_POST['scenario'];
+	return $r;
+}
 
 function check_stat($r) {
 	$statuses = [
@@ -83,14 +92,13 @@ function check_stat($r) {
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td>";
 	echo "<table><tr><th>Iteration</th><th>Status</th><th>Description</th></tr>";
 
-	foreach ($r as $innerArray) {
+	foreach ($r as $element) {
 		echo "<tr>";
-    foreach ($innerArray as $element) {
-		echo "<td align='center'>$element</td>";
-	}
-    $statuses[$element] .= 1;
-    $sum .= 1;
-    echo "<td>".$_SESSION['codes'][$element]."</td></tr>"; // Add a line break after each inner array
+		echo "<td align='center'>".$element['iteration']."</td>";
+	
+    $statuses[$element['status']] += 1;
+    $sum += 1;
+    echo "<td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
     }
     echo "</table></td>"; // Add a line break after each inner array
 	 echo "<td><table><tr><td><strong>SUM</strong><td>$sum</td></tr><tr><th>Code</th><th>Number of iterations</th></tr>";
@@ -105,58 +113,28 @@ function stop($r) {
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td>";
 	echo "<table><tr><th>Job ID</th><th>Halted?</th><th>Status</th></tr>";
 
-	foreach ($r as $innerArray) {
-    foreach ($innerArray as $element) {
+	foreach ($r as $element) {
 
-    $cmd = "gearadmin --cancel-job=$element";
+    $cmd = "gearadmin --cancel-job=".$element['job_id'];
 
     // Output a 'waiting message'
-        echo "<tr><td>$element</td>";
+        echo "<tr><td>".$element['iteration']."</td>";
 	$z=shell_exec("$cmd");
 	if ($z == null) { 
-		$rr=$_SESSION['nn']->query("SELECT status FROM simulations WHERE job_id=$1", array($element ))[0];
+		$rr=$_SESSION['nn']->query("SELECT status FROM simulations WHERE job_id=$1", array($element['job_id'] ))[0];
 		foreach ($rr as $foo) {	echo "<td align='center'>NO</td><td align='center'>$foo</td>";}
 	}
 	else{	echo "<td align='center'>$z</td><td></td>"; 
-	$r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element ));
-    $sum .= 1;
+	$r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id'] ));
+    $sum += 1;
 	}
-    }
+    
     //echo "<td>".$_SESSION['codes'][$element]."</td></tr>"; // Add a line break after each inner array
     echo "<tr>";
 }
     echo "</table></td><td>$sum jobs removed from queue</td></tr></table>"; // Add a line break after each inner array
 
 }
-function stop_current() {
-	$r=$_SESSION['nn']->query("SELECT job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
-	echo "<br>".$_SESSION['main']['project_id']."/".$_SESSION['main']['scenario_id']."<br>";
-	echo "<table><tr><th>Job ID</th><th>Halted?</th><th>Status</th></tr>";
-
-	foreach ($r as $innerArray) {
-    foreach ($innerArray as $element) {
-
-    $cmd = "gearadmin --cancel-job=$element";
-
-    // Output a 'waiting message'
-        echo "<tr><td>$element</td>";
-	$z=shell_exec("$cmd");
-	if ($z == null) { 
-		$rr=$_SESSION['nn']->query("SELECT status FROM simulations WHERE job_id=$1", array($element ))[0];
-		foreach ($rr as $foo) {	echo "<td align='center'>NO</td><td align='center'>$foo</td>";}
-	}
-	else{	echo "<td align='center'>$z</td><td></td>"; 
-	$r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element ));
-	}
-    }
-    //echo "<td>".$_SESSION['codes'][$element]."</td></tr>"; // Add a line break after each inner array
-    echo "<tr>";
-}
-    echo "</table>"; // Add a line break after each inner array
-}
-/*}}}*/
-/*}}}*/
-
 
 function runPP() {
 	$f=$_SESSION['main']['working_home'];
