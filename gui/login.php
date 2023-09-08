@@ -83,6 +83,30 @@ function login_form(){/*{{{*/
     </form>
     </center>
 	";
+	changes();
+	exit();
+	#<br>or<br><br>
+	#<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' ></div>
+	#<br><br> <br><br> <br><br> <br><br>
+	//taken from $form for now (Finland)
+} #}}}
+function changes(){/*{{{*/
+	if(isset($_SESSION['main']['user_id'])) { return; }
+    echo "
+    <br><br>
+    <center>
+	<strong>Recent updates</strong><br>
+    <table>
+	<tr><td>2023-09-08</td><td>--></td><td>Rescue sub-model form fields updated</td></tr>
+	<tr><td>2023-09-07</td><td>--></td><td>Convergence of individual risk</td></tr>
+	<tr><td>2023-09-07</td><td>--></td><td>Attributing statuses fixed</td></tr>
+	<tr><td>2023-09-04</td><td>--></td><td>Bunch of minor fixes</td></tr>
+	<tr><td>2023-09-02</td><td>--></td><td>Manage jobs section introduced</td></tr>
+	<tr><td>2023-09-02</td><td>--></td><td>Rescue sub-model form improved</td></tr>
+    </table><br>
+	Visit our <a href='https://github.com/aamks/aamks/'>GitHub</a> or <a href='https://github.com/aamks/aamks/wiki'>wiki</a> to find out more.
+    </center>
+	";
 	exit();
 	#<br>or<br><br>
 	#<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' ></div>

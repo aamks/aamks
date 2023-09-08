@@ -575,7 +575,7 @@ class DrawAndLog:
         There is lack of vent condition - underventilated fires
         '''
         orig_area = math.prod([dim * 2 for dim in self.sections['FIRE']['LOCATION']]) #[m2]
-        if self.conf['r_is']==1 or self.conf['r_is']==-1:
+        if self.conf['r_is']!='simple':
             fire_area = orig_area
         else:
             p = pareto(b=self.conf['fire_area']['b'], scale=self.conf['fire_area']['scale'])
@@ -970,7 +970,7 @@ class HRR:
     def is_rescue(self): 
         # Trying to get rescue parameter which old projects don't have 
         try:
-            if self.conf["r_is"] > 0:
+            if self.conf["r_is"] == 'complex':
                 return True
             else:
                 return False

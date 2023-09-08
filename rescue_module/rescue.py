@@ -14,10 +14,10 @@ import json
 class Rescue():
     def __init__(self, conf):
         self.conf = conf
-        self.electronic = bool(int(self.conf["r_trans"]))  # electronic/phone_call 1/0
+        self.electronic = True if self.conf["r_trans"]=='auto' else False  # electronic/phone_call 1/0
         self.distance_short = self.conf["r_distances"]["1st"] # distance from nearest fire department
         self.distance_long = self.conf["r_distances"]["2nd"] # distance from second nearest fire department
-        self.cpr = bool(int(self.conf["r_times"]["processing"]))
+        self.cpr = bool(int(self.conf["r_cpr"]))
         self.data = {}
 
     def main(self):

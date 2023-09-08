@@ -32,12 +32,19 @@ function droplist_fire_model($in) {/*{{{*/
 	return $select;
 }
 /*}}}*/
+function checkbox($in) {/*{{{*/
+	if ($in){ $stat=' checked';}else{$stat='';}
+	$select="<input type='hidden' name=post[r_cpr] value=0>";
+	$select.="<input type='checkbox' name=post[r_cpr] value=1$stat>";
+	return $select;
+}
+/*}}}*/
 function droplist_rescue($in) {/*{{{*/
 	$select="<select name=post[r_is]>";
 	$select.="<option value='$in'>$in</option>";
-	$select.="<option value=0>Simple (Pareto)</option>";
-	$select.="<option value=1>Complex (Kuziora 2023)</option>";
-	$select.="<option value=-1>None (for developers only)</option>";
+	$select.="<option value='simple'>Simple (Pareto)</option>";
+	$select.="<option value='complex'>Complex (Kuziora 2023)</option>";
+	$select.="<option value='none'>None (for developers only)</option>";
 	$select.="</select>";
 	return $select;
 }
@@ -45,8 +52,8 @@ function droplist_rescue($in) {/*{{{*/
 function droplist_rescue_electronic($in) {/*{{{*/
 	$select="<select name=post[r_trans]>";
 	$select.="<option value='$in'>$in</option>";
-	$select.="<option value=0>Phone call</option>";
-	$select.="<option value=1>Automatic</option>";
+	$select.="<option value='phone'>Phone call</option>";
+	$select.="<option value='auto'>Automatic</option>";
 	$select.="</select>";
 	return $select;
 }
@@ -197,10 +204,10 @@ function form_plain_arr_switchable2($key,$arr,$display) { #{{{
 function form_plain_arr_switchable3($key,$arr) { #{{{
 	$z='';
 	if(strlen(implode("", $arr))>0) {
-		$z.="<div id=$key-switch class='grey no-display'>Only for complex rescue sub-model</div>";
+		$z.="<div id=$key-switch class='grey no-display'>Required for complex rescue sub-model only</div>";
 		$z.="<table id='$key-table' class='noborder'>";
 	} else {
-		$z.="<div id=$key-switch class='grey'>Only for complex rescue sub-model</div>";
+		$z.="<div id=$key-switch class='grey'>Required for complex rescue sub-model only</div>";
 		$z.="<table id='$key-table' class='noborder no-display'>";
 	}
 	$z.="<tr>";
@@ -379,12 +386,11 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('evacuees_density')."<td>".form_assoc('evacuees_density',$evacuees_density); 
 
     echo "<tr><td>&nbsp;</td></tr><tr><th><strong>RESCUE SUB-MODEL</strong></th>";
-	//echo "<tr><td><a class='rlink switch' id='rescue'>Parameters</a><td>".form_assoc('RESCUE',$RESCUE);
-	//echo "<tr><td><a class='rlink switch' id='NOZZLES'>Nozzles</a><td>".form_assoc('NOZZLES',$NOZZLES);	
 	echo "<tr><td>".get_help('r_is')."<td>".droplist_rescue($r_is); 
 	echo "<tr><td>".get_help('fire_area')."<td>".form_assoc('fire_area',$fire_area); 
 	echo "<tr><td>".get_help('r_trans')."<td>".droplist_rescue_electronic($r_trans); 
 	echo "<tr><td><a class='rlink switch' id='r_times'>Times</a>".get_help('r_times')."<td>".form_plain_arr_switchable3('r_times',$r_times); 
+	echo "<tr><td>".get_help('cpr')."<td>".checkbox($r_cpr); 
 	echo "<tr><td><a class='rlink switch' id='r_distances'>Fire Unit</a>".get_help('r_distances')."<td>".form_plain_arr_switchable3('r_distances',$r_distances); 
 	echo "<tr><td><a class='rlink switch' id='r_to_fire'>Firehoses</a>".get_help('r_to_fire')."<td>".form_plain_arr_switchable3('r_to_fire',$r_to_fire); 
 	echo "<tr><td><a class='rlink switch' id='r_nozzles'>Nozzles</a>".get_help('r_nozzles')."<td>".form_plain_arr_switchable3('r_nozzles',$r_nozzles); 
@@ -395,6 +401,8 @@ function form_fields_advanced() { #{{{
 function form_fields_easy() { #{{{
 	$json=read_aamks_conf_json();
 	extract($json);
+	echo "<font size=4><strong>Easy form is not supported at the moment</strong><br>Use advanced editor</font>";
+	return 0;
 	echo "<form method=post>";
 	echo "<input autocomplete=off type=submit name=update_form_easy value='Save'><br><br>";
 	echo "<table>";
