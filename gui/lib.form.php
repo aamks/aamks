@@ -1,29 +1,94 @@
 <?php
 function make_help() { /*{{{*/
 	$help=[]                                                                                                                                                              ;
-	$help["project_id"]              = ["scenario"                         , "This is scenario"]                                                         ;
-	$help["number_of_simulations"]   = ["number of simulations"            , "write me..."]                                                              ;
-	$help["fire_model"]				 = ["fire_model"                       , "CFAST | FDS | None"]                                                              ;
-	$help["dispatch_evacuees"]		 = ["dispatch_evacuees"                , "<orange>manual+probabilistic</orange> probabilistic evacuees only in the rooms free of manual evacuees<hr> <orange>probabilistic+manual</orange> probabilistic evacuees first and then extra manual evacuees<hr> <orange>manual</orange> probabilistic evacuees are never added "]                                                              ;
-	$help["evac_clusters"]		     = ["evac_clusters"					   , "follow the leader, etc (TODO)."];                                                              ;
-	$help["simulation_time"]         = ["simulation time"                  , "write me..."]                                                              ;
-	$help["indoor_temperature"]      = ["indoor_temperature"               , "write me..."]                                                              ;
-	$help["outdoor_temperature"]     = ["outdoor_temperature"              , "write me..."]                                                              ;
-	$help["indoor_pressure"]         = ["indoor_pressure"                  , "write me..."]                                                              ;
-	$help["ceiling"]				 = ["ceiling"                          , "write me..."]                                                              ;
-	$help["floor"]          		 = ["floor"                            , "write me..."]                                                              ;
-	$help["wall"]           		 = ["wall"                             , "write me..."]                                                              ;
-	$help["detectors"]           	 = ["detectors"                        , "write me..."]                                                              ;
-	$help["detectors_temp"]			 = ["detectors_temp"                   , "write me..."]                                                              ;
-	$help["detectors_obscur"]		 = ["detectors_obscur"                 , "write me..."]                                                              ;
-	$help["detectors_not_broken"]	 = ["detectors_not_broken"             , "write me..."]                                                              ;
-	$help["windows"]				 = ["windows"                          , "help for the windows <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ]  ;
-	$help["building_profile"]		 = ["building profile"                 , "help for the windows <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ]  ;
-	$help["material"]				 = ["material"                         , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
-	$help["pre_evac"]				 = ["pre-evacuation"                   , "help for the material <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa <br>aa " ] ;
-	$help["pre_evac_fire_origin"]	 = ["pre-evacuation<br>in fire origin" , "fire origin room" ]                                                        ;
-	$help["management"]			     = ["management"                       , "help for management" ]                                                     ;
-	$help["temp_mean"]			     = ["temp mean"                        , "help for temp mean" ]                                                      ;
+    //GENERAL SETTINGS
+	$help["project_id"]              = ["Project & scenario"               , "Project ID/scenario ID"]                                                         ;
+	$help["number_of_simulations"]   = ["Number of simulations"            , "The number of simulation to be launched"]                                                              ;
+	$help["simulation_time"]         = ["Simulation time"                  , "Prescribed duration of single simulation (iteration) [s]"]                                                              ;
+	$help["fire_model"]				 = ["Fire model"                       , "CFAST | FDS | None !!!currently only CFAST available!!!"]                                                              ;
+    //FIRE MODEL
+	$help["indoor_temperature"]      = ["Initial indoor temperature"               , "Parameters of normal distribution of initial indoor temperature [°C]"]                                                              ;
+	$help["outdoor_temperature"]     = ["Initial outdoor temperature"              , "Parameters of normal distribution of initial outdoor temperature [°C]"]                                                              ;
+	$help["pressure"]                = ["Initial pressure"                  , "Parameters of normal distribution of initial pressure [Pa]"]                                                              ;
+	$help["humidity"]                = ["Initial humidity"                         , "Parameters of normal distribution of initial humidity [%RH]"]                                                              ;
+	$help["material"]				 = ["Materials"                         , "Construction materials in the building. Those are uniform across walls, ceilings and floors respectively. Thickness unit is meter [m] !!!currently fixed acc. to the table!!!. <br><table><tr><th>Material</th><th>Specific heat [kJ/(kg&middot;K)]</th><th>Conductivity [kW/(m&middot;K)]</th><th>Density [kg/m<sup>3</sup>]</th><th>Emissivity [-]</th><th>Fixed thickness [m]</th></tr><tr><td>Concrete</td><td>1.0</td><td>1.75</td><td>2200</td><td>0.94</td><td>0.15</td></tr><tr><td>Gypsum</td><td>1.09</td><td>0.3</td><td>1000</td><td>0.85</td><td>0.03</td></tr><tr><td>Brick</td><td>0.9</td><td>0.3</td><td>840</td><td>0.85</td><td>0.2</td></tr></table>" ] ;
+	//$help["ceiling"]				 = ["ceiling"                          , "write me..."]                                                              ;
+	//$help["floor"]          		 = ["floor"                            , "write me..."]                                                              ;
+	//$help["wall"]           		 = ["wall"                             , "write me..."]                                                              ;
+	$help["heat_detectors"]        	 = [""                                 , "Heat detectors - temperature of activation [°C] (press to switch on/off)"]                                                              ;
+	$help["smoke_detectors"]      	 = [""                                 , "Smoke detectors - obscuration of activation [%/m] (press to switch on/off)"]                                                              ;
+	$help["sprinklers"]         	 = [""                                 , "Sprinklers (press to switch on/off) !!!currently fixed values: RTI=100, SprayDensity=7e-5!!!"]                                                              ;
+	$help["density_mean"]         	 = ["SprayDensity_m"                   , "Mean of spray density normal distribution [m/s]"]                                                              ;
+	$help["density_sd"]         	 = ["SprayDensity_sd"                  , "Standard deviation of spray density normal distribution [m/s]"]                                                              ;
+	$help["temp_mean"]			     = ["temp_mean"                        , "Mean of activation temperature normal distribution" ]                                                      ;
+	$help["obsc_sd"]			     = ["obsc_sd"                          , "Standard deviation of activation obscuration normal distribution" ]                                                      ;
+	$help["obsc_mean"]			     = ["obsc_mean"                        , "Mean of activation obscuration normal distribution" ]                                                      ;
+	$help["temp_sd"]			     = ["temp_sd"                          , "Standard deviation of activation temperature normal distribution" ]                                                      ;
+	$help["not_broken"]	             = ["reliability"                      , "Probability of proper functioning"]                                                              ;
+	$help["RTI"]	                 = ["RTI"                              , "Response Time Index [(m&middot;s)<sup>1/2</sup>]"]                                                              ;
+	$help["NSHEVS"]	                 = [""                                 , "Mechanical ventilation systems (press to switch on/off) !!!currently always FULLY ON!!!"]                                                              ;
+	$help["activation_time"]	     = ["activation time"                  , "Time to fans' start"]                                                              ;
+	$help["startup_time"]	         = ["start-up"                         , "Fans' start-up time"]                                                              ;
+	$help["windows"]				 = ["Windows openness"                 , "Each row defines probabilities of certain window state in given temperature range:<br> min - lower temperature for this row<br>max - upper temperature for this row<br>quarter - probability of window being partially (0.25) open<br>full - probability of window being fully open" ]  ;
+	$help["vents_open"]	             = ["Openings"                         , "Probability of openness for different opening types"]                                                              ;
+	$help["DELECTR"]	             = ["DELECTR"                          , "Door with electromagnetic holder and automatic closer"]                                                              ;
+	$help["DCLOSER"]	             = ["DCLOSER"                          , "Door with automatic closer"]                                                              ;
+	$help["DOOR"]	                 = ["DOOR"                             , "Regular door"]                                                              ;
+	$help["VVENT"]	                 = ["VVENT"                            , "Vertical openings"]                                                              ;
+	$help["c_const"]        	     = ["C constant"                       , "Constant value used for visibility calculations !!!currently used only in animation anywhere else fixed to 5!!!"]                                                              ;
+	$help["fire_starts_in_a_room"]	 = ["Fire in 'ROOM'?"                  , "Probability of fire initialized in 'ROOM' (rX) compartment type"]                                                              ;
+	$help["hrrpua"]        	         = ["HRRPUA"                           , "Parameters of triangular distribution of Heat Release Rate Per Unit Area [kW/m<sup>2</sup>]"]                                                              ;
+	$help["hrr_alpha"]    	         = ["Fire growth rate"                 , "Parameters of triangular distribution of Fire growth rate [kW/s<sup>2</sup>]"]                                                              ;
+	$help["fuel"]    	             = ["Fuel"                             , "Fuel for CFAST combustion model. More information can be found on wiki page. Remember to set <i>Molecule</i>, <i>Heat of combustion</i>, <i>Yields</i> if <i>Fuel</i> is <b><i>user-defined</i></b>"]                                                              ;
+	$help["molecule"]    	         = [""                                 , "<b>User-defined</b> formula of fuel molecule."]                                                              ;
+	$help["heatcom"]             	 = [""                                 , "<b>User-defined</b> parameters of heat of combustion normal distribution [MJ/kg]"]                                                              ;
+	$help["yields"]    	             = [""                                 , "<b>User-defined</b> parameters of species yields normal distribution [g/g]"]                                                              ;
+	$help["radfrac"]    	         = ["Radiative fraction"               , "Parameters of gamma distribution of radiative fraction of HRR [-]"]                                                              ;
+	$help["fire_load"]    	         = [""                                 , "Parameters of log-normal distribution of fire load in ROOM and other comprtments types [MJ/m<sup>2</sup>]"]                                                              ;
+
+    //EVACUTAION MODEL
+	//$help["evac_clusters"]		     = ["evac_clusters"					   , "follow the leader, etc (TODO)."];                                                              ;
+	$help["dispatch_evacuees"]		 = ["Evacuees dispatch mode"           , "<orange>manual+probabilistic</orange> probabilistic evacuees only in the rooms free of manual evacuees<hr> <orange>probabilistic+manual</orange> probabilistic evacuees first and then extra manual evacuees<hr> <orange>manual</orange> probabilistic evacuees are never added "]                                                              ;
+	$help["pre_evac"]				 = ["Pre-evacuation time"              , "Parameters of log-normal distribution of pre-evacuation time [s]<br>(time from agent being alarmed to start of egrees) "  ] ;
+	$help["pre_evac_fire_origin"]	 = ["Pre-evacuation<br>in fire origin" , "Parameters of log-normal distribution of pre-evacuation time in compartment of fire origin [s]<br>(time from agent being alarmed to start of egrees) " ]                                                        ;
+	$help["alarming"]				 = ["Alarming time"                    , "Parameters of normal distribution of alarming time [s] !!!currently fixed to 0!!!" ] ;
+	$help["evacuees_density"]		 = ["Evacuees density"                 , "Density of occupants in different compartments types [pers/m<sup>2</sup>]" ] ;
+	$help["building_profile"]		 = ["Building profile"                 , "Default profiles for buildings. Description available on wiki page" ]  ;
+	$help["management"]			     = ["Management lvl"                   , "Referring to PD 7974-6" ]                                                     ;
+	$help["complexity"]			     = ["Complexity lvl"                   , "Referring to  PD 7974-6" ]                                                     ;
+	$help["alarmingb"]			     = ["Alarming lvl"                     , "Referring to PD 7974-6" ]                                                     ;
+	$help["evacuees_max_h_speed"]    = ["Horizontal speed"                 , "Parameters of normal distribution of nominal horizontal speed [cm/s]"]                                                              ;
+	$help["evacuees_max_v_speed"]    = ["Vertical speed"                   , "Parameters of normal distribution of nominal vertical speed [cm/s] !!!currently not used!!!"]                                                              ;
+	$help["evacuees_alpha_v"]        = ["Alpha speed"                      , "Parameters of normal distribution of alpha (used for speed reduction in somke) [-]"]                                                              ;
+	$help["evacuees_beta_v"]         = ["Beta speed"                       , "Parameters of normal distribution of beta (used for speed rduction in smoke) [-]"]                                                              ;
+
+    //RESCUE MODEL 
+	$help["is_rescue"]			     = ["is rescue?"                        , "is rescue module used? 1/0" ]                                                      ;
+	$help["electronic"]			     = ["electronic/phone"                       , "Electronic =1, phone call = 0" ]                                                      ;
+	$help["detection"]			     = ["detection"                       , "Input detection time in seconds [s]" ]                                                      ;
+	$help["t1"]			     = ["t1"                       , "Time T1- only with electronic [s]" ]                                                      ;
+	$help["t2"]			     = ["t2"                       , "Time T2- only with electronic [s]" ]                                                      ;
+	$help["CPR"]			     = ["CPR"                       , "Phone call time - only with electronic [s]" ]                                                      ;
+	$help["dist_short"]			     = ["dist short"                       , "Distance to the nearest Fire Department [km]" ]                                                      ;
+	$help["dist_long"]			     = ["dist long"                       , "Distance to the second Fire Department [km]" ]                                                      ;
+	$help["fire_distance_horizontal"]			     = ["horizontal to fire"                       , "Longest distance beetween fire origin and entrance to the building in horizontal plane [m]" ]                                                      ;
+	$help["fire_distance_vertical"]			     = ["vertical to fire"                       , "Longest distance beetween fire origin and entrance to the building in vertical plane [m]" ]                                                      ;
+	$help["time_1"]			     = ["t1"                       , "Time from arrival to start putting fire from 1st nozzle [s]" ]                                                      ;
+	$help["time_2"]			     = ["t2"                       , "Time from arrival to start putting fire from 2nd nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;
+	$help["time_3"]			     = ["t3"                       , "Time from arrival to start putting fire from 3rd nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;	
+	$help["time_4"]			     = ["t4"                       , "Time from arrival to start putting fire from 4th nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;
+
+	$help["r_is"]			     = ["Model"                       , "Simple (0) - Pareto distribution of fire area<br>Complex (1) - see Kuziora 2023" ]                                                      ;
+	$help["r_trans"]			     = ["Transmission"                       , "Phone call (0) - fire service is notified of fire via phone call<br>Automatic(1) - automatic alarm transmission from FACP" ]                                                      ;
+	$help["r_times"]			     = [""                       , "Time intervals for fire scenario [s]" ]                                                      ;
+	$help["detection"]			     = ["detection"                       , "Time from fire initiation to detection (used only within complex fire service sub-model)" ]                                                      ;
+	$help["t1"]			     = ["T1"                       , "Confirmation time"];
+	$help["t2"]			     = ["T2"                       , "Reconnaissance time"];
+	$help["processing"]			     = ["processing"                       , "Time for alarm processing"];
+    $help["r_distances"]			     = [""                       , "Distances to the nearest Fire Units [km]"];
+	$help["r_to_fire"]			     = [""                       , "Maximum length (horizontal) and hydraulic head (vertical) of firehoses system [m]"];
+	$help["r_nozzles"]			     = [""                       , "Time from fire unit arrival to application of subsequent water jets [s] (-1 if never ready)"];
+    $help["fire_area"]    	         = ["Pareto fire area"                        , "Parameters of Pareto distribution of fire area [m<sup>2</sup>]"]                                                              ;
 
 	foreach($help as $k=>$v) { 
 		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
@@ -318,8 +383,14 @@ function get_template_defaults($q) {/*{{{*/
     "dispatch_evacuees": "manual+probabilistic",
     "number_of_simulations": 1,
     "simulation_time": 100,
-    "indoor_temperature": 20,
-    "humidity": 40,
+    "indoor_temperature": {
+        "mean": 22,
+        "sd": 2
+    },
+    "humidity": {
+        "mean": 40,
+        "sd": 5
+    },
     "building_profile": {
         "type": "Bank",
         "management": "M1",
@@ -339,56 +410,100 @@ function get_template_defaults($q) {/*{{{*/
         "thickness": 0.3
     },
     "heat_detectors": {
-        "temp_mean": "",
-        "temp_sd": "",
+        "mean": "",
+        "sd": "",
         "RTI": "",
         "not_broken": ""
     },
     "smoke_detectors": {
-        "temp_mean": "",
-        "temp_sd": "",
+        "mean": "",
+        "sd": "",
         "not_broken": ""
     },
     "sprinklers": {
-        "temp_mean": 3,
-        "temp_sd": 4,
-        "density_mean": 1,
-        "density_sd": 2,
-        "RTI": 3,
-        "not_broken": 0.5
+        "mean": 60,
+        "sd": 2,
+        "density_mean": 0.0001,
+        "density_sd": 0.00001,
+        "RTI": 100,
+        "not_broken": 0.95
     },
     "NSHEVS": {
-        "activation_time": ""
+        "activation_time": "",
+        "startup_time": ""
     },
+    "RESCUE": {
+        "is_rescue": 0,
+        "electronic": 0,
+        "detection": 20,
+        "t1": 20,
+        "t2": 20,
+	"CPR": 1, 
+        "dist_short": 4,
+        "dist_long": 8,
+        "fire_distance_horizontal": 20,
+        "fire_distance_vertical":5
+    },
+    "NOZZLES": {
+	"time_1" : 0,
+	"time_2": 40,
+	"time_3": 80,
+	"time_4": -1
+    },
+
+    "r_is":"0",
+    "r_trans":"0",
+    "r_times": {
+        "detection": "",
+        "t1": "",
+        "t2": "",
+        "processing": ""},
+    "r_distances": {
+        "1st": "",
+        "2nd": ""},
+    "r_to_fire": {
+        "horizontal": "",
+        "vertical": ""},
+    "r_nozzles": {
+        "1st": "",
+        "2nd": "",
+        "3rd": "",
+        "4th": ""},
+
+
+	        
     "outdoor_temperature": {
-        "mean": 25,
-        "sd": 2
+        "mean": 10,
+        "sd": 10
     },
-    "indoor_pressure": 101325,
+    "pressure": {
+        "mean": 101325,
+        "sd": 1000
+    },
     "windows": [
         {
             "min": -99999,
             "max": -5,
-            "quarter": -5,
-            "full": 0.11
+            "quarter": 0.05,
+            "full": 0.01
         },
         {
             "min": -5,
             "max": 15,
-            "quarter": 0,
-            "full": 0.5
+            "quarter": 0.1,
+            "full": 0.05
         },
         {
             "min": 15,
             "max": 27,
-            "quarter": 0,
-            "full": 0.5
+            "quarter": 0.15,
+            "full": 0.2
         },
         {
             "min": 27,
             "max": 99999,
-            "quarter": 0,
-            "full": 0.5
+            "quarter": 0.2,
+            "full": 0.3
         }
     ],
     "vents_open": {
@@ -414,40 +529,56 @@ function get_template_defaults($q) {/*{{{*/
         "mean": -0.057,
         "sd": 0.015
     },
-    "fire_starts_in_a_room": 0.8,
+    "fire_starts_in_a_room": 0.9,
     "hrrpua": {
         "min": 300,
         "mode": 500,
         "max": 1300
     },
     "hrr_alpha": {
-        "min": 0.0029,
-        "mode": 0.0029,
-        "max": 0.188
+        "min": 0.00293,
+        "mode": 0.01172,
+        "max": 0.1876
     },
-    "co_yield": {
-      "min": 0.01,
-      "max": 0.043
+    "yields":
+    {
+        "soot": {
+          "mean": 0,
+          "sd": 0
+        },
+        "co": {
+          "mean": 0,
+          "sd": 0
+        },
+        "hcn": {
+          "mean": 0,
+          "sd": 0
+    }},
+    "heatcom": {
+      "mean": 17100,
+      "sd": 2000
     },
-    "hcl_yield": {
-      "min": 0.01,
-      "max": 0.043
+    "molecule": {
+      "C": "",
+      "H": "",
+      "O": "",
+      "N": "",
+      "Cl": ""
     },
-    "hcn_yield": {
-      "min": 0.01,
-      "max": 0.043
-    },
-    "soot_yield": {
-      "min": 0.11,
-      "max": 0.17
-    },
+    "fuel": "random",
+    "fire_load":
+    {
+        "room": {
+          "mean": 6.33,
+          "sd": 1.13
+        },
+        "non_room": {
+          "mean": 4,
+          "sd": 0.5
+    }},
     "radfrac": {
       "k": 124.48,
       "theta": 0.00217
-    },
-    "heatcom": {
-      "min": 16400,
-      "max": 27000
     },
     "fire_area": {
       "b": 0.668,
@@ -468,8 +599,8 @@ function get_template_defaults($q) {/*{{{*/
         "sd": 8.87
     },
     "pre_evac_fire_origin": {
-        "mean": 59.85,
-        "sd": 1.48
+        "mean": 15,
+        "sd": 5
     }
 }';
 

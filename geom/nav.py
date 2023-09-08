@@ -16,6 +16,7 @@ from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from fire.partition_query import PartitionQuery
+# from pathfinder.navmesh_baker import NavmeshBaker
 from shapely.ops import polygonize
 from numpy.random import uniform
 from math import sqrt
@@ -30,13 +31,6 @@ from include import Vis
 class Navmesh: 
     def __init__(self):# {{{
         ''' 
-        installer/navmesh_installer.sh installs all the dependencies.
-
-        * navmesh build from the obj geometry file
-        thanks to https://github.com/arl/go-detour !
-
-        * navmesh query
-        thanks to https://github.com/layzerar/recastlib/ !
 
         ============================================
 
@@ -98,7 +92,54 @@ class Navmesh:
             self.NAV = dt.dtLoadSampleTileMesh(file_nav)
         except:
             raise SystemExit("Navmesh: cannot create {}".format(file_nav))
+
+        # self.baker = NavmeshBaker()
+        # vertex_positions, polygons_of_the_geometry = self.get_geometry_data()
+        # self.baker.add_geometry(vertex_positions,polygons_of_the_geometry)
+        # self.baker.bake()
+
 # }}}
+    def get_geometry_data(self):
+        #[(-4.0, 0.0, -4.0), (-4.0, 0.0, 4.0), (4.0, 0.0, 4.0), (4.0, 0.0, -4.0)], [[0, 1, 2, 3]]
+        vertex_positions = []
+        polygons_of_the_geometry = []
+        # sdfsdf = '{}/{}.obj'.format(os.environ['AAMKS_PROJECT'], self.nav_name)
+        file1 = open('{}/{}.obj'.format(os.environ['AAMKS_PROJECT'], self.nav_name), 'r')
+        Lines = file1.readlines()
+        count = 1
+        for line in Lines:
+            if count % 7 == 2:
+                vertex_positions.append((float(line.split()[1]),0,float(line.split()[3])))
+            if count % 7 == 3:
+                vertex_positions.append((float(line.split()[1]),0,float(line.split()[3])))
+            if count % 7 == 4:
+                vertex_positions.append((float(line.split()[1]),0,float(line.split()[3])))
+            if count % 7 == 5:
+                vertex_positions.append((float(line.split()[1]),0,float(line.split()[3])))
+            count += 1
+        vertex_positions_without_duplicates = list(set(vertex_positions))
+
+        count = 1
+        for line in Lines:
+            if count % 7 == 2:
+                point1 = [x for x, y in enumerate(vertex_positions_without_duplicates) 
+                    if y[0] == float(line.split()[1]) and y[2] == float(line.split()[3])]
+            if count % 7 == 3:
+                point2 = [x for x, y in enumerate(vertex_positions_without_duplicates) 
+                    if y[0] == float(line.split()[1]) and y[2] == float(line.split()[3])]
+            if count % 7 == 4:
+                point3 = [x for x, y in enumerate(vertex_positions_without_duplicates) 
+                    if y[0] == float(line.split()[1]) and y[2] == float(line.split()[3])]
+            if count % 7 == 5:
+                point4 = [x for x, y in enumerate(vertex_positions_without_duplicates) 
+                    if y[0] == float(line.split()[1]) and y[2] == float(line.split()[3])]
+            if count % 7 == 0:
+                polygons_of_the_geometry.append([point1[0],point2[0],point3[0],point4[0]])
+            count += 1
+
+        return vertex_positions_without_duplicates, polygons_of_the_geometry
+
+
     def nav_query(self,src,dst,maxStraightPath=16):# {{{
         '''
         ./Detour/Include/DetourNavMeshQuery.h: maxStraightPath: The maximum number of points the straight path arrays can hold.  [Limit: > 0]
@@ -256,6 +297,8 @@ class Navmesh:
 # }}}
     def _obj_elem(self,face,z):# {{{
         elem=''
+        if len(face[:4]) != 4:
+            return ""
         elem+="o Face{}\n".format(self._obj_num)
         for verts in face[:4]:
             elem+="v {}\n".format(" ".join([ str(i/100) for i in [verts[0], z, verts[1]]]))

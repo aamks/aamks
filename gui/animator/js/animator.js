@@ -18,6 +18,7 @@ var labelsSize=50;
 var sliderPos=0;
 var lerpFrame=0;
 var frame=0;
+var frame_to_skip = 9999999;
 var velocitiesGroup={};
 var evacueesGroup={};
 var evacueesLabelsGroup={};
@@ -238,10 +239,15 @@ function showEvacueesLabels() {//{{{
 		_.each(frame0_data, function(e,i) {
 			x=evacueesGroup[ffloor].children[i].position.x;
 			y=evacueesGroup[ffloor].children[i].position.y;
-			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(15+x-evacueeRadius/1,y-evacueeRadius/7), fillColor:"#000", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.5 }));
-			evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y+evacueeRadius/3), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.5}));
+			addEvacueeLabel(ffloor, i, x, y)
+			
 		})
 	})
+}
+
+function addEvacueeLabel(ffloor,i, x, y) {
+	evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(15+x-evacueeRadius/1,y-evacueeRadius/7), fillColor:"#000", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.5 }));
+	evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y+evacueeRadius/3), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.5}));
 }
 //}}}
 function initSpeed() {//{{{
@@ -547,29 +553,176 @@ function initAnimAgents() { //{{{
 
 }
 //}}}
+
+
+// function addEvacueesAndVelocities(count,ffloor){
+// 	for(let i=0; i<count; i++){
+// 		evacueesGroup[ffloor].addChild(new Path.Circle({center: new Point(-10000, -10000), radius: evacueeRadius}));
+// 		velocitiesGroup[ffloor].addChild(new Path.Line({from: new Point(-10000, -10000), to: new Point(-10000,-10000), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+// 	}
+
+// }
+function updateAgentNumbersOnFloors(){
+	if(frame_to_skip == frame){
+	// 		sdfsdfsdsdf()
+		return;
+	}
+		
+	_.each(evacueesGroup, function(data,ffloor) {
+		if(ffloor in dstatic.floors) { 
+			if(Object.keys(eData[frame][ffloor]).length != data.children.length){
+				updateEvacueesOnEachFloor();	
+				frame_to_skip = frame;
+				return;
+			}
+		}	
+	})
+}
+
+
+
+function updateEvacueesOnEachFloor(){
+	// _.each(evacueesGroup, function(data,ffloor) {
+	// 	if(ffloor in dstatic.floors) { 
+	// 		if(eData[frame][ffloor].length > data.children.length){
+	// 			for (var i=0; i < eData[frame][ffloor].length-data.children.length; i++) { 
+	// 				addAgentToFloor(ffloor,)
+	// 				removaAgentFromFloor(ffloor+1,)
+	// 				data.AddChild(new Path.Circle({center: 
+	// 					new Point(
+	// 						eData[frame][ffloor][eData[frame][ffloor].length-i-1][0], 
+	// 						eData[frame][ffloor][eData[frame][ffloor].length-i-1][1]), 
+	// 						radius: evacueeRadius}));
+	// 				}
+	// 		}
+	// 	}
+	// })
+	_.each(eData[frame], function(frame0_data,ffloor) {
+		evacueesLabelsGroup[ffloor].removeChildren();
+		velocitiesGroup[ffloor].removeChildren();
+		evacueesGroup[ffloor].removeChildren();
+		// velocitiesGroup[ffloor]=new Group();
+		// evacueesGroup[ffloor]=new Group();
+		// evacueesLabelsGroup[ffloor]=new Group();
+		_.each(frame0_data, function(data, i) {
+			// x = data[0]
+			// y = data[1]
+			// x_to = x + data[2]
+			// y_to = y + data[3]
+			evacueesGroup[ffloor].addChild(new Path.Circle({center: new Point(-10000, -10000), radius: evacueeRadius}));
+			velocitiesGroup[ffloor].addChild(new Path.Line({from: new Point(-10000, -10000), to: new Point(-10000,-10000), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+			//velocitiesGroup[ffloor].addChild(new Path.Line({from: new Point(x, y), to: new Point(x_to,y_to), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+			//evacueesGroup[ffloor].addChild(new Path.Circle({center: new Point(x, y), radius: evacueeRadius}));
+		});
+
+	// _.each(evacueesGroup, function(data,ffloor) {
+	// 	if(ffloor in dstatic.floors) { 
+	// 		_.each(data.children, function(e,i) {
+	// 			e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c']; 
+	// 			e.position.x = eData[frame][ffloor][i][0]; 
+	// 			e.position.y = eData[frame][ffloor][i][1]; 
+	// 		})
+	// 	}
+	// })
+
+	// _.each(velocitiesGroup, function(data,ffloor) {
+	// 	if(ffloor in dstatic.floors) { 
+	// 		_.each(data.children, function(e,i) {
+	// 			e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
+	// 			e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
+	// 			e.segments[1].point.x = evacueesGroup[ffloor].children[i].position.x + eData[frame][ffloor][i][2];
+	// 			e.segments[1].point.y = evacueesGroup[ffloor].children[i].position.y + eData[frame][ffloor][i][3];
+	// 		})
+	// 	}
+	// })
+
+
+		// _.each(evacueesGroup, function(data,ffloor) {
+		// 	if(ffloor in dstatic.floors) { 
+		// 		_.each(data.children, function(e,i) {
+		// 			e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c']; 
+		// 			e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps; 
+		// 			e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
+		// 		})
+		// 	}
+		// })
+	});
+
+}
+
+// function sdfsdfsdsdf(){
+
+// 	_.each(evacueesGroup, function(data,ffloor) {
+// 		if(ffloor in dstatic.floors) { 
+// 			_.each(data.children, function(e,i) {
+// 				e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c']; 
+// 				e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps; 
+// 				e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
+// 			})
+// 		}
+// 	})
+
+// 	_.each(velocitiesGroup, function(data,ffloor) {
+// 		if(ffloor in dstatic.floors) { 
+// 			_.each(data.children, function(e,i) {
+// 				e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
+// 				e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
+// 				e.segments[1].point.x = evacueesGroup[ffloor].children[i].position.x + eData[frame][ffloor][i][2];
+// 				e.segments[1].point.y = evacueesGroup[ffloor].children[i].position.y + eData[frame][ffloor][i][3];
+// 			})
+// 		}
+// 	})
+
+// }
 function evacueesInFrame() {//{{{
 	// Lerps are Linear Interpolations. 
 	// There is eData for each frame. Within each frame there are evacueesGroup positions. We take first frame and loop thru each evacuee. But we are not done with this frame yet:
 	// We can have say 1 or 1000 of lerps (invented positions) between each two frames. This is for both smoothening animations and for slow/fast playbacks. 
 	// We remove an evacuee by making it transparent. When we rewind, then we initialize all opacities with 1 again.
 	
+
+
+	// check whether current frame is related to the change in the number of agents 
+	// on any floor (going downstairs by agents) if so, update the evacueesGroup data
+	// to make proper numer of agents on each floor
+
+
+
+	
+	// _.each(evacueesGroup, function(data,ffloor) {
+	// 	if(ffloor in dstatic.floors) { 
+	// 		if(data.children.length < Object.keys(eData[frame][ffloor]).length)
+	// 			addEvacueesAndVelocities(data.children.length, ffloor)
+	// 		}	
+	// })
+
 	_.each(evacueesGroup, function(data,ffloor) {
 		if(ffloor in dstatic.floors) { 
+			agentsOnFloorKeys = Object.keys(eData[frame][ffloor])
 			_.each(data.children, function(e,i) {
-				e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c']; 
-				e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps; 
-				e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
+				if(agentsOnFloorKeys[i] in eData[frame+1][ffloor]){
+					e.fillColor=colors['color_'+eData[frame][ffloor][agentsOnFloorKeys[i]][4]]['c']; 
+					e.position.x = eData[frame][ffloor][agentsOnFloorKeys[i]][0] + (eData[frame+1][ffloor][agentsOnFloorKeys[i]][0] - eData[frame][ffloor][agentsOnFloorKeys[i]][0]) * (lerpFrame%lerps)/lerps; 
+					e.position.y = eData[frame][ffloor][agentsOnFloorKeys[i]][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][agentsOnFloorKeys[i]][1] - eData[frame][ffloor][agentsOnFloorKeys[i]][1] ) * (lerpFrame%lerps)/lerps; 
+				}
+				else{
+					e.fillColor=colors['color_'+eData[frame][ffloor][agentsOnFloorKeys[i]][4]]['c']; 
+					e.position.x = eData[frame][ffloor][agentsOnFloorKeys[i]][0];
+					e.position.y = eData[frame][ffloor][agentsOnFloorKeys[i]][1] + dstatic.floors[ffloor].floor_meta.ty
+				}
+				
 			})
 		}
 	})
 
 	_.each(velocitiesGroup, function(data,ffloor) {
 		if(ffloor in dstatic.floors) { 
+			agentsOnFloorKeys = Object.keys(eData[frame][ffloor])
 			_.each(data.children, function(e,i) {
 				e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
 				e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
-				e.segments[1].point.x = evacueesGroup[ffloor].children[i].position.x + eData[frame][ffloor][i][2];
-				e.segments[1].point.y = evacueesGroup[ffloor].children[i].position.y + eData[frame][ffloor][i][3];
+				e.segments[1].point.x = evacueesGroup[ffloor].children[i].position.x + eData[frame][ffloor][agentsOnFloorKeys[i]][2];
+				e.segments[1].point.y = evacueesGroup[ffloor].children[i].position.y + eData[frame][ffloor][agentsOnFloorKeys[i]][3];
 			})
 		}
 	})
@@ -591,6 +744,7 @@ function afterLerpFrame() {//{{{
 	if(frame >= lastFrame) { 
 		frame=0; 
 		lerpFrame=0; 
+		frame_to_skip = 9999999;
 	} 
 
 }
@@ -704,6 +858,7 @@ view.onFrame=function(event) {//{{{
 		showEvacueesLabels(); 
 		paused=1; 
 	} else {
+		updateAgentNumbersOnFloors();
 		evacueesInFrame();
 		roomsSmokeInFrame();
 		afterLerpFrame();

@@ -15,7 +15,7 @@ from include import SimIterations
 from include import Vis
 from include import GetUserPrefs
 from geom.nav import Navmesh
-
+import subprocess
 import logging
 logger = logging.getLogger('AAMKS.init.py')
 
@@ -120,11 +120,12 @@ class OnEnd():
         self.uprefs=GetUserPrefs()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.p=Psql()
         self.project_id=self.conf['project_id']
         self.scenario_id=self.conf['scenario_id']
         if self.uprefs.get_var('navmesh_debug')==1:
             logger.debug('start _test_navmesh()')
-            self._test_navmesh()
+            # self._test_navmesh()
         Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
         logger.debug('start _register_works()')
         self._register_works()
@@ -167,9 +168,12 @@ class OnEnd():
                 for i in range(*si.get()):
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                     worker = worker.replace("/home","/mnt")
-                    gearman="gearman -b -f aRun '{}'".format(worker)
-                    os.system(gearman)
+                    gearman=["gearman", "-v",  "-b", "-f", "aRun", worker]
+                    job_id = subprocess.check_output(gearman, universal_newlines=True)
+                    job_id = job_id.split('Task created: ')[-1][:-1]
+                    self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                     logger.info(f'send {gearman}')
+
             except Exception as e:
                 print('OnEnd: {}'.format(e))
                 logger.error(f'gearman error {e}')

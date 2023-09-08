@@ -10,14 +10,29 @@ class Evacuees:
     def __init__(self):
         self.pedestrians = []
 
+    def get_pedestrian(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no]
 
+    def remove_pedestrian(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        # if ped_no >= len(self.pedestrians):
+        #     print("sdfsdfsdfsf")
+        #     return;
+        del self.pedestrians[ped_no]
 
     def add_pedestrian(self, pedestrian):
         assert isinstance(pedestrian, Evacuee), "%pedestrian is not Pedestrian class object"
         self.pedestrians.append(pedestrian)
 
+    def add_pedestrians(self, pedestrians):
+        self.pedestrians.extend(pedestrians)
+
     def get_number_of_pedestrians(self) -> int:
         return len(self.pedestrians)
+
+    def get_unique_agent_id_on_floor(self, ped_no):
+        return self.pedestrians[ped_no].unique_agent_id_on_different_floors
 
     def set_speed_to_pedestrian(self, ped_no, speed):
         assert isinstance(ped_no, int), "%ped_no is not an integer"
@@ -86,7 +101,7 @@ class Evacuees:
         :type position: tuple
         """
         assert isinstance(ped_no, int), "%ped_no is not an integer"
-        assert isinstance(position, tuple), "%position is not a list"
+        assert isinstance(position, tuple), "%position is not a tuple"
         self.pedestrians[ped_no].position = position
 
     def get_position_of_pedestrian(self, ped_no):
@@ -98,9 +113,13 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].goal
 
-    def set_goal(self, ped_no: int, goal: list) -> object:
+    def set_goal(self, floor, ped_no: int, goal: list) -> object:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
-        self.pedestrians[ped_no].set_goal(goal)
+        self.pedestrians[ped_no].set_goal(floor, goal)
+
+    def has_agent_reached_teleport(self, floor, ped_no: int) -> object:
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].has_agent_reached_teleport()
 
     def set_exit_door(self, ped_no: int, exit_door: list) -> object:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
@@ -133,12 +152,37 @@ class Evacuees:
     def update_speed_of_pedestrian(self, ped_no):
         self.pedestrians[ped_no].update_speed()
 
-    def update_fed_of_pedestrian(self, ped_no, fed):
-        self.pedestrians[ped_no].update_fed(fed)
+    def update_fed_of_pedestrian(self, ped_no, dfed):
+        return self.pedestrians[ped_no].update_fed(dfed)
+
+    def update_previous_fed_of_pedestrian(self, ped_no, fed):
+        self.pedestrians[ped_no].previous_step_fed = fed
+
+    def update_symbolic_fed_of_pedestrian(self, ped_no):
+        if self.pedestrians[ped_no].fed < 0.01:
+            self.pedestrians[ped_no].symbolic_fed = 'N'
+        elif self.pedestrians[ped_no].fed < 0.3:
+            self.pedestrians[ped_no].symbolic_fed = 'L'
+        elif self.pedestrians[ped_no].fed < 1:
+            self.pedestrians[ped_no].symbolic_fed = 'M'
+        else:
+            self.pedestrians[ped_no].symbolic_fed = 'H'
 
     def get_fed_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].fed
+
+    def get_dfed_of_pedestrian(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].dfed
+
+    def get_symbolic_fed_of_pedestrian(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].symbolic_fed
+
+    def get_previous_step_fed_of_pedestrian(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].previous_step_fed
 
     def set_finish_to_agent(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
@@ -158,3 +202,5 @@ class Evacuees:
     def set_num_of_orca_lines(self, ped_no, num_of_lines):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].num_of_orca_lines = num_of_lines
+
+
