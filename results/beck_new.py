@@ -679,7 +679,7 @@ class PostProcess:
                 {'name':'fn_curve', 'lab':['Number of fatalities [-]', 'Frequency [-]']}
                 ],
             'conv':[
-                {'name':'conv_individual', 'lab':['Individual risk [-]', 'Iteration [-]']}
+                {'name':'conv_individual', 'lab':['Iteration [-]', 'Individual risk [-]']}
                 ]}
 
     def __init__(self, scen_dir=None):
