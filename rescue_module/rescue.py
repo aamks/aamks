@@ -245,7 +245,9 @@ class Nozzles:
     def get_times(self):
         self.nozzles_times = []
         for time in self.nozzles_data.values():     
-            if time >= 0:     
+            if time == "":
+                continue
+            elif time >= 0:     
                 self.nozzles_times.append(time)
         self.data['Nozzles times'] = self.nozzles_times
  
