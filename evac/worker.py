@@ -75,7 +75,7 @@ class Worker:
         LOG_FILE = f"{self.project_dir}/aamks.log"
         file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
         file_handler.setFormatter(FORMATTER)
-        file_handler.setLevel(logging.DEBUG)
+        file_handler.setLevel(logging.INFO)
 
         logger = logging.getLogger(logger_name)
         #logger.setLevel(eval('logging.{}'.format(self.config['LOGGING_MODE'])))
@@ -567,52 +567,11 @@ class Worker:
         params['highlight_geom']=None
         params['anim']="{}/{}_{}_{}_anim.zip".format(self.sim_id, self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
         p = Psql()
-        p.query(f"""UPDATE simulations SET animation = '{params}'
+        p.query(f"""UPDATE simulations SET animation = '{json.dumps(params)}'
                 WHERE project={self.vars['conf']['project_id']} AND scenario_id={self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")
+
         self.wlogger.info("Animation saved to psql")
     # }}}
-#    def _write_meta(self, e=False):# {{{
-#        j=Json()
-#        report = OrderedDict()
-#        report['worker'] = self.host_name
-#        report['path_to_project'] = self.project_dir
-#        if e and 1 < e['status'] < 20:
-#            report['early_error'] = self.working_dir
-#        else:
-#            report['sim_id'] = self.sim_id
-#            report['scenario_id'] = self.vars['conf']['scenario_id']
-#            report['project_id'] = self.vars['conf']['project_id']
-#            report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
-#            report['highlight_geom'] = None
-#        report['psql'] = dict()
-#        if e:
-#            report['psql'] = e
-#        else:
-#            report['psql']['fed'] = dict()
-#            report['psql']['fed_symbolic'] = dict()
-#            report['psql']['rset'] = dict()
-#            report['psql']['dfed'] = dict()
-#            report['psql']['runtime'] = int(time.time() - self.start_time)
-#            report['psql']['cross_building_results'] = self.cross_building_results
-#            for i in self.floors:
-#                report['psql']['fed'] = self._collect_evac_data('fed')
-#                report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
-#                report['psql']['rset'][i.floor] = int(i.rset)
-#                report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
-#            for num_floor in range(len(self.floors)):
-#                report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
-#                report['floor'] = num_floor
-#            report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
-#
-#            report['psql']['detection'] = int(self.detection_time)
-#            report['psql']['status'] = 0
-#
-#        self.meta_file = "meta_{}.json".format(self.sim_id)
-#        j.write(report, self.meta_file)
-#        if e:
-#            return 1 
-#        self.wlogger.info('Metadata prepared successfully')
-#    # }}}
 
     # gather data across all floors
     def _collect_evac_data(self, parameter):

@@ -59,7 +59,7 @@ class Manager():
 
         self._access_hosts()
         for i in self.s.query("SELECT host FROM workers WHERE conf_enabled=1 ORDER BY network,host"):
-            cmd = f"ssh -f -o ConnectTimeout=3 {i['host']} \"AAMKS_PATH={os.environ['AAMKS_PATH']} AAMKS_WORKER=gearman AAMKS_SERVER={os.environ['AAMKS_SERVER']} nohup gearman -w -h {os.environ['AAMKS_SERVER']} -f aRun xargs python3 {os.environ['AAMKS_PATH']}/evac/worker.py >> /dev/null 2>&1 &\""
+            cmd = f"ssh -f -o ConnectTimeout=3 {i['host']} \"AAMKS_PATH={os.environ['AAMKS_PATH']} AAMKS_WORKER=gearman AAMKS_PROJECT={os.environ['AAMKS_PROJECT']} AAMKS_SERVER={os.environ['AAMKS_SERVER']} AAMKS_PG_PASS={os.environ['AAMKS_PG_PASS']} nohup gearman -w -h {os.environ['AAMKS_SERVER']} -f aRun xargs python3 {os.environ['AAMKS_PATH']}/evac/worker.py >> /dev/null 2>&1 &\""
             Popen(cmd, shell=True)
             print(cmd)
         self._gearman_register_results_collector()
