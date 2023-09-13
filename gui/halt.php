@@ -122,7 +122,7 @@ function stop($r) {
             $r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id'] ));
             $sum += 1;
         }else{
-            echo "<td align='center'>NO</td><td align='center'>$foo</td>";
+            echo "<td align='center'>NO</td><td align='center'>".$element['status']."</td>";
         }
     echo "<tr>";
     }
