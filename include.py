@@ -436,9 +436,6 @@ class CreateAnimEntry:# {{{
         except:
             z=[]
             lowest_id=-1
-            with open(path_anims_json, "w") as file:
-                pass
-            os.chmod(path_anims_json, 0o666)
 
         anim_record=OrderedDict()
         anim_record['sort_id']=lowest_id

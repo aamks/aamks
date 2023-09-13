@@ -30,6 +30,7 @@ from subprocess import Popen, run, TimeoutExpired
 import zipfile
 import multiprocessing
 import pandas as pd
+from include import Psql
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
@@ -65,6 +66,7 @@ class Worker:
         ssl._create_default_https_context = ssl._create_unverified_context
         self.rows_to_insert = []
         self.detection_time = None
+        self.start_time = time.time()
 
 
     def get_logger(self, logger_name):
@@ -72,7 +74,7 @@ class Worker:
         LOG_FILE = f"{self.project_dir}/aamks.log"
         file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
         file_handler.setFormatter(FORMATTER)
-        file_handler.setLevel(logging.INFO)
+        file_handler.setLevel(logging.DEBUG)
 
         logger = logging.getLogger(logger_name)
         #logger.setLevel(eval('logging.{}'.format(self.config['LOGGING_MODE'])))
@@ -272,6 +274,7 @@ class Worker:
             eenv = None
             obstacles = []
             try:
+                self.vars['conf']['project_dir'] = self.project_dir
                 eenv = EvacEnv(self.vars['conf'])
                 eenv.floor = floor
             except Exception as e:
@@ -464,16 +467,16 @@ class Worker:
             self._write_animation_zips()
         self._write_meta(e=e)
 
-        if os.environ['AAMKS_WORKER'] == 'gearman':
-            Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
-            self.wlogger.info('aOut launched successfully')
-        else:
-            self.wlogger.info('Run results_collector.py')
-            exit_status = subprocess.run(["python3", "{}/manager/results_collector.py".format(os.environ['AAMKS_PATH']), self.host_name, self.meta_file, str(self.sim_id)])
-            if exit_status.returncode != 0:
-                self.wlogger.error('results_collector.py exit status - %s', exit_status)
-            else:
-                self.wlogger.info('finished results_collector.py')
+        # if os.environ['AAMKS_WORKER'] == 'gearman':
+        #     Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
+        #     self.wlogger.info('aOut launched successfully')
+        # else:
+        #     self.wlogger.info('Run results_collector.py')
+        #     exit_status = subprocess.run(["python3", "{}/manager/results_collector.py".format(os.environ['AAMKS_PATH']), self.host_name, self.meta_file, str(self.sim_id)])
+        #     if exit_status.returncode != 0:
+        #         self.wlogger.error('results_collector.py exit status - %s', exit_status)
+        #     else:
+        #         self.wlogger.info('finished results_collector.py')
 
     # }}}
     def _write_animation_zips(self):# {{{
@@ -510,16 +513,19 @@ class Worker:
         finally:
             zf.close()
 
-    # }}}   
+    # }}}
+    def update_psql(self, status):
+        p = Psql()
+        p.query(f"""UPDATE simulations SET status = '{status}', host = '{self.host_name}'
+                WHERE project={self.vars['conf']['project_id']} AND scenario_id={self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")
+        
     def _write_meta(self, e=False):# {{{
         j=Json()
         report = OrderedDict()
         report['worker'] = self.host_name
         report['path_to_project'] = self.project_dir
         if e and 1 < e['status'] < 20:
-            report['early_error'] = self.url
-            self.sim_id = self.url.split("/")[-1]
-            os.chdir(self.working_dir)
+            report['early_error'] = self.working_dir
         else:
             report['sim_id'] = self.sim_id
             report['scenario_id'] = self.vars['conf']['scenario_id']
