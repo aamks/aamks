@@ -17,7 +17,12 @@ function site() {/*{{{*/
 
 	<script type='text/javascript' src='js/paper-full.min.js'></script>
 	<script type='text/javascript' src='js/animator.js'></script>
-		
+	<div style='text-align:center;'>
+	<form method='post'>
+        <input type='submit' name='refresh'
+                value='Refresh anim list'/>
+	</form>
+	</div>
 	<right-menu-box>
 		<close-right-menu-box><img src=/aamks/css/close.svg></close-right-menu-box><br>
 		<table>
@@ -42,6 +47,14 @@ function site() {/*{{{*/
 function main() {/*{{{*/
 	$_SESSION['nn']->htmlHead("Animator");
 	site();
+	if(isset($_POST['refresh'])) {
+		$project = $_SESSION['main']['project_id'];
+		$scenario = $_SESSION['main']['scenario_id'];
+		$anims =  $_SESSION['nn']->query("SELECT animation FROM simulations s WHERE s.project=$project AND s.scenario_id=$scenario");
+		$anims_file = $_SESSION['main']['working_home']."/workers/anims.json";
+		$z=file_put_contents($anims_file, $anims);
+	}
+
 }
 /*}}}*/
 

@@ -466,6 +466,7 @@ class Worker:
         '''
         if not e:
             self._write_animation_zips()
+            self._animation_save_psql()
             LocalResultsCollector(self._get_meta(e)).psql_report()
         else:
             LocalResultsCollector(self._get_meta(e)).psql_error()
@@ -557,6 +558,18 @@ class Worker:
         finally:
             zf.close()
 
+    def _animation_save_psql(self):# {{{
+        params=OrderedDict()
+        params['sort_id']=self.sim_id
+        params['title']="sim.{}".format(self.sim_id)
+        params['srv']=0
+        params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
+        params['highlight_geom']=None
+        params['anim']="{}/{}_{}_{}_anim.zip".format(self.sim_id, self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
+        p = Psql()
+        p.query(f"""UPDATE simulations SET animation = '{params}'
+                WHERE project={self.vars['conf']['project_id']} AND scenario_id={self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")
+        self.wlogger.info("Animation saved to psql")
     # }}}
 #    def _write_meta(self, e=False):# {{{
 #        j=Json()
