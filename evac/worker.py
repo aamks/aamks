@@ -466,7 +466,11 @@ class Worker:
         '''
         if not e:
             self._write_animation_zips()
-        self._write_meta(e=e)
+            LocalResultsCollector(self._get_meta(e)).psql_report()
+        else:
+            LocalResultsCollector(self._get_meta(e)).psql_error()
+        
+        #self._write_meta(e=e)
 
         # if os.environ['AAMKS_WORKER'] == 'gearman':
         #     Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
@@ -478,6 +482,45 @@ class Worker:
         #         self.wlogger.error('results_collector.py exit status - %s', exit_status)
         #     else:
         #         self.wlogger.info('finished results_collector.py')
+
+    def _get_meta(self, e=False):
+        report = OrderedDict()
+        report['worker'] = self.host_name
+        report['path_to_project'] = self.project_dir
+        if e and 1 < e['status'] < 20:
+            report['early_error'] = self.working_dir
+        else:
+            report['sim_id'] = self.sim_id
+            report['scenario_id'] = self.vars['conf']['scenario_id']
+            report['project_id'] = self.vars['conf']['project_id']
+            report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
+            report['highlight_geom'] = None
+        report['psql'] = dict()
+        if e:
+            report['psql'] = e
+        else:
+            report['psql']['fed'] = dict()
+            report['psql']['fed_symbolic'] = dict()
+            report['psql']['rset'] = dict()
+            report['psql']['dfed'] = dict()
+            report['psql']['runtime'] = int(time.time() - self.start_time)
+            report['psql']['cross_building_results'] = self.cross_building_results
+            for i in self.floors:
+                report['psql']['fed'] = self._collect_evac_data('fed')
+                report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
+                report['psql']['rset'][i.floor] = int(i.rset)
+                report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
+            for num_floor in range(len(self.floors)):
+                report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
+                report['floor'] = num_floor
+            report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
+
+            report['psql']['detection'] = int(self.detection_time)
+            report['psql']['status'] = 0
+            
+        self.wlogger.info('Metadata prepared successfully')
+
+        return report
 
     # }}}
     def _write_animation_zips(self):# {{{
@@ -515,53 +558,48 @@ class Worker:
             zf.close()
 
     # }}}
-    def update_psql(self, status):
-        p = Psql()
-        p.query(f"""UPDATE simulations SET status = '{status}', host = '{self.host_name}'
-                WHERE project={self.vars['conf']['project_id']} AND scenario_id={self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")
-        
-    def _write_meta(self, e=False):# {{{
-        j=Json()
-        report = OrderedDict()
-        report['worker'] = self.host_name
-        report['path_to_project'] = self.project_dir
-        if e and 1 < e['status'] < 20:
-            report['early_error'] = self.working_dir
-        else:
-            report['sim_id'] = self.sim_id
-            report['scenario_id'] = self.vars['conf']['scenario_id']
-            report['project_id'] = self.vars['conf']['project_id']
-            report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
-            report['highlight_geom'] = None
-        report['psql'] = dict()
-        if e:
-            report['psql'] = e
-        else:
-            report['psql']['fed'] = dict()
-            report['psql']['fed_symbolic'] = dict()
-            report['psql']['rset'] = dict()
-            report['psql']['dfed'] = dict()
-            report['psql']['runtime'] = int(time.time() - self.start_time)
-            report['psql']['cross_building_results'] = self.cross_building_results
-            for i in self.floors:
-                report['psql']['fed'] = self._collect_evac_data('fed')
-                report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
-                report['psql']['rset'][i.floor] = int(i.rset)
-                report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
-            for num_floor in range(len(self.floors)):
-                report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
-                report['floor'] = num_floor
-            report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
-
-            report['psql']['detection'] = int(self.detection_time)
-            report['psql']['status'] = 0
-
-        self.meta_file = "meta_{}.json".format(self.sim_id)
-        j.write(report, self.meta_file)
-        if e:
-            return 1 
-        self.wlogger.info('Metadata prepared successfully')
-    # }}}
+#    def _write_meta(self, e=False):# {{{
+#        j=Json()
+#        report = OrderedDict()
+#        report['worker'] = self.host_name
+#        report['path_to_project'] = self.project_dir
+#        if e and 1 < e['status'] < 20:
+#            report['early_error'] = self.working_dir
+#        else:
+#            report['sim_id'] = self.sim_id
+#            report['scenario_id'] = self.vars['conf']['scenario_id']
+#            report['project_id'] = self.vars['conf']['project_id']
+#            report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
+#            report['highlight_geom'] = None
+#        report['psql'] = dict()
+#        if e:
+#            report['psql'] = e
+#        else:
+#            report['psql']['fed'] = dict()
+#            report['psql']['fed_symbolic'] = dict()
+#            report['psql']['rset'] = dict()
+#            report['psql']['dfed'] = dict()
+#            report['psql']['runtime'] = int(time.time() - self.start_time)
+#            report['psql']['cross_building_results'] = self.cross_building_results
+#            for i in self.floors:
+#                report['psql']['fed'] = self._collect_evac_data('fed')
+#                report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
+#                report['psql']['rset'][i.floor] = int(i.rset)
+#                report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
+#            for num_floor in range(len(self.floors)):
+#                report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
+#                report['floor'] = num_floor
+#            report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
+#
+#            report['psql']['detection'] = int(self.detection_time)
+#            report['psql']['status'] = 0
+#
+#        self.meta_file = "meta_{}.json".format(self.sim_id)
+#        j.write(report, self.meta_file)
+#        if e:
+#            return 1 
+#        self.wlogger.info('Metadata prepared successfully')
+#    # }}}
 
     # gather data across all floors
     def _collect_evac_data(self, parameter):
@@ -610,6 +648,62 @@ class Worker:
             self.do_simulation()
             self.send_report()
             self.wlogger.info('Simulation ended successfully')
+
+
+class LocalResultsCollector:
+    def __init__(self, report: OrderedDict):
+        self.meta = report
+        self.p = Psql()
+
+    def psql_report(self):
+        fed = json.dumps(self.meta['psql']['fed'])
+        fed_symbolic = json.dumps(self.meta['psql']['fed_symbolic'])
+        rset = json.dumps(self.meta['psql']['rset'])
+        dfeds = [pd.read_json(i) for i in self.meta['psql']['dfed'].values()]
+
+        # fed_growth_cells table
+        def check_for_data(x, floor):
+            return  bool(self.p.query(f"""SELECT * FROM fed_growth_cells_data
+                    WHERE x_min={x['xmin']} AND x_max={x['xmax']} AND y_min={x['ymin']} AND y_max={x['ymax']}
+                    AND scenario_id={self.meta['scenario_id']} AND project={self.meta['project_id']} AND floor={floor}"""))
+
+        def update_fed_growth(x, floor):
+            if check_for_data(x, floor):
+                query = f"""UPDATE fed_growth_cells_data SET fed_growth_sum = fed_growth_sum + {x['total_dfed']},
+                        samples_number = samples_number + 1
+                        WHERE x_min={x['xmin']} AND x_max={x['xmax']} AND y_min={x['ymin']} AND y_max={x['ymax']}
+                        AND scenario_id={self.meta['scenario_id']} AND project={self.meta['project_id']} AND floor={floor}"""
+            else:
+                query = f"""INSERT INTO fed_growth_cells_data(scenario_id, project, floor, x_min, x_max, y_min, y_max, fed_growth_sum, samples_number)
+                        VALUES ({self.meta['scenario_id']}, {self.meta['project_id']}, {floor}, {x['xmin']}, {x['xmax']}, 
+                        {x['ymin']}, {x['ymax']}, {x['total_dfed']}, 1)"""
+            self.p.query(query)
+
+        [dfed.apply(update_fed_growth, axis=1, floor=f) for f, dfed in enumerate(dfeds)]
+
+        # simulations table
+        self.p.query(f"""UPDATE simulations SET fed = '{fed}', fed_symbolic = '{fed_symbolic}', wcbe='{rset}', detection = '{self.meta['psql']['detection']}', 
+                run_time = {self.meta['psql']['runtime']}, dcbe_time = {self.meta['psql']['cross_building_results']['dcbe']},
+                min_vis_compa = {self.meta['psql']['cross_building_results']['min_vis_compa']},
+                max_temp = {self.meta['psql']['cross_building_results']['max_temp_compa']}, host = '{self.meta['worker']}',
+                min_hgt_compa = {self.meta['psql']['cross_building_results']['min_hgt_compa']},
+                min_vis_cor = {self.meta['psql']['cross_building_results']['min_vis_cor']},
+                min_hgt_cor = {self.meta['psql']['cross_building_results']['min_hgt_cor']},
+                tot_heat = {self.meta['psql']['cross_building_results']['tot_heat']},
+                status = '{self.meta['psql']['status']}',
+                results = '{self.meta['psql']['i_risk']}'
+                WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
+        #SendMessage("Database updated")
+
+    def psql_error(self):
+        if 'early_error' in self.meta.keys():
+            url_s = self.meta['early_error'].split('/')
+            self.meta['sim_id'] = url_s[-1]
+            self.meta['project_id'] = self.p.query(f"SELECT id FROM projects WHERE project_name='{url_s[-4]}'")[0][0]
+            self.meta['scenario_id'] = self.p.query(f"SELECT id FROM scenarios WHERE project_id={self.meta['project_id']} AND scenario_name='{url_s[-3]}'")[0][0]
+        self.p.query(f"""UPDATE simulations SET status = '{self.meta['psql']['status']}', host = '{self.meta['worker']}'
+                WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
+        #SendMessage("Database updated with error status")
 
 
 w = Worker()
