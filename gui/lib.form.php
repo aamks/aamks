@@ -11,13 +11,13 @@ function make_help() { /*{{{*/
 	$help["outdoor_temperature"]     = ["Initial outdoor temperature"              , "Parameters of normal distribution of initial outdoor temperature [°C]"]                                                              ;
 	$help["pressure"]                = ["Initial pressure"                  , "Parameters of normal distribution of initial pressure [Pa]"]                                                              ;
 	$help["humidity"]                = ["Initial humidity"                         , "Parameters of normal distribution of initial humidity [%RH]"]                                                              ;
-	$help["material"]				 = ["Materials"                         , "Construction materials in the building. Those are uniform across walls, ceilings and floors respectively. Thickness unit is meter [m] !!!currently fixed acc. to the table!!!. <br><table><tr><th>Material</th><th>Specific heat [kJ/(kg&middot;K)]</th><th>Conductivity [kW/(m&middot;K)]</th><th>Density [kg/m<sup>3</sup>]</th><th>Emissivity [-]</th><th>Fixed thickness [m]</th></tr><tr><td>Concrete</td><td>1.0</td><td>1.75</td><td>2200</td><td>0.94</td><td>0.15</td></tr><tr><td>Gypsum</td><td>1.09</td><td>0.3</td><td>1000</td><td>0.85</td><td>0.03</td></tr><tr><td>Brick</td><td>0.9</td><td>0.3</td><td>840</td><td>0.85</td><td>0.2</td></tr></table>" ] ;
+	$help["material"]				 = ["Materials"                         , "Construction materials in the building. Those are uniform across walls, ceilings and floors respectively. Thickness unit is meter [m]  <br><table><tr><th>Material</th><th>Specific heat [kJ/(kg&middot;K)]</th><th>Conductivity [kW/(m&middot;K)]</th><th>Density [kg/m<sup>3</sup>]</th><th>Emissivity [-]</th><th>Fixed thickness [m]</th></tr><tr><td>Concrete</td><td>1.0</td><td>1.75</td><td>2200</td><td>0.94</td><td>0.15</td></tr><tr><td>Gypsum</td><td>1.09</td><td>0.3</td><td>1000</td><td>0.85</td><td>0.03</td></tr><tr><td>Brick</td><td>0.9</td><td>0.3</td><td>840</td><td>0.85</td><td>0.2</td></tr></table>" ] ;
 	//$help["ceiling"]				 = ["ceiling"                          , "write me..."]                                                              ;
 	//$help["floor"]          		 = ["floor"                            , "write me..."]                                                              ;
 	//$help["wall"]           		 = ["wall"                             , "write me..."]                                                              ;
 	$help["heat_detectors"]        	 = [""                                 , "Heat detectors - temperature of activation [°C] (press to switch on/off)"]                                                              ;
 	$help["smoke_detectors"]      	 = [""                                 , "Smoke detectors - obscuration of activation [%/m] (press to switch on/off)"]                                                              ;
-	$help["sprinklers"]         	 = [""                                 , "Sprinklers (press to switch on/off) !!!currently fixed values: RTI=100, SprayDensity=7e-5!!!"]                                                              ;
+	$help["sprinklers"]         	 = [""                                 , "Sprinklers (press to switch on/off)"]                                                              ;
 	$help["density_mean"]         	 = ["SprayDensity_m"                   , "Mean of spray density normal distribution [m/s]"]                                                              ;
 	$help["density_sd"]         	 = ["SprayDensity_sd"                  , "Standard deviation of spray density normal distribution [m/s]"]                                                              ;
 	$help["temp_mean"]			     = ["temp_mean"                        , "Mean of activation temperature normal distribution" ]                                                      ;
@@ -26,7 +26,7 @@ function make_help() { /*{{{*/
 	$help["temp_sd"]			     = ["temp_sd"                          , "Standard deviation of activation temperature normal distribution" ]                                                      ;
 	$help["not_broken"]	             = ["reliability"                      , "Probability of proper functioning"]                                                              ;
 	$help["RTI"]	                 = ["RTI"                              , "Response Time Index [(m&middot;s)<sup>1/2</sup>]"]                                                              ;
-	$help["NSHEVS"]	                 = [""                                 , "Mechanical ventilation systems (press to switch on/off) !!!currently always FULLY ON!!!"]                                                              ;
+	$help["NSHEVS"]	                 = [""                                 , "Mechanical ventilation systems (press to switch on/off)"]                                                              ;
 	$help["activation_time"]	     = ["activation time"                  , "Time to fans' start"]                                                              ;
 	$help["startup_time"]	         = ["start-up"                         , "Fans' start-up time"]                                                              ;
 	$help["windows"]				 = ["Windows openness"                 , "Each row defines probabilities of certain window state in given temperature range:<br> min - lower temperature for this row<br>max - upper temperature for this row<br>quarter - probability of window being partially (0.25) open<br>full - probability of window being fully open" ]  ;
@@ -35,7 +35,7 @@ function make_help() { /*{{{*/
 	$help["DCLOSER"]	             = ["DCLOSER"                          , "Door with automatic closer"]                                                              ;
 	$help["DOOR"]	                 = ["DOOR"                             , "Regular door"]                                                              ;
 	$help["VVENT"]	                 = ["VVENT"                            , "Vertical openings"]                                                              ;
-	$help["c_const"]        	     = ["C constant"                       , "Constant value used for visibility calculations !!!currently used only in animation anywhere else fixed to 5!!!"]                                                              ;
+	$help["c_const"]        	     = ["C constant"                       , "Constant used for visibility calculations"]                                                              ;
 	$help["fire_starts_in_a_room"]	 = ["Fire in 'ROOM'?"                  , "Probability of fire initialized in 'ROOM' (rX) compartment type"]                                                              ;
 	$help["hrrpua"]        	         = ["HRRPUA"                           , "Parameters of triangular distribution of Heat Release Rate Per Unit Area [kW/m<sup>2</sup>]"]                                                              ;
 	$help["hrr_alpha"]    	         = ["Fire growth rate"                 , "Parameters of triangular distribution of Fire growth rate [kW/s<sup>2</sup>]"]                                                              ;
@@ -78,13 +78,13 @@ function make_help() { /*{{{*/
 	$help["time_3"]			     = ["t3"                       , "Time from arrival to start putting fire from 3rd nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;	
 	$help["time_4"]			     = ["t4"                       , "Time from arrival to start putting fire from 4th nozzle [s], -1 means that this nozzle does not exist" ]                                                      ;
 
-	$help["r_is"]			     = ["Model"                       , "Simple (0) - Pareto distribution of fire area<br>Complex (1) - see Kuziora 2023" ]                                                      ;
-	$help["r_trans"]			     = ["Transmission"                       , "Phone call (0) - fire service is notified of fire via phone call<br>Automatic(1) - automatic alarm transmission from FACP" ]                                                      ;
+	$help["r_is"]			     = ["Model"                       , "Simple - Pareto distribution of fire area<br>Complex - see Kuziora 2023" ]                                                      ;
+	$help["r_trans"]			     = ["Transmission"                       , "Phone call - fire service is notified of fire via phone call<br>Automatic - automatic alarm transmission from FACP" ]                                                      ;
 	$help["r_times"]			     = [""                       , "Time intervals for fire scenario [s]" ]                                                      ;
-	$help["detection"]			     = ["detection"                       , "Time from fire initiation to detection (used only within complex fire service sub-model)" ]                                                      ;
+	$help["detection"]			     = ["detection"                       , "Time from fire initiation to detection" ]                                                      ;
 	$help["t1"]			     = ["T1"                       , "Confirmation time"];
 	$help["t2"]			     = ["T2"                       , "Reconnaissance time"];
-	$help["processing"]			     = ["processing"                       , "Time for alarm processing"];
+	$help["cpr"]			     = ["CPR"                       , "Add phone call time?"];
     $help["r_distances"]			     = [""                       , "Distances to the nearest Fire Units [km]"];
 	$help["r_to_fire"]			     = [""                       , "Maximum length (horizontal) and hydraulic head (vertical) of firehoses system [m]"];
 	$help["r_nozzles"]			     = [""                       , "Time from fire unit arrival to application of subsequent water jets [s] (-1 if never ready)"];
@@ -451,13 +451,13 @@ function get_template_defaults($q) {/*{{{*/
 	"time_4": -1
     },
 
-    "r_is":"0",
-    "r_trans":"0",
+    "r_is":"simple",
+    "r_trans":"phone",
+    "r_cpr":0,
     "r_times": {
         "detection": "",
         "t1": "",
-        "t2": "",
-        "processing": ""},
+        "t2": ""},
     "r_distances": {
         "1st": "",
         "2nd": ""},

@@ -499,9 +499,10 @@ class Plot:
             data = {'CDF': data}
 
         fig, ax = plt.subplots()
+        palette = sns.color_palette()
 
-        for k in data.keys():
-            sns.histplot(data[k], cumulative=True, kde=True, stat='probability', bins=25, fill=True,
+        for i, k in enumerate(data.keys()):
+            sns.histplot(data[k], cumulative=True, kde=True, stat='probability', bins=25, fill=True, color=palette[i],
                 kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1e6]}, ax=ax, label=k)
 
         #labels
@@ -679,7 +680,7 @@ class PostProcess:
                 {'name':'fn_curve', 'lab':['Number of fatalities [-]', 'Frequency [-]']}
                 ],
             'conv':[
-                {'name':'conv_individual', 'lab':['Individual risk [-]', 'Iteration [-]']}
+                {'name':'conv_individual', 'lab':['Iteration [-]', 'Individual risk [-]']}
                 ]}
 
     def __init__(self, scen_dir=None):

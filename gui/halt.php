@@ -111,29 +111,22 @@ function check_stat($r) {
 function stop($r) {
     $sum=0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
-	echo "<table><tr><th>Job ID</th><th>Halted?</th><th>Status</th></tr>";
+	echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
 
 	foreach ($r as $element) {
-
-    $cmd = "gearadmin --cancel-job=".$element['job_id'];
-
-    // Output a 'waiting message'
         echo "<tr><td>".$element['iteration']."</td>";
-	$z=shell_exec("$cmd");
-	if ($z == null) { 
-		$rr=$_SESSION['nn']->query("SELECT status FROM simulations WHERE job_id=$1", array($element['job_id'] ))[0];
-		foreach ($rr as $foo) {	echo "<td align='center'>NO</td><td align='center'>$foo</td>";}
-	}
-	else{	echo "<td align='center'>$z</td><td></td>"; 
-	$r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id'] ));
-    $sum += 1;
-	}
-    
-    //echo "<td>".$_SESSION['codes'][$element]."</td></tr>"; // Add a line break after each inner array
+        if ($element['status']==''){
+            $cmd = "gearadmin --cancel-job=".$element['job_id'];
+            $z=shell_exec("$cmd");
+            echo "<td align='center'>$z</td><td></td>";
+            $r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id'] ));
+            $sum += 1;
+        }else{
+            echo "<td align='center'>NO</td><td align='center'>$foo</td>";
+        }
     echo "<tr>";
-}
-    echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>"; // Add a line break after each inner array
-
+    }
+    echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>";
 }
 
 function runPP() {

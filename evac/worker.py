@@ -69,7 +69,7 @@ class Worker:
 
     def get_logger(self, logger_name):
         FORMATTER = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
-        LOG_FILE = "/home/aamks_users/aamks.log"
+        LOG_FILE = f"{self.project_dir}/aamks.log"
         file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
         file_handler.setFormatter(FORMATTER)
         file_handler.setLevel(logging.INFO)
@@ -594,7 +594,6 @@ class Worker:
         self.send_report()
 
     def local_worker(self):
-        os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
         if self.run_cfast_simulations():

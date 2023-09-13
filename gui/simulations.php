@@ -286,7 +286,7 @@ function show_data() {/*{{{*/
     foreach ($scens as $s){echo "<th><strong>".$s." mean</strong></th><th><strong>".$s." std dev</strong></th>";};
     echo "</tr>";
 
-    for($i = 4; $i < 10; ++$i) {
+    for($i = 5; $i < 11; ++$i) {
         echo "<tr><td>".$heads[$i]."</td><td>".$units[$i]."</td>";
         foreach ($data as $d){
             $d = explode(',', $d[$i]);

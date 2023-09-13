@@ -1,12 +1,18 @@
 {
     "project_id": 1,
     "scenario_id": 2,
-    "fire_model": "None",
+    "fire_model": "CFAST",
     "dispatch_evacuees": "manual+probabilistic",
     "number_of_simulations": 1,
     "simulation_time": 100,
-    "indoor_temperature": 20,
-    "humidity": 40,
+    "indoor_temperature": {
+        "mean": 22,
+        "sd": 2
+    },
+    "humidity": {
+        "mean": 40,
+        "sd": 5
+    },
     "building_profile": {
         "type": "Bank",
         "management": "M1",
@@ -26,56 +32,100 @@
         "thickness": 0.3
     },
     "heat_detectors": {
-        "temp_mean": "",
-        "temp_sd": "",
+        "mean": "",
+        "sd": "",
         "RTI": "",
         "not_broken": ""
     },
     "smoke_detectors": {
-        "temp_mean": "",
-        "temp_sd": "",
+        "mean": "",
+        "sd": "",
         "not_broken": ""
     },
     "sprinklers": {
-        "temp_mean": 3,
-        "temp_sd": 4,
-        "density_mean": 1,
-        "density_sd": 2,
-        "RTI": 3,
-        "not_broken": 0.5
+        "mean": 60,
+        "sd": 2,
+        "density_mean": 0.0001,
+        "density_sd": 0.00001,
+        "RTI": 100,
+        "not_broken": 0.95
     },
     "NSHEVS": {
-        "activation_time": ""
+        "activation_time": "",
+        "startup_time": ""
     },
+    "RESCUE": {
+        "is_rescue": 0,
+        "electronic": 0,
+        "detection": 20,
+        "t1": 20,
+        "t2": 20,
+	"CPR": 1, 
+        "dist_short": 4,
+        "dist_long": 8,
+        "fire_distance_horizontal": 20,
+        "fire_distance_vertical":5
+    },
+    "NOZZLES": {
+	"time_1" : 0,
+	"time_2": 40,
+	"time_3": 80,
+	"time_4": -1
+    },
+
+    "r_is":"simple",
+    "r_trans":"phone",
+    "r_cpr":0,
+    "r_times": {
+        "detection": "",
+        "t1": "",
+        "t2": ""},
+    "r_distances": {
+        "1st": "",
+        "2nd": ""},
+    "r_to_fire": {
+        "horizontal": "",
+        "vertical": ""},
+    "r_nozzles": {
+        "1st": "",
+        "2nd": "",
+        "3rd": "",
+        "4th": ""},
+
+
+	        
     "outdoor_temperature": {
-        "mean": 25,
-        "sd": 2
+        "mean": 10,
+        "sd": 10
     },
-    "indoor_pressure": 101325,
+    "pressure": {
+        "mean": 101325,
+        "sd": 1000
+    },
     "windows": [
         {
             "min": -99999,
             "max": -5,
-            "quarter": -5,
-            "full": 0.11
+            "quarter": 0.05,
+            "full": 0.01
         },
         {
             "min": -5,
             "max": 15,
-            "quarter": 0,
-            "full": 0.5
+            "quarter": 0.1,
+            "full": 0.05
         },
         {
             "min": 15,
             "max": 27,
-            "quarter": 0,
-            "full": 0.5
+            "quarter": 0.15,
+            "full": 0.2
         },
         {
             "min": 27,
             "max": 99999,
-            "quarter": 0,
-            "full": 0.5
+            "quarter": 0.2,
+            "full": 0.3
         }
     ],
     "vents_open": {
@@ -101,51 +151,67 @@
         "mean": -0.057,
         "sd": 0.015
     },
-    "fire_starts_in_a_room": 0.8,
+    "fire_starts_in_a_room": 0.9,
     "hrrpua": {
         "min": 300,
         "mode": 500,
         "max": 1300
     },
     "hrr_alpha": {
-        "min": 0.0029,
-        "mode": 0.0029,
-        "max": 0.188
+        "min": 0.00293,
+        "mode": 0.01172,
+        "max": 0.1876
     },
-    "co_yield": {
-        "min": 0.01,
-        "max": 0.043
-    },
-    "hcl_yield": {
-        "min": 0.01,
-        "max": 0.043
-    },
-    "hcn_yield": {
-        "min": 0.01,
-        "max": 0.043
-    },
-    "soot_yield": {
-        "min": 0.11,
-        "max": 0.17
-    },
-    "radfrac": {
-        "k": 124.48,
-        "theta": 0.00217
-    },
+    "yields":
+    {
+        "soot": {
+          "mean": 0,
+          "sd": 0
+        },
+        "co": {
+          "mean": 0,
+          "sd": 0
+        },
+        "hcn": {
+          "mean": 0,
+          "sd": 0
+    }},
     "heatcom": {
-        "min": 16400,
-        "max": 27000
+      "mean": 17100,
+      "sd": 2000
+    },
+    "molecule": {
+      "C": "",
+      "H": "",
+      "O": "",
+      "N": "",
+      "Cl": ""
+    },
+    "fuel": "random",
+    "fire_load":
+    {
+        "room": {
+          "mean": 6.33,
+          "sd": 1.13
+        },
+        "non_room": {
+          "mean": 4,
+          "sd": 0.5
+    }},
+    "radfrac": {
+      "k": 124.48,
+      "theta": 0.00217
     },
     "fire_area": {
-        "b": 0.668,
-        "scale": 0.775
+      "b": 0.668,
+      "scale": 0.775
     },
-    "evacuees_density": {
-        "ROOM": 0.33,
-        "COR": 0.05,
-        "STAI": 0.05,
-        "HALL": 0.05
-    },
+    "evacuees_density": { 
+		"ROOM": 0.33, 
+		"COR": 0.05, 
+		"STAI": 0.05, 
+		"HALL": 0.05 
+	},
     "alarming": {
         "mean": 0,
         "sd": 0
@@ -155,7 +221,7 @@
         "sd": 8.87
     },
     "pre_evac_fire_origin": {
-        "mean": 59.85,
-        "sd": 1.48
+        "mean": 15,
+        "sd": 5
     }
 }
