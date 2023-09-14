@@ -44,17 +44,24 @@ function site() {/*{{{*/
 	";
 }
 /*}}}*/
-function main() {/*{{{*/
-	$_SESSION['nn']->htmlHead("Animator");
-	site();
+function refresh(){
 	if(isset($_POST['refresh'])) {
 		$project = $_SESSION['main']['project_id'];
 		$scenario = $_SESSION['main']['scenario_id'];
-		$anims =  $_SESSION['nn']->query("SELECT animation FROM simulations s WHERE s.project=$project AND s.scenario_id=$scenario");
+		$anims =  $_SESSION['nn']->query("SELECT animation FROM simulations WHERE project='$project' AND scenario_id='$scenario' AND status='0';");
+		$anim_json = "[";
+		foreach ($anims as &$value){
+			$anim_json = $anim_json . $value['animation'] . ",";
+		}
+		$anim_json = $anim_json . "]";
 		$anims_file = $_SESSION['main']['working_home']."/workers/anims.json";
-		$z=file_put_contents($anims_file, $anims);
+		$z=file_put_contents($anims_file, $anim_json);
 	}
-
+}
+function main() {/*{{{*/
+	$_SESSION['nn']->htmlHead("Animator");
+	site();
+	refresh();
 }
 /*}}}*/
 
