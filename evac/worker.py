@@ -562,6 +562,7 @@ class Worker:
         params=OrderedDict()
         params['sort_id']=self.sim_id
         params['title']="sim.{}".format(self.sim_id)
+        params['time']=time.strftime("%H:%M %d.%m", time.gmtime())
         params['srv']=0
         params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
         params['highlight_geom']=None
