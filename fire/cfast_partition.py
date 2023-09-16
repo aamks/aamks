@@ -69,6 +69,7 @@ class CfastPartition():
             Vis({'highlight_geom': None, 'anim': None, 'title': 'partitioning', 'srv': 1, 'skip_fire_origin': 1, 'skip_evacuees': 1}) # debug
 
         self._dbsave()
+        self.s.close()
 # }}}
     def _init_space(self,floor):# {{{
         ''' Divide floor into squares. Prepare empty rectangles placeholders. '''

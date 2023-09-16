@@ -57,6 +57,7 @@ class EvacMcarlo():
             self._dispatch_evacuees()
             self._make_evac_conf()
         self._evacuees_static_animator()
+        self.s.close()
 
 # }}}
     def _static_evac_conf(self):# {{{

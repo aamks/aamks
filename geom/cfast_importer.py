@@ -56,6 +56,7 @@ class CFASTimporter():
         self._assert_faces_ok()
         self._assert_room_has_door()
         self._debug()
+        self.s.close()
 # }}}
 
     def _floors_meta(self):# {{{
