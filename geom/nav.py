@@ -29,7 +29,7 @@ from include import Vis
 # }}}
 
 class Navmesh: 
-    def __init__(self, project_dir):# {{{
+    def __init__(self):# {{{
         ''' 
 
         ============================================
@@ -52,9 +52,8 @@ class Navmesh:
         nav.nav_query(src, dst, maxStraightPath=300)
 
         '''
-        self.project_dir = project_dir
         self.json=Json()
-        self.s=Sqlite("{}/aamks.sqlite".format(self.project_dir))
+        self.s=Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         self._test_colors=[ "#f80", "#f00", "#8f0", "#08f" ]
         self.navmesh=OrderedDict()
         self.partition_query={}
@@ -66,8 +65,8 @@ class Navmesh:
         self.bypass_rooms=bypass_rooms
         self._get_name(bypass_rooms)
         file_obj=self._obj_make(bypass_rooms)
-        file_nav="{}/{}".format(self.project_dir, self.nav_name)
-        file_conf="{}/recast.yml".format(self.project_dir)
+        file_nav="{}/{}".format(os.environ['AAMKS_PROJECT'], self.nav_name)
+        file_conf="{}/recast.yml".format(os.environ['AAMKS_PROJECT'])
         with open(file_conf, "w") as f: 
             f.write('''\
             cellsize: 0.10
@@ -104,7 +103,7 @@ class Navmesh:
         vertex_positions = []
         polygons_of_the_geometry = []
         # sdfsdf = '{}/{}.obj'.format(os.environ['AAMKS_PROJECT'], self.nav_name)
-        file1 = open('{}/{}.obj'.format(self.project_dir, self.nav_name), 'r')
+        file1 = open('{}/{}.obj'.format(os.environ['AAMKS_PROJECT'], self.nav_name), 'r')
         Lines = file1.readlines()
         count = 1
         for line in Lines:
@@ -248,7 +247,7 @@ class Navmesh:
         ddgeoms.add({'floor': self.floor, 'type': 'path', "g": { "points": points } , 'style': ss } )
 # }}}
     def test(self):# {{{
-        self.conf=self.json.read("{}/conf.json".format(self.project_dir))
+        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         agents_pairs=4
         ee=self.s.query("SELECT name,x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
         if len(ee) == 0: return
@@ -325,7 +324,7 @@ class Navmesh:
         for face in self._obj_platform():
             obj+=self._obj_elem(face,0)
         
-        path="{}/{}.obj".format(self.project_dir, self.nav_name)
+        path="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], self.nav_name)
         with open(path, "w") as f: 
             f.write(obj)
         return path

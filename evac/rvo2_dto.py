@@ -50,7 +50,6 @@ class EvacEnv:
         self.config = json.load(f)
 
         self.general = aamks_vars
-        self.project_dir = aamks_vars['project_dir']
 
 #        self.sim = rvo2.PyRVOSimulator(self.config['TIME_STEP'], self.config['NEIGHBOR_DISTANCE'],
 #                                       self.config['MAX_NEIGHBOR'], self.config['TIME_HORIZON'],
@@ -67,7 +66,7 @@ class EvacEnv:
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
 
-        self.dfed = FEDDerivative(self.floor, self.project_dir)
+        self.dfed = FEDDerivative(self.floor)
         #simulation_id = 1 #przykladowa symulacja
         #self.evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
         #self.all_evac = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]
@@ -335,11 +334,11 @@ class EvacEnv:
         return self.simulator.get_obstacles_count(), 2
 
     def generate_nav_mesh(self):
-        self.nav = Navmesh(self.project_dir)
+        self.nav = Navmesh()
         self.nav.build(floor=str(self.floor))
 
     def prepare_rooms_list(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
+        self.s = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})
@@ -430,9 +429,8 @@ class EvacEnv:
 
 # Total FED growth spatial function (per floor)
 class FEDDerivative:
-    def __init__(self, floor: int, project_dir):
+    def __init__(self, floor: int):
         self.floor = floor
-        self.project_dir = project_dir
         self.dim = self._find_2dims()
 
         self.raw = []
@@ -444,7 +442,7 @@ class FEDDerivative:
 
     # find dimensions of the plane returns list: [[xmin, ymin], [xmax, ymax]]
     def _find_2dims(self):
-        aamks_sqlite = Sqlite(f"{self.project_dir}/aamks.sqlite")
+        aamks_sqlite = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         dims = []
         q = aamks_sqlite.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
                 (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%' or a.name LIKE 's%');")
