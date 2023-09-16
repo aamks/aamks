@@ -156,6 +156,9 @@ class Sqlite: # {{{
                 Dump(z)
             except:
                 pass
+    def close(self):
+        self.SQLITE.close()
+
 # }}}
 class Psql: # {{{
     def __init__(self):

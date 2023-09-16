@@ -30,10 +30,11 @@ class OnInit():
         self.scenario_id=self.conf['scenario_id']
         self.p=Psql()
         self._clear_srv_anims()
-        self._clear_sqlite()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self._clear_sqlite()
         self._setup_simulations()
         self._create_sqlite_tables()
+        self.s.close()
 # }}}
     def _clear_srv_anims(self):# {{{
         ''' 
@@ -65,8 +66,15 @@ class OnInit():
 # }}}
     def _clear_sqlite(self):# {{{
         try:
-            os.remove("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+            self.s.query("DROP TABLE dispatched_evacuees")
+            self.s.query("DROP TABLE aamks_geom")
+            self.s.query("DROP TABLE floors_meta")
+            self.s.query("DROP TABLE world_meta")
+            self.s.query("DROP TABLE obstacles")
+            self.s.query("DROP TABLE cell2compa")
+            self.s.query("DROP TABLE query_vertices")
         except:
+            logger.error('dropping Sqlite tables finished with error')
             pass
 # }}}
     def _create_iterations_sequence(self):# {{{
@@ -128,6 +136,7 @@ class OnEnd():
         Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
         logger.debug('start _register_works()')
         self._register_works()
+        self.s.close()
 # }}}
     def _test_navmesh(self):# {{{
         navs={}

@@ -106,6 +106,7 @@ class CfastMcarlo():
     def do_iterations(self):
         self._make_cfast()
         self._write()
+        self.s.close()
 
 # CFAST SECTIONS
     def _make_cfast(self):# {{{
@@ -295,19 +296,6 @@ class CfastMcarlo():
         '''
         Either deterministic fire from Apainter, or probabilistic (_draw_fire_origin()). 
         '''
-        z=self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")
-        i=z[0]
-        x=i['center_x']
-        y=i['center_y']
-        z=i['z1']-i['z0']
-        room=self.s.query("SELECT floor,name,type_sec,global_type_id,x0,y0 FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", (i['floor'], i['x0'], i['y0'], i['x1'], i['y1']))
-        if room[0]['type_sec'] in ('COR','HALL'):
-            fire_origin=[room[0]['name'], 'non_room', x, y, z, room[0]['floor']]
-        else:
-            fire_origin=[room[0]['name'], 'room', x, y , z,  room[0]['floor']]
-
-        fire_origin += "f{}".format(room[0]['global_type_id'])
-        self._save_fire_origin(fire_origin)
 
         f = self.s.query("SELECT f_id, name FROM fire_origin")
 
@@ -320,10 +308,7 @@ class CfastMcarlo():
         return ', '.join(str(i) for i in collect)
 # }}}
     def _section_fire(self):# {{{
-        if len(self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")) > 0:
-            fire_preamble = self._deterministic_fire()
-        else:
-            fire_preamble = self._cfast_record('FIRE')
+        fire_preamble = self._cfast_record('FIRE')
 
         txt = (
             '!! SECTION FIRE',
@@ -521,16 +506,40 @@ class DrawAndLog:
         location['global'] = [x,y,z]    #[cm]
         location['local'] = [round(lc/100, 2) for lc in [int(compa['width']/2), int(compa['depth']/2)]]   #[m]
         location['floor'] = compa['floor']
-        location['fire_id'] = "f{}".format(compa['global_type_id'])
+        location['fire_id'] = f"f{compa['global_type_id']}"
         self._fire_id = location['fire_id']
 
         self._psql_log_variable('heigh', self._fire_height)
 
         return location
 
+    def _deterministic_fire(self):
+        comp, loc = {}, {}
+        fire = self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")[0]
+        room = self.s.query("SELECT floor,name,type_sec,global_type_id,x0,y0 FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", 
+                (fire['floor'], fire['x0'], fire['y0'], fire['x1'], fire['y1']))[0]
+
+        loc['global'] =  [fire['center_x'], fire['center_y'], fire['z1'] - fire['z0']]
+        loc['local'] = [fire['center_x'] - fire['x0'], fire['center_y'] - fire['y0']]  # seems irrelevant ? - to be investigated [WK]
+        loc['local'] = [round(i/100, 2) for i in loc['local']]
+        loc['floor'] = room['floor']
+        loc['fire_id'] = f"f{room['global_type_id']}"
+        self._fire_id = loc['fire_id']
+
+        comp['name'] = room['name']
+        comp['type'] = 'room' if room['type_sec'] == 'ROOM' else 'non_room'
+        self._comp_type = comp['type']
+        self._fire_room_name = comp['name']
+
+        return comp, loc
+
     def _draw_fire_preamble(self):# {{{
-        comp = self._draw_compartment() 
-        loc = self._locate_in_the_middle(comp['name'])
+        if len(self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")) > 0:
+            comp, loc = self._deterministic_fire()
+        else:
+            comp = self._draw_compartment() 
+            loc = self._locate_in_the_middle(comp['name'])
+
         self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
 
         # save in CFAST dict
