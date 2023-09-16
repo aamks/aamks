@@ -175,7 +175,7 @@ class Worker:
                 p = run([f"/usr/local/aamks/fire/{cfast_file}","cfast.in"], timeout=600, capture_output=True, text=True)
             except TimeoutExpired as e:
                 self.wlogger.error(e)
-                self.send_report(e={"status":11})
+                self.send_report(e={"status":21})
                 err = True
             else:
                 for line in p.stdout.split('\n'):
@@ -183,9 +183,9 @@ class Worker:
                         err = True
                         self.wlogger.error(Exception(f'CFAST:{line}'))
                         if 'essure' in p.stdout:
-                            self.send_report(e={"status":12})
+                            self.send_report(e={"status":22})
                         else:
-                            self.send_report(e={"status":10})
+                            self.send_report(e={"status":20})
 
             inf = 'Iteration skipped due to CFAST error' if err else 'CFAST simulation calculated with success' 
             self.wlogger.info(inf)
