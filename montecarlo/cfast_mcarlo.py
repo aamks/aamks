@@ -106,6 +106,7 @@ class CfastMcarlo():
     def do_iterations(self):
         self._make_cfast()
         self._write()
+        self.s.close()
 
 # CFAST SECTIONS
     def _make_cfast(self):# {{{
