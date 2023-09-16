@@ -173,7 +173,7 @@ class Worker:
                 p = run([f"/usr/local/aamks/fire/{cfast_file}","cfast.in"], timeout=600, capture_output=True, text=True)
             except TimeoutExpired as e:
                 self.wlogger.error(e)
-                self.send_report(e={"status":11})
+                self.send_report(e={"status":21})
                 err = True
             else:
                 for line in p.stdout.split('\n'):
@@ -181,9 +181,9 @@ class Worker:
                         err = True
                         self.wlogger.error(Exception(f'CFAST:{line}'))
                         if 'essure' in p.stdout:
-                            self.send_report(e={"status":12})
+                            self.send_report(e={"status":22})
                         else:
-                            self.send_report(e={"status":10})
+                            self.send_report(e={"status":20})
 
             inf = 'Iteration skipped due to CFAST error' if err else 'CFAST simulation calculated with success' 
             self.wlogger.info(inf)
@@ -471,19 +471,6 @@ class Worker:
         else:
             LocalResultsCollector(self._get_meta(e)).psql_error()
         
-        #self._write_meta(e=e)
-
-        # if os.environ['AAMKS_WORKER'] == 'gearman':
-        #     Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
-        #     self.wlogger.info('aOut launched successfully')
-        # else:
-        #     self.wlogger.info('Run results_collector.py')
-        #     exit_status = subprocess.run(["python3", "{}/manager/results_collector.py".format(os.environ['AAMKS_PATH']), self.host_name, self.meta_file, str(self.sim_id)])
-        #     if exit_status.returncode != 0:
-        #         self.wlogger.error('results_collector.py exit status - %s', exit_status)
-        #     else:
-        #         self.wlogger.info('finished results_collector.py')
-
     def _get_meta(self, e=False):
         report = OrderedDict()
         report['worker'] = self.host_name
@@ -612,6 +599,7 @@ class Worker:
         self.send_report()
 
     def local_worker(self):
+        os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
         if self.run_cfast_simulations():
