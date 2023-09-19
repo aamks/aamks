@@ -67,7 +67,7 @@ CREATE TABLE simulations ( ---{{{
     wcbe text,
     dcbe_time integer,
     dcbe_compa text,
-    fed real,
+    fed text,
     fed_symbolic text,
     min_hgt_compa decimal,
     min_hgt_cor decimal,

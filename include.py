@@ -12,15 +12,7 @@ import os
 import sqlite3
 import sys
 
-class SendMessage:# {{{
-    ''' 
-    Useful for debuging gearman workers. In the past we had jabber here.
-    '''
 
-    def __init__(self,msg):
-        with open("/tmp/aamks.log", "a") as f: 
-            f.write(str(msg)+"\n")
-# }}}
 class Dump:# {{{
     def __init__(self,*args):
         '''debugging function, much like print but handles various types better'''
@@ -79,11 +71,6 @@ class Sqlite: # {{{
         must_exist=0: we are creating the database
         must_exist=1: Exception if there's no such file
         '''
-        if must_exist == 2:
-            with open(handle, "w") as file:
-                pass
-            os.chmod(handle, 0o666)
-
         if must_exist == 1:
             assert os.path.exists(handle), "Expected to find an existing sqlite file at: {}.\nCWD: {}".format(handle, os.getcwd())
 
