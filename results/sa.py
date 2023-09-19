@@ -1,20 +1,87 @@
 import sys
+import os
 import re
 sys.path.insert(0, '/usr/local/aamks')
-from include import Sqlite
-from include import Psql
-from include import Json
+from include import Sqlite, Psql, Json
 import json
 from statistics import mean 
 from scipy.stats import spearmanr
 import matplotlib.pyplot as plt
-from numpy import arange
-from numpy import array
+from SALib.analyze import sobol, hdmr
+from numpy import array, arange, floor
 from numpy.random import randn
 import pandas as pd
 import collections
 
-class SA:
+
+
+class SensitivityAnalysis:
+    VARS = ['alpha', 'fireload', 'hrrpeak', 'max_area', 'co_yield', 'soot_yield', 'hcn_yield',
+            'heat_of_combustion', 'heigh', 'rad_frac', 'outdoor_temp',
+            'fireorig', 
+            'heat_detectors', 'smoke_detectors', 'sprinklers']
+
+    def __init__(self):
+        self.p = Psql()
+        self.j = Json()
+        self.dir = sys.argv[1]
+        self.configs = self.j.read('{}/conf.json'.format(self.dir))
+        self.s = Sqlite("{}/aamks.sqlite".format(self.dir))
+        self.variables = sys.argv[2:] if len(sys.argv) > 2 else self.VARS
+
+        self.problem = {}
+        self.samples = pd.DataFrame()
+        self.results = pd.DataFrame()
+
+    def _define_problem(self):
+        self.problem = {
+            'num_vars': len(self.variables),
+            'names': self.variables#,
+            #'bounds': [[]] * len(self.variables)
+        }
+
+    def _import_samples(self):
+        query = f'SELECT {", ".join(self.variables)}, results, fireorigname FROM simulations WHERE scenario_id={self.configs["scenario_id"]} AND results IS NOT NULL'
+        self.samples = pd.DataFrame(self.p.query(query), columns=self.variables+['results', 'fireorigname'])
+        self.results = pd.json_normalize(self.samples.pop('results').apply(json.loads))
+        self.fire_room = self.samples.pop('fireorigname')
+
+    def _modify_samples(self):
+        def room_or_not(rec): return True if rec == 'room' else False
+
+        [self.samples[i].apply(bool) for i in ['heat_detectors', 'smoke_detectors', 'sprinklers']]
+        self.samples['fireorig'] = self.samples['fireorig'].map(room_or_not)
+        self.results = self.results[['individual', 'awr']]
+
+    
+#    def do_sobol(self, second_order):
+#        m = 2 if second_order else 1
+#        n = int(len(self.results['individual']) - floor(len(self.results['individual']) % (m*problem['num_vars']+2)))
+#        si = sobol.analyze(self.problem, self.results['individual'].iloc[:n].to_numpy(), 
+#                print_to_console=True, calc_second_order=second_order)
+#        return si
+
+    def do_hdmr(self):
+        si = hdmr.analyze(self.problem, self.samples.to_numpy(), self.results.to_numpy(), 
+                print_to_console=True)#, calc_second_order=second_order)
+        return si
+        
+    def plot(self, si):
+        axes = si.plot()
+        fig = plt.gcf()  # get current figure
+        fig.set_size_inches(10, 4)
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.dir, 'picts', 'hdmr.png'))
+
+    def main(self, second_order=False):
+        self._define_problem()
+        self._import_samples()
+        self._modify_samples()
+        si = self.do_hdmr()
+        self.plot(si)
+
+
+class SA_old:
 
     def __init__(self):
         self.p = Psql()
@@ -58,10 +125,10 @@ class SA:
 
         # create DataFrame with samples. Replace empty results with 0,0
         df = pd.DataFrame(results, columns=['soot yield', 'hrr peak', 'doors p', 'co yield', 'growth rate', 'fire origin', 'heat of combustion', 'radiative fraction', 'doors c', 'doors e', 'vvent', 'sprinklers', 'fname', 'risk', 'fed'])
-        df['doors p'].replace("", "0,0", inplace=True)
-        df['doors c'].replace("", "0,0", inplace=True)
-        df['doors e'].replace("", "0,0", inplace=True)
-        df['vvent'].replace("", "0,0", inplace=True)
+        df['doors p'].replace("", "0", inplace=True)
+        df['doors c'].replace("", "0", inplace=True)
+        df['doors e'].replace("", "0", inplace=True)
+        df['vvent'].replace("", "0", inplace=True)
         df['sprinklers'].replace("", "0,0", inplace=True)
         df['fire origin'].replace("room", "0", inplace=True)
         df['fire origin'].replace("non_room", "1", inplace=True)
@@ -69,7 +136,6 @@ class SA:
         #df['doors open'] = ['0'] * len(df['risk'])
 
         for index, row in df.iterrows():
-            print(index, row)
             if len(sprinklered_rooms) > 0:
                 s_name = sprinklered_rooms.index(row['fname'])
                 #row['sprinklers'] = float(list(map(float, row['sprinklers'].split(',')))[s_name])
@@ -81,26 +147,21 @@ class SA:
             else:
                 row['sprinklers'] = 0
                 #row['sprinklers'] = sum(map(float, row['sprinklers'].split(',')))
-            print('done')
             fname = rooms.index(row['fname'])
             orig_id = c_id[fname]
 
-            print('done')
             door_p_sec = list(map(int, row['doors p'].split(',')))
             row['fire orig open'] = int(self._door_to_fire_orig_open("DOOR", door_p_sec, orig_id))
             row['doors p'] = sum(door_p_sec)
 
-            print('done')
             door_c_sec = list(map(int, row['doors c'].split(',')))
             row['fire orig open'] = row['fire orig open'] + int(self._door_to_fire_orig_open("DCLOSER", door_c_sec, orig_id))
             row['doors c'] = sum(door_c_sec)
             row['doors open'] = sum(door_c_sec) + sum(door_p_sec)
 
-            print('done')
             row['doors e'] = sum(map(int, row['doors e'].split(',')))
             row['vvent'] = sum(map(int, row['vvent'].split(',')))
 
-            print('done')
             row['soot yield'] = float(row['soot yield'])
             row['hrr peak'] = float(row['hrr peak'])
             row['co yield'] = float(row['co yield'])
@@ -144,7 +205,7 @@ class SA:
         pvalue = [i[1] for i in list(ranks.values())]
         corr_d = [i[0] for i in list(d_factor.values())]
         pvalue_d = [i[1] for i in list(d_factor.values())]
-        df = pd.DataFrame({'i_risk': corr, 'FN': corr_d}, index=labels)
+        df = pd.DataFrame({'i_risk': corr, 'FED': corr_d}, index=labels)
         
         #ax.barh(y_pos, corr, align='center')
         #ax.barh(y_pos, corr_d, align='center')
@@ -160,8 +221,11 @@ class SA:
 
 
 
-sa = SA()
+sa = SA_old()
 ranks, d_factor = sa.calculate_indvidual_risk()
 sa.plot_ranks(ranks, d_factor)
+
+s = SensitivityAnalysis()
+s.main()
 
 
