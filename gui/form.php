@@ -58,32 +58,6 @@ function droplist_rescue_electronic($in) {/*{{{*/
 	return $select;
 }
 /*}}}*/
-function checkbox($in) {/*{{{*/
-	if ($in){ $stat=' checked';}else{$stat='';}
-	$select="<input type='hidden' name=post[r_cpr] value=0>";
-	$select.="<input type='checkbox' name=post[r_cpr] value=1$stat>";
-	return $select;
-}
-/*}}}*/
-function droplist_rescue($in) {/*{{{*/
-	$select="<select name=post[r_is]>";
-	$select.="<option value='$in'>$in</option>";
-	$select.="<option value='simple'>Simple (Pareto)</option>";
-	$select.="<option value='complex'>Complex (Kuziora 2023)</option>";
-	$select.="<option value='none'>None (for developers only)</option>";
-	$select.="</select>";
-	return $select;
-}
-/*}}}*/
-function droplist_rescue_electronic($in) {/*{{{*/
-	$select="<select name=post[r_trans]>";
-	$select.="<option value='$in'>$in</option>";
-	$select.="<option value='phone'>Phone call</option>";
-	$select.="<option value='auto'>Automatic</option>";
-	$select.="</select>";
-	return $select;
-}
-/*}}}*/
 function droplist_dipatch_evacuees($in) {/*{{{*/
 	$select="<select name=post[dispatch_evacuees]>";
 	$select.="<option value='$in'>$in</option>";
