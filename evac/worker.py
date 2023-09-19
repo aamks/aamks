@@ -516,7 +516,6 @@ class Worker:
         return collected_fed
 
 
-
     def main(self):
         self.get_config()
         self.create_geom_database()
@@ -578,7 +577,6 @@ class LocalResultsCollector:
                 status = '{self.meta['psql']['status']}',
                 results = '{self.meta['psql']['i_risk']}'
                 WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
-        #SendMessage("Database updated")
 
     def psql_error(self):
         if 'early_error' in self.meta.keys():
@@ -588,8 +586,6 @@ class LocalResultsCollector:
             self.meta['scenario_id'] = self.p.query(f"SELECT id FROM scenarios WHERE project_id={self.meta['project_id']} AND scenario_name='{url_s[-3]}'")[0][0]
         self.p.query(f"""UPDATE simulations SET status = '{self.meta['psql']['status']}', host = '{self.meta['worker']}'
                 WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
-        #SendMessage("Database updated with error status")
-
 
 w = Worker()
 try:
@@ -599,5 +595,4 @@ try:
     else:
         w.main()
 except:
-    # send report but with error code
     w.send_report(e={'status': 1})

@@ -31,7 +31,7 @@ class OnInit():
         self.scenario_id=self.conf['scenario_id']
         self.p=Psql()
         self._clear_srv_anims()
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 2)
         self._clear_sqlite()
         self._setup_simulations()
         self._create_sqlite_tables()
