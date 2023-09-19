@@ -41,9 +41,6 @@ class Evacuee:
         self.agent_has_no_escape = 0
         self.dst_coordinates = None
 
-        logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
-                            format='%(asctime)s %(levelname)s: %(message)s')
-
     def __getattr__(self, name):
         return self.__dict__[name]
 

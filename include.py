@@ -74,6 +74,8 @@ class Sqlite: # {{{
         if must_exist == 1:
             assert os.path.exists(handle), "Expected to find an existing sqlite file at: {}.\nCWD: {}".format(handle, os.getcwd())
         if must_exist == 2:
+            with open(handle, "r") as file:
+                pass
             os.chmod(handle, 0o666)
 
         self.SQLITE = sqlite3.connect(handle)
