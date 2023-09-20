@@ -12,15 +12,7 @@ import os
 import sqlite3
 import sys
 
-class SendMessage:# {{{
-    ''' 
-    Useful for debuging gearman workers. In the past we had jabber here.
-    '''
 
-    def __init__(self,msg):
-        with open("/tmp/aamks.log", "a") as f: 
-            f.write(str(msg)+"\n")
-# }}}
 class Dump:# {{{
     def __init__(self,*args):
         '''debugging function, much like print but handles various types better'''
@@ -79,10 +71,13 @@ class Sqlite: # {{{
         must_exist=0: we are creating the database
         must_exist=1: Exception if there's no such file
         '''
-
         if must_exist == 1:
             assert os.path.exists(handle), "Expected to find an existing sqlite file at: {}.\nCWD: {}".format(handle, os.getcwd())
-
+        if must_exist == 2:
+            if not os.path.exists(handle):
+                with open(handle, "w") as file:
+                    pass
+                os.chmod(handle, 0o666)
 
         self.SQLITE = sqlite3.connect(handle)
         self.SQLITE.row_factory=self._sql_assoc
@@ -172,7 +167,7 @@ class Psql: # {{{
             pass
 
         try:
-            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host='127.0.0.1' password='{}'".format(os.environ['AAMKS_PG_PASS']))
+            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host='{}' password='{}'".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_PG_PASS']))
             self.psqldb=self.PSQL.cursor(cursor_factory=psycopg2.extras.DictCursor)
         except:
             raise SystemExit("Fatal: Cannot connect to postresql.")
@@ -308,6 +303,7 @@ class Vis:# {{{
         self.json.write(OrderedDict([('world_meta', self._world_meta), ('floors', self._static_floors)]), '{}/workers/static.json'.format(os.environ['AAMKS_PROJECT'])) 
         cae=CreateAnimEntry()
         cae.save(self.params, "{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
+
 # }}}
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''

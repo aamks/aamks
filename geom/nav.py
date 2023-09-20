@@ -52,9 +52,8 @@ class Navmesh:
         nav.nav_query(src, dst, maxStraightPath=300)
 
         '''
-
         self.json=Json()
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.s=Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         self._test_colors=[ "#f80", "#f00", "#8f0", "#08f" ]
         self.navmesh=OrderedDict()
         self.partition_query={}

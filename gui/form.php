@@ -31,7 +31,7 @@ function droplist_fire_model($in) {/*{{{*/
 	$select.="</select>";
 	return $select;
 }
-/*}}}*/
+
 function checkbox($in) {/*{{{*/
 	if ($in){ $stat=' checked';}else{$stat='';}
 	$select="<input type='hidden' name=post[r_cpr] value=0>";

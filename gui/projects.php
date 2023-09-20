@@ -57,7 +57,7 @@ function new_scenario() { # {{{
 
 	if(empty($_POST['new_scenario'])) { return; }
 	$sid=$_SESSION['nn']->query("INSERT INTO scenarios(project_id,scenario_name) VALUES($1, $2) RETURNING id", array($_POST['project_id'], $_POST['new_scenario'])); 
-	if (!mkdir(implode("/", array($_SESSION['main']['user_home'],$_POST['project_name'],$_POST['new_scenario'])), 0770, true)) {
+	if (!mkdir(implode("/", array($_SESSION['main']['user_home'],$_POST['project_name'],$_POST['new_scenario'])), 0777, true)) {
 		$_SESSION['header_err'][]="Cannot create $_POST[project_name]/$_POST[new_scenario]";
 		header("Location: projects.php?projects_list");
 	} else {
@@ -70,7 +70,7 @@ function new_project() { # {{{
 	#psql aamks -c 'select  * from projects'
 	if(empty($_POST['new_project'])) { return; }
 	$_SESSION['nn']->query("INSERT INTO projects(project_name,user_id) VALUES($1, $2)", array($_POST['new_project'], $_SESSION['main']['user_id'])); 
-	if (!mkdir(implode("/", array($_SESSION['main']['user_home'],$_POST['new_project'])), 0770, true)) {
+	if (!mkdir(implode("/", array($_SESSION['main']['user_home'],$_POST['new_project'])), 0777, true)) {
 		$_SESSION['header_err'][]="Cannot create $_POST[new_project]";
 	} 
 	header("Location: projects.php?projects_list");

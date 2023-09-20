@@ -338,7 +338,7 @@ class EvacEnv:
         self.nav.build(floor=str(self.floor))
 
     def prepare_rooms_list(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.s = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})
@@ -442,7 +442,7 @@ class FEDDerivative:
 
     # find dimensions of the plane returns list: [[xmin, ymin], [xmax, ymax]]
     def _find_2dims(self):
-        aamks_sqlite = Sqlite(os.environ['AAMKS_PROJECT']  + "/aamks.sqlite")
+        aamks_sqlite = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         dims = []
         q = aamks_sqlite.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
                 (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%' or a.name LIKE 's%');")
