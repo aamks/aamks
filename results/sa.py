@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 import os
 import re
 sys.path.insert(0, '/usr/local/aamks')
@@ -14,12 +15,93 @@ import pandas as pd
 import collections
 
 
+'''from SALib.plotting.hdmr.py'''
+def plot(Si, direct):
+    # Close all figures
+    plt.close("all")
+
+    # Extract necessary data from Si
+    try:
+        problem = Si.problem
+    except AttributeError:
+        problem = Si
+
+    Em = Si["Em"]
+    RT = Si["RT"]
+    Y_em = Si["Y_em"]
+    idx = Si["idx"]
+    X = Si["X"]
+    Y = Si["Y"]
+
+    # Get number of bootstrap from Runtime and sample size N
+    K = RT.shape[0]
+    N = Y.shape[0]
+    row = 2
+    col = 5
+
+    try:
+        ax = Si._plot()
+    except AttributeError:
+        # basic bar plot not found or is not available
+        pass
+
+    # Plot emulator performance
+    Y_p = np.linspace(np.min(Y), np.max(Y), N, endpoint=True)
+
+    start = max(0, K - 10)
+    for i in range(start, K):
+        # Only showing the last 10
+        if (i % (row * col) == 0) or (i == 0):
+            fig = plt.figure(frameon=False)
+            fig.suptitle("Showing last 10 Bootstrap Trials")
+            it = 1
+
+        title_str = f"Trial {K - i}"
+        ax = fig.add_subplot(row, col, it, frameon=True, title=title_str)
+        ax.plot(Em["Y_e"][:, i], Y[idx[:, i]], "r+", label="Emulator")
+        ax.plot(Y_p, Y_p, "darkgray", label="1:1 Line")
+        ax.axis("square")
+        ax.set_xlim(np.min(Y), np.max(Y))
+        ax.set_ylim(np.min(Y), np.max(Y))
+        it += 1
+
+        if i == (K - 1):
+            handles, labels = ax.get_legend_handles_labels()
+            fig.legend(handles, labels, loc="center right", bbox_to_anchor=(1.0, 0.5))
+
+    fig.tight_layout()
+
+    # Now plot regression lines of component functions
+    row = 4
+    col = 3
+    last_bootstrap = idx[:, -1]
+    for i in range(problem["num_vars"]):
+        if (i % (row * col) == 0) or (i == 0):
+            fig = plt.figure(frameon=False)
+            it = 1
+        title_str = (
+            "Regression of parameter " + problem["names"][i] + r"$^{(Last Trial)}$"
+        )
+        ax = fig.add_subplot(row, col, it, frameon=True, title=title_str)
+        ax.plot(X[last_bootstrap, i], Y[last_bootstrap], "r.")
+        ax.plot(X[last_bootstrap, i], np.mean(Em["f0"]) + Y_em[:, i], "k.")
+        ax.legend(
+            [r"$\widetilde{Y}$", "$f_" + str(i + 1) + "$"],
+            loc="upper left",
+            bbox_to_anchor=(1.04, 1.0),
+        )
+        it += 1
+
+        fig.tight_layout()
+        if (row*col)%3 ==0:
+            plt.savefig(direct+f'_{i}.png')
+
+    return ax
 
 class SensitivityAnalysis:
     VARS = ['alpha', 'fireload', 'hrrpeak', 'max_area', 'co_yield', 'soot_yield', 'hcn_yield',
             'heat_of_combustion', 'heigh', 'rad_frac', 'outdoor_temp',
-            'fireorig', 
-            'heat_detectors', 'smoke_detectors', 'sprinklers']
+            'fireorig']
 
     def __init__(self):
         self.p = Psql()
@@ -41,17 +123,21 @@ class SensitivityAnalysis:
         }
 
     def _import_samples(self):
-        query = f'SELECT {", ".join(self.variables)}, results, fireorigname FROM simulations WHERE scenario_id={self.configs["scenario_id"]} AND results IS NOT NULL'
+        query = f"SELECT {', '.join(self.variables)}, results, fireorigname FROM simulations WHERE scenario_id={self.configs['scenario_id']} AND status='0'"
         self.samples = pd.DataFrame(self.p.query(query), columns=self.variables+['results', 'fireorigname'])
         self.results = pd.json_normalize(self.samples.pop('results').apply(json.loads))
         self.fire_room = self.samples.pop('fireorigname')
 
     def _modify_samples(self):
+        # is fire originated in the room
         def room_or_not(rec): return True if rec == 'room' else False
-
-        [self.samples[i].apply(bool) for i in ['heat_detectors', 'smoke_detectors', 'sprinklers']]
         self.samples['fireorig'] = self.samples['fireorig'].map(room_or_not)
-        self.results = self.results[['individual', 'awr']]
+
+        try:
+            self.samples = self.samples.astype(float)
+        except:
+            breakpoint()
+        self.results = self.results['individual']
 
     
 #    def do_sobol(self, second_order):
@@ -62,12 +148,12 @@ class SensitivityAnalysis:
 #        return si
 
     def do_hdmr(self):
-        si = hdmr.analyze(self.problem, self.samples.to_numpy(), self.results.to_numpy(), 
+        si = hdmr.analyze(self.problem, self.samples.to_numpy(), self.results.to_numpy(), K=1,
                 print_to_console=True)#, calc_second_order=second_order)
         return si
         
     def plot(self, si):
-        axes = si.plot()
+        axes = hdmr.plot(si)
         fig = plt.gcf()  # get current figure
         fig.set_size_inches(10, 4)
         plt.tight_layout()
@@ -78,7 +164,7 @@ class SensitivityAnalysis:
         self._import_samples()
         self._modify_samples()
         si = self.do_hdmr()
-        self.plot(si)
+        plot(si, os.path.join(self.dir, 'picts', 'hdmr.png'))
 
 
 class SA_old:
