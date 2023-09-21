@@ -22,6 +22,7 @@ from include import Sqlite, Psql
 import warnings
 import pandas as pd
 from zipfile import ZipFile
+from sa import SensitivityAnalysis as SA
 
 
 
@@ -959,13 +960,19 @@ class Comparison:
         
 
 if __name__ == '__main__':
-    if len(sys.argv) > 2:
-        comp = Comparison(sys.argv[2:], path=sys.argv[1])
-        comp.produce()
-    else:
-        pp = PostProcess()
-        pp.t = time.time()
-        pp.produce()
+    print('hello')
+    try:
+        if len(sys.argv) > 2:
+            comp = Comparison(sys.argv[2:], path=sys.argv[1])
+            comp.produce()
+        else:
+            pp = PostProcess()
+            pp.t = time.time()
+            pp.produce()
+            s = SA()
+            s.main(spearman=True)
+    except Exception as e:
+        print(e)
 
     
 

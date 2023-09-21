@@ -9,107 +9,26 @@ from statistics import mean
 from scipy.stats import spearmanr
 import matplotlib.pyplot as plt
 from SALib.analyze import sobol, hdmr
+from SALib.plotting import bar
 from numpy import array, arange, floor
 from numpy.random import randn
 import pandas as pd
 import collections
 
 
-'''from SALib.plotting.hdmr.py'''
-def plot(Si, direct):
-    # Close all figures
-    plt.close("all")
-
-    # Extract necessary data from Si
-    try:
-        problem = Si.problem
-    except AttributeError:
-        problem = Si
-
-    Em = Si["Em"]
-    RT = Si["RT"]
-    Y_em = Si["Y_em"]
-    idx = Si["idx"]
-    X = Si["X"]
-    Y = Si["Y"]
-
-    # Get number of bootstrap from Runtime and sample size N
-    K = RT.shape[0]
-    N = Y.shape[0]
-    row = 2
-    col = 5
-
-    try:
-        ax = Si._plot()
-    except AttributeError:
-        # basic bar plot not found or is not available
-        pass
-
-    # Plot emulator performance
-    Y_p = np.linspace(np.min(Y), np.max(Y), N, endpoint=True)
-
-    start = max(0, K - 10)
-    for i in range(start, K):
-        # Only showing the last 10
-        if (i % (row * col) == 0) or (i == 0):
-            fig = plt.figure(frameon=False)
-            fig.suptitle("Showing last 10 Bootstrap Trials")
-            it = 1
-
-        title_str = f"Trial {K - i}"
-        ax = fig.add_subplot(row, col, it, frameon=True, title=title_str)
-        ax.plot(Em["Y_e"][:, i], Y[idx[:, i]], "r+", label="Emulator")
-        ax.plot(Y_p, Y_p, "darkgray", label="1:1 Line")
-        ax.axis("square")
-        ax.set_xlim(np.min(Y), np.max(Y))
-        ax.set_ylim(np.min(Y), np.max(Y))
-        it += 1
-
-        if i == (K - 1):
-            handles, labels = ax.get_legend_handles_labels()
-            fig.legend(handles, labels, loc="center right", bbox_to_anchor=(1.0, 0.5))
-
-    fig.tight_layout()
-
-    # Now plot regression lines of component functions
-    row = 4
-    col = 3
-    last_bootstrap = idx[:, -1]
-    for i in range(problem["num_vars"]):
-        if (i % (row * col) == 0) or (i == 0):
-            fig = plt.figure(frameon=False)
-            it = 1
-        title_str = (
-            "Regression of parameter " + problem["names"][i] + r"$^{(Last Trial)}$"
-        )
-        ax = fig.add_subplot(row, col, it, frameon=True, title=title_str)
-        ax.plot(X[last_bootstrap, i], Y[last_bootstrap], "r.")
-        ax.plot(X[last_bootstrap, i], np.mean(Em["f0"]) + Y_em[:, i], "k.")
-        ax.legend(
-            [r"$\widetilde{Y}$", "$f_" + str(i + 1) + "$"],
-            loc="upper left",
-            bbox_to_anchor=(1.04, 1.0),
-        )
-        it += 1
-
-        fig.tight_layout()
-        if (row*col)%3 ==0:
-            plt.savefig(direct+f'_{i}.png')
-
-    return ax
-
 class SensitivityAnalysis:
     VARS = ['alpha', 'fireload', 'hrrpeak', 'max_area', 'co_yield', 'soot_yield', 'hcn_yield',
-            'heat_of_combustion', 'heigh', 'rad_frac', 'outdoor_temp',
-            'fireorig']
+            'heat_of_combustion',  'rad_frac', 'outdoor_temp']
+            #'fireorig']
 
-    def __init__(self):
+    def __init__(self, y='individual'):
         self.p = Psql()
         self.j = Json()
         self.dir = sys.argv[1]
         self.configs = self.j.read('{}/conf.json'.format(self.dir))
         self.s = Sqlite("{}/aamks.sqlite".format(self.dir))
         self.variables = sys.argv[2:] if len(sys.argv) > 2 else self.VARS
+        self.y = y
 
         self.problem = {}
         self.samples = pd.DataFrame()
@@ -123,57 +42,83 @@ class SensitivityAnalysis:
         }
 
     def _import_samples(self):
-        query = f"SELECT {', '.join(self.variables)}, results, fireorigname FROM simulations WHERE scenario_id={self.configs['scenario_id']} AND status='0'"
-        self.samples = pd.DataFrame(self.p.query(query), columns=self.variables+['results', 'fireorigname'])
+        query = f"SELECT {', '.join(self.variables)}, results, fireorigname FROM simulations WHERE \
+                scenario_id={self.configs['scenario_id']} AND status='0'"
+        self.samples = pd.DataFrame(self.p.query(query), columns=self.variables + ['results', 'fireorigname'])
         self.results = pd.json_normalize(self.samples.pop('results').apply(json.loads))
         self.fire_room = self.samples.pop('fireorigname')
 
     def _modify_samples(self):
         # is fire originated in the room
         def room_or_not(rec): return True if rec == 'room' else False
-        self.samples['fireorig'] = self.samples['fireorig'].map(room_or_not)
+        #self.samples['fireorig'] = self.samples['fireorig'].map(room_or_not)
+        #self.samples['heigh'] = self.samples['heigh'].replace('', 0)
 
         try:
             self.samples = self.samples.astype(float)
         except:
-            breakpoint()
-        self.results = self.results['individual']
+            raise ValueError('Unable to convert to float')
+
+        self.results = self.results[self.y]
 
     
-#    def do_sobol(self, second_order):
-#        m = 2 if second_order else 1
-#        n = int(len(self.results['individual']) - floor(len(self.results['individual']) % (m*problem['num_vars']+2)))
-#        si = sobol.analyze(self.problem, self.results['individual'].iloc[:n].to_numpy(), 
-#                print_to_console=True, calc_second_order=second_order)
-#        return si
+    def _do_sobol(self, second_order):
+        m = 2 if second_order else 1
+        n = int(len(self.results[self.y]) - floor(len(self.results[self.y]) % (m*problem['num_vars']+2)))
+        si = sobol.analyze(self.problem, self.results[self.y].iloc[:n].to_numpy(), 
+                print_to_console=True, calc_second_order=second_order)
+        return si
 
-    def do_hdmr(self):
+    def _do_hdmr(self):
         si = hdmr.analyze(self.problem, self.samples.to_numpy(), self.results.to_numpy(), K=1,
                 print_to_console=True)#, calc_second_order=second_order)
         return si
         
-    def plot(self, si):
-        axes = hdmr.plot(si)
-        fig = plt.gcf()  # get current figure
-        fig.set_size_inches(10, 4)
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.dir, 'picts', 'hdmr.png'))
+    def _my_plot_hdmr(self, si):
+        c = ['royalblue', 'firebrick']  # 0 for non-important 1 for important
+        titles = {
+            'Sa': 'Uncorrelated contribution of a term',
+            'Sb': 'Correlated contribution of a term',
+            'S': 'Total contribution of a particular term (Sa and Sb sum)',
+            'ST': f'Total contribution to output ({self.y}) variation'
+            }
 
-    def main(self, second_order=False):
+        for s in ['Sa', 'Sb', 'S', 'ST']:
+            plt.close('all')
+            fig, ax = plt.subplots()
+            ax.set_ylabel(s)
+            ax.set_title(titles[s])
+            for i, n in enumerate(si['names']):
+                if s == 'ST':
+                    plt.xscale("log")
+                    ax.barh(n, si[s][i], xerr=si[f'{s}_conf'][i], align='center', alpha=0.8, ecolor='black',
+                            capsize=5, color=c[int(si['select'][i])])
+                else:
+                    plt.yscale("log")
+                    plt.xticks(rotate=90)
+                    ax.bar(n, si[s][i], yerr=si[f'{s}_conf'][i], align='center', alpha=0.8, ecolor='black',
+                            capsize=5, color=c[int(si['select'][i])])
+
+            plt.tight_layout()
+            plt.savefig(os.path.join(self.dir, 'picts', f'sobol_{s}.png'))
+
+    def main(self, spearman=True):
         self._define_problem()
         self._import_samples()
         self._modify_samples()
-        si = self.do_hdmr()
-        plot(si, os.path.join(self.dir, 'picts', 'hdmr.png'))
+        si = self._do_hdmr()
+        self._my_plot_hdmr(si)
+        if spearman:
+            sa = SA_old()
+            ranks, d_factor = sa.calculate_indvidual_risk()
+            sa.plot_ranks(ranks, d_factor)
 
 
 class SA_old:
-
     def __init__(self):
         self.p = Psql()
         self.j = Json()
         self.dir = sys.argv[1]
-        #self.dir = "/home/aamks_users/mzimny94@gmail.com/SFPE_Case_study/S1"
         self.configs = self.j.read('{}/conf.json'.format(self.dir))
         self.s = Sqlite("{}/aamks.sqlite".format(self.dir))
 
@@ -218,8 +163,8 @@ class SA_old:
         df['sprinklers'].replace("", "0,0", inplace=True)
         df['fire origin'].replace("room", "0", inplace=True)
         df['fire origin'].replace("non_room", "1", inplace=True)
-        #df['fire orig open'] = ['0'] * len(df['risk'])
-        #df['doors open'] = ['0'] * len(df['risk'])
+        df['fire orig open'] = ['0'] * len(df['risk'])
+        df['doors open'] = ['0'] * len(df['risk'])
 
         for index, row in df.iterrows():
             if len(sprinklered_rooms) > 0:
@@ -303,15 +248,13 @@ class SA_old:
         ax.set_xlabel('Spearman Range Correlation Coeficient')
         ax.set_title('Sensitivity analysis')
         
-        plt.savefig("{}/picts/sa.png".format(self.dir))
+        plt.savefig("{}/picts/spearman.png".format(self.dir))
 
 
 
-sa = SA_old()
-ranks, d_factor = sa.calculate_indvidual_risk()
-sa.plot_ranks(ranks, d_factor)
+if __name__ == '__main__':
 
-s = SensitivityAnalysis()
-s.main()
+    s = SensitivityAnalysis()
+    s.main()
 
 
