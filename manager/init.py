@@ -158,6 +158,8 @@ class OnEnd():
 
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
 
+        os.environ['AAMKS_WORKER']='local'
+
         if os.environ['AAMKS_WORKER']=='none':
             return
 
