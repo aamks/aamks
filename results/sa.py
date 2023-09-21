@@ -95,7 +95,7 @@ class SensitivityAnalysis:
                             capsize=5, color=c[int(si['select'][i])])
                 else:
                     plt.yscale("log")
-                    plt.xticks(rotate=90)
+                    plt.xticks(rotation=90)
                     ax.bar(n, si[s][i], yerr=si[f'{s}_conf'][i], align='center', alpha=0.8, ecolor='black',
                             capsize=5, color=c[int(si['select'][i])])
 
