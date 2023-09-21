@@ -226,6 +226,34 @@ function ajaxGoogleLogin() { /*{{{*/
 	$_SESSION['nn']->ch_main_vars($ret[0]);
 }
 /*}}}*/
+
+function ajaxCheckProgress(){
+	$user_id=$_SESSION['main']['user_id'];
+	$scenario_id = $_SESSION['main']['scenario_id'];
+	
+	$all_sims = $_SESSION['nn']->query('SELECT COUNT(*)	 FROM "simulations" WHERE "scenario_id"=$1', array($scenario_id));
+	$bad_sims = $_SESSION['nn']->query('SELECT COUNT(*) FROM "simulations" WHERE "scenario_id" = $1 AND "status"::numeric BETWEEN $2 AND $3', array($scenario_id, 1, 100));
+	$good_sims = $_SESSION['nn']->query('SELECT COUNT(*)	 FROM "simulations" WHERE "scenario_id"=$1 AND "status"=$2 ', array($scenario_id, "0"));
+	$active_sims = $_SESSION['nn']->query('SELECT "iteration" ,"status" FROM "simulations" WHERE "scenario_id"=$1 AND "status"::numeric>$2 ', array($scenario_id,1000));
+	$active = array(); 
+	$x = 0;
+	foreach ($active_sims as $row) {
+		$iteration = $row['iteration'];
+		$status = substr($row['status'],-4,2);
+		if ($status == "00") { $status="100";}
+		$active[] = "<tr><td id='left_column'>No:".$iteration."</td>:<td>".$status."%</td><tr>";
+		$x+=1;
+	}
+	$all = $all_sims[0]['count'];
+	$bad = $bad_sims[0]['count'];
+	$good = $good_sims[0]['count'];
+
+	echo json_encode(array("msg"=>"","bad"=>json_encode($all_sims), "err"=>0,  "data"=>json_encode($result), "good"=>$good, "bad"=>$bad, "all"=>$all, "active"=>$active));
+
+}
+
+
+
 function main() { /*{{{*/
 	header('Content-type: application/json');
 	ini_set('display_errors', 1);
@@ -257,6 +285,7 @@ function main() { /*{{{*/
 		if(isset($_GET['ajaxGetUnderlay']))             { ini_set('display_errors', 0) ; ajaxGetUnderlay()          ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxAddUnderlay']))             { ini_set('display_errors', 0) ; ajaxAddUnderlay()          ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxRemoveUnderlay']))          { ini_set('display_errors', 0) ; ajaxRemoveUnderlay()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxCheckProgress']))          	{ ini_set('display_errors', 0) ; ajaxCheckProgress()       	; ini_set('display_errors', 1) ; }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

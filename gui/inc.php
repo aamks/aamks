@@ -126,6 +126,11 @@ class Aamks {/*{{{*/
 			$menu.="<option value='$v[id]'>$v[scenario_name]</option>\n";
 		}
 		$menu.="</select>\n";
+		$menu.="<br>";
+		//$menu.='<div id="progress" style="color:#BBC; height:0px; padding-top:15px; font-size:16px"></div> <br>';
+		$menu.='<div id="active-sims" style="color:#BBC; height:20px; padding-top:5px; font-size:16px"> Progress </div><br>';
+		$menu.='<button id="check-sim">Check progress</button>'; 
+
 		return $menu;
 	}
 /*}}}*/

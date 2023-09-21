@@ -349,3 +349,18 @@ letter { display: inline; padding: 0px 4px 1px 4px; background-color: #960; colo
 #alter-z { margin-left: 20px; height: 20px; width: 110px }
 #alter-geom-letter { width: 20px; }
 #apainter-next-view::first-letter { background-color: #960; padding-left: 3px; padding-right: 3px; margin-right: 1px; }
+
+#active-sims{
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width:110px;
+	border-top: 2px solid #888;
+	border-left: 2px solid #888;
+	border-right: 2px solid#888;
+	overflow: auto; 
+}
+
+#left_column {
+	padding-right:15px;
+}

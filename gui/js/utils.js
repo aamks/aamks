@@ -118,6 +118,30 @@ function ajaxUserPreferences() {//{{{
 		aamksUserPrefs=json.data;
 	});
 }
+
+function check_progress(){
+	$("#check-sim").click(function(){
+		amsg({"msg": "Checking progress", "err":0, "duration": 2000 }); 
+		$("#progress").css("color","white");
+		
+		$.post('/aamks/ajax.php?ajaxCheckProgress',{}, function (json){
+			let newContent = "<tr><td id='left_column'>Done:</td><td>" +json.good+ "</td></tr><br>"+"<tr><td id='left_column'>All:</td><td>"+ json.all + "</td></tr>";
+			$("#active-sims").html(newContent+json.active);
+			$("#active-sims").css({
+				"color": "white",
+				"height": "150px",
+				"transition-duration": "1s",
+				"background-color": "#616"
+			});
+			setTimeout(()=> {
+				$("#active-sims").css("background-color", "");
+			}, 2000)
+
+			
+		})
+	})
+}	
+
 //}}}
 function launch_simulation() {//{{{
 	$("body").on("click", "#launch_simulation", function() {
@@ -158,6 +182,7 @@ deepcopy=function(x) {//{{{
 //}}}
 
 $(function() { 
+	check_progress();
 	scenario_changer();
 	launch_simulation();
 	if(navigator.userAgent.indexOf("Chrome")==-1) { alert("Aamks is designed for Google Chrome. Aamks may work, but is not supported on other browsers"); }

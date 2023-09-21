@@ -327,8 +327,10 @@ class Worker:
                 for i in self.floors:
                     rsets.append(i.rset)
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
-                self.wlogger.info(f'Progress: {round(time_frame/self.vars["conf"]["simulation_time"] * 100, 1)}%')
-
+                progress = round(time_frame/self.vars["conf"]["simulation_time"] * 100, 1)
+                self.wlogger.info(f'Progress: {progress}%')
+                progres_status = 1000+progress
+                self.send_report(e={"status":progres_status})
                 # check if all agents egressed and determine RSET for the building
                 if prod(array(rsets)) > 0:
                     self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(rsets))
