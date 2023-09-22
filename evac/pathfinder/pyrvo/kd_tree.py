@@ -1,7 +1,7 @@
 from typing import List, Tuple, Optional
-from pathfinder.pyrvo.obstacle import Obstacle
-from pathfinder.pyrvo.agent import Agent
-from pathfinder.pyrvo.utilities import left_of, abs_sq, RVO_EPSILON, MAX_LEAF_SIZE
+from evac.pathfinder.pyrvo.obstacle import Obstacle
+from evac.pathfinder.pyrvo.agent import Agent
+from evac.pathfinder.pyrvo.utilities import left_of, abs_sq, RVO_EPSILON, MAX_LEAF_SIZE
 
 class AgentTreeNode:
     def __init__(self):

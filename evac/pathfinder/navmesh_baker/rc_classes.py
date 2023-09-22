@@ -1,5 +1,5 @@
 from typing import Optional, List, Tuple
-from pathfinder.navmesh_baker.rc_constants import RC_SPANS_PER_POOL
+from evac.pathfinder.navmesh_baker.rc_constants import RC_SPANS_PER_POOL
 
 # Represents a span in a heightfield
 class Span:

@@ -1,6 +1,6 @@
 from typing import Tuple
 import math
-from pathfinder.pyrvo.utilities import left_of
+from evac.pathfinder.pyrvo.utilities import left_of
 
 class Obstacle:
     def __init__(self):

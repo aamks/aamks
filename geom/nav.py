@@ -17,9 +17,9 @@ from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from fire.partition_query import PartitionQuery
-from pathfinder.navmesh_baker import NavmeshBaker
-from pathfinder import PathFinder
-import pathfinder
+from evac.pathfinder.navmesh_baker import NavmeshBaker
+from evac.pathfinder import PathFinder
+import evac.pathfinder
 from shapely.ops import polygonize
 from numpy.random import uniform
 from math import sqrt

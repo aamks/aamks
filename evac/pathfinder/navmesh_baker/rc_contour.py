@@ -1,8 +1,8 @@
 from typing import List, Tuple, Optional
 from functools import cmp_to_key
-from pathfinder.navmesh_baker.rc_classes import CompactHeightfield, ContourSet, Contour, CompactCell, CompactSpan, ContourRegion, ContourHole, PotentialDiagonal
-from pathfinder.navmesh_baker.rc_constants import RC_CONTOUR_TESS_WALL_EDGES, RC_BORDER_REG, RC_NOT_CONNECTED, RC_BORDER_VERTEX, RC_AREA_BORDER, RC_CONTOUR_REG_MASK, RC_CONTOUR_TESS_AREA_EDGES
-from pathfinder.navmesh_baker.rc_calcs import get_con, get_dir_offset_x, get_dir_offset_y, v_equal, next, prev
+from evac.pathfinder.navmesh_baker.rc_classes import CompactHeightfield, ContourSet, Contour, CompactCell, CompactSpan, ContourRegion, ContourHole, PotentialDiagonal
+from evac.pathfinder.navmesh_baker.rc_constants import RC_CONTOUR_TESS_WALL_EDGES, RC_BORDER_REG, RC_NOT_CONNECTED, RC_BORDER_VERTEX, RC_AREA_BORDER, RC_CONTOUR_REG_MASK, RC_CONTOUR_TESS_AREA_EDGES
+from evac.pathfinder.navmesh_baker.rc_calcs import get_con, get_dir_offset_x, get_dir_offset_y, v_equal, next, prev
 
 def get_corner_height(x: int,
                       y: int,

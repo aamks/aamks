@@ -1,7 +1,7 @@
 from typing import List, Tuple, Optional
-from pathfinder.navmesh_baker.rc_classes import CompactHeightfield, CompactCell, CompactSpan, LevelStackEntry, DirtyEntry, Region
-from pathfinder.navmesh_baker.rc_constants import RC_NULL_AREA, RC_NOT_CONNECTED, RC_BORDER_REG
-from pathfinder.navmesh_baker.rc_calcs import get_con, get_dir_offset_x, get_dir_offset_y
+from evac.pathfinder.navmesh_baker.rc_classes import CompactHeightfield, CompactCell, CompactSpan, LevelStackEntry, DirtyEntry, Region
+from evac.pathfinder.navmesh_baker.rc_constants import RC_NULL_AREA, RC_NOT_CONNECTED, RC_BORDER_REG
+from evac.pathfinder.navmesh_baker.rc_calcs import get_con, get_dir_offset_x, get_dir_offset_y
 
 def erode_walkable_area(radius: int,
                         chf: CompactHeightfield) -> bool:

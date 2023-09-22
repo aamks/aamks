@@ -2,8 +2,10 @@ from typing import Tuple, List, Optional
 import math
 import time
 import struct
-from pathfinder.navmesh import Navmesh
-import pathfinder.pyrvo as rvo
+import sys
+sys.path.insert(1, '/usr/local/aamks')
+from evac.pathfinder.navmesh import Navmesh
+import evac.pathfinder.pyrvo as rvo
 
 
 def get_vector_length_squared(vector_2d: Tuple[float, float]):

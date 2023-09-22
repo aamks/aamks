@@ -1,7 +1,7 @@
 from typing import List, Tuple
-from pathfinder.navmesh_baker.rc_classes import ContourSet, PolyMesh, Contour, Edge
-from pathfinder.navmesh_baker.rc_constants import RC_BORDER_VERTEX, RC_MESH_NULL_IDX, RC_MULTIPLE_REGS
-from pathfinder.navmesh_baker.rc_calcs import next, prev, v_equal
+from evac.pathfinder.navmesh_baker.rc_classes import ContourSet, PolyMesh, Contour, Edge
+from evac.pathfinder.navmesh_baker.rc_constants import RC_BORDER_VERTEX, RC_MESH_NULL_IDX, RC_MULTIPLE_REGS
+from evac.pathfinder.navmesh_baker.rc_calcs import next, prev, v_equal
 
 VERTEX_BUCKET_COUNT = 1<<12  # 4096
 

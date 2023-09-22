@@ -6,7 +6,7 @@ if IMPORT_BINARY:
         print("Fails to load binary RVO2 library, switch to Python version")
         IMPORT_BINARY = False
 if IMPORT_BINARY is False:
-    from pathfinder.pyrvo.rvo_simulator import RVOSimulator
+    from evac.pathfinder.pyrvo.rvo_simulator import RVOSimulator
 from typing import Tuple, List, Optional
 
 # -------------------------------------

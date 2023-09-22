@@ -1,5 +1,5 @@
 from typing import List, Tuple, Optional
-from pathfinder.navmesh.navmesh_node import NavmeshNode
+from evac.pathfinder.navmesh.navmesh_node import NavmeshNode
 
 BVH_AABB_DELTA = 0.5
 

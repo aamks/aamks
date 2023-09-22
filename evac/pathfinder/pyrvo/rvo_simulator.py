@@ -1,7 +1,7 @@
 from typing import Tuple, List, Optional
-from pathfinder.pyrvo.kd_tree import KDTree
-from pathfinder.pyrvo.agent import Agent, linear_program2, linear_program3
-from pathfinder.pyrvo.obstacle import Obstacle
+from evac.pathfinder.pyrvo.kd_tree import KDTree
+from evac.pathfinder.pyrvo.agent import Agent, linear_program2, linear_program3
+from evac.pathfinder.pyrvo.obstacle import Obstacle
 
 class RVOSimulator:
     def __init__(self, neighbor_dist: float,

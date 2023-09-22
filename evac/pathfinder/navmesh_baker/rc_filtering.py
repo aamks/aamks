@@ -1,7 +1,7 @@
 from typing import Optional
-from pathfinder.navmesh_baker.rc_classes import Heightfield, Span
-from pathfinder.navmesh_baker.rc_constants import RC_NULL_AREA
-from pathfinder.navmesh_baker.rc_calcs import get_dir_offset_x, get_dir_offset_y
+from evac.pathfinder.navmesh_baker.rc_classes import Heightfield, Span
+from evac.pathfinder.navmesh_baker.rc_constants import RC_NULL_AREA
+from evac.pathfinder.navmesh_baker.rc_calcs import get_dir_offset_x, get_dir_offset_y
 
 def filter_low_hanging_walkable_obstacles(walkable_climb: int,
                                           solid: Heightfield):

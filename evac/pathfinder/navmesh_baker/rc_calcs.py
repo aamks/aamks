@@ -1,6 +1,6 @@
 from typing import Tuple, List
 import math
-from pathfinder.navmesh_baker.rc_classes import CompactSpan
+from evac.pathfinder.navmesh_baker.rc_classes import CompactSpan
 
 # return w and h
 def calc_grid_size(bmin: Tuple[float, float, float],

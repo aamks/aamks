@@ -1,7 +1,7 @@
 from typing import List, Tuple, Optional
 import math
-from pathfinder.pyrvo.obstacle import Obstacle
-from pathfinder.pyrvo.utilities import abs_sq, dist_sq_point_line_segment, vector_difference, vector_scale, vector_negate, vector_sum, vector_length, det, dot, normalize, line_to_point, line_to_direction, RVO_EPSILON, INFINITY
+from evac.pathfinder.pyrvo.obstacle import Obstacle
+from evac.pathfinder.pyrvo.utilities import abs_sq, dist_sq_point_line_segment, vector_difference, vector_scale, vector_negate, vector_sum, vector_length, det, dot, normalize, line_to_point, line_to_direction, RVO_EPSILON, INFINITY
 
 
 def linear_program1(lines: List[Tuple[float, float, float, float]],

@@ -1,14 +1,14 @@
 from typing import List, Tuple
 import math
 import struct
-from pathfinder.navmesh_baker.rc_calcs import calc_grid_size
-from pathfinder.navmesh_baker.rc_rasterization import rasterize_triangles
-from pathfinder.navmesh_baker.rc_filtering import filter_low_hanging_walkable_obstacles, filter_ledge_spans, filter_walkable_low_height_spans
-from pathfinder.navmesh_baker.rc_area import erode_walkable_area, build_distance_field, build_regions
-from pathfinder.navmesh_baker.rc_contour import build_contours
-from pathfinder.navmesh_baker.rc_classes import ContourSet, PolyMesh
-from pathfinder.navmesh_baker.rc_mesh import build_poly_mesh
-from pathfinder.navmesh_baker.rc_heightfield import create_height_field, mark_walkable_triangles, build_compact_heightfield
+from evac.pathfinder.navmesh_baker.rc_calcs import calc_grid_size
+from evac.pathfinder.navmesh_baker.rc_rasterization import rasterize_triangles
+from evac.pathfinder.navmesh_baker.rc_filtering import filter_low_hanging_walkable_obstacles, filter_ledge_spans, filter_walkable_low_height_spans
+from evac.pathfinder.navmesh_baker.rc_area import erode_walkable_area, build_distance_field, build_regions
+from evac.pathfinder.navmesh_baker.rc_contour import build_contours
+from evac.pathfinder.navmesh_baker.rc_classes import ContourSet, PolyMesh
+from evac.pathfinder.navmesh_baker.rc_mesh import build_poly_mesh
+from evac.pathfinder.navmesh_baker.rc_heightfield import create_height_field, mark_walkable_triangles, build_compact_heightfield
 
 class NavmeshBaker:
     def __init__(self):
