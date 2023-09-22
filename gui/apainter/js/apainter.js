@@ -20,7 +20,7 @@ var buildingLabels;
 var ax={};
 var snapLinesSvg;
 var snapLinesArr={};
-var defaults={'door_dimz': 200, 'floor_teleport_width':20,'door_width': 90, 'floor_dimz': 350, 'window_dimz': 150, 'window_offsetz': 100 };
+var defaults={'door_dimz': 200, 'floor_teleport_width':70,'door_width': 90, 'floor_dimz': 350, 'window_dimz': 150, 'window_offsetz': 100 };
 var activeSnap={};
 var undoBuffer=[];
 var evacueeRadius;

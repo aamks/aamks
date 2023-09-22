@@ -178,7 +178,7 @@ class Worker:
         try:
             return det
         except NameError:
-            return 60*30
+            return 0
             return round(normal(loc=self.project_conf['detection']['mean'], scale=self.project_conf['detection']['sd']), 2)
 
     def _create_evacuees(self, floor):
@@ -223,15 +223,13 @@ class Worker:
             else:
                 self.wlogger.info('rvo2_dto ready on {} floors'.format(floor))
 
+            # CO-ORDINATES OF OBST MUST BE IN COUNTER-CLOCKWISE DIRECTION FOR THE RVO2 ALGORITHM TO WORK PROPERLY
             for obst in self.obstacles['obstacles'][str(floor)]:
-                coords = list()
-                for coord in obst:
-                    coords.append(tuple(coord))
-                if len(obst) > 1:
-                    coords.append(tuple(obst[1]))
-                obstacles.append(coords)
-            if str(floor) in self.obstacles['fire']:
-                obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0, 1, 2, 3, 4, 1]]])
+                x_min = min(i[0] for i in obst)
+                x_max = max(i[0] for i in obst)
+                y_min = min(i[1] for i in obst)
+                y_max = max(i[1] for i in obst)
+                obstacles.append([(x_min,y_min),(x_max,y_min),(x_max,y_max),(x_min,y_max),(x_min,y_min),(x_max,y_min)])
 
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)

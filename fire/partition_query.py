@@ -291,8 +291,11 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         if re.search(r'(s\d+)', conditions['COMPA']):
             return conditions['ULOD'], conditions['COMPA']
         
-        hgt = conditions['HGT']
-        if hgt == None:
+        if 'HGT' in conditions.keys():
+            hgt = conditions['HGT']
+            if hgt == None:
+                return 0, conditions['COMPA']
+        else:
             return 0, conditions['COMPA']
 
         if hgt > self.config['LAYER_HEIGHT']:

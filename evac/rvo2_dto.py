@@ -394,7 +394,10 @@ class EvacEnv:
     def do_simulation(self, step):
         self.step = step
         # update goal and speed every 10th step
-        if (step % 10) == 0:
+        # we call the navmesh every odd number of steps because we want to avoid 
+        # the problem of the agent oscillating around the top of the navigation mesh, 
+        # which sometimes happens if we call the navmesh every 10 steps, for example
+        if (step % 9) == 0:
             self.set_goal()
             self.update_speed()
         else:

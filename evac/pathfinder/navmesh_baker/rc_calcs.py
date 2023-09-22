@@ -22,7 +22,10 @@ def v_cross(dest: List[float], v1: List[float], v2: List[float]):
 
 
 def v_normalize(v: List[float]):
-    d: float = 1.0 / math.sqrt(v[0]**2 + v[1]**2 + v[2]**2)
+    val = math.sqrt(v[0]**2 + v[1]**2 + v[2]**2)
+    if (val == 0):
+        return
+    d: float = 1.0 / val
     v[0] = v[0] * d
     v[1] = v[1] * d
     v[2] = v[2] * d

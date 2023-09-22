@@ -5,6 +5,7 @@ import shutil
 import os
 import re
 import sys
+from evac.polymesh import Polymesh
 sys.path.insert(1, '/usr/local/aamks')
 import codecs
 import itertools
@@ -16,7 +17,9 @@ from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from fire.partition_query import PartitionQuery
-# from pathfinder.navmesh_baker import NavmeshBaker
+from pathfinder.navmesh_baker import NavmeshBaker
+from pathfinder import PathFinder
+import pathfinder
 from shapely.ops import polygonize
 from numpy.random import uniform
 from math import sqrt
@@ -55,9 +58,12 @@ class Navmesh:
         self.json=Json()
         self.s=Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         self._test_colors=[ "#f80", "#f00", "#8f0", "#08f" ]
+        self.polymesh = Polymesh()
         self.navmesh=OrderedDict()
         self.partition_query={}
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
+        self.vertex_positions = []
+        self.polygons_of_the_geometry = []
 # }}}
 
     def build(self,floor,bypass_rooms=[]):# {{{
@@ -87,114 +93,63 @@ class Navmesh:
             ''')
         subprocess.call("rm -rf {}; recast --config {} --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_conf, file_obj, file_nav), shell=True)
 
-        try:
-            self.NAV = dt.dtLoadSampleTileMesh(file_nav)
-        except:
-            raise SystemExit("Navmesh: cannot create {}".format(file_nav))
 
-        # self.baker = NavmeshBaker()
-        # vertex_positions, polygons_of_the_geometry = self.get_geometry_data()
-        # self.baker.add_geometry(vertex_positions,polygons_of_the_geometry)
-        # self.baker.bake()
+
+        self.baker = NavmeshBaker()
+        vertex_positions, polygons_of_the_geometry = self.get_geometry_data()
+        self.baker.add_geometry(vertex_positions,polygons_of_the_geometry)
+        mesh = self.polymesh.import_obj(file_obj)
+        polygons = self.get_polygons_for_pynavmesh(mesh)
+        self.baker.add_geometry(mesh.vertices, polygons)
+        self.baker.bake()
+        self.baker.save_to_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name))
+        vert, polygs = pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name))
+        self.navmesh = PathFinder(vert, polygs)
+ 
 
 # }}}
-    def get_geometry_data(self):
-        #[(-4.0, 0.0, -4.0), (-4.0, 0.0, 4.0), (4.0, 0.0, 4.0), (4.0, 0.0, -4.0)], [[0, 1, 2, 3]]
-        vertex_positions = []
-        polygons_of_the_geometry = []
-        # sdfsdf = '{}/{}.obj'.format(os.environ['AAMKS_PROJECT'], self.nav_name)
-        file1 = open('{}/{}.obj'.format(os.environ['AAMKS_PROJECT'], self.nav_name), 'r')
-        Lines = file1.readlines()
-        count = 1
-        for line in Lines:
-            if count % 7 == 2:
-                vertex_positions.append((float(line.split()[1]),0,float(line.split()[3])))
-            if count % 7 == 3:
-                vertex_positions.append((float(line.split()[1]),0,float(line.split()[3])))
-            if count % 7 == 4:
-                vertex_positions.append((float(line.split()[1]),0,float(line.split()[3])))
-            if count % 7 == 5:
-                vertex_positions.append((float(line.split()[1]),0,float(line.split()[3])))
-            count += 1
-        vertex_positions_without_duplicates = list(set(vertex_positions))
-
-        count = 1
-        for line in Lines:
-            if count % 7 == 2:
-                point1 = [x for x, y in enumerate(vertex_positions_without_duplicates) 
-                    if y[0] == float(line.split()[1]) and y[2] == float(line.split()[3])]
-            if count % 7 == 3:
-                point2 = [x for x, y in enumerate(vertex_positions_without_duplicates) 
-                    if y[0] == float(line.split()[1]) and y[2] == float(line.split()[3])]
-            if count % 7 == 4:
-                point3 = [x for x, y in enumerate(vertex_positions_without_duplicates) 
-                    if y[0] == float(line.split()[1]) and y[2] == float(line.split()[3])]
-            if count % 7 == 5:
-                point4 = [x for x, y in enumerate(vertex_positions_without_duplicates) 
-                    if y[0] == float(line.split()[1]) and y[2] == float(line.split()[3])]
-            if count % 7 == 0:
-                polygons_of_the_geometry.append([point1[0],point2[0],point3[0],point4[0]])
-            count += 1
-
-        return vertex_positions_without_duplicates, polygons_of_the_geometry
-
+    def get_polygons_for_pynavmesh(self, mesh):
+        index = 0
+        polygons = []
+        for s in mesh.faces_vertex_count:
+            polygon = []
+            for i in range(s):
+                polygon.append(mesh.faces_definition[index])
+                index += 1
+                polygons.append(polygon)
+        return polygons
 
     def nav_query(self,src,dst,maxStraightPath=16):# {{{
-        '''
-        ./Detour/Include/DetourNavMeshQuery.h: maxStraightPath: The maximum number of points the straight path arrays can hold.  [Limit: > 0]
-        We set maxStraightPath to a default low value which stops calculations early
-        If one needs to get the full path to the destination one must call us with any high value, e.g. 999999999
+        path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+        path_to_return = []
+        if len(path) > 0:
+            for i in path:
+                path_to_return.append((i[0]*100, i[2]*100))
+            return path_to_return
+        else:
+            # agen is probably trapped on the wall, now we want to take the agent's coordinates at his 
+            # outer edge instead of his central coordinates and check the path from these coordinates
+            path = self.navmesh.search_path(((src[0]-17)/100, 0.0, (src[1]-17)/100), (dst[0]/100, 0.0, dst[1]/100))
+            if not path:
+                path = self.navmesh.search_path(((src[0]+17)/100, 0.0, (src[1]-17)/100), (dst[0]/100, 0.0, dst[1]/100))
+            if not path:
+                path = self.navmesh.search_path(((src[0]+17)/100, 0.0, (src[1]+17)/100), (dst[0]/100, 0.0, dst[1]/100))
+            if not path:
+                path = self.navmesh.search_path(((src[0]-17)/100, 0.0, (src[1]+17)/100), (dst[0]/100, 0.0, dst[1]/100))
+            if not path:
+                path = self.navmesh.search_path(((src[0]-25)/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+            if not path:
+                path = self.navmesh.search_path(((src[0])/100, 0.0, (src[1]-25)/100), (dst[0]/100, 0.0, dst[1]/100))
+            if not path:
+                path = self.navmesh.search_path(((src[0]+25)/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+            if not path:
+                path = self.navmesh.search_path((src[0]/100, 0.0, (src[1]+25)/100), (dst[0]/100, 0.0, dst[1]/100))
+            if not path:
+                return ['err']
+            for i in path:
+                path_to_return.append((i[0]*100, i[2]*100))
+            return path_to_return
 
-
-        '''
-
-        filtr = dt.dtQueryFilter()
-        query = dt.dtNavMeshQuery()
-
-        status = query.init(self.NAV, 2048)
-        if dt.dtStatusFailed(status):
-            return "err", -1, status
-
-        polyPickExt = dt.dtVec3(2.0, 4.0, 2.0)
-        startPos = dt.dtVec3(src[0]/100, 1, src[1]/100)
-        endPos = dt.dtVec3(dst[0]/100, 1, dst[1]/100)
-
-        status, out = query.findNearestPoly(startPos, polyPickExt, filtr)
-        if dt.dtStatusFailed(status):
-            return "err", -2, status
-        startRef = out["nearestRef"]
-        _startPt = out["nearestPt"]
-
-        status, out = query.findNearestPoly(endPos, polyPickExt, filtr)
-        if dt.dtStatusFailed(status):
-            return "err", -3, status
-        endRef = out["nearestRef"]
-        _endPt = out["nearestPt"]
-
-        status, out = query.findPath(startRef, endRef, startPos, endPos, filtr, maxStraightPath)
-        if dt.dtStatusFailed(status):
-            return "err", -4, status
-        pathRefs = out["path"]
-
-        status, fixEndPos = query.closestPointOnPoly(pathRefs[-1], endPos)
-        if dt.dtStatusFailed(status):
-            return "err", -5, status
-
-        status, out = query.findStraightPath(startPos, fixEndPos, pathRefs, maxStraightPath, 0)
-        if dt.dtStatusFailed(status):
-            return "err", -6, status
-        straightPath = out["straightPath"]
-        straightPathFlags = out["straightPathFlags"]
-        straightPathRefs = out["straightPathRefs"]
-        
-        path=[]
-        for i in straightPath:
-            path.append((i[0]*100, i[2]*100))
-
-        if path[0]=="err":
-            return None
-        else :
-            return path
 # }}}
     def closest_terminal(self,p0,exit_type):# {{{
         '''
@@ -278,19 +233,25 @@ class Navmesh:
                 bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
 
         bricked_wall+=self.json.readdb("obstacles")['obstacles'][self.floor]
-        try:
-            bricked_wall.append(self.json.readdb("obstacles")['fire'][self.floor])
-        except:
-            pass
 
         return bricked_wall
 
 # }}}
     def _obj_platform(self):# {{{
         z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (self.floor,))
+        exit_doors = self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE terminal_door='auto' AND floor=?", (self.floor,))
         platforms=[]
         for i in z:
             platforms.append([ (i['x1'], i['y1']), (i['x1'], i['y0']), (i['x0'], i['y0']), (i['x0'], i['y1']) ])
+        for i in exit_doors:
+            # extra 25 px for each exit door point because navmesh baker bakes navigation mesh 
+            # only on the inner surface at a distance greater than approximately cell_size 
+            # plus agent_radius (read bake function in navmesh baker)
+            min_x = min(i['x1'],i['x0'])
+            max_x = max(i['x0'],i['x1'])
+            min_y = min(i['y0'],i['y1'])
+            max_y = max(i['y0'],i['y1'])
+            platforms.append([ (min_x-25, min_y-25), (min_x-25, max_y+25), (max_x+25, max_y+25), (max_x+25,  min_y-25) ])
         return platforms
 
 # }}}

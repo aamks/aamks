@@ -35,15 +35,15 @@ class NavmeshBaker:
                 self._input_triangles.append((polygon[0] + n, polygon[i] + n, polygon[i + 1] + n))
         self._is_dirty = True
 
-    def bake(self, cell_size: float = 0.3,
+    def bake(self, cell_size: float = 0.05,
                    cell_height: float = 0.2,
                    agent_height: float = 2.0,
-                   agent_radius: float = 0.6,
-                   agent_max_climb: float = 0.9,
-                   agent_max_slope: float = 45.0,
-                   region_min_size: int = 8,
+                   agent_radius: float = 0.25,
+                   agent_max_climb: float = 0.01,
+                   agent_max_slope: float = 5.0,
+                   region_min_size: int = 1,
                    region_merge_size: int = 20,
-                   edge_max_len: float = 12.0,
+                   edge_max_len: float = 30.0,
                    edge_max_error: float = 1.3,
                    verts_per_poly: int = 6,
                    detail_sample_distance: float = 6.0,
