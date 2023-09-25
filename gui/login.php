@@ -97,11 +97,11 @@ function changes(){/*{{{*/
     <center>
 	<strong>Recent updates</strong><br>
     <table>
+	<tr><td>2023-09-25</td><td>--></td><td>Maximum HRR for under-ventilated fire fixed</td></tr>
+	<tr><td>2023-09-16</td><td>--></td><td>One-by-one launching & bunch of minor fixes</td></tr>
 	<tr><td>2023-09-12</td><td>--></td><td>Demo scenarios updated, fire entity fixed & minor improvements</td></tr>
 	<tr><td>2023-09-08</td><td>--></td><td>Rescue sub-model form fields updated</td></tr>
 	<tr><td>2023-09-07</td><td>--></td><td>Convergence of individual risk</td></tr>
-	<tr><td>2023-09-07</td><td>--></td><td>Attributing statuses fixed</td></tr>
-	<tr><td>2023-09-04</td><td>--></td><td>Bunch of minor fixes</td></tr>
     </table><br>
 	Visit our <a href='https://github.com/aamks/aamks/'>GitHub</a> or <a href='https://github.com/aamks/aamks/wiki'>wiki</a> to find out more.
     </center>
