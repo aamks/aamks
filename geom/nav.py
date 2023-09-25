@@ -96,14 +96,12 @@ class Navmesh:
 
 
         self.baker = NavmeshBaker()
-        vertex_positions, polygons_of_the_geometry = self.get_geometry_data()
-        self.baker.add_geometry(vertex_positions,polygons_of_the_geometry)
         mesh = self.polymesh.import_obj(file_obj)
         polygons = self.get_polygons_for_pynavmesh(mesh)
         self.baker.add_geometry(mesh.vertices, polygons)
         self.baker.bake()
         self.baker.save_to_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name))
-        vert, polygs = pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name))
+        vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name))
         self.navmesh = PathFinder(vert, polygs)
  
 

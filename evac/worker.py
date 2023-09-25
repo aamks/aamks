@@ -592,5 +592,6 @@ try:
         w.test()
     else:
         w.main()
-except:
+except Exception as error:
+    w.wlogger.error(error)
     w.send_report(e={'status': 1})
