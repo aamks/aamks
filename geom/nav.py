@@ -237,7 +237,7 @@ class Navmesh:
 # }}}
     def _obj_platform(self):# {{{
         z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (self.floor,))
-        exit_doors = self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE terminal_door='auto' AND floor=?", (self.floor,))
+        exit_doors = self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
         platforms=[]
         for i in z:
             platforms.append([ (i['x1'], i['y1']), (i['x1'], i['y0']), (i['x0'], i['y0']), (i['x0'], i['y1']) ])
