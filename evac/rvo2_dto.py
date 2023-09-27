@@ -249,8 +249,6 @@ class EvacEnv:
 
                 # TODO: mimooh temporary fix
                 position = self.evacuees.get_position_of_pedestrian(e)
-                goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
-
                 dst_coordinates = self._find_closest_exit(e)
                 goal = self.nav.nav_query(src=position, dst=dst_coordinates, maxStraightPath=32)
                 if goal[0] == 'err':
@@ -265,8 +263,6 @@ class EvacEnv:
                         self.evacuees.set_goal(self.floor,ped_no=e, goal=goal)
                 except:
                     self.evacuees.set_goal(self.floor,ped_no=e, goal=goal)
-                if evacuee.target_teleport_coordinates is not None and evacuee.finished == 0:
-                    self.append_agents_to_move_downstairs(evacuee, e)
         for e in range(RVOSimulator.get_agents_count(self.simulator)):
             self.focus.append(self.evacuees.get_goal_of_pedestrian(e))
 
@@ -400,8 +396,7 @@ class EvacEnv:
         if (step % 9) == 0:
             self.set_goal()
             self.update_speed()
-        else:
-            self.check_agent_downstair_movement()
+        self.check_if_agents_reached_goal()
         self.update_agents_velocity()
         RVOSimulator.do_step(self.simulator, self.config['TIME_STEP'])
 
@@ -419,16 +414,16 @@ class EvacEnv:
         for key, value in self.floor_teleports_queue.items():
             self.floor_teleports_queue[key] = False
 
-    def check_agent_downstair_movement(self):
+    def check_if_agents_reached_goal(self):
         for e in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
                 continue
             else:
-                self.evacuees.has_agent_reached_teleport(self.floor, ped_no=e)
-                evacuee = self.evacuees.get_pedestrian(e)
-                if evacuee.target_teleport_coordinates is not None and evacuee.finished == 0:
-                    self.append_agents_to_move_downstairs(evacuee, e)
-
+                if not self.evacuees.check_if_agent_reached_outside_door(ped_no=e):
+                    self.evacuees.has_agent_reached_teleport(self.floor, ped_no=e)
+                    evacuee = self.evacuees.get_pedestrian(e)
+                    if evacuee.target_teleport_coordinates is not None and evacuee.finished == 0:
+                        self.append_agents_to_move_downstairs(evacuee, e)
 
 # Total FED growth spatial function (per floor)
 class FEDDerivative:

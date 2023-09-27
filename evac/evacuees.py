@@ -117,6 +117,10 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].set_goal(floor, goal)
 
+    def check_if_agent_reached_outside_door(self, ped_no: int) -> object:
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].check_if_agent_reached_outside_door()
+
     def has_agent_reached_teleport(self, floor, ped_no: int) -> object:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].has_agent_reached_teleport()

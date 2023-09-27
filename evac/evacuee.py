@@ -74,15 +74,21 @@ class Evacuee:
 
     def has_agent_reached_teleport(self):
         dist_coordinates = cdist([self.position], [self.dst_coordinates], 'euclidean')
-        if dist_coordinates < 15 and self.agent_has_no_escape == 0 and self.target_teleport_coordinates is not None:
+        if dist_coordinates < 50 and self.target_teleport_coordinates is not None:
             self.finished = 0
+
+    def check_if_agent_reached_outside_door(self):
+        dist_coordinates = cdist([self.position], [self.dst_coordinates], 'euclidean')
+        if dist_coordinates < 50 and self.target_teleport_coordinates is None:
+            self.finished = 0
+            return True
+        return False
 
     def set_goal(self, floor, goal):
         assert isinstance(goal, list), '%goal is not a list'
         dist_navmesh = cdist([self.position], [goal[-1]], 'euclidean')
         dist_coordinates = cdist([self.position], [self.dst_coordinates], 'euclidean')
-        if (dist_coordinates < 15 or dist_navmesh < 50) and self.agent_has_no_escape == 0:
-            self.finished = 0
+        if (dist_coordinates < 50 or dist_navmesh < 50) and self.agent_has_no_escape == 0:
             self.goal = [int(goal[0][0]), int(goal[0][1])]
         else:
             try:
