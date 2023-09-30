@@ -1,8 +1,8 @@
 from typing import List, Tuple
 import math
-from pathfinder.navmesh_baker.rc_calcs import v_copy, v_min, v_max, overlap_bounds, clamp
-from pathfinder.navmesh_baker.rc_classes import Span, Heightfield
-from pathfinder.navmesh_baker.rc_constants import RC_SPAN_MAX_HEIGHT
+from evac.pathfinder.navmesh_baker.rc_calcs import v_copy, v_min, v_max, overlap_bounds, clamp
+from evac.pathfinder.navmesh_baker.rc_classes import Span, Heightfield
+from evac.pathfinder.navmesh_baker.rc_constants import RC_SPAN_MAX_HEIGHT
 
 def divide_poly(buf: List[float],
                 in_ptr: int,

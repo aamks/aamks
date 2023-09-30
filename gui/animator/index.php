@@ -17,7 +17,8 @@ function site() {/*{{{*/
 
 	<script type='text/javascript' src='js/paper-full.min.js'></script>
 	<script type='text/javascript' src='js/animator.js'></script>
-		
+	<div style='text-align:center;'>
+	</div>
 	<right-menu-box>
 		<close-right-menu-box><img src=/aamks/css/close.svg></close-right-menu-box><br>
 		<table>
@@ -39,9 +40,22 @@ function site() {/*{{{*/
 	";
 }
 /*}}}*/
+function refresh(){
+	$project = $_SESSION['main']['project_id'];
+	$scenario = $_SESSION['main']['scenario_id'];
+	$anims =  $_SESSION['nn']->query("SELECT animation FROM simulations WHERE project='$project' AND scenario_id='$scenario' AND status='0' ORDER BY modified DESC;");
+	$anim_json = "[";
+	foreach ($anims as &$value){
+		$anim_json = $anim_json . $value['animation'] . ",";
+	}
+	$anim_json = rtrim($anim_json, ",") . "]";
+	$anims_file = $_SESSION['main']['working_home']."/workers/anims.json";
+	$z=file_put_contents($anims_file, $anim_json);
+}
 function main() {/*{{{*/
 	$_SESSION['nn']->htmlHead("Animator");
 	site();
+	refresh();
 }
 /*}}}*/
 

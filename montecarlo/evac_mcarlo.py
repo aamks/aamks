@@ -222,6 +222,7 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(self.conf['evacuees_max_h_speed']['mean'] , self.conf['evacuees_max_h_speed']['sd']) , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(self.conf['evacuees_max_v_speed']['mean'] , self.conf['evacuees_max_v_speed']['sd']) , 2)
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
+        os.chmod("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)
 # }}}
     def _evacuees_static_animator(self):# {{{
         ''' 

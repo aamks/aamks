@@ -2,8 +2,10 @@ from typing import Tuple, List, Optional
 import math
 import time
 import struct
-from pathfinder.navmesh import Navmesh
-import pathfinder.pyrvo as rvo
+import sys
+sys.path.insert(1, '/usr/local/aamks')
+from evac.pathfinder.navmesh import Navmesh
+import evac.pathfinder.pyrvo as rvo
 
 
 def get_vector_length_squared(vector_2d: Tuple[float, float]):
@@ -116,12 +118,12 @@ class PathFinder(object):
     def __init__(self, 
                  vertices: Optional[List[Tuple[float, float, float]]] = None, 
                  polygons: Optional[List[List[int]]] = None,
-                 neighbor_dist: float = 1.5,
+                 neighbor_dist: float = 55,
                  max_neighbors: int = 5,
                  time_horizon: float = 1.5,
-                 time_horizon_obst: float = 2.0,
-                 max_speed: float = 10.0,
-                 agent_radius: float = 0.2,
+                 time_horizon_obst: float = 0.1,
+                 max_speed: float = 200,
+                 agent_radius: float = 25,
                  update_path_find: float = 1.0,
                  continuous_moving: bool = False,
                  move_agents: bool = True):

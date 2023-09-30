@@ -109,7 +109,8 @@ function ajaxAnimsList() { /*{{{*/
 /*}}}*/
 function ajaxAnimsStatic() { /*{{{*/
 	$f=$_SESSION['main']['working_home']."/workers/static.json";
-	if(is_file($f)) { 
+	if(is_file($f)) {
+		chmod($f, 0666); 
 		$data=json_decode(file_get_contents($f));
 		if(empty($data)) { 
 			echo json_encode(array("msg"=>"Empty or broken json $f", "err"=>1, "data"=>''));
@@ -184,6 +185,7 @@ function ajaxApainterExport() { /*{{{*/
 	$src=$_POST['data'];
 	$dest=$_SESSION['main']['working_home']."/cad.json";
 	$z=file_put_contents($dest, $src);
+	chmod($dest, 0666);
 
 	if($z>0) { 
 		echo json_encode(array("msg"=>"File saved", "err"=>0, "data"=>""));

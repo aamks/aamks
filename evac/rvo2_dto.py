@@ -249,8 +249,6 @@ class EvacEnv:
 
                 # TODO: mimooh temporary fix
                 position = self.evacuees.get_position_of_pedestrian(e)
-                goal = self.nav.nav_query(src=position, dst=self._find_closest_exit(e), maxStraightPath=32)
-
                 dst_coordinates = self._find_closest_exit(e)
                 goal = self.nav.nav_query(src=position, dst=dst_coordinates, maxStraightPath=32)
                 if goal[0] == 'err':
@@ -265,8 +263,6 @@ class EvacEnv:
                         self.evacuees.set_goal(self.floor,ped_no=e, goal=goal)
                 except:
                     self.evacuees.set_goal(self.floor,ped_no=e, goal=goal)
-                if evacuee.target_teleport_coordinates is not None and evacuee.finished == 0:
-                    self.append_agents_to_move_downstairs(evacuee, e)
         for e in range(RVOSimulator.get_agents_count(self.simulator)):
             self.focus.append(self.evacuees.get_goal_of_pedestrian(e))
 
@@ -338,7 +334,7 @@ class EvacEnv:
         self.nav.build(floor=str(self.floor))
 
     def prepare_rooms_list(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.s = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})
@@ -394,11 +390,13 @@ class EvacEnv:
     def do_simulation(self, step):
         self.step = step
         # update goal and speed every 10th step
-        if (step % 10) == 0:
+        # we call the navmesh every odd number of steps because we want to avoid 
+        # the problem of the agent oscillating around the top of the navigation mesh, 
+        # which sometimes happens if we call the navmesh every 10 steps, for example
+        if (step % 9) == 0:
             self.set_goal()
             self.update_speed()
-        else:
-            self.check_agent_downstair_movement()
+        self.check_if_agents_reached_goal()
         self.update_agents_velocity()
         RVOSimulator.do_step(self.simulator, self.config['TIME_STEP'])
 
@@ -416,16 +414,16 @@ class EvacEnv:
         for key, value in self.floor_teleports_queue.items():
             self.floor_teleports_queue[key] = False
 
-    def check_agent_downstair_movement(self):
+    def check_if_agents_reached_goal(self):
         for e in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
                 continue
             else:
-                self.evacuees.has_agent_reached_teleport(self.floor, ped_no=e)
-                evacuee = self.evacuees.get_pedestrian(e)
-                if evacuee.target_teleport_coordinates is not None and evacuee.finished == 0:
-                    self.append_agents_to_move_downstairs(evacuee, e)
-
+                if not self.evacuees.check_if_agent_reached_outside_door(ped_no=e):
+                    self.evacuees.has_agent_reached_teleport(self.floor, ped_no=e)
+                    evacuee = self.evacuees.get_pedestrian(e)
+                    if evacuee.target_teleport_coordinates is not None and evacuee.finished == 0:
+                        self.append_agents_to_move_downstairs(evacuee, e)
 
 # Total FED growth spatial function (per floor)
 class FEDDerivative:
@@ -442,7 +440,7 @@ class FEDDerivative:
 
     # find dimensions of the plane returns list: [[xmin, ymin], [xmax, ymax]]
     def _find_2dims(self):
-        aamks_sqlite = Sqlite(os.environ['AAMKS_PROJECT']  + "/aamks.sqlite")
+        aamks_sqlite = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         dims = []
         q = aamks_sqlite.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
                 (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%' or a.name LIKE 's%');")

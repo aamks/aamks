@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from subprocess import Popen,PIPE
+import subprocess
 import time
 import sys
 import os
@@ -30,7 +31,7 @@ class OnInit():
         self.scenario_id=self.conf['scenario_id']
         self.p=Psql()
         self._clear_srv_anims()
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 2)
         self._clear_sqlite()
         self._setup_simulations()
         self._create_sqlite_tables()
@@ -104,12 +105,12 @@ class OnInit():
         ''' Simulation dir maps to id from psql's simulations table'''
 
         workers_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        os.makedirs(workers_dir, exist_ok=True)
+        os.makedirs(workers_dir, mode = 0o777, exist_ok=True)
 
         irange=self._create_iterations_sequence()
         for i in range(*irange):
             sim_dir="{}/{}".format(workers_dir,i)
-            os.makedirs(sim_dir, exist_ok=True)
+            os.makedirs(sim_dir, mode=0o777, exist_ok=True)
             self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
 
 # }}}
@@ -164,26 +165,26 @@ class OnEnd():
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
                 logger.info('start worker.py sim - %s', i)
-                # os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1281@wp.pl/test18/49'
-                #exit_status = os.WEXITSTATUS(os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)))
-                exit_status = subprocess.run(["python3", "worker.py", "http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
-                if exit_status != 0:
-                   logger.error('worker exit status - %s', exit_status)
+                exit_status = subprocess.run(["python3", "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                if exit_status.returncode != 0:
+                    logger.error('worker exit status - %s', exit_status)
                 else:
-                   logger.info('finished worker.py')
+                    logger.info('finished worker.py sim - %s', i)
             return
 
         if os.environ['AAMKS_WORKER']=='gearman':
             try:
                 for i in range(*si.get()):
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                    worker = worker.replace("/home","")
-                    gearman=["gearman", "-v",  "-b", "-f", "aRun", f"'https://{os.environ['AAMKS_SERVER']}{worker}'"]
+                    worker = worker.replace("/home","/mnt")
+                    gearman=["gearman", "-v",  "-b", "-f", "aRun", worker]
                     job_id = subprocess.check_output(gearman, universal_newlines=True)
                     job_id = job_id.split('Task created: ')[-1][:-1]
                     self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
+                    logger.info(f'send {gearman}')
 
             except Exception as e:
                 print('OnEnd: {}'.format(e))
+                logger.error(f'gearman error {e}')
             
 # }}}

@@ -1,8 +1,8 @@
 from typing import List, Tuple, Optional
 import math
-from pathfinder.navmesh.navmesh_graph import NavmeshGraph
-from pathfinder.navmesh.navmesh_node import NavmeshNode
-from pathfinder.navmesh.navmesh_bvh import NavmeshBVH
+from evac.pathfinder.navmesh.navmesh_graph import NavmeshGraph
+from evac.pathfinder.navmesh.navmesh_node import NavmeshNode
+from evac.pathfinder.navmesh.navmesh_bvh import NavmeshBVH
 
 
 class Navmesh:

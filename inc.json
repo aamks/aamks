@@ -14,7 +14,7 @@
 		"t":       { "legendary": 1 , "x": "OBST"            , "t": "obst"            , "c": "#eeeeff" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#000000" , "animOpacity": 0.5 , "strokeWidth": 0.5 } ,
 		"b":       { "legendary": 1 , "x": "VVENT"           , "t": "vvent"           , "c": "#ffaa00" , "stroke": "#882200" , "lightc": "#000000" , "font": "#222244" , "animOpacity": 0.4 , "strokeWidth": 2.5 } ,
 		"m":       { "legendary": 1 , "x": "MVENT"           , "t": "mvent"           , "c": "#008844" , "stroke": "#006622" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 2.5 } ,
-		"f":       { "legendary": 1 , "x": "EVACUEE"         , "t": "evacuee"         , "c": "fffffff" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
+		"f":       { "legendary": 1 , "x": "EVACUEE"         , "t": "evacuee"         , "c": "#ffffff" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
 		"k":	   { "legendary": 1 , "x": "FLOOR_TELEPORT"  , "t": "floor_teleport"  , "c": "#eeffff" , "stroke": "#ffffff" , "lightc": "#000000" , "font": "#000000" , "animOpacity": 10  , "strokeWidth": 10 }   ,
 		"y":       { "legendary": 1 , "x": "FIRE"            , "t": "fire"            , "c": "#ff4400" , "stroke": "#220000" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 10 }  ,
 		"p":       { "legendary": 0 , "x": "UNDERLAY_SCALER" , "t": "underlay_scaler" , "c": "#ff00ff" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#444444" , "animOpacity": 0.4 , "strokeWidth": 0 }   ,

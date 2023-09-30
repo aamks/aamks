@@ -130,6 +130,7 @@ class CfastMcarlo():
 
         with open("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), "w") as output:
             output.write("\n".join(filter(None,txt)))
+        os.chmod("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)
 # }}}
     def _section_preamble(self):# {{{
         txt=(
@@ -593,15 +594,19 @@ class DrawAndLog:
                 fire_area = orig_area
         return fire_area
 
-    def _flashover_q(self, model='Thomas'):
+    def _flashover_q(self, model='max'):
         fire_room = self.s.query(f"SELECT width, depth, height FROM aamks_geom WHERE name='{self._fire_room_name}'")[0]
-        a_o = sum([math.prod(o) for o in self._fire_openings]) / 1e4    # because dimensions in cm
+        a_o = sum([math.prod(o) for o in self._fire_openings])    # because openings dimensions in m
         a_t = (2 * (fire_room['width'] + fire_room['depth']) * fire_room['height']) / 1e4 - a_o    # because dimensions in cm 
-        h_o = sum([o[1] for o in self._fire_openings]) / 100    # because dimensions in cm
+        h_o = sum([o[1] for o in self._fire_openings])     # because openings dimensions in m
+        thomas =  7.83 * a_t + 378 * a_o * h_o ** 0.5
+        babrauskass = 750 * a_o * h_o ** 0.5
         if model == 'Thomas':
-            return 7.83 * a_t + 378 * a_o * h_o ** 0.5
+            return thomas
         elif model == 'Babrauskass':
-            return 750 * a_o * h_o ** 0.5
+            return babrauskass
+        else:
+            return max([thomas, babrauskass])
 
     def _draw_hrr_area_cont_func(self):
         hrrpua_d = self.conf['hrrpua']    # [kW/m2]

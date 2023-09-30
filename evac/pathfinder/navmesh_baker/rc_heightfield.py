@@ -1,8 +1,8 @@
 from typing import List, Tuple, Optional
 import math
-from pathfinder.navmesh_baker.rc_classes import Span, Heightfield, CompactHeightfield, CompactCell, CompactSpan
-from pathfinder.navmesh_baker.rc_constants import RC_PI, RC_WALKABLE_AREA, RC_NULL_AREA, RC_NOT_CONNECTED
-from pathfinder.navmesh_baker.rc_calcs import calc_tri_normal, clamp, get_dir_offset_x, get_dir_offset_y, set_con
+from evac.pathfinder.navmesh_baker.rc_classes import Span, Heightfield, CompactHeightfield, CompactCell, CompactSpan
+from evac.pathfinder.navmesh_baker.rc_constants import RC_PI, RC_WALKABLE_AREA, RC_NULL_AREA, RC_NOT_CONNECTED
+from evac.pathfinder.navmesh_baker.rc_calcs import calc_tri_normal, clamp, get_dir_offset_x, get_dir_offset_y, set_con
 
 def create_height_field(width: int,
                         height: int,

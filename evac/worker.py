@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import subprocess
 import sys
 sys.path.insert(1, '/usr/local/aamks')
 from numpy import array
@@ -14,7 +15,6 @@ from results.beck_new import RiskIteration as RI
 from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
-from evac.staircase import Staircase
 from fire.partition_query import PartitionQuery
 from include import Sqlite
 import time
@@ -25,10 +25,10 @@ import ssl
 from include import Json
 import json
 from collections import OrderedDict
-from subprocess import Popen, run, TimeoutExpired
+from subprocess import run, TimeoutExpired
 import zipfile
-import multiprocessing
 import pandas as pd
+from include import Psql
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
@@ -40,8 +40,10 @@ class Worker:
     def __init__(self):
         self.json=Json()
         self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
-        self.start_time = time.time()
-        self.url=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
+        self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
+        self.project_dir=self.working_dir.split("/workers/")[0]
+        os.environ["AAMKS_PROJECT"] = self.project_dir
+        os.chdir(self.working_dir)
         self.vars = OrderedDict()
         self.results = dict()
         self.obstacles = None
@@ -53,13 +55,6 @@ class Worker:
         self.sim_floors = None
         self.floors = list()
         self.host_name = os.uname()[1]
-        os.chdir('/home/aamks_users')
-        os.environ["AAMKS_PROJECT"] = '/home/aamks_users/'+self.url.split('aamks_users/')[1].split('/workers/')[0]
-        if self.url.split('aamks_users/')[1][0] == "/":
-            self.working_dir = self.url.split('aamks_users/')[1][1:]
-        else:
-            self.working_dir = self.url.split('aamks_users/')[1]
-
         self.cross_building_results = None
         self.simulation_time = None
         self.time_shift = None
@@ -67,14 +62,14 @@ class Worker:
         self.smoke_opacity = []
         self.rooms_in_smoke = dict()
         self.position_fed_tables_information = []
-        ssl._create_default_https_context = ssl._create_unverified_context
         self.rows_to_insert = []
         self.detection_time = None
+        self.start_time = time.time()
 
 
     def get_logger(self, logger_name):
         FORMATTER = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
-        LOG_FILE = "/home/aamks_users/aamks.log"
+        LOG_FILE = f"{self.project_dir}/aamks.log"
         file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
         file_handler.setFormatter(FORMATTER)
         file_handler.setLevel(logging.INFO)
@@ -85,49 +80,11 @@ class Worker:
         logger.addHandler(file_handler)
         logger.propagate = False
         ch = logging.StreamHandler()
-        ch.setLevel(logging.ERROR)
+        ch.setLevel(logging.INFO)
         ch.setFormatter(FORMATTER)
         logger.addHandler(ch)
 
         return logger
-
-    def download_inputs(self):
-
-        os.chdir(self.working_dir)
-
-        try:
-            urlretrieve('{}/../../conf.json'.format(self.url), '{}/conf.json'.format(os.environ['AAMKS_PROJECT']))
-
-        except Exception as e:
-            self.send_report(e={"status":12})
-            print(e)
-        else:
-            print('conf.json fetched from server')
-
-        try:
-            urlretrieve('{}/evac.json'.format(self.url), 'evac.json'.format(os.environ['AAMKS_PROJECT']))
-        except Exception as e:
-            self.send_report(e={"status":13})
-            print(e)
-        else:
-            print('evac.json fetched from server')
-
-        try:
-            urlretrieve('{}/../../aamks.sqlite'.format(self.url), '{}/aamks.sqlite'.format(os.environ['AAMKS_PROJECT']))
-
-        except Exception as e:
-            self.send_report(e={"status":14})
-            print(e)
-        else:
-            print('Aamks.sqlite fetched from server')
-
-        try:
-            urlretrieve('{}/cfast.in'.format(self.url), 'cfast.in'.format(os.environ['AAMKS_PROJECT']))
-        except Exception as e:
-            self.send_report(e={"status":15})
-            print(e)
-        else:
-            print('cfast.in fetched from server')
 
     def get_config(self):
         try:
@@ -153,16 +110,6 @@ class Worker:
         #print('Starting simulations id: {}'.format(self.sim_id))
         self.wlogger=self.get_logger('worker.py')
         self.vars['conf']['logger'] = self.get_logger('evac.py')
-
-    def _create_workspace(self):
-        try:
-            shutil.rmtree(self.working_dir, ignore_errors=True)
-            os.makedirs(self.working_dir)
-        except Exception as e:
-            self.send_report(e={"status":11})
-            print(e)
-        else:
-            print('Workspace created')
 
     def run_cfast_simulations(self):
         cfast_file = 'cfast7_linux_64'
@@ -193,8 +140,7 @@ class Worker:
 
     def create_geom_database(self):
 
-        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        #self.s.dumpall()
+        self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
         outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, terminal_door from aamks_geom WHERE terminal_door IS NOT NULL')
         floor_teleports = self.s.query("SELECT floor, name, teleport_from, teleport_to from aamks_geom WHERE name LIKE 'k%'")
 
@@ -232,7 +178,7 @@ class Worker:
         try:
             return det
         except NameError:
-            return 60*30
+            return 0
             return round(normal(loc=self.project_conf['detection']['mean'], scale=self.project_conf['detection']['sd']), 2)
 
     def _create_evacuees(self, floor):
@@ -261,15 +207,6 @@ class Worker:
         self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees)))
         return e
 
-    def prepare_staircases(self):
-        rows = self.s.query("SELECT name, floor, x0, y0, width, depth, height, room_area from aamks_geom WHERE type_sec='STAI' AND fire_model_ignore !=1 ORDER BY name")
-        stair_cases = []
-        for row in rows:
-            staircase = {row['name']: Staircase(name=row['name'], floors=9, number_queues=2, doors=1, width=row['width'], height=row['height'], offsetx=0, offsety=0)}
-            stair_cases.append(staircase)
-        self.vars['conf']['staircases'] = stair_cases
-        return stair_cases
-
     def prepare_simulations(self):
         self.detection_time = self._get_detection_time() #rough - with CFAST SPREADSHEET resolution
 
@@ -277,6 +214,7 @@ class Worker:
             eenv = None
             obstacles = []
             try:
+                self.vars['conf']['project_dir'] = self.project_dir
                 eenv = EvacEnv(self.vars['conf'])
                 eenv.floor = floor
             except Exception as e:
@@ -285,15 +223,13 @@ class Worker:
             else:
                 self.wlogger.info('rvo2_dto ready on {} floors'.format(floor))
 
+            # CO-ORDINATES OF OBST MUST BE IN COUNTER-CLOCKWISE DIRECTION FOR THE RVO2 ALGORITHM TO WORK PROPERLY
             for obst in self.obstacles['obstacles'][str(floor)]:
-                coords = list()
-                for coord in obst:
-                    coords.append(tuple(coord))
-                if len(obst) > 1:
-                    coords.append(tuple(obst[1]))
-                obstacles.append(coords)
-            if str(floor) in self.obstacles['fire']:
-                obstacles.append([tuple(x) for x in array(self.obstacles['fire'][str(floor)])[[0, 1, 2, 3, 4, 1]]])
+                x_min = min(i[0] for i in obst)
+                x_max = max(i[0] for i in obst)
+                y_min = min(i[1] for i in obst)
+                y_max = max(i[1] for i in obst)
+                obstacles.append([(x_min,y_min),(x_max,y_min),(x_max,y_max),(x_min,y_max),(x_min,y_min),(x_max,y_min)])
 
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
@@ -361,7 +297,7 @@ class Worker:
                         i.read_cfast_record(time_frame)
                     except IndexError:
                         self.wlogger.error(f'Unable to read CFAST results at {time_frame} s')
-                        #TODO: mark simulation as broken/not finished due to CFAST
+                        self.send_report(e={"status":23})
                         break
                     #first_evacuue.append(i.evacuees.get_first_evacuees_time())
 
@@ -467,14 +403,49 @@ class Worker:
         '''
         if not e:
             self._write_animation_zips()
-        self._write_meta(e=e)
-
-        if os.environ['AAMKS_WORKER'] == 'gearman':
-            Popen("gearman -h {} -f aOut '{} {} {}'".format(self.AAMKS_SERVER, self.host_name, '/home/aamks_users/'+self.working_dir+'/'+self.meta_file, self.sim_id), shell=True)
-            self.wlogger.info('aOut launched successfully')
+            self._animation_save_psql()
+            LocalResultsCollector(self._get_meta(e)).psql_report()
         else:
-            command = "python3 {}/manager/results_collector.py {} {} {}".format(os.environ['AAMKS_PATH'], self.host_name, self.meta_file, self.sim_id)
-            os.system(command)
+            LocalResultsCollector(self._get_meta(e)).psql_error()
+        
+    def _get_meta(self, e=False):
+        report = OrderedDict()
+        report['worker'] = self.host_name
+        report['path_to_project'] = self.project_dir
+        if e and 1 < e['status'] < 20:
+            report['early_error'] = self.working_dir
+        else:
+            report['sim_id'] = self.sim_id
+            report['scenario_id'] = self.vars['conf']['scenario_id']
+            report['project_id'] = self.vars['conf']['project_id']
+            report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
+            report['highlight_geom'] = None
+        report['psql'] = dict()
+        if e:
+            report['psql'] = e
+        else:
+            report['psql']['fed'] = dict()
+            report['psql']['fed_symbolic'] = dict()
+            report['psql']['rset'] = dict()
+            report['psql']['dfed'] = dict()
+            report['psql']['runtime'] = int(time.time() - self.start_time)
+            report['psql']['cross_building_results'] = self.cross_building_results
+            for i in self.floors:
+                report['psql']['fed'] = self._collect_evac_data('fed')
+                report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
+                report['psql']['rset'][i.floor] = int(i.rset)
+                report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
+            for num_floor in range(len(self.floors)):
+                report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
+                report['floor'] = num_floor
+            report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
+
+            report['psql']['detection'] = int(self.detection_time)
+            report['psql']['status'] = 0
+            
+        self.wlogger.info('Metadata prepared successfully')
+
+        return report
 
     # }}}
     def _write_animation_zips(self):# {{{
@@ -511,50 +482,20 @@ class Worker:
         finally:
             zf.close()
 
-    # }}}   
-    def _write_meta(self, e=False):# {{{
-        j=Json()
-        report = OrderedDict()
-        report['worker'] = self.host_name
-        report['path_to_project'] = '/home/aamks_users/'+self.working_dir.split('workers')[0]
-        if e and 1 < e['status'] < 20:
-            report['early_error'] = self.url
-            self.sim_id = self.url.split("/")[-1]
-            os.chdir(self.working_dir)
-        else:
-            report['sim_id'] = self.sim_id
-            report['scenario_id'] = self.vars['conf']['scenario_id']
-            report['project_id'] = self.vars['conf']['project_id']
-            report['fire_origin'] = self.vars['conf']['FIRE_ORIGIN']
-            report['highlight_geom'] = None
-        report['psql'] = dict()
-        if e:
-            report['psql'] = e
-        else:
-            report['psql']['fed'] = dict()
-            report['psql']['fed_symbolic'] = dict()
-            report['psql']['rset'] = dict()
-            report['psql']['dfed'] = dict()
-            report['psql']['runtime'] = int(time.time() - self.start_time)
-            report['psql']['cross_building_results'] = self.cross_building_results
-            for i in self.floors:
-                report['psql']['fed'] = self._collect_evac_data('fed')
-                report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
-                report['psql']['rset'][i.floor] = int(i.rset)
-                report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
-            for num_floor in range(len(self.floors)):
-                report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
-                report['floor'] = num_floor
-            report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
+    def _animation_save_psql(self):# {{{
+        params=OrderedDict()
+        params['sort_id']=self.sim_id
+        params['title']="sim.{}".format(self.sim_id)
+        params['time']=time.strftime("%H:%M %d.%m", time.gmtime())
+        params['srv']=0
+        params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
+        params['highlight_geom']=None
+        params['anim']="{}/{}_{}_{}_anim.zip".format(self.sim_id, self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
+        p = Psql()
+        p.query(f"""UPDATE simulations SET animation = '{json.dumps(params)}'
+                WHERE project={self.vars['conf']['project_id']} AND scenario_id={self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")
 
-            report['psql']['detection'] = int(self.detection_time)
-            report['psql']['status'] = 0
-
-        self.meta_file = "meta_{}.json".format(self.sim_id)
-        j.write(report, self.meta_file)
-        if e:
-            return 1 
-        self.wlogger.info('Metadata prepared successfully')
+        self.wlogger.info("Animation saved to psql")
     # }}}
 
     # gather data across all floors
@@ -573,10 +514,7 @@ class Worker:
         return collected_fed
 
 
-
     def main(self):
-        self._create_workspace()
-        self.download_inputs()
         self.get_config()
         self.create_geom_database()
         if self.run_cfast_simulations():
@@ -587,7 +525,6 @@ class Worker:
             self.wlogger.info('Simulation ended successfully')
 
     def test(self):
-        os.chdir(self.working_dir)
         self.get_config()
         self.create_geom_database()
         self.prepare_simulations()
@@ -595,32 +532,66 @@ class Worker:
         self.do_simulation()
         self.send_report()
 
-    def local_worker(self):
-        os.chdir(self.working_dir)
-        self.get_config()
-        self.create_geom_database()
-        if self.run_cfast_simulations():
-            self.prepare_staircases()
-            self.prepare_simulations()
-            self.connect_rvo2_with_smoke_query()
-            self.do_simulation()
-            self.send_report()
-            self.wlogger.info('Simulation ended successfully')
+class LocalResultsCollector:
+    def __init__(self, report: OrderedDict):
+        self.meta = report
+        self.p = Psql()
 
+    def psql_report(self):
+        fed = json.dumps(self.meta['psql']['fed'])
+        fed_symbolic = json.dumps(self.meta['psql']['fed_symbolic'])
+        rset = json.dumps(self.meta['psql']['rset'])
+        dfeds = [pd.read_json(i) for i in self.meta['psql']['dfed'].values()]
+
+        # fed_growth_cells table
+        def check_for_data(x, floor):
+            return  bool(self.p.query(f"""SELECT * FROM fed_growth_cells_data
+                    WHERE x_min={x['xmin']} AND x_max={x['xmax']} AND y_min={x['ymin']} AND y_max={x['ymax']}
+                    AND scenario_id={self.meta['scenario_id']} AND project={self.meta['project_id']} AND floor={floor}"""))
+
+        def update_fed_growth(x, floor):
+            if check_for_data(x, floor):
+                query = f"""UPDATE fed_growth_cells_data SET fed_growth_sum = fed_growth_sum + {x['total_dfed']},
+                        samples_number = samples_number + 1
+                        WHERE x_min={x['xmin']} AND x_max={x['xmax']} AND y_min={x['ymin']} AND y_max={x['ymax']}
+                        AND scenario_id={self.meta['scenario_id']} AND project={self.meta['project_id']} AND floor={floor}"""
+            else:
+                query = f"""INSERT INTO fed_growth_cells_data(scenario_id, project, floor, x_min, x_max, y_min, y_max, fed_growth_sum, samples_number)
+                        VALUES ({self.meta['scenario_id']}, {self.meta['project_id']}, {floor}, {x['xmin']}, {x['xmax']}, 
+                        {x['ymin']}, {x['ymax']}, {x['total_dfed']}, 1)"""
+            self.p.query(query)
+
+        [dfed.apply(update_fed_growth, axis=1, floor=f) for f, dfed in enumerate(dfeds)]
+
+        # simulations table
+        self.p.query(f"""UPDATE simulations SET fed = '{fed}', fed_symbolic = '{fed_symbolic}', wcbe='{rset}', detection = '{self.meta['psql']['detection']}', 
+                run_time = {self.meta['psql']['runtime']}, dcbe_time = {self.meta['psql']['cross_building_results']['dcbe']},
+                min_vis_compa = {self.meta['psql']['cross_building_results']['min_vis_compa']},
+                max_temp = {self.meta['psql']['cross_building_results']['max_temp_compa']}, host = '{self.meta['worker']}',
+                min_hgt_compa = {self.meta['psql']['cross_building_results']['min_hgt_compa']},
+                min_vis_cor = {self.meta['psql']['cross_building_results']['min_vis_cor']},
+                min_hgt_cor = {self.meta['psql']['cross_building_results']['min_hgt_cor']},
+                tot_heat = {self.meta['psql']['cross_building_results']['tot_heat']},
+                status = '{self.meta['psql']['status']}',
+                results = '{self.meta['psql']['i_risk']}'
+                WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
+
+    def psql_error(self):
+        if 'early_error' in self.meta.keys():
+            url_s = self.meta['early_error'].split('/')
+            self.meta['sim_id'] = url_s[-1]
+            self.meta['project_id'] = self.p.query(f"SELECT id FROM projects WHERE project_name='{url_s[-4]}'")[0][0]
+            self.meta['scenario_id'] = self.p.query(f"SELECT id FROM scenarios WHERE project_id={self.meta['project_id']} AND scenario_name='{url_s[-3]}'")[0][0]
+        self.p.query(f"""UPDATE simulations SET status = '{self.meta['psql']['status']}', host = '{self.meta['worker']}'
+                WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
 
 w = Worker()
 try:
     if SIMULATION_TYPE == 'NO_CFAST':
         print('Working in NO_CFAST mode')
         w.test()
-    elif os.environ['AAMKS_WORKER'] == 'local':
-        print('Working in LOCAL MODE')
-        w.local_worker()
-    elif os.environ['AAMKS_WORKER'] == 'gearman':
-        print('Working in gearman MODE')
-        w.main()
     else:
-        print('Please specify worker mode')
-except:
-    # send report but with error code
+        w.main()
+except Exception as error:
+    w.wlogger.error(error)
     w.send_report(e={'status': 1})
