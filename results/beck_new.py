@@ -960,7 +960,11 @@ class Comparison:
         
 
 if __name__ == '__main__':
-    print('hello')
+    pp = PostProcess()
+    pp.t = time.time()
+    pp.produce()
+    s = SA(pp.dir)
+    s.main(spearman=True)
     try:
         if len(sys.argv) > 2:
             comp = Comparison(sys.argv[2:], path=sys.argv[1])

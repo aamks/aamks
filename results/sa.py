@@ -21,10 +21,10 @@ class SensitivityAnalysis:
             'heat_of_combustion',  'rad_frac', 'outdoor_temp']
             #'fireorig']
 
-    def __init__(self, y='individual'):
+    def __init__(self, workdir=None, y='individual'):
         self.p = Psql()
         self.j = Json()
-        self.dir = sys.argv[1]
+        self.dir = workdir if workdir else sys.argv[1]
         self.configs = self.j.read('{}/conf.json'.format(self.dir))
         self.s = Sqlite("{}/aamks.sqlite".format(self.dir))
         self.variables = sys.argv[2:] if len(sys.argv) > 2 else self.VARS
@@ -103,22 +103,22 @@ class SensitivityAnalysis:
             plt.savefig(os.path.join(self.dir, 'picts', f'sobol_{s}.png'))
 
     def main(self, spearman=True):
+        if spearman:
+            sa = SA_old(self.dir)
+            ranks, d_factor = sa.calculate_indvidual_risk()
+            sa.plot_ranks(ranks, d_factor)
         self._define_problem()
         self._import_samples()
         self._modify_samples()
         si = self._do_hdmr()
         self._my_plot_hdmr(si)
-        if spearman:
-            sa = SA_old()
-            ranks, d_factor = sa.calculate_indvidual_risk()
-            sa.plot_ranks(ranks, d_factor)
 
 
 class SA_old:
-    def __init__(self):
+    def __init__(self, workdir=None):
         self.p = Psql()
         self.j = Json()
-        self.dir = sys.argv[1]
+        self.dir = workdir if workdir else sys.argv[1]
         self.configs = self.j.read('{}/conf.json'.format(self.dir))
         self.s = Sqlite("{}/aamks.sqlite".format(self.dir))
 
