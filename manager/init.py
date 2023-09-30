@@ -6,7 +6,6 @@ import sys
 import os
 import json
 import shutil
-from distutils.dir_util import copy_tree
 from include import Json
 from include import Psql
 from include import Sqlite
@@ -200,7 +199,7 @@ class Retry():# {{{
 
         logger.debug('trying to restart status 1 jobs')
         self.stat1 = self._find_status1()
-        self._retry()
+        print(self._retry())
 # }}}
     def _find_status1(self):
         return self.p.query(f"SELECT iteration FROM simulations WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND status='1';")

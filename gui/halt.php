@@ -194,7 +194,7 @@ function show_picture($f, $pictures_list) {
 		$size_info=getimagesize($file);
 		$data64=shell_exec("base64 $file");
 		echo "<br><p>Figure ". ($k+1) .". <strong>".$pictures_list[$k][1]."</strong></p>";
-		echo "<img class='results-pictures' style='width:".(0.6*$size_info[0])."px;height:".(0.6*$size_info[1])."px;' src='data:image/png;base64, $data64'/>";
+		echo "<img class='results-pictures' style='width:".(0.8*$size_info[0])."px;height:".(0.8*$size_info[1])."px;' src='data:image/png;base64, $data64'/>";
 	}
 
 }
