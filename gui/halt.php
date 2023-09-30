@@ -41,7 +41,7 @@ function listing() {/*{{{*/
 	echo "<form method='POST' action=''>
         <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-halt-cur' value='Remove jobs'><withHelp>?<help>Remove current scenario jobs from the queue</help></withHelp>&nbsp;
 	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status-cur' value='Check status'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
-	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-conv-cur' value='Check error'><withHelp>?<help>Show convergence of individual risk<br>and perform sensitivity analysis</help></withHelp>&nbsp;&nbsp;
+	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-conv-cur' value='Calc uncertainties'><withHelp>?<help>Show convergence of individual risk<br>and perform sensitivity analysis</help></withHelp>&nbsp;&nbsp;
 	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-status' value='Status table'><br>
         </form>
 <form method='POST' action=''>
@@ -169,24 +169,22 @@ function show_picture($f, $pictures_list) {
         $j = "";
         }
         
-        echo "<br><br><br><font size=4><strong>Figures</strong></font><br><br>";
+        echo "<br><br><br><font size=4><strong>Uncertainties</strong></font><br><br>";
         echo '<br><a href="halt.php?pid='.prevNext($k, $total, -1).$j.'"><button>', $button_left, '</button></a>';
         echo '    <a href="halt.php?pid='.prevNext($k, $total, 1).$j.'"><button>', $button_right, '</button></a>';
         $file=$f."/picts/".$pictures_list[$k][0].".png";
-        $size_info=getimagesize($file);
-        $data64=shell_exec("base64 $file");
-        echo "<br><p>Figure ". ($k+1) .". <strong>".$pictures_list[$k][1]."</strong></p>";
-        echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
-	return 0;
 
-        $file=$f."/picts/".$list[0].".png";
 	if (!file_exists($file)) {
-		echo '<br><br><font size=4>No data available. Try <strong>Check error</strong> button.</font>';
+		echo '<br><br><font size=4>No data available. Try <strong>Calc uncertainties</strong> button.</font>';
+		if ($_GET['pid'] > 1){
+			echo '<br><br><font size=2>At least 300 iterations finished correctly are required to calculate
+			       	Sobol indices.</font>';
+		}
 	}else{
 		$size_info=getimagesize($file);
 		$data64=shell_exec("base64 $file");
-		echo "<br><font size=4>".$list[1]."</font>";
-		echo "<img class='results-pictures' style='width:".($size_info[0]*.8)."px;height:".($size_info[1]*.8)."px;' src='data:image/png;base64, $data64'/>";
+		echo "<br><p>Figure ". ($k+1) .". <strong>".$pictures_list[$k][1]."</strong></p>";
+		echo "<img class='results-pictures' style='width:".(0.6*$size_info[0])."px;height:".(0.6*$size_info[1])."px;' src='data:image/png;base64, $data64'/>";
 	}
 
 }
