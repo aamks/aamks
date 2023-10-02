@@ -479,9 +479,7 @@ function form_delete() { #{{{
 	// This way we make sure there will always be a fallback in $_SESSION['main']
 
 	if($_SESSION['main']['project_name']=='demo' && in_array($_SESSION['main']['scenario_name'], array("simple", "navmesh", "three", "fds"))) { return; }
-	echo "<form method=post>";
-	echo "<input autocomplete=off style='float:right; margin: 0px 50px 400px 0px' type=submit name=delete_scenario value='delete this scenario'>";
-	echo "</form>";
+	echo "<input style='position:absolute; left:200px;' onclick=delScenario() type=submit value='Delete this scenario'>";
 }
 /*}}}*/
 function delete_scenario() {/*{{{*/
@@ -510,13 +508,12 @@ function main() {/*{{{*/
 	change_editor();
 	delete_scenario();
 	make_help();
-
+	form_delete();
 	if(isset($_GET['edit'])) { 
 		$e=$_SESSION['prefs']['apainter_editor'];
 		if($e=='easy')     { update_form_easy()     ; form_fields_easy()     ; update_form_buildings_param(); 		update_buildings_param();}
 		if($e=='advanced') { update_form_advanced() ; form_fields_advanced() ; }
 		if($e=='text')     { update_form_text()     ; form_text()            ; }
-		form_delete();
 	}
 
 	if(isset($_GET['bprofiles'])) { $_SESSION['nn']->menu('Building profiles'); form_bprofiles(); update_form_bprofiles(); exit(); }

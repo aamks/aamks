@@ -119,7 +119,7 @@ function do_login() { #{{{
 	if(!empty($ret)){//password and email match
 		if($salted==$ret[0]['password'] && $ret[0]['activation_token'] == 'already activated'){
 			$_SESSION['nn']->ch_main_vars($ret[0]);
-		 	header("Location: projects.php");
+		 	header("Location: projects.php?projects_list");
 		} else {
 			echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 			$_SESSION['nn']->fatal("Email address not activated!");

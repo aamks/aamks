@@ -17,7 +17,7 @@ function projects_list(){/*{{{*/
 			echo "<a class=blink href=?ch_scenario=$scenarios[id]>$scenarios[scenario_name]</a>"; 
 		}
 		if($projects['project_name']!='demo') { 
-			echo "<td><a href=?delete_project=$projects[id]>delete</a>";
+			echo '<td><button type="submit" onclick="' . "delProject($projects[id])" . '">delete</button></td>';
 		}
 
 	}

@@ -1,4 +1,40 @@
 var aamksUserPrefs;
+function myConfirm(message){
+	let element = document.createElement("div");
+	element.classList.add("box-background");
+	element.innerHTML = `<div class="box">
+						${message}
+	<div>
+		<button id="falseButton" class="btn red">No</button>
+		<button id="trueButton" class="btn green">Yes</button>
+	</div>
+</div>`;
+	document.body.appendChild(element);
+	return new Promise(function (resolve, reject) {
+		document.getElementById("trueButton").addEventListener("click", function () {
+			resolve(true);
+			document.body.removeChild(element);
+	});
+	document.getElementById("falseButton").addEventListener("click", function () {
+		resolve(false);
+		document.body.removeChild(element);
+	});
+})
+}
+function delProject(id) {
+	myConfirm("Are you sure to delete this project?").then(response=>{
+		if (response) {
+			window.location.href = '?delete_project='+id;
+		};
+	})
+};
+function delScenario() {
+	myConfirm("Are you sure to delete scenario?").then(response=>{
+		if (response) {
+			$.post('form.php', 'delete_scenario');
+			setTimeout(() => {  window.location.href = 'projects.php?projects_list';  }, 500);
+		}}
+)};
 
 $(function()  {//{{{
 	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
@@ -85,17 +121,20 @@ function ajaxUserPreferences() {//{{{
 //}}}
 function launch_simulation() {//{{{
 	$("body").on("click", "#launch_simulation", function() {
-		amsg({"msg": "Trying to launch...", "err":0, "duration": 20000 }); 
-		$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function (json) { 
-			amsg(json); 
-			if(json.err==0) {
-				setTimeout(function(){
-					location.assign("/aamks/animator/index.php");
-				}, 1500);
-			}
+		myConfirm("Are you sure to launch simulations?").then(result=>{
+			if (result == true) {
+				amsg({"msg": "Trying to launch...", "err":0, "duration": 20000 }); 
+				$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function (json) { 
+					amsg(json); 
+					if(json.err==0) {
+						setTimeout(function(){
+							location.assign("/aamks/animator/index.php");
+						}, 1500);
+					}
+				});
+			} 
 		});
 	});
-
 }
 //}}}
 function isEmpty(obj) {//{{{
