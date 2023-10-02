@@ -22,7 +22,6 @@ from include import Sqlite, Psql
 import warnings
 import pandas as pd
 from zipfile import ZipFile
-from sa import SensitivityAnalysis as SA
 
 
 
@@ -970,6 +969,7 @@ if __name__ == '__main__':
             pp = PostProcess()
             pp.t = time.time()
             pp.produce()
+            from sa import SensitivityAnalysis as SA
             s = SA(pp.dir)
             s.main(spearman=True)
     except Exception as e:
