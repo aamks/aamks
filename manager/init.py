@@ -6,7 +6,6 @@ import sys
 import os
 import json
 import shutil
-from distutils.dir_util import copy_tree
 from include import Json
 from include import Psql
 from include import Sqlite
@@ -75,7 +74,6 @@ class OnInit():
             self.s.query("DROP TABLE cell2compa")
             self.s.query("DROP TABLE query_vertices")
         except:
-            logger.error('dropping Sqlite tables finished with error')
             pass
 # }}}
     def _create_iterations_sequence(self):# {{{
@@ -187,4 +185,54 @@ class OnEnd():
                 print('OnEnd: {}'.format(e))
                 logger.error(f'gearman error {e}')
             
+
+
 # }}}
+class Retry():# {{{
+    def __init__(self):# {{{
+        self.json=Json()
+        self.uprefs=GetUserPrefs()
+        self.conf=self.json.read("{}/conf.json".format(sys.argv[1]))
+        self.p=Psql()
+        self.project_id=self.conf['project_id']
+        self.scenario_id=self.conf['scenario_id']
+
+        logger.debug('trying to restart status 1 jobs')
+        self.stat1 = self._find_status1()
+        print(self._retry())
+# }}}
+    def _find_status1(self):
+        return self.p.query(f"SELECT iteration FROM simulations WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND status='1';")
+
+    def _retry(self):# {{{
+        if os.environ['AAMKS_WORKER']=='none':
+            return
+
+        if os.environ['AAMKS_WORKER']=='local':
+            os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
+            for i in self.stat1:
+                logger.info('start worker.py sim - %s', i)
+                exit_status = subprocess.run(["python3", "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                if exit_status.returncode != 0:
+                    logger.error('worker exit status - %s', exit_status)
+                else:
+                    logger.info('finished worker.py sim - %s', i)
+            return
+
+        if os.environ['AAMKS_WORKER']=='gearman':
+            for i in self.stat1:
+                worker="{}/workers/{}".format(sys.argv[1],i[0])
+                worker = worker.replace("/home","/mnt")
+                gearman=["gearman", "-v",  "-b", "-f", "aRun", worker]
+                job_id = subprocess.check_output(gearman, universal_newlines=True)
+                job_id = job_id.split('Task created: ')[-1][:-1]
+                q = f"UPDATE simulations SET job_id='{job_id}', status='' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i[0]}"
+                self.p.query(q)
+                logger.info(f'send {gearman}')
+
+        return len(self.stat1)
+
+# }}}
+if __name__ == "__main__":
+    Retry()
+

@@ -22,6 +22,7 @@ from include import Sqlite, Psql
 import warnings
 import pandas as pd
 from zipfile import ZipFile
+from sa import SensitivityAnalysis as SA
 
 
 
@@ -405,9 +406,11 @@ class Heatmap:
         for f, df in enumerate(self.plot['floors']):
             df['xes'] = np.array(sorted([min(self.data[f]['x_min']), *self.data[f]['x_max'].unique()]))
             df['yes'] = np.array(sorted([min(self.data[f]['y_min']), *self.data[f]['y_max'].unique()]))
-            df['data'] = self.data[f][['x_max', 'y_max', 'fed_growth_sum']].pivot(columns='x_max',
-                    index='y_max').astype(float).fillna(-1).apply(lambda x: x/self.n_iter).to_numpy()
-
+            df['data'] = self.data[f][['x_max', 'y_max', 'fed_growth_sum']]
+            df['data'] = df['data'].pivot_table(columns='x_max', index='y_max', aggfunc='sum').astype(float)
+            df['data'] = df['data'].fillna(-1)
+            df['data'] = df['data'].apply(lambda x: x/self.n_iter)
+            df['data'] = df['data'].to_numpy()
             self.plot['range'] = max(df['data'].max(), self.plot['range'])
 
         return self.plot
@@ -959,13 +962,18 @@ class Comparison:
         
 
 if __name__ == '__main__':
-    if len(sys.argv) > 2:
-        comp = Comparison(sys.argv[2:], path=sys.argv[1])
-        comp.produce()
-    else:
-        pp = PostProcess()
-        pp.t = time.time()
-        pp.produce()
+    try:
+        if len(sys.argv) > 2:
+            comp = Comparison(sys.argv[2:], path=sys.argv[1])
+            comp.produce()
+        else:
+            pp = PostProcess()
+            pp.t = time.time()
+            pp.produce()
+            s = SA(pp.dir)
+            s.main(spearman=True)
+    except Exception as e:
+        print(e)
 
     
 

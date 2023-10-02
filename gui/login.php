@@ -63,6 +63,8 @@ function salt($password){/*{{{*/
 }/*}}}*/
 function login_form(){/*{{{*/
 	if(isset($_SESSION['main']['user_id'])) { return; }
+ // echo "<center><br><br><img src=logo_m.svg><br><br><br>We are changing for you!<br><i><a href='mailto:projectaamks@gmail.com'>Let us know </a> if you want to recieve a notification when service is up again</i></center>";
+ // exit();
     echo "
     <br><br>
     <form method=POST>
@@ -97,11 +99,10 @@ function changes(){/*{{{*/
     <center>
 	<strong>Recent updates</strong><br>
     <table>
-	<tr><td>2023-09-12</td><td>--></td><td>Demo scenarios updated, fire entity fixed & minor improvements</td></tr>
-	<tr><td>2023-09-08</td><td>--></td><td>Rescue sub-model form fields updated</td></tr>
-	<tr><td>2023-09-07</td><td>--></td><td>Convergence of individual risk</td></tr>
-	<tr><td>2023-09-07</td><td>--></td><td>Attributing statuses fixed</td></tr>
-	<tr><td>2023-09-04</td><td>--></td><td>Bunch of minor fixes</td></tr>
+	<tr><td>2023-09-30</td><td>--></td><td>Sensitivity analysis</td></tr>
+<tr><td>2023-09-28</td><td>--></td><td>Retry status 1 button available</td></tr>
+<tr><td>2023-09-27</td><td>--></td><td>pynavmesh introduced and fixes in rvo</td></tr>
+<tr><td>2023-09-25</td><td>--></td><td>Simulation files handled with NFS</td></tr>
     </table><br>
 	Visit our <a href='https://github.com/aamks/aamks/'>GitHub</a> or <a href='https://github.com/aamks/aamks/wiki'>wiki</a> to find out more.
     </center>
