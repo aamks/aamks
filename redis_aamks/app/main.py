@@ -1,0 +1,52 @@
+"""Main app
+
+This app pushes messages into the redis queue
+"""
+
+from datetime import datetime
+from json import dumps
+from uuid import uuid4
+
+import redis
+from . import config
+
+
+
+class AARedis:
+    def redis_db(self):
+        db = redis.Redis(
+            host=config.redis_host,
+            port=config.redis_port,
+            db=config.redis_db_number,
+            password=config.redis_password,
+            decode_responses=True,
+        )
+
+    # make sure redis is up and running
+        db.ping()
+        return db
+
+
+    def redis_queue_push(self, db, message):
+        # push to tail of the queue (left of the list)
+        db.lpush(config.redis_queue_name, message)
+
+
+    def main(self, worker_pwd):
+        # connect to Redis
+        db = self.redis_db()
+        message = {
+            "id": str(uuid4()),
+            "ts": datetime.utcnow().isoformat(),
+            "data": {
+                "sim": worker_pwd,
+            }
+        }
+        # We'll store the data as JSON in Redis
+        message_json = dumps(message)
+        # Push message to Redis queue
+        print(f"Sending message {message['id']}")
+        self.redis_queue_push(db, message_json)
+
+    if __name__ == '__main__':
+        main()

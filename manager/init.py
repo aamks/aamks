@@ -17,6 +17,9 @@ from include import GetUserPrefs
 from geom.nav import Navmesh
 import subprocess
 import logging
+import sys
+
+from redis_aamks.app.main import AARedis
 logger = logging.getLogger('AAMKS.init.py')
 
 class OnInit():
@@ -158,8 +161,8 @@ class OnEnd():
 
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
 
-        os.environ['AAMKS_WORKER']='local'
-
+        os.environ['AAMKS_WORKER']='redis'
+        x = os.environ['AAMKS_WORKER']
         if os.environ['AAMKS_WORKER']=='none':
             return
 
@@ -178,7 +181,7 @@ class OnEnd():
             try:
                 for i in range(*si.get()):
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                    worker = worker.replace("/home","/mnt")
+                    # worker = worker.replace("/home","/mnt")
                     gearman=["gearman", "-v",  "-b", "-f", "aRun", worker]
                     job_id = subprocess.check_output(gearman, universal_newlines=True)
                     job_id = job_id.split('Task created: ')[-1][:-1]
@@ -188,5 +191,18 @@ class OnEnd():
             except Exception as e:
                 print('OnEnd: {}'.format(e))
                 logger.error(f'gearman error {e}')
+
+
+        if os.environ['AAMKS_WORKER']=='redis':
+            print("working on redis mode")
+            AR = AARedis()
+            try:
+                for i in range(*si.get()):
+                    worker_pwd="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
+                    AR.main(worker_pwd)
+            except Exception as e:
+                print('OnEnd: {}'.format(e))
+                logger.error(f'gearman error {e}')
+
             
 # }}}
