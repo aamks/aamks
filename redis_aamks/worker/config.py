@@ -1,5 +1,5 @@
 
-redis_host = "127.0.0.3"
+redis_host = "192.168.0.185"
 redis_port = 6379
 redis_db_number = 0
 redis_password = "secret"

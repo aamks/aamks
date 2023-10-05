@@ -39,9 +39,10 @@ class RedisWorker:
 
     def process_message(self, db, message_json: str):
         message = loads(message_json)
-        print(f"Message received: id={message['id']}")
+        print(f"Message received: id={message['data']['sim']}")
         sim_value = message["data"]["sim"]
         try:
+            sim_value = sim_value.replace("home","mnt")
             subprocess.run(["python", "/usr/local/aamks/evac/worker.py", sim_value], check=True)
         except subprocess.CalledProcessError as e:
             print(f"Błąd podczas uruchamiania worker.py: {e}")
