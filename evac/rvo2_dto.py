@@ -288,7 +288,7 @@ class EvacEnv:
         for stair in self.general['staircases']:
             pedestrian = self.evacuees.get_pedestrian(i)
             if stair['x_min']<pedestrian.position[0]<stair['x_max'] and stair['y_min']<pedestrian.position[1]<stair['y_max']:
-                return agent_speed*0.7
+                return agent_speed*0.4
         return agent_speed
 
     def save_feds(self, time):
