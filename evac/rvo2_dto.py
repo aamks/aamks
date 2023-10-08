@@ -280,7 +280,16 @@ class EvacEnv:
                 continue
             else:
                 self.evacuees.update_speed_of_pedestrian(i)
-                RVOSimulator.set_agent_max_speed(self.simulator, i, self.evacuees.get_speed_of_pedestrian(i))
+                agent_speed = self.evacuees.get_speed_of_pedestrian(i)
+                agent_speed = self.reduce_agent_on_stairs_speed(agent_speed, i) 
+                RVOSimulator.set_agent_max_speed(self.simulator, i, agent_speed)
+
+    def reduce_agent_on_stairs_speed(self, agent_speed, i):
+        for stair in self.general['staircases']:
+            pedestrian = self.evacuees.get_pedestrian(i)
+            if stair['x_min']<pedestrian.position[0]<stair['x_max'] and stair['y_min']<pedestrian.position[1]<stair['y_max']:
+                return agent_speed*0.7
+        return agent_speed
 
     def save_feds(self, time):
         with open('fed.csv', 'a') as file:

@@ -207,6 +207,19 @@ class Worker:
         self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees)))
         return e
 
+    def prepare_staircases(self, floor):
+        rows = self.s.query("SELECT x0, y0, width, depth from aamks_geom WHERE type_sec='STAI' AND floor = floor")
+        stair_cases = []
+        for row in rows:
+            x_min = row['x0']
+            x_max = row['x0'] + row['width']
+            y_min = row['y0']
+            y_max = row['y0'] + row['depth']
+            staircase = {'x_min':x_min, 'x_max':x_max, 'y_min':y_min, 'y_max':y_max}
+            stair_cases.append(staircase)
+        self.vars['conf']['staircases'] = stair_cases
+        return stair_cases
+
     def prepare_simulations(self):
         self.detection_time = self._get_detection_time() #rough - with CFAST SPREADSHEET resolution
 
@@ -214,6 +227,7 @@ class Worker:
             eenv = None
             obstacles = []
             try:
+                self.prepare_staircases(str(floor))
                 self.vars['conf']['project_dir'] = self.project_dir
                 eenv = EvacEnv(self.vars['conf'])
                 eenv.floor = floor
