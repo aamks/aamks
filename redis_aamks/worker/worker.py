@@ -34,7 +34,7 @@ class RedisWorker:
     def process_message(self, db, message_json: str):
         message = loads(message_json)
         print(f"Message received: id={message['data']['sim']}")
-        sim_value = message["data"]["sim"]
+        sim_value = message["data"]["sim"].replace("home","mnt")
         # Try counter
         retry_count = 0
         max_retries = 3
