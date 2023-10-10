@@ -1,15 +1,13 @@
-"""Main Worker app
-
-This app listens messages into the redis queue
-"""
 import random
 from json import loads
-
+import sys
 import redis
 import config
 import subprocess
 import os
 
+sys.path.insert(1, '/usr/local/aamks/evac')
+from evac import worker as EvacWorker
 
 class RedisWorker:
     def redis_db(self):
@@ -24,11 +22,9 @@ class RedisWorker:
         db.ping()
         return db
 
-
     def redis_queue_push(self, db, message):
         # push to tail of the queue (left of the list)
         db.lpush(config.redis_queue_name, message)
-
 
     def redis_queue_pop(self, db):
         # pop from head of the queue (right of the list)
@@ -36,18 +32,27 @@ class RedisWorker:
         _, message_json = db.brpop(config.redis_queue_name)
         return message_json
 
-
     def process_message(self, db, message_json: str):
         message = loads(message_json)
         print(f"Message received: id={message['data']['sim']}")
         sim_value = message["data"]["sim"]
-        try:
-            sim_value = sim_value.replace("home","mnt")
-            subprocess.run(["python", "/usr/local/aamks/evac/worker.py", sim_value], check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Błąd podczas uruchamiania worker.py: {e}")
-            #self.redis_queue_push(db, message_json)
-
+        # Try counter
+        retry_count = 0
+        max_retries = 3
+        
+        while retry_count < max_retries:
+            try:
+                ew = EvacWorker.Worker(redis_worker_pwd=sim_value)
+                ew.run_worker()
+                break  
+            except Exception as e:
+                retry_count += 1
+                print(f"Error during running worker ({retry_count}/{max_retries}): {e}")
+                if retry_count < max_retries:
+                    self.redis_queue_push(db, message_json)
+                else:
+                    print("All attempts used in this simulation")
+                    break
 
     def main(self):
         """
