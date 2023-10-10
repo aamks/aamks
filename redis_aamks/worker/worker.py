@@ -51,7 +51,7 @@ class RedisWorker:
                     continue  # Try again
                 else:
                     print("--- SKIPPING -  All attempts used in this simulation   ---")
-                    return  
+                    break  
 
     def main(self):
         """
