@@ -110,8 +110,18 @@ class Worker:
         self.sim_id = self.vars['conf']['SIM_ID']
         self.host_name = os.uname()[1]
         #print('Starting simulations id: {}'.format(self.sim_id))
-        self.wlogger=self.get_logger('worker.py')
-        self.vars['conf']['logger'] = self.get_logger('evac.py')
+        if not logging.getLogger("worker.py").handlers:
+         self.wlogger = self.get_logger('worker.py')
+        else:
+            self.wlogger = logging.getLogger("worker.py")
+
+        if not logging.getLogger("evac.py").handlers: 
+            self.vars['conf']['logger'] = self.get_logger('evac.py')
+        else:
+            self.vars['conf']['logger'] = logging.getLogger("evac.py")
+
+
+
 
     def run_cfast_simulations(self):
         cfast_file = 'cfast7_linux_64'
@@ -536,12 +546,10 @@ class Worker:
         self.send_report()
 
     def run_worker(self):
-        print("run_worker")
         if SIMULATION_TYPE == 'NO_CFAST':
             print('Working in NO_CFAST mode')
             self.test()
         else:
-            print("JEST W SRODKU")
             print(self.working_dir)
             self.main()
             
@@ -608,6 +616,7 @@ if __name__ == "__main__":
             w.test()
         else:
             w.main()
+            w.ch.close()
     except Exception as error:
         w.wlogger.error(error)
         w.send_report(e={'status': 1})

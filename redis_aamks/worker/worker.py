@@ -49,10 +49,10 @@ class RedisWorker:
                 retry_count += 1
                 print(f"Error during running worker ({retry_count}/{max_retries}): {e}")
                 if retry_count < max_retries:
-                    self.redis_queue_push(db, message_json)
+                    continue  # Try again
                 else:
-                    print("All attempts used in this simulation")
-                    break
+                    print("--- SKIPPING -  All attempts used in this simulation   ---")
+                    return  
 
     def main(self):
         """
