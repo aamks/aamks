@@ -496,7 +496,6 @@ class DrawAndLog:
         else:
             omega, probs = __prob_space(all_corridors_and_halls)
             comp['type'] = 'non_room'
-        breakpoint()
         comp['name'] = str(choice(omega, p=probs))
         self._comp_type = comp['type']
         self._fire_room_name = comp['name']
