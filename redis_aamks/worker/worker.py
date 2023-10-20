@@ -41,7 +41,7 @@ class RedisWorker:
         
         while retry_count < max_retries:
             try:
-                ew = EvacWorker.Worker(redis_worker_pwd=sim_value)
+                ew = EvacWorker.Worker(redis_worker_pwd=sim_value, AA=message['AA'])
                 ew.run_worker()
                 break  
             except Exception as e:

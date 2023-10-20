@@ -2,7 +2,7 @@
 
 This app pushes messages into the redis queue
 """
-
+import os
 from datetime import datetime
 from json import dumps
 from uuid import uuid4
@@ -38,6 +38,10 @@ class AARedis:
         message = {
             "id": str(uuid4()),
             "ts": datetime.utcnow().isoformat(),
+            "AA": { 
+                "PROJECT": os.environ["AAMKS_PROJECT"],
+                "PATH": os.environ["AAMKS_PATH"]
+                },
             "data": {
                 "sim": worker_pwd,
             }
@@ -45,7 +49,7 @@ class AARedis:
         # We'll store the data as JSON in Redis
         message_json = dumps(message)
         # Push message to Redis queue
-        print(f"Sending message {message['id']}")
+        print(f"Sending message {message['data']['sim']}")
         self.redis_queue_push(db, message_json)
 
     if __name__ == '__main__':
