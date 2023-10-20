@@ -478,7 +478,7 @@ class DrawAndLog:
 # }}}
     def _draw_compartment(self):
         # calculate probabilistic space (events and probabilities) from sqlite import format
-        def __prob_space(l):
+        def prob_space(l):
             o = [e[0] for e in l]
             p = [e[1] for e in l]
             tot = sum(p)
@@ -491,10 +491,10 @@ class DrawAndLog:
         
         comp = {}
         if is_origin_in_room or not all_corridors_and_halls:
-            omega, probs = __prob_space(all_rooms)
+            omega, probs = prob_space(all_rooms)
             comp['type'] = 'room'
         else:
-            omega, probs = __prob_space(all_corridors_and_halls)
+            omega, probs = prob_space(all_corridors_and_halls)
             comp['type'] = 'non_room'
         comp['name'] = str(choice(omega, p=probs))
         self._comp_type = comp['type']
