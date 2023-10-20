@@ -274,7 +274,7 @@ class CfastMcarlo():
         txt=['!! SECTION MECHANICAL VENT']
         for v in self.s.query( "SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
             if v['mvent_throughput'] < 0:
-                comp_ids = [vcfast_name(['vent_from_name']), 'OUTSIDE']
+                comp_ids = [cfast_name(v['vent_from_name']), 'OUTSIDE']
             else:
                 comp_ids = ['OUTSIDE', cfast_name(v['vent_from_name'])]
             if v['is_vertical'] is True:
