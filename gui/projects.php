@@ -54,26 +54,39 @@ function ch_scenario($scenario, $header=NULL){/*{{{*/
 }/*}}}*/
 function new_scenario() { # {{{
 	#psql aamks -c 'select  * from scenarios'
-
 	if(empty($_POST['new_scenario'])) { return; }
-	$sid=$_SESSION['nn']->query("INSERT INTO scenarios(project_id,scenario_name) VALUES($1, $2) RETURNING id", array($_POST['project_id'], $_POST['new_scenario'])); 
-	if (!mkdir(implode("/", array($_SESSION['main']['user_home'],$_POST['project_name'],$_POST['new_scenario'])), 0777, true)) {
-		$_SESSION['header_err'][]="Cannot create $_POST[project_name]/$_POST[new_scenario]";
-		header("Location: projects.php?projects_list");
+	
+	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_POST['project_id'])), 'scenario_name');
+	dd($scenarios);
+	if(in_array($_POST['new_scenario'], $scenarios, true)){
+		$_SESSION['header_err'][]="Scenario '$_POST[new_scenario]' already exists";
 	} else {
-		ch_scenario($sid[0]['id']);
-		$_SESSION['nn']->scenario_from_template("apainter/index.php");
+		if (!mkdir(implode("/", array($_SESSION['main']['user_home'],$_POST['project_name'],$_POST['new_scenario'])), 0777, true)) {
+			$_SESSION['header_err'][]="Cannot create $_POST[project_name]/$_POST[new_scenario]";
+			header("Location: projects.php?projects_list");
+		} else {
+			$sid=$_SESSION['nn']->query("INSERT INTO scenarios(project_id,scenario_name) VALUES($1, $2) RETURNING id", array($_POST['project_id'], $_POST['new_scenario'])); 
+			ch_scenario($sid[0]['id']);
+			$_SESSION['nn']->scenario_from_template("apainter/index.php");
+		}
 	}
 }
 /*}}}*/
 function new_project() { # {{{
 	#psql aamks -c 'select  * from projects'
 	if(empty($_POST['new_project'])) { return; }
-	$_SESSION['nn']->query("INSERT INTO projects(project_name,user_id) VALUES($1, $2)", array($_POST['new_project'], $_SESSION['main']['user_id'])); 
-	if (!mkdir(implode("/", array($_SESSION['main']['user_home'],$_POST['new_project'])), 0777, true)) {
-		$_SESSION['header_err'][]="Cannot create $_POST[new_project]";
-	} 
-	header("Location: projects.php?projects_list");
+
+	$projects=array_column($_SESSION['nn']->query("SELECT project_name FROM projects WHERE user_id=$1", array($_SESSION['main']['user_id'] )), 'project_name');
+	if(in_array($_POST['new_project'], $projects, true)){
+		$_SESSION['header_err'][]="Project '$_POST[new_project]' already exists";
+	} else {
+		if (!mkdir(implode("/", array($_SESSION['main']['user_home'],$_POST['new_project'])), 0777, true)) {
+			$_SESSION['header_err'][]="Cannot create $_POST[new_project]";
+		} else {
+			$_SESSION['nn']->query("INSERT INTO projects(project_name,user_id) VALUES($1, $2)", array($_POST['new_project'], $_SESSION['main']['user_id'])); 
+		}
+		header("Location: projects.php?projects_list");
+	}
 }
 /*}}}*/
 function assert_session_complete() { #{{{
