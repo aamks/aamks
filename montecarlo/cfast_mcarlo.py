@@ -233,8 +233,6 @@ class CfastMcarlo():
             if how_much_open == 0:
                 continue
             collect=[]
-            vent_from_name = v['vent_from_name'].split(".")[0]
-            vent_to_name = v['vent_to_name'].split(".")[0]
             collect.append("&VENT TYPE = 'WALL'")                                             # TYPE
             collect.append("ID = '{}'".format(v['name']))                                    # VENT ID
             collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(vent_from_name), cfast_name(vent_to_name)))     # FROM_TO
@@ -256,8 +254,6 @@ class CfastMcarlo():
         for i, v in enumerate(self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to")):
             how_much_open = self.samples['vvents'][i][0]           # end state with probability of working
             collect=[]
-            vent_from_name = v['vent_from_name'].split(".")[0]
-            vent_to_name = v['vent_to_name'].split(".")[0]
             collect.append("&VENT TYPE = 'CEILING'")                                                  # VENT TYPE
             collect.append("ID = '{}'".format(v['name']))                                             # VENT ID
             collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(vent_from_name), cfast_name(vent_to_name)))    # FROM_TO
