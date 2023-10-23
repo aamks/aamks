@@ -38,6 +38,12 @@ def join2str(l, sep, quotes=False, force=False):
     return sep.join(joined)
 
 
+# staircase entities are named like s1.1, s1.2, s2.1, s2.2 in order to produce navmesh on subsequent floors
+# CFAST, however, treats each staircas as one compartment called s1, s2 and so on without irrelevant floor info
+def cfast_name(aamks_geom_name):
+    return aamks_geom_name.split('.')[0]
+
+
 # TODO properly logging VVENTS and MVENTS into psql; DOORS BROKEN AFTER FIRE; HCN, HCL DISTRIBUTION, Fire development intervals
 class CfastMcarlo():
     MATL = {'concrete': {'CONDUCTIVITY': 1.75, 'SPECIFIC_HEAT': 1., 'DENSITY': 2200., 'EMISSIVITY': 0.94, 'THICKNESS': 0.15},
@@ -204,7 +210,7 @@ class CfastMcarlo():
             collect=[]
             collect.append("&VENT TYPE = 'WALL'")
             collect.append("ID = '{}'".format(v['name']))
-            collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))
+            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
             collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))
             collect.append("TOP = {}".format(round((v['sill']+v['height'])/100.0, 2)))
             collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))
@@ -227,11 +233,9 @@ class CfastMcarlo():
             if how_much_open == 0:
                 continue
             collect=[]
-            vent_from_name = v['vent_from_name'].split(".")[0]
-            vent_to_name = v['vent_to_name'].split(".")[0]
             collect.append("&VENT TYPE = 'WALL'")                                             # TYPE
             collect.append("ID = '{}'".format(v['name']))                                    # VENT ID
-            collect.append("COMP_IDS = '{}', '{}'".format(vent_from_name, vent_to_name))     # FROM_TO
+            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(vent_from_name), cfast_name(vent_to_name)))     # FROM_TO
             collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))            # WIDTH
             collect.append("TOP = {}".format(round((v['sill']+v['height'])/100.0, 2)))       # TOP (height of the top of the hvent relative to the floor)
             collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))                  # BOTTOM
@@ -250,11 +254,9 @@ class CfastMcarlo():
         for i, v in enumerate(self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to")):
             how_much_open = self.samples['vvents'][i][0]           # end state with probability of working
             collect=[]
-            vent_from_name = v['vent_from_name'].split(".")[0]
-            vent_to_name = v['vent_to_name'].split(".")[0]
             collect.append("&VENT TYPE = 'CEILING'")                                                  # VENT TYPE
             collect.append("ID = '{}'".format(v['name']))                                             # VENT ID
-            collect.append("COMP_IDS = '{}', '{}'".format(vent_from_name, vent_to_name))    # FROM_TO
+            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(vent_from_name), cfast_name(vent_to_name)))    # FROM_TO
             collect.append("AREA = {}".format(round((v['width']*v['depth'])/1e4, 2)))               # AREA OF THE VENT,
             collect.append("SHAPE = 'SQUARE'")
             collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))           # COMPARTMENT1_OFFSET
@@ -268,9 +270,9 @@ class CfastMcarlo():
         txt=['!! SECTION MECHANICAL VENT']
         for v in self.s.query( "SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
             if v['mvent_throughput'] < 0:
-                comp_ids = [v['vent_from_name'], 'OUTSIDE']
+                comp_ids = [cfast_name(v['vent_from_name']), 'OUTSIDE']
             else:
-                comp_ids = ['OUTSIDE', v['vent_from_name']]
+                comp_ids = ['OUTSIDE', cfast_name(v['vent_from_name'])]
             if v['is_vertical'] is True:
                 orientation = 'VERTICAL'
             else:
