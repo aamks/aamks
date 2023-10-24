@@ -44,7 +44,8 @@ class Worker:
             AA['PROJECT'] = AA['PROJECT'].replace("home","mnt")
             os.environ['AAMKS_PROJECT'] = AA['PROJECT']
             os.environ['AAMKS_PATH'] = AA['PATH']
-
+            os.environ['AAMKS_SERVER'] = AA['SERVER']
+            os.environ['AAMKS_PG_PASS'] = AA['PG_PASS']
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 

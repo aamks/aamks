@@ -40,7 +40,9 @@ class AARedis:
             "ts": datetime.utcnow().isoformat(),
             "AA": { 
                 "PROJECT": os.environ["AAMKS_PROJECT"],
-                "PATH": os.environ["AAMKS_PATH"]
+                "PATH": os.environ["AAMKS_PATH"],
+                "SERVER": os.environ['AAMKS_SERVER'],
+                "PG_PASS": os.environ['AAMKS_PG_PASS']
                 },
             "data": {
                 "sim": worker_pwd,
