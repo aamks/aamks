@@ -235,7 +235,7 @@ class CfastMcarlo():
             collect=[]
             collect.append("&VENT TYPE = 'WALL'")                                             # TYPE
             collect.append("ID = '{}'".format(v['name']))                                    # VENT ID
-            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(vent_from_name), cfast_name(vent_to_name)))     # FROM_TO
+            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
             collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))            # WIDTH
             collect.append("TOP = {}".format(round((v['sill']+v['height'])/100.0, 2)))       # TOP (height of the top of the hvent relative to the floor)
             collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))                  # BOTTOM
@@ -256,7 +256,7 @@ class CfastMcarlo():
             collect=[]
             collect.append("&VENT TYPE = 'CEILING'")                                                  # VENT TYPE
             collect.append("ID = '{}'".format(v['name']))                                             # VENT ID
-            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(vent_from_name), cfast_name(vent_to_name)))    # FROM_TO
+            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
             collect.append("AREA = {}".format(round((v['width']*v['depth'])/1e4, 2)))               # AREA OF THE VENT,
             collect.append("SHAPE = 'SQUARE'")
             collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))           # COMPARTMENT1_OFFSET
