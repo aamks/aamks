@@ -36,8 +36,48 @@ function site() {/*{{{*/
 	</right-menu-box>
 
 	<canvas-mouse-coords></canvas-mouse-coords>
-	<canvas id='animator-canvas' resize hidpi='off' />
-	";
+	<div class='grid' style='position: relative; display:grid; top: 30px; grid-template-columns: 3fr 1fr;'>
+	<div>
+		<canvas id='animator-canvas' resize hidpi='off'></canvas>
+	</div>
+	<div id='anim-info' style='width: 400px'>
+	<form method='POST' action=''>
+		<input type='submit' style='font-size:10pt; font-weight: bold' name='btn-beck' value='Create charts for this simulation'>
+	</form>
+	<div style='display:flex; justify-content: space-between;'>
+	<label>Room:</label><select id='selRooms'></select>
+	<label>Param:</label><select id='selParams'>
+	<option selected='selected'>Select room first</option>
+	</select>
+	</div>
+	<img id='image' src='' alt='An image will load here' width='400' height='400'>";
+	$id = $_GET['id'];
+	$project = $_SESSION['main']['project_id'];
+	$scenario = $_SESSION['main']['scenario_id'];
+	$data = $_SESSION['nn']->query("SELECT * from simulations where project='$project' and scenario_id='$scenario' and id='$id';");
+	$results = json_decode($data[0]['results'], true);
+	$wcbe = json_decode($data[0]['wcbe'], true);
+	echo "<div><table style='width:400px'><thead><tr>
+	  <th>RSET</th>
+	  <th>ASET</th>
+	  <th>individual</th>
+	</tr>
+    </thead>
+    <tbody>
+	<tr>
+	<td>" . number_format($wcbe['0'], 0, ".", "") . " </td>
+	<td>" . number_format($data[0]['dcbe_time'], 0, ".", "") . " </td>
+	<td>" . number_format($results['individual'], 4, ".", "") . " </td>
+	</tr></tbody></table>
+	<table style='width:400px;'><thead><tr>
+	<th>WRI</th>
+	<th>AWR</th>
+	<th>SRI</th></tr>
+	<tr>
+	<td>" . number_format($results['wri'], 4, ".", "") . "</td>
+	<td>" . number_format($results['awr'], 4, ".", "") . "</td>
+	<td>" . number_format($results['sri'], 4, ".", "") . "</td>
+	</tr></tbody></table></div></div></div>";
 }
 /*}}}*/
 function refresh(){
@@ -52,11 +92,25 @@ function refresh(){
 	$anim_json = rtrim($anim_json, ",") . "]";
 	$anims_file = $_SESSION['main']['working_home']."/workers/anims.json";
 	$z=file_put_contents($anims_file, $anim_json);
+	$anim_params =  $_SESSION['nn']->query("SELECT anim_params FROM simulations WHERE project='$project' AND scenario_id='$scenario' AND id='$id';");
+	echo "<div id='anim_params' style='display: none;'>" .json_encode($anim_params) . "</div>";
+}
+function make_anim_pictures(){
+	$id = $_GET['id'];
+	$project = $_SESSION['main']['project_id'];
+	$scenario = $_SESSION['main']['scenario_id'];
+	$f=$_SESSION['main']['working_home'];
+	$aamks=getenv("AAMKS_PATH");
+    $cmd="cd $aamks/results; python3 beck_anim.py $f $project $scenario $id 2>&1";
+	$z=shell_exec("$cmd");
 }
 function main() {/*{{{*/
 	$_SESSION['nn']->htmlHead("Animator");
 	site();
 	refresh();
+	if (isset($_POST['btn-beck'])) {
+		make_anim_pictures();
+    }
 }
 /*}}}*/
 

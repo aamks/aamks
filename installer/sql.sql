@@ -77,6 +77,7 @@ CREATE TABLE simulations ( ---{{{
     tot_heat decimal,
 	status int,
 	animation text,
+    anim_params text,
 	modified timestamp without time zone not null default now(),
     results text
 );
