@@ -102,7 +102,10 @@ function make_anim_pictures(){
 	$f=$_SESSION['main']['working_home'];
 	$aamks=getenv("AAMKS_PATH");
     $cmd="cd $aamks/results; python3 beck_anim.py $f $project $scenario $id 2>&1";
-	$z=shell_exec("$cmd");
+	$data = $_SESSION['nn']->query("SELECT anim_params from simulations where project = '$project' and scenario_id = '$scenario' and id = '$id';");
+	if (empty($data[0]['anim_params'])){
+		$z=shell_exec("$cmd");
+	};
 }
 function main() {/*{{{*/
 	$_SESSION['nn']->htmlHead("Animator");
