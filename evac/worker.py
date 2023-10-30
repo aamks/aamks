@@ -598,7 +598,7 @@ class LocalResultsCollector:
             self.meta['sim_id'] = url_s[-1]
             self.meta['project_id'] = self.p.query(f"SELECT id FROM projects WHERE project_name='{url_s[-4]}'")[0][0]
             self.meta['scenario_id'] = self.p.query(f"SELECT id FROM scenarios WHERE project_id={self.meta['project_id']} AND scenario_name='{url_s[-3]}'")[0][0]
-        self.p.query(f"""UPDATE simulations SET status = {self.meta['psql']['status']}, host = '{self.meta['worker']}'
+        self.p.query(f"""UPDATE simulations SET status = '{self.meta['psql']['status']}', host = '{self.meta['worker']}'
                 WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
 
 w = Worker()

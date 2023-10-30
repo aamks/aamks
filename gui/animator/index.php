@@ -5,7 +5,7 @@ require_once("../inc.php");
 function main() {
 	$_SESSION['nn']->htmlHead("Animator");
 
-	$data = $_SESSION['nn']->query("SELECT * from simulations where project = ".$_SESSION['main']['project_id']." and scenario_id = ".$_SESSION['main']['scenario_id']." and status = 0 and status is not null;");
+	$data = $_SESSION['nn']->query("SELECT * from simulations where project = ".$_SESSION['main']['project_id']." and scenario_id = ".$_SESSION['main']['scenario_id']." and status = '0' and status is not null;");
 	echo '
 	<section class="container" style="margin-left:150px;">
   <h2 class="title">Search Table Record for '.$_SESSION['main']['project_name'].' / '.$_SESSION['main']['scenario_name'].'</h2>
