@@ -11,7 +11,7 @@ class RedisManager:
         self.worker_path = os.path.join(self.redis_pwd, "worker", "worker.py")
         self.container_name = "aamks_redis"
         self.net_conf = "/etc/aamksconf.json" 
-        self.data_array = []
+        self.host_array = []
         self.ip_array = []
         
         
@@ -24,9 +24,9 @@ class RedisManager:
                     if count > 0 and network_name in data["AAMKS_NETCONF"]["networks"]:
                         network_data = data["AAMKS_NETCONF"]["networks"][network_name]
                         ip_array = [item[1] for item in network_data if len(item) > 1]
-                        self.data_array.append((network_name, count, ip_array))
+                        self.host_array.append((network_name, count, ip_array))
 
-        for data in self.data_array:
+        for data in self.host_array:
             for ip in data[2]:
                 self.ip_array.append(ip)
 
@@ -54,21 +54,26 @@ class RedisManager:
                 os.system("docker-compose up -d")
             except:
                 print("Error during starting docker redis container")
-
-
-    def start_workers_on_node(self, workers:int):
-        for ip in self.ip_array:
-            for _ in range(workers):
-                cmd = f'ssh {ip} python3 {self.worker_path}'
-                Popen(cmd, shell=True)
+   
+    def start_workers_on_node(self):
+        for host in self.host_array:
+            for ip in host[2]:
+                for num in range(host[1]):
+                    cmd = f'ssh {ip} python3 {self.worker_path}'
+                    Popen(cmd, shell=True)
 
     def kill_workers(self):
         for ip in self.ip_array:
-            cmd = f'pkill -f "{self.worker_path}"'
+            cmd = f'pkill -f python3 "{self.worker_path}"'
             Popen(cmd, shell=True)
-
 
     def main(self):
         self.get_hosts()
         self.run_redis_server()
-        self.start_workers_on_node(2)
+        self.start_workers_on_node()
+
+
+if __name__ == "__main__":
+    r= RedisManager()
+    r.get_hosts()
+    r.start()
