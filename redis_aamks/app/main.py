@@ -6,11 +6,8 @@ import os
 from datetime import datetime
 from json import dumps
 from uuid import uuid4
-
 import redis
 from . import config
-
-
 
 class AARedis:
     def redis_db(self):
@@ -21,16 +18,12 @@ class AARedis:
             password=config.redis_password,
             decode_responses=True,
         )
-
-    # make sure redis is up and running
         db.ping()
         return db
-
 
     def redis_queue_push(self, db, message):
         # push to tail of the queue (left of the list)
         db.lpush(config.redis_queue_name, message)
-
 
     def main(self, worker_pwd):
         # connect to Redis

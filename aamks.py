@@ -13,8 +13,11 @@ from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SimIterations
 from include import Json
-
+from redis_aamks.manager import RedisManager
 import logging
+
+r=RedisManager()
+r.main()
 logger = logging.getLogger('AAMKS')
 logger.setLevel(logging.DEBUG)
 # create file handler which logs even debug messages
