@@ -29,6 +29,15 @@ function projects_list(){/*{{{*/
 		<input autocomplete=off type=submit name=submit value='add'>
 	</form>
 	";
+
+	echo "<br>
+	<div>Copy current scenario as:
+	<form method=POST>
+		<input autocomplete=off type=text placeholder='new scenario name' name=copy_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
+		<input autocomplete=off type=submit name=submit value='copy'>
+	</form></div>
+	";
+
 	exit();
 }/*}}}*/
 function delete_project() {/*{{{*/
@@ -55,9 +64,8 @@ function ch_scenario($scenario, $header=NULL){/*{{{*/
 function new_scenario() { # {{{
 	#psql aamks -c 'select  * from scenarios'
 	if(empty($_POST['new_scenario'])) { return; }
-	
+
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_POST['project_id'])), 'scenario_name');
-	dd($scenarios);
 	if(in_array($_POST['new_scenario'], $scenarios, true)){
 		$_SESSION['header_err'][]="Scenario '$_POST[new_scenario]' already exists";
 	} else {
@@ -68,6 +76,33 @@ function new_scenario() { # {{{
 			$sid=$_SESSION['nn']->query("INSERT INTO scenarios(project_id,scenario_name) VALUES($1, $2) RETURNING id", array($_POST['project_id'], $_POST['new_scenario'])); 
 			ch_scenario($sid[0]['id']);
 			$_SESSION['nn']->scenario_from_template("apainter/index.php");
+		}
+	}
+}
+
+function copy_scenario() { # {{{
+	#psql aamks -c 'select  * from scenarios'
+	if(empty($_POST['copy_scenario'])) { return; }
+
+	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_SESSION['main']['project_id'])), 'scenario_name');
+	if(in_array($_POST['copy_scenario'], $scenarios, true)){
+		$_SESSION['header_err'][]="Scenario '$_POST[copy_scenario]' already exists";
+	} else {
+		$new_scenario_directory = implode("/", array($_SESSION['main']['user_home'],$_SESSION['main']['project_name'],$_POST['copy_scenario']));
+		if (!mkdir($new_scenario_directory, 0777, true)) {
+			$_SESSION['header_err'][]="Cannot create $_POST[project_name]/$_POST[copy_scenario]";
+			header("Location: projects.php?projects_list");
+		} else {
+			$sid=$_SESSION['nn']->query("INSERT INTO scenarios(project_id,scenario_name) VALUES($1, $2) RETURNING id", array($_SESSION['main']['project_id'], $_POST['copy_scenario']));
+			$existing_scenario_directory = implode("/", array($_SESSION['main']['user_home'],$_SESSION['main']['project_name'],$_SESSION['main']['scenario_name']));
+			$files_to_copy = array("cad.json", "conf.json");
+			foreach($files_to_copy as $filename) {
+				$from = implode("/", array($existing_scenario_directory, $filename));
+				$to = implode("/", array($new_scenario_directory, $filename));
+				if (file_exists($from))
+					copy($from, $to);
+			}
+			ch_scenario($sid[0]['id']);
 		}
 	}
 }
@@ -97,6 +132,7 @@ function main() { #{{{
 	$_SESSION['nn']->htmlHead("Manage projects");
 	new_scenario();
 	new_project();
+	copy_scenario();
 	delete_project();
 	if(isset($_GET['ch_scenario'])) { ch_scenario($_GET['ch_scenario'], "form.php?edit"); }
 	$_SESSION['nn']->menu('Manage projects');
