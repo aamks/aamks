@@ -73,3 +73,6 @@ logger.info('calling OnEnd()')
 OnEnd()
 logger.info('finished OnEnd()')
 logger.info('AAMKS application finished successfully')
+
+#Redis stop and close workers on nodes
+r.kill_workers()

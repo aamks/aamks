@@ -9,16 +9,10 @@ class RedisManager:
     def __init__(self):
         self.redis_pwd = os.path.join(os.environ['AAMKS_PATH'], "redis_aamks")
         self.worker_path = os.path.join(self.redis_pwd, "worker", "worker.py")
-        self.data_array = []
-        self.ip_array = []
-        self.hosts =[
-            # {"hostname": "192.168.0.184", "username": "aamks"},
-            {"hostname": "127.0.0.13", "username": "zarooba"},
-
-            # {"hostname": "192.168.0.183", "username": "aamks"}
-        ]
         self.container_name = "aamks_redis"
         self.net_conf = "/etc/aamksconf.json" 
+        self.data_array = []
+        self.ip_array = []
         
         
     def get_hosts(self):
@@ -65,8 +59,13 @@ class RedisManager:
     def start_workers_on_node(self, workers:int):
         for ip in self.ip_array:
             for _ in range(workers):
-                cmd = f'ssh {ip} {self.worker_path}'
+                cmd = f'ssh {ip} python3 {self.worker_path}'
                 Popen(cmd, shell=True)
+
+    def kill_workers(self):
+        for ip in self.ip_array:
+            cmd = f'pkill -f "{self.worker_path}"'
+            Popen(cmd, shell=True)
 
 
     def main(self):
