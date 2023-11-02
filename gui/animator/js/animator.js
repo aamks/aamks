@@ -77,7 +77,7 @@ function loadImage(file){
 		newImg.onload = function() {
 			_img.src = this.src;
 		}
-		newImg.src = response+file;
+		newImg.src = response.slice(5)+file;
 	})
 }
 function initLayers() {//{{{

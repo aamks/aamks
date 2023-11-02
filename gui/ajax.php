@@ -58,8 +58,8 @@ function ajaxUserPreferences() { #{{{
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=>json_decode($r[0]['preferences'],1)));
 }
 function ajaxUserInfo() { #{{{
-	$r=substr_replace($_SESSION['main']['working_home']."/picts/", $_SERVER['SERVER_ADDR'], 0, 5);
-	echo json_encode("http://".$r);
+	$r=$_SESSION['main']['working_home']."/picts/";
+	echo json_encode($_SESSION['main']['working_home']."/picts/");
 }
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{
