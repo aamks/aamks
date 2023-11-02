@@ -36,6 +36,10 @@ function prefs_form() { # {{{
 /*}}}*/
 
 function main() {/*{{{*/
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->htmlHead("Aamks setup");
 	$_SESSION['nn']->menu('Aamks setup');
 	update_prefs();

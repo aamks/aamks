@@ -65,10 +65,16 @@ function login_form(){/*{{{*/
 	if(isset($_SESSION['main']['user_id'])) { return; }
  // echo "<center><br><br><img src=logo_m.svg><br><br><br>We are changing for you!<br><i><a href='mailto:projectaamks@gmail.com'>Let us know </a> if you want to recieve a notification when service is up again</i></center>";
  // exit();
+	$inf = "";
+	if(isset($_GET['session_finished_information'])) {
+		$inf = '<div style="width:30%; background-color: #fce4e4;border: 1px solid #fcc2c3; padding: 20px 30px;"><span style ="color: #cc0033;font-family: Helvetica, Arial, sans-serif;font-size: 13px;font-weight: bold;line-height: 20px; text-shadow: 1px 1px rgba(250,250,250,.3);">session has ended, please log in again</span></div><br>';
+	 	unset($_GET['session_finished_information']);
+	}
     echo "
     <br><br>
     <form method=POST>
     <center>
+   $inf
 	<img src=logo.svg>
 	<br><br>
 	<div style='border: 1px solid #555; padding: 10px; width: 360px'>

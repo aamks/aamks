@@ -3,6 +3,10 @@ session_name('aamks');
 require_once("../inc.php"); 
 
 function main() {
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: ../login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->htmlHead("Animator");
 
 	$data = $_SESSION['nn']->query("SELECT * from simulations where project = ".$_SESSION['main']['project_id']." and scenario_id = ".$_SESSION['main']['scenario_id'].";");
