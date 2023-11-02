@@ -20,6 +20,9 @@ def draw(x, y, label_x, title, name):
 class Beck_Anim:
     def __init__(self, path, project, scenario, iter):
         self.path = path
+        picts_dir = os.path.join(path, 'picts')
+        if not os.path.exists(picts_dir):
+            os.makedirs(picts_dir)
         self.iter = int(iter)
         self.project = int(project)
         self.scenario = int(scenario)
