@@ -31,7 +31,55 @@ window.onload = function() {
 	resizeAndRedrawCanvas();
 	right_menu_box();
 	listenEvents();
+	createSelect();
 
+function createSelect(){
+	var anim_params = document.getElementById("anim_params").textContent;
+	anim_params = JSON.parse(anim_params)[0]['anim_params'];
+	anim_params = JSON.parse(anim_params)
+	var rooms = ['Select room'];
+	for(var r in anim_params){
+		rooms.push(r);
+	}
+	var selectRooms = document.getElementById('selRooms');
+	for (var i = 0; i < rooms.length; i++) {
+		var option = document.createElement("option");
+		option.value = rooms[i];
+		option.text = rooms[i];
+		selectRooms.appendChild(option);
+	}
+	var selectParams = document.getElementById('selParams');
+	var room = "";
+	selectRooms.addEventListener("change", (event) => {
+		room = event.target.value;
+		selectParams.innerHTML = '';
+		var params = [];
+		params.push(anim_params[room]);
+		var option = document.createElement("option");
+			option.value = "";
+			option.text = "Select param";
+			selectParams.appendChild(option);
+		for (var i = 0; i < params[0].length; i++) {
+			var option = document.createElement("option");
+			option.value = params[0][i];
+			option.text = params[0][i];
+			selectParams.appendChild(option);
+		}
+	});
+	selectParams.addEventListener("change", (event) => {
+		loadImage(event.target.value+"_"+room+".png");
+	});
+}
+function loadImage(file){
+	$.get('/aamks/ajax.php?ajaxUserInfo', function (response) { 
+		var _img = document.getElementById('image');
+		var newImg = new Image;
+		newImg.onload = function() {
+			_img.src = this.src;
+		}
+		newImg.src = response.slice(5)+file;
+	})
+}
 function initLayers() {//{{{
 	new Layer({'name': 'rooms'});
 	new Layer({'name': 'roomSmoke'});
@@ -116,7 +164,13 @@ function right_menu_box() {//{{{
 	$("body").on("click", "close-right-menu-box", function() {
 		project.layers.highlight.removeChildren();
 	});
-
+    $("body").on("click", '#button-info', function() { 
+		if ($("#animator-canvas").width() >= $(window).width()-20){
+			$("#animator-canvas").width('73%');
+		} else {
+			$("#animator-canvas").width('100%'); 
+		}
+	});
 	$("body").on("click", '#button-setup', function() { $('right-menu-box').fadeIn(); });
 }
 //}}}

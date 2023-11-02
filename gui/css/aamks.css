@@ -364,3 +364,9 @@ letter { display: inline; padding: 0px 4px 1px 4px; background-color: #960; colo
 #left_column {
 	padding-right:15px;
 }
+
+.photo > img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}

@@ -77,6 +77,7 @@ function make_legend2(module) {//{{{
 	} 
 	if (module=='animator') {
 		$('legend2').append("<animator-floor-links style='padding-right: 10px'></animator-floor-links> ");
+		$('legend2').append("<button id=button-info>View sim information</button>");
 		$('legend2').append("<button id=button-setup>Setup</button>");
 	}
 
