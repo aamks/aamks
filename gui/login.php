@@ -67,7 +67,7 @@ function login_form(){/*{{{*/
  // exit();
 	$inf = "";
 	if(isset($_GET['session_finished_information'])) {
-		$inf = '<div style="width:30%; background-color: #fce4e4;border: 1px solid #fcc2c3; padding: 20px 30px;"><span style ="color: #cc0033;font-family: Helvetica, Arial, sans-serif;font-size: 13px;font-weight: bold;line-height: 20px; text-shadow: 1px 1px rgba(250,250,250,.3);">session has ended, please log in again</span></div><br>';
+		$inf = '<div style="width:30%; background-color: #fce4e4;border: 1px solid #fcc2c3; padding: 20px 30px;"><span style ="color: #cc0033;font-family: Helvetica, Arial, sans-serif;font-size: 13px;font-weight: bold;line-height: 20px; text-shadow: 1px 1px rgba(250,250,250,.3);">Session expired - please log in again.</span></div><br>';
 	 	unset($_GET['session_finished_information']);
 	}
     echo "
