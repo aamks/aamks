@@ -220,6 +220,10 @@ function check_conv_current() {/*{{{*/
 
 
 function main() {/*{{{*/
+    if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$_SESSION['nn']->htmlHead("Manage jobs");
 	$_SESSION['nn']->menu('Manage jobs');
 

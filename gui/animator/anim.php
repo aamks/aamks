@@ -109,6 +109,10 @@ function make_anim_pictures(){
 	};
 }
 function main() {/*{{{*/
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: ../login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->htmlHead("Animator");
 	site();
 	make_anim_pictures();
