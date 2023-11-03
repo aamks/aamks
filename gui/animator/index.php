@@ -56,8 +56,8 @@ function main() {
 		<td>" . number_format($sim['tot_heat'], 1, ".", "") . " </td>
 		<td>" . number_format($wcbe['0'], 0, ".", "") . " </td>
 		<td>" . number_format($sim['dcbe_time'], 0, ".", "") . " </td>
-		<td>{$results['individual']}</td>
-		<td>{$results['societal']}</td>
+		<td>" . sprintf("%.4e", $results['individual']) . "</td>
+		<td>" . sprintf("%.4e", $results['societal']) . "</td>
 		<td>{$modified}</td>
 		<td>{$link}</td>
 		</tr>

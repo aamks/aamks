@@ -48,7 +48,7 @@ function site() {/*{{{*/
 	<option selected='selected'>Select room first</option>
 	</select>
 	</div>
-	<div class='photo'>
+	<div class='photo' style='width: 100%;max-height: 100%;'>
 		<img id='image' src='' alt='An image will load here'>
 	</div>
 ";
@@ -58,7 +58,7 @@ function site() {/*{{{*/
 	$data = $_SESSION['nn']->query("SELECT * from simulations where project='$project' and scenario_id='$scenario' and id='$id';");
 	$results = json_decode($data[0]['results'], true);
 	$wcbe = json_decode($data[0]['wcbe'], true);
-	echo "<div><table><thead><tr>
+	echo "<div><table style='width: 100%;'><thead><tr>
 	  <th>RSET</th>
 	  <th>ASET</th>
 	  <th>individual</th>
@@ -68,16 +68,16 @@ function site() {/*{{{*/
 	<tr>
 	<td>" . number_format($wcbe['0'], 0, ".", "") . " </td>
 	<td>" . number_format($data[0]['dcbe_time'], 0, ".", "") . " </td>
-	<td>" . number_format($results['individual'], 4, ".", "") . " </td>
+	<td>" . sprintf("%.4e", $results['individual']) . "</td>
 	</tr></tbody></table>
-	<table><thead><tr>
+	<table style='width: 100%;'><thead><tr>
 	<th>WRI</th>
 	<th>AWR</th>
 	<th>SRI</th></tr>
 	<tr>
-	<td>" . number_format($results['societal'], 4, ".", "") . "</td>
-	<td>" . number_format($results['awr'], 4, ".", "") . "</td>
-	<td>" . number_format($results['sri'], 4, ".", "") . "</td>
+	<td>" . sprintf("%.4e", $results['societal']) . "</td>
+	<td>" . sprintf("%.4e", $results['sri']) . "</td>
+	<td>" . sprintf("%.4e", $results['awr']) . "</td>
 	</tr></tbody></table></div></div></div>";
 }
 /*}}}*/
