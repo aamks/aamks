@@ -4,6 +4,7 @@ require_once("inc.php");
 
 function projects_list(){/*{{{*/
 	# psql aamks -c 'SELECT * from projects'
+	$current_proj = $_SESSION['main']['project_name'];
 
 	$r=$_SESSION['nn']->query("SELECT id, project_name FROM projects WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id'] ));
 	echo '<table>';
@@ -11,7 +12,11 @@ function projects_list(){/*{{{*/
 	foreach($r as $projects){
 		$rr=$_SESSION['nn']->query("SELECT *, modified::date AS date FROM scenarios WHERE project_id=$1 ORDER BY id", array($projects['id']));
 		if(empty($rr[0]['date'])) { $date=''; } else { $date=$rr[0]['date']; }
-		echo "<tr><td>$projects[project_name]<td style='opacity:0.2'>$date<td>";
+		echo "<tr";
+		if($projects['project_name']==$current_proj) {
+			echo " bgcolor='#616'";
+		}
+		echo "><td>$projects[project_name]<td style='opacity:0.2'>$date<td>";
 		echo "<form method=post><input autocomplete=off type=hidden name=project_name value='$projects[project_name]'><input autocomplete=off type=hidden name=project_id value='$projects[id]'><input autocomplete=off size=12 type=text placeholder='new scenario' name=new_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'><input autocomplete=off type=submit value='add'></form><td>";
 		foreach($rr as $scenarios) { 
 			echo "<a class=blink href=?ch_scenario=$scenarios[id]>$scenarios[scenario_name]</a>"; 
@@ -23,6 +28,7 @@ function projects_list(){/*{{{*/
 	}
 	echo "</table>";
 
+	//new project
 	echo "<br><br><br>
 	<form method=POST>
 		<input autocomplete=off type=text placeholder='new project name' name=new_project required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
@@ -30,6 +36,16 @@ function projects_list(){/*{{{*/
 	</form>
 	";
 
+	//rename project
+	echo "<br>
+	<div>Rename current project (<i>$current_proj</i>) as:
+	<form method=POST>
+		<input autocomplete=off type=text placeholder='new project name' name=rename_project required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
+		<input autocomplete=off type=submit name=submit value='rename'>
+	</form></div>
+	";
+
+	//copy scenario
 	echo "<br>
 	<div>Copy current scenario as:
 	<form method=POST>
@@ -123,6 +139,27 @@ function new_project() { # {{{
 		header("Location: projects.php?projects_list");
 	}
 }
+
+function rename_project() { # {{{
+	#psql aamks -c 'select  * from projects'
+	if(empty($_POST['rename_project'])) { return; }
+
+	$projects=array_column($_SESSION['nn']->query("SELECT project_name FROM projects WHERE user_id=$1", array($_SESSION['main']['user_id'] )), 'project_name');
+	if(in_array($_POST['rename_project'], $projects, true)){
+		$_SESSION['header_err'][]="Project '$_POST[rename_project]' already exists";
+	} else {
+		$old_directory = implode("/", array($_SESSION['main']['user_home'],$_SESSION['main']['project_name']));
+		$new_directory = implode("/", array($_SESSION['main']['user_home'],$_POST['rename_project']));
+		if (!rename($old_directory, $new_directory)) {
+			$_SESSION['header_err'][]="Cannot rename folder to $_POST[rename_project]";
+		} else {
+			$_SESSION['nn']->query("UPDATE projects SET project_name=$1 WHERE id=$2", array($_POST['rename_project'], $_SESSION['main']['project_id']));
+			ch_scenario($_SESSION['main']['scenario_id']);
+		}
+		header("Location: projects.php?projects_list");
+	}
+}
+
 /*}}}*/
 function assert_session_complete() { #{{{
 }
@@ -132,6 +169,7 @@ function main() { #{{{
 	$_SESSION['nn']->htmlHead("Manage projects");
 	new_scenario();
 	new_project();
+	rename_project();
 	copy_scenario();
 	delete_project();
 	if(isset($_GET['ch_scenario'])) { ch_scenario($_GET['ch_scenario'], "form.php?edit"); }
