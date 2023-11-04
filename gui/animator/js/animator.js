@@ -71,13 +71,15 @@ function createSelect(){
 	});
 }
 function loadImage(file){
+	const urlParams = new URLSearchParams(window.location.search);
+	const iter = urlParams.get('iter');
 	$.get('/aamks/ajax.php?ajaxUserInfo', function (response) { 
 		var _img = document.getElementById('image');
 		var newImg = new Image;
 		newImg.onload = function() {
 			_img.src = this.src;
 		}
-		newImg.src = response.slice(5)+file;
+		newImg.src = response.slice(5)+iter+"_"+file;
 	})
 }
 function initLayers() {//{{{

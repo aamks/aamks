@@ -48,17 +48,17 @@ function site() {/*{{{*/
 	<option selected='selected'>Select room first</option>
 	</select>
 	</div>
-	<div class='photo'>
+	<div class='photo' style='width: 100%;max-height: 100%;'>
 		<img id='image' src='' alt='An image will load here'>
 	</div>
 ";
-	$id = $_GET['id'];
+	$iter = $_GET['iter'];
 	$project = $_SESSION['main']['project_id'];
 	$scenario = $_SESSION['main']['scenario_id'];
-	$data = $_SESSION['nn']->query("SELECT * from simulations where project='$project' and scenario_id='$scenario' and id='$id';");
+	$data = $_SESSION['nn']->query("SELECT * from simulations where project='$project' and scenario_id='$scenario' and iteration='$iter';");
 	$results = json_decode($data[0]['results'], true);
 	$wcbe = json_decode($data[0]['wcbe'], true);
-	echo "<div><table><thead><tr>
+	echo "<div><table style='width: 100%;'><thead><tr>
 	  <th>RSET</th>
 	  <th>ASET</th>
 	  <th>individual</th>
@@ -68,24 +68,24 @@ function site() {/*{{{*/
 	<tr>
 	<td>" . number_format($wcbe['0'], 0, ".", "") . " </td>
 	<td>" . number_format($data[0]['dcbe_time'], 0, ".", "") . " </td>
-	<td>" . number_format($results['individual'], 4, ".", "") . " </td>
+	<td>" . sprintf("%.4e", $results['individual']) . "</td>
 	</tr></tbody></table>
-	<table><thead><tr>
+	<table style='width: 100%;'><thead><tr>
 	<th>WRI</th>
 	<th>AWR</th>
 	<th>SRI</th></tr>
 	<tr>
-	<td>" . number_format($results['societal'], 4, ".", "") . "</td>
-	<td>" . number_format($results['awr'], 4, ".", "") . "</td>
-	<td>" . number_format($results['sri'], 4, ".", "") . "</td>
+	<td>" . sprintf("%.4e", $results['societal']) . "</td>
+	<td>" . sprintf("%.4e", $results['sri']) . "</td>
+	<td>" . sprintf("%.4e", $results['awr']) . "</td>
 	</tr></tbody></table></div></div></div>";
 }
 /*}}}*/
 function refresh(){
-	$id = $_GET['id'];
+	$iter = $_GET['iter'];
 	$project = $_SESSION['main']['project_id'];
 	$scenario = $_SESSION['main']['scenario_id'];
-	$anims =  $_SESSION['nn']->query("SELECT animation FROM simulations WHERE project='$project' AND scenario_id='$scenario' AND id='$id';");
+	$anims =  $_SESSION['nn']->query("SELECT animation FROM simulations WHERE project='$project' AND scenario_id='$scenario' AND iteration='$iter';");
 	$anim_json = "[";
 	foreach ($anims as &$value){
 		$anim_json = $anim_json . $value['animation'] . ",";
@@ -93,17 +93,17 @@ function refresh(){
 	$anim_json = rtrim($anim_json, ",") . "]";
 	$anims_file = $_SESSION['main']['working_home']."/workers/anims.json";
 	$z=file_put_contents($anims_file, $anim_json);
-	$anim_params =  $_SESSION['nn']->query("SELECT anim_params FROM simulations WHERE project='$project' AND scenario_id='$scenario' AND id='$id';");
+	$anim_params =  $_SESSION['nn']->query("SELECT anim_params FROM simulations WHERE project='$project' AND scenario_id='$scenario' AND iteration='$iter';");
 	echo "<div id='anim_params' style='display: none;'>" .json_encode($anim_params) . "</div>";
 }
 function make_anim_pictures(){
-	$id = $_GET['id'];
+	$iter = $_GET['iter'];
 	$project = $_SESSION['main']['project_id'];
 	$scenario = $_SESSION['main']['scenario_id'];
 	$f=$_SESSION['main']['working_home'];
 	$aamks=getenv("AAMKS_PATH");
-	$data = $_SESSION['nn']->query("SELECT anim_params, iteration from simulations where project = '$project' and scenario_id = '$scenario' and id = '$id';");
-	    $cmd="cd $aamks/results; python3 beck_anim.py $f $project $scenario ".$data[0]['iteration']." 2>&1";
+	$data = $_SESSION['nn']->query("SELECT anim_params, iteration from simulations where project = '$project' and scenario_id = '$scenario' and iteration = '$iter';");
+	    $cmd="cd $aamks/results; python3 beck_anim.py $f $project $scenario $iter 2>&1";
 	if (empty($data[0]['anim_params'])){
 		$z=shell_exec("$cmd");
 	};

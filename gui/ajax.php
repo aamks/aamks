@@ -59,7 +59,7 @@ function ajaxUserPreferences() { #{{{
 }
 function ajaxUserInfo() { #{{{
 	$r=$_SESSION['main']['working_home']."/picts/";
-	echo json_encode($_SESSION['main']['working_home']."/picts/");
+	echo json_encode($_SESSION['main']['working_home']."/picts/", 1);
 }
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{

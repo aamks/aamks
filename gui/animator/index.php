@@ -41,7 +41,7 @@ function main() {
 	foreach ($data as $key=>&$sim) {
 		$results = json_decode($sim['results'], true);
 		$wcbe = json_decode($sim['wcbe'], true);
-		$link = "<a href='anim.php?id=" . $sim['id'] . "'>Go to anim</a>";
+		$link = "<a href='anim.php?iter=" . $sim['iteration'] . "'>Go to anim</a>";
 		$modified = substr($sim['modified'], 0, 19);
 		echo "<tr>
 		<td>{$sim['iteration']}</td>
@@ -56,8 +56,8 @@ function main() {
 		<td>" . number_format($sim['tot_heat'], 1, ".", "") . " </td>
 		<td>" . number_format($wcbe['0'], 0, ".", "") . " </td>
 		<td>" . number_format($sim['dcbe_time'], 0, ".", "") . " </td>
-		<td>{$results['individual']}</td>
-		<td>{$results['societal']}</td>
+		<td>" . sprintf("%.4e", $results['individual']) . "</td>
+		<td>" . sprintf("%.4e", $results['societal']) . "</td>
 		<td>{$modified}</td>
 		<td>{$link}</td>
 		</tr>
