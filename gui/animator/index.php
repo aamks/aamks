@@ -41,7 +41,7 @@ function main() {
 	foreach ($data as $key=>&$sim) {
 		$results = json_decode($sim['results'], true);
 		$wcbe = json_decode($sim['wcbe'], true);
-		$link = "<a href='anim.php?id=" . $sim['id'] . "'>Go to anim</a>";
+		$link = "<a href='anim.php?iter=" . $sim['iteration'] . "'>Go to anim</a>";
 		$modified = substr($sim['modified'], 0, 19);
 		echo "<tr>
 		<td>{$sim['iteration']}</td>
