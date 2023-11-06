@@ -118,6 +118,7 @@ function stop($r) {
 	foreach ($r as $element) {
         echo "<tr><td>".$element['iteration']."</td>";
         if ($element['status']==''){
+            #redis delete from DB
             $cmd = "gearadmin --cancel-job=".$element['job_id'];
             $z=shell_exec("$cmd");
             echo "<td align='center'>$z</td><td></td>";

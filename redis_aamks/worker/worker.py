@@ -38,7 +38,7 @@ class RedisWorker:
         # Try counter
         retry_count = 0
         max_retries = 3
-        
+        # ustawienie 
         while retry_count < max_retries:
             try:
                 ew = EvacWorker.Worker(redis_worker_pwd=sim_value, AA=message['AA'])

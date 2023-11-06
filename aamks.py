@@ -16,8 +16,7 @@ from include import Json
 from redis_aamks.manager import RedisManager
 import logging
 
-r=RedisManager()
-r.main()
+
 logger = logging.getLogger('AAMKS')
 logger.setLevel(logging.DEBUG)
 # create file handler which logs even debug messages
