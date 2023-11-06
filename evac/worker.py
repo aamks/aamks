@@ -19,6 +19,7 @@ from fire.partition_query import PartitionQuery
 from include import Sqlite
 import time
 import logging
+import math
 from logging.handlers import TimedRotatingFileHandler
 from urllib.request import urlopen, urlretrieve
 import ssl
@@ -60,6 +61,7 @@ class Worker:
         self.time_shift = None
         self.animation_data = []
         self.smoke_opacity = []
+        self.fire_size = []
         self.rooms_in_smoke = dict()
         self.position_fed_tables_information = []
         self.rows_to_insert = []
@@ -162,9 +164,24 @@ class Worker:
 
             self.vars['conf']['agents_destination'].append({'name':teleport['name'], 'floor':teleport['floor'], 'center_x':center_x, 'center_y':center_y, 'type':'teleport', 'direction_x':direction_x, 'direction_y':direction_y})
 
-
+        self.vars['conf']['fire_size_dict'] = self.get_fire_size_dict()
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
+        for fire_location_floor in self.obstacles['fire'].keys():
+            self.vars['conf']['fire_location_floor'] = fire_location_floor
         self.wlogger.info('SQLite load successfully')
+
+    def get_fire_size_dict(self):
+        keys = []
+        values = []
+        fire_size_dict = {}
+        with open(self.working_dir+"/fire_size.txt") as f:
+            for line in f:
+                keys = json.loads(line)
+                nextline = next(f)
+                values = json.loads(nextline)
+
+        fire_size_dict = {keys[i]: math.sqrt(values[i]/math.pi) for i in range(len(keys))}
+        return fire_size_dict
 
     def _get_detection_time(self):
         heat = any(self.project_conf['smoke_detectors'].values())
@@ -245,6 +262,14 @@ class Worker:
                 y_max = max(i[1] for i in obst)
                 obstacles.append([(x_min,y_min),(x_max,y_min),(x_max,y_max),(x_min,y_max),(x_min,y_min),(x_max,y_min)])
 
+            if str(floor) in self.obstacles['fire']:
+                fire_obst = self.obstacles['fire'][str(floor)]
+                x_min = min(i[0] for i in fire_obst)
+                x_max = max(i[0] for i in fire_obst)
+                y_min = min(i[1] for i in fire_obst)
+                y_max = max(i[1] for i in fire_obst)
+                obstacles.append([(x_min,y_min),(x_max,y_min),(x_max,y_max),(x_min,y_max),(x_min,y_min),(x_max,y_min)])
+            
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
             eenv.generate_nav_mesh()
@@ -333,9 +358,12 @@ class Worker:
                         if (step_no % i.config['VISUALIZATION_RESOLUTION']) == 0:
                             time_row.update({str(i.floor): i.get_data_for_visualization()})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})
+                            if str(i.floor) == self.vars['conf']['fire_location_floor']:
+                                fire_radius = i.update_fire_size(time_frame+10*(step_no*aevac_step/cfast_step))
                     if len(time_row) > 0:
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
+                        self.fire_size.append(fire_radius)
 
                 # determine RSET and smoke on all floors
                 for i in self.floors:
@@ -488,7 +516,8 @@ class Worker:
                         'time_shift': self.time_shift,
                         'animations': {
                             'evacuees': self.animation_data,
-                            'rooms_opacity': smoke_data
+                            'rooms_opacity': smoke_data,
+                            'fire_size': self.fire_size
                         }
                         }
         zf = zipfile.ZipFile("{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)

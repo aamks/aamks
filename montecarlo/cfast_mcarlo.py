@@ -692,7 +692,10 @@ class DrawAndLog:
     def _draw_fire_table(self):# {{{
         # fire curve
         times, hrrs, areas, flash_time = self._draw_hrr_area_cont_func()
-
+        with open("{}/workers/{}/fire_size.txt".format(os.environ['AAMKS_PROJECT'],self._sim_id), "w") as output:
+            output.write(str(times))
+            output.write('\n')
+            output.write(str(areas))
         # gather parameters
         heights = [self._fire_height] * len(times)  #constant
         yields = self._draw_yields(times, flash_time)

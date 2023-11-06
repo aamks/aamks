@@ -8,6 +8,7 @@ var doorsSize;
 var evacueeRadius;
 var velocitiesSize;
 var eData=[];
+var fireSize=[];
 var roomsOpacity=[];
 var dstatic;
 var dstaticAllFloors;
@@ -21,6 +22,13 @@ var frame=0;
 var frame_to_skip = 9999999;
 var velocitiesGroup={};
 var evacueesGroup={};
+var fireFrameGroup={};
+var fireSurfaceGroup={};
+var fire_x;
+var fire_y;
+var fireMinSymbolicRadius = 4;
+
+
 var evacueesLabelsGroup={};
 
 paper.install(window);
@@ -31,64 +39,15 @@ window.onload = function() {
 	resizeAndRedrawCanvas();
 	right_menu_box();
 	listenEvents();
-	createSelect();
 
-function createSelect(){
-	var anim_params = document.getElementById("anim_params").textContent;
-	anim_params = JSON.parse(anim_params)[0]['anim_params'];
-	anim_params = JSON.parse(anim_params)
-	var rooms = ['Select room'];
-	for(var r in anim_params){
-		rooms.push(r);
-	}
-	var selectRooms = document.getElementById('selRooms');
-	for (var i = 0; i < rooms.length; i++) {
-		var option = document.createElement("option");
-		option.value = rooms[i];
-		option.text = rooms[i];
-		selectRooms.appendChild(option);
-	}
-	var selectParams = document.getElementById('selParams');
-	var room = "";
-	selectRooms.addEventListener("change", (event) => {
-		room = event.target.value;
-		selectParams.innerHTML = '';
-		var params = [];
-		params.push(anim_params[room]);
-		var option = document.createElement("option");
-			option.value = "";
-			option.text = "Select param";
-			selectParams.appendChild(option);
-		for (var i = 0; i < params[0].length; i++) {
-			var option = document.createElement("option");
-			option.value = params[0][i];
-			option.text = params[0][i];
-			selectParams.appendChild(option);
-		}
-	});
-	selectParams.addEventListener("change", (event) => {
-		loadImage(event.target.value+"_"+room+".png");
-	});
-}
-function loadImage(file){
-	const urlParams = new URLSearchParams(window.location.search);
-	const iter = urlParams.get('iter');
-	$.get('/aamks/ajax.php?ajaxUserInfo', function (response) { 
-		var _img = document.getElementById('image');
-		var newImg = new Image;
-		newImg.onload = function() {
-			_img.src = this.src;
-		}
-		newImg.src = response.slice(5)+iter+"_"+file;
-	})
-}
 function initLayers() {//{{{
 	new Layer({'name': 'rooms'});
 	new Layer({'name': 'roomSmoke'});
-	new Layer({'name': 'roomFire'});
 	new Layer({'name': 'highlight'});
 	new Layer({'name': 'animated'});
 	new Layer({'name': 'info'});
+	new Layer({'name': 'fireFrame'});
+	new Layer({'name': 'fireSurface'});
 }
 //}}}
 function listenForSpeedChange() {//{{{
@@ -166,13 +125,7 @@ function right_menu_box() {//{{{
 	$("body").on("click", "close-right-menu-box", function() {
 		project.layers.highlight.removeChildren();
 	});
-    $("body").on("click", '#button-info', function() { 
-		if ($("#animator-canvas").width() >= $(window).width()-20){
-			$("#animator-canvas").width('73%');
-		} else {
-			$("#animator-canvas").width('100%'); 
-		}
-	});
+
 	$("body").on("click", '#button-setup', function() { $('right-menu-box').fadeIn(); });
 }
 //}}}
@@ -335,8 +288,10 @@ function showAnimation() {//{{{
 		currentAnimData=JSON.parse(response['data']);
 		eData=currentAnimData.animations.evacuees;
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
+		fireSize=currentAnimData.animations.fire_size;
 		initRoomSmoke();
 		initAnimAgents();
+		letItBurn();
 		initSpeed();
 	});
 }
@@ -353,7 +308,6 @@ function resetCanvas() {//{{{
 	project.clear();
 	initLayers();
 	initStaticGeoms();
-	letItBurn();
 
 	if(currentAnimMeta["highlight_geom"]!=null) { highlightGeom(currentAnimMeta["highlight_geom"]); }
 	if(currentAnimMeta["anim"] != undefined)    { showAnimation(currentAnimMeta); }
@@ -428,33 +382,18 @@ function letItBurn() {//{{{
 	var tx=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.tx; 
 	var ty=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.ty;
 
-	project.layers.roomFire.importSVG("smoke.svg", function (item) {
-		item.position.x = currentAnimMeta['fire_origin']['x']+tx;
-		item.position.y = currentAnimMeta['fire_origin']['y']+ty-40;
-		smoke=item;
-		smoke.opacity=0.5;
-		smokeOrig=item.bounds;
-		// This way the z-order is preserved
-		project.layers.roomFire.importSVG("fire.svg", function (item) {
-			item.position.x = currentAnimMeta['fire_origin']['x']+tx;
-			item.position.y = currentAnimMeta['fire_origin']['y']+ty;
-			fire=item;
+	fire_x = currentAnimMeta['fire_origin']['x']+tx;
+	fire_y = currentAnimMeta['fire_origin']['y']+ty;
 
-		});
-	});
+	project.layers.fireFrame.activate();
 
-	var intervalId;
-	clearInterval(intervalId);
-	intervalId=setInterval(function(){ 
-		smoke.opacity-=0.008;
-		if (smoke.opacity<=0.15) { 
-			smoke.opacity=0.5; 
-			smoke.setBounds(smokeOrig);
-		}
-		smoke.setPosition(smoke.getPosition().x, smoke.getPosition().y-2);
-		smoke.scale(1.02);
-		
-	},500);
+	fireFrameGroup = new Group();
+	fireSurfaceGroup = new Group();
+	var fireFrameRadius = Math.ceil(fireSize[0]*100) == 0? fireMinSymbolicRadius : Math.ceil(Math.max(...fireSize)*100);
+
+	fireFrameGroup.addChild(new Path.Circle({ center: new Point(fire_x, fire_y), strokeColor:"#B00", radius: fireFrameRadius}));
+	fireSurfaceGroup.addChild(new Path.Circle({ center: new Point(fire_x, fire_y), fillColor:"#900", radius: Math.ceil(fireSize[0]*100)}));
+
 }
 //}}}
 function drawMeta(floor,tx,ty) {//{{{
@@ -898,6 +837,15 @@ function roomsSmokeInFrame() {//{{{
 	});
 }
 //}}}
+function fireSizeInFrame() {//{{{
+	if (fireSize.length<1) { return; }
+	fireSurfaceGroup.removeChildren();
+    fireSurfaceGroup.addChild(new Path.Circle({ center: new Point(fire_x, fire_y), fillColor:"#B00", radius: Math.ceil(fireSize[frame]*100)}));
+	// _.each(fireFrameGroup.children, function(e,i) { 
+	// 		e.radius=fireSize[frame]*100;
+	// });
+}
+//}}}
 function resizeAndRedrawCanvas() {//{{{
 	wWidth = $(window).width()-20;
 	wHeight = $(window).height()-70;
@@ -917,9 +865,11 @@ view.onFrame=function(event) {//{{{
 		updateAgentNumbersOnFloors();
 		evacueesInFrame();
 		roomsSmokeInFrame();
+		fireSizeInFrame();
 		afterLerpFrame();
 	} 
 }
 //}}}
 
 };
+

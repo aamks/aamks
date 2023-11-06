@@ -231,7 +231,10 @@ class Navmesh:
                 bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
 
         bricked_wall+=self.json.readdb("obstacles")['obstacles'][self.floor]
-
+        try:
+            bricked_wall.append(self.json.readdb("obstacles")['fire'][self.floor])
+        except:
+            pass
         return bricked_wall
 
 # }}}

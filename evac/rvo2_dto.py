@@ -348,7 +348,10 @@ class EvacEnv:
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})
 
-
+    def update_fire_size(self, time_frame):
+        nearest_time_frame = min(self.general['fire_size_dict'].keys(), key=lambda x:abs(x-time_frame))
+        return self.general['fire_size_dict'][nearest_time_frame]
+        
     def update_room_opacity(self):
         smoke_opacity = dict()
         for room in self.room_list.keys():

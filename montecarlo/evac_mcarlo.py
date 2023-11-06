@@ -74,16 +74,26 @@ class EvacMcarlo():
     def _fire_obstacle(self):# {{{
         '''
         Fire Obstacle prevents humans to walk right through the fire. Currently
-        we build the rectangle xx * yy around x,y. Perhaps this size could be
+        we build the rectangle r * r around x,y. Perhaps this size could be
         some function of fire properties.
         '''
 
-        xx=150
-        yy=150
+        with open("{}/workers/{}/fire_size.txt".format(os.environ['AAMKS_PROJECT'],self._sim_id)) as f:
+            for line in f:
+                nextline = next(f)
+                values = json.loads(nextline)
+        biggest_fire_area = values[-1]
 
-        z=self.s.query("SELECT * FROM fire_origin") 
+        r = round(100*math.sqrt(biggest_fire_area/math.pi))
+        
+
+        # give minimal fire size if cfast fire size is 0
+        if r <=0:
+            r = 4
+
+        z=self.s.query("SELECT * FROM fire_origin WHERE sim_id=?", (self._sim_id,))
         i=z[0]
-        points=[ [i['x']-xx, i['y']-yy, 0], [i['x']+xx, i['y']-yy, 0], [i['x']+xx, i['y']+yy, 0], [i['x']-xx, i['y']+yy, 0], [i['x']-xx, i['y']-yy, 0] ]
+        points=[ [i['x']-r, i['y']-r, 0], [i['x']+r, i['y']-r, 0], [i['x']+r, i['y']+r, 0], [i['x']-r, i['y']+r, 0], [i['x']-r, i['y']-r, 0] ]
 
         obstacles=self.json.readdb("obstacles")
         obstacles['fire']={ i['floor']: points }
