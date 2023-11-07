@@ -129,6 +129,9 @@ function copy_scenario() { # {{{
 					copy($from, $to);
 			}
 			ch_scenario($sid[0]['id']);
+			// save conf.json again to update scenario number in the file
+			$conf_file = file_get_contents(implode("/", array($new_scenario_directory, "conf.json")));
+			$_SESSION['nn']->write_scenario($conf_file, "projects.php?projects_list");
 		}
 	}
 }
