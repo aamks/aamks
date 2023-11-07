@@ -100,7 +100,7 @@ class RedisManager:
         self.get_hosts()
         enabled_workers = []
         print("aamksconf.json") 
-        for host in self.host_array):
+        for host in self.host_array:
             print(host)
         print("END aamksconf.json")
         for host in self.host_array:
