@@ -20,6 +20,7 @@ AAMKS_SERVER=10.8.47.50									# gearman + www for workers
 AAMKS_PATH='/usr/local/aamks'								
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
+AAMKS_REDIS_PASS = 'hulakula'
 AAMKS_WORKER='gearman'										# 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'gearman': dispatch simulations over a network (grid/cluster environment)
 AAMKS_SALT='aamksisthebest'
 AAMKS_USE_MAIL=0											# needed if we allow users to register accounts

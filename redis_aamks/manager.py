@@ -117,7 +117,7 @@ class RedisManager:
         cmd = f'ssh {ip} ps aux | grep "python3 {self.worker_path}" | wc -l'
         try:
             output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, text=True)
-            print(f"Number of processes on {ip}: {output.strip()}")
+            print(f"Number of redis worker processes on {ip}: {output.strip()}")
         except subprocess.CalledProcessError as e:
             print(f"Error while retrieving worker information for node with IP {ip}: {e}")
 

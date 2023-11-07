@@ -6,7 +6,7 @@ services:
     container_name: aamks_redis 
     restart: always
     ports:
-      - '192.168.0.185:6379:6379'
+      - '${AAMKS_SERVER:-127.0.0.1}:6379:6379'
     command: redis-server --save 20 1 --loglevel warning --requirepass hulakula
     volumes:
       - data-volume:/data
