@@ -98,8 +98,11 @@ class RedisManager:
 
     def show_all_workers(self):
         self.get_hosts()
-        enabled_workers = [] 
-        print(self.host_array)
+        enabled_workers = []
+        print("aamksconf.json") 
+        for host in self.host_array):
+            print(host)
+        print("END aamksconf.json")
         for host in self.host_array:
             for ip in host[2]:
                 cmd = f'ssh {ip} ps aux | grep {self.worker_path} | wc -l'
