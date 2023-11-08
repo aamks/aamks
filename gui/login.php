@@ -105,10 +105,7 @@ function changes(){/*{{{*/
     <center>
 	<strong>Recent updates</strong><br>
     <table>
-	<tr><td>2023-09-30</td><td>--></td><td>Sensitivity analysis</td></tr>
-<tr><td>2023-09-28</td><td>--></td><td>Retry status 1 button available</td></tr>
-<tr><td>2023-09-27</td><td>--></td><td>pynavmesh introduced and fixes in rvo</td></tr>
-<tr><td>2023-09-25</td><td>--></td><td>Simulation files handled with NFS</td></tr>
+	<tr><td>date</td><td>--></td><td>Brief description of changes</td></tr>
     </table><br>
 	Visit our <a href='https://github.com/aamks/aamks/'>GitHub</a> or <a href='https://github.com/aamks/aamks/wiki'>wiki</a> to find out more.
     </center>
@@ -127,7 +124,7 @@ function do_login() { #{{{
 			$_SESSION['nn']->ch_main_vars($ret[0]);
 		 	header("Location: projects.php?projects_list");
 		} else {
-			echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+			echo "<center><br><br><a href=https://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 			$_SESSION['nn']->fatal("Email address not activated!");
 		}
 	}else{
@@ -146,14 +143,14 @@ function do_register(){/*{{{*/
 	extract($_POST);
 	$ret=$_SESSION['nn']->query("SELECT * FROM users WHERE email = $1 ", array($_POST['email'] ));
 	if (!empty($ret[0])){
-		echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+		echo "<center><br><br><a href=https://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 		$_SESSION['nn']->fatal("Email address already used in AAMKS!");
 	}
 	$salted=salt($password);
 	$token=md5(time());
 	$_SESSION['nn']->query("insert into users (user_name, email, password, activation_token,active_scenario) values ($1,$2,$3,$4,$5)", array($name, $email, $salted,$token,1));
 	$_SESSION['nn']->msg("We send you email to activation account. Check inbox or spam folder for activation link!");
-	sendMail($email,"AAMKS activation account",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token"], "activation");
+	sendMail($email,"AAMKS activation account",["url" => "https://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token"], "activation");
 	
 	//echo "<br>activation account <a href=login.php?activation_token=$token>Click here</a>";  
 	//header("Location: login.php"); // Finland only
@@ -199,7 +196,7 @@ function register_form(){/*{{{*/
 function activate_user(){/*{{{*/
 	$r=$_SESSION['nn']->query("SELECT * FROM users WHERE activation_token= $1 AND activation_token !='already activated'", array($_GET['activation_token'] ));
 	if (empty($r[0])){
-		echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+		echo "<center><br><br><a href=https://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 		$_SESSION['nn']->fatal("Activation token not valid");
 	} else {
 		$_SESSION['nn']->query("UPDATE users SET activation_token='already activated' WHERE id=$1", array($r[0]['id'])) ;
@@ -250,7 +247,7 @@ function reset_password(){/*{{{*/
 			$reset_email = $_POST['email'];
 			$result = $_SESSION['nn']->query("SELECT * FROM users WHERE email= '" . $reset_email . "'");
 			if(empty($result)){
-				echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+				echo "<center><br><br><a href=https://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 				$_SESSION['nn']->fatal("There is no such email in our database!");
 				header("location:/aamks/login.php"); 
 				exit();
@@ -258,7 +255,7 @@ function reset_password(){/*{{{*/
 				$ret=$_SESSION['nn']->query("UPDATE users SET reset_token = $1, access_time = $2 where email = $3 returning id", array($token, $expDate, $reset_email));
 				$_SESSION['nn']->msg("Email sent, check inbox or spam folder for reset link!");
 				$_SESSION['reset_email'] = $reset_email;
-				sendMail($reset_email,"AAMKS reset password",["url" => "http://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token"], "password_reset");
+				sendMail($reset_email,"AAMKS reset password",["url" => "https://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token"], "password_reset");
 				//echo "Email sent to $reset_email" ;
 				//echo " <a href=".loginphp()."?reset=$token>HERE</a>";
 			}
@@ -292,15 +289,15 @@ function reset_password(){/*{{{*/
 						header("Location: projects.php");
 						exit();
 					}else{
-						echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+						echo "<center><br><br><a href=https://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 						$_SESSION['nn']->fatal("Something goes wrong. Please try again!");
 					}
 				}else{
-					echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+					echo "<center><br><br><a href=https://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 					$_SESSION['nn']->fatal("This forget password link has been expired!");
 				}
 			}else{
-				echo "<center><br><br><a href=http://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
+				echo "<center><br><br><a href=https://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 				$_SESSION['nn']->fatal("Wrong token!");
 			}
 		}
