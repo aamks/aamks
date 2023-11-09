@@ -18,7 +18,7 @@ from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from fire.partition_query import PartitionQuery
 from evac.pathfinder.navmesh_baker import NavmeshBaker
-from evac.pathfinder import PathFinder
+from evac.pathfinder.navmesh import Navmesh as Pynavmesh
 import evac.pathfinder
 from shapely.ops import polygonize
 from numpy.random import uniform
@@ -102,7 +102,30 @@ class Navmesh:
         self.baker.bake()
         self.baker.save_to_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name))
         vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name))
-        self.navmesh = PathFinder(vert, polygs)
+        self.navmesh = Pynavmesh(vert, polygs)
+        # self.test_navmesh()
+ 
+    # def test_navmesh(self):
+    #     src = (3243,1643)
+    #     dst = (3243.000062244715, 1643.745674220584)
+
+
+       
+        
+        
+    #     path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     # dst = (3003, 3516)
+    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     # dst = (3172, 1661)
+    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     # dst = (3172, 1713)
+    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     print("sdfsdfsdfsdf")
+
  
 
 # }}}
@@ -125,28 +148,7 @@ class Navmesh:
                 path_to_return.append((i[0]*100, i[2]*100))
             return path_to_return
         else:
-            # agen is probably trapped on the wall, now we want to take the agent's coordinates at his 
-            # outer edge instead of his central coordinates and check the path from these coordinates
-            path = self.navmesh.search_path(((src[0]-17)/100, 0.0, (src[1]-17)/100), (dst[0]/100, 0.0, dst[1]/100))
-            if not path:
-                path = self.navmesh.search_path(((src[0]+17)/100, 0.0, (src[1]-17)/100), (dst[0]/100, 0.0, dst[1]/100))
-            if not path:
-                path = self.navmesh.search_path(((src[0]+17)/100, 0.0, (src[1]+17)/100), (dst[0]/100, 0.0, dst[1]/100))
-            if not path:
-                path = self.navmesh.search_path(((src[0]-17)/100, 0.0, (src[1]+17)/100), (dst[0]/100, 0.0, dst[1]/100))
-            if not path:
-                path = self.navmesh.search_path(((src[0]-25)/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
-            if not path:
-                path = self.navmesh.search_path(((src[0])/100, 0.0, (src[1]-25)/100), (dst[0]/100, 0.0, dst[1]/100))
-            if not path:
-                path = self.navmesh.search_path(((src[0]+25)/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
-            if not path:
-                path = self.navmesh.search_path((src[0]/100, 0.0, (src[1]+25)/100), (dst[0]/100, 0.0, dst[1]/100))
-            if not path:
-                return ['err']
-            for i in path:
-                path_to_return.append((i[0]*100, i[2]*100))
-            return path_to_return
+            return ['err']
 
 # }}}
     def closest_terminal(self,p0,exit_type):# {{{

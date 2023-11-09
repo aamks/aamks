@@ -3,7 +3,7 @@ import math
 from evac.pathfinder.navmesh.navmesh_graph import NavmeshGraph
 from evac.pathfinder.navmesh.navmesh_node import NavmeshNode
 from evac.pathfinder.navmesh.navmesh_bvh import NavmeshBVH
-
+from evac.pathfinder.navmesh.navmesh_bvh import TrianglesBVH
 
 class Navmesh:
     def __init__(self, vertices: List[Tuple[float, float, float]], polygons: List[List[int]]):
@@ -77,6 +77,18 @@ class Navmesh:
         # build bvh
         self._bvh: NavmeshBVH = NavmeshBVH(self._nodes)
 
+        if not all(len(x) == 3 for x in polygons):
+            raise Exception('Navigation mesh should be created from triangles, for the TrianglesBVH tree to work properly, the verts_per_poly value in the NavmeshBaker bake function should always be set to 3')
+
+        # build triangle bvh
+        triangle_BVH_coordinates_list = []
+        for p in polygons:
+            for index in p:
+                triangle_BVH_coordinates_list.append(vertices[index][0])
+                triangle_BVH_coordinates_list.append(vertices[index][1])
+                triangle_BVH_coordinates_list.append(vertices[index][2])
+        self._triangles_bvh = TrianglesBVH(triangle_BVH_coordinates_list)
+
     def get_groups_count(self) -> int:
         '''Return the number of polygon groups (connected components) in the navigation mesh
         '''
@@ -103,6 +115,13 @@ class Navmesh:
         # find nodes indexes for start and end point
         start_node: Optional[NavmeshNode] = self._bvh.sample(start)
         finish_node: Optional[NavmeshNode] = self._bvh.sample(finish)
+        if start_node is None:
+            _start = self._triangles_bvh.sample(start[0],start[1],start[2])
+            start_node: Optional[NavmeshNode] = self._bvh.sample(_start[:3])
+        if finish_node is None:
+            _finish = self._triangles_bvh.sample(finish[0],finish[1],finish[2])
+            finish_node: Optional[NavmeshNode] = self._bvh.sample(_finish[:3])
+            
         if start_node is not None and finish_node is not None:
             # check are nodes in one group
             start_index: int = start_node.get_index()

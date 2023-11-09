@@ -252,7 +252,7 @@ class EvacEnv:
                 dst_coordinates = self._find_closest_exit(e)
                 goal = self.nav.nav_query(src=position, dst=dst_coordinates, maxStraightPath=32)
                 if goal[0] == 'err':
-                    continue
+                    raise Exception("path in navigation mesh not found")
                 evacuee = self.evacuees.get_pedestrian(e)
                 evacuee.dst_coordinates = (dst_coordinates[0], dst_coordinates[1])
                 try:
