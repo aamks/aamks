@@ -79,7 +79,7 @@ CREATE TABLE simulations ( ---{{{
 	animation text,
     anim_params text,
 	modified timestamp without time zone not null default now(),
-    results text
+    results text,
     i_risk text,
     error_log character varying(30),
     rescue_params text
