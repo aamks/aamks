@@ -190,7 +190,7 @@ function launch_simulation() {//{{{
 					amsg(json); 
 					if(json.err==0) {
 						setTimeout(function(){
-							location.assign("/aamks/animator/index.php");
+							location.assign("/aamks/halt.php");
 						}, 1500);
 					}
 				});

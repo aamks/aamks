@@ -89,7 +89,7 @@ function check_stat($r) {
     '90' => 0,
     '91' => 0,
     '' => 0,
-    'halted' => 0,
+    'in progress' => 0,
 ];
     $sum = 0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
@@ -98,14 +98,22 @@ function check_stat($r) {
 	foreach ($r as $element) {
 		echo "<tr>";
 		echo "<td align='center'>".$element['iteration']."</td>";
+
+		if ($element['status'] > 1000){
+			$sum += 1;
+			$statuses['in progress'] += 1;
+			echo "<td>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
+		}else{
+			$statuses[$element['status']] += 1;
+			$sum += 1;
+			echo "<td>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
+		}
+
 	
-    $statuses[$element['status']] += 1;
-    $sum += 1;
-    echo "<td>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
     }
     echo "</table></td>"; // Add a line break after each inner array
-	 echo "<td valign='top'><table><tr><td><strong>SUM</strong><td>$sum</td></tr><tr><th>Code</th><th>Number of iterations</th></tr>";
-		foreach ($statuses as $c => $d) { echo "<tr><td>$c</td><td>$d</td></tr>";}
+	echo "<td valign='top'><table><tr><td><strong>SUM</strong><td>$sum</td></tr><tr><th>Code</th><th>Number of iterations</th></tr>";
+	foreach ($statuses as $c => $d) { echo "<tr><td>$c</td><td>$d</td></tr>";}
     echo "</table>";
     echo "</td></tr></table>";
 }

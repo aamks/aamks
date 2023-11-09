@@ -41,6 +41,7 @@ function createSelect(){
 	for(var r in anim_params){
 		rooms.push(r);
 	}
+	rooms.sort()
 	var selectRooms = document.getElementById('selRooms');
 	for (var i = 0; i < rooms.length; i++) {
 		var option = document.createElement("option");
