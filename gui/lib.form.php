@@ -569,14 +569,14 @@ function get_template_defaults($q) {/*{{{*/
     "fire_load":
     {
         "room": {
-            "mean": '',
-            "sd": '',
+            "mean": "",
+            "sd": "",
             "1st": 100,
             "99th": 2000
         },
         "non_room": {
-            "mean": '',
-            "sd": '',
+            "mean": "",
+            "sd": "",
             "1st": 100,
             "99th": 800
     }},
@@ -599,14 +599,14 @@ function get_template_defaults($q) {/*{{{*/
         "sd": 0
     },
     "pre_evac": {
-        "mean": '',
-        "sd": '',
+        "mean": "",
+        "sd": "",
         "1st": 60,
         "99th": 180
     },
     "pre_evac_fire_origin": {
-        "mean": '',
-        "sd": '',
+        "mean": "",
+        "sd": "",
         "1st": 15,
         "99th": 60
     }

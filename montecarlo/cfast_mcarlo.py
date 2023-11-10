@@ -665,7 +665,7 @@ class DrawAndLog:
         if fire_load_d['mean']!='' and fire_load_d['sd']!='':
             load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
         elif fire_load_d['1st']!='' and fire_load_d['99th']!='':
-            params = lognormal_params_from_percentiles(fire_load_d['1st'], fire_load_d['99th'])
+            params = lognorm_params_from_percentiles(fire_load_d['1st'], fire_load_d['99th'])
             load_density = int(lognormal(*params))  # location, scale
         self._psql_log_variable('fireload', load_density)
         

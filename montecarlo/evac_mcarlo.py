@@ -37,13 +37,14 @@ from scipy.special import erfc
 
 # }}}
 def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99, outtype='l'):
-    def equations(vars, x1=60, x99=180):
+    def equations(vars):
         m, s = vars
         eq1 = 0.5 * erfc(-(log(x1) - m) / (s * sqrt(2))) - 0.01
-        eq2 = 0.5 * erfc(-(log(x99) - m) / (s * sqrt(2))) - 0.99
+        eq2 = 0.5 * erfc(-(log(x2) - m) / (s * sqrt(2))) - 0.99
         return [eq1, eq2]
 
     loc, scale =  fsolve(equations, (1, 1))
+
     if outtype=='l':
         return [loc, scale]
     elif ottype=='d':
@@ -118,12 +119,15 @@ class EvacMcarlo():
 
         if room != self._evac_conf['FIRE_ORIGIN']:
             pe=self.conf['pre_evac']
+            print('no')
         else:
             pe=self.conf['pre_evac_fire_origin']
+            print('fire')
 
         if pe['1st'] and pe['99th']:
             # if percentiles are given
-            params = lognormal_params_from_percentiles(pe['1st'], pe['99th'])
+            params = lognorm_params_from_percentiles(pe['1st'], pe['99th'])
+            print(pe, params)
             return self._get_alarming_time() + round(lognormal(mean=params[0], sigma=params[1]), 2)
         # if distribution parameters are given
         elif pe['mean'] and pe['sd']:
