@@ -47,7 +47,7 @@ def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99, outtype='l'):
 
     if outtype=='l':
         return [loc, scale]
-    elif ottype=='d':
+    elif outtype=='d':
         return {'loc': loc, 'scale': scale}
     else:
         raise ValueError(f'{outtype} is not the correct outtype. Use "d" for dictionary or "l" for list')
