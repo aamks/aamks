@@ -44,13 +44,13 @@ function make_help() { /*{{{*/
 	$help["heatcom"]             	 = [""                                 , "<b>User-defined</b> parameters of heat of combustion normal distribution [MJ/kg]"]                                                              ;
 	$help["yields"]    	             = [""                                 , "<b>User-defined</b> parameters of species yields normal distribution [g/g]"]                                                              ;
 	$help["radfrac"]    	         = ["Radiative fraction"               , "Parameters of gamma distribution of radiative fraction of HRR [-]"]                                                              ;
-	$help["fire_load"]    	         = [""                                 , "Parameters of log-normal distribution of fire load in ROOM and other comprtments types [MJ/m<sup>2</sup>]"]                                                              ;
+	$help["fire_load"]    	         = [""                                 , "Parameters OR 1st and 99th percentiles of log-normal distribution of fire load in ROOM and other comprtments types [MJ/m<sup>2</sup>]"]                                                              ;
 
     //EVACUTAION MODEL
 	//$help["evac_clusters"]		     = ["evac_clusters"					   , "follow the leader, etc (TODO)."];                                                              ;
 	$help["dispatch_evacuees"]		 = ["Evacuees dispatch mode"           , "<orange>manual+probabilistic</orange> probabilistic evacuees only in the rooms free of manual evacuees<hr> <orange>probabilistic+manual</orange> probabilistic evacuees first and then extra manual evacuees<hr> <orange>manual</orange> probabilistic evacuees are never added "]                                                              ;
-	$help["pre_evac"]				 = ["Pre-evacuation time"              , "Parameters of log-normal distribution of pre-evacuation time [s]<br>(time from agent being alarmed to start of egrees) "  ] ;
-	$help["pre_evac_fire_origin"]	 = ["Pre-evacuation<br>in fire origin" , "Parameters of log-normal distribution of pre-evacuation time in compartment of fire origin [s]<br>(time from agent being alarmed to start of egrees) " ]                                                        ;
+	$help["pre_evac"]				 = ["Pre-evacuation time"              , "Parameters OR 1st and 99th percentile of log-normal distribution of pre-evacuation time [s]<br>(time from agent being alarmed to start of egrees) "  ] ;
+	$help["pre_evac_fire_origin"]	 = ["Pre-evacuation<br>in fire origin" , "Parameters OR 1st and 99th percentile of log-normal distribution of pre-evacuation time in compartment of fire origin [s]<br>(time from agent being alarmed to start of egrees) " ]                                                        ;
 	$help["alarming"]				 = ["Alarming time"                    , "Parameters of normal distribution of alarming time [s] !!!currently fixed to 0!!!" ] ;
 	$help["evacuees_density"]		 = ["Evacuees density"                 , "Density of occupants in different compartments types [pers/m<sup>2</sup>]" ] ;
 	$help["building_profile"]		 = ["Building profile"                 , "Default profiles for buildings. Description available on wiki page" ]  ;
@@ -569,12 +569,16 @@ function get_template_defaults($q) {/*{{{*/
     "fire_load":
     {
         "room": {
-          "mean": 6.33,
-          "sd": 1.13
+            "mean": '',
+            "sd": '',
+            "1st": 100,
+            "99th": 2000
         },
         "non_room": {
-          "mean": 4,
-          "sd": 0.5
+            "mean": '',
+            "sd": '',
+            "1st": 100,
+            "99th": 800
     }},
     "radfrac": {
       "k": 124.48,
@@ -595,12 +599,16 @@ function get_template_defaults($q) {/*{{{*/
         "sd": 0
     },
     "pre_evac": {
-        "mean": 29.13,
-        "sd": 8.87
+        "mean": '',
+        "sd": '',
+        "1st": 60,
+        "99th": 180
     },
     "pre_evac_fire_origin": {
-        "mean": 15,
-        "sd": 5
+        "mean": '',
+        "sd": '',
+        "1st": 15,
+        "99th": 60
     }
 }';
 

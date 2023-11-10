@@ -25,6 +25,8 @@ from rescue_module.rescue import *
 import warnings
 import numpy as np
 
+from montecarlo.evac_mcarlo import lognorm_params_from_percentiles
+
 # }}}
 def join2str(l, sep, quotes=False, force=False):
     joined = []
@@ -660,7 +662,11 @@ class DrawAndLog:
         hrr_peak, flashover = find_peak_hrr()
 
         fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
-        load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
+        if fire_load_d['mean']!='' and fire_load_d['sd']!='':
+            load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
+        elif fire_load_d['1st']!='' and fire_load_d['99th']!='':
+            params = lognormal_params_from_percentiles(fire_load_d['1st'], fire_load_d['99th'])
+            load_density = int(lognormal(*params))  # location, scale
         self._psql_log_variable('fireload', load_density)
         
         hrr = HRR(self.conf, self._sim_id)
