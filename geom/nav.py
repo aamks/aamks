@@ -71,30 +71,6 @@ class Navmesh:
         self.bypass_rooms=bypass_rooms
         self._get_name(bypass_rooms)
         file_obj=self._obj_make(bypass_rooms)
-        file_nav="{}/{}".format(os.environ['AAMKS_PROJECT'], self.nav_name)
-        file_conf="{}/recast.yml".format(os.environ['AAMKS_PROJECT'])
-        with open(file_conf, "w") as f: 
-            f.write('''\
-            cellsize: 0.10
-            cellheight: 0.2
-            agentheight: 2
-            agentradius: 0.30
-            agentmaxclimb: 0.1
-            agentmaxslope: 45
-            regionminsize: 8
-            regionmergesize: 20
-            edgemaxlen: 12
-            edgemaxerror: 1.3
-            vertsperpoly: 6
-            detailsampledist: 6
-            detailsamplemaxerror: 1
-            partitiontype: 1
-            tilesize: 0
-            ''')
-        subprocess.call("rm -rf {}; recast --config {} --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_conf, file_obj, file_nav), shell=True)
-
-
-
         self.baker = NavmeshBaker()
         mesh = self.polymesh.import_obj(file_obj)
         polygons = self.get_polygons_for_pynavmesh(mesh)
@@ -233,26 +209,56 @@ class Navmesh:
                 bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
 
         bricked_wall+=self.json.readdb("obstacles")['obstacles'][self.floor]
+        
+        try:
+            bricked_wall.append(self.json.readdb("obstacles")['fire'][self.floor])
+        except:
+            pass
 
         return bricked_wall
 
 # }}}
     def _obj_platform(self):# {{{
         z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (self.floor,))
-        exit_doors = self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
+        exit_doors = self.s.query("SELECT vent_to_name,vent_from_name,width,depth,center_x, center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
         platforms=[]
         for i in z:
             platforms.append([ (i['x1'], i['y1']), (i['x1'], i['y0']), (i['x0'], i['y0']), (i['x0'], i['y1']) ])
         for i in exit_doors:
-            # extra 25 px for each exit door point because navmesh baker bakes navigation mesh 
+            # extra 150 px for each exit door point because navmesh baker bakes navigation mesh 
             # only on the inner surface at a distance greater than approximately cell_size 
-            # plus agent_radius (read bake function in navmesh baker)
-            min_x = min(i['x1'],i['x0'])
-            max_x = max(i['x0'],i['x1'])
-            min_y = min(i['y0'],i['y1'])
-            max_y = max(i['y0'],i['y1'])
-            platforms.append([ (min_x-25, min_y-25), (min_x-25, max_y+25), (max_x+25, max_y+25), (max_x+25,  min_y-25) ])
+            # plus agent_radius (read bake function in navmesh baker). If destination coordinates are in navmesh, 
+            # then search_path doesnt need to call TrianglesBVH sample function - calculation is faster
+            room_before_exit_center = self.s.query('SELECT center_x, center_y from aamks_geom WHERE name=? or name=?', (i['vent_to_name'],i['vent_from_name']))
+            
+            #the outer vestibule is a virtual room - necessary to add a navigation mesh outside 
+            #the exit door because agents disappear when they reach a target that is 1 m behind the exit door
+            min_x, max_x, min_y, max_y = self._get_outer_vestibule_coordinates(room_before_exit_center[0]['center_x'], room_before_exit_center[0]['center_y'], i)
+            platforms.append([ (min_x, min_y), (min_x, max_y), (max_x, max_y), (max_x,  min_y) ])
         return platforms
+
+    def _get_outer_vestibule_coordinates(self, last_room_center_x, last_room_center_y, door):
+        if door['width'] < door['depth']:
+            # exit door is vertical
+            vestibule_height = (door['depth']/2 +30)
+            if last_room_center_x > door['center_x']:
+                #exit door leads to the left on the building plan
+                return(door['center_x']-150, door['center_x'],door['center_y']-vestibule_height, door['center_y']+vestibule_height)
+            if last_room_center_x < door['center_x']:
+                #exit door leads to the right on the building plan
+                return(door['center_x'], door['center_x']+150,door['center_y']-vestibule_height, door['center_y']+vestibule_height)
+        else:
+            # exit door is horizontal
+            vestibule_width = (door['width']/2 +30)
+            if last_room_center_y > door['center_y']:
+                #The exit door leads downwards on the building plan
+                return(door['center_x']-vestibule_width, door['center_x']+vestibule_width,door['center_y']-150, door['center_y'])
+            
+            if last_room_center_y < door['center_x']:
+                #The exit door leads upwards on the building plan
+                return(door['center_x']-vestibule_width, door['center_x']+vestibule_width,door['center_y'], door['center_y']+150)
+            
+        raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target from building 100 cm behind exit door")
 
 # }}}
     def _obj_elem(self,face,z):# {{{

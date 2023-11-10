@@ -166,7 +166,7 @@ class AABB:
         self.z_max = 0.0
 
 class TrianglesBVH():
-    def __init__(self, triangles_vertices=None, BVH_AABB_DELTA=0.5):
+    def __init__(self, triangles_vertices=None):
         self.m_return_buffer = [0.0, 0.0, 0.0, 0.0]
         self.m_triangle_data = []
         self.m_is_object = False
@@ -309,8 +309,8 @@ class TrianglesBVH():
                 right_array = np.array(right_objects[:right_count * 9], dtype=np.float32)
 
 
-                self.m_left_child = TrianglesBVH(left_array, BVH_AABB_DELTA)
-                self.m_right_child = TrianglesBVH(right_array, BVH_AABB_DELTA)
+                self.m_left_child = TrianglesBVH(left_array)
+                self.m_right_child = TrianglesBVH(right_array)
 
                 self.m_children_exists = True
 

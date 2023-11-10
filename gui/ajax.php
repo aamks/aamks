@@ -48,12 +48,20 @@ function ajaxGetUnderlay() { #{{{
 }
 /*}}}*/
 function ajaxChangeActiveScenario() { #{{{
+	if(!array_key_exists('nn', $_SESSION))
+		{
+			header("Location: login.php?session_finished_information=1");
+		}
 	$r=$_SESSION['nn']->query("SELECT u.id AS user_id, u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$_SESSION['main']['scenario_name']));
 }
 /*}}}*/
 function ajaxUserPreferences() { #{{{
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$r=$_SESSION['nn']->query("SELECT preferences FROM users WHERE id=$1",array($_SESSION['main']['user_id']));
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=>json_decode($r[0]['preferences'],1)));
 }
@@ -93,6 +101,10 @@ function ajaxMenuContent() { /*{{{*/
 	# psql aamks -c "select p.*,s.* from scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=1"
 	# psql aamks -c "select * from scenarios"
 	# psql aamks -c "select * from projects"
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$menu=$_SESSION['nn']->rawMenu();
 	echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $menu));
 }
@@ -226,6 +238,10 @@ function ajaxGoogleLogin() { /*{{{*/
 	$_SESSION['g_email'] =$_SESSION['google_data']['g_email'];
 	$_SESSION['g_user_id']=$_SESSION['google_data']['g_user_id'];
 	$_SESSION['g_picture']=$_SESSION['google_data']['g_picture'];
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$ret[0]=$_SESSION['nn']->do_google_login();
 	$_SESSION['nn']->ch_main_vars($ret[0]);
 }
@@ -234,7 +250,10 @@ function ajaxGoogleLogin() { /*{{{*/
 function ajaxCheckProgress(){
 	$user_id=$_SESSION['main']['user_id'];
 	$scenario_id = $_SESSION['main']['scenario_id'];
-	
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$all_sims = $_SESSION['nn']->query('SELECT COUNT(*)	 FROM "simulations" WHERE "scenario_id"=$1', array($scenario_id));
 	$bad_sims = $_SESSION['nn']->query('SELECT COUNT(*) FROM "simulations" WHERE "scenario_id" = $1 AND "status"::numeric BETWEEN $2 AND $3', array($scenario_id, 1, 100));
 	$good_sims = $_SESSION['nn']->query('SELECT COUNT(*)	 FROM "simulations" WHERE "scenario_id"=$1 AND "status"=$2 ', array($scenario_id, "0"));

@@ -4,7 +4,10 @@ require_once("inc.php");
 
 function projects_list(){/*{{{*/
 	# psql aamks -c 'SELECT * from projects'
-
+	if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$r=$_SESSION['nn']->query("SELECT id, project_name FROM projects WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id'] ));
 	echo '<table>';
 	echo '<tr><th>projects<th>date<th>add scenario<th>scenarios<th>delete';
@@ -42,7 +45,12 @@ function projects_list(){/*{{{*/
 }/*}}}*/
 function delete_project() {/*{{{*/
 	#psql aamks -c 'select * from projects'
+
 	if(!isset($_GET['delete_project'])) { return; }
+	if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$r=$_SESSION['nn']->query("DELETE FROM projects WHERE id=$1 and user_id=$2 RETURNING project_name", array($_GET['delete_project'], $_SESSION['main']['user_id']));
 	$project_name=$r[0]['project_name'];
 	if(!empty($project_name)) { 
@@ -56,6 +64,10 @@ function delete_project() {/*{{{*/
 function ch_scenario($scenario, $header=NULL){/*{{{*/
 	#psql aamks -c 'select * from scenarios'
 	#psql aamks -c 'select * from users'
+	if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$r=$_SESSION['nn']->query("SELECT u.id AS user_id,u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($scenario, $_SESSION['main']['user_id']));
 	if(empty($r[0])) { die("scenario_id=$scenario?"); }
 	$_SESSION['nn']->ch_main_vars($r[0]);
@@ -64,7 +76,10 @@ function ch_scenario($scenario, $header=NULL){/*{{{*/
 function new_scenario() { # {{{
 	#psql aamks -c 'select  * from scenarios'
 	if(empty($_POST['new_scenario'])) { return; }
-
+	if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_POST['project_id'])), 'scenario_name');
 	if(in_array($_POST['new_scenario'], $scenarios, true)){
 		$_SESSION['header_err'][]="Scenario '$_POST[new_scenario]' already exists";
@@ -83,7 +98,10 @@ function new_scenario() { # {{{
 function copy_scenario() { # {{{
 	#psql aamks -c 'select  * from scenarios'
 	if(empty($_POST['copy_scenario'])) { return; }
-
+	if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_SESSION['main']['project_id'])), 'scenario_name');
 	if(in_array($_POST['copy_scenario'], $scenarios, true)){
 		$_SESSION['header_err'][]="Scenario '$_POST[copy_scenario]' already exists";
@@ -110,7 +128,10 @@ function copy_scenario() { # {{{
 function new_project() { # {{{
 	#psql aamks -c 'select  * from projects'
 	if(empty($_POST['new_project'])) { return; }
-
+	if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$projects=array_column($_SESSION['nn']->query("SELECT project_name FROM projects WHERE user_id=$1", array($_SESSION['main']['user_id'] )), 'project_name');
 	if(in_array($_POST['new_project'], $projects, true)){
 		$_SESSION['header_err'][]="Project '$_POST[new_project]' already exists";

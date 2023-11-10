@@ -54,6 +54,10 @@ function listing() {/*{{{*/
 }
 
 function query_cur() {
+    if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
 	echo $_SESSION['main']['project_id']."/".$_SESSION['main']['scenario_id'];
 	return $r;
@@ -61,6 +65,10 @@ function query_cur() {
 
 
 function query_any() {
+    if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
 	echo $_POST['project']."/".$_POST['scenario'];
 	return $r;
@@ -130,6 +138,10 @@ function stop($r) {
             $cmd = "gearadmin --cancel-job=".$element['job_id'];
             $z=shell_exec("$cmd");
             echo "<td align='center'>$z</td><td></td>";
+            if(!array_key_exists('nn', $_SESSION))
+            {
+                header("Location: login.php?session_finished_information=1");
+            }
             $r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id'] ));
             $sum += 1;
         }else{
