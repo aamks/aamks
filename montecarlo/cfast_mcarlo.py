@@ -830,12 +830,10 @@ class HRR:
         elif t[0] > t[1]:
             if not v:
                 return False
-            print(self.domains)
             raise ValueError(f'Lower limit must be lower than upper limit {t}')
         elif t[0] == t[1]:
             if not v:
                 return False
-            print(self.domains)
             raise ValueError(f'Lower and upper limits must not be equal {t}')
 
         add_i = 0 
@@ -856,12 +854,10 @@ class HRR:
         elif t[0] > t[1]:
             if not v:
                 return False
-            print(self.domains)
             raise ValueError(f'Lower limit must be lower than upper limit {t}')
         elif t[0] == t[1]:
             if not v:
                 return False
-            print(self.domains)
             raise ValueError(f'Lower and upper limits must not be equal {t}')
 
         for i, domain in enumerate(self.domains):
