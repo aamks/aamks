@@ -102,7 +102,6 @@ class Worker:
             print(e)
             self.send_report(e={"status":16})
             sys.exit(1)
-
         try:
             f = open('evac.json', 'r')
             self.vars['conf'] = json.load(f)
@@ -115,19 +114,15 @@ class Worker:
 
         self.sim_id = self.vars['conf']['SIM_ID']
         self.host_name = os.uname()[1]
-        #print('Starting simulations id: {}'.format(self.sim_id))
+        #this statement prevents redis_aamks/worker/worker.py from creating new loggers during every iteration
         if not logging.getLogger("worker.py").handlers:
          self.wlogger = self.get_logger('worker.py')
         else:
             self.wlogger = logging.getLogger("worker.py")
-
         if not logging.getLogger("evac.py").handlers: 
             self.vars['conf']['logger'] = self.get_logger('evac.py')
         else:
             self.vars['conf']['logger'] = logging.getLogger("evac.py")
-
-
-
 
     def run_cfast_simulations(self):
         cfast_file = 'cfast7_linux_64'
