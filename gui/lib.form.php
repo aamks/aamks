@@ -569,16 +569,16 @@ function get_template_defaults($q) {/*{{{*/
     "fire_load":
     {
         "room": {
-            "mean": "",
-            "sd": "",
-            "1st": 100,
-            "99th": 2000
+          "mean": 6.33,
+          "sd": 1.13,
+          "1st": "",
+          "99th": ""
         },
         "non_room": {
-            "mean": "",
-            "sd": "",
-            "1st": 100,
-            "99th": 800
+          "mean": 4,
+          "sd": 0.5,
+          "1st": "",
+          "99th": ""
     }},
     "radfrac": {
       "k": 124.48,
@@ -601,14 +601,14 @@ function get_template_defaults($q) {/*{{{*/
     "pre_evac": {
         "mean": "",
         "sd": "",
-        "1st": 60,
-        "99th": 180
+          "1st": 60,
+          "99th": 180
     },
     "pre_evac_fire_origin": {
         "mean": "",
         "sd": "",
-        "1st": 15,
-        "99th": 60
+          "1st": 10,
+          "99th": 60
     }
 }';
 
