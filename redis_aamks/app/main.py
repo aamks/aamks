@@ -22,11 +22,11 @@ class AARedis:
         return db
 
     def redis_queue_push(self, db, message):
-        # push to tail of the queue (left of the list)
+        # Push to tail of the queue (left of the list)
         db.lpush(config.redis_queue_name, message)
 
     def main(self, worker_pwd):
-        # connect to Redis
+        # Connect to Redis
         db = self.redis_db()
         message = {
             "id": str(uuid4()),
@@ -41,11 +41,13 @@ class AARedis:
                 "sim": worker_pwd,
             }
         }
-        # We'll store the data as JSON in Redis
+        
+        # Store the data as JSON in Redis
         message_json = dumps(message)
         # Push message to Redis queue
-        print(f"Sending message {message['data']['sim']}")
+        # print(f"Sending message {message['data']['sim']}")
         self.redis_queue_push(db, message_json)
+        return message
 
     if __name__ == '__main__':
         main()

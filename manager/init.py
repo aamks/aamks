@@ -194,12 +194,13 @@ class OnEnd():
 
 
         if os.environ['AAMKS_WORKER']=='redis':
-            print("working on redis mode")
             AR = AARedis()
             try:
                 for i in range(*si.get()):
                     worker_pwd="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                    AR.main(worker_pwd)
+                    messege_redis = AR.main(worker_pwd)
+                    job_id = messege_redis['id']
+                    self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
             except Exception as e:
                 print('OnEnd: {}'.format(e))
                 logger.error(f'gearman error {e}')

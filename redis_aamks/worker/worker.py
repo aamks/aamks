@@ -41,7 +41,6 @@ class RedisWorker:
         # Try counter
         retry_count = 0
         max_retries = 3
-        # ustawienie 
         while retry_count < max_retries:
             try:
                 ew = EvacWorker.Worker(redis_worker_pwd=sim_value, AA=message['AA'])
@@ -57,13 +56,10 @@ class RedisWorker:
                     break  
 
     def main(self):
-        """
-        Consumes items from the Redis queue
-        """
-        # connect to Redis
+        """Consumes items from the Redis queue"""
         db = self.redis_db()
         while True:
-            message_json = self.redis_queue_pop(db)  # this blocks until an item is received
+            message_json = self.redis_queue_pop(db) 
             self.process_message(db, message_json)
 
 AAWorker = RedisWorker()
