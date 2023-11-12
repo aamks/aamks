@@ -89,7 +89,7 @@ class EvacEnv:
                     paths_free_of_smoke.append([x, y, 0, exit, path])
 
             else:
-                paths.append([x, y, LineString(path).length, exit])
+                paths.append([x, y, LineString(path).length, exit, path])
 
         if len(paths_free_of_smoke) > 0:
             exits = list(zip(*paths_free_of_smoke))[2]
