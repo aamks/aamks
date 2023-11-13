@@ -152,7 +152,6 @@ function rename_scenario() { # {{{
 			header("Location: projects.php?projects_list");
 		} else {
 			$_SESSION['nn']->query("UPDATE scenarios SET scenario_name=$1 WHERE id=$2", array($_POST['rename_scenario'], $_SESSION['main']['scenario_id']));
-			//TODO rename folders in _comp - charts location
 			ch_scenario($_SESSION['main']['scenario_id']);
 		}
 	}
