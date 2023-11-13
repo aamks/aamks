@@ -667,6 +667,9 @@ class DrawAndLog:
         elif fire_load_d['1st']!='' and fire_load_d['99th']!='':
             params = lognorm_params_from_percentiles(fire_load_d['1st'], fire_load_d['99th'])
             load_density = int(lognormal(*params))  # location, scale
+        else:
+            raise ValueError(f'Invalid fire load density input data - check the form.')
+
         self._psql_log_variable('fireload', load_density)
         
         hrr = HRR(self.conf, self._sim_id)

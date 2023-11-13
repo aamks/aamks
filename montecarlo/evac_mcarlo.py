@@ -129,6 +129,8 @@ class EvacMcarlo():
             # if percentiles are given
             params = lognorm_params_from_percentiles(pe['1st'], pe['99th'])
             return self._get_alarming_time() + round(lognormal(mean=params[0], sigma=params[1]), 2)
+        else:
+            raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
         ''' 
