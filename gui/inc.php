@@ -339,7 +339,7 @@ public function do_google_login(){/*{{{*/
 	/*}}}*/
 
 	private function mk_default_preferences($user_id) { #{{{
-		$default_preferences='{"apainter_editor": "easy", "navmesh_debug": 0, "apainter_labels": 1, "partitioning_debug": 0 }';
+		$default_preferences='{"apainter_editor": "advanced", "navmesh_debug": 0, "apainter_labels": 1, "partitioning_debug": 0 }';
 		$this->query("UPDATE users SET preferences=$1 WHERE id=$2", array($default_preferences, $user_id));
 		return $default_preferences;
 	}

@@ -79,7 +79,9 @@ CREATE TABLE simulations ( ---{{{
 	animation text,
     anim_params text,
 	modified timestamp without time zone not null default now(),
-    results text
+    results text,
+    rescue_params text
+
 );
 ---}}}
 CREATE TABLE users (---{{{

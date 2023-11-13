@@ -39,7 +39,7 @@ class Evacuee:
         self.num_of_obstacle_neighbours = 0
         self.num_of_orca_lines = 0
         self.agent_has_no_escape = 0
-        self.dst_coordinates = None
+        self.exit_coordinates = None
 
     def __getattr__(self, name):
         return self.__dict__[name]
@@ -73,31 +73,40 @@ class Evacuee:
 
 
     def has_agent_reached_teleport(self):
-        dist_coordinates = cdist([self.position], [self.dst_coordinates], 'euclidean')
-        if dist_coordinates < 50 and self.target_teleport_coordinates is not None:
+        if self.exit_coordinates is None:
+            return
+        dist = cdist([self.position], [self.exit_coordinates], 'euclidean')
+        if dist < 50 and self.target_teleport_coordinates is not None:
             self.finished = 0
 
     def check_if_agent_reached_outside_door(self):
-        dist_coordinates = cdist([self.position], [self.dst_coordinates], 'euclidean')
-        if dist_coordinates < 50 and self.target_teleport_coordinates is None:
+        if self.exit_coordinates is None:
+            return
+        dist = cdist([self.position], [self.exit_coordinates], 'euclidean')
+        if dist < 50 and self.target_teleport_coordinates is None:
             self.finished = 0
             return True
         return False
 
-    def set_goal(self, floor, goal):
-        assert isinstance(goal, list), '%goal is not a list'
-        dist_navmesh = cdist([self.position], [goal[-1]], 'euclidean')
-        dist_coordinates = cdist([self.position], [self.dst_coordinates], 'euclidean')
-        if (dist_coordinates < 50 or dist_navmesh < 50) and self.agent_has_no_escape == 0:
-            self.goal = [int(goal[0][0]), int(goal[0][1])]
+    def set_goal(self, navmesh_path):
+        assert isinstance(navmesh_path, list), '%goal is not a list'
+        if self.agent_has_no_escape == 1:
+            return
+        dist_navmesh = cdist([self.position], [navmesh_path[-1]], 'euclidean')
+        dist_coordinates = cdist([self.position], [self.exit_coordinates], 'euclidean')
+        if (dist_coordinates < 50 or dist_navmesh < 50):
+            self.goal = [int(navmesh_path[0][0]), int(navmesh_path[0][1])]
         else:
             try:
-                self.goal = [int(goal[1][0]), int(goal[1][1])]
+                self.goal = [int(navmesh_path[1][0]), int(navmesh_path[1][1])]
             except:
-                self.goal = [int(goal[0][0]), int(goal[0][1])]
+                self.goal = [int(navmesh_path[0][0]), int(navmesh_path[0][1])]
 
 
     def calculate_velocity(self, current_time):
+        if self.goal is None:
+            self.velocity = (0, 0)
+            return
         self.unnorm_vector = tuple(map(sub, self.goal, self.position))
         self.distance = (sqrt(self.unnorm_vector[0] ** 2 + self.unnorm_vector[1] ** 2))
 

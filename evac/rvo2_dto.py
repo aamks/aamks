@@ -32,7 +32,6 @@ class EvacEnv:
         self.finished = []
         self.finished_vec = []
         self.trajectory = []
-        self.focus = []
         self.smoke_query = None
         self.rset = 0
         self.per_9 = 0
@@ -50,12 +49,6 @@ class EvacEnv:
         self.config = json.load(f)
 
         self.general = aamks_vars
-
-#        self.sim = rvo2.PyRVOSimulator(self.config['TIME_STEP'], self.config['NEIGHBOR_DISTANCE'],
-#                                       self.config['MAX_NEIGHBOR'], self.config['TIME_HORIZON'],
-#                                       self.config['TIME_HORIZON_OBSTACLE'], self.config['RADIUS'],
-#                                       self.max_speed)
-
         self.simulator = RVOSimulator(neighbor_dist=self.config['NEIGHBOR_DISTANCE'],
                                      max_neighbors=self.config['MAX_NEIGHBOR'],
                                      time_horizon=self.config['TIME_HORIZON'],
@@ -67,9 +60,6 @@ class EvacEnv:
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
 
         self.dfed = FEDDerivative(self.floor)
-        #simulation_id = 1 #przykladowa symulacja
-        #self.evac_data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], simulation_id))
-        #self.all_evac = self.evac_data["FLOORS_DATA"]["0"]["EVACUEES"]
 
     def _find_closest_exit(self, e):
         '''
@@ -79,10 +69,7 @@ class EvacEnv:
         '''
         paths, paths_free_of_smoke = list(), list()
         evacuee = self.evacuees.get_pedestrian(e)
-
-        for exit in self.general['agents_destination']:
-            if exit['floor'] != str(self.floor):
-                continue
+        for exit in self.general['agents_destination'][int(self.floor)]:
             x, y = exit['center_x'], exit['center_y']
             path = self.nav.nav_query(src=self.evacuees.get_position_of_pedestrian(e), dst=(x, y), maxStraightPath=999)
             if path[0] == 'err':
@@ -92,34 +79,35 @@ class EvacEnv:
                 continue
             if self._next_room_in_smoke(e, path) is not True:
                 try:
-                    paths_free_of_smoke.append([x, y, LineString(path).length, exit])
+                    paths_free_of_smoke.append([x, y, LineString(path).length, exit, path])
                 except:
                     self.evacuees.set_finish_to_agent(e)
                     if exit['type'] == 'teleport':
                         evacuee.target_teleport_coordinates = (exit['direction_x'], exit['direction_y'])
                     if evacuee.target_teleport_coordinates is not None:
                         self.append_agents_to_move_downstairs(evacuee, e)
-                    paths_free_of_smoke.append([x, y, 0, exit])
+                    paths_free_of_smoke.append([x, y, 0, exit, path])
 
-                # paths.append([x, y, LineString(path).length])
             else:
-                paths.append([x, y, LineString(path).length, exit])
+                paths.append([x, y, LineString(path).length, exit, path])
 
         if len(paths_free_of_smoke) > 0:
-            exits = list(zip(*paths_free_of_smoke))[-2]
-            if paths_free_of_smoke[exits.index(min(exits))][3]['type'] == 'teleport':
-                evacuee.target_teleport_coordinates = (paths_free_of_smoke[exits.index(min(exits))][3]['direction_x'], paths_free_of_smoke[exits.index(min(exits))][3]['direction_y'])
+            exits = list(zip(*paths_free_of_smoke))[2]
+            index = exits.index(min(exits))
+            if paths_free_of_smoke[index][3]['type'] == 'teleport':
+                evacuee.target_teleport_coordinates = (paths_free_of_smoke[index][3]['direction_x'], paths_free_of_smoke[index][3]['direction_y'])
                 evacuee.agent_has_no_escape = False
-            return paths_free_of_smoke[exits.index(min(exits))][0], paths_free_of_smoke[exits.index(min(exits))][1]
+            return paths_free_of_smoke[index][0], paths_free_of_smoke[index][1], paths_free_of_smoke[index][4]
         elif len(paths) > 0:
-            exits = list(zip(*paths))[-2]
-            if paths[exits.index(min(exits))][3]['type'] == 'teleport':
-                evacuee.target_teleport_coordinates = (paths[exits.index(min(exits))][3]['direction_x'], paths[exits.index(min(exits))][3]['direction_y'])
+            exits = list(zip(*paths))[2]
+            index = exits.index(min(exits))
+            if paths[index][3]['type'] == 'teleport':
+                evacuee.target_teleport_coordinates = (paths[index][3]['direction_x'], paths[index][3]['direction_y'])
                 evacuee.agent_has_no_escape = False
-            return paths[exits.index(min(exits))][0], paths[exits.index(min(exits))][1]
+            return paths[index][0], paths[index][1], paths[index][4]
         else:
             evacuee.agent_has_no_escape = True
-            return RVOSimulator.get_agent_position(self.simulator, e)[0], RVOSimulator.get_agent_position(self.simulator, e)[1]
+            return None
 
 
     def _next_room_in_smoke(self, evacuee, path):
@@ -141,14 +129,14 @@ class EvacEnv:
         else:
             return False
 
-    def set_floor_teleport_destination_queue_lists(self):
-        for exit in self.general['agents_destination']:
-            # destination of teleport on n florr is locaten on n-1 floor but queues of agents are formed on n floor
-            if exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor):
-                self.floor_teleports_queue[(exit['direction_x'],exit['direction_y'])] = False
-            elif exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor)+1:
-                self.free_space_coordinates_of_telepors_destination[(exit['direction_x'],exit['direction_y'])]={'min_x':exit['direction_x']-25, 'max_x':exit['direction_x']+25, 'min_y': exit['direction_y']-25, 'max_y': exit['direction_y']+25}
-            
+    def set_floor_teleport_destination_queue_lists(self, floor_numbers):
+        for floor in floor_numbers:
+            for exit in self.general['agents_destination'][int(floor)]:
+                # destination of teleport on n florr is locaten on n-1 floor but queues of agents are formed on n floor
+                if exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor):
+                    self.floor_teleports_queue[(exit['direction_x'],exit['direction_y'])] = False
+                elif exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor)+1:
+                    self.free_space_coordinates_of_telepors_destination[(exit['direction_x'],exit['direction_y'])]={'min_x':exit['direction_x']-25, 'max_x':exit['direction_x']+25, 'min_y': exit['direction_y']-25, 'max_y': exit['direction_y']+25}
             
     def read_cfast_record(self, time):
         self.smoke_query.read_cfast_record(time)
@@ -244,33 +232,30 @@ class EvacEnv:
         for e in range(self.evacuees.get_number_of_pedestrians()):
             if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
                 continue
-
             else:
-
                 # TODO: mimooh temporary fix
-                position = self.evacuees.get_position_of_pedestrian(e)
-                dst_coordinates = self._find_closest_exit(e)
-                goal = self.nav.nav_query(src=position, dst=dst_coordinates, maxStraightPath=32)
-                if goal[0] == 'err':
-                    continue
                 evacuee = self.evacuees.get_pedestrian(e)
-                evacuee.dst_coordinates = (dst_coordinates[0], dst_coordinates[1])
+                position = evacuee.position
+                exit = self._find_closest_exit(e)
+                if evacuee.agent_has_no_escape == True:
+                    # agent is trapped, has no escape
+                    continue
+                navmesh_path = exit[2]
+                evacuee.exit_coordinates = (exit[0], exit[1])
                 try:
-                    vis = RVOSimulator.query_visibility(self.simulator, position, goal[2], 15)
+                    vis = RVOSimulator.query_visibility(self.simulator, position, navmesh_path[2], 15)
                     if vis:
-                        self.evacuees.set_goal(self.floor, ped_no=e, goal=goal[1:])
+                        self.evacuees.set_goal(ped_no=e, navmesh_path=navmesh_path[1:])
                     else:
-                        self.evacuees.set_goal(self.floor,ped_no=e, goal=goal)
+                        self.evacuees.set_goal(ped_no=e, navmesh_path=navmesh_path)
                 except:
-                    self.evacuees.set_goal(self.floor,ped_no=e, goal=goal)
-        for e in range(RVOSimulator.get_agents_count(self.simulator)):
-            self.focus.append(self.evacuees.get_goal_of_pedestrian(e))
+                    self.evacuees.set_goal(ped_no=e, navmesh_path=navmesh_path)
 
     def append_agents_to_move_downstairs(self, evacuee, pedestrian_number):
         self.agents_to_move_downstairs.append({
             'agent_number': pedestrian_number,
             'teleport_position': evacuee.target_teleport_coordinates,
-            'distance_from_teleport': cdist([evacuee.position], [evacuee.dst_coordinates], 'euclidean')})
+            'distance_from_teleport': cdist([evacuee.position], [evacuee.exit_coordinates], 'euclidean')})
 
     def update_speed(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):

@@ -106,7 +106,10 @@ class NavmeshNode:
             w: Tuple[float, float, float] = vertices[self._modulize(i + 2, size)]
             vector: Tuple[float, float, float] = self._cross(v[0] - u[0], v[1] - u[1], v[2] - u[2], w[0] - u[0], w[1] - u[1], w[2] - u[2])
             d: float = math.sqrt(vector[0]**2 + vector[1]**2 + vector[2]**2)
-            to_return.append((vector[0] / d, vector[1] / d, vector[2] / d))
+            if d == 0:
+                to_return.append((vector[0], vector[1], vector[2]))
+            else:
+                to_return.append((vector[0] / d, vector[1] / d, vector[2] / d))
         return to_return
 
     def _calc_center(self, array: List[Tuple[float, float, float]]) -> Tuple[float, float, float]:
@@ -121,7 +124,7 @@ class NavmeshNode:
         return (s[0], s[1], s[2])
 
     def _cross(self, a_x: float, a_y: float, a_z: float, b_x: float, b_y: float, b_z: float) -> Tuple[float, float, float]:
-        return (a_y*b_z - a_z*b_y, a_z*b_x - a_x*b_z, a_x*b_y - a_y*b_x)
+        return (round(a_y*b_z - a_z*b_y,2), round(a_z*b_x - a_x*b_z,2), round(a_x*b_y - a_y*b_x,2))
 
     def _calc_average_normal(self, center: Tuple[float, float, float], points: List[Tuple[float, float, float]]) -> Tuple[float, float, float]:
         normal: List[float] = [0.0, 0.0, 0.0]
@@ -133,6 +136,8 @@ class NavmeshNode:
             normal[1] += c[1]
             normal[2] += c[2]
         d: float = math.sqrt(normal[0]**2 + normal[1]**2 + normal[2]**2)
+        if d == 0:
+            return (normal[0], normal[1], normal[2])
         return (normal[0] / d, normal[1] / d, normal[2] / d)
 
     def __repr__(self):

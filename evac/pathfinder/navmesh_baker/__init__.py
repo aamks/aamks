@@ -45,7 +45,7 @@ class NavmeshBaker:
                    region_merge_size: int = 20,
                    edge_max_len: float = 30.0,
                    edge_max_error: float = 1.3,
-                   verts_per_poly: int = 6,
+                   verts_per_poly: int = 3,
                    detail_sample_distance: float = 6.0,
                    detail_sample_maximum_error: float = 1.0) -> bool:
         nverts = len(self._input_vertices)

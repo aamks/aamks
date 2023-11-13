@@ -434,6 +434,12 @@ class Plot:
                     max_fat = len(v) - i
                     break
             binwdth = max(int(max_fat / n_bins), 1)
+
+            # due to MC aproximation error sum of PDF elements can be lower than 1
+            checksum = sum(v[:max_fat])
+            if checksum != 1:
+                v[0] += 1 - checksum
+
             samples[k] = [np.random.choice(np.arange(max_fat), p=v[:max_fat]) for i in range(1000)]
 
         try:
@@ -817,6 +823,8 @@ class PostProcess:
             self.t = time.time()
         p = Plot(self.dir)
         tm('Plot')
+        [p.pdf_n(self.data[d['name']], path=f"{d['name']}", label=d['lab']) for d in self.plot_type['pdf_n']]
+        tm('plot pdf_n')
         h = Heatmap(self.data['fed_der_df'], self.data['geometry'], self.n)
         tm('Heatmap')
         h.calc()
@@ -829,8 +837,6 @@ class PostProcess:
         tm('plot cdf')
         [p.pdf(self.data[d['name']], path=f"{d['name']}_pdf", label=d['lab']) for d in self.plot_type['pdf']]
         tm('plot pdf')
-        [p.pdf_n(self.data[d['name']], path=f"{d['name']}", label=d['lab']) for d in self.plot_type['pdf_n']]
-        tm('plot pdf_n')
         p.pdf({'ASET': self.data['dcbe'], 'RSET': self.data['wcbe']}, label=['Time [s]', 'Density [-]'], path='overlap')
         p.cdf_ovl({'RSET': np.array(self.data['wcbe']), 'ASET': self.data['dcbe']}, label=['Time [s]', 'Density [-]'], path='overlap_n')
         tm('plot overlap')

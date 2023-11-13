@@ -141,13 +141,18 @@ class Worker:
     def create_geom_database(self):
 
         self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
-        outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, terminal_door from aamks_geom WHERE terminal_door IS NOT NULL')
+        self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
+        outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door from aamks_geom WHERE terminal_door IS NOT NULL')
         floor_teleports = self.s.query("SELECT floor, name, teleport_from, teleport_to from aamks_geom WHERE name LIKE 'k%'")
 
         self.vars['conf']['agents_destination'] = []
+        for floor in sorted(self.obstacles['obstacles'].keys()):
+            self.vars['conf']['agents_destination'].append([])
 
         for door in outside_building_doors:
-            self.vars['conf']['agents_destination'].append({'name':door['name'], 'floor':door['floor'], 'center_x':door['center_x'], 'center_y':door['center_y'], 'type':'door'})
+            room_before_exit_center = self.s.query('SELECT center_x, center_y from aamks_geom WHERE name=? or name=?', (door['vent_to_name'],door['vent_from_name']))
+            destination_x, destination_y = self._get_outside_door_destination(room_before_exit_center[0]['center_x'], room_before_exit_center[0]['center_y'], door)
+            self.vars['conf']['agents_destination'][int(door['floor'])].append({'name':door['name'], 'floor':door['floor'], 'center_x':destination_x, 'center_y':destination_y, 'type':'door'})
 
         for teleport in floor_teleports:
             teleport_from_coordinates = teleport['teleport_from'].replace('[', '').replace(']','').replace(' ', '').split(',')
@@ -160,11 +165,30 @@ class Worker:
             direction_x = int_teleport_to_coordinates[0]
             direction_y = int_teleport_to_coordinates[1]
 
-            self.vars['conf']['agents_destination'].append({'name':teleport['name'], 'floor':teleport['floor'], 'center_x':center_x, 'center_y':center_y, 'type':'teleport', 'direction_x':direction_x, 'direction_y':direction_y})
-
-
-        self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
+            self.vars['conf']['agents_destination'][int(teleport['floor'])].append({'name':teleport['name'], 'floor':teleport['floor'], 'center_x':center_x, 'center_y':center_y, 'type':'teleport', 'direction_x':direction_x, 'direction_y':direction_y})
         self.wlogger.info('SQLite load successfully')
+
+
+    def _get_outside_door_destination(self, last_room_center_x, last_room_center_y, door):
+        if door['width'] < door['depth']:
+            # exit door is vertical
+            if last_room_center_x > door['center_x']:
+                #exit door leads to the left on the building plan
+                return(door['center_x']-100, door['center_y'])
+            if last_room_center_x < door['center_x']:
+                #exit door leads to the right on the building plan
+                return(door['center_x']+100, door['center_y'])
+        else:
+            # exit door is horizontal
+            if last_room_center_y > door['center_y']:
+                #The exit door leads downwards on the building plan
+                return(door['center_x'], door['center_y']-100)
+            if last_room_center_y < door['center_x']:
+                #The exit door leads upwards on the building plan
+                return(door['center_x'], door['center_y']+100)
+            
+        raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target from building 100 cm behind exit door")
+
 
     def _get_detection_time(self):
         heat = any(self.project_conf['smoke_detectors'].values())
@@ -222,8 +246,8 @@ class Worker:
 
     def prepare_simulations(self):
         self.detection_time = self._get_detection_time() #rough - with CFAST SPREADSHEET resolution
-
-        for floor in sorted(self.obstacles['obstacles'].keys()):
+        floor_numers = sorted(self.obstacles['obstacles'].keys())
+        for floor in floor_numers:
             eenv = None
             obstacles = []
             try:
@@ -244,6 +268,13 @@ class Worker:
                 y_min = min(i[1] for i in obst)
                 y_max = max(i[1] for i in obst)
                 obstacles.append([(x_min,y_min),(x_max,y_min),(x_max,y_max),(x_min,y_max),(x_min,y_min),(x_max,y_min)])
+            if str(floor) in self.obstacles['fire']:
+                fire_obst = self.obstacles['fire'][str(floor)]
+                x_min = min(i[0] for i in fire_obst)
+                x_max = max(i[0] for i in fire_obst)
+                y_min = min(i[1] for i in fire_obst)
+                y_max = max(i[1] for i in fire_obst)
+                obstacles.append([(x_min,y_min),(x_max,y_min),(x_max,y_max),(x_min,y_max),(x_min,y_min),(x_max,y_min)])
 
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
@@ -255,7 +286,7 @@ class Worker:
             eenv.place_evacuees(e)
             eenv.prepare_rooms_list()
             self.wlogger.info('Room list prepared on floor: {}'.format(floor))
-            eenv.set_floor_teleport_destination_queue_lists()
+            eenv.set_floor_teleport_destination_queue_lists(floor_numers)
             self.floors.append(eenv)
 
 

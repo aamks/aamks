@@ -8,6 +8,10 @@ function update_prefs() { #{{{
 	if(!isset($_POST['update_prefs'])) { return; }
 	foreach($_POST['update_prefs'] as $k=>$v) {
 		if(is_numeric($v)) { $v=intval($v); }
+		if(!array_key_exists('nn', $_SESSION))
+		{
+			header("Location: login.php?session_finished_information=1");
+		}
 		$_SESSION['nn']->preferences_update_param($k, $v);
 	}
 }
