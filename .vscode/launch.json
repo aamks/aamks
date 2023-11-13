@@ -12,6 +12,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "subProcess": true,
+            "args": ["/home/aamks_users/demo@aamks/demo/three"]
         },
         {
             "name": "Python: bieżący plik",

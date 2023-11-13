@@ -222,7 +222,7 @@ class Worker:
     def recalculate_pre_evac_time(self):
         dct = self.read_compartments_HGT()
         for room in dct.keys():
-            if room in ['Time', 'Outside', 'fire']:
+            if room.startswith('s') or room in ['Time', 'Outside', 'fire']:
                 continue
             condition = self.config['PRE_EVAC_TIME_ZONE_REDUCTION']*dct[room][0]
             indexes = where(array(dct[room]) <= condition)[0]
@@ -230,7 +230,6 @@ class Worker:
                 self.rooms_pre_time[room] = dct["Time"][indexes[0]]
 
     def _create_evacuees(self, floor):
-        self.recalculate_pre_evac_time()
         evacuees = []
         self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
@@ -272,6 +271,7 @@ class Worker:
 
     def prepare_simulations(self):
         self.detection_time = self._get_detection_time() #rough - with CFAST SPREADSHEET resolution
+        self.recalculate_pre_evac_time()
         floor_numers = sorted(self.obstacles['obstacles'].keys())
         for floor in floor_numers:
             eenv = None
