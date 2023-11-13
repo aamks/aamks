@@ -4,11 +4,11 @@ require_once("inc.php");
 
 function projects_list(){/*{{{*/
 	# psql aamks -c 'SELECT * from projects'
-	if(!array_key_exists('nn', $_SESSION) {
-    header("Location: login.php?session_finished_information=1");
-  }
-  
-  $current_project = $_SESSION['main']['project_name'];
+	if(!array_key_exists('nn', $_SESSION)) {
+    	header("Location: login.php?session_finished_information=1");
+	}
+
+	$current_project = $_SESSION['main']['project_name'];
 	$current_scenario = $_SESSION['main']['scenario_name'];
 	$r=$_SESSION['nn']->query("SELECT id, project_name FROM projects WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id'] ));
 	echo '<table>';
