@@ -224,7 +224,7 @@ class Worker:
         for room in dct.keys():
             if room in ['Time', 'Outside', 'fire']:
                 continue
-            condition = 0.9*dct[room][0]
+            condition = self.config['PRE_EVAC_TIME_ZONE_REDUCTION']*dct[room][0]
             indexes = where(array(dct[room]) <= condition)[0]
             if indexes.size > 0:
                 self.rooms_pre_time[room] = dct["Time"][indexes[0]]
