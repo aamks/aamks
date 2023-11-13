@@ -237,7 +237,10 @@ class Worker:
 
         def pre_evac_total(i):
             if floor['EVACUEES'][i]['COMPA'] in self.rooms_pre_time.keys():
-                return self.rooms_pre_time[floor['EVACUEES'][i]['COMPA']]
+                if floor['EVACUEES'][i]['PRE_EVACUATION'] > self.rooms_pre_time[floor['EVACUEES'][i]['COMPA']]:
+                    return self.rooms_pre_time[floor['EVACUEES'][i]['COMPA']]
+                else:
+                   return floor['EVACUEES'][i]['PRE_EVACUATION']
             if floor['EVACUEES'][i]['COMPA'] == self.vars['conf']['FIRE_ORIGIN']:
                 return floor['EVACUEES'][i]['PRE_EVACUATION']
             else:
