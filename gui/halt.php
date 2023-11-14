@@ -38,18 +38,30 @@ function listing() {/*{{{*/
 	//enter project id
 	//enter scenario_id
 	// halt jobs button
+
+
+    $projectID = '';
+    $scenarioID = '';
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+        // Update values based on form submission
+        $projectID = isset($_POST['project']) ? htmlspecialchars($_POST['project']) : '';
+        $scenarioID = isset($_POST['scenario']) ? htmlspecialchars($_POST['scenario']) : '';
+    }
+
+
 	echo "<form method='POST' action=''>
-        <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-halt-cur' value='Remove jobs'><withHelp>?<help>Remove current scenario jobs from the queue</help></withHelp>&nbsp;
-	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status-cur' value='Check status'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
-	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-conv-cur' value='Check convergence'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
-	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-status' value='Status table'><br>
+            <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-halt-cur' value='Remove jobs'><withHelp>?<help>Remove current scenario jobs from the queue</help></withHelp>&nbsp;
+            <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status-cur' value='Check status'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
+            <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-conv-cur' value='Check convergence'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
+            <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-status' value='Status table'><br>
         </form>
-<form method='POST' action=''>
-	Developers only:&nbsp;
-	<input autocomplete=off type=text placeholder='project ID' required name=project title='project ID to be checked'> 
-	<input autocomplete=off type=text placeholder='scenario ID' required name=scenario title='scenario ID to be checked'> 
-	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-check-status' value='Check status'>
-	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-halt' value='Remove jobs'></form><br>";
+        <form method='POST' action=''>
+        Developers only:&nbsp;
+        <input autocomplete='off' type='text' placeholder='project ID' required name='project' title='project ID to be checked' value='$projectID'>
+        <input autocomplete='off' type='text' placeholder='scenario ID' required name='scenario' title='scenario ID to be checked' value='$scenarioID'>
+        <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-check-status' value='Check status'>
+        <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-halt' value='Remove jobs'>
+    </form>";
 }
 
 function query_cur() {
@@ -111,23 +123,26 @@ function check_stat($r) {
 
 
 function stop($r) {
-    $sum=0;
+    $sum = 0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
-	echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
+    echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
 
-	foreach ($r as $element) {
-        echo "<tr><td>".$element['iteration']."</td>";
-        if ($element['status']==''){
-            #redis delete from DB
-            $cmd = "gearadmin --cancel-job=".$element['job_id'];
-            $z=shell_exec("$cmd");
-            echo "<td align='center'>$z</td><td></td>";
-            $r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id'] ));
+    foreach ($r as $element) {
+        $redis = new Redis();
+        $redis->connect(getenv('AAMKS_SERVER'), 6379); 
+        $redis->auth(getenv('AAMKS_REDIS_PASS')); 
+        echo "<tr><td>" . $element['iteration'] . "</td>";
+        if ($element['status'] == '') {
+            # Redis delete
+            $element_job_id = $element['job_id'];
+            delete_from_redis($redis, $element_job_id);
+            echo "<td align='center'>$element_job_id</td><td></td>";
+            $r = $_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id']));
             $sum += 1;
-        }else{
-            echo "<td align='center'>NO</td><td align='center'>".$element['status']."</td>";
+        } else {
+            echo "<td align='center'>NO</td><td align='center'>" . $element['status'] . "</td>";
         }
-    echo "<tr>";
+        echo "<tr>";
     }
     echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>";
 }
@@ -163,6 +178,22 @@ function check_conv_current() {/*{{{*/
 
 
 }
+
+function delete_from_redis($redis, $id){ 
+    $element_id_to_remove = $id;
+    $redis_queue_key = 'aamks_queue';
+    $elements = $redis->lrange($redis_queue_key, 0, -1);
+    foreach ($elements as $element) {
+        // Decode JSON
+        $decoded_element = json_decode($element, true);
+        if ($decoded_element['id'] == $element_id_to_remove) {
+            // delete element from DB
+            $redis->lrem($redis_queue_key, $element, 0);
+            break; // break when id found
+        }
+    }
+}
+
 
 
 function main() {/*{{{*/
@@ -203,4 +234,6 @@ function main() {/*{{{*/
 /*}}}*/
 
 main();
+// stop(query_any());
+
 ?>

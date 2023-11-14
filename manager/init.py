@@ -203,7 +203,7 @@ class OnEnd():
                     self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
             except Exception as e:
                 print('OnEnd: {}'.format(e))
-                logger.error(f'gearman error {e}')
+                logger.error(f'OnEnd: Error {e}')
 
             
 # }}}
