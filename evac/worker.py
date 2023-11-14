@@ -19,10 +19,11 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 from include import Json
 import json
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from subprocess import run, TimeoutExpired
 import zipfile
 import pandas as pd
+from math import log
 from include import Psql
 
 SIMULATION_TYPE = 1
@@ -198,10 +199,10 @@ class Worker:
         try:
             return det
         except NameError:
-            return 0
+            return self.config['DETECTION_TIME']
             return round(normal(loc=self.project_conf['detection']['mean'], scale=self.project_conf['detection']['sd']), 2)
 
-    def read_compartments_HGT(self):
+    def read_compartments(self):
         f = f"{self.working_dir}/cfast_compartments.csv"
         with open(f, 'r') as csvfile:
             reader = csv.reader(csvfile, delimiter=',')
@@ -211,25 +212,40 @@ class Worker:
             uniq_rooms = set(rooms)
             dct = {}
             for room in uniq_rooms:
-                dct[room] = list()
+                dct[room] = defaultdict(list)
             next(reader) # units
             for row in reader:
                 for i, val in enumerate(row):
-                    if params[i] in ["HGT", "Time"]:
-                        dct[rooms[i]].append(float(val))
+                    if params[i] in ["HGT", "ULOD", "Time"]:
+                        dct[rooms[i]][params[i]].append(float(val))
+        for room in dct.keys():
+            for x in dct[room]["ULOD"]:
+                if x <= 1:
+                    dct[room]["VIS"].append(1.0)
+                else:
+                    vis = self.vars['conf']['c_const']/ log(x)
+                    if vis <= 3:
+                        dct[room]["VIS"].append(1.0)
+                    elif vis >= 30:
+                        dct[room]["VIS"].append(0.0)
+                    else:
+                        dct[room]["VIS"].append((30-vis)/30)
         return dct
     
     def recalculate_pre_evac_time(self):
-        dct = self.read_compartments_HGT()
+        dct = self.read_compartments()
         for room in dct.keys():
             if room.startswith('s') or room in ['Time', 'Outside', 'fire']:
                 continue
-            condition = self.config['PRE_EVAC_TIME_ZONE_REDUCTION']*dct[room][0]
-            indexes = where(array(dct[room]) <= condition)[0]
+            condition_hgt = self.config['PRE_EVAC_TIME_ZONE_REDUCTION']*dct[room]["HGT"][0]
+            condition_vis = 1.0
+            arr = array(list(zip(dct[room]["HGT"], dct[room]["ULOD"])))
+            indexes = where((arr[:, 0] < condition_hgt) & (arr[:, 1] > condition_vis))[0]
             if indexes.size > 0:
-                self.rooms_pre_time[room] = dct["Time"][indexes[0]]
+                self.rooms_pre_time[room] = dct["Time"]["Time"][indexes[0]]
 
     def _create_evacuees(self, floor):
+        print(self.rooms_pre_time)
         evacuees = []
         self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
