@@ -262,7 +262,12 @@ function ajaxCheckProgress(){
 	$x = 0;
 	foreach ($active_sims as $row) {
 		$iteration = $row['iteration'];
-		$status = substr($row['status'],-4,2);
+		if($row['status']=='1100'){
+			$status = substr($row['status'],-3,3);
+		}
+		else{
+			$status = substr($row['status'],-2);
+		}
 		if ($status == "00") { $status="100";}
 		$active[] = "<tr><td id='left_column'>No:".$iteration."</td>:<td>".$status."%</td><tr>";
 		$x+=1;
