@@ -238,14 +238,13 @@ class Worker:
             if room.startswith('s') or room in ['Time', 'Outside', 'fire']:
                 continue
             condition_hgt = self.config['PRE_EVAC_TIME_ZONE_REDUCTION']*dct[room]["HGT"][0]
-            condition_vis = 1.0
+            condition_vis = self.config['LOWEST_VIS']
             arr = array(list(zip(dct[room]["HGT"], dct[room]["ULOD"])))
             indexes = where((arr[:, 0] < condition_hgt) & (arr[:, 1] > condition_vis))[0]
             if indexes.size > 0:
                 self.rooms_pre_time[room] = dct["Time"]["Time"][indexes[0]]
 
     def _create_evacuees(self, floor):
-        print(self.rooms_pre_time)
         evacuees = []
         self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
