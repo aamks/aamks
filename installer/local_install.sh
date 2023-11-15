@@ -35,10 +35,9 @@ echo "<Enter> accepts, <ctrl+c> cancels";
 read
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
-sudo apt-get --yes install git python3-pip xdg-utils unzip cmake ipython3 python3-urllib3 libboost-python-dev libgfortran5
-sudo apt-get --yes install php-curl postgresql subversion python3-psycopg2 apache2 php-pgsql pdf2svg libapache2-mod-php 
-sudo -H pip3 install --upgrade pip
-sudo -H pip3 install shapely scipy numpy Cython webcolors pyhull colour sns seaborn statsmodels
+sudo apt-get --yes install git python3-pip unzip php-curl postgresql
+sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php 
+sudo -H pip3 install virtualenv
 if [ ! -f /usr/lib/x86_64-linux-gnu/libboost_python3.so  ]; then
 	sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python3*.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
 fi
@@ -50,6 +49,10 @@ cd || exit
 [ -d aamks ] || { git clone https://github.com/aamks/aamks; }
 cd aamks || exit
 git switch dev
+python3 -m venv env
+source env/bin/activate
+pip install -r requirements.txt
+deactivate
 cd || exit
 # clear $AAMKS_PATH if there is already any content
 if [ -d "$AAMKS_PATH" ]; then
@@ -61,68 +64,6 @@ fi
 
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
 
-# RVO2
-if python3 -c "import rvo2" &> /dev/null; then
-    echo 'RVO2 already installed'
-else
-	echo; echo; echo "Installing RVO2 (agents collisions library) ..."; echo; echo;
-	[ -d Python-RVO2 ] && { git -C Python-RVO2 pull; } || { git clone https://github.com/sybrenstuvel/Python-RVO2; }
-	cd Python-RVO2 || exit
-	echo "Build RVO2..."
-	python3 setup.py build
-	echo
-	echo "Build RVO2 exit code - " $? 
-	echo "Installing RVO2..."
-	sudo python3 setup.py install
-	echo
-	echo "Installing RVO2 exit code - " $?
-fi
-cd || exit
-
-# recast
-if [ -f /usr/local/bin/recast ]; then
-	echo "recast installed"
-else 
-	wget https://golang.org/dl/go1.19.4.linux-amd64.tar.gz
-	if [ $? -ne 0 ]; then
-		echo "Golang download failure - check your network connection"
-		exit
-	fi
-	sudo tar -C /usr/local -xzf go1.19.4.linux-amd64.tar.gz
-	echo
-	echo "Extracting go exit code - " $? 
-	sudo rm go1.19.4.linux-amd64.tar.gz
-	echo "PATH=\"/usr/local/go/bin:\$PATH\"" >> ~/.profile
-	export PATH=$PATH:/usr/local/go/bin
-	echo; echo; echo "Installing recast (path finding library, navmesh producer)..."; echo; echo;
-	cd || exit
-	go install github.com/arl/go-detour/cmd/recast@latest
-	if [ $? -ne 0 ]; then
-		echo "go get -u...  failure"
-		exit
-	fi
-	[ -f ~/go/bin/recast ] || {
-			echo " ~/go/bin/recast is missing. It is likely that your golang version is obsolete.";
-	echo "Perhaps the below commands can fix golang. Once you have fixed golang, you can rerun the installer.
-	sudo add-apt-repository ppa:longsleep/golang-backports
-	sudo apt update
-	sudo apt install golang-go";exit; }
-
-	sudo mv ~/go/bin/recast /usr/local/bin
-	echo "Recast should be now installed"
-
-	# detour
-	echo; echo; echo "Installing detour (path finding library, navmesh navigator) ..."; echo; echo;
-	cd || exit
-	[ -d recastlib ] && { git -C recastlib pull; } || { git clone https://github.com/layzerar/recastlib.git; }
-	cd recastlib || exit
-	cp -rf ./Recast\(Patched\)/Detour/ ./Recast/
-	sudo python3 setup.py install
-	if [ $? -ne 0 ]; then
-		echo "python3 setup.py install... Detour install failure"
-		exit
-	fi
-fi
 # mkdir if there is not any
 if [ ! -d  /home/aamks_users ]; then
 	sudo mkdir /home/aamks_users

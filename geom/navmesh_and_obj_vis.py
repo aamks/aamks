@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import random
 from matplotlib.patches import Polygon
-from descartes import PolygonPatch
 import numpy as np
 fig, ax = plt.subplots()
 
