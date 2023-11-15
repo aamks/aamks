@@ -107,11 +107,12 @@ function check_stat($r) {
 		echo "<tr>";
 		echo "<td align='center'>".$element['iteration']."</td>";
 
-		if ($element['status'] > 1000){
-			$sum += 1;
-			$statuses['in progress'] += 1;
-			echo "<td>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
-		}else{
+        if ($element['status'] > 1000){
+            $sum += 1;
+            $statuses['in progress'] += 1;
+            echo "<td>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
+        }
+        else{
 			$statuses[$element['status']] += 1;
 			$sum += 1;
 			echo "<td>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
@@ -129,7 +130,7 @@ function check_stat($r) {
 
 function stop($r) {
     $sum=0;
-    echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
+    echo "<table><tr><th>Details</th><th>Summary</th></tr><tr><td valign='top'>";
 	echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
 
 	foreach ($r as $element) {
