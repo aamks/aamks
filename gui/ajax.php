@@ -268,7 +268,6 @@ function ajaxCheckProgress(){
 		else{
 			$status = substr($row['status'],-2);
 		}
-		if ($status == "00") { $status="100";}
 		$active[] = "<tr><td id='left_column'>No:".$iteration."</td>:<td>".$status."%</td><tr>";
 		$x+=1;
 	}
