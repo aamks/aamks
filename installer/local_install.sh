@@ -35,7 +35,7 @@ echo "<Enter> accepts, <ctrl+c> cancels";
 read
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
-sudo apt-get --yes install git python3-pip unzip php-curl postgresql python3-psycopg2
+sudo apt-get --yes install git unzip php-curl postgresql
 sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3-venv
 if [ ! -f /usr/lib/x86_64-linux-gnu/libboost_python3.so  ]; then
 	sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python3*.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
@@ -108,7 +108,7 @@ echo "export LOGNAME='$(id -un)'" >> "$temp"
 echo "export HOSTNAME='$HOSTNAME'" >> "$temp"
 echo "alias aamks='cd /usr/local/aamks/'" >> "$temp"
 echo "alias aamks.manager='cd /usr/local/aamks/manager; python3 manager.py'" >> "$temp"
-echo "alias AA='cd /usr/local/aamks/; python3 aamks.py; cd $AAMKS_PROJECT/workers;'" >> "$temp"
+echo "alias AA='cd /usr/local/aamks/; env/bin/python3 aamks.py; cd $AAMKS_PROJECT/workers;'" >> "$temp"
 echo "alias AP='cd $AAMKS_PROJECT'" >> "$temp"
 
 echo "Add some variables to your .bashrc"

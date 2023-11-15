@@ -163,7 +163,7 @@ class OnEnd():
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
                 logger.info('start worker.py sim - %s', i)
-                exit_status = subprocess.run(["python3", "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                exit_status = subprocess.run(["{}/env/bin/python3".format(os.environ['AAMKS_PATH']), "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
                 if exit_status.returncode != 0:
                     logger.error('worker exit status - %s', exit_status)
                 else:
@@ -212,7 +212,7 @@ class Retry():# {{{
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in self.stat1:
                 logger.info('start worker.py sim - %s', i)
-                exit_status = subprocess.run(["python3", "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                exit_status = subprocess.run(["{}/env/bin/python3".format(os.environ['AAMKS_PATH']), "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
                 if exit_status.returncode != 0:
                     logger.error('worker exit status - %s', exit_status)
                 else:

@@ -156,7 +156,7 @@ function runPP() {
 	$f=$_SESSION['main']['working_home'];
 	$aamks=getenv("AAMKS_PATH");
 
-	$cmd="python3 $aamks/results/beck_new.py $f 2>&1";
+	$cmd="$aamks/env/bin/python3 $aamks/results/beck_new.py $f 2>&1";
 	$z=shell_exec("$cmd");
 	echo "Postprocess finished<br>";
 }
@@ -164,7 +164,7 @@ function runPP() {
 function retry() {
    $f=$_SESSION['main']['working_home'];
    $aamks=getenv("AAMKS_PATH");
-   $cmd="cd $aamks/manager; python3 init.py $f 2>&1";
+   $cmd="cd $aamks/manager; ../env/bin/python3 init.py $f 2>&1";
 
    $z=shell_exec("$cmd");
    echo "$z jobs retried<br>";
