@@ -209,9 +209,9 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
                 for x in range(4):
                     next(reader)
                 for row in reader:
-                    if int(float(row[0])) == time:
+                    if round(float(row[0])) == time:
                         needed_record=[(float(j)) for j in row]
-                        needed_record[0]=int(float(row[0]))
+                        needed_record[0]=round(float(row[0]))
                         break
 
             for compa in self.all_compas:
