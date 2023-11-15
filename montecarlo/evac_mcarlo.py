@@ -24,7 +24,7 @@ from numpy.random import gamma
 from numpy.random import triangular
 from numpy.random import seed
 from numpy import array as npa
-from math import sqrt
+from math import sqrt, log
 
 from include import Sqlite
 from include import Json
@@ -32,10 +32,26 @@ from include import Dump as dd
 from include import SimIterations
 from include import Vis
 
-from scipy.stats.distributions import lognorm
-
+from scipy.optimize import fsolve
+from scipy.special import erfc
 
 # }}}
+def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99, outtype='l'):
+    def equations(vars):
+        m, s = vars
+        eq1 = 0.5 * erfc(-(log(x1) - m) / (s * sqrt(2))) - 0.01
+        eq2 = 0.5 * erfc(-(log(x2) - m) / (s * sqrt(2))) - 0.99
+        return [eq1, eq2]
+
+    loc, scale =  fsolve(equations, (1, 1))
+
+    if outtype=='l':
+        return [loc, scale]
+    elif outtype=='d':
+        return {'loc': loc, 'scale': scale}
+    else:
+        raise ValueError(f'{outtype} is not the correct outtype. Use "d" for dictionary or "l" for list')
+
 
 class EvacMcarlo():
     def __init__(self):# {{{
@@ -105,7 +121,16 @@ class EvacMcarlo():
             pe=self.conf['pre_evac']
         else:
             pe=self.conf['pre_evac_fire_origin']
-        return self._get_alarming_time() + round(lognorm(s=1, loc=pe['mean'], scale=pe['sd']).rvs(), 2)
+
+        if pe['mean'] and pe['sd']:
+            # if distribution parameters are given
+            return self._get_alarming_time() + round(lognormal(mean=pe['mean'], sigma=pe['sd']), 2)
+        elif pe['1st'] and pe['99th']:
+            # if percentiles are given
+            params = lognorm_params_from_percentiles(pe['1st'], pe['99th'])
+            return self._get_alarming_time() + round(lognormal(mean=params[0], sigma=params[1]), 2)
+        else:
+            raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
         ''' 

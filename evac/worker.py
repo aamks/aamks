@@ -418,7 +418,7 @@ class Worker:
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
                 progress = round(time_frame/self.vars["conf"]["simulation_time"] * 100, 1)
                 self.wlogger.info(f'Progress: {progress}%')
-                progres_status = 1000+progress
+                progres_status = int(1000+progress)
                 self.send_report(e={"status":progres_status})
                 # check if all agents egressed and determine RSET for the building
                 if prod(array(rsets)) > 0:
