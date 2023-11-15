@@ -35,9 +35,8 @@ echo "<Enter> accepts, <ctrl+c> cancels";
 read
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
-sudo apt-get --yes install git python3-pip unzip php-curl postgresql
-sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php 
-sudo -H pip3 install virtualenv
+sudo apt-get --yes install git python3-pip unzip php-curl postgresql python3-psycopg2
+sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3-venv
 if [ ! -f /usr/lib/x86_64-linux-gnu/libboost_python3.so  ]; then
 	sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python3*.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
 fi
@@ -49,10 +48,6 @@ cd || exit
 [ -d aamks ] || { git clone https://github.com/aamks/aamks; }
 cd aamks || exit
 git switch dev
-python3 -m venv env
-source env/bin/activate
-pip install -r requirements.txt
-deactivate
 cd || exit
 # clear $AAMKS_PATH if there is already any content
 if [ -d "$AAMKS_PATH" ]; then
@@ -63,7 +58,9 @@ else
 fi
 
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
-
+cd "$AAMKS_PATH" || exit
+python3 -m venv env
+env/bin/pip install -r requirements.txt
 # mkdir if there is not any
 if [ ! -d  /home/aamks_users ]; then
 	sudo mkdir /home/aamks_users
@@ -153,6 +150,7 @@ sudo a2enmod ssl
 sudo a2ensite default-ssl.conf
 sudo sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/ssl/' /etc/apache2/sites-available/000-default.conf
 sudo systemctl restart apache2
+echo; echo; echo;
 echo "AAMKS installed successfully. You can start using it at http://127.0.0.1/aamks"
 echo "Default user email: demo@aamks"
 echo "Password: AAMKSisthe1!"

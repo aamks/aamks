@@ -1,18 +1,11 @@
 # MODULES
 # {{{
 import json
-import shutil
 import os
-import re
 import sys
 from evac.polymesh import Polymesh
 sys.path.insert(1, '/usr/local/aamks')
-import codecs
-import itertools
-import _recast as dt
-import subprocess
 import copy
-
 from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon

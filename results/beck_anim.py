@@ -66,6 +66,5 @@ class Beck_Anim:
 
 
 if __name__ == '__main__':
-    print("run")
     Beck_Anim(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
     #Beck_Anim('/home/aamks_users/demo@aamks/demo/three', '1', '3', '2')
