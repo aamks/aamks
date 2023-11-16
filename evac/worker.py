@@ -5,9 +5,7 @@ import os
 import re
 import sys
 sys.path.insert(1, '/usr/local/aamks')
-from numpy import array
-from numpy import prod
-from numpy import where, diff
+from numpy import array, prod, log, where, diff
 from results.beck_new import RiskIteration as RI
 from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
@@ -23,7 +21,6 @@ from collections import OrderedDict, defaultdict
 from subprocess import run, TimeoutExpired
 import zipfile
 import pandas as pd
-from math import log
 from include import Psql
 
 SIMULATION_TYPE = 1
@@ -60,7 +57,7 @@ class Worker:
         self.position_fed_tables_information = []
         self.rows_to_insert = []
         self.detection_time = None
-        self.rooms_pre_time = {}
+        self.rooms_det_time = {}
         self.start_time = time.time()
 
 
@@ -187,7 +184,7 @@ class Worker:
         raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target from building 100 cm behind exit door")
 
 
-    def _get_detection_time(self):
+    def _get_detection_time_device(self):
         heat = any(self.project_conf['smoke_detectors'].values())
         smoke = any(self.project_conf['heat_detectors'].values())
         sprink = any(self.project_conf['sprinklers'].values())
@@ -200,9 +197,8 @@ class Worker:
             return det
         except NameError:
             return self.config['DETECTION_TIME']
-            return round(normal(loc=self.project_conf['detection']['mean'], scale=self.project_conf['detection']['sd']), 2)
 
-    def read_compartments(self):
+    def _read_compartments(self):
         f = f"{self.working_dir}/cfast_compartments.csv"
         with open(f, 'r') as csvfile:
             reader = csv.reader(csvfile, delimiter=',')
@@ -220,46 +216,51 @@ class Worker:
                         dct[rooms[i]][params[i]].append(float(val))
         for room in dct.keys():
             for x in dct[room]["ULOD"]:
-                if x <= 1:
-                    dct[room]["VIS"].append(1.0)
-                else:
-                    vis = self.vars['conf']['c_const']/ log(x)
-                    if vis <= 3:
-                        dct[room]["VIS"].append(1.0)
-                    elif vis >= 30:
-                        dct[room]["VIS"].append(0.0)
-                    else:
-                        dct[room]["VIS"].append((30-vis)/30)
+                vis = min([30, self.vars['conf']['c_const'] / (x * log(10))])
+                dct[room]["VIS"].append(vis)
+
         return dct
     
-    def recalculate_pre_evac_time(self):
-        dct = self.read_compartments()
+    def _get_detection_time_room(self):
+        dct = self._read_compartments()
         for room in dct.keys():
             if room.startswith('s') or room in ['Time', 'Outside', 'fire']:
                 continue
-            condition_hgt = self.config['PRE_EVAC_TIME_ZONE_REDUCTION']*dct[room]["HGT"][0]
+            condition_hgt = self.config['PRE_EVAC_TIME_ZONE_REDUCTION'] * dct[room]["HGT"][0]
             condition_vis = self.config['LOWEST_VIS']
-            arr = array(list(zip(dct[room]["HGT"], dct[room]["ULOD"])))
-            indexes = where((arr[:, 0] < condition_hgt) & (arr[:, 1] > condition_vis))[0]
+            arr = array(list(zip(dct[room]["HGT"], dct[room]["VIS"])))
+            indexes = where((arr[:, 0] < condition_hgt) & (arr[:, 1] < condition_vis))[0]
             if indexes.size > 0:
-                self.rooms_pre_time[room] = dct["Time"]["Time"][indexes[0]]
+                self.rooms_det_time[room] = dct["Time"]["Time"][indexes[0]]
 
-    def _create_evacuees(self, floor):
+    def _create_evacuees(self, floor: int):
         evacuees = []
         self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
         floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
 
+            
         def pre_evac_total(i):
-            if floor['EVACUEES'][i]['COMPA'] in self.rooms_pre_time.keys():
-                if floor['EVACUEES'][i]['PRE_EVACUATION'] > self.rooms_pre_time[floor['EVACUEES'][i]['COMPA']]:
-                    return self.rooms_pre_time[floor['EVACUEES'][i]['COMPA']]
-                else:
-                   return floor['EVACUEES'][i]['PRE_EVACUATION']
+            det = self._get_detection_time_device()     # detection time for the building
+            alarm = floor['ALARMING']   # alarming time for the floor
+            pres = floor['EVACUEES'][i]['PRE_EVACUATION']   # pre-evacuation times [default, fire origin] for the agent
+            pre = pres['pre_evac']  # default pre-evacuation time for agent
+
+            # fire origin room
             if floor['EVACUEES'][i]['COMPA'] == self.vars['conf']['FIRE_ORIGIN']:
-                return floor['EVACUEES'][i]['PRE_EVACUATION']
-            else:
-                return self.detection_time+floor['EVACUEES'][i]['PRE_EVACUATION']
+                det = 0
+                alarm = 0
+                pre = pres['pre_evac_fire_origin']
+
+            # other rooms
+            elif floor['EVACUEES'][i]['COMPA'] in self.rooms_det_time.keys():
+                if det > self.rooms_det_time[floor['EVACUEES'][i]['COMPA']]:
+                    det = self.rooms_det_time[floor['EVACUEES'][i]['COMPA']]
+                    alarm = 0
+                    pre = pres['pre_evac_fire_origin']
+
+            return det + alarm + pre
+
 
         for i in floor['EVACUEES'].keys():
             evacuees.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
@@ -288,8 +289,8 @@ class Worker:
         return stair_cases
 
     def prepare_simulations(self):
-        self.detection_time = self._get_detection_time() #rough - with CFAST SPREADSHEET resolution
-        self.recalculate_pre_evac_time()
+        self._get_detection_time_room()
+        self.detection_time = self._get_detection_time_device() #rough - with CFAST SPREADSHEET resolution
         floor_numers = sorted(self.obstacles['obstacles'].keys())
         for floor in floor_numers:
             eenv = None
@@ -677,6 +678,7 @@ class LocalResultsCollector:
                 WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
 
 w = Worker()
+#w.main()
 try:
     if SIMULATION_TYPE == 'NO_CFAST':
         print('Working in NO_CFAST mode')

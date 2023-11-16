@@ -32,25 +32,23 @@ from include import Dump as dd
 from include import SimIterations
 from include import Vis
 
-from scipy.optimize import fsolve
+from scipy.optimize import root
 from scipy.special import erfc
 
 # }}}
-def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99, outtype='l'):
+def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99):
     def equations(vars):
         m, s = vars
         eq1 = 0.5 * erfc(-(log(x1) - m) / (s * sqrt(2))) - 0.01
         eq2 = 0.5 * erfc(-(log(x2) - m) / (s * sqrt(2))) - 0.99
         return [eq1, eq2]
 
-    loc, scale =  fsolve(equations, (1, 1))
+    params = root(equations, (0, 0.1))
 
-    if outtype=='l':
-        return [loc, scale]
-    elif outtype=='d':
-        return {'loc': loc, 'scale': scale}
-    else:
-        raise ValueError(f'{outtype} is not the correct outtype. Use "d" for dictionary or "l" for list')
+    if not params.success:
+        raise RuntimeError(f'Numerical solution of lognormal distribution parameters failed.\n{params.message}')
+
+    return params.x
 
 
 class EvacMcarlo():
@@ -110,27 +108,27 @@ class EvacMcarlo():
         return round(normal(loc=self.conf['alarming']['mean'], scale=self.conf['alarming']['sd']), 2)
 
     def _make_pre_evacuation(self,room,type_sec):# {{{
-        ''' 
-        An evacuee pre_evacuates from either ordinary room or from the room of
-        fire origin; type_sec is for future development.
-        Detection from CFAST or config when no detectors in worker.py
-        Alarming form config
+        '''
+        Get values for both cases (once there is enough smoke in the room other than fire origin's,
+        agents should start to behave like they actually are in the room of fire origin though).
         '''
 
-        if room != self._evac_conf['FIRE_ORIGIN']:
-            pe=self.conf['pre_evac']
-        else:
-            pe=self.conf['pre_evac_fire_origin']
+        pre_evacs = {'pre_evac': None, 'pre_evac_fire_origin': None}
+        for room_type in ['pre_evac', 'pre_evac_fire_origin']:
+            pe = self.conf[room_type]
+            if pe['mean'] and pe['sd']:
+                # if distribution parameters are given
+                params = [pe[i] for i in ['mean', 'sd']]
+            elif pe['1st'] and pe['99th']:
+                # if percentiles are given
+                params = lognorm_params_from_percentiles(pe['1st'], pe['99th'])
+            else:
+                raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
+            pre_evacs[room_type] = round(lognormal(mean=params[0], sigma=params[1]), 2)
+            
 
-        if pe['mean'] and pe['sd']:
-            # if distribution parameters are given
-            return self._get_alarming_time() + round(lognormal(mean=pe['mean'], sigma=pe['sd']), 2)
-        elif pe['1st'] and pe['99th']:
-            # if percentiles are given
-            params = lognorm_params_from_percentiles(pe['1st'], pe['99th'])
-            return self._get_alarming_time() + round(lognormal(mean=params[0], sigma=params[1]), 2)
-        else:
-            raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
+        return pre_evacs
+
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
         ''' 
@@ -233,6 +231,7 @@ class EvacMcarlo():
         for floor in self.floors:
             self._evac_conf['FLOORS_DATA'][floor]=OrderedDict()
             self._evac_conf['FLOORS_DATA'][floor]['NUM_OF_EVACUEES']=len(self.dispatched_evacuees[floor])
+            self._evac_conf['FLOORS_DATA'][floor]['ALARMING']=self._get_alarming_time()
             self._evac_conf['FLOORS_DATA'][floor]['EVACUEES']=OrderedDict()
             z=self.s.query("SELECT z0 FROM aamks_geom WHERE floor=?", (floor,))[0]['z0']
             for i,pos in enumerate(self.dispatched_evacuees[floor]):
