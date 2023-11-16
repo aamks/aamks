@@ -32,11 +32,13 @@ from include import Dump as dd
 from include import SimIterations
 from include import Vis
 
+
 from scipy.optimize import root
 from scipy.special import erfc
 
 # }}}
 def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99):
+
     def equations(vars):
         m, s = vars
         eq1 = 0.5 * erfc(-(log(x1) - m) / (s * sqrt(2))) - 0.01
@@ -49,6 +51,7 @@ def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99):
         raise RuntimeError(f'Numerical solution of lognormal distribution parameters failed.\n{params.message}')
 
     return params.x
+
 
 
 class EvacMcarlo():
@@ -128,6 +131,7 @@ class EvacMcarlo():
             
 
         return pre_evacs
+
 
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
