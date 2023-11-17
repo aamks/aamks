@@ -37,7 +37,7 @@ class RedisWorker:
         message = loads(message_json)
         print(f"Message received: id={message['data']['sim']}")
         sim_value = message["data"]["sim"]
-        if  self.host != "127.0.0.1":
+        if self.host != "127.0.0.1":
             sim_value = sim_value.replace("home","mnt")
         # Try counter
         retry_count = 0
