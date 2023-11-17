@@ -9,9 +9,11 @@ sys.path.insert(1, '/usr/local/aamks/evac')
 from evac import worker as EvacWorker
 
 class RedisWorker:
+    
     def redis_db(self):
+        self.host = config.redis_host
         db = redis.Redis(
-            host=config.redis_host,
+            host=self.host,
             port=config.redis_port,
             db=config.redis_db_number,
             password=config.redis_password,
@@ -35,7 +37,7 @@ class RedisWorker:
         message = loads(message_json)
         print(f"Message received: id={message['data']['sim']}")
         sim_value = message["data"]["sim"]
-        if os.environ['AAMKS_SERVER'] != "127.0.0.1":
+        if  self.host != "127.0.0.1":
             sim_value = sim_value.replace("home","mnt")
         # Try counter
         retry_count = 0
