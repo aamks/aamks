@@ -14,7 +14,7 @@ class RedisManager:
         self.host_array = []
         self.ip_array = []
         self._argparse()
-        
+
     #SERVER
     def run_redis_server(self):
         client = docker.from_env()
@@ -125,10 +125,10 @@ class RedisManager:
                     print(f"Error while retrieving worker information for node with IP {ip}: {e}")
         return enabled_workers  
 
-    def show_worker_ip(self, ip):
+    def show_worker_one(self, ip):
         cmd = f'ssh {ip} ps aux | grep "python3 {self.worker_path}" | wc -l'
         try:
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+            output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, text=True)
             print(f"Number of redis worker processes on {ip}: {output.strip()}")
         except subprocess.CalledProcessError as e:
             print(f"Error while retrieving worker information for node with IP {ip}: {e}")
@@ -208,7 +208,7 @@ class RedisManager:
         if args.showall:
             self.show_all_workers()
         if args.showone and args.ip:
-            self.show_worker_ip(args.ip)
+            self.show_worker_one(args.ip)
         if args.showlocal:
             self.show_local_workers()
         #kill
