@@ -34,6 +34,7 @@ function projects_list(){/*{{{*/
 
 	//new project
 	echo "<br><br><br>
+	<div>Add new project:
 	<form method=POST>
 		<input autocomplete=off type=text placeholder='new project name' name=new_project required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
 		<input autocomplete=off type=submit name=submit value='add'>
@@ -60,7 +61,7 @@ function projects_list(){/*{{{*/
 
 	//copy scenario
 	echo "<br>
-	<div>Copy current scenario as:
+	<div>Copy current scenario (<i>$current_project/$current_scenario</i>) as:
 	<form method=POST>
 		<input autocomplete=off type=text placeholder='new scenario name' name=copy_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
 		<input autocomplete=off type=submit name=submit value='copy'>
