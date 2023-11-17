@@ -6,7 +6,6 @@ import argparse
 import subprocess
 
 class RedisManager:
-
     def __init__(self):
         self.redis_pwd = os.path.join(os.environ['AAMKS_PATH'], "redis_aamks")
         self.worker_path = os.path.join(self.redis_pwd, "worker", "worker.py")
@@ -15,7 +14,8 @@ class RedisManager:
         self.host_array = []
         self.ip_array = []
         self._argparse()
-
+        
+    #SERVER
     def run_redis_server(self):
         client = docker.from_env()
         try:
@@ -57,7 +57,7 @@ class RedisManager:
             cmd = f"docker ps -a | grep {self.container_name} | awk '{{print $1}}' | xargs docker rm -f"
             os.system(cmd)
         except Exception as e:                                              
-            print(f"Error during deleting ({e})")     
+            print(f"Error during deleting ({e})")  
 
     def show_server_status(self):
         client = docker.from_env()
@@ -66,8 +66,9 @@ class RedisManager:
             print(container.status)
         except:
             print("Redis container does not exist")
-      
+
     def get_hosts(self):
+        #Get all nodes from aamkconf.json
         with open(self.net_conf, "r") as file:
             data = json.load(file)
             if "AAMKS_NETCONF" in data and "enabled_networks" in data["AAMKS_NETCONF"]:
@@ -82,9 +83,11 @@ class RedisManager:
             for ip in data[2]:
                 self.ip_array.append(ip)
 
-    def start_workers_one(self, ip, n:int):
+    #START WORKERS
+    def start_workers_ip(self, ip, n:int):
+        print(f"Trying to start {n} workers on {ip}")
         for _ in range(int(n)):
-            cmd = f"ssh {ip} python3 {self.worker_path}"
+            cmd = f'ssh {ip} "nohup python3 {self.worker_path} &"'
             Popen(cmd, shell=True)
 
     def start_workers_on_all_nodes(self):
@@ -100,8 +103,9 @@ class RedisManager:
         print(f"Trying to run workers locally,workers: {n}")
         for _ in range(int(n)):
             cmd = ["nohup", "python3", self.worker_path, "&"]
-            subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
+            Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    #SHOW WORKERS     
     def show_all_workers(self):
         self.get_hosts()
         enabled_workers = []
@@ -121,7 +125,7 @@ class RedisManager:
                     print(f"Error while retrieving worker information for node with IP {ip}: {e}")
         return enabled_workers  
 
-    def show_worker(self, ip):
+    def show_worker_ip(self, ip):
         cmd = f'ssh {ip} ps aux | grep "python3 {self.worker_path}" | wc -l'
         try:
             output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
@@ -137,8 +141,10 @@ class RedisManager:
             print(f"Number of local workers: {x-2}")
         else:
             print(f"Error: {result.stderr}")
-
+    
+    #KILL WORKERS
     def kill_one(self, ip):
+        print("Trying to kill workers on specific IP")
         kill_cmd = f"python3 {self.worker_path}"
         cmd = f"""ssh {ip} 'pkill -f "{kill_cmd}"'"""
         process = Popen(cmd, shell=True)
@@ -152,28 +158,30 @@ class RedisManager:
                 self.kill_one(ip)
 
     def kill_local(self): 
+        print("Trying to kill all local workers if any")
         kill_cmd = f"python3 {self.worker_path}"
         cmd = f"""pkill -f '{kill_cmd}'"""
         Popen(cmd, shell=True)
 
+    #ARGS
     def _argparse(self):
         parser = argparse.ArgumentParser(description='redis manager')
         #server
-        parser.add_argument('--serverstart', help='run redis server', required=False, action='store_true')
-        parser.add_argument('--serverstop', help='stop redis server', required=False, action='store_true')
-        parser.add_argument('--serverdelete', help='delete all docker redis containers', required=False, action='store_true')
-        parser.add_argument('--serverstatus', help='check docker redis containers status', required=False, action='store_true')
+        parser.add_argument('--serverstart', help='Run redis server', required=False, action='store_true')
+        parser.add_argument('--serverstop', help='Stop redis server', required=False, action='store_true')
+        parser.add_argument('--serverdelete', help='Delete all docker redis containers', required=False, action='store_true')
+        parser.add_argument('--serverstatus', help='Check docker redis containers status', required=False, action='store_true')
         #run
-        parser.add_argument('--runall', help='run all workers according to etc/aamksconf.json', required=False, action='store_true')
-        parser.add_argument('--runone', help='run n workers on specific ip', required=False,  action='store_true')
-        parser.add_argument('--runlocal', help='run n workers on local machine', required=False,  action='store_true')
+        parser.add_argument('--runall', help='Run all workers according to etc/aamksconf.json', required=False, action='store_true')
+        parser.add_argument('--runone', help='Run n workers on specific ip | --runone -ip 192.168.0.184 -n 2', required=False,  action='store_true')
+        parser.add_argument('--runlocal', help='Run n workers on local machine | --runlocal -n 2', required=False,  action='store_true')
         #show
-        parser.add_argument('--showall', help='Show information for all workers', required=False, action='store_true')
-        parser.add_argument('--showone', help='Show information for a single worker', required=False,  action='store_true')
+        parser.add_argument('--showall', help='Show information about all workers', required=False, action='store_true')
+        parser.add_argument('--showone', help='Show information about a single worker | --showone -ip 192.168.0.184', required=False,  action='store_true')
         parser.add_argument('--showlocal', help='Show information about local workers', required=False,  action='store_true')
         #kill
         parser.add_argument('--killall', help='Kill all workers on all nodes', required=False, action='store_true')
-        parser.add_argument('--killone', help='Kill all workers on specific node', required=False, action='store_true')
+        parser.add_argument('--killone', help='Kill all workers on specific node | --killone -ip 192.168.0.184', required=False, action='store_true')
         parser.add_argument('--killlocal', help='Kill all workers locally', required=False, action='store_true')
         #params for runone, showone, killone
         parser.add_argument('-ip', help='The IP address to work on', default=None, required=False)
@@ -193,14 +201,14 @@ class RedisManager:
         if args.runall:
             self.start_workers_on_all_nodes()
         if args.runone and args.ip and args.n:
-            self.start_workers_one(args.ip, args.n)
+            self.start_workers_ip(args.ip, args.n)
         if args.runlocal and args.n:
             self.start_workers_locally(args.n)
         #show
         if args.showall:
             self.show_all_workers()
         if args.showone and args.ip:
-            self.show_worker(args.ip)
+            self.show_worker_ip(args.ip)
         if args.showlocal:
             self.show_local_workers()
         #kill

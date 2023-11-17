@@ -7,9 +7,9 @@ try:
 except ImportError:
     print("Error importing from worker_env. Using os.environ instead.")
     try:
-        if os.environ['AAMKS_SERVER'].startswith("127"):
+        if os.environ['AAMKS_SERVER']:
             redis_host = os.environ['AAMKS_SERVER']
-            redis_password = os.environ.get('AAMKS_REDIS_PASS', '')
+            redis_password = os.environ('AAMKS_REDIS_PASS')
         else:
             print("AAMKS_SERVER not properly configured or doesn't start with '127'")
     except Exception as e:
