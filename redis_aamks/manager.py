@@ -93,14 +93,14 @@ class RedisManager:
         for host in self.host_array:
             for ip in host[2]:
                 for _ in range(host[1]):
-                    cmd = f'ssh {ip} python3 {self.worker_path}'
-                    # Popen(cmd, shell=True)
-                    subprocess.run(["python3", self.worker_path])
+                    cmd = f'ssh {ip} "nohup python3 {self.worker_path} &"'
+                    Popen(cmd, shell=True)
 
     def start_workers_locally(self, n: int):
+        print(f"Trying to run workers locally,workers: {n}")
         for _ in range(int(n)):
-            cmd = ["python3", self.worker_path]
-            subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, shell=False)
+            cmd = ["nohup", "python3", self.worker_path, "&"]
+            subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         
     def show_all_workers(self):
         self.get_hosts()
