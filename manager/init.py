@@ -161,8 +161,6 @@ class OnEnd():
 
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
 
-        os.environ['AAMKS_WORKER']='redis'
-        x = os.environ['AAMKS_WORKER']
         if os.environ['AAMKS_WORKER']=='none':
             return
 
