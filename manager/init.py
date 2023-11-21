@@ -179,7 +179,7 @@ class OnEnd():
             try:
                 for i in range(*si.get()):
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                    # worker = worker.replace("/home","/mnt")
+                    worker = worker.replace("/home","/mnt")
                     gearman=["gearman", "-v",  "-b", "-f", "aRun", worker]
                     job_id = subprocess.check_output(gearman, universal_newlines=True)
                     job_id = job_id.split('Task created: ')[-1][:-1]
