@@ -28,6 +28,7 @@ from collections import OrderedDict
 from subprocess import run, TimeoutExpired
 import zipfile
 import pandas as pd
+from io import StringIO
 from include import Psql
 
 SIMULATION_TYPE = 1
@@ -588,7 +589,7 @@ class LocalResultsCollector:
         fed = json.dumps(self.meta['psql']['fed'])
         fed_symbolic = json.dumps(self.meta['psql']['fed_symbolic'])
         rset = json.dumps(self.meta['psql']['rset'])
-        dfeds = [pd.read_json(i) for i in self.meta['psql']['dfed'].values()]
+        dfeds = [pd.read_json(StringIO(i)) for i in self.meta['psql']['dfed'].values()]
 
         # fed_growth_cells table
         def check_for_data(x, floor):
