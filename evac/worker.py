@@ -617,7 +617,6 @@ if __name__ == "__main__":
             w.test()
         else:
             w.main()
-            w.ch.close()
     except Exception as error:
         w.wlogger.error(error)
         w.send_report(e={'status': 1})
