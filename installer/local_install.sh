@@ -15,7 +15,7 @@ if [[ ! -v PYTHONPATH ]]
 then
 	PYTHONPATH="$AAMKS_PATH"
 else
-	PYTHONPATH="${PYTHONPATH}:$AAMKS_PATH"
+	PYTHONPATH="$PYTHONPATH:$AAMKS_PATH"
 fi
 echo "This is the default Aamks configuration that can be modified in local_config or later in /etc/apache2/envvars."
 echo "If you use PYTHONPATH in /etc/apache2/envvars make sure we haven't broken it."
@@ -37,7 +37,7 @@ sudo locale-gen en_US.UTF-8
 sudo apt-get update
 sudo apt-get --yes install git unzip php-curl postgresql
 sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3-venv
-if [ ! -f /usr/lib/x86_64-linux-gnu/libboost_python3.so  ]; then
+if [[ ! -f /usr/lib/x86_64-linux-gnu/libboost_python3.so  ]]; then
 	sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python3*.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
 fi
 echo "{ \"AAMKS_SERVER\": \"$AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
