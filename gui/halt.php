@@ -50,18 +50,11 @@ function listing() {/*{{{*/
 
 
 	echo "<form method='POST' action=''>
-<<<<<<< HEAD
-            <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-halt-cur' value='Remove jobs'><withHelp>?<help>Remove current scenario jobs from the queue</help></withHelp>&nbsp;
-            <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status-cur' value='Check status'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
-            <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-conv-cur' value='Check convergence'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
-            <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-status' value='Status table'><br>
-=======
         <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-halt-cur' value='Remove jobs'><withHelp>?<help>Remove current scenario jobs from the queue</help></withHelp>&nbsp;
 	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status-cur' value='Check status'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
 	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-conv-cur' value='Calc uncertainties'><withHelp>?<help>Show convergence of individual risk<br>and perform sensitivity analysis</help></withHelp>&nbsp;&nbsp;
 	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-status' value='Status table'><br>
 	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-retry' value='Retry'><withHelp>?<help>Retry jobs finished with status 1</help></withHelp>&nbsp;&nbsp;
->>>>>>> dev
         </form>
         <form method='POST' action=''>
         Developers only:&nbsp;
