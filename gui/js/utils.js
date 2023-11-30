@@ -1,4 +1,40 @@
 var aamksUserPrefs;
+function myConfirm(message){
+	let element = document.createElement("div");
+	element.classList.add("box-background");
+	element.innerHTML = `<div class="box">
+						${message}
+	<div>
+		<button id="falseButton" class="btn red">No</button>
+		<button id="trueButton" class="btn green">Yes</button>
+	</div>
+</div>`;
+	document.body.appendChild(element);
+	return new Promise(function (resolve, reject) {
+		document.getElementById("trueButton").addEventListener("click", function () {
+			resolve(true);
+			document.body.removeChild(element);
+	});
+	document.getElementById("falseButton").addEventListener("click", function () {
+		resolve(false);
+		document.body.removeChild(element);
+	});
+})
+}
+function delProject(id) {
+	myConfirm("Are you sure to delete this project?").then(response=>{
+		if (response) {
+			window.location.href = '?delete_project='+id;
+		};
+	})
+};
+function delScenario() {
+	myConfirm("Are you sure to delete scenario?").then(response=>{
+		if (response) {
+			$.post('form.php', 'delete_scenario');
+			setTimeout(() => {  window.location.href = 'projects.php?projects_list';  }, 500);
+		}}
+)};
 
 $(function()  {//{{{
 	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
@@ -41,6 +77,7 @@ function make_legend2(module) {//{{{
 	} 
 	if (module=='animator') {
 		$('legend2').append("<animator-floor-links style='padding-right: 10px'></animator-floor-links> ");
+		$('legend2').append("<button id=button-info>View sim information</button>");
 		$('legend2').append("<button id=button-setup>Setup</button>");
 	}
 
@@ -69,6 +106,43 @@ function amsg(r) {//{{{
 	}
 }
 //}}}
+function searchTable() {
+	var input, filter, found, table, tr, td, i, j;
+	input = document.getElementById("search");
+	filter = input.value.toUpperCase();
+	table = document.getElementById("sim");
+	tr = table.getElementsByTagName("tr");
+	for (i = 0; i < tr.length; i++) {
+		td = tr[i].getElementsByTagName("td");
+		for (j = 0; j < td.length; j++) {
+			if (td[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
+				found = true;
+			}
+		}
+		if (found) {
+			tr[i].style.display = "";
+			found = false;
+		} else {
+			tr[i].style.display = "none";
+		}
+	}
+}
+function sortTable(){
+	document.getElementById("animcheck").checked="checked";
+	document.getElementById('trAnim').style.cursor = 'pointer';
+	const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
+
+	const comparer = (idx, asc) => (a, b) => ((v1, v2) => 
+	v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
+	)(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
+
+	document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
+	const table = th.closest('table');
+	Array.from(table.querySelectorAll('tr:not(thead tr)'))
+		.sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
+		.forEach(tr => table.appendChild(tr) );
+	})));
+}
 function scenario_changer() {//{{{
 	$("body").on("change", "#choose_scenario", function() {
 		$.post('/aamks/ajax.php?ajaxChangeActiveScenario', {'ch_scenario':$(this).val() }, function (json) { 
@@ -82,20 +156,47 @@ function ajaxUserPreferences() {//{{{
 		aamksUserPrefs=json.data;
 	});
 }
+
+function check_progress(){
+	$("#check-sim").click(function(){
+		amsg({"msg": "Checking progress", "err":0, "duration": 2000 }); 
+		$("#progress").css("color","white");
+		
+		$.post('/aamks/ajax.php?ajaxCheckProgress',{}, function (json){
+			let newContent = "<tr><td id='left_column'>Done:</td><td>" +json.good+ "</td></tr><br>"+"<tr><td id='left_column'>All:</td><td>"+ json.all + "</td></tr>";
+			$("#active-sims").html(newContent+json.active);
+			$("#active-sims").css({
+				"color": "white",
+				"height": "150px",
+				"transition-duration": "1s",
+				"background-color": "#616"
+			});
+			setTimeout(()=> {
+				$("#active-sims").css("background-color", "");
+			}, 2000)
+
+			
+		})
+	})
+}	
+
 //}}}
 function launch_simulation() {//{{{
 	$("body").on("click", "#launch_simulation", function() {
-		amsg({"msg": "Trying to launch...", "err":0, "duration": 20000 }); 
-		$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function (json) { 
-			amsg(json); 
-			if(json.err==0) {
-				setTimeout(function(){
-					location.assign("/aamks/animator/index.php");
-				}, 1500);
-			}
+		myConfirm("Are you sure to launch simulations?").then(result=>{
+			if (result == true) {
+				amsg({"msg": "Trying to launch...", "err":0, "duration": 20000 }); 
+				$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function (json) { 
+					amsg(json); 
+					if(json.err==0) {
+						setTimeout(function(){
+							location.assign("/aamks/halt.php");
+						}, 1500);
+					}
+				});
+			} 
 		});
 	});
-
 }
 //}}}
 function isEmpty(obj) {//{{{
@@ -119,6 +220,7 @@ deepcopy=function(x) {//{{{
 //}}}
 
 $(function() { 
+	check_progress();
 	scenario_changer();
 	launch_simulation();
 	if(navigator.userAgent.indexOf("Chrome")==-1) { alert("Aamks is designed for Google Chrome. Aamks may work, but is not supported on other browsers"); }

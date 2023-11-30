@@ -1,7 +1,9 @@
 from typing import List, Tuple, Optional
 from evac.pathfinder.navmesh.navmesh_node import NavmeshNode
 
-BVH_AABB_DELTA = 0.5
+import numpy as np
+BVH_AABB_DELTA = 0.3
+
 
 
 class NavmeshBVH:

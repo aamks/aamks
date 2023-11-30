@@ -126,6 +126,11 @@ class Aamks {/*{{{*/
 			$menu.="<option value='$v[id]'>$v[scenario_name]</option>\n";
 		}
 		$menu.="</select>\n";
+		$menu.="<br>";
+		//$menu.='<div id="progress" style="color:#BBC; height:0px; padding-top:15px; font-size:16px"></div> <br>';
+		$menu.='<div id="active-sims" style="color:#BBC; height:20px; padding-top:5px; font-size:16px"> Progress </div><br>';
+		$menu.='<button id="check-sim">Check progress</button>'; 
+
 		return $menu;
 	}
 /*}}}*/
@@ -334,7 +339,7 @@ public function do_google_login(){/*{{{*/
 	/*}}}*/
 
 	private function mk_default_preferences($user_id) { #{{{
-		$default_preferences='{"apainter_editor": "easy", "navmesh_debug": 0, "apainter_labels": 1, "partitioning_debug": 0 }';
+		$default_preferences='{"apainter_editor": "advanced", "navmesh_debug": 0, "apainter_labels": 1, "partitioning_debug": 0 }';
 		$this->query("UPDATE users SET preferences=$1 WHERE id=$2", array($default_preferences, $user_id));
 		return $default_preferences;
 	}

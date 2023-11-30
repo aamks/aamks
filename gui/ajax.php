@@ -48,14 +48,26 @@ function ajaxGetUnderlay() { #{{{
 }
 /*}}}*/
 function ajaxChangeActiveScenario() { #{{{
+	if(!array_key_exists('nn', $_SESSION))
+		{
+			header("Location: login.php?session_finished_information=1");
+		}
 	$r=$_SESSION['nn']->query("SELECT u.id AS user_id, u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($_POST['ch_scenario'], $_SESSION['main']['user_id']));
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=>$_SESSION['main']['scenario_name']));
 }
 /*}}}*/
 function ajaxUserPreferences() { #{{{
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$r=$_SESSION['nn']->query("SELECT preferences FROM users WHERE id=$1",array($_SESSION['main']['user_id']));
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=>json_decode($r[0]['preferences'],1)));
+}
+function ajaxUserInfo() { #{{{
+	$r=$_SESSION['main']['working_home']."/picts/";
+	echo json_encode($_SESSION['main']['working_home']."/picts/", 1);
 }
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{
@@ -89,6 +101,10 @@ function ajaxMenuContent() { /*{{{*/
 	# psql aamks -c "select p.*,s.* from scenarios s LEFT JOIN projects p ON s.project_id=p.id WHERE user_id=1"
 	# psql aamks -c "select * from scenarios"
 	# psql aamks -c "select * from projects"
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$menu=$_SESSION['nn']->rawMenu();
 	echo json_encode(array("msg"=>"", "err"=>0,  "data"=> $menu));
 }
@@ -222,10 +238,49 @@ function ajaxGoogleLogin() { /*{{{*/
 	$_SESSION['g_email'] =$_SESSION['google_data']['g_email'];
 	$_SESSION['g_user_id']=$_SESSION['google_data']['g_user_id'];
 	$_SESSION['g_picture']=$_SESSION['google_data']['g_picture'];
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$ret[0]=$_SESSION['nn']->do_google_login();
 	$_SESSION['nn']->ch_main_vars($ret[0]);
 }
 /*}}}*/
+
+function ajaxCheckProgress(){
+	$user_id=$_SESSION['main']['user_id'];
+	$scenario_id = $_SESSION['main']['scenario_id'];
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
+	$all_sims = $_SESSION['nn']->query('SELECT COUNT(*)	 FROM "simulations" WHERE "scenario_id"=$1', array($scenario_id));
+	$bad_sims = $_SESSION['nn']->query('SELECT COUNT(*) FROM "simulations" WHERE "scenario_id" = $1 AND "status"::numeric BETWEEN $2 AND $3', array($scenario_id, 1, 100));
+	$good_sims = $_SESSION['nn']->query('SELECT COUNT(*)	 FROM "simulations" WHERE "scenario_id"=$1 AND "status"=$2 ', array($scenario_id, "0"));
+	$active_sims = $_SESSION['nn']->query('SELECT "iteration" ,"status" FROM "simulations" WHERE "scenario_id"=$1 AND "status"::numeric>$2 ', array($scenario_id,1000));
+	$active = array(); 
+	$x = 0;
+	foreach ($active_sims as $row) {
+		$iteration = $row['iteration'];
+		if($row['status']=='1100'){
+			$status = substr($row['status'],-3,3);
+		}
+		else{
+			$status = substr($row['status'],-2);
+		}
+		$active[] = "<tr><td id='left_column'>No:".$iteration."</td>:<td>".$status."%</td><tr>";
+		$x+=1;
+	}
+	$all = $all_sims[0]['count'];
+	$bad = $bad_sims[0]['count'];
+	$good = $good_sims[0]['count'];
+
+	echo json_encode(array("msg"=>"","bad"=>json_encode($all_sims), "err"=>0,  "data"=>json_encode($result), "good"=>$good, "bad"=>$bad, "all"=>$all, "active"=>$active));
+
+}
+
+
+
 function main() { /*{{{*/
 	header('Content-type: application/json');
 	ini_set('display_errors', 1);
@@ -252,11 +307,13 @@ function main() { /*{{{*/
 		if(isset($_GET['ajaxMenuContent']))             { ini_set('display_errors', 0) ; ajaxMenuContent()          ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxUserPreferences']))         { ini_set('display_errors', 0) ; ajaxUserPreferences()      ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxUserInfo']))         		{ ini_set('display_errors', 0) ; ajaxUserInfo()      		; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxGetUnderlay']))             { ini_set('display_errors', 0) ; ajaxGetUnderlay()          ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxAddUnderlay']))             { ini_set('display_errors', 0) ; ajaxAddUnderlay()          ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxRemoveUnderlay']))          { ini_set('display_errors', 0) ; ajaxRemoveUnderlay()       ; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxCheckProgress']))          	{ ini_set('display_errors', 0) ; ajaxCheckProgress()       	; ini_set('display_errors', 1) ; }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }

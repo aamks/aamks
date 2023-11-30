@@ -405,9 +405,11 @@ class Heatmap:
         for f, df in enumerate(self.plot['floors']):
             df['xes'] = np.array(sorted([min(self.data[f]['x_min']), *self.data[f]['x_max'].unique()]))
             df['yes'] = np.array(sorted([min(self.data[f]['y_min']), *self.data[f]['y_max'].unique()]))
-            df['data'] = self.data[f][['x_max', 'y_max', 'fed_growth_sum']].pivot(columns='x_max',
-                    index='y_max').astype(float).fillna(-1).apply(lambda x: x/self.n_iter).to_numpy()
-
+            df['data'] = self.data[f][['x_max', 'y_max', 'fed_growth_sum']]
+            df['data'] = df['data'].pivot_table(columns='x_max', index='y_max', aggfunc='sum').astype(float)
+            df['data'] = df['data'].fillna(-1)
+            df['data'] = df['data'].apply(lambda x: x/self.n_iter)
+            df['data'] = df['data'].to_numpy()
             self.plot['range'] = max(df['data'].max(), self.plot['range'])
 
         return self.plot
@@ -432,6 +434,12 @@ class Plot:
                     max_fat = len(v) - i
                     break
             binwdth = max(int(max_fat / n_bins), 1)
+
+            # due to MC aproximation error sum of PDF elements can be lower than 1
+            checksum = sum(v[:max_fat])
+            if checksum != 1:
+                v[0] += 1 - checksum
+
             samples[k] = [np.random.choice(np.arange(max_fat), p=v[:max_fat]) for i in range(1000)]
 
         try:
@@ -815,6 +823,8 @@ class PostProcess:
             self.t = time.time()
         p = Plot(self.dir)
         tm('Plot')
+        [p.pdf_n(self.data[d['name']], path=f"{d['name']}", label=d['lab']) for d in self.plot_type['pdf_n']]
+        tm('plot pdf_n')
         h = Heatmap(self.data['fed_der_df'], self.data['geometry'], self.n)
         tm('Heatmap')
         h.calc()
@@ -827,8 +837,6 @@ class PostProcess:
         tm('plot cdf')
         [p.pdf(self.data[d['name']], path=f"{d['name']}_pdf", label=d['lab']) for d in self.plot_type['pdf']]
         tm('plot pdf')
-        [p.pdf_n(self.data[d['name']], path=f"{d['name']}", label=d['lab']) for d in self.plot_type['pdf_n']]
-        tm('plot pdf_n')
         p.pdf({'ASET': self.data['dcbe'], 'RSET': self.data['wcbe']}, label=['Time [s]', 'Density [-]'], path='overlap')
         p.cdf_ovl({'RSET': np.array(self.data['wcbe']), 'ASET': self.data['dcbe']}, label=['Time [s]', 'Density [-]'], path='overlap_n')
         tm('plot overlap')
@@ -959,13 +967,19 @@ class Comparison:
         
 
 if __name__ == '__main__':
-    if len(sys.argv) > 2:
-        comp = Comparison(sys.argv[2:], path=sys.argv[1])
-        comp.produce()
-    else:
-        pp = PostProcess()
-        pp.t = time.time()
-        pp.produce()
+    try:
+        if len(sys.argv) > 2:
+            comp = Comparison(sys.argv[2:], path=sys.argv[1])
+            comp.produce()
+        else:
+            pp = PostProcess()
+            pp.t = time.time()
+            pp.produce()
+            from sa import SensitivityAnalysis as SA
+            s = SA(pp.dir)
+            s.main(spearman=True)
+    except Exception as e:
+        print(e)
 
     
 

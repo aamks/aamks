@@ -3,6 +3,10 @@ session_name('aamks');
 require_once("inc.php"); 
 
 function read_aamks_conf_json() { /*{{{*/
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->assert_working_home_exists();
 	if(!is_file($_SESSION['main']['working_home']."/conf.json")) { 
 		$_SESSION['nn']->scenario_from_template();
@@ -302,6 +306,10 @@ function update_buildings_param(){
 	$out['pre_evac']=$z['pre_evac'];
 	$out['pre_evac_fire_origin']=$z['pre_evac_fire_origin'];
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->write_scenario($s);
 	$_SESSION['nn']->msg("Alarming time, evacuees density, hrr_alpha, hrrpua, pre-evacuation and pre-evacuation
 	in fire origin updated!");
@@ -312,6 +320,10 @@ function update_form_easy() {/*{{{*/
 	$out=$_POST['post'];
 	$out+=get_template_defaults('setup1');
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->write_scenario($s);
 }
 /*}}}*/
@@ -319,6 +331,10 @@ function update_form_advanced() {/*{{{*/
 	if(empty($_POST['update_form_advanced'])) { return; }
 	$out=$_POST['post'];
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->write_scenario($s);
 }
 /*}}}*/
@@ -326,6 +342,10 @@ function update_form_text() {/*{{{*/
 	if(empty($_POST['update_form_text'])) { return; }
 	json_decode($_POST['json']);
 	if (json_last_error() != JSON_ERROR_NONE) { $_SESSION['nn']->fatal("JSON: ".json_last_error_msg()."<br>Reverting to the previous version of the config." ); return; }
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->write_scenario($_POST['json']);
 }
 /*}}}*/
@@ -469,6 +489,10 @@ function editors() {/*{{{*/
 /*}}}*/
 function change_editor() {/*{{{*/
 	if(!isset($_POST['change_editor'])) { return; }
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->preferences_update_param("apainter_editor", $_POST['change_editor']);
 	header("Location: ?edit");
 	exit();
@@ -479,9 +503,7 @@ function form_delete() { #{{{
 	// This way we make sure there will always be a fallback in $_SESSION['main']
 
 	if($_SESSION['main']['project_name']=='demo' && in_array($_SESSION['main']['scenario_name'], array("simple", "navmesh", "three", "fds"))) { return; }
-	echo "<form method=post>";
-	echo "<input autocomplete=off style='float:right; margin: 0px 50px 400px 0px' type=submit name=delete_scenario value='delete this scenario'>";
-	echo "</form>";
+	echo "<input style='position:absolute; left:200px;' onclick=delScenario() type=submit value='Delete this scenario'>";
 }
 /*}}}*/
 function delete_scenario() {/*{{{*/
@@ -492,6 +514,10 @@ function delete_scenario() {/*{{{*/
 	# psql aamks -c 'select * from users'
 	# psql aamks -c "SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=1 AND s.id IS NOT NULL  ORDER BY s.modified DESC "
 	if(!isset($_POST['delete_scenario'])) { return; }
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->query("DELETE FROM scenarios WHERE id=$1", array($_SESSION['main']['scenario_id']));
 	$disk_delete=implode("/", array($_SESSION['main']['user_home'], $_SESSION['main']['project_name'], $_SESSION['main']['scenario_name']));
 	system("rm -rf $disk_delete");
@@ -505,18 +531,21 @@ function delete_scenario() {/*{{{*/
 /*}}}*/
 
 function main() {/*{{{*/
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->htmlHead("Scenario properties");
 	$_SESSION['nn']->menu();
 	change_editor();
 	delete_scenario();
 	make_help();
-
+	form_delete();
 	if(isset($_GET['edit'])) { 
 		$e=$_SESSION['prefs']['apainter_editor'];
 		if($e=='easy')     { update_form_easy()     ; form_fields_easy()     ; update_form_buildings_param(); 		update_buildings_param();}
 		if($e=='advanced') { update_form_advanced() ; form_fields_advanced() ; }
 		if($e=='text')     { update_form_text()     ; form_text()            ; }
-		form_delete();
 	}
 
 	if(isset($_GET['bprofiles'])) { $_SESSION['nn']->menu('Building profiles'); form_bprofiles(); update_form_bprofiles(); exit(); }

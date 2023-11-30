@@ -209,9 +209,9 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
                 for x in range(4):
                     next(reader)
                 for row in reader:
-                    if int(float(row[0])) == time:
+                    if round(float(row[0])) == time:
                         needed_record=[(float(j)) for j in row]
-                        needed_record[0]=int(float(row[0]))
+                        needed_record[0]=round(float(row[0]))
                         break
 
             for compa in self.all_compas:
@@ -236,6 +236,8 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
 
         x=self.floors_meta[self.floor]['minx'] + self._square_side * int((q[0]-self.floors_meta[self.floor]['minx'])/self._square_side) 
         y=self.floors_meta[self.floor]['miny'] + self._square_side * int((q[1]-self.floors_meta[self.floor]['miny'])/self._square_side)
+        if q[0]< self.floors_meta[self.floor]['minx'] or q[0] > self.floors_meta[self.floor]['maxx'] or q[1] < self.floors_meta[self.floor]['miny'] or q[1] > self.floors_meta[self.floor]['maxy']:
+            return "outside"
 
         if len(self._query_vertices[x,y]['x'])==1:
             return self._cell2compa[(x,y)] if (x,y) in self._cell2compa else "outside"
@@ -251,6 +253,12 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         ''' 
         Same as xy2room, except it returns conditions, not just the room.
         '''
+
+
+        if q[0] < self.floors_meta[self.floor]['minx'] or q[0] > self.floors_meta[self.floor]['maxx'] or q[1] < self.floors_meta[self.floor]['miny'] or q[1] > self.floors_meta[self.floor]['maxy']:
+            # agent is outside building:
+            return {'COMPA': 'outside'}
+
 
         if self.project_conf['fire_model'] == 'None':
             return self._default_conditions

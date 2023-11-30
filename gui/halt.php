@@ -50,10 +50,18 @@ function listing() {/*{{{*/
 
 
 	echo "<form method='POST' action=''>
+<<<<<<< HEAD
             <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-halt-cur' value='Remove jobs'><withHelp>?<help>Remove current scenario jobs from the queue</help></withHelp>&nbsp;
             <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status-cur' value='Check status'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
             <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-conv-cur' value='Check convergence'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
             <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-status' value='Status table'><br>
+=======
+        <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-halt-cur' value='Remove jobs'><withHelp>?<help>Remove current scenario jobs from the queue</help></withHelp>&nbsp;
+	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status-cur' value='Check status'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
+	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-conv-cur' value='Calc uncertainties'><withHelp>?<help>Show convergence of individual risk<br>and perform sensitivity analysis</help></withHelp>&nbsp;&nbsp;
+	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-status' value='Status table'><br>
+	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-retry' value='Retry'><withHelp>?<help>Retry jobs finished with status 1</help></withHelp>&nbsp;&nbsp;
+>>>>>>> dev
         </form>
         <form method='POST' action=''>
         Developers only:&nbsp;
@@ -65,6 +73,10 @@ function listing() {/*{{{*/
 }
 
 function query_cur() {
+    if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
 	echo $_SESSION['main']['project_id']."/".$_SESSION['main']['scenario_id'];
 	return $r;
@@ -72,6 +84,10 @@ function query_cur() {
 
 
 function query_any() {
+    if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
 	echo $_POST['project']."/".$_POST['scenario'];
 	return $r;
@@ -100,7 +116,7 @@ function check_stat($r) {
     '90' => 0,
     '91' => 0,
     '' => 0,
-    'halted' => 0,
+    'in progress' => 0,
 ];
     $sum = 0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
@@ -109,14 +125,23 @@ function check_stat($r) {
 	foreach ($r as $element) {
 		echo "<tr>";
 		echo "<td align='center'>".$element['iteration']."</td>";
+
+        if ($element['status'] > 1000){
+            $sum += 1;
+            $statuses['in progress'] += 1;
+            echo "<td>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
+        }
+        else{
+			$statuses[$element['status']] += 1;
+			$sum += 1;
+			echo "<td>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
+		}
+
 	
-    $statuses[$element['status']] += 1;
-    $sum += 1;
-    echo "<td>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
     }
     echo "</table></td>"; // Add a line break after each inner array
-	 echo "<td valign='top'><table><tr><td><strong>SUM</strong><td>$sum</td></tr><tr><th>Code</th><th>Number of iterations</th></tr>";
-		foreach ($statuses as $c => $d) { echo "<tr><td>$c</td><td>$d</td></tr>";}
+	echo "<td valign='top'><table><tr><td><strong>SUM</strong><td>$sum</td></tr><tr><th>Code</th><th>Number of iterations</th></tr>";
+	foreach ($statuses as $c => $d) { echo "<tr><td>$c</td><td>$d</td></tr>";}
     echo "</table>";
     echo "</td></tr></table>";
 }
@@ -151,32 +176,86 @@ function runPP() {
 	$f=$_SESSION['main']['working_home'];
 	$aamks=getenv("AAMKS_PATH");
 
-	$cmd="cd $aamks/results; python3 beck_new.py $f 2>&1";
-
-	// Output a 'waiting message'
+	$cmd="python3 $aamks/results/beck_new.py $f 2>&1";
 	$z=shell_exec("$cmd");
 	echo "Postprocess finished<br>";
 }
 
+function retry() {
+   $f=$_SESSION['main']['working_home'];
+   $aamks=getenv("AAMKS_PATH");
+   $cmd="cd $aamks/manager; python3 init.py $f 2>&1";
+
+   $z=shell_exec("$cmd");
+   echo "$z jobs retried<br>";
+}
+
+function prevNext($k, $t, $d) {
+    return ($r=($k+$d)%$t)>=0?$r:$r+=$t;
+}
+
+function show_picture($f, $pictures_list) {
+   
+    //total array size
+    $total = sizeof($pictures_list);
+
+    //current position in the array
+    $k = 0;
+
+    //displays left and right navigation buttons which execute prev/nextImage functions
+    $button_left='<<< Previous figure';
+    $button_right='Next figure >>>';
+
+
+    //displays the current image
+    if(isset($_GET['pid'])){
+        $k = $_GET['pid'];
+    }else{
+        $_GET['pid'] = $k;
+        }
+    if(isset($_GET['comp'])){
+        $j = "&comp=".$_GET['comp'];
+    }else{
+        $j = "";
+        }
+        
+        echo "<br><br><br><font size=4><strong>Uncertainties</strong></font><br><br>";
+        echo '<br><a href="halt.php?pid='.prevNext($k, $total, -1).$j.'"><button>', $button_left, '</button></a>';
+        echo '    <a href="halt.php?pid='.prevNext($k, $total, 1).$j.'"><button>', $button_right, '</button></a>';
+        $file=$f."/picts/".$pictures_list[$k][0].".png";
+
+	if (!file_exists($file)) {
+		echo '<br><br><font size=4>No data available. Try <strong>Calc uncertainties</strong> button.</font>';
+		if ($_GET['pid'] > 1){
+			echo '<br><br><font size=2>At least 300 iterations finished correctly are required to calculate
+			       	Sobol indices.</font>';
+		}
+	}else{
+		$size_info=getimagesize($file);
+		$data64=shell_exec("base64 $file");
+		echo "<br><p>Figure ". ($k+1) .". <strong>".$pictures_list[$k][1]."</strong></p>";
+		echo "<img class='results-pictures' style='width:".(0.8*$size_info[0])."px;height:".(0.8*$size_info[1])."px;' src='data:image/png;base64, $data64'/>";
+	}
+
+}
 function check_conv_current() {/*{{{*/
         $f=$_SESSION['main']['working_home'];
 	$path = $f."/picts/";
 
         $pictures_list = array(
-            array('conv_individual','Convergence of individual risk in subsequent iterations')
+            array('conv_individual','Convergence of individual risk in subsequent iterations'),
+            array('spearman','Spearman rank correlation of parameters'),
+            array('sobol_ST','Total  contribution of parameters'),
+            array('sobol_S','Total contribution of particular  terms'),
+	    array('sobol_Sa','Uncorrelated contribution of particular  terms'),
+            array('sobol_Sb','Correlated contribution of particular  terms'),
         );
 
-        $file=$f."/picts/".$pictures_list[0][0].".png";
-	if (!file_exists($file)) {
-		echo '<br><br><font size=4>No convergence data available. Try <strong>Check convergence</strong> button.</font>';
-		return False;
-	}
-        $size_info=getimagesize($file);
-        $data64=shell_exec("base64 $file");
-        echo "<br><font size=4>".$pictures_list[0][1]."</font>";
-        echo "<img class='results-pictures' style='width:".($size_info[0]*.8)."px;height:".($size_info[1]*.8)."px;' src='data:image/png;base64, $data64'/>";
-
-
+	//echo "<table><tr><td valign='top'>";
+	show_picture($f, $pictures_list);
+	//echo "</td><td valign='top'>";
+	#show_picture($f, $pictures_list[1]);
+	//echo "</td></tr></table>";
 }
 
 function delete_from_redis($redis, $id){ 
@@ -197,6 +276,10 @@ function delete_from_redis($redis, $id){
 
 
 function main() {/*{{{*/
+    if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	$_SESSION['nn']->htmlHead("Manage jobs");
 	$_SESSION['nn']->menu('Manage jobs');
 
@@ -223,6 +306,8 @@ function main() {/*{{{*/
 		check_conv_current();
     }	elseif (isset($_POST['btn-status'])) {
 		set_help(true);
+    }  elseif (isset($_POST['btn-retry'])) {
+       retry();
     }else{
 	    check_conv_current();
     }

@@ -77,8 +77,11 @@ CREATE TABLE simulations ( ---{{{
     tot_heat decimal,
 	status text,
 	animation text,
+    anim_params text,
 	modified timestamp without time zone not null default now(),
-    results text
+    results text,
+    rescue_params text
+
 );
 ---}}}
 CREATE TABLE users (---{{{

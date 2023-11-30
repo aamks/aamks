@@ -25,6 +25,8 @@ from rescue_module.rescue import *
 import warnings
 import numpy as np
 
+from montecarlo.evac_mcarlo import lognorm_params_from_percentiles
+
 # }}}
 def join2str(l, sep, quotes=False, force=False):
     joined = []
@@ -36,6 +38,12 @@ def join2str(l, sep, quotes=False, force=False):
     joined[0] = l[0] if quotes and not force else joined[0]
 
     return sep.join(joined)
+
+
+# staircase entities are named like s1.1, s1.2, s2.1, s2.2 in order to produce navmesh on subsequent floors
+# CFAST, however, treats each staircas as one compartment called s1, s2 and so on without irrelevant floor info
+def cfast_name(aamks_geom_name):
+    return aamks_geom_name.split('.')[0]
 
 
 # TODO properly logging VVENTS and MVENTS into psql; DOORS BROKEN AFTER FIRE; HCN, HCL DISTRIBUTION, Fire development intervals
@@ -204,7 +212,7 @@ class CfastMcarlo():
             collect=[]
             collect.append("&VENT TYPE = 'WALL'")
             collect.append("ID = '{}'".format(v['name']))
-            collect.append("COMP_IDS = '{}', '{}'".format(v['vent_from_name'], v['vent_to_name']))
+            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
             collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))
             collect.append("TOP = {}".format(round((v['sill']+v['height'])/100.0, 2)))
             collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))
@@ -227,11 +235,9 @@ class CfastMcarlo():
             if how_much_open == 0:
                 continue
             collect=[]
-            vent_from_name = v['vent_from_name'].split(".")[0]
-            vent_to_name = v['vent_to_name'].split(".")[0]
             collect.append("&VENT TYPE = 'WALL'")                                             # TYPE
             collect.append("ID = '{}'".format(v['name']))                                    # VENT ID
-            collect.append("COMP_IDS = '{}', '{}'".format(vent_from_name, vent_to_name))     # FROM_TO
+            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
             collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))            # WIDTH
             collect.append("TOP = {}".format(round((v['sill']+v['height'])/100.0, 2)))       # TOP (height of the top of the hvent relative to the floor)
             collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))                  # BOTTOM
@@ -250,11 +256,9 @@ class CfastMcarlo():
         for i, v in enumerate(self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to")):
             how_much_open = self.samples['vvents'][i][0]           # end state with probability of working
             collect=[]
-            vent_from_name = v['vent_from_name'].split(".")[0]
-            vent_to_name = v['vent_to_name'].split(".")[0]
             collect.append("&VENT TYPE = 'CEILING'")                                                  # VENT TYPE
             collect.append("ID = '{}'".format(v['name']))                                             # VENT ID
-            collect.append("COMP_IDS = '{}', '{}'".format(vent_from_name, vent_to_name))    # FROM_TO
+            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
             collect.append("AREA = {}".format(round((v['width']*v['depth'])/1e4, 2)))               # AREA OF THE VENT,
             collect.append("SHAPE = 'SQUARE'")
             collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))           # COMPARTMENT1_OFFSET
@@ -268,9 +272,9 @@ class CfastMcarlo():
         txt=['!! SECTION MECHANICAL VENT']
         for v in self.s.query( "SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
             if v['mvent_throughput'] < 0:
-                comp_ids = [v['vent_from_name'], 'OUTSIDE']
+                comp_ids = [cfast_name(v['vent_from_name']), 'OUTSIDE']
             else:
-                comp_ids = ['OUTSIDE', v['vent_from_name']]
+                comp_ids = ['OUTSIDE', cfast_name(v['vent_from_name'])]
             if v['is_vertical'] is True:
                 orientation = 'VERTICAL'
             else:
@@ -477,18 +481,26 @@ class DrawAndLog:
                                       ('fireorig', fire_origin[1])])
 # }}}
     def _draw_compartment(self):
+        # calculate probabilistic space (events and probabilities) from sqlite import format
+        def prob_space(compa_list):
+            omega = [element[0] for element in compa_list]
+            ranks = [element[1] for element in compa_list]
+            ranks_sum = sum(ranks)
+            probabilities = [rank/ranks_sum for rank in ranks]
+            return omega, probabilities
         # find fire compartment
         is_origin_in_room = binomial(True, self.conf['fire_starts_in_a_room'])
-        all_corridors_and_halls = [z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND type_sec in('COR','HALL') ORDER BY global_type_id") ]
-        all_rooms = [z['name'] for z in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='ROOM' ORDER BY global_type_id") ]
-
+        all_corridors_and_halls = [[z['name'], z['width']*z['depth']] for z in self.s.query("SELECT name, width, depth FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND type_sec in('COR','HALL') ORDER BY global_type_id") ]
+        all_rooms = [[z['name'], z['width']*z['depth']] for z in self.s.query("SELECT name, width, depth FROM aamks_geom WHERE type_sec='ROOM' ORDER BY global_type_id") ]
+        
         comp = {}
         if is_origin_in_room or not all_corridors_and_halls:
-            comp['name'] = str(choice(all_rooms))
+            omega, probs = prob_space(all_rooms)
             comp['type'] = 'room'
         else:
-            comp['name'] = str(choice(all_corridors_and_halls))
+            omega, probs = prob_space(all_corridors_and_halls)
             comp['type'] = 'non_room'
+        comp['name'] = str(choice(omega, p=probs))
         self._comp_type = comp['type']
         self._fire_room_name = comp['name']
 
@@ -501,8 +513,8 @@ class DrawAndLog:
 
         x=int(compa['x0']+compa['width']/2.0)
         y=int(compa['y0']+compa['depth']/2.0)
-        self._fire_height = round((compa['height'] * (1-math.log10(uniform(1,9)))) / 100, 2)
-        z = int(self._fire_height * 100) + compa['height'] * int(compa['floor'])
+        self._fire_height = round((compa['height'] * (1-math.log10(uniform(10**0.1,10)))) / 100, 2)
+        z = int(self._fire_height * 100) + compa['z0']
 
         location['global'] = [x,y,z]    #[cm]
         location['local'] = [round(lc/100, 2) for lc in [int(compa['width']/2), int(compa['depth']/2)]]   #[m]
@@ -514,18 +526,43 @@ class DrawAndLog:
 
         return location
 
+    def _locate_randomly(self, fire_room):
+        location = {}
+        # locate fire in compartment
+        compa = self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_room, ))[0]
+
+        # draw location (uniform across the compartment)
+        dx = uniform(0, compa['width'])
+        dy = uniform(0, compa['depth'])
+
+        x = int(compa['x0']+dx)
+        y = int(compa['y0']+dy)
+        self._fire_height = round((compa['height'] * (1-math.log10(uniform(10**0.1,10)))) / 100, 2)
+        z = int(self._fire_height * 100) + compa['z0']
+
+        location['global'] = [x,y,z]    #[cm]
+        location['local'] = [round(lc/100, 2) for lc in [dx, dy]]   #[m]
+        location['floor'] = compa['floor']
+        location['fire_id'] = f"f{compa['global_type_id']}"
+        self._fire_id = location['fire_id']
+
+        self._psql_log_variable('heigh', self._fire_height)
+
+        return location
+
     def _deterministic_fire(self):
         comp, loc = {}, {}
         fire = self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")[0]
-        room = self.s.query("SELECT floor,name,type_sec,global_type_id,x0,y0 FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", 
+        room = self.s.query("SELECT floor,name,type_sec,global_type_id,x0,y0,z0 FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", 
                 (fire['floor'], fire['x0'], fire['y0'], fire['x1'], fire['y1']))[0]
 
-        loc['global'] =  [fire['center_x'], fire['center_y'], fire['z1'] - fire['z0']]
+        loc['global'] =  [fire['center_x'], fire['center_y'], fire['z0']]
         loc['local'] = [fire['center_x'] - fire['x0'], fire['center_y'] - fire['y0']]  # seems irrelevant ? - to be investigated [WK]
         loc['local'] = [round(i/100, 2) for i in loc['local']]
         loc['floor'] = room['floor']
         loc['fire_id'] = f"f{room['global_type_id']}"
         self._fire_id = loc['fire_id']
+        self._fire_height = fire['z0'] - room['z0']
 
         comp['name'] = room['name']
         comp['type'] = 'room' if room['type_sec'] == 'ROOM' else 'non_room'
@@ -539,7 +576,7 @@ class DrawAndLog:
             comp, loc = self._deterministic_fire()
         else:
             comp = self._draw_compartment() 
-            loc = self._locate_in_the_middle(comp['name'])
+            loc = self._locate_randomly(comp['name'])
 
         self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
 
@@ -625,7 +662,14 @@ class DrawAndLog:
         hrr_peak, flashover = find_peak_hrr()
 
         fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
-        load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
+        if fire_load_d['mean']!='' and fire_load_d['sd']!='':
+            load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
+        elif fire_load_d['1st']!='' and fire_load_d['99th']!='':
+            params = lognorm_params_from_percentiles(fire_load_d['1st'], fire_load_d['99th'])
+            load_density = int(lognormal(*params))  # location, scale
+        else:
+            raise ValueError(f'Invalid fire load density input data - check the form.')
+
         self._psql_log_variable('fireload', load_density)
         
         hrr = HRR(self.conf, self._sim_id)
@@ -789,12 +833,10 @@ class HRR:
         elif t[0] > t[1]:
             if not v:
                 return False
-            print(self.domains)
             raise ValueError(f'Lower limit must be lower than upper limit {t}')
         elif t[0] == t[1]:
             if not v:
                 return False
-            print(self.domains)
             raise ValueError(f'Lower and upper limits must not be equal {t}')
 
         add_i = 0 
@@ -815,12 +857,10 @@ class HRR:
         elif t[0] > t[1]:
             if not v:
                 return False
-            print(self.domains)
             raise ValueError(f'Lower limit must be lower than upper limit {t}')
         elif t[0] == t[1]:
             if not v:
                 return False
-            print(self.domains)
             raise ValueError(f'Lower and upper limits must not be equal {t}')
 
         for i, domain in enumerate(self.domains):

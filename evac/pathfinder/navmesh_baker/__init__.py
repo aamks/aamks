@@ -43,7 +43,7 @@ class NavmeshBaker:
                    agent_max_slope: float = 5.0,
                    region_min_size: int = 1,
                    region_merge_size: int = 20,
-                   edge_max_len: float = 30.0,
+                   edge_max_len: float = 12.0,
                    edge_max_error: float = 1.3,
                    verts_per_poly: int = 6,
                    detail_sample_distance: float = 6.0,

@@ -303,10 +303,14 @@ function show_data() {/*{{{*/
 /*}}}*/
 
 function main() {/*{{{*/
+    if(!array_key_exists('nn', $_SESSION))
+        {
+            header("Location: login.php?session_finished_information=1");
+        }
     if (isset($_GET['comp'])){
         $scens = explode('<>', $_GET['comp']);
         $dir = implode('-', $scens);
-        $title = implode(', ', $scens); 
+        $title = implode(', ', $scens);  
         $_SESSION['nn']->htmlHead("Comparison");
         $_SESSION['nn']->menu("Comparison: ".$title);
     }else{
