@@ -16,6 +16,9 @@ from include import GetUserPrefs
 from geom.nav import Navmesh
 import subprocess
 import logging
+import sys
+
+from redis_aamks.app.main import AARedis
 logger = logging.getLogger('AAMKS.init.py')
 
 class OnInit():
@@ -184,6 +187,20 @@ class OnEnd():
             except Exception as e:
                 print('OnEnd: {}'.format(e))
                 logger.error(f'gearman error {e}')
+
+
+        if os.environ['AAMKS_WORKER']=='redis':
+            AR = AARedis()
+            try:
+                for i in range(*si.get()):
+                    worker_pwd="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
+                    messege_redis = AR.main(worker_pwd)
+                    job_id = messege_redis['id']
+                    self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
+            except Exception as e:
+                print('OnEnd: {}'.format(e))
+                logger.error(f'OnEnd: Error {e}')
+
             
 
 
