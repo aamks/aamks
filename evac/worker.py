@@ -701,11 +701,7 @@ class LocalResultsCollector:
 if __name__ == "__main__":
     w = Worker()
     try:
-        if SIMULATION_TYPE == 'NO_CFAST':
-            print('Working in NO_CFAST mode')
-            w.test()
-        else:
-            w.main()
+        w.run_worker()
     except Exception as error:
         w.wlogger.error(error)
         w.send_report(e={'status': 1})
