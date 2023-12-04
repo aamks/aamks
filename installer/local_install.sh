@@ -37,9 +37,6 @@ sudo locale-gen en_US.UTF-8
 sudo apt-get update
 sudo apt-get --yes install git unzip php-curl postgresql docker-compose
 sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3-venv
-if [[ ! -f /usr/lib/x86_64-linux-gnu/libboost_python3.so  ]]; then
-	sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python3*.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
-fi
 echo "{ \"AAMKS_SERVER\": \"$AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
 sudo chown -R "$USER":"$USER" /etc/aamksconf.json
 
@@ -78,6 +75,7 @@ echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> "$temp"
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> "$temp"
 echo "export AAMKS_WORKER='$AAMKS_WORKER'" >> "$temp"
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> "$temp"
+echo "export AAMKS_REDIS_PASS='$AAMKS_REDIS_PASS'" >> "$temp"
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> "$temp"
 echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> "$temp"
 echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> "$temp"
@@ -115,6 +113,11 @@ echo "alias AP='cd $AAMKS_PROJECT'" >> "$temp"
 echo "Add some variables to your .bashrc"
 sudo cp "$temp" ~/.bashrc
 rm "$temp"
+
+sudo usermod -a -G docker $USERNAME
+cd "$AAMKS_PATH"/redis_aamks || exit
+sudo docker-compose up -d
+
 [ "X$AAMKS_USE_MAIL" == "X1" ] && { 
 	# TODO - instructables for sending mail via mail
 	sudo apt-get --yes install composer
@@ -130,7 +133,6 @@ fi
 sudo cp -r "$AAMKS_PATH"/installer/demo /home/aamks_users/demo@aamks/
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.
-sudo usermod -a -G docker $USERNAME
 sudo usermod -a -G www-data $USERNAME
 sudo chown -R $USERNAME:www-data /home/aamks_users
 sudo chmod -R g+w /home/aamks_users
@@ -157,3 +159,6 @@ echo "AAMKS installed successfully. You can start using it at http://127.0.0.1/a
 echo "Default user email: demo@aamks"
 echo "Password: AAMKSisthe1!"
 echo "Log out and log in to reload USER group settings"
+echo;
+echo "In order to run simulations in redis mode configure workers in network or start worker via redis manager.";
+echo "python3 $AAMKS_PATH/redis_aamks/manager.py";
