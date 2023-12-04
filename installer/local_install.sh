@@ -158,7 +158,6 @@ echo; echo; echo;
 echo "AAMKS installed successfully. You can start using it at http://127.0.0.1/aamks"
 echo "Default user email: demo@aamks"
 echo "Password: AAMKSisthe1!"
-echo "Log out and log in to reload USER group settings"
-echo;
 echo "In order to run simulations in redis mode configure workers in network or start worker via redis manager.";
-echo "python3 $AAMKS_PATH/redis_aamks/manager.py";
+echo "python3 $AAMKS_PATH/redis_aamks/manager.py --runlocal -n 1";
+echo "Log out and log in to reload USER group settings"
