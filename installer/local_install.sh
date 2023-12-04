@@ -35,7 +35,7 @@ echo "<Enter> accepts, <ctrl+c> cancels";
 read
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
-sudo apt-get --yes install git unzip php-curl postgresql
+sudo apt-get --yes install git unzip php-curl postgresql docker-compose
 sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3-venv
 if [[ ! -f /usr/lib/x86_64-linux-gnu/libboost_python3.so  ]]; then
 	sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python3*.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
@@ -88,7 +88,7 @@ rm "$temp"
 
 temp=$(mktemp)
 sudo cat ~/.bashrc | grep -v AAMKS_ | grep -v umask  | grep -v USER | grep -v LOGNAME | grep -v HOSTNAME | grep -v aamks | grep -vw AA | grep -vw AP > "$temp"
-echo "umask 0002" >> "$temp"
+echo "umask 0000" >> "$temp"
 echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> "$temp"
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> "$temp"
 echo "export AAMKS_WORKER='$AAMKS_WORKER'" >> "$temp"
@@ -130,6 +130,7 @@ fi
 sudo cp -r "$AAMKS_PATH"/installer/demo /home/aamks_users/demo@aamks/
 
 # From now on, each file written to /home/aamks_users will belong to www-data group.
+sudo usermod -a -G docker $USERNAME
 sudo usermod -a -G www-data $USERNAME
 sudo chown -R $USERNAME:www-data /home/aamks_users
 sudo chmod -R g+w /home/aamks_users

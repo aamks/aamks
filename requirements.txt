@@ -8,3 +8,4 @@ seaborn==0.13.0
 shapely==2.0.2
 statsmodels==0.14.0
 redis==5.0.1
+docker==6.1.3

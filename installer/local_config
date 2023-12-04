@@ -1,6 +1,6 @@
 AAMKS_PATH="/usr/local/aamks";
 AAMKS_SERVER="127.0.0.1"; # gearman + www for workers
-AAMKS_WORKER="local"; # 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'gearman': dispatch simulations over a network (grid/cluster environment)
+AAMKS_WORKER="redis"; # 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'redis': dispatch simulations over a network (grid/cluster environment)
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
 AAMKS_SALT='aamksisthebest'
