@@ -635,14 +635,6 @@ class Worker:
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
-
-    def run_worker(self):
-        if SIMULATION_TYPE == 'NO_CFAST':
-            print('Working in NO_CFAST mode')
-            self.test()
-        else:
-            print(self.working_dir)
-            self.main()
             
 class LocalResultsCollector:
     def __init__(self, report: OrderedDict):
