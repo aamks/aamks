@@ -20,7 +20,8 @@ AAMKS_SERVER=10.8.47.50									# gearman + www for workers
 AAMKS_PATH='/usr/local/aamks'								
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
-AAMKS_WORKER='gearman'										# 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'gearman': dispatch simulations over a network (grid/cluster environment)
+AAMKS_REDIS_PASS = 'hulakula'
+AAMKS_WORKER='redis'										# 'redis' : worker and server with redis as task broker 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'gearman': dispatch simulations over a network (grid/cluster environment)
 AAMKS_SALT='aamksisthebest'
 AAMKS_USE_MAIL=0											# needed if we allow users to register accounts
 AAMKS_MAIL_API_KEY='none'									# needed if we allow users to register accounts
@@ -37,6 +38,7 @@ echo "AAMKS_SERVER: $AAMKS_SERVER"
 echo "AAMKS_PATH: $AAMKS_PATH"
 echo "AAMKS_PROJECT: $AAMKS_PROJECT"
 echo "AAMKS_PG_PASS: $AAMKS_PG_PASS"
+echo "AAMKS_REDIS_PASS: $AAMKS_REDIS_PASS"
 echo "AAMKS_WORKER: $AAMKS_WORKER"
 echo "AAMKS_SALT: $AAMKS_SALT"
 echo "AAMKS_USE_MAIL: $AAMKS_USE_MAIL"

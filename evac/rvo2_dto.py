@@ -111,7 +111,6 @@ class EvacEnv:
 
     def _next_room_in_smoke(self, evacuee, path):
         try:
-            s=self.evacuees.get_position_of_pedestrian(evacuee)
             od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee))
         except:
             od_at_agent_position = 0, 'outside'
@@ -119,14 +118,18 @@ class EvacEnv:
         self.evacuees.set_optical_density(evacuee, od_at_agent_position[0])
         self.room = od_at_agent_position[1]
 
-        if self.config['SMOKE_AWARENESS'] and len(path) > 1:
-            od_next_room = self.smoke_query.get_visibility(path[1])
-            if od_at_agent_position[0] < od_next_room[0]:
-                return True
-            else:
-                return False
-        else:
-            return False
+        for point in path[1:]:
+            room = self.smoke_query.xy2room(point)
+            if room != self.room and room != 'outside':
+                if self.config['SMOKE_AWARENESS'] and len(path) > 1:
+                    od_next_room = self.smoke_query.get_visibility(point)
+                    if od_at_agent_position[0] < od_next_room[0]:
+                        return True
+                    else:
+                        return False
+                else:
+                    return False
+        return False
 
     def set_floor_teleport_destination_queue_lists(self, floor_numbers):
         for floor in floor_numbers:

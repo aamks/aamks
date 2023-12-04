@@ -94,8 +94,8 @@ class EvacMcarlo():
         some function of fire properties.
         '''
 
-        xx=150
-        yy=150
+        xx=50
+        yy=50
 
         z=self.s.query("SELECT * FROM fire_origin") 
         i=z[0]

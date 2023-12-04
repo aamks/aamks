@@ -38,10 +38,18 @@ if 'AAMKS_SKIP_CFAST' in os.environ:
 
 class Worker:
 
-    def __init__(self):
+    def __init__(self, redis_worker_pwd = None, AA=None):
         self.json=Json()
         self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
+        if AA:
+            AA['PROJECT'] = AA['PROJECT'].replace("home","mnt")
+            os.environ['AAMKS_PROJECT'] = AA['PROJECT']
+            os.environ['AAMKS_PATH'] = AA['PATH']
+            os.environ['AAMKS_SERVER'] = AA['SERVER']
+            os.environ['AAMKS_PG_PASS'] = AA['PG_PASS']
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
+        if redis_worker_pwd: 
+            self.working_dir = redis_worker_pwd 
         self.project_dir=self.working_dir.split("/workers/")[0]
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
@@ -95,7 +103,6 @@ class Worker:
             print(e)
             self.send_report(e={"status":16})
             sys.exit(1)
-
         try:
             f = open('evac.json', 'r')
             self.vars['conf'] = json.load(f)
@@ -108,15 +115,20 @@ class Worker:
 
         self.sim_id = self.vars['conf']['SIM_ID']
         self.host_name = os.uname()[1]
-        #print('Starting simulations id: {}'.format(self.sim_id))
-        self.wlogger=self.get_logger('worker.py')
-        self.vars['conf']['logger'] = self.get_logger('evac.py')
+        #this statement prevents redis_aamks/worker/worker.py from creating new loggers during every iteration
+        if not logging.getLogger("worker.py").handlers:
+         self.wlogger = self.get_logger('worker.py')
+        else:
+            self.wlogger = logging.getLogger("worker.py")
+        if not logging.getLogger("evac.py").handlers: 
+            self.vars['conf']['logger'] = self.get_logger('evac.py')
+        else:
+            self.vars['conf']['logger'] = logging.getLogger("evac.py")
 
     def run_cfast_simulations(self):
         cfast_file = 'cfast7_linux_64'
         compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
         cfast_file = 'cfast_775-1000-i' if compa_no > 100 else 'cfast_775-100-i'
-            
         if self.project_conf['fire_model'] == 'CFAST':
             err = False
             try:
@@ -375,7 +387,7 @@ class Worker:
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
                 progress = round(time_frame/self.vars["conf"]["simulation_time"] * 100, 1)
                 self.wlogger.info(f'Progress: {progress}%')
-                progres_status = 1000+progress
+                progres_status = int(1000+progress)
                 self.send_report(e={"status":progres_status})
                 # check if all agents egressed and determine RSET for the building
                 if prod(array(rsets)) > 0:
@@ -580,6 +592,14 @@ class Worker:
         self.do_simulation()
         self.send_report()
 
+    def run_worker(self):
+        if SIMULATION_TYPE == 'NO_CFAST':
+            print('Working in NO_CFAST mode')
+            self.test()
+        else:
+            print(self.working_dir)
+            self.main()
+            
 class LocalResultsCollector:
     def __init__(self, report: OrderedDict):
         self.meta = report
@@ -633,13 +653,16 @@ class LocalResultsCollector:
         self.p.query(f"""UPDATE simulations SET status = '{self.meta['psql']['status']}', host = '{self.meta['worker']}'
                 WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
 
-w = Worker()
-try:
-    if SIMULATION_TYPE == 'NO_CFAST':
-        print('Working in NO_CFAST mode')
-        w.test()
-    else:
-        w.main()
-except Exception as error:
-    w.wlogger.error(error)
-    w.send_report(e={'status': 1})
+
+
+if __name__ == "__main__":
+    w = Worker()
+    try:
+        if SIMULATION_TYPE == 'NO_CFAST':
+            print('Working in NO_CFAST mode')
+            w.test()
+        else:
+            w.main()
+    except Exception as error:
+        w.wlogger.error(error)
+        w.send_report(e={'status': 1})
