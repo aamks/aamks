@@ -14,6 +14,7 @@ from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SimIterations
 from include import Json
 from redis_aamks.manager import RedisManager
+from montecarlo.evac_clusters import EvacClusters
 import logging
 
 
@@ -68,6 +69,10 @@ for sim_id in range(*si.get()):
 logger.info('calling EvacMcarlo()')
 EvacMcarlo()
 logger.info('finished EvacMcarlo()')
+print("EVAC - CLUSTERIGN")
+logger.info('calling EvacClusters()')
+EvacClusters()
+logger.info('finished EvacClusters()')
 logger.info('calling OnEnd()')
 OnEnd()
 logger.info('finished OnEnd()')
