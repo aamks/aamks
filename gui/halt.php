@@ -140,7 +140,34 @@ function check_stat($r) {
 }
 
 
-function stop($r) {
+function stop_redis($r) {
+    $sum = 0;
+    echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
+    echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
+
+    foreach ($r as $element) {
+        $redis = new Redis();
+        $redis->connect(getenv('AAMKS_SERVER'), 6379); 
+        $redis->auth(getenv('AAMKS_REDIS_PASS')); 
+        echo "<tr><td>" . $element['iteration'] . "</td>";
+        if ($element['status'] == '') {
+            # Redis delete
+            $element_job_id = $element['job_id'];
+            delete_from_redis($redis, $element_job_id);
+            echo "<td align='center'>$element_job_id</td><td></td>";
+            $r = $_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id']));
+            $sum += 1;
+        } else {
+            echo "<td align='center'>NO</td><td align='center'>" . $element['status'] . "</td>";
+        }
+        echo "<tr>";
+    }
+    echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>";
+}
+
+
+
+function stop_gearman($r) {
     $sum = 0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
     echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
@@ -280,11 +307,23 @@ function main() {/*{{{*/
 	//if halt stop()
 	if (isset($_POST['btn-halt'])) {
 		set_help();
-		stop(query_any());
+        if (getenv('AAMKS_WORKER') == "gearman"){
+            stop_gearman(query_any());
+        }
+        elseif (getenv('AAMKS_WORKER') == "redis"){
+            stop_redis(query_any());
+        }
+        
 	}
 	elseif (isset($_POST['btn-halt-cur'])) {
 		set_help();
-		stop(query_cur());
+        if (getenv('AAMKS_WORKER') == "gearman"){
+            stop_gearman(query_cur());
+        }
+        elseif (getenv('AAMKS_WORKER') == "redis"){
+            stop_redis(query_cur());
+        }
+		
     }
 	elseif (isset($_POST['btn-check-status'])) {
 		set_help();
