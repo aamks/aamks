@@ -98,11 +98,9 @@ class Aamks {/*{{{*/
 		$data=$this->assert_json_ids($data);
 		$file=$_SESSION['main']['working_home']."/conf.json";
 		$saved=file_put_contents($file, $data);
-		chmod($file, 0666);
 		if($saved<=0) { 
 			$_SESSION['header_err'][]="problem saving $file";
 		}
-		header("Location: $header");
 	}
 	/*}}}*/
 
