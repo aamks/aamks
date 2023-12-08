@@ -44,7 +44,6 @@ class EvacClusters():
         self.get_all_compas() # czy dict wszystkich compas bedzie potrzebny?
         self.evacues_grouped_by_rooms = self.group_evacuees_by_rooms() 
         self.find_cluster_in_whole_building()
-        self.check_types()
         self.write_to_json_file()
         # self._clustering()
         # self._vis_clusters()
@@ -76,7 +75,6 @@ class EvacClusters():
                     }
                 else:
                     grouped_by_rooms[floor][room_type]['positions'].append(room_coordinates)
-        # print(grouped_by_rooms)
         return grouped_by_rooms
 
     def cluster_one_room(self, positions_in_room):
@@ -84,7 +82,6 @@ class EvacClusters():
         ms.fit(np.array(positions_in_room))
         cluster_centers = ms.cluster_centers_
         labels = ms.labels_
-        # print(labels)
         clustered_dict = {}
         for label in labels:
             if label not in clustered_dict:
@@ -93,12 +90,23 @@ class EvacClusters():
                     "center": "",
                     "leader": ""
                 }
+
         for position, label in zip(positions_in_room, labels):
-            clustered_dict[label]['positions'].append(position,)
+            clustered_dict[label]['positions'].append([position, ""])
         for cluster in clustered_dict:
             clustered_dict[cluster]['center'] = tuple([int(x) for x in cluster_centers[cluster]])
-            clustered_dict[cluster]['leader'] = tuple(self.find_position_nearest_center(clustered_dict[cluster]['positions'], clustered_dict[cluster]['center']))
+            leader = tuple(self.find_position_nearest_center([pos_and_type[0] for pos_and_type in clustered_dict[cluster]['positions']], clustered_dict[cluster]['center']))
+            clustered_dict[cluster]['leader'] = leader
+            for num, xy_type in enumerate(clustered_dict[cluster]['positions']):
+                clustered_dict[cluster]['positions'][num][1] = (self.check_type(xy_type[0], leader))
         return clustered_dict
+
+    def check_type(self, position, leader):
+        if position == leader:
+            return "leader"
+        else:
+            return "follower"
+
 
     def find_position_nearest_center(self, positions, center):
         positions_array = np.array(positions)
@@ -109,11 +117,10 @@ class EvacClusters():
 
     def find_cluster_in_whole_building(self):
         for floor in self.evacues_grouped_by_rooms:
-            print(floor)
             for room in self.evacues_grouped_by_rooms[floor]:
                 clustered_room = self.cluster_one_room(self.evacues_grouped_by_rooms[floor][room]['positions'])
                 self.evacues_grouped_by_rooms[floor][room]["clusters"] = clustered_room
-        # print(self.evacues_grouped_by_rooms)
+
 
     def check_types(self):
         for floor in self.evacues_grouped_by_rooms:
