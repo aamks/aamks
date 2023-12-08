@@ -87,7 +87,7 @@ function ajaxLaunchSimulation() { #{{{
 		echo json_encode(array("msg"=>"Problem with the number of simulations. <a class=blink href=/aamks/form.php?edit>Setup scenario</a>", "err"=>1, "data"=>''));
 		return;
 	}
-	$cmd="cd $aamks; python3 aamks.py $working_home $user_id  2>&1"; 
+	$cmd="cd $aamks; env/bin/python3 aamks.py $working_home $user_id  2>&1"; 
 
 	$z=shell_exec("$cmd");
 	if(empty($z)) { 

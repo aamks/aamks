@@ -87,7 +87,7 @@ class RedisManager:
     def start_workers_ip(self, ip, n:int):
         print(f"Trying to start {n} workers on {ip}")
         for _ in range(int(n)):
-            cmd = f"ssh {ip} \"AAMKS_SERVER={os.environ['AAMKS_SERVER']} AAMKS_REDIS_PASS={os.environ['AAMKS_REDIS_PASS']} nohup python3 {self.worker_path} &\""
+            cmd = f"ssh {ip} \"AAMKS_SERVER={os.environ['AAMKS_SERVER']} AAMKS_REDIS_PASS={os.environ['AAMKS_REDIS_PASS']} nohup {os.environ['AAMKS_PATH']}/env/bin/python3 {self.worker_path} &\""
             Popen(cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL)
 
     def start_workers_on_all_nodes(self):
@@ -96,13 +96,13 @@ class RedisManager:
         for host in self.host_array:
             for ip in host[2]:
                 for _ in range(host[1]):
-                    cmd = f"ssh {ip} \"AAMKS_SERVER={os.environ['AAMKS_SERVER']} AAMKS_REDIS_PASS={os.environ['AAMKS_REDIS_PASS']} nohup python3 {self.worker_path} &\""
+                    cmd = f"ssh {ip} \"AAMKS_SERVER={os.environ['AAMKS_SERVER']} AAMKS_REDIS_PASS={os.environ['AAMKS_REDIS_PASS']} nohup {os.environ['AAMKS_PATH']}/env/bin/python3 {self.worker_path} &\""
                     Popen(cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL)
 
     def start_workers_locally(self, n: int):
         print(f"Trying to run workers locally,workers: {n}")
         for _ in range(int(n)):
-            cmd = ["nohup", "python3", self.worker_path, "&"]
+            cmd = ["nohup", f"{os.environ['AAMKS_PATH']}/env/bin/python3", self.worker_path, "&"]
             Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
     #SHOW WORKERS     

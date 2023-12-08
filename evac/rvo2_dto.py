@@ -2,7 +2,6 @@ import warnings
 from collections import OrderedDict
 from pyrvo.rvo_simulator import RVOSimulator
 warnings.simplefilter('ignore', RuntimeWarning)
-import rvo2
 from evac.evacuees import Evacuees
 from math import ceil
 import json

@@ -1,10 +1,10 @@
 AAMKS_PATH="/usr/local/aamks";
 AAMKS_SERVER="127.0.0.1"; # gearman + www for workers
-AAMKS_WORKER="local"; # 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'gearman': dispatch simulations over a network (grid/cluster environment)
+AAMKS_WORKER="redis"; # 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'redis': dispatch simulations over a network (grid/cluster environment)
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
 AAMKS_SALT='aamksisthebest'
-AAMKS_USE_MAIL=1											# needed if we allow users to register accounts and reset passwords
+AAMKS_USE_MAIL=0											# needed if we allow users to register accounts and reset passwords
 AAMKS_MAIL_API_KEY='none'								    # check documentation on github and set your own values
 AAMKS_MAIL_SENDER='none'                                    # set your verified sending email 
 AAMKS_REDIS_PASS='hulakula'
