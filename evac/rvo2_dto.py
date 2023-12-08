@@ -359,7 +359,7 @@ class EvacEnv:
         if OD <= 1:
             return 0.0
         else:
-            vis = self.general['c_const'] / log(OD)
+            vis = self.general['c_const'] / (log(10) * OD)
             if vis <= 3:
                 return 1.0
             elif vis >= 30:
