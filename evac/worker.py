@@ -267,7 +267,8 @@ class Worker:
             # other rooms
             elif floor['EVACUEES'][i]['COMPA'] in self.rooms_det_time.keys():
                 default_t = det + alarm + pre
-                if default_t > self.rooms_det_time[floor['EVACUEES'][i]['COMPA']]:
+                conditional_t = self.rooms_det_time[floor['EVACUEES'][i]['COMPA']] + pres['pre_evac_fire_origin']
+                if default_t > conditional_t:
                     det = self.rooms_det_time[floor['EVACUEES'][i]['COMPA']]
                     alarm = 0
                     pre = pres['pre_evac_fire_origin']
