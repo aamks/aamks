@@ -36,18 +36,21 @@ class EvacClusters():
         si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
         # print("SIM ITERATIONS: ", si)
         self.simulation_id = list(range(*si.get()))
-        # print(self.simulation_id)   
+        # print(self.simulation_id) 
         self.main()
         
 
     def main(self):
         self.get_all_compas() # czy dict wszystkich compas bedzie potrzebny?
-        self.group_evacuees_by_rooms() 
-        room = self.group_evacuees_by_rooms() 
-        self.cluster_one_room(room['0']['r1']) 
+        self.evacues_grouped_by_rooms = self.group_evacuees_by_rooms() 
+        self.find_cluster_in_whole_building()
+        self.check_types()
+        self.write_to_json_file()
         # self._clustering()
         # self._vis_clusters()
         # self._update_json()
+
+
 
     def get_all_compas(self):
         all_compas = {}
@@ -61,14 +64,19 @@ class EvacClusters():
     def group_evacuees_by_rooms(self):
         grouped_by_rooms = {}
         for floor, evacuees in self.dispatched_evacuees.items():
-            grouped_by_rooms[floor] = {}
+            grouped_by_rooms[floor] = {
+            }
             for coordinates in evacuees:
                 room_type = coordinates[2]
                 room_coordinates = tuple(coordinates[:2])
                 if room_type not in grouped_by_rooms[floor]:
-                    grouped_by_rooms[floor][room_type] = [room_coordinates]
+                    grouped_by_rooms[floor][room_type] = {
+                    "positions": [room_coordinates],
+                    "clusters": {}
+                    }
                 else:
-                    grouped_by_rooms[floor][room_type].append(room_coordinates)
+                    grouped_by_rooms[floor][room_type]['positions'].append(room_coordinates)
+        # print(grouped_by_rooms)
         return grouped_by_rooms
 
     def cluster_one_room(self, positions_in_room):
@@ -76,28 +84,49 @@ class EvacClusters():
         ms.fit(np.array(positions_in_room))
         cluster_centers = ms.cluster_centers_
         labels = ms.labels_
-        print(labels)
+        # print(labels)
         clustered_dict = {}
-        
         for label in labels:
             if label not in clustered_dict:
-                clustered_dict[label] = {
+                clustered_dict[int(label)] = {
                     "positions": [],
-                    "center": ""
+                    "center": "",
+                    "leader": ""
                 }
-
         for position, label in zip(positions_in_room, labels):
-            clustered_dict[label]['positions'].append(position)
+            clustered_dict[label]['positions'].append(position,)
         for cluster in clustered_dict:
-            clustered_dict[cluster]['center'] = cluster_centers[cluster]
+            clustered_dict[cluster]['center'] = tuple([int(x) for x in cluster_centers[cluster]])
+            clustered_dict[cluster]['leader'] = tuple(self.find_position_nearest_center(clustered_dict[cluster]['positions'], clustered_dict[cluster]['center']))
+        return clustered_dict
 
-        print(clustered_dict)
+    def find_position_nearest_center(self, positions, center):
+        positions_array = np.array(positions)
+        distances = np.linalg.norm(positions_array - center, axis=1)
+        closest_index = np.argmin(distances)
+        closest_position = positions[closest_index]
+        return tuple(closest_position)
 
+    def find_cluster_in_whole_building(self):
+        for floor in self.evacues_grouped_by_rooms:
+            print(floor)
+            for room in self.evacues_grouped_by_rooms[floor]:
+                clustered_room = self.cluster_one_room(self.evacues_grouped_by_rooms[floor][room]['positions'])
+                self.evacues_grouped_by_rooms[floor][room]["clusters"] = clustered_room
+        # print(self.evacues_grouped_by_rooms)
 
-    def cluster_leader(self, center, points):
-        points = tuple(map(tuple, points))
-        dist_2 = np.sum((points - center) ** 2, axis=1)
-        return points[np.argmin(dist_2)]
+    def check_types(self):
+        for floor in self.evacues_grouped_by_rooms:
+            print(type(floor), floor)
+            for room in self.evacues_grouped_by_rooms[floor]:
+                print(type(room), room)
+                for cluster in self.evacues_grouped_by_rooms[floor][room]['clusters']:
+                    print(type(cluster), cluster)
+
+    def write_to_json_file(self):
+        pwd = os.path.join(os.environ['AAMKS_PROJECT'], "cluster.json")
+        with open(pwd, "w") as file:
+            json.dump(self.evacues_grouped_by_rooms, file)
 
     def _clustering(self):
         try:
@@ -180,7 +209,6 @@ class EvacClusters():
         self._write_anim_zip(anim)
         Vis({'highlight_geom': None, 'anim': None, 'title': 'Clustering', 'srv': 1, 'anim': "1/clustering.zip"})
 
-# }}}
     def _write_anim_zip(self,anim):# {{{
         zf = zipfile.ZipFile("{}/workers/{}/clustering.zip".format(os.environ['AAMKS_PROJECT'], 1) , mode='w', compression=zipfile.ZIP_DEFLATED)
         try:
