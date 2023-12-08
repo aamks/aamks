@@ -36,7 +36,7 @@ read
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
 sudo apt-get --yes install git unzip php-curl postgresql docker-compose
-sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3-venv
+sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3.10 python3.10-venv
 echo "{ \"AAMKS_SERVER\": \"$AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
 sudo chown -R "$USER":"$USER" /etc/aamksconf.json
 
@@ -49,14 +49,14 @@ cd || exit
 # clear $AAMKS_PATH if there is already any content
 if [ -d "$AAMKS_PATH" ]; then
 	sudo rm -r "$AAMKS_PATH"
-	sudo mv aamks "$AAMKS_PATH"
+	sudo mv aamks/* "$AAMKS_PATH"
 else
-	sudo mv aamks "$AAMKS_PATH"
+	sudo mv aamks/* "$AAMKS_PATH"
 fi
 
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
 cd "$AAMKS_PATH" || exit
-python3 -m venv env
+python3.10 -m venv env
 env/bin/pip install -r requirements.txt
 # mkdir if there is not any
 if [ ! -d  /home/aamks_users ]; then

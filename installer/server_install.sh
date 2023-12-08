@@ -127,28 +127,23 @@ USER=`id -ru`
 
 sudo locale-gen en_US.UTF-8
 sudo apt-get update 
-sudo apt-get --yes install postgresql subversion python3-pip python3-psycopg2 xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php 
-sudo -H pip3 install webcolors pyhull colour shapely scipy numpy sns seaborn statsmodels # TODO: do we need these in master? PyQt5 ete3 sklearn. pip fails at PyQt5.
-#sudo -H pip3 install webcolors pyhull colour shapely scipy numpy sns seaborn statsmodels PyQt5 ete3 sklearn
-
+sudo apt-get --yes install postgresql subversion python3.10 python3.10-venv python3-psycopg2 xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`
 sudo cat /etc/apache2/envvars | grep -v AAMKS_ | grep -v umask > $temp
-echo "umask 0002" >> $temp
+echo "umask 0000" >> $temp
 echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> $temp
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> $temp
 echo "export AAMKS_WORKER='$AAMKS_WORKER'" >> $temp
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
+echo "export AAMKS_REDIS_PASS='$AAMKS_REDIS_PASS'" >> $temp
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> $temp
 echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> $temp
 echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> $temp
 echo "export AAMKS_MAIL_SENDER='$AAMKS_MAIL_SENDER'" >> $temp
 echo "export PYTHONPATH='$PYTHONPATH'" >> $temp
 sudo cp $temp /etc/apache2/envvars
-
-echo "umask 0002" >> $temp
-
 
 echo; echo; echo  "sudo service apache2 restart..."
 sudo service apache2 restart

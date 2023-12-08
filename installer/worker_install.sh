@@ -20,16 +20,16 @@ install() { #{{{
 	rm -rf $_AAMKS_PATH 
 	sudo locale-gen en_US.UTF-8
 	sudo apt-get update
-	sudo apt-get --yes install git unzip python3-venv
+	sudo apt-get --yes install git unzip python3.10 python3.10-venv
 	sudo rm -rf /etc/aamksconf.json
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
-	[ -d aamks ] || { git clone https://github.com/aamks/aamks; }
-	sudo mv aamks $_AAMKS_PATH
+	[ -d $_AAMKS_PATH ] || { git clone https://github.com/aamks/aamks; }
+	sudo mv aamks/* $_AAMKS_PATH
 	sudo chown -R $USER:$USER $_AAMKS_PATH
 	cd $_AAMKS_PATH || exit
 	git switch dev
-	python3 -m venv env
-	env/bin/python install -r requirements.txt
+	python3.10 -m venv env
+	env/bin/pip install -r requirements.txt
 	sudo mkdir /home/aamks_users
 	sudo chmod 777 /home/aamks_users
 }
