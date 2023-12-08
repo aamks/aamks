@@ -7,8 +7,9 @@
 
 update() { #{{{
 	[ -d $_AAMKS_PATH ] || { install; }
-	echo
-	git -C $_AAMKS_PATH pull -q
+	cd $_AAMKS_PATH || exit
+	git switch dev
+	git pull
 	sudo rm -rf /etc/aamksconf.json
 	hostname
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
@@ -23,15 +24,12 @@ install() { #{{{
 	sudo apt-get --yes install git unzip python3.10 python3.10-venv
 	sudo rm -rf /etc/aamksconf.json
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
-	[ -d $_AAMKS_PATH ] || { git clone https://github.com/aamks/aamks; }
-	sudo mv aamks/* $_AAMKS_PATH
+	sudo git clone https://github.com/aamks/aamks $_AAMKS_PATH
 	sudo chown -R $USER:$USER $_AAMKS_PATH
 	cd $_AAMKS_PATH || exit
 	git switch dev
 	python3.10 -m venv env
 	env/bin/pip install -r requirements.txt
-	sudo mkdir /home/aamks_users
-	sudo chmod 777 /home/aamks_users
 }
 #}}}
 print_help() { #{{{

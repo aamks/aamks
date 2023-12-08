@@ -40,22 +40,17 @@ sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-p
 echo "{ \"AAMKS_SERVER\": \"$AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
 sudo chown -R "$USER":"$USER" /etc/aamksconf.json
 
-echo "Check if aamks is download in /home/USER directory..."
-cd || exit
-[ -d aamks ] || { git clone https://github.com/aamks/aamks; }
-cd aamks || exit
-git switch dev
-cd || exit
 # clear $AAMKS_PATH if there is already any content
 if [ -d "$AAMKS_PATH" ]; then
 	sudo rm -r "$AAMKS_PATH"
-	sudo mv aamks/* "$AAMKS_PATH"
+	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
 else
-	sudo mv aamks/* "$AAMKS_PATH"
+	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
 fi
 
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
 cd "$AAMKS_PATH" || exit
+git switch dev
 python3.10 -m venv env
 env/bin/pip install -r requirements.txt
 # mkdir if there is not any
