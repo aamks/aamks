@@ -307,24 +307,18 @@ function update_buildings_param(){
 	$out['hrr_alpha']['mode']=$z['hrr_alpha_mode'];
 	$out['hrr_alpha']['max']=$z['hrr_alpha_max'];
 	$out['hrrpua']['mode']=$z['hrrpua_mode'];
+	$z['pre_evac']['1st'] = 0;
+	$z['pre_evac']['99th'] = 0;
+	$out['pre_evac']=$z['pre_evac'];
+	$z['pre_evac_fire_origin']['1st'] = 0;
+	$z['pre_evac_fire_origin']['99th'] = 0;
+	$out['pre_evac_fire_origin']=$z['pre_evac_fire_origin'];
 	if(empty($z['pre_evac']['mean'])){
 		$_SESSION['nn']->cannot("There is no data in that building profile!<br> Go to advanced or text editor and fill
 		 out pre-evacuation time, pre-evacuation in fire origin. ");
-		$z['pre_evac']['1st'] = 0;
-		$z['pre_evac']['99th'] = 0;
-		$out['pre_evac']=$z['pre_evac'];
-		$z['pre_evac_fire_origin']['1st'] = 0;
-		$z['pre_evac_fire_origin']['99th'] = 0;
-		$out['pre_evac_fire_origin']=$z['pre_evac_fire_origin'];
 	}else{
 		$_SESSION['nn']->msg("Alarming time, evacuees density, hrr_alpha, hrrpua, pre-evacuation and pre-evacuation
 		in fire origin updated!");
-		$z['pre_evac']['1st'] = 0;
-		$z['pre_evac']['99th'] = 0;
-		$out['pre_evac']=$z['pre_evac'];
-		$z['pre_evac_fire_origin']['1st'] = 0;
-		$z['pre_evac_fire_origin']['99th'] = 0;
-		$out['pre_evac_fire_origin']=$z['pre_evac_fire_origin'];
 	}
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
 	$_SESSION['nn']->write_scenario($s);
