@@ -256,7 +256,7 @@ function building_fields($v, $variant='easy') {/*{{{*/
 	} else {
 		$out="";
 		foreach($v as $k=>$v) {
-			$out.="<input autocomplete=off type=hidden name=post[building_profile][$k] value=''>";
+			$out.="<input autocomplete=off type=hidden name=post[building_profile][$k] value='$v'>";
 		}
 	}
 	return $out;

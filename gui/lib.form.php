@@ -44,14 +44,14 @@ function make_help() { /*{{{*/
 	$help["heatcom"]             	 = [""                                 , "<b>User-defined</b> parameters of heat of combustion normal distribution [MJ/kg]"]                                                              ;
 	$help["yields"]    	             = [""                                 , "<b>User-defined</b> parameters of species yields normal distribution [g/g]"]                                                              ;
 	$help["radfrac"]    	         = ["Radiative fraction"               , "Parameters of gamma distribution of radiative fraction of HRR [-]"]                                                              ;
-	$help["fire_load"]    	         = [""                                 , "Parameters OR 1st and 99th percentiles of log-normal distribution of fire load in ROOM and other comprtments types [MJ/m<sup>2</sup>]"]                                                              ;
+	$help["fire_load"]    	         = [""                                 , "Parameters (mean, sd) OR 1st and 99th percentiles of log-normal distribution of fire load in ROOM and other comprtments types [MJ/m<sup>2</sup>]"]                                                              ;
 
     //EVACUTAION MODEL
 	//$help["evac_clusters"]		     = ["evac_clusters"					   , "follow the leader, etc (TODO)."];                                                              ;
 	$help["dispatch_evacuees"]		 = ["Evacuees dispatch mode"           , "<orange>manual+probabilistic</orange> probabilistic evacuees only in the rooms free of manual evacuees<hr> <orange>probabilistic+manual</orange> probabilistic evacuees first and then extra manual evacuees<hr> <orange>manual</orange> probabilistic evacuees are never added "]                                                              ;
 	$help["pre_evac"]				 = ["Pre-evacuation time"              , "Parameters (mean, sd) OR 1st and 99th percentile of log-normal distribution of pre-evacuation time [s]<br>(time from agent being alarmed to start of egrees) "  ] ;
 	$help["pre_evac_fire_origin"]	 = ["Pre-evacuation<br>in fire origin" , "Parameters (mean, sd) OR 1st and 99th percentile of log-normal distribution of pre-evacuation time in compartment of fire origin [s]<br>(time from agent being alarmed to start of egrees) " ]                                                        ;
-	$help["alarming"]				 = ["Alarming time"                    , "Parameters of normal distribution of alarming time [s] !!!currently fixed to 0!!!" ] ;
+	$help["alarming"]				 = ["Alarming time"                    , "Parameters of normal distribution of alarming time [s]" ] ;
 	$help["evacuees_density"]		 = ["Evacuees density"                 , "Density of occupants in different compartments types [pers/m<sup>2</sup>]" ] ;
 	$help["building_profile"]		 = ["Building profile"                 , "Default profiles for buildings. Description available on wiki page" ]  ;
 	$help["management"]			     = ["Management lvl"                   , "Referring to PD 7974-6<br>Level M1: the normal occupants (staff or residents) should be trained to a high
@@ -396,7 +396,7 @@ function get_template_defaults($q) {/*{{{*/
     "fire_model": "CFAST",
     "dispatch_evacuees": "manual+probabilistic",
     "number_of_simulations": 1,
-    "simulation_time": 100,
+    "simulation_time": 1000,
     "indoor_temperature": {
         "mean": 22,
         "sd": 2
@@ -435,36 +435,17 @@ function get_template_defaults($q) {/*{{{*/
         "not_broken": ""
     },
     "sprinklers": {
-        "mean": 60,
-        "sd": 2,
-        "density_mean": 0.0001,
-        "density_sd": 0.00001,
-        "RTI": 100,
-        "not_broken": 0.95
+        "mean": "",
+        "sd": "",
+        "density_mean": "",
+        "density_sd": "",
+        "RTI": "",
+        "not_broken": ""
     },
     "NSHEVS": {
         "activation_time": "",
         "startup_time": ""
     },
-    "RESCUE": {
-        "is_rescue": 0,
-        "electronic": 0,
-        "detection": 20,
-        "t1": 20,
-        "t2": 20,
-	"CPR": 1, 
-        "dist_short": 4,
-        "dist_long": 8,
-        "fire_distance_horizontal": 20,
-        "fire_distance_vertical":5
-    },
-    "NOZZLES": {
-	"time_1" : 0,
-	"time_2": 40,
-	"time_3": 80,
-	"time_4": -1
-    },
-
     "r_is":"simple",
     "r_trans":"phone",
     "r_cpr":0,
@@ -482,10 +463,7 @@ function get_template_defaults($q) {/*{{{*/
         "1st": "",
         "2nd": "",
         "3rd": "",
-        "4th": ""},
-
-
-	        
+        "4th": ""},        
     "outdoor_temperature": {
         "mean": 10,
         "sd": 10
