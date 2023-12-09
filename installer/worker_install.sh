@@ -21,7 +21,9 @@ install() { #{{{
 	rm -rf $_AAMKS_PATH 
 	sudo locale-gen en_US.UTF-8
 	sudo apt-get update
-	sudo apt-get --yes install git unzip python3.10 python3.10-venv
+	sudo apt-get --yes install git unzip software-properties-common
+	sudo add-apt-repository ppa:deadsnakes/ppa
+	sudo apt-get --yes install python3.10 python3.10-venv 
 	sudo rm -rf /etc/aamksconf.json
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
 	sudo git clone https://github.com/aamks/aamks $_AAMKS_PATH
