@@ -270,7 +270,9 @@ function calculate_profile($arr) { #{{{
 	$hrr_alpha_min=$params['hrr_alpha_min'];
 	$hrr_alpha_mode=$params['hrr_alpha_mode'];
 	$hrr_alpha_max=$params['hrr_alpha_max'];
+	$hrrpua_min=$params['hrrpua_min'];
 	$hrrpua_mode=$params['hrrpua_mode'];
+	$hrrpua_max=$params['hrrpua_max'];
 	$pre_evac=get_profile_code(implode(",", array($code,$management,$complexity,$alarming)));
 	$pre_evac_fire_origin=get_profile_code(implode(",", array($code,"fire_origin")));
 	return array(
@@ -278,7 +280,9 @@ function calculate_profile($arr) { #{{{
 		'hrr_alpha_min'=>$hrr_alpha_min,
 		'hrr_alpha_mode'=>$hrr_alpha_mode,
 		'hrr_alpha_max'=>$hrr_alpha_max,
+		'hrrpua_min'=>$hrrpua_min,
 		'hrrpua_mode'=>$hrrpua_mode,
+		'hrrpua_max'=>$hrrpua_max,
 		'pre_evac'=>$pre_evac, 
 		'pre_evac_fire_origin'=>$pre_evac_fire_origin
 	);
@@ -306,7 +310,9 @@ function update_buildings_param(){
 	$out['hrr_alpha']['min']=$z['hrr_alpha_min'];
 	$out['hrr_alpha']['mode']=$z['hrr_alpha_mode'];
 	$out['hrr_alpha']['max']=$z['hrr_alpha_max'];
+	$out['hrrpua']['min']=$z['hrrpua_min'];
 	$out['hrrpua']['mode']=$z['hrrpua_mode'];
+	$out['hrrpua']['max']=$z['hrrpua_max'];
 	$z['pre_evac']['1st'] = 0;
 	$z['pre_evac']['99th'] = 0;
 	$out['pre_evac']=$z['pre_evac'];
