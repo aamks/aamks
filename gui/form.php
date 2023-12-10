@@ -333,7 +333,8 @@ function update_buildings_param(){
 function update_form_easy() {/*{{{*/
 	if(empty($_POST['update_form_easy'])) { return; }
 	$out=$_POST['post'];
-	$out+=get_template_defaults('setup1');
+	$json=read_aamks_conf_json();
+	$out+=$json;
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
 	$_SESSION['nn']->write_scenario($s);
 }
