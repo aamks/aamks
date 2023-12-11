@@ -154,7 +154,7 @@ function stop($r) {
             # Redis delete
             $element_job_id = $element['job_id'];
             delete_from_redis($redis, $element_job_id);
-            echo "<td align='center'>$element_job_id</td><td></td>";
+            echo "<td align='center'>YES</td><td></td>";
             $r = $_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id']));
             $sum += 1;
         } else {

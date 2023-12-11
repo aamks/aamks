@@ -32,6 +32,11 @@ install() { #{{{
 	git switch dev
 	python3.10 -m venv env
 	env/bin/pip install -r requirements.txt
+	[ "X$AAMKS_WORKER" == "Xgearman" ] && { 
+		sudo mkdir /home/aamks_users
+		sudo chmod 777 /home/aamks_users
+	}
+	
 }
 #}}}
 print_help() { #{{{
