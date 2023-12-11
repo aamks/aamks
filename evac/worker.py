@@ -119,10 +119,14 @@ class Worker:
         else:
             self.vars['conf']['logger'] = logging.getLogger("evac.py")
 
-    def run_cfast_simulations(self):
-        cfast_file = 'cfast7_linux_64'
+    def run_cfast_simulations(self, version='intel', attempt=0):
+        if attempt >= 2:
+            return False
         compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
-        cfast_file = 'cfast_775-1000-i' if compa_no > 100 else 'cfast_775-100-i'
+        if version == 'intel':
+            cfast_file = 'cfast_775-1000-i' if compa_no > 100 else 'cfast_775-100-i'
+        else:
+            cfast_file = 'cfast_775-1000' if compa_no > 100 else 'cfast_775-100'
         if self.project_conf['fire_model'] == 'CFAST':
             err = False
             try:
@@ -143,7 +147,10 @@ class Worker:
 
             inf = 'Iteration skipped due to CFAST error' if err else 'CFAST simulation calculated with success' 
             self.wlogger.info(inf)
-            return not err
+            if not err:
+                return True
+            else:
+                return self.run_cfast_simulations("gnu", attempt+1)
 
     def create_geom_database(self):
 
