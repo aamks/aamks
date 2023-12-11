@@ -92,7 +92,7 @@ function compare() {/*{{{*/
     $scens = implode(' ', $_POST['comp']);
     $sep = implode('<>', $_POST['comp']);
 
-    $cmd = "cd $aamks/results; python3 beck_new.py $f ".$scens." 2>&1";
+    $cmd = "cd $aamks/results; ../env/bin/python3 beck_new.py $f ".$scens." 2>&1";
 
     // Output a 'waiting message'
 	$z=shell_exec("$cmd");
@@ -109,7 +109,7 @@ function make_pictures() {/*{{{*/
 	/*Generate pictures with using beck.py script*/
 	$aamks=getenv("AAMKS_PATH");
 	
-    $cmd="cd $aamks/results; python3 beck_new.py $f 2>&1";
+    $cmd="cd $aamks/results; ../env/bin/python3 beck_new.py $f 2>&1";
 
     // Output a 'waiting message'
 	$z=shell_exec("$cmd");

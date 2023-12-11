@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from statsmodels.distributions.empirical_distribution import ECDF as ecdf
 import matplotlib.ticker as tic
-from ete3 import Tree, TreeStyle, TextFace
 import sys
 import os
 import shutil
