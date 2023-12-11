@@ -295,15 +295,11 @@ function alarming_defaults($x) {/*{{{*/
 	return array('mean' =>  0, 'sd' =>  0) ;  # In case none of the alarming is chosen
 }
 /*}}}*/
-function update_form_buildings_param() {
-	echo "<form method=post>";
-	echo "<div style='float:left; margin-top: 20px;'><input autocomplete=off type=submit name=update_buildings_param value='Calculate building profile parameters'>".get_help('button_easy_form')."</div>";
-	echo "</form>";
-	echo "<div style='float:left; margin-top: 20px; padding-left: 10px'><a href='?bprofiles'><button>Check values for building profiles</button></a></div>";
-}
-function update_buildings_param(){
-	if(empty($_POST['update_buildings_param'])) { return; }
-	$out = read_aamks_conf_json();
+function update_form_easy() {/*{{{*/
+	if(empty($_POST['update_form_easy'])) { return; }
+	$out=$_POST['post'];
+	$json=read_aamks_conf_json();
+	$out+=$json;
 	$z=calculate_profile($out['building_profile']);
 	$out['alarming']=alarming_defaults($out['building_profile']['alarming']);
 	$out['evacuees_density']=$z['evacuees_density'];
@@ -313,27 +309,22 @@ function update_buildings_param(){
 	$out['hrrpua']['min']=$z['hrrpua_min'];
 	$out['hrrpua']['mode']=$z['hrrpua_mode'];
 	$out['hrrpua']['max']=$z['hrrpua_max'];
-	$z['pre_evac']['1st'] = 0;
-	$z['pre_evac']['99th'] = 0;
-	$out['pre_evac']=$z['pre_evac'];
 	$z['pre_evac_fire_origin']['1st'] = 0;
 	$z['pre_evac_fire_origin']['99th'] = 0;
 	$out['pre_evac_fire_origin']=$z['pre_evac_fire_origin'];
 	if(empty($z['pre_evac']['mean'])){
 		$_SESSION['nn']->cannot("There is no data in that building profile!<br> Go to advanced or text editor and fill
 		 out pre-evacuation time, pre-evacuation in fire origin. ");
+		$z['pre_evac']['mean'] = 0;
+		$z['pre_evac']['sd'] = 0;
+		$z['pre_evac']['1st'] = 0;
+		$z['pre_evac']['99th'] = 0;
+		$out['pre_evac']=$z['pre_evac'];
 	}else{
-		$_SESSION['nn']->msg("Alarming time, evacuees density, hrr_alpha, hrrpua, pre-evacuation and pre-evacuation
-		in fire origin updated!");
+		$z['pre_evac']['1st'] = 0;
+		$z['pre_evac']['99th'] = 0;
+		$out['pre_evac']=$z['pre_evac'];
 	}
-	$s=json_encode($out, JSON_NUMERIC_CHECK);
-	$_SESSION['nn']->write_scenario($s);
-
-}
-function update_form_easy() {/*{{{*/
-	if(empty($_POST['update_form_easy'])) { return; }
-	$out=$_POST['post'];
-	$out+=get_template_defaults('setup1');
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
 	$_SESSION['nn']->write_scenario($s);
 }
@@ -439,6 +430,7 @@ function form_fields_easy() { #{{{
 	echo "<tr><td><a class='rlink switch' id='NSHEVS'>NSHEVS</a>".get_help('NSHEVS')."<td>".form_plain_arr_switchable('NSHEVS',$NSHEVS); 
 	echo "</table>";
 	echo "</form>";
+	echo "<div style='float:left; margin-top: 20px; padding-left: 10px'><a href='?bprofiles'><button>Check values for building profiles</button></a></div>";
 }
 /*}}}*/
 function form_text() { /*{{{*/
@@ -536,7 +528,7 @@ function main() {/*{{{*/
 	form_delete();
 	if(isset($_GET['edit'])) { 
 		$e=$_SESSION['prefs']['apainter_editor'];
-		if($e=='easy')     { update_form_easy()     ; form_fields_easy()     ; update_form_buildings_param(); 		update_buildings_param();}
+		if($e=='easy')     { update_form_easy()     ; form_fields_easy()     ;}
 		if($e=='advanced') { update_form_advanced() ; form_fields_advanced() ; }
 		if($e=='text')     { update_form_text()     ; form_text()            ; }
 	}
