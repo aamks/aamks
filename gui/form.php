@@ -3,10 +3,6 @@ session_name('aamks');
 require_once("inc.php"); 
 
 function read_aamks_conf_json() { /*{{{*/
-	if(!array_key_exists('nn', $_SESSION))
-	{
-		header("Location: login.php?session_finished_information=1");
-	}
 	$_SESSION['nn']->assert_working_home_exists();
 	if(!is_file($_SESSION['main']['working_home']."/conf.json")) { 
 		$_SESSION['nn']->scenario_from_template();
@@ -260,7 +256,7 @@ function building_fields($v, $variant='easy') {/*{{{*/
 	} else {
 		$out="";
 		foreach($v as $k=>$v) {
-			$out.="<input autocomplete=off type=hidden name=post[building_profile][$k] value=''>";
+			$out.="<input autocomplete=off type=hidden name=post[building_profile][$k] value='$v'>";
 		}
 	}
 	return $out;
@@ -269,15 +265,24 @@ function building_fields($v, $variant='easy') {/*{{{*/
 function calculate_profile($arr) { #{{{
 	$arr['code']=get_building($arr['type'])['code'];
 	extract($arr);
-	$evacuees_density=get_building($arr['type'])['evacuees_density'];
-	$hrr_alpha_mode=get_building($arr['type'])['hrr_alpha_mode'];
-	$hrrpua_mode=get_building($arr['type'])['hrrpua_mode'];
+	$params = get_building($arr['type']);
+	$evacuees_density=$params['evacuees_density'];
+	$hrr_alpha_min=$params['hrr_alpha_min'];
+	$hrr_alpha_mode=$params['hrr_alpha_mode'];
+	$hrr_alpha_max=$params['hrr_alpha_max'];
+	$hrrpua_min=$params['hrrpua_min'];
+	$hrrpua_mode=$params['hrrpua_mode'];
+	$hrrpua_max=$params['hrrpua_max'];
 	$pre_evac=get_profile_code(implode(",", array($code,$management,$complexity,$alarming)));
 	$pre_evac_fire_origin=get_profile_code(implode(",", array($code,"fire_origin")));
 	return array(
 		'evacuees_density'=>$evacuees_density,
+		'hrr_alpha_min'=>$hrr_alpha_min,
 		'hrr_alpha_mode'=>$hrr_alpha_mode,
+		'hrr_alpha_max'=>$hrr_alpha_max,
+		'hrrpua_min'=>$hrrpua_min,
 		'hrrpua_mode'=>$hrrpua_mode,
+		'hrrpua_max'=>$hrrpua_max,
 		'pre_evac'=>$pre_evac, 
 		'pre_evac_fire_origin'=>$pre_evac_fire_origin
 	);
@@ -292,8 +297,9 @@ function alarming_defaults($x) {/*{{{*/
 /*}}}*/
 function update_form_buildings_param() {
 	echo "<form method=post>";
-	echo "<input autocomplete=off style='float:left; margin-top: 20px;' type=submit name=update_buildings_param value='Calculate building profile parameters'>";
+	echo "<div style='float:left; margin-top: 20px;'><input autocomplete=off type=submit name=update_buildings_param value='Calculate building profile parameters'>".get_help('button_easy_form')."</div>";
 	echo "</form>";
+	echo "<div style='float:left; margin-top: 20px; padding-left: 10px'><a href='?bprofiles'><button>Check values for building profiles</button></a></div>";
 }
 function update_buildings_param(){
 	if(empty($_POST['update_buildings_param'])) { return; }
@@ -301,18 +307,27 @@ function update_buildings_param(){
 	$z=calculate_profile($out['building_profile']);
 	$out['alarming']=alarming_defaults($out['building_profile']['alarming']);
 	$out['evacuees_density']=$z['evacuees_density'];
+	$out['hrr_alpha']['min']=$z['hrr_alpha_min'];
 	$out['hrr_alpha']['mode']=$z['hrr_alpha_mode'];
+	$out['hrr_alpha']['max']=$z['hrr_alpha_max'];
+	$out['hrrpua']['min']=$z['hrrpua_min'];
 	$out['hrrpua']['mode']=$z['hrrpua_mode'];
+	$out['hrrpua']['max']=$z['hrrpua_max'];
+	$z['pre_evac']['1st'] = 0;
+	$z['pre_evac']['99th'] = 0;
 	$out['pre_evac']=$z['pre_evac'];
+	$z['pre_evac_fire_origin']['1st'] = 0;
+	$z['pre_evac_fire_origin']['99th'] = 0;
 	$out['pre_evac_fire_origin']=$z['pre_evac_fire_origin'];
-	$s=json_encode($out, JSON_NUMERIC_CHECK);
-	if(!array_key_exists('nn', $_SESSION))
-	{
-		header("Location: login.php?session_finished_information=1");
+	if(empty($z['pre_evac']['mean'])){
+		$_SESSION['nn']->cannot("There is no data in that building profile!<br> Go to advanced or text editor and fill
+		 out pre-evacuation time, pre-evacuation in fire origin. ");
+	}else{
+		$_SESSION['nn']->msg("Alarming time, evacuees density, hrr_alpha, hrrpua, pre-evacuation and pre-evacuation
+		in fire origin updated!");
 	}
+	$s=json_encode($out, JSON_NUMERIC_CHECK);
 	$_SESSION['nn']->write_scenario($s);
-	$_SESSION['nn']->msg("Alarming time, evacuees density, hrr_alpha, hrrpua, pre-evacuation and pre-evacuation
-	in fire origin updated!");
 
 }
 function update_form_easy() {/*{{{*/
@@ -320,10 +335,6 @@ function update_form_easy() {/*{{{*/
 	$out=$_POST['post'];
 	$out+=get_template_defaults('setup1');
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
-	if(!array_key_exists('nn', $_SESSION))
-	{
-		header("Location: login.php?session_finished_information=1");
-	}
 	$_SESSION['nn']->write_scenario($s);
 }
 /*}}}*/
@@ -331,10 +342,6 @@ function update_form_advanced() {/*{{{*/
 	if(empty($_POST['update_form_advanced'])) { return; }
 	$out=$_POST['post'];
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
-	if(!array_key_exists('nn', $_SESSION))
-	{
-		header("Location: login.php?session_finished_information=1");
-	}
 	$_SESSION['nn']->write_scenario($s);
 }
 /*}}}*/
@@ -342,10 +349,6 @@ function update_form_text() {/*{{{*/
 	if(empty($_POST['update_form_text'])) { return; }
 	json_decode($_POST['json']);
 	if (json_last_error() != JSON_ERROR_NONE) { $_SESSION['nn']->fatal("JSON: ".json_last_error_msg()."<br>Reverting to the previous version of the config." ); return; }
-	if(!array_key_exists('nn', $_SESSION))
-	{
-		header("Location: login.php?session_finished_information=1");
-	}
 	$_SESSION['nn']->write_scenario($_POST['json']);
 }
 /*}}}*/
@@ -421,8 +424,6 @@ function form_fields_advanced() { #{{{
 function form_fields_easy() { #{{{
 	$json=read_aamks_conf_json();
 	extract($json);
-	echo "<font size=4><strong>Easy form is not supported at the moment</strong><br>Use advanced editor</font>";
-	return 0;
 	echo "<form method=post>";
 	echo "<input autocomplete=off type=submit name=update_form_easy value='Save'><br><br>";
 	echo "<table>";
@@ -489,10 +490,6 @@ function editors() {/*{{{*/
 /*}}}*/
 function change_editor() {/*{{{*/
 	if(!isset($_POST['change_editor'])) { return; }
-	if(!array_key_exists('nn', $_SESSION))
-	{
-		header("Location: login.php?session_finished_information=1");
-	}
 	$_SESSION['nn']->preferences_update_param("apainter_editor", $_POST['change_editor']);
 	header("Location: ?edit");
 	exit();
@@ -514,10 +511,6 @@ function delete_scenario() {/*{{{*/
 	# psql aamks -c 'select * from users'
 	# psql aamks -c "SELECT u.email, p.project_name, u.preferences, u.user_photo, u.user_name, p.id AS project_id, s.scenario_name, s.id AS scenario_id  FROM projects p LEFT JOIN scenarios s ON (p.id=s.project_id) LEFT JOIN users u ON(p.user_id=u.id) WHERE u.id=1 AND s.id IS NOT NULL  ORDER BY s.modified DESC "
 	if(!isset($_POST['delete_scenario'])) { return; }
-	if(!array_key_exists('nn', $_SESSION))
-	{
-		header("Location: login.php?session_finished_information=1");
-	}
 	$_SESSION['nn']->query("DELETE FROM scenarios WHERE id=$1", array($_SESSION['main']['scenario_id']));
 	$disk_delete=implode("/", array($_SESSION['main']['user_home'], $_SESSION['main']['project_name'], $_SESSION['main']['scenario_name']));
 	system("rm -rf $disk_delete");
