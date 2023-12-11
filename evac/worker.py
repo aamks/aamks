@@ -120,9 +120,8 @@ class Worker:
             self.vars['conf']['logger'] = logging.getLogger("evac.py")
 
     def run_cfast_simulations(self, version='intel', attempt=0):
-        if attempt > 2:
+        if attempt >= 2:
             return False
-        cfast_file = 'cfast7_linux_64'
         compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
         if version == 'intel':
             cfast_file = 'cfast_775-1000-i' if compa_no > 100 else 'cfast_775-100-i'
