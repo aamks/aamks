@@ -18,7 +18,6 @@ import subprocess
 import logging
 import sys
 
-from redis_aamks.app.main import AARedis
 logger = logging.getLogger('AAMKS.init.py')
 
 class OnInit():
@@ -190,6 +189,7 @@ class OnEnd():
 
 
         if os.environ['AAMKS_WORKER']=='redis':
+            from redis_aamks.app.main import AARedis
             AR = AARedis()
             try:
                 for i in range(*si.get()):

@@ -115,6 +115,9 @@ EOF
 
 }
 
+[ "X$AAMKS_WORKER" == "Xredis" ] && { 
+	sudo apt-get --yes php-redis
+}
 
 
 
