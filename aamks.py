@@ -13,7 +13,6 @@ from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SimIterations
 from include import Json
-from redis_aamks.manager import RedisManager
 import logging
 
 
