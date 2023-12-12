@@ -68,6 +68,7 @@ class Worker:
         self.detection_time = None
         self.rooms_det_time = {}
         self.start_time = time.time()
+        self.max_exit_weight = 10
 
 
     def get_logger(self, logger_name):
@@ -146,55 +147,117 @@ class Worker:
             return not err
 
     def create_geom_database(self):
-
         self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
-        outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door from aamks_geom WHERE terminal_door IS NOT NULL')
-        floor_teleports = self.s.query("SELECT floor, name, teleport_from, teleport_to from aamks_geom WHERE name LIKE 'k%'")
+        outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL')
+        floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to from aamks_geom WHERE name LIKE 'k%'")
+        rooms_with_exits_weights_set = self.s.query('SELECT floor, name, center_x, center_y, room_exits_weights from aamks_geom WHERE room_exits_weights IS NOT NULL')
 
         self.vars['conf']['agents_destination'] = []
         for floor in sorted(self.obstacles['obstacles'].keys()):
             self.vars['conf']['agents_destination'].append([])
+            self.vars['conf']['agents_destination'][int(floor)]= {}
+            self.vars['conf']['agents_destination'][int(floor)]['general_floor_goals'] = []
+            self.vars['conf']['agents_destination'][int(floor)]['rooms_goals'] = {}
 
         for door in outside_building_doors:
             room_before_exit_center = self.s.query('SELECT center_x, center_y from aamks_geom WHERE name=? or name=?', (door['vent_to_name'],door['vent_from_name']))
             destination_x, destination_y = self._get_outside_door_destination(room_before_exit_center[0]['center_x'], room_before_exit_center[0]['center_y'], door)
-            self.vars['conf']['agents_destination'][int(door['floor'])].append({'name':door['name'], 'floor':door['floor'], 'center_x':destination_x, 'center_y':destination_y, 'type':'door'})
+            if door['exit_weight'] is not None:
+                if door['exit_weight'] == '0':
+                    weight = float("inf")
+                else:
+                    weight = self.max_exit_weight/int(door['exit_weight'])
+            else:
+                weight = 1
+            self.vars['conf']['agents_destination'][int(door['floor'])]['general_floor_goals'].append({'name':door['name'], 'floor':door['floor'], 'x':destination_x, 'y':destination_y, 'type':'door', 'exit_weight':weight})
 
         for teleport in floor_teleports:
             teleport_from_coordinates = teleport['teleport_from'].replace('[', '').replace(']','').replace(' ', '').split(',')
             int_teleport_from_coordinates = [int(t) for t in teleport_from_coordinates]
-            center_x = int_teleport_from_coordinates[0]
-            center_y = int_teleport_from_coordinates[1]
+            x = int_teleport_from_coordinates[0]
+            y = int_teleport_from_coordinates[1]
 
             teleport_to_coordinates = teleport['teleport_to'].replace('[', '').replace(']','').replace(' ', '').split(',')
             int_teleport_to_coordinates = [int(t) for t in teleport_to_coordinates]
             direction_x = int_teleport_to_coordinates[0]
             direction_y = int_teleport_to_coordinates[1]
 
-            self.vars['conf']['agents_destination'][int(teleport['floor'])].append({'name':teleport['name'], 'floor':teleport['floor'], 'center_x':center_x, 'center_y':center_y, 'type':'teleport', 'direction_x':direction_x, 'direction_y':direction_y})
+            if teleport['exit_weight'] is not None:
+                if teleport['exit_weight'] == '0':
+                    weight = float("inf")
+                else:
+                    weight = self.max_exit_weight/int(teleport['exit_weight'])
+            else:
+                weight = 1
+
+            self.vars['conf']['agents_destination'][int(teleport['floor'])]['general_floor_goals'].append({'name':teleport['name'], 'floor':teleport['floor'], 'x':x, 'y':y, 'type':'teleport', 'direction_x':direction_x, 'direction_y':direction_y,'exit_weight':weight})
+        
+        for room in rooms_with_exits_weights_set:
+            self.vars['conf']['agents_destination'][int(room['floor'])]['rooms_goals'][room['name']] = []
+
+            exits_weights_dict = dict(eval(room['room_exits_weights']))
+            for exit_id in exits_weights_dict.keys():
+                if exits_weights_dict[exit_id] == '0':
+                    weight = float("inf")
+                else:
+                    weight = self.max_exit_weight/int(exits_weights_dict[exit_id])
+                door_query = "SELECT floor, name, center_x, center_y, width, depth from aamks_geom WHERE (global_type_id="+exit_id+" and type_tri='DOOR')"
+                door = self.s.query(door_query)
+                destination_x, destination_y = self._get_door_destination(room['center_x'], room['center_y'], door[0], outside_building_doors)
+                self.vars['conf']['agents_destination'][int(door[0]['floor'])]['rooms_goals'][room['name']].append({'name':door[0]['name'], 'floor':door[0]['floor'], 'x':destination_x, 'y':destination_y, 'type':'door', 'exit_weight':weight})
+
         self.wlogger.info('SQLite load successfully')
 
 
     def _get_outside_door_destination(self, last_room_center_x, last_room_center_y, door):
+        goal_from_door_distance = 100
         if door['width'] < door['depth']:
             # exit door is vertical
             if last_room_center_x > door['center_x']:
                 #exit door leads to the left on the building plan
-                return(door['center_x']-100, door['center_y'])
+                return(door['center_x']-goal_from_door_distance, door['center_y'])
             if last_room_center_x < door['center_x']:
                 #exit door leads to the right on the building plan
-                return(door['center_x']+100, door['center_y'])
+                return(door['center_x']+goal_from_door_distance, door['center_y'])
         else:
             # exit door is horizontal
             if last_room_center_y > door['center_y']:
                 #The exit door leads downwards on the building plan
-                return(door['center_x'], door['center_y']-100)
+                return(door['center_x'], door['center_y']-goal_from_door_distance)
             if last_room_center_y < door['center_x']:
                 #The exit door leads upwards on the building plan
-                return(door['center_x'], door['center_y']+100)
+                return(door['center_x'], door['center_y']+goal_from_door_distance)
             
-        raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target from building 100 cm behind exit door")
+        raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target from building "+ str(goal_from_door_distance) +"cm behind exit door")
+
+    def _get_door_destination(self, last_room_center_x, last_room_center_y, door, outside_building_doors):
+        goal_from_door_distance=25
+        for outside_door in outside_building_doors:
+            if outside_door['name'] == door['name']:
+                # doors are terminal - leads outside
+                goal_from_door_distance=100
+                break
+
+        if door['width'] < door['depth']:
+            # exit door is vertical
+            if last_room_center_x > door['center_x']:
+                #exit door leads to the left on the building plan
+                return(door['center_x']-goal_from_door_distance, door['center_y'])
+            if last_room_center_x < door['center_x']:
+                #exit door leads to the right on the building plan
+                return(door['center_x']+goal_from_door_distance, door['center_y'])
+        else:
+            # exit door is horizontal
+            if last_room_center_y > door['center_y']:
+                #The exit door leads downwards on the building plan
+                return(door['center_x'], door['center_y']-goal_from_door_distance)
+            if last_room_center_y < door['center_x']:
+                #The exit door leads upwards on the building plan
+                return(door['center_x'], door['center_y']+goal_from_door_distance)
+
+
+        raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target "+ str(goal_from_door_distance) +"cm behind door")
 
 
     def _get_detection_time_device(self):

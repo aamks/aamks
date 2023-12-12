@@ -27,6 +27,9 @@ var evacueeRadius;
 var threejsPlay=1;
 var floor_teleports_count=0;
 var floor_teleport_direction=0;
+var external_doors = [];
+var teleports = [];
+var rooms_and_adjecent_doors = [];
 //}}}
 function debug() {//{{{
 	console.clear();
@@ -222,7 +225,7 @@ function cgDb(undoRegister=1) { //{{{
 	}
 	db({"name": cg.name}).remove();
 	b=getBbox();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput,"exit_weight":cg.exit_weight,"room_exits_weights":cg.room_exits_weights, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
 	if(undoRegister==1) { undoBufferRegister('insert'); }
 }
 //}}}
@@ -801,14 +804,17 @@ function dbUpdateCadJsonStr() { //{{{
 
 		if(i.type=='door') {
 			cad_json["exit_type"]=i.exit_type;
+			cad_json["exit_weight"]=i.exit_weight;
 		} else if(i.type=='room') {
 			cad_json["room_enter"]=i.room_enter; 
 			cad_json["evacuees_density"]=i.evacuees_density; 
+			cad_json["room_exits_weights"]=i.room_exits_weights; 
 		} else if(i.type=='mvent') {
 			cad_json["mvent_throughput"]=i.mvent_throughput;
 		}else if(i.type=='floor_teleport') {
 			cad_json["teleport_from"]=i.teleport_from;
 			cad_json["teleport_to"]=i.teleport_to;
+			cad_json["exit_weight"]=i.exit_weight;
 		}
 
 		db({'name': i.name}).update({'cad_json': cad_json});
@@ -919,11 +925,13 @@ function cgMake(floor,letter,record) { //{{{
 	cg.idx=record.idx;
 	cg.name=letter+cg.idx;
 	cg.letter=letter;
-	if(gg[letter] == undefined)
-		console.log("sdfsdfsd");
 	cg.type=gg[letter].t;
 	cg.floor=floor;
 
+	if('exit_weight' in record)        { cg.exit_weight=record.exit_weight; }
+	else { cg.exit_weight=undefined; }
+	if('room_exits_weights' in record) { cg.room_exits_weights=record.room_exits_weights; }
+	else { cg.room_exits_weights=undefined;}
 	if('exit_type' in record)        { cg.exit_type=record.exit_type; }
 	if('room_enter' in record)       { cg.room_enter=record.room_enter; }
 	if('evacuees_density' in record) { cg.evacuees_density=record.evacuees_density; }
@@ -996,7 +1004,7 @@ function dbReorder() {//{{{
 	var idx=1;
 	for (var i in ee) {
 		ee[i]['idx']=idx;
-		ee[i]['name']="e"+idx;
+		ee[i]['name']="f"+idx;
 		db.insert(ee[i]);
 		idx++;
 	}
@@ -1106,6 +1114,24 @@ function roomProps() {//{{{
 	if(cg.type=='room') {
 		v=db({'name':cg.name}).get()[0];
 		pp='';
+		adjecentDoors = rooms_and_adjecent_doors[cg.name];
+		if (adjecentDoors.length > 0){
+			pp+= "<tr><td colspan=2 style='text-align: center'>set the weight of the exit doors from this room";
+			pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
+			pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
+			adjecentDoors.forEach(function(door){
+				var door_name = door[1];
+				var points = door[0].points;
+
+				pp+= "<tr><td>exit door " +door_name+" weight:";
+
+				if ('room_exits_weights' in v && v.room_exits_weights !== undefined && v.room_exits_weights[door[0].idx] !== undefined)
+					pp+= "<td><input type=number id=room_exits_weights_"+cg.name+ "_"+door_name+" name=room_exits_weights_"+cg.name+ "_"+door_name+" min=0 max=10 value="+v.room_exits_weights[door[0].idx]+">";
+				else
+					pp+= "<td><input type=number id=room_exits_weights_"+cg.name+ "_"+door_name+" name=room_exits_weights_"+cg.name+ "_"+door_name+" min=0 max=10 value=10>";
+
+			});
+		}
 		pp+="<tr><td>enter <withHelp>?<help><orange>yes</orange> agents can evacuate via this room<br><hr><orange>no</orange> agents can not evacuate via this room</help></withHelp>";
 		pp+="<td><select id=alter-room-enter>";
 		pp+="<option value="+v.room_enter+">"+v.room_enter+"</option>";
@@ -1128,10 +1154,24 @@ function mventProps() {//{{{
 }
 //}}}
 function doorProps() {//{{{
-	pp="<input id=alter-exit-type type=hidden value=0>";
+	pp="";
 	if(cg.type=='door') {
 		v=db({'name':cg.name}).get()[0];
 		pp='';
+		external_doors.forEach((door, index) => {
+			var door_name = door[1];
+			if (door_name == v.name){
+				pp+= "<tr><td colspan=2 style='text-align: center'>set the general weight of the exit";
+				pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
+				pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
+				pp+= "<tr><td>exit door " +door_name+" weight:";
+				if ('exit_weight' in v && v.exit_weight !== undefined)
+					pp+= "<td><input type=number id=floor_exits_weights_"+door_name+ " name="+door_name+" min=0 max=10 value="+v.exit_weight+">";
+				else
+					pp+= "<td><input type=number id=floor_exits_weights_"+door_name+ " name="+door_name+" min=0 max=10 value=10>";
+			}
+		});
+
 		pp+="<tr><td>exit <withHelp>?<help><orange>auto</orange> any evacuee can use this door<br><hr><orange>primary</orange> many evacuees have had used this door to get in and will use it to get out<br><hr><orange>secondary</orange> extra door known to the personel</help></withHelp>";
 		pp+="<td><select id=alter-exit-type>";
 		pp+="<option value="+v.exit_type+">"+v.exit_type+"</option>";
@@ -1139,6 +1179,29 @@ function doorProps() {//{{{
 		pp+="<option value='primary'>primary</option>";
 		pp+="<option value='secondary'>secondary</option>";
 		pp+="</select>";
+
+	}
+	return pp;
+}
+//}}}
+function teleportProps() {//{{{
+	pp="";
+	if(cg.type=='floor_teleport') {
+		v=db({'name':cg.name}).get()[0];
+		pp='';
+		teleports.forEach((teleport, index) => {
+			teleport_name = teleport[1];
+			if (teleport_name == v.name){
+				pp+= "<tr><td colspan=2 style='text-align: center'>set the general weight of the exit";
+				pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
+				pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
+				pp+= "<tr><td>teleport " +teleport_name+" weight:";
+				if ('exit_weight' in v && v.exit_weight !== undefined)
+					pp+= "<td><input type=number id=floor_exits_weights_"+teleport_name+ " name=floor_exits_weights_"+teleport_name+" min=0 max=10 value="+v.exit_weight+">";
+				else
+					pp+= "<td><input type=number id=floor_exits_weights_"+teleport_name+ " name=floor_exits_weights_"+teleport_name+" min=0 max=10 value=10>";
+			}
+		});
 	}
 	return pp;
 }
@@ -1152,6 +1215,127 @@ function rightBoxShow(html, close_button=1) {//{{{
 	underlayPointerEvents();
 }
 //}}}
+
+function getMinMaxXY(object){
+	var points = JSON.parse(object['points'])
+	x_min = points[0][0];
+	x_max = points[0][0];
+	y_min = points[0][1];
+	y_max = points[0][1];
+	for (const [key, value] of Object.entries(points)) {
+		if (value[0] < x_min)
+			x_min = value[0];
+		else if (value[0] > x_max)
+			x_max = value[0];
+
+		if (value[1] < y_min)
+			y_min = value[1];
+		else if (value[1] > y_max)
+			y_max = value[1];
+	}
+
+	return [x_min, y_min, x_max, y_max];
+
+}
+
+function getExternalDoors(doors,room_types_objects){
+	external_doors = [];
+	doors.forEach((door, index) => {
+		var points = getMinMaxXY(door[0]);
+		var first_side_door_point = [points[0], points[1]];
+		var second_side_door_point = [points[2], points[3]];
+		var is_first_side_door_point_outside = false;
+		var is_second_side_door_point_outside = false;
+		room_types_objects.forEach((room, index) => {
+			room_points = getMinMaxXY(room[0]);
+			room_min_X = room_points[0];
+			room_max_X = room_points[2];
+			room_min_Y = room_points[1];
+			room_max_Y = room_points[3];
+			if (first_side_door_point[0] < room_max_X && 
+				first_side_door_point[0] > room_min_X &&
+				first_side_door_point[1] < room_max_Y &&
+				first_side_door_point[1] > room_min_Y)
+				is_first_side_door_point_outside = true;
+			if (second_side_door_point[0] < room_max_X && 
+				second_side_door_point[0] > room_min_X &&
+				second_side_door_point[1] < room_max_Y &&
+				second_side_door_point[1] > room_min_Y)
+				is_second_side_door_point_outside = true;
+		});
+		if (is_first_side_door_point_outside == false ||
+			is_second_side_door_point_outside == false)
+				external_doors.push(door);
+		var is_first_side_door_point_outside = false;
+		var is_second_side_door_point_outside = false;
+	});
+}
+function getRoomsAndAdjecentDoors(doors,room_types_objects){
+	rooms_and_adjecent_doors = {};
+	room_types_objects.forEach((room, index) => {
+		rooms_and_adjecent_doors[room[1]] = [];
+		var room_points = getMinMaxXY(room[0]);
+		var room_min_X = room_points[0];
+		var room_max_X = room_points[2];
+		var room_min_Y = room_points[1];
+		var room_max_Y = room_points[3];
+		doors.forEach((door, i) => {
+			var doorIsAdjecantToRoom = false;
+			door_points = getMinMaxXY(door[0]);
+			door_min_X = door_points[0];
+			door_max_X = door_points[2];
+			door_min_Y = door_points[1];
+			door_max_Y = door_points[3];
+			if (door_min_X < room_max_X && 
+				door_min_X > room_min_X &&
+				door_min_Y < room_max_Y &&
+				door_min_Y > room_min_Y)
+				doorIsAdjecantToRoom = true;
+			if (door_max_X < room_max_X && 
+				door_max_X > room_min_X &&
+				door_max_Y  < room_max_Y &&
+				door_max_Y  > room_min_Y)
+				doorIsAdjecantToRoom = true;
+
+			if (doorIsAdjecantToRoom == true)
+				rooms_and_adjecent_doors[room[1]].push(door);
+		});
+
+	});
+}
+
+function getFloorExits(){
+	cgEscapeCreate();
+	verifyIntersections();
+	dbReorder();
+	var doors =[];
+	var room_types_objects =[];
+
+	for(var letter in gg) {
+		if (gg[letter]['t'] == 'door') { 
+			_.each(db({"floor": floor, "letter": letter}).select("cad_json","name"), function(m) {
+			doors.push(m);
+			});
+		}
+	}
+
+	for(var letter in gg) {
+		if (gg[letter]['t'] == 'room' || gg[letter]['t'] == 'vroom') { 
+			_.each(db({"floor": floor, "letter": letter}).select("cad_json","name"), function(m) {
+				room_types_objects.push(m);
+			});
+		}
+	}
+	getExternalDoors(doors,room_types_objects);
+	var floor_teleport_letter = 'k';
+	teleports = []
+	_.each(db({"floor": floor, "letter": floor_teleport_letter}).select("cad_json","name"), function(m) {
+		teleports.push(m);
+	});
+	getRoomsAndAdjecentDoors(doors, room_types_objects);
+
+	
+}
 function showGeneralBox() { //{{{
 	rightBoxShow(
 		"<table class=nobreak>"+
@@ -1208,8 +1392,8 @@ function showCgPropsBox() {//{{{
 	if(cg.letter==undefined)					 { return; }   // mouse leaving right boxes
 	if(db({'name':cg.name}).get()[0]==undefined) { return; }   // clicking right boxes while new element is very infant
 	if($("#uimg_remove").length)				 { return; }   // return if underlay menu
-
 	showBuildingLabels(1);
+	getFloorExits();
 	activeLetter=cg.letter;
 	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
@@ -1220,6 +1404,7 @@ function showCgPropsBox() {//{{{
 		"<table>"+
 		roomProps()+
 		doorProps()+
+		teleportProps()+
 		mventProps()+
 		"</table>"+
 		"<br><wheat><letter>x</letter> delete, <letter>l</letter> list</wheat>"+
@@ -1239,7 +1424,6 @@ function saveRightBoxGeneral() {//{{{
 	defaults.window_offsetz=Number($("#default_window_offsetz").val());
 	legend();
 }
-//}}}
 function checkGeomReplacement() {//{{{
 	var origGeomName=$("#alter-geom-name-replaced").val();
 	if(cg.name != origGeomName) {
@@ -1276,6 +1460,10 @@ function saveRightBoxCgProps() {//{{{
 		cg.room_enter=$("#alter-room-enter").val();
 		cg.evacuees_density=$("#alter-evacuees-density").val();
 		cg.exit_type=$("#alter-exit-type").val();
+		cg.exit_weight=$("#floor_exits_weights_"+cg.name).val();
+		if (cg.type == 'room'){
+			cg.room_exits_weights = getRoomExitWeight(cg.name);
+		}
 		cg.letter=$("#alter-geom-letter").val();
 		cg.mvent_throughput=Number($("#alter-mvent-throughput").val());
 		validateForm();
@@ -1290,6 +1478,17 @@ function saveRightBoxCgProps() {//{{{
 	}
 
 } 
+function getRoomExitWeight() {//{{{
+	adjecentDoors = rooms_and_adjecent_doors[cg.name];
+	adjecentDoorsWeights={};
+	adjecentDoors.forEach(function(door){
+		var door_name = door[1];
+		var points = door[0].points;
+		adjecentDoorsWeights[door[0].idx] = $("#room_exits_weights_"+cg.name+"_"+door_name).val();
+	});
+	return adjecentDoorsWeights;
+}
+
 //}}}
 function saveRightBox() {//{{{
 	if ($("#general_setup").val() != null)   { saveRightBoxGeneral(); }
