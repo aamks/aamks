@@ -1052,6 +1052,8 @@ function floorCopy() {	//{{{
 		activeLetter=m.letter;
 		cgIdUpdate();
 		cg=deepcopy(m);
+		cg.exit_weight=undefined;
+		cg.room_exits_weights=undefined;
 		cg.floor=c2f;
 		cg.idx=cgID;
 		cg.name=cg.letter + cgID;
