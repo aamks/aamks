@@ -851,10 +851,15 @@ class PostProcess:
 
 '''Produce results of multiple scenarios on each plot'''
 class Comparison:
-    def __init__(self, scenarios, path=None):
+    def __init__(self, scenario_ids, path=None):
         self.project_path = go_back(os.getenv('AAMKS_PROJECT') if not path else path)
+        scenarios = []
+        psql_db = Psql()
+        for id in scenario_ids:
+            query = f'SELECT scenario_name FROM scenarios WHERE Id={id}'
+            scenarios.append(psql_db.query(query)[0][0])
         self.scen_names = sorted(scenarios)
-        self.dir = os.path.join(self.project_path, '_comp', '-'.join(self.scen_names), 'picts')
+        self.dir = os.path.join(self.project_path, '_comp', '-'.join(scenario_ids), 'picts')
         self.scens = self._scen_init(scenarios)
         self.data = self._merge_scens()
         self.t = 0
@@ -893,9 +898,13 @@ class Comparison:
         if 'all' in args:
             for i in os.scandir(self.project_path):
                 scens[i.name] = PostProcess(scen_dir=i.path)
+                scens[i.name].t = time.time()
+                scens[i.name].produce()
         else:
             for i in args:
                 scens[i] = PostProcess(scen_dir=os.path.join(self.project_path, i))
+                scens[i].t = time.time()
+                scens[i].produce()
 
         return scens
 

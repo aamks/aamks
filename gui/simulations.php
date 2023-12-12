@@ -3,56 +3,45 @@
 session_name('aamks');
 require_once("inc.php"); 
 
-function listing() {/*{{{*/
-	extract($_SESSION['main']);
-	$sim="$project_id/$scenario_id";
-	$path=$_SESSION['main']['working_home'];
-    $exploded = explode('/', $path);
-	$f = implode('/', array_slice($exploded, 0, -1));
-    $directories = glob($f . '/*' , GLOB_ONLYDIR);
-	echo "<form method='POST' action=''>
-			<input type='submit' style='font-size:12pt; font-weight: bold' name='btn-beck' value='Launch post-processing'>
-            <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-log' value='Check log'>
-            <br><br> Scenarios to be compared:";
-        foreach ($directories as $d) {
-            $lab = explode('/', $d);
-            $lab = end($lab);
-            if ($lab != '_comp') {
-            echo "&nbsp;<input type='checkbox' id=$d name='comp[]' value=$lab><label for=$d>$lab</label>";
-            }
-        }
-            echo "<br><input type='submit' style='font-size:10pt; font-weight: bold' name='btn-comp' value='Compare scenarios'></form>";
+function listing($scenarios) {
+	$project_path = dirname($_SESSION['main']['working_home']);
+    echo "<form method='POST' action=''>
+    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-beck' value='Launch post-processing'>
+    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-log' value='Check log'>";
+    echo "<br><br><font size=4><strong>Compare scenarios</strong></font>";
+	echo "<br>Scenarios to be compared:";
+    foreach ($scenarios as $scenario_id=>$scenario_name) {
+        $scenario_path = $project_path . '/' . $scenario_name;
+        echo "&nbsp;<input type='checkbox' id=$scenario_path name='comp[]' value=$scenario_id><label for=$scenario_path>$scenario_name ($scenario_id)</label>";
+    }
+    echo "&emsp;<input type='submit' style='font-size:10pt; font-weight: bold' name='btn-comp' value='Compare scenarios'></form>";
 }
 
-
-/*}}}*/
-function status() {/*{{{*/
-	extract($_SESSION['main']);
-	$f=$_SESSION['main']['working_home'];
-	$f = substr($f, strpos($f, '/', 1));
-	$r=$_SESSION['nn']->query("SELECT count(*) AS finished FROM simulations WHERE project = $project_id and scenario_id = $scenario_id and dcbe_time is not null");
-	$finished=$r[0]['finished'];
-	$r=$_SESSION['nn']->query("SELECT count(*) AS total FROM simulations WHERE project = $project_id and scenario_id = $scenario_id");
+function status() {
+    $project_id = $_SESSION['main']['project_id'];
+    $scenario_id = $_SESSION['main']['scenario_id'];
+    
+	$r = $_SESSION['nn']->query("SELECT count(*) AS finished FROM simulations WHERE project = $project_id and scenario_id = $scenario_id and dcbe_time is not null");
+	$finished = $r[0]['finished'];
+    
+	$r = $_SESSION['nn']->query("SELECT count(*) AS total FROM simulations WHERE project = $project_id and scenario_id = $scenario_id");
 	$total=$r[0]['total'];
+    
 	echo "<br>Complete: $finished of $total";
     echo "&nbsp;&nbsp; <br>Postprocess finished at: ";
     if (array_key_exists('pp_time', $_SESSION)) {
         echo date('Y-m-d H:i:s', $_SESSION['pp_time']);
     } else {
         echo 'No time of last postprocessing found';
-        }
+    }
+    echo '<br>';
 }
-/*}}}*/
 
-/*}}}*/
-function downloads() {/*{{{*/
+function downloads($dir=NULL) {
 	$f=$_SESSION['main']['working_home'];
     if (isset($_GET['comp'])){ 
         $f = substr($f, strpos($f, '/', 1));
-        $f = substr($f, 0, strrpos($f, '/'));
-        $scens = explode('<>', $_GET['comp']);
-        $dir = implode('-', $scens);
-        $f = $f."/_comp/".$dir;
+        $f = dirname($f)."/_comp/".$dir;
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/txt.zip download><button>Summary TXT files (.ZIP)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/picts.zip download><button>Pictures (.ZIP)</button></a>";
@@ -69,12 +58,8 @@ function downloads() {/*{{{*/
         echo "<br><br><br><br>";
     }
 }
-/*}}}*/
-
 
 function last_log(){
-	$f=$_SESSION['main']['working_home'];
-
     $cmd = 'tail -10 /home/aamks_users/aamks.log';
 	$z=shell_exec("$cmd");
     echo "<br><br><br><font size=4><strong>Last logs</strong></font><br><br>";
@@ -82,52 +67,46 @@ function last_log(){
     $_POST['btn-log'] = False;
 }
 
-/*}}}*/
-function compare() {/*{{{*/
-	$f=$_SESSION['main']['working_home'];
+function compare() {
+	$scenario_directory_path=$_SESSION['main']['working_home'];
 
-	/*Generate pictures with using beck.py script*/
+	// Generate pictures with beck.py script
 	$aamks=getenv("AAMKS_PATH");
 
-    $scens = implode(' ', $_POST['comp']);
+    $scenario_ids_string = implode(' ', $_POST['comp']);
     $sep = implode('<>', $_POST['comp']);
 
-    $cmd = "cd $aamks/results; ../env/bin/python3 beck_new.py $f ".$scens." 2>&1";
+    $cmd = "cd $aamks/results; ../env/bin/python3 beck_new.py $scenario_directory_path ".$scenario_ids_string." 2>&1";
 
     // Output a 'waiting message'
 	$z=shell_exec("$cmd");
     $_SESSION['pp_time'] =  $_SERVER['REQUEST_TIME'];
     $URL = "/aamks/simulations.php?comp=".$sep;
     echo '<META HTTP-EQUIV="refresh" content="0;URL=' . $URL . '">';
-/*}}}*/
 }
 
-/*}}}*/
-function make_pictures() {/*{{{*/
-	$f=$_SESSION['main']['working_home'];
+function make_pictures() {
+	$scenario_directory_path=$_SESSION['main']['working_home'];
 
-	/*Generate pictures with using beck.py script*/
+	// Generate pictures with beck.py script
 	$aamks=getenv("AAMKS_PATH");
 	
-    $cmd="cd $aamks/results; ../env/bin/python3 beck_new.py $f 2>&1";
+    $cmd="cd $aamks/results; ../env/bin/python3 beck_new.py $scenario_directory_path 2>&1";
 
     // Output a 'waiting message'
 	$z=shell_exec("$cmd");
     $_SESSION['pp_time'] =  $_SERVER['REQUEST_TIME'];
     $URL = "/aamks/simulations.php";
     echo '<META HTTP-EQUIV="refresh" content="0;URL=' . $URL . '">';
-/*}}}*/
 }
 
 function prevNext($k, $t, $d) {
     return ($r=($k+$d)%$t)>=0?$r:$r+=$t;
 }
 
-function show_results() {/*{{{*/
-    if (isset($_GET['comp'])){ 
-        $scens = explode('<>', $_GET['comp']);
-        $dir = implode('-', $scens);
-        $text = implode(', ', $scens);
+function show_results($dir=NULL, $compared_scenarios=NULL) {
+    if (isset($_GET['comp'])){
+        $text = implode(', ', $compared_scenarios);
         $f = $_SESSION['main']['user_home']."/".$_SESSION['main']['project_name']."/_comp/".$dir;
 
         $pictures_list = array(
@@ -143,16 +122,13 @@ function show_results() {/*{{{*/
             array('min_vis_cor_cdf','Cumulative distribution function of the minimal visibility on the evacuation routes for scenarios: '.$text), 
         );
 
-
-
-
     }else{
         $f=$_SESSION['main']['working_home'];
-	$path = $f."/picts/";
-	if (!file_exists($path.'data.txt')) {
-		echo '<br><br><font size=4><strong>No data available. Launch postprocessing first.</font></strong>';
-		return False;
-	}
+        $path = $f."/picts/";
+        if (!file_exists($path.'data.txt')) {
+            echo '<br><br><font size=4><strong>No data available. Launch postprocessing first.</font></strong>';
+            return False;
+        }
 
         $pictures_list = array(
             array('pie_fault','The share of iterations with failure of safety systems (at least one fatality)'),
@@ -182,7 +158,6 @@ function show_results() {/*{{{*/
             }
     }
 
-   
     //total array size
     $total = sizeof($pictures_list);
 
@@ -193,41 +168,38 @@ function show_results() {/*{{{*/
     $button_left='<<< Previous figure';
     $button_right='Next figure >>>';
 
-
     //displays the current image
     if(isset($_GET['pid'])){
         $k = $_GET['pid'];
     }else{
         $_GET['pid'] = $k;
-        }
+    }
+
     if(isset($_GET['comp'])){
         $j = "&comp=".$_GET['comp'];
     }else{
         $j = "";
-        }
-        
-        echo "<br><br><br><font size=4><strong>Figures</strong></font><br><br>";
-        echo '<br><a href="simulations.php?pid='.prevNext($k, $total, -1).$j.'"><button>', $button_left, '</button></a>';
-        echo '    <a href="simulations.php?pid='.prevNext($k, $total, 1).$j.'"><button>', $button_right, '</button></a>';
-        $file=$f."/picts/".$pictures_list[$k][0].".png";
-        $size_info=getimagesize($file);
-        $data64=shell_exec("base64 $file");
-        echo "<br><p>Figure ". ($k+1) .". <strong>".$pictures_list[$k][1]."</strong></p>";
-        echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
+    }
+    
+    echo "<br><font size=4><strong>Figures</strong></font><br>";
+    echo '<br><a href="simulations.php?pid='.prevNext($k, $total, -1).$j.'"><button>', $button_left, '</button></a>';
+    echo '    <a href="simulations.php?pid='.prevNext($k, $total, 1).$j.'"><button>', $button_right, '</button></a>';
+    $file=$f."/picts/".$pictures_list[$k][0].".png";
+    $size_info=getimagesize($file);
+    $data64=shell_exec("base64 $file");
+    echo "<br><p>Figure ". ($k+1) .". <strong>".$pictures_list[$k][1]."</strong></p>";
+    echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
 
-	show_data();
-	downloads();
-
-
-
+	show_data($dir, $compared_scenarios);
+	downloads($dir);
 }
 
 function startsWith( $haystack, $needle ) {
-     $length = strlen( $needle );
-     return substr( $haystack, 0, $length ) === $needle;
+     $length = strlen($needle);
+     return substr($haystack, 0, $length) === $needle;
 }
 
-function show_data() {/*{{{*/
+function show_data($dir, $compared_scenarios) {
 	$f=$_SESSION['main']['working_home'];
 
     $heads = array('Individual risk', 'IR RMSE', 'Societal risk (WRI)', 'Societal risk (AWR)', 'Societal risk (SRI)', 'RSET',
@@ -236,20 +208,18 @@ function show_data() {/*{{{*/
     $data = array();
 
     if (isset($_GET['comp'])){
-        $scens = explode('<>', $_GET['comp']);
-        $dir = implode('-', $scens);
         $f = $_SESSION['main']['user_home']."/".$_SESSION['main']['project_name']."/_comp/".$dir;
-        
+        $scens = $compared_scenarios;
         //collect data from each scenario TXT
-        foreach ($scens as $s){
+        foreach ($compared_scenarios as $scenario_id=>$scenario_name){
             $d = array();
-            $txt_file = file_get_contents($f."/picts/".$s."_data.txt");
+            $txt_file = file_get_contents($f."/picts/".$scenario_name."_data.txt");
             $rows = explode("\n", $txt_file);
             for($i = 0; $i < count($rows); ++$i) {
                 if (!startsWith($rows[$i], "#")){
                     $d[] = $rows[$i];
                 };};
-            $data[$s] = $d;
+            $data[$scenario_name] = $d;
         };
     }else{
         //collect data for single scenario
@@ -263,7 +233,6 @@ function show_data() {/*{{{*/
             };
             $data['Value'] = $d;
         };
-
     }
 
     //Risk indices table
@@ -274,7 +243,7 @@ function show_data() {/*{{{*/
 
     for($i = 0; $i < 5; ++$i) {
         echo "<tr><td>".$heads[$i]."</td><td>".$units[$i]."</td>";
-        foreach ($data as $d){echo "<td>".round($d[$i], 4)."</td>";};
+        foreach ($data as $d){echo "<td>".round(floatval($d[$i]), 4)."</td>";};
         echo "</tr>";
     }
 
@@ -291,7 +260,8 @@ function show_data() {/*{{{*/
         foreach ($data as $d){
             $d = explode(',', $d[$i]);
             if (count($d) < 2){
-                echo "<td>".round($d[0], 2)."</td><td>-</td>";}else{
+                echo "<td>".round($d[0], 2)."</td><td>-</td>";
+            }else{
                 echo "<td>".round($d[0], 2)."</td>";
                 echo "<td>".round($d[1], 2)."</td>";}}
 
@@ -300,32 +270,44 @@ function show_data() {/*{{{*/
 
     echo "</table>";
 }
-/*}}}*/
 
-function main() {/*{{{*/
-    if(!array_key_exists('nn', $_SESSION))
-        {
-            header("Location: login.php?session_finished_information=1");
-        }
+
+
+function main() {
+    if(!array_key_exists('nn', $_SESSION)){
+        header("Location: login.php?session_finished_information=1");
+    }
+    
+    $scenarios_query_results = $_SESSION['nn']->query("SELECT id, scenario_name FROM scenarios WHERE project_id=$1", array($_SESSION['main']['project_id']));
+    $scenarios = array();
+    foreach($scenarios_query_results as $scenario) {
+        $scenarios[$scenario['id']] = $scenario['scenario_name'];
+    }
+    
     if (isset($_GET['comp'])){
-        $scens = explode('<>', $_GET['comp']);
-        $dir = implode('-', $scens);
-        $title = implode(', ', $scens);  
+        $compared_scenarios_ids = explode('<>', $_GET['comp']);
+        $dir = implode('-', $compared_scenarios_ids);
+        $compared_scenarios = array();
+        foreach($compared_scenarios_ids as $scenario_id) {
+            $compared_scenarios[$scenario_id] = $scenarios[$scenario_id];
+        }
+        $title = implode(', ', $compared_scenarios);
         $_SESSION['nn']->htmlHead("Comparison");
         $_SESSION['nn']->menu("Comparison: ".$title);
     }else{
+        $dir = NULL;
+        $compared_scenarios = NULL;
         $_SESSION['nn']->htmlHead("Multisimulation results");
         $_SESSION['nn']->menu('Multisimulation results');
     }
+    status();
+    listing($scenarios);
 
-	listing();
-	status();
-
-	if (isset($_POST['btn-log'])) {
-		last_log();
+    if (isset($_POST['btn-log'])) {
+        last_log();
     }
 
-	show_results();
+    show_results($dir, $compared_scenarios);
 
 	if (isset($_POST['btn-beck'])) {
 		make_pictures();
@@ -334,10 +316,7 @@ function main() {/*{{{*/
 	if (isset($_POST['btn-comp'])) {
         compare();
     }
-
-
 }
-/*}}}*/
 
 main();
 ?>
