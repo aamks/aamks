@@ -24,7 +24,7 @@ from numpy.random import gamma
 from numpy.random import triangular
 from numpy.random import seed
 from numpy import array as npa
-from math import sqrt, log
+from math import sqrt, log, exp
 
 from include import Sqlite
 from include import Json
@@ -32,26 +32,28 @@ from include import Dump as dd
 from include import SimIterations
 from include import Vis
 
-
+from scipy.stats import lognorm
 from scipy.optimize import root
 from scipy.special import erfc
 
 # }}}
 def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99):
-
     def equations(vars):
         m, s = vars
-        eq1 = 0.5 * erfc(-(log(x1) - m) / (s * sqrt(2))) - 0.01
-        eq2 = 0.5 * erfc(-(log(x2) - m) / (s * sqrt(2))) - 0.99
+        eq1 = 0.5 * erfc(-(log(x1) - m) / (s * sqrt(2))) - p1
+        eq2 = 0.5 * erfc(-(log(x2) - m) / (s * sqrt(2))) - p2
         return [eq1, eq2]
 
-    params = root(equations, (0, 0.1))
-
-    if not params.success:
+    results =  root(equations, (0, 0.1))
+    if not results.success:
         raise RuntimeError(f'Numerical solution of lognormal distribution parameters failed.\n{params.message}')
 
-    return params.x
+    return results.x
 
+
+def lognorm_percentiles_from_params(mu, sigma, p1=0.01, p2=0.99):
+    dist = lognorm(scale=math.exp(mu), s=sigma)
+    return [dist.ppf(p) for p in [p1, p2]]
 
 
 class EvacMcarlo():
@@ -111,7 +113,7 @@ class EvacMcarlo():
         return round(normal(loc=self.conf['alarming']['mean'], scale=self.conf['alarming']['sd']), 2)
 
     def _make_pre_evacuation(self,room,type_sec):# {{{
-        '''
+        ''' 
         Get values for both cases (once there is enough smoke in the room other than fire origin's,
         agents should start to behave like they actually are in the room of fire origin though).
         '''
@@ -129,9 +131,7 @@ class EvacMcarlo():
                 raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
             pre_evacs[room_type] = round(lognormal(mean=params[0], sigma=params[1]), 2)
             
-
         return pre_evacs
-
 
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
