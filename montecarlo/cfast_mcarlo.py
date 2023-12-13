@@ -231,8 +231,6 @@ class CfastMcarlo():
 
         pre_evac = self.conf['pre_evac']
         try:
-            if not pre_evac['1st']:
-                raise KeyError
             first_percentile = pre_evac['1st']
         except KeyError:
             first_percentile = round(lognorm_percentiles_from_params(pre_evac['mean'], pre_evac['sd'])[0], 1)
