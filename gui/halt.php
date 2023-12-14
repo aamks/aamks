@@ -119,7 +119,7 @@ function check_stat($r) {
 		echo "<tr>";
 		echo "<td align='center'>".$element['iteration']."</td>";
 
-        if ($element['status'] > 1000){
+        if ($element['status'] >= 1000){
             $sum += 1;
             $statuses['in progress'] += 1;
             echo "<td>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
