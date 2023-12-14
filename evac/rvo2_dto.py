@@ -131,7 +131,7 @@ class EvacEnv:
             x, y = exit['x'], exit['y']
             path = self.nav.nav_query(src=position, dst=(x, y), maxStraightPath=999)
             if path[0] == 'err':
-                raise Exception("navmesh search path error")
+                continue
             if self._next_room_in_smoke(e, path, od_at_agent_position) is not True:
                 try:
                     if math.isinf(exit['exit_weight']):
