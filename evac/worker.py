@@ -14,7 +14,6 @@ from fire.partition_query import PartitionQuery
 from include import Sqlite
 import time
 import logging
-from logging.handlers import TimedRotatingFileHandler
 from include import Json
 import json
 from collections import OrderedDict, defaultdict
@@ -72,8 +71,8 @@ class Worker:
 
     def get_logger(self, logger_name):
         FORMATTER = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
-        LOG_FILE = f"{self.project_dir}/aamks.log"
-        file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
+        LOG_FILE = f"{self.working_dir}/aamks.log"
+        file_handler = logging.FileHandler(LOG_FILE)
         file_handler.setFormatter(FORMATTER)
         file_handler.setLevel(logging.INFO)
 
@@ -111,13 +110,13 @@ class Worker:
         self.host_name = os.uname()[1]
         #this statement prevents redis_aamks/worker/worker.py from creating new loggers during every iteration
         if not logging.getLogger("worker.py").handlers:
-         self.wlogger = self.get_logger('worker.py')
+            self.wlogger = self.get_logger(f'{self.host_name} - worker.py')
         else:
-            self.wlogger = logging.getLogger("worker.py")
+            self.wlogger = logging.getLogger(f'{self.host_name} - worker.py')
         if not logging.getLogger("evac.py").handlers: 
-            self.vars['conf']['logger'] = self.get_logger('evac.py')
+            self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py')
         else:
-            self.vars['conf']['logger'] = logging.getLogger("evac.py")
+            self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py')
 
     def run_cfast_simulations(self, version='intel', attempt=0):
         if attempt >= 2:
@@ -145,11 +144,11 @@ class Worker:
                         else:
                             self.send_report(e={"status":20})
 
-            inf = 'Iteration skipped due to CFAST error' if err else 'CFAST simulation calculated with success' 
-            self.wlogger.info(inf)
             if not err:
+                self.wlogger.info('CFAST simulation calculated with success')
                 return True
             else:
+                self.wlogger.error(f'Iteration skipped due to CFAST error, attempt = {attempt+1}')
                 return self.run_cfast_simulations("gnu", attempt+1)
 
     def create_geom_database(self):
