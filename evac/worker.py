@@ -107,18 +107,18 @@ class Worker:
         self.project_conf=self.json.read("../../conf.json")
 
         self.sim_id = self.vars['conf']['SIM_ID']
-        self.host_name = os.uname()[1]
         #this statement prevents redis_aamks/worker/worker.py from creating new loggers during every iteration
-        if not logging.getLogger("worker.py").handlers:
+        if not logging.getLogger(f'{self.host_name} - worker.py').handlers:
             self.wlogger = self.get_logger(f'{self.host_name} - worker.py')
         else:
             self.wlogger = logging.getLogger(f'{self.host_name} - worker.py')
-        if not logging.getLogger("evac.py").handlers: 
+        if not logging.getLogger(f'{self.host_name} - evac.py').handlers: 
             self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py')
         else:
             self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py')
 
     def run_cfast_simulations(self, version='intel', attempt=0):
+        self.send_report(e={"status":18})
         if attempt >= 2:
             return False
         compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
@@ -146,6 +146,7 @@ class Worker:
 
             if not err:
                 self.wlogger.info('CFAST simulation calculated with success')
+                self.send_report(e={"status":19})
                 return True
             else:
                 self.wlogger.error(f'Iteration skipped due to CFAST error, attempt = {attempt+1}')
