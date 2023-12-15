@@ -6,6 +6,7 @@ session_start();
 ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
 ini_set('display_startup_errors',1);
+ini_set('memory_limit','512M');
 setlocale(LC_TIME, "pl_PL");
 
 # debug/*{{{*/
