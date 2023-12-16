@@ -36,7 +36,7 @@ read
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
 sudo apt-get --yes install git python3-pip xdg-utils unzip cmake ipython3 python3-urllib3 libboost-python-dev libgfortran5
-sudo apt-get --yes install php-curl postgresql subversion python3-psycopg2 apache2 php-pgsql pdf2svg libapache2-mod-php 
+sudo apt-get --yes install php-curl postgresql subversion python3-psycopg2 apache2 php-pgsql pdf2svg libapache2-mod-php php-redis
 sudo -H pip3 install --upgrade pip
 sudo -H pip3 install shapely scipy numpy Cython webcolors pyhull colour sns seaborn statsmodels
 if [ ! -f /usr/lib/x86_64-linux-gnu/libboost_python3.so  ]; then
