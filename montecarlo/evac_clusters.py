@@ -1,14 +1,10 @@
 import sys
 import re
 import os
-import shutil
-import math
 import numpy as np
 from collections import OrderedDict
 import json
-import getopt
 from pprint import pprint
-import codecs
 from subprocess import Popen,call
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 import zipfile
@@ -34,9 +30,7 @@ class EvacClusters():
         self.dispatched_evacuees=self.json.readdb("dispatched_evacuees")
 
         si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
-        # print("SIM ITERATIONS: ", si)
         self.simulation_id = list(range(*si.get()))
-        # print(self.simulation_id) 
         self.main()
         
 
@@ -45,6 +39,7 @@ class EvacClusters():
         self.evacues_grouped_by_rooms = self.group_evacuees_by_rooms() 
         self.find_cluster_in_whole_building()
         self.write_to_json_file()
+        # self.new_Vis()
         # self._clustering()
         # self._vis_clusters()
         # self._update_json()
@@ -63,8 +58,7 @@ class EvacClusters():
     def group_evacuees_by_rooms(self):
         grouped_by_rooms = {}
         for floor, evacuees in self.dispatched_evacuees.items():
-            grouped_by_rooms[floor] = {
-            }
+            grouped_by_rooms[floor] = {}
             for coordinates in evacuees:
                 room_type = coordinates[2]
                 room_coordinates = tuple(coordinates[:2])
@@ -92,20 +86,28 @@ class EvacClusters():
                 }
 
         for position, label in zip(positions_in_room, labels):
-            clustered_dict[label]['positions'].append([position, ""])
-        for cluster in clustered_dict:
+            clustered_dict[label]['positions'].append([position, "", 0])
+        for cl_num, cluster in enumerate(clustered_dict):
             clustered_dict[cluster]['center'] = tuple([int(x) for x in cluster_centers[cluster]])
             leader = tuple(self.find_position_nearest_center([pos_and_type[0] for pos_and_type in clustered_dict[cluster]['positions']], clustered_dict[cluster]['center']))
             clustered_dict[cluster]['leader'] = leader
-            for num, xy_type in enumerate(clustered_dict[cluster]['positions']):
-                clustered_dict[cluster]['positions'][num][1] = (self.check_type(xy_type[0], leader))
+            for num, xy__type_color in enumerate(clustered_dict[cluster]['positions']):
+                clustered_dict[cluster]['positions'][num][1] = self.check_type(xy__type_color[0], leader)
+                clustered_dict[cluster]['positions'][num][2] = self.add_color(xy__type_color[1], cl_num)
+
         return clustered_dict
 
-    def check_type(self, position, leader):
-        if position == leader:
+    def check_type(self, type, leader):
+        if type == leader:
             return "leader"
         else:
             return "follower"
+        
+    def add_color(self, type, num):
+        if type == "leader":
+            return -1
+        else:
+            return num%9
 
 
     def find_position_nearest_center(self, positions, center):
@@ -120,7 +122,6 @@ class EvacClusters():
             for room in self.evacues_grouped_by_rooms[floor]:
                 clustered_room = self.cluster_one_room(self.evacues_grouped_by_rooms[floor][room]['positions'])
                 self.evacues_grouped_by_rooms[floor][room]["clusters"] = clustered_room
-
 
     def check_types(self):
         for floor in self.evacues_grouped_by_rooms:
@@ -153,7 +154,6 @@ class EvacClusters():
                 ms.fit(z)
                 cluster_centers = ms.cluster_centers_
                 labels = ms.labels_
-
 
                 for i in sorted(labels):
                     self.clusters[floor][room][i]=OrderedDict([('agents', [])])
@@ -215,6 +215,23 @@ class EvacClusters():
         anim['animations']=OrderedDict([("evacuees", anim_evacuees), ("rooms_opacity", anim_rooms_opacity)]) 
         self._write_anim_zip(anim)
         Vis({'highlight_geom': None, 'anim': None, 'title': 'Clustering', 'srv': 1, 'anim': "1/clustering.zip"})
+
+    def new_Vis(self):
+        anim=OrderedDict([("simulation_id",1), ("simulation_time",0), ("time_shift",0)])
+        anim_evacuees=[OrderedDict(), OrderedDict()]
+        anim_rooms_opacity=[OrderedDict(), OrderedDict()]
+        frame=[]
+
+        for floor in self.evacues_grouped_by_rooms:
+            for room in self.evacues_grouped_by_rooms[floor]:
+                for cluster in self.evacues_grouped_by_rooms[floor][room]["clusters"]:
+                    # print(self.evacues_grouped_by_rooms[floor][room]["clusters"][cluster])
+                    for pos_type_color in self.evacues_grouped_by_rooms[floor][room]["clusters"][cluster]['positions']:
+                        frame.append([pos_type_color[0][0] ,pos_type_color[0][1], 0,0, pos_type_color[2]])
+                        # print(frame)
+
+        anim['animations']=OrderedDict([("evacuees", anim_evacuees), ("rooms_opacity", anim_rooms_opacity)])
+        self._write_anim_zip(anim) 
 
     def _write_anim_zip(self,anim):# {{{
         zf = zipfile.ZipFile("{}/workers/{}/clustering.zip".format(os.environ['AAMKS_PROJECT'], 1) , mode='w', compression=zipfile.ZIP_DEFLATED)
