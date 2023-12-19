@@ -75,7 +75,7 @@ function query_cur() {
     {
         header("Location: login.php?session_finished_information=1");
     }
-	$r = $_SESSION['nn']->query("SELECT iteration, host, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
+	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
 	echo $_SESSION['main']['project_id']."/".$_SESSION['main']['scenario_id'];
 	return $r;
 }
@@ -86,7 +86,7 @@ function query_any() {
     {
         header("Location: login.php?session_finished_information=1");
     }
-	$r = $_SESSION['nn']->query("SELECT iteration, host, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
+	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
 	echo $_POST['project']."/".$_POST['scenario'];
 	return $r;
 }
@@ -123,13 +123,11 @@ function check_stat($r) {
 ];
     $sum = 0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
-	echo "<table><tr><th>Iteration</th><th>Worker</th><th>Job id</th><th>Status</th><th>Description</th></tr>";
+	echo "<table><tr><th>Iteration</th><th>Status</th><th>Description</th></tr>";
 
 	foreach ($r as $element) {
 		echo "<tr>";
 		echo "<td align='center'>".$element['iteration']."</td>";
-        echo "<td align='center'>".$element['host']."</td>";
-        echo "<td>".$element['job_id']."</td>";
 
         if ($element['status'] >= 1000){
             $sum += 1;
