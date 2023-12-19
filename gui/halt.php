@@ -15,8 +15,6 @@ function set_help($show=false) {
     '15' => 'Downloading cfast.in failed',
     '16' => 'Downloading $AAMKS_PATH/evac/conf.json failed',
     '17' => 'Loading evac.json failed',
-    '18' => 'Started worker - running CFAST simulation',
-    '19' => 'CFAST simulation calculated with success',
     '20' => 'Unknown CFAST error',
     '21' => 'CFAST timeout (after 600 s)',
     '22' => 'CFAST pressure error',
@@ -27,6 +25,9 @@ function set_help($show=false) {
     '33' => 'Error reading smoke query record (fires.partition_query.PartitionQuery.cfast_has_time())',
     '90' => 'Iteration halted remotely (cancelled at the queuing stage)',
     '91' => 'Iteration halted manually (also this code has to be set by hand)',
+    '100' => 'Started worker',
+    '101' => 'Started running CFAST simulation',
+    '102' => 'CFAST simulation calculated with success',
     '' => 'Job submitted. No data has been received from worker yet',
     'halted' => 'deprecated code 90',
 ];
@@ -100,8 +101,6 @@ function check_stat($r) {
     '15' => 0,
     '16' => 0,
     '17' => 0,
-    '18' => 0,
-    '19' => 0,
     '20' => 0,
     '21' => 0,
     '22' => 0,
@@ -112,17 +111,21 @@ function check_stat($r) {
     '33' => 0,
     '90' => 0,
     '91' => 0,
+    '100' => 0,
+    '101' => 0,
+    '102' => 0,
     '' => 0,
     'in progress' => 0,
 ];
     $sum = 0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
-	echo "<table><tr><th>Iteration</th><th>Worker</th><th>Status</th><th>Description</th></tr>";
+	echo "<table><tr><th>Iteration</th><th>Worker</th><th>Job id</th><th>Status</th><th>Description</th></tr>";
 
 	foreach ($r as $element) {
 		echo "<tr>";
 		echo "<td align='center'>".$element['iteration']."</td>";
         echo "<td align='center'>".$element['host']."</td>";
+        echo "<td>".$element['job_id']."</td>";
 
         if ($element['status'] > 1000){
             $sum += 1;
