@@ -200,6 +200,7 @@ class RedisManager:
         parser.add_argument('-wa', help='Show details of workers available', required=False, action='store_true')
         parser.add_argument('--status', help='Show cluster status (number of tasks, workers...)', required=False, action='store_true')
         parser.add_argument('-s', help='Show brief cluster status (number of tasks, workers...)', required=False, action='store_true')
+        parser.add_argument('-d', help='Delete all tasks in queue', required=False, action='store_true')
 
         args = parser.parse_args()
         #server
@@ -245,6 +246,8 @@ class RedisManager:
             self.queue.status()
         elif args.s:
             self.queue.status(short=True)
+        elif args.d:
+            self.queue.remove_all()
 
 
 class QueueManago:
@@ -282,6 +285,11 @@ class QueueManago:
             self.clients()
             self.show()
 
+    def remove_all(self):
+        elements = self.r.lrange(self.name, 0, -1)
+        for element in elements:
+            self.r.lrem(self.name, 0, element)
+            print('deleted ', element)
 
 if __name__=="__main__":
     manager=RedisManager()

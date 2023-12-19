@@ -118,7 +118,7 @@ class Worker:
             self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py')
 
     def run_cfast_simulations(self, version='intel', attempt=0):
-        self.send_report(e={"status":18})
+        self.send_report(e={"status":101})
         if attempt >= 2:
             return False
         compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
@@ -146,10 +146,10 @@ class Worker:
 
             if not err:
                 self.wlogger.info('CFAST simulation calculated with success')
-                self.send_report(e={"status":19})
+                self.send_report(e={"status":102})
                 return True
             else:
-                self.wlogger.error(f'Iteration skipped due to CFAST error, attempt = {attempt+1}')
+                self.wlogger.warning(f'Iteration skipped due to CFAST error, attempt = {attempt+1}')
                 return self.run_cfast_simulations("gnu", attempt+1)
 
     def create_geom_database(self):
@@ -630,6 +630,7 @@ class Worker:
 
     def main(self):
         self.get_config()
+        self.send_report(e={"status":100})
         self.create_geom_database()
         if self.run_cfast_simulations():
             self.prepare_simulations()
