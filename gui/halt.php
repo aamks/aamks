@@ -15,6 +15,8 @@ function set_help($show=false) {
     '15' => 'Downloading cfast.in failed',
     '16' => 'Downloading $AAMKS_PATH/evac/conf.json failed',
     '17' => 'Loading evac.json failed',
+    '18' => 'Started worker - running CFAST simulation',
+    '19' => 'CFAST simulation calculated with success',
     '20' => 'Unknown CFAST error',
     '21' => 'CFAST timeout (after 600 s)',
     '22' => 'CFAST pressure error',
@@ -101,6 +103,8 @@ function check_stat($r) {
     '15' => 0,
     '16' => 0,
     '17' => 0,
+    '18' => 0,
+    '19' => 0,
     '20' => 0,
     '21' => 0,
     '22' => 0,
@@ -127,7 +131,7 @@ function check_stat($r) {
         echo "<td align='center'>".$element['host']."</td>";
         echo "<td>".$element['job_id']."</td>";
 
-        if ($element['status'] > 1000){
+        if ($element['status'] >= 1000){
             $sum += 1;
             $statuses['in progress'] += 1;
             echo "<td align='center'>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
