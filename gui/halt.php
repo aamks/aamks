@@ -15,6 +15,8 @@ function set_help($show=false) {
     '15' => 'Downloading cfast.in failed',
     '16' => 'Downloading $AAMKS_PATH/evac/conf.json failed',
     '17' => 'Loading evac.json failed',
+    '18' => 'Started worker - running CFAST simulation',
+    '19' => 'CFAST simulation calculated with success',
     '20' => 'Unknown CFAST error',
     '21' => 'CFAST timeout (after 600 s)',
     '22' => 'CFAST pressure error',
@@ -70,7 +72,7 @@ function query_cur() {
     {
         header("Location: login.php?session_finished_information=1");
     }
-	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
+	$r = $_SESSION['nn']->query("SELECT iteration, host, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
 	echo $_SESSION['main']['project_id']."/".$_SESSION['main']['scenario_id'];
 	return $r;
 }
@@ -81,7 +83,7 @@ function query_any() {
     {
         header("Location: login.php?session_finished_information=1");
     }
-	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
+	$r = $_SESSION['nn']->query("SELECT iteration, host, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
 	echo $_POST['project']."/".$_POST['scenario'];
 	return $r;
 }
@@ -98,6 +100,8 @@ function check_stat($r) {
     '15' => 0,
     '16' => 0,
     '17' => 0,
+    '18' => 0,
+    '19' => 0,
     '20' => 0,
     '21' => 0,
     '22' => 0,
@@ -113,21 +117,22 @@ function check_stat($r) {
 ];
     $sum = 0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
-	echo "<table><tr><th>Iteration</th><th>Status</th><th>Description</th></tr>";
+	echo "<table><tr><th>Iteration</th><th>Worker</th><th>Status</th><th>Description</th></tr>";
 
 	foreach ($r as $element) {
 		echo "<tr>";
 		echo "<td align='center'>".$element['iteration']."</td>";
+        echo "<td align='center'>".$element['host']."</td>";
 
         if ($element['status'] >= 1000){
             $sum += 1;
             $statuses['in progress'] += 1;
-            echo "<td>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
+            echo "<td align='center'>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
         }
         else{
 			$statuses[$element['status']] += 1;
 			$sum += 1;
-			echo "<td>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
+			echo "<td align='center'>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
 		}
 
 	
