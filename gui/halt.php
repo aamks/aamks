@@ -178,26 +178,26 @@ function stop_redis($r) {
 
 
 function stop_gearman($r) {
-    $sum = 0;
-    echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
-    echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
+    $sum=0;
+    echo "<table><tr><th>Details</th><th>Summary</th></tr><tr><td valign='top'>";
+	echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
 
-    foreach ($r as $element) {
-        $redis = new Redis();
-        $redis->connect(getenv('AAMKS_SERVER'), 6379); 
-        $redis->auth(getenv('AAMKS_REDIS_PASS')); 
-        echo "<tr><td>" . $element['iteration'] . "</td>";
-        if ($element['status'] == '') {
-            # Redis delete
-            $element_job_id = $element['job_id'];
-            delete_from_redis($redis, $element_job_id);
-            echo "<td align='center'>YES</td><td></td>";
-            $r = $_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id']));
+	foreach ($r as $element) {
+        echo "<tr><td>".$element['iteration']."</td>";
+        if ($element['status']==''){
+            $cmd = "gearadmin --cancel-job=".$element['job_id'];
+            $z=shell_exec("$cmd");
+            echo "<td align='center'>$z</td><td></td>";
+            if(!array_key_exists('nn', $_SESSION))
+            {
+                header("Location: login.php?session_finished_information=1");
+            }
+            $r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id'] ));
             $sum += 1;
-        } else {
-            echo "<td align='center'>NO</td><td align='center'>" . $element['status'] . "</td>";
+        }else{
+            echo "<td align='center'>NO</td><td align='center'>".$element['status']."</td>";
         }
-        echo "<tr>";
+    echo "<tr>";
     }
     echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>";
 }
@@ -293,12 +293,11 @@ function delete_from_redis($redis, $id){
     $redis_queue_key = 'aamks_queue';
     $elements = $redis->lrange($redis_queue_key, 0, -1);
     foreach ($elements as $element) {
-        // Decode JSON
         $decoded_element = json_decode($element, true);
         if ($decoded_element['id'] == $element_id_to_remove) {
             // delete element from DB
             $redis->lrem($redis_queue_key, $element, 0);
-            break; // break when id found
+            break; 
         }
     }
 }
