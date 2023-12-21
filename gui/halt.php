@@ -15,6 +15,8 @@ function set_help($show=false) {
     '15' => 'Downloading cfast.in failed',
     '16' => 'Downloading $AAMKS_PATH/evac/conf.json failed',
     '17' => 'Loading evac.json failed',
+    '18' => 'Started worker - running CFAST simulation',
+    '19' => 'CFAST simulation calculated with success',
     '20' => 'Unknown CFAST error',
     '21' => 'CFAST timeout (after 600 s)',
     '22' => 'CFAST pressure error',
@@ -25,6 +27,9 @@ function set_help($show=false) {
     '33' => 'Error reading smoke query record (fires.partition_query.PartitionQuery.cfast_has_time())',
     '90' => 'Iteration halted remotely (cancelled at the queuing stage)',
     '91' => 'Iteration halted manually (also this code has to be set by hand)',
+    '100' => 'Started worker',
+    '101' => 'Started running CFAST simulation',
+    '102' => 'CFAST simulation calculated with success',
     '' => 'Job submitted. No data has been received from worker yet',
     'halted' => 'deprecated code 90',
 ];
@@ -98,6 +103,8 @@ function check_stat($r) {
     '15' => 0,
     '16' => 0,
     '17' => 0,
+    '18' => 0,
+    '19' => 0,
     '20' => 0,
     '21' => 0,
     '22' => 0,
@@ -108,6 +115,9 @@ function check_stat($r) {
     '33' => 0,
     '90' => 0,
     '91' => 0,
+    '100' => 0,
+    '101' => 0,
+    '102' => 0,
     '' => 0,
     'in progress' => 0,
 ];
@@ -119,15 +129,15 @@ function check_stat($r) {
 		echo "<tr>";
 		echo "<td align='center'>".$element['iteration']."</td>";
 
-        if ($element['status'] > 1000){
+        if ($element['status'] >= 1000){
             $sum += 1;
             $statuses['in progress'] += 1;
-            echo "<td>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
+            echo "<td align='center'>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
         }
         else{
 			$statuses[$element['status']] += 1;
 			$sum += 1;
-			echo "<td>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
+			echo "<td align='center'>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
 		}
 
 	
@@ -181,7 +191,7 @@ function stop_gearman($r) {
             # Redis delete
             $element_job_id = $element['job_id'];
             delete_from_redis($redis, $element_job_id);
-            echo "<td align='center'>$element_job_id</td><td></td>";
+            echo "<td align='center'>YES</td><td></td>";
             $r = $_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id']));
             $sum += 1;
         } else {
@@ -196,7 +206,7 @@ function runPP() {
 	$f=$_SESSION['main']['working_home'];
 	$aamks=getenv("AAMKS_PATH");
 
-	$cmd="python3 $aamks/results/beck_new.py $f 2>&1";
+	$cmd="$aamks/env/bin/python3 $aamks/results/beck_new.py $f 2>&1";
 	$z=shell_exec("$cmd");
 	echo "Postprocess finished<br>";
 }
@@ -204,7 +214,7 @@ function runPP() {
 function retry() {
    $f=$_SESSION['main']['working_home'];
    $aamks=getenv("AAMKS_PATH");
-   $cmd="cd $aamks/manager; python3 init.py $f 2>&1";
+   $cmd="cd $aamks/manager; ../env/bin/python3 init.py $f 2>&1";
 
    $z=shell_exec("$cmd");
    echo "$z jobs retried<br>";

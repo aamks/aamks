@@ -25,7 +25,7 @@ from rescue_module.rescue import *
 import warnings
 import numpy as np
 
-from montecarlo.evac_mcarlo import lognorm_params_from_percentiles
+from montecarlo.evac_mcarlo import lognorm_params_from_percentiles, lognorm_percentiles_from_params
 
 # }}}
 def join2str(l, sep, quotes=False, force=False):
@@ -225,8 +225,15 @@ class CfastMcarlo():
 
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
+
     def _section_doors_and_holes(self):# {{{
         ''' Randomize how doors are opened/close. '''
+
+        pre_evac = self.conf['pre_evac']
+        try:
+            first_percentile = pre_evac['1st']
+        except KeyError:
+            first_percentile = round(lognorm_percentiles_from_params(pre_evac['mean'], pre_evac['sd'])[0], 1)
 
         txt=['!! SECTION DOORS AND HOLES']
         hvents_setup = self.samples['hvents']
@@ -243,7 +250,12 @@ class CfastMcarlo():
             collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))                  # BOTTOM
             collect.append("OFFSET = {}".format(round(v['face_offset']/100.0, 2)))           # COMPARTMENT1_OFFSET
             collect.append("FACE = '{}'".format(v['face']))                                  # FACE
-            collect.append("CRITERION = 'TIME' T = 0 F = {} /".format(how_much_open))         # OPEN CLOSE
+            if v['type_tri'] == 'DOOR':
+                # open after 1st percentile of evacuees run
+                collect.append(f"CRITERION='TIME' T=0,{first_percentile},{first_percentile+1} F=0,0,{how_much_open} /")
+            else:
+                collect.append("CRITERION = 'TIME' T = 0 F = {} /".format(how_much_open))         # constatntly open
+            print(v['type_sec'], collect[:-1])
             txt.append(', '.join(str(j) for j in collect))
 
         self.s.executemany('UPDATE aamks_geom SET how_much_open=? WHERE name=?', hvents_setup)

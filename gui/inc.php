@@ -6,6 +6,7 @@ session_start();
 ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
 ini_set('display_startup_errors',1);
+ini_set('memory_limit','512M');
 setlocale(LC_TIME, "pl_PL");
 
 # debug/*{{{*/
@@ -98,11 +99,9 @@ class Aamks {/*{{{*/
 		$data=$this->assert_json_ids($data);
 		$file=$_SESSION['main']['working_home']."/conf.json";
 		$saved=file_put_contents($file, $data);
-		chmod($file, 0666);
 		if($saved<=0) { 
 			$_SESSION['header_err'][]="problem saving $file";
 		}
-		header("Location: $header");
 	}
 	/*}}}*/
 

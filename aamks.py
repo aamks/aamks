@@ -13,14 +13,20 @@ from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SimIterations
 from include import Json
-from redis_aamks.manager import RedisManager
 import logging
 
+json = Json()
+if len(sys.argv) > 1:
+    conf = json.read("{}/conf.json".format(sys.argv[1]))
+    log_file = sys.argv[1] + '/aamks.log'
+else:
+    conf = json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+    log_file = os.environ['AAMKS_PROJECT'] + '/aamks.log'
 
 logger = logging.getLogger('AAMKS')
 logger.setLevel(logging.DEBUG)
 # create file handler which logs even debug messages
-fh = logging.FileHandler("/home/aamks_users/aamks.log")
+fh = logging.FileHandler(log_file)
 fh.setLevel(logging.DEBUG)
 # create console handler 
 ch = logging.StreamHandler()
@@ -35,11 +41,6 @@ logger.addHandler(ch)
 
 logger.warning('Start AAMKS application. Read conf.json')
 
-json = Json()
-if len(sys.argv) > 1:
-    conf = json.read("{}/conf.json".format(sys.argv[1]))
-else:
-    conf = json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 ##
 logger.info('calling OnInit()')
 OnInit()

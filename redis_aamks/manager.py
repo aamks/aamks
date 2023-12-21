@@ -5,6 +5,9 @@ import json
 import argparse
 import subprocess
 
+from redis_aamks.app.main import AARedis
+
+
 class RedisManager:
     def __init__(self):
         self.redis_pwd = os.path.join(os.environ['AAMKS_PATH'], "redis_aamks")
@@ -13,7 +16,7 @@ class RedisManager:
         self.net_conf = "/etc/aamksconf.json" 
         self.host_array = []
         self.ip_array = []
-        self._argparse()
+        self.queue = QueueManago()
 
     #SERVER
     def run_redis_server(self):
@@ -87,7 +90,7 @@ class RedisManager:
     def start_workers_ip(self, ip, n:int):
         print(f"Trying to start {n} workers on {ip}")
         for _ in range(int(n)):
-            cmd = f"ssh {ip} \"AAMKS_SERVER={os.environ['AAMKS_SERVER']} AAMKS_REDIS_PASS={os.environ['AAMKS_REDIS_PASS']} nohup python3 {self.worker_path} &\""
+            cmd = f"ssh {ip} \"AAMKS_SERVER={os.environ['AAMKS_SERVER']} AAMKS_REDIS_PASS={os.environ['AAMKS_REDIS_PASS']} nohup {os.environ['AAMKS_PATH']}/env/bin/python3 {self.worker_path} &\""
             Popen(cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL)
 
     def start_workers_on_all_nodes(self):
@@ -96,13 +99,14 @@ class RedisManager:
         for host in self.host_array:
             for ip in host[2]:
                 for _ in range(host[1]):
-                    cmd = f"ssh {ip} \"AAMKS_SERVER={os.environ['AAMKS_SERVER']} AAMKS_REDIS_PASS={os.environ['AAMKS_REDIS_PASS']} nohup python3 {self.worker_path} &\""
+                    cmd = f"ssh {ip} \"AAMKS_SERVER={os.environ['AAMKS_SERVER']} AAMKS_REDIS_PASS={os.environ['AAMKS_REDIS_PASS']} nohup {os.environ['AAMKS_PATH']}/env/bin/python3 {self.worker_path} &\""
                     Popen(cmd, shell=True, stdout=DEVNULL, stderr=DEVNULL)
+                print(f'{host[1]} workers requested from {ip}')
 
     def start_workers_locally(self, n: int):
         print(f"Trying to run workers locally,workers: {n}")
         for _ in range(int(n)):
-            cmd = ["nohup", "python3", self.worker_path, "&"]
+            cmd = ["nohup", f"{os.environ['AAMKS_PATH']}/env/bin/python3", self.worker_path, "&"]
             Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
     #SHOW WORKERS     
@@ -118,7 +122,10 @@ class RedisManager:
                 cmd = f'ssh {ip} ps aux | grep {self.worker_path} | wc -l'
                 try:
                     output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, text=True)
-                    num_processes = int(output.strip())
+                    try:
+                        num_processes = int(output.strip())
+                    except ValueError:
+                        num_processes = 'worker down'
                     enabled_workers.append((ip, num_processes))  
                     print(f"Number of processes on {ip}: {num_processes}")
                 except subprocess.CalledProcessError as e:
@@ -186,6 +193,14 @@ class RedisManager:
         #params for runone, showone, killone
         parser.add_argument('-ip', help='The IP address to work on', default=None, required=False)
         parser.add_argument('-n', help='How many times run redis worker.py', default=None, type=int, required=False)
+        #queues
+        parser.add_argument('-q', help='Show tasks in queue (sim paths)', required=False, action='store_true')
+        parser.add_argument('-qa', help='Show full queue items', required=False, action='store_true')
+        parser.add_argument('-w', help='Show number of workers available', required=False, action='store_true')
+        parser.add_argument('-wa', help='Show details of workers available', required=False, action='store_true')
+        parser.add_argument('--status', help='Show cluster status (number of tasks, workers...)', required=False, action='store_true')
+        parser.add_argument('-s', help='Show brief cluster status (number of tasks, workers...)', required=False, action='store_true')
+        parser.add_argument('-d', help='Delete all tasks in queue', required=False, action='store_true')
 
         args = parser.parse_args()
         #server
@@ -218,6 +233,65 @@ class RedisManager:
             self.kill_one(args.ip)
         if args.killlocal:
             self.kill_local() 
+        #queue
+        elif args.q:
+            self.queue.show(short=True)
+        elif args.qa:
+            self.queue.show()
+        elif args.w:
+            self.queue.clients(short=True)
+        elif args.wa:
+            self.queue.clients()
+        elif args.status:
+            self.queue.status()
+        elif args.s:
+            self.queue.status(short=True)
+        elif args.d:
+            self.queue.remove_all()
+
+
+class QueueManago:
+    def __init__(self):
+        self.r = AARedis().redis_db()
+        self.name = 'aamks_queue'
+    
+    def show(self, short=False, left=0, right=-1):
+        jobs = self.r.lrange(self.name, left, right)
+        if short:
+            [print(json.loads(job)['data']['sim']) for job in jobs]
+        else:
+            [print(job) for job in jobs]
+        print (f'Total number of jobs in queue: {len(jobs)}')
+        return jobs
+
+    def clients(self, short=False):
+        clients = self.r.client_list()
+        for c in clients:
+            if c['flags']=='N': 
+                if not short:
+                    print(f'Server client>>>\n{c}\nWorker clients>>>')
+                clients.remove(c)
+        if not short:
+            [print(client) for client in clients]
+        print (f'Total number of workers: {len(clients)}')
+
+    def status(self, short=False):
+        if short:
+            clients = self.r.client_list()
+            jobs = self.r.lrange(self.name, 0, -1)
+            print (f'Workers available: {len(clients)-1}')
+            print (f'Queued tasks: {len(jobs)}')
+        else:
+            self.clients()
+            self.show()
+
+    def remove_all(self):
+        elements = self.r.lrange(self.name, 0, -1)
+        for element in elements:
+            self.r.lrem(self.name, 0, element)
+            print('deleted ', element)
 
 if __name__=="__main__":
     manager=RedisManager()
+    manager._argparse()
+

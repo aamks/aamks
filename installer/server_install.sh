@@ -20,7 +20,7 @@ AAMKS_SERVER=10.8.47.50									# gearman + www for workers
 AAMKS_PATH='/usr/local/aamks'								
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
-AAMKS_REDIS_PASS = 'hulakula'
+AAMKS_REDIS_PASS='hulakula'
 AAMKS_WORKER='redis'										# 'redis' : worker and server with redis as task broker 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'gearman': dispatch simulations over a network (grid/cluster environment)
 AAMKS_SALT='aamksisthebest'
 AAMKS_USE_MAIL=0											# needed if we allow users to register accounts
@@ -115,6 +115,9 @@ EOF
 
 }
 
+[ "X$AAMKS_WORKER" == "Xredis" ] && { 
+	sudo apt-get --yes php-redis
+}
 
 
 
@@ -127,28 +130,25 @@ USER=`id -ru`
 
 sudo locale-gen en_US.UTF-8
 sudo apt-get update 
-sudo apt-get --yes install postgresql subversion python3-pip python3-psycopg2 xdg-utils apache2 php-pgsql pdf2svg unzip libapache2-mod-php php-redis
-sudo -H pip3 install webcolors pyhull colour shapely scipy numpy sns seaborn statsmodels # TODO: do we need these in master? PyQt5 ete3 sklearn. pip fails at PyQt5.
-#sudo -H pip3 install webcolors pyhull colour shapely scipy numpy sns seaborn statsmodels PyQt5 ete3 sklearn
-
+sudo apt-get --yes install postgresql subversion python3-psycopg2 xdg-utils apache2 software-properties-common php-redis
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt-get --yes install python3.10 python3.10-venv php-pgsql pdf2svg unzip libapache2-mod-php
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`
 sudo cat /etc/apache2/envvars | grep -v AAMKS_ | grep -v umask > $temp
-echo "umask 0002" >> $temp
+echo "umask 0000" >> $temp
 echo "export AAMKS_SERVER='$AAMKS_SERVER'" >> $temp
 echo "export AAMKS_PATH='$AAMKS_PATH'" >> $temp
 echo "export AAMKS_WORKER='$AAMKS_WORKER'" >> $temp
 echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> $temp
+echo "export AAMKS_REDIS_PASS='$AAMKS_REDIS_PASS'" >> $temp
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> $temp
 echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> $temp
 echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> $temp
 echo "export AAMKS_MAIL_SENDER='$AAMKS_MAIL_SENDER'" >> $temp
 echo "export PYTHONPATH='$PYTHONPATH'" >> $temp
 sudo cp $temp /etc/apache2/envvars
-
-echo "umask 0002" >> $temp
-
 
 echo; echo; echo  "sudo service apache2 restart..."
 sudo service apache2 restart
