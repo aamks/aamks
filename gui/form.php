@@ -123,7 +123,7 @@ function droplist_management($in) { /*{{{*/
 }
 /*}}}*/
 function droplist_fuel($in) { /*{{{*/
-	$select="<select required name=post[fuel]>";
+	$select="<select required id='fuel' name=post[fuel]>";
 	$select.="<option value='$in'>$in</option>";
 	$select.="<option value='PE'>PE</option>";
 	$select.="<option value='PU'>PU</option>";
@@ -547,11 +547,11 @@ function validation_easy(){
 		const sprinklers_mean = document.getElementById('sprinklers_mean').value;
 		const sprinklers_sd = document.getElementById('sprinklers_sd').value;
 		const sprinklers_density_mean_val = document.getElementById('sprinklers_density_mean').value;
-		let sprinklersDensityMean = '0';
+		let sprinklersDensityMean = '';
 		if (sprinklers_density_mean_val !== ''){sprinklersDensityMean = parseFloat(sprinklers_density_mean_val).toString();}
 		const sprinklers_density_sd_val = document.getElementById('sprinklers_density_sd').value;
-		let sprinklersDensitySd = '0';
-		if (sprinklers_density_sd_val !== ''){const sprinklersDensitySd = parseFloat(sprinklers_density_sd_val).toString();}
+		let sprinklersDensitySd = '';
+		if (sprinklers_density_sd_val !== ''){sprinklersDensitySd = parseFloat(sprinklers_density_sd_val).toString();}
 		const sprinklers_RTI = document.getElementById('sprinklers_RTI').value;
 		const sprinklers_not_broken = document.getElementById('sprinklers_not_broken').value;
 		const NSHEVS_activation_time = document.getElementById('NSHEVS_activation_time').value;
@@ -562,8 +562,8 @@ function validation_easy(){
 		if ((!noSim.match(intPattern)) || (noSim <= 0)) {
 		  errorMessage += 'Wrong Number of simulations! Field must be an integer &gt 0!<br>'
 		} 	  
-		if ((!timeSim.match(intPattern)) || (timeSim <= 0)) {
-		  errorMessage += 'Wrong Simulation time! Field must be an integer &gt 0!<br>'
+		if ((!timeSim.match(intPattern)) || (timeSim < 10)) {
+		  errorMessage += 'Wrong Simulation time! Field must be an integer >= SMOKE_QUERY_RESOLUTION in \$AAMKS_PATH/evac/config.json!<br>'
 		}		
 		if ((buildingManagement === '') || (buildingComplexity === '') || (buildingAlarming === '')){
 		 	errorMessage += 'Please select a building profile - management, complexity, alarming option!<br>';
@@ -574,26 +574,42 @@ function validation_easy(){
 		errorFloatwithoutZero('Materials ceiling thickness', thick_material_ceiling);
 		errorFloatwithoutZero('Materials floor thickness', thick_material_floor);
 		errorFloatwithoutZero('Materials wall thickness', thick_material_wall);
-		errorMeanSd('Smoke detectors', heat_detectors_mean, heat_detectors_sd);
-		errorFloatwithoutZero('Heat detecrots RTI', heat_detectors_RTI);
+		errorMeanSd('Heat detectors', heat_detectors_mean, heat_detectors_sd);
+		errorFloatwithoutZero('Heat detectors RTI', heat_detectors_RTI);
 		errorProbability('Heat detectors reliability', heat_detectors_not_broken);
 		errorMeanSd('Smoke detectors', smoke_detectors_mean, smoke_detectors_sd);
 		errorProbability('Smoke detectors reliability', smoke_detectors_not_broken);
 		errorMeanSd('Sprinklers', sprinklers_mean, sprinklers_sd);
-		errorMeanSd('Sprinklers SprayDensity', sprinklersDensityMean, sprinklersDensitySd);
+		errorMeanSdonlyPositive('Sprinklers SprayDensity', sprinklersDensityMean, sprinklersDensitySd);
 		errorFloatwithoutZero('Sprinklers RTI', sprinklers_RTI);
 		errorProbability('Sprinklers reliability', sprinklers_not_broken);
-		errorFloatwithoutZero('NSHEVS activation time', NSHEVS_startup_time);
-		errorFloatwithoutZero('NSHEVS start-up time', NSHEVS_startup_time);
+		errorFloatwithZero('NSHEVS activation time', NSHEVS_startup_time);
+		errorFloatwithZero('NSHEVS start-up time', NSHEVS_startup_time);
 
 		function errorFloatwithoutZero(param, value){
 			if((!value.match(floatPattern)) || (parseFloat(value) <= 0)){
 				errorMessage += 'Wrong '+param+'! Field must be a float number > 0 with (.) separator!<br>';
 			}
 		}
+		function errorFloatwithZero(param, value){
+			if((!value.match(floatPattern)) || (parseFloat(value) < 0)){
+				errorMessage += 'Wrong '+param+'! Field must be a float number >= 0 with (.) separator!<br>';
+			}
+		}
+		function errorMeanSdonlyPositive(param, mean, sd){
+			if ((!mean.match(floatPattern)) || (!sd.match(floatPattern))){
+				errorMessage += 'Wrong '+param+' mean or sd! Field must be an empty string or a float number > 0 with (.) separator!<br>'
+			}
+			if (!isEmpty(mean) && (parseFloat(mean) <= 0)){
+				errorMessage += 'Wrong '+param+' mean! Field must be an empty string or a float number > 0 with (.) separator!<br>'
+			}
+			if (!isEmpty(sd) && (parseFloat(sd) <= 0)){
+				errorMessage += 'Wrong '+param+' sd! Field must be an empty string or a float number > 0 with (.) separator!<br>'
+			}
+		}
 		function errorMeanSd(param, mean, sd){
-			if ((!mean.match(floatPattern)) || (parseFloat(mean) < 0) || (!sd.match(floatPattern)) || (parseFloat(sd) < 0) || (parseFloat(sd) > parseFloat(mean))){
-				errorMessage += 'Wrong '+param+' mean or sd! Field must be a float number >= 0 with (.) separator! Mean > sd !<br>'
+			if ((!mean.match(floatPattern)) || (!sd.match(floatPattern)) || (parseFloat(sd) < 0)){
+				errorMessage += 'Wrong '+param+' mean or sd! Field must be a float number >= 0 with (.) separator!<br>'
 			}
 		}
 		function errorProbability(param, value){
@@ -614,6 +630,18 @@ function validation_easy(){
 }
 function validation_advanced(){
 	echo "<script>
+	const fuel = document.getElementById('fuel');
+	fuel.addEventListener('change', (e) => {
+		const molecule_table = document.getElementById('molecule-table')
+		const molecule_switch = document.getElementById('molecule-switch')
+		if(e.target.value == 'user'){ 
+			molecule_table.className = 'noborder';
+			molecule_switch.className = 'no-display';
+		}else{
+			molecule_table.className = 'noborder no-display';
+			molecule_switch.className = 'grey';
+		}
+	});
 	document.getElementById('form').addEventListener('submit', function(e) {
 		e.preventDefault();
 		const intPattern = /^-?\d+$/;
@@ -637,11 +665,11 @@ function validation_advanced(){
 		const sprinklers_mean = document.getElementById('sprinklers_mean').value;
 		const sprinklers_sd = document.getElementById('sprinklers_sd').value;
 		const sprinklers_density_mean_val = document.getElementById('sprinklers_density_mean').value;
-		let sprinklersDensityMean = '0';
+		let sprinklersDensityMean = '';
 		if (sprinklers_density_mean_val !== ''){sprinklersDensityMean = parseFloat(sprinklers_density_mean_val).toString();}
 		const sprinklers_density_sd_val = document.getElementById('sprinklers_density_sd').value;
-		let sprinklersDensitySd = '0';
-		if (sprinklers_density_sd_val !== ''){const sprinklersDensitySd = parseFloat(sprinklers_density_sd_val).toString();}
+		let sprinklersDensitySd = '';
+		if (sprinklers_density_sd_val !== ''){sprinklersDensitySd = parseFloat(sprinklers_density_sd_val).toString();}
 		const sprinklers_RTI = document.getElementById('sprinklers_RTI').value;
 		const sprinklers_not_broken = document.getElementById('sprinklers_not_broken').value;
 		const NSHEVS_activation_time = document.getElementById('NSHEVS_activation_time').value;
@@ -747,37 +775,44 @@ function validation_advanced(){
 		if ((!noSim.match(intPattern)) || (noSim <= 0)) {
 		  errorMessage += 'Wrong Number of simulations! Field must be an integer &gt 0!<br>'
 		} 	  
-		if ((!timeSim.match(intPattern)) || (timeSim <= 0)) {
-		  errorMessage += 'Wrong Simulation time! Field must be an integer &gt 0!<br>'
-		}		
+		if ((!timeSim.match(intPattern)) || (timeSim < 10)) {
+			errorMessage += 'Wrong Simulation time! Field must be an integer >= SMOKE_QUERY_RESOLUTION in \$AAMKS_PATH/evac/config.json!<br>'
+		}			
 		if ((material_ceiling === '') || (material_floor === '') || (material_wall === '')){
 			errorMessage += 'Please select materials for ceiling, floor and wall!<br>';
 		}
 		errorFloatwithoutZero('Materials ceiling thickness', thick_material_ceiling);
 		errorFloatwithoutZero('Materials floor thickness', thick_material_floor);
 		errorFloatwithoutZero('Materials wall thickness', thick_material_wall);
-		errorMeanSd('Smoke detectors', heat_detectors_mean, heat_detectors_sd);
-		errorFloatwithoutZero('Heat detecrots RTI', heat_detectors_RTI);
+		errorMeanSd('Heat detectors', heat_detectors_mean, heat_detectors_sd);
+		errorFloatwithoutZero('Heat detectors RTI', heat_detectors_RTI);
 		errorProbability('Heat detectors reliability', heat_detectors_not_broken);
 		errorMeanSd('Smoke detectors', smoke_detectors_mean, smoke_detectors_sd);
 		errorProbability('Smoke detectors reliability', smoke_detectors_not_broken);
 		errorMeanSd('Sprinklers', sprinklers_mean, sprinklers_sd);
-		errorMeanSd('Sprinklers SprayDensity', sprinklersDensityMean, sprinklersDensitySd);
+		errorMeanSdonlyPositive('Sprinklers SprayDensity', sprinklersDensityMean, sprinklersDensitySd);
 		errorFloatwithoutZero('Sprinklers RTI', sprinklers_RTI);
 		errorProbability('Sprinklers reliability', sprinklers_not_broken);
-		errorFloatwithoutZero('NSHEVS activation time', NSHEVS_startup_time);
-		errorFloatwithoutZero('NSHEVS start-up time', NSHEVS_startup_time);
+		errorFloatwithZero('NSHEVS activation time', NSHEVS_startup_time);
+		errorFloatwithZero('NSHEVS start-up time', NSHEVS_startup_time);
 		errorFloatwithoutZero('C constant', c_const);
 		errorProbability('Fire in ROOM', fire_starts_in_a_room);
 		errorTriangular('HRRPUA', hrrpua_min, hrrpua_mode, hrrpua_max);
 		errorTriangular('Fire growth rate', hrr_alpha_min, hrr_alpha_mode, hrr_alpha_max);
 		errorFloatwithoutZero('Radiative fraction k', radfrac_k);
 		errorFloatwithoutZero('Radiative fraction theta', radfrac_theta);
-		errorFloatwithoutZero('Molecule C', molecule_C);
-		errorFloatwithoutZero('Molecule H', molecule_H);
-		errorFloatwithoutZero('Molecule O', molecule_O);
-		errorFloatwithoutZero('Molecule N', molecule_N);
-		errorFloatwithoutZero('Molecule Cl', molecule_Cl);
+
+		if (fuel.value == 'user'){
+			if((molecule_C == '') || (molecule_C == '') || (molecule_C == '') || (molecule_C == '') || (molecule_C == '')){
+				errorMessage += 'Wrong user defined Molecule C, H, O, N or Cl! Field cannot be empty! Change Fuel or complete field!<br>';
+			}
+		}
+
+		errorFloatwithZero('Molecule C', molecule_C);
+		errorFloatwithZero('Molecule H', molecule_H);
+		errorFloatwithZero('Molecule O', molecule_O);
+		errorFloatwithZero('Molecule N', molecule_N);
+		errorFloatwithZero('Molecule Cl', molecule_Cl);
 		errorMeanSd('Heat of combustion', heatcom_mean, heatcom_sd);
 		errorMeanSd('Yields soot', soot_mean, soot_sd);
 		errorMeanSd('Yields co', co_mean, co_sd);
@@ -791,24 +826,33 @@ function validation_advanced(){
 		errorMeanSd('Vertical speed', evacuees_max_v_speed_mean, evacuees_max_v_speed_sd);
 		errorMeanSd('Alpha speed', evacuees_alpha_v_mean, evacuees_alpha_v_sd);
 		errorMeanSdlessZero('Beta speed', evacuees_beta_v_mean, evacuees_beta_v_sd);
-		errorFloatwithoutZero('Evacuees density ROOM', evacuees_density_ROOM);
-		errorFloatwithoutZero('Evacuees density COR', evacuees_density_COR);
-		errorFloatwithoutZero('Evacuees density STAI', evacuees_density_STAI);
-		errorFloatwithoutZero('Evacuees density HALL', evacuees_density_HALL);
+		errorFloatwithZero('Evacuees density ROOM', evacuees_density_ROOM);
+		errorFloatwithZero('Evacuees density COR', evacuees_density_COR);
+		errorFloatwithZero('Evacuees density STAI', evacuees_density_STAI);
+		errorFloatwithZero('Evacuees density HALL', evacuees_density_HALL);
 		errorFloatwithoutZero('Pareto fire area b', fire_area_b);
 		errorFloatwithoutZero('Pareto fire area scale', fire_area_scale);
 		errorFloatwithZero('RESCUE Times detection', r_times_detection);
 		errorFloatwithZero('RESCUE Times T1', r_times_t1);
 		errorFloatwithZero('RESCUE Times T2', r_times_t2);
 		errorFloatwithZero('RESCUE Fire Unit 1st', r_distances_1st);
-		errorFloatwithZero('RESCUE Firehoses horizontal', r_to_fire_horizontal);
-		errorFloatwithZero('RESCUE Firehoses vertical', r_to_fire_vertical);
 		errorFloatwithZero('RESCUE Fire Unit 2nd', r_distances_2nd);
+		errorFirstgreaterthanSec('RESCUE Fire Unit distance', r_distances_1st, r_distances_2nd);
+		errorFloatwithZero('RESCUE Firehoses horizontal', r_to_fire_horizontal);
+		errorFloat('RESCUE Firehoses vertical', r_to_fire_vertical);
 		errorFloatminusOne('RESCUE Nozzles 1st', r_nozzles_1st);
+		errorFirstgreaterthanSec('RESCUE Nozzles 1st 2nd', r_nozzles_1st, r_nozzles_2nd);
 		errorFloatminusOne('RESCUE Nozzles 2nd', r_nozzles_2nd);
+		errorFirstgreaterthanSec('RESCUE Nozzles 2nd 3rd', r_nozzles_2nd, r_nozzles_3rd);
 		errorFloatminusOne('RESCUE Nozzles 3rd', r_nozzles_3rd);
+		errorFirstgreaterthanSec('RESCUE Nozzles 3rd 4th', r_nozzles_3rd, r_nozzles_4th);
 		errorFloatminusOne('RESCUE Nozzles 4th', r_nozzles_4th);
 
+		function errorFloat(param, value){
+			if(!value.match(floatPattern)){
+				errorMessage += 'Wrong '+param+'! Field must be a float number with (.) separator!<br>';
+			}
+		}
 		function errorFloatwithoutZero(param, value){
 			if((!value.match(floatPattern)) || (parseFloat(value) <= 0)){
 				errorMessage += 'Wrong '+param+'! Field must be a float number > 0 with (.) separator!<br>';
@@ -820,18 +864,34 @@ function validation_advanced(){
 			}
 		}
 		function errorFloatminusOne(param, value){
-			if((!value.match(floatPattern)) || (parseFloat(value) < -1)){
-				errorMessage += 'Wrong '+param+'! Field must be a float number >= -1 with (.) separator!<br>';
+			if((!value.match(floatPattern)) || ((parseFloat(value) < 0) && (value != -1))){
+				errorMessage += 'Wrong '+param+'! Field must be a float number >= 0 or -1 with (.) separator!<br>';
+			}
+		}
+		function errorFirstgreaterthanSec(param, value1, value2){
+			if(((parseFloat(value1) > parseFloat(value2)) && (value1 != -1) && (value2 != -1)) || ((value1 == -1) && (value2 != -1))){
+				errorMessage += 'Wrong '+param+'! The previous parameter must be lower than the next one and != -1!<br>';
 			}
 		}
 		function errorMeanSd(param, mean, sd){
-			if ((!mean.match(floatPattern)) || (parseFloat(mean) < 0) || (!sd.match(floatPattern)) || (parseFloat(sd) < 0) || (parseFloat(sd) > parseFloat(mean))){
-				errorMessage += 'Wrong '+param+' mean or sd! Field must be a float number >= 0 with (.) separator! Mean > sd !<br>'
+			if ((!mean.match(floatPattern)) || (!sd.match(floatPattern)) || (parseFloat(sd) < 0)){
+				errorMessage += 'Wrong '+param+' mean or sd! Field must be a float number >= 0 with (.) separator!<br>'
 			}
 		}
 		function errorMeanSdlessZero(param, mean, sd){
-			if ((!mean.match(floatPattern)) || (parseFloat(mean) > 0) || (!sd.match(floatPattern)) || (parseFloat(sd) < 0) || (Math.abs(parseFloat(sd)) > Math.abs(parseFloat(mean)))){
-				errorMessage += 'Wrong '+param+' mean or sd! Field must be a float number <= 0 with (.) separator! Mean > sd !<br>'
+			if ((!mean.match(floatPattern)) || (parseFloat(mean) > 0) || (!sd.match(floatPattern)) || (parseFloat(sd) < 0)){
+				errorMessage += 'Wrong '+param+' mean or sd! Field must be a float number <= 0 with (.) separator!<br>'
+			}
+		}
+		function errorMeanSdonlyPositive(param, mean, sd){
+			if ((!mean.match(floatPattern)) || (!sd.match(floatPattern))){
+				errorMessage += 'Wrong '+param+' mean or sd! Field must be an empty string or a float number > 0 with (.) separator!<br>'
+			}
+			if (!isEmpty(mean) && (parseFloat(mean) <= 0)){
+				errorMessage += 'Wrong '+param+' mean! Field must be an empty string or a float number > 0 with (.) separator!<br>'
+			}
+			if (!isEmpty(sd) && (parseFloat(sd) <= 0)){
+				errorMessage += 'Wrong '+param+' sd! Field must be an empty string or a float number > 0 with (.) separator!<br>'
 			}
 		}
 		function errorProbability(param, value){
@@ -840,8 +900,8 @@ function validation_advanced(){
 			}
 		}
 		function errorTriangular(param, min, mode, max){
-			if ((!min.match(floatPattern)) || (parseFloat(min) < 0) || (!mode.match(floatPattern)) || (parseFloat(mode) < 0) || (parseFloat(mode) <= parseFloat(min)) ||
-			(!max.match(floatPattern)) || (parseFloat(max) < 0) || (parseFloat(max) <= parseFloat(mode))){
+			if ((!min.match(floatPattern)) || (parseFloat(min) < 0) || (!mode.match(floatPattern)) || (parseFloat(mode) < 0) || (parseFloat(mode) < parseFloat(min)) ||
+			(!max.match(floatPattern)) || (parseFloat(max) < 0) || (parseFloat(max) < parseFloat(mode))){
 				errorMessage += 'Wrong '+param+' min, mode or max! Field must be a float number > 0 with (.) separator! Min < Mode < Max!<br>'
 			}
 		}
@@ -849,8 +909,8 @@ function validation_advanced(){
 			if (((mean.value != 0) || (sd.value !=0 )) && ((per1.value != 0) || (per9.value != 0))){
 				errorMessage += 'Wrong '+param+' choose mean and sd or 1st and 99th distribution!<br>';
 			}
-			if ((!mean.value.match(floatPattern)) || (parseFloat(mean.value) < 0) || (!sd.value.match(floatPattern)) || (parseFloat(sd.value) < 0) || (parseFloat(sd.value) > parseFloat(mean.value))) {
-				errorMessage += 'Wrong '+param+' mean, sd! Field must be a float number > 0 with (.) separator! Mean > sd ! 1st and 99th are not considered.<br>'
+			if ((!mean.value.match(floatPattern)) || (parseFloat(mean.value) < 0) || (!sd.value.match(floatPattern)) || (parseFloat(sd.value) < 0)) {
+				errorMessage += 'Wrong '+param+' mean, sd! Field must be a float number > 0 with (.) separator! 1st and 99th are not considered.<br>'
 				per1.value = '';
 				per9.value = '';
 			}

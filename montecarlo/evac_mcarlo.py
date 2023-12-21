@@ -147,7 +147,10 @@ class EvacMcarlo():
             return 1/r['evacuees_density'] * 100 * 100
 
         z=self.conf['evacuees_density'][type_sec]
-        return 1/z * 100 * 100
+        if z != 0:
+            return 1/z * 100 * 100
+        else:
+            return 0
 
         raise Exception("Cannot determine the density for {}".format(name))
 
@@ -219,9 +222,12 @@ class EvacMcarlo():
         exterior_minus_obsts=exterior.difference(self._floor_obstacles[floor])
         walkable=exterior_minus_obsts.buffer(- self.evacuee_radius - 10 )
 
-        bbox=list(walkable.bounds)
-        target=int(walkable.area / density)
         positions=[]
+        bbox=list(walkable.bounds)
+        if density != 0:
+            target=int(walkable.area / density)
+        else:
+            return []            
         while len(positions) < target:
             x=uniform(bbox[0], bbox[2])
             y=uniform(bbox[1], bbox[3])
