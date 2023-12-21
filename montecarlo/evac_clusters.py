@@ -15,14 +15,33 @@ from include import Vis
 
 from sklearn.cluster import MeanShift
 
+
+
+class AgentCluster():
+    def __init__(self, id, room, position, floor):
+        self.id = id
+        self.room = room
+        self.position = position
+        self.floor = floor
+        self.leader = 0
+        self.cluster = ""
+
+    def __str__(self) -> str:
+        return str(self.id)
+        
+
+class AllAgentsCluster():
+    def __init__(self):
+        self.list = []
+
+    def show_all(self):
+        for agent in self.list:
+            print(agent)
+
 class EvacClusters():
 
     def __init__(self):
         self.json=Json()
-        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        self.conf['evac_clusters']=1
-        if self.conf['evac_clusters']==0:
-            return
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
 
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -30,19 +49,34 @@ class EvacClusters():
         self.dispatched_evacuees=self.json.readdb("dispatched_evacuees")
 
         si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
-        self.simulation_id = list(range(*si.get()))
+        self.simulation_id = list(range(*si.get()))[0]
+        
         self.main()
         
 
     def main(self):
-        self.get_all_compas() # czy dict wszystkich compas bedzie potrzebny?
-        self.evacues_grouped_by_rooms = self.group_evacuees_by_rooms() 
-        self.find_cluster_in_whole_building()
-        self.write_to_json_file()
+        self.AllAgents = AllAgentsCluster()
+        self.prepare_agents(self.AllAgents )
+        self.AllAgents.show_all()
+        # self.all_compas = self.get_all_compas() # czy dict wszystkich compas bedzie potrzebny?
+        # self.evacues_grouped_by_rooms = self.group_evacuees_by_rooms() 
+        # self.find_cluster_in_whole_building()
+        # self.write_to_json_file()
         # self.new_Vis()
         # self._clustering()
         # self._vis_clusters()
         # self._update_json()
+
+    def prepare_agents(self, AllAgents):
+        id = 0
+        for floor in self.dispatched_evacuees:
+            for agent in self.dispatched_evacuees[floor]:
+                agent_pos_x = agent[0]
+                agent_pos_y = agent[1]
+                room = agent[2]
+                ac = AgentCluster(id, room, [agent_pos_x, agent_pos_y], floor)
+                self.AllAgents.list.append(ac)
+                id+=1
 
 
 
@@ -227,12 +261,13 @@ class EvacClusters():
                     anim_evacuees[1][floor]=frame
                     anim_rooms_opacity[0][floor]={}
                     anim_rooms_opacity[1][floor]={}
+
         anim['animations']=OrderedDict([("evacuees", anim_evacuees), ("rooms_opacity", anim_rooms_opacity)]) 
         self._write_anim_zip(anim)
         Vis({'highlight_geom': None, 'anim': None, 'title': 'Clustering', 'srv': 1, 'anim': "1/clustering.zip"})
 
     def new_Vis(self):
-        anim=OrderedDict([("simulation_id",1), ("simulation_time",0), ("time_shift",0)])
+        anim=OrderedDict([("simulation_id",self.simulation_id), ("simulation_time",0), ("time_shift",0)])
         anim_evacuees=[OrderedDict(), OrderedDict()]
         anim_rooms_opacity=[OrderedDict(), OrderedDict()]
         frame=[]
@@ -242,14 +277,19 @@ class EvacClusters():
                 for cluster in self.evacues_grouped_by_rooms[floor][room]["clusters"]:
                     # print(self.evacues_grouped_by_rooms[floor][room]["clusters"][cluster])
                     for pos_type_color in self.evacues_grouped_by_rooms[floor][room]["clusters"][cluster]['positions']:
-                        frame.append([pos_type_color[0][0] ,pos_type_color[0][1], 0,0, pos_type_color[2]])
+                        frame.append([pos_type_color[0][0] ,pos_type_color[0][1], 0,"N", 3])
                         # print(frame)
+                    anim_evacuees[0][floor]=frame
+                    anim_evacuees[1][floor]=frame
+                    anim_rooms_opacity[0][floor]={}
+                    anim_rooms_opacity[1][floor]={}
 
         anim['animations']=OrderedDict([("evacuees", anim_evacuees), ("rooms_opacity", anim_rooms_opacity)])
         self._write_anim_zip(anim) 
+        Vis({'highlight_geom': None, 'anim': None, 'title': 'Clustering', 'srv': 1, 'anim': "{self.simulation_id}/clustering.zip"})
 
     def _write_anim_zip(self,anim):# {{{
-        zf = zipfile.ZipFile("{}/workers/{}/clustering.zip".format(os.environ['AAMKS_PROJECT'], 1) , mode='w', compression=zipfile.ZIP_DEFLATED)
+        zf = zipfile.ZipFile("{}/workers/{}/clustering.zip".format(os.environ['AAMKS_PROJECT'], self.simulation_id) , mode='w', compression=zipfile.ZIP_DEFLATED)
         try:
             zf.writestr("anim.json", json.dumps(anim))
         finally:
