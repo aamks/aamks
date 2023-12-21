@@ -150,7 +150,7 @@ function check_stat($r) {
 }
 
 
-function stop($r) {
+function stop_redis($r) {
     $sum = 0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
     echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
@@ -164,13 +164,40 @@ function stop($r) {
             # Redis delete
             $element_job_id = $element['job_id'];
             delete_from_redis($redis, $element_job_id);
-            echo "<td align='center'>YES</td><td></td>";
+            echo "<td align='center'>$element_job_id</td><td></td>";
             $r = $_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id']));
             $sum += 1;
         } else {
             echo "<td align='center'>NO</td><td align='center'>" . $element['status'] . "</td>";
         }
         echo "<tr>";
+    }
+    echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>";
+}
+
+
+
+function stop_gearman($r) {
+    $sum=0;
+    echo "<table><tr><th>Details</th><th>Summary</th></tr><tr><td valign='top'>";
+	echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
+
+	foreach ($r as $element) {
+        echo "<tr><td>".$element['iteration']."</td>";
+        if ($element['status']==''){
+            $cmd = "gearadmin --cancel-job=".$element['job_id'];
+            $z=shell_exec("$cmd");
+            echo "<td align='center'>$z</td><td></td>";
+            if(!array_key_exists('nn', $_SESSION))
+            {
+                header("Location: login.php?session_finished_information=1");
+            }
+            $r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id'] ));
+            $sum += 1;
+        }else{
+            echo "<td align='center'>NO</td><td align='center'>".$element['status']."</td>";
+        }
+    echo "<tr>";
     }
     echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>";
 }
@@ -266,12 +293,11 @@ function delete_from_redis($redis, $id){
     $redis_queue_key = 'aamks_queue';
     $elements = $redis->lrange($redis_queue_key, 0, -1);
     foreach ($elements as $element) {
-        // Decode JSON
         $decoded_element = json_decode($element, true);
         if ($decoded_element['id'] == $element_id_to_remove) {
             // delete element from DB
             $redis->lrem($redis_queue_key, $element, 0);
-            break; // break when id found
+            break; 
         }
     }
 }
@@ -290,11 +316,23 @@ function main() {/*{{{*/
 	//if halt stop()
 	if (isset($_POST['btn-halt'])) {
 		set_help();
-		stop(query_any());
+        if (getenv('AAMKS_WORKER') == "gearman"){
+            stop_gearman(query_any());
+        }
+        elseif (getenv('AAMKS_WORKER') == "redis"){
+            stop_redis(query_any());
+        }
+        
 	}
 	elseif (isset($_POST['btn-halt-cur'])) {
 		set_help();
-		stop(query_cur());
+        if (getenv('AAMKS_WORKER') == "gearman"){
+            stop_gearman(query_cur());
+        }
+        elseif (getenv('AAMKS_WORKER') == "redis"){
+            stop_redis(query_cur());
+        }
+		
     }
 	elseif (isset($_POST['btn-check-status'])) {
 		set_help();

@@ -35,7 +35,7 @@ echo "<Enter> accepts, <ctrl+c> cancels";
 read
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
-sudo apt-get --yes install git unzip php-curl postgresql docker-compose software-properties-common
+sudo apt-get --yes install git unzip php-curl postgresql docker-compose software-properties-common php-redis
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3.10 python3.10-venv
 echo "{ \"AAMKS_SERVER\": \"$AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json

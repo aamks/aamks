@@ -130,7 +130,7 @@ USER=`id -ru`
 
 sudo locale-gen en_US.UTF-8
 sudo apt-get update 
-sudo apt-get --yes install postgresql subversion python3-psycopg2 xdg-utils apache2 software-properties-common
+sudo apt-get --yes install postgresql subversion python3-psycopg2 xdg-utils apache2 software-properties-common php-redis
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt-get --yes install python3.10 python3.10-venv php-pgsql pdf2svg unzip libapache2-mod-php
 
