@@ -4,8 +4,8 @@ set -ueo pipefail
 # e - stop installing when exit != 0
 # o - invalid | 
 
-# Download local_config and set parameters
-source local_config
+# Download config and set parameters
+source config
 
 USER=$(id -ru)
 USERNAME=$(id -nu)
@@ -24,6 +24,7 @@ echo "AAMKS_SERVER: $AAMKS_SERVER"
 echo "AAMKS_PATH: $AAMKS_PATH"
 echo "AAMKS_PROJECT: $AAMKS_PROJECT"
 echo "AAMKS_PG_PASS: $AAMKS_PG_PASS"
+echo "AAMKS_REDIS_PASS: $AAMKS_REDIS_PASS"
 echo "AAMKS_WORKER: $AAMKS_WORKER"
 echo "AAMKS_SALT: $AAMKS_SALT"
 echo "AAMKS_USE_MAIL: $AAMKS_USE_MAIL"
@@ -36,7 +37,7 @@ read
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
 sudo apt-get --yes install git unzip php-curl postgresql docker-compose software-properties-common php-redis
-sudo add-apt-repository ppa:deadsnakes/ppa
+sudo add-apt-repository --yes ppa:deadsnakes/ppa
 sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3.10 python3.10-venv
 echo "{ \"AAMKS_SERVER\": \"$AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
 sudo chown -R "$USER":"$USER" /etc/aamksconf.json
