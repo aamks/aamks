@@ -306,6 +306,11 @@ function update_form_easy() {/*{{{*/
 	$out=$_POST['post'];
 	$json=read_aamks_conf_json();
 	$out+=$json;
+	$min_sim_time = read_evac_config_json()['SMOKE_QUERY_RESOLUTION'];
+	if ($out['simulation_time'] < $min_sim_time){
+		$out['simulation_time'] = $min_sim_time;
+		$_SESSION['nn']->msg('Simulation time increased due to SMOKE_QUERY_RESOLUTION!');
+	}
 	$z=calculate_profile($out['building_profile']);
 	$out['alarming']=alarming_defaults($out['building_profile']['alarming']);
 	$out['evacuees_density']=$z['evacuees_density'];
@@ -338,6 +343,11 @@ function update_form_easy() {/*{{{*/
 function update_form_advanced() {/*{{{*/
 	if(empty($_POST['update_form_advanced'])) { return; }
 	$out=$_POST['post'];
+	$min_sim_time = read_evac_config_json()['SMOKE_QUERY_RESOLUTION'];
+	if ($out['simulation_time'] < $min_sim_time){
+		$out['simulation_time'] = $min_sim_time;
+		$_SESSION['nn']->msg('Simulation time increased due to SMOKE_QUERY_RESOLUTION!');
+	}
 	$s=json_encode($out, JSON_NUMERIC_CHECK);
 	$_SESSION['nn']->write_scenario($s);
 }
@@ -562,8 +572,8 @@ function validation_easy(){
 		if ((!noSim.match(intPattern)) || (noSim <= 0)) {
 		  errorMessage += 'Wrong Number of simulations! Field must be an integer &gt 0!<br>'
 		} 	  
-		if ((!timeSim.match(intPattern)) || (timeSim < 10)) {
-		  errorMessage += 'Wrong Simulation time! Field must be an integer >= SMOKE_QUERY_RESOLUTION in \$AAMKS_PATH/evac/config.json!<br>'
+		if ((!timeSim.match(intPattern)) || (timeSim < 0)) {
+		  errorMessage += 'Wrong Simulation time! Field must be an integer > 0!<br>'
 		}		
 		if ((buildingManagement === '') || (buildingComplexity === '') || (buildingAlarming === '')){
 		 	errorMessage += 'Please select a building profile - management, complexity, alarming option!<br>';
@@ -775,8 +785,8 @@ function validation_advanced(){
 		if ((!noSim.match(intPattern)) || (noSim <= 0)) {
 		  errorMessage += 'Wrong Number of simulations! Field must be an integer &gt 0!<br>'
 		} 	  
-		if ((!timeSim.match(intPattern)) || (timeSim < 10)) {
-			errorMessage += 'Wrong Simulation time! Field must be an integer >= SMOKE_QUERY_RESOLUTION in \$AAMKS_PATH/evac/config.json!<br>'
+		if ((!timeSim.match(intPattern)) || (timeSim < 0)) {
+			errorMessage += 'Wrong Simulation time! Field must be an integer > 0!<br>'
 		}			
 		if ((material_ceiling === '') || (material_floor === '') || (material_wall === '')){
 			errorMessage += 'Please select materials for ceiling, floor and wall!<br>';
