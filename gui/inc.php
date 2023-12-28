@@ -30,6 +30,14 @@ function dd3($arr) {
 	$out="<pre>".htmlspecialchars(print_r($arr,1))."</pre>";
 	return $out;
 }
+function read_evac_config_json() {
+	$path=getenv("AAMKS_PATH");
+	$json=json_decode(file_get_contents("$path/evac/config.json"), 1);
+	if(empty($json)) { 
+		$_SESSION['nn']->fatal("Broken json: $path/evac/config.json");
+	} 
+	return $json;
+}
 
 /*}}}*/
 class Aamks {/*{{{*/
