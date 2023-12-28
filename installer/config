@@ -1,13 +1,13 @@
 AAMKS_PATH="/usr/local/aamks";
-AAMKS_SERVER="127.0.0.1"; # gearman + www for workers
+AAMKS_SERVER="10.8.47.50";
 AAMKS_WORKER="redis"; # 'none': no worker, don't run fire and evacuation simulations | 'local': worker and server on same machine | 'redis': dispatch simulations over a network (grid/cluster environment)
 AAMKS_PROJECT="/home/aamks_users/demo@aamks/demo/simple" 
 AAMKS_PG_PASS='hulakula' 
+AAMKS_REDIS_PASS='hulakula'
 AAMKS_SALT='aamksisthebest'
 AAMKS_USE_MAIL=0											# needed if we allow users to register accounts and reset passwords
 AAMKS_MAIL_API_KEY='none'								    # check documentation on github and set your own values
 AAMKS_MAIL_SENDER='none'                                    # set your verified sending email 
-AAMKS_REDIS_PASS='hulakula'
 
 # Aamks uses postgres (user:aamks, db:aamks) for collecting the simulations data.
 
@@ -18,3 +18,8 @@ AAMKS_REDIS_PASS='hulakula'
 
 # By convention aamks GUI must reside under /var/www/ssl/aamks
 # and will be accessed via https://your.host.abc/aamks
+
+# All the configuration may be later tweaked in:
+# ~/.bashrc
+# /etc/aamksconf.json
+# /etc/apache2/envvars

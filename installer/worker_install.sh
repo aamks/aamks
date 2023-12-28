@@ -22,7 +22,7 @@ install() { #{{{
 	sudo locale-gen en_US.UTF-8
 	sudo apt-get update
 	sudo apt-get --yes install git unzip software-properties-common
-	sudo add-apt-repository ppa:deadsnakes/ppa
+	sudo add-apt-repository --yes ppa:deadsnakes/ppa
 	sudo apt-get --yes install python3.10 python3.10-venv 
 	sudo rm -rf /etc/aamksconf.json
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
