@@ -206,5 +206,11 @@ echo "AAMKS installed successfully. You can start using it at $AAMKS_SERVER/aamk
 echo "Default user email: demo@aamks"
 echo "Password: AAMKSisthe1!"
 echo "In order to run simulations in redis mode configure workers in network or start worker via redis manager.";
+echo "Add the following line to postgres pg_hba.conf to configure database"
+echo "host	aamks	all 	0.0.0.0/0 	md5"
+echo "You can find location of configuration file below:"
+locate pg_hba.conf 
+echo "You can start redis server and worker via command:"
+echo "python3 $AAMKS_PATH/redis_aamks/manager.py --serverstart"
 echo "python3 $AAMKS_PATH/redis_aamks/manager.py --runlocal -n 1";
 echo "Log out and log in to reload USER group settings"
