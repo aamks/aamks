@@ -230,7 +230,7 @@ function startsWith( $haystack, $needle ) {
 function show_data() {/*{{{*/
 	$f=$_SESSION['main']['working_home'];
 
-    $heads = array('Individual risk', 'IR RMSE', 'Societal risk (WRI)', 'Societal risk (AWR)', 'Societal risk (SRI)', 'RSET',
+    $heads = array('Individual risk', 'IR RMSE (inc. 95% CI)', 'Societal risk (WRI)', 'Societal risk (AWR)', 'Societal risk (SRI)', 'RSET',
         'ASET', 'Overlapping index', 'Maximum temperature', 'Minimum neutral plane level', 'Minimum visibility');
     $units = array('-', '-', 'fatalities', 'fatalities', '(fatalities+fatalities<sup>2</sup>)/m<sup>2</sup>', 's', 's', 's', '°C', 'cm', 'm');
     $data = array();
@@ -272,7 +272,7 @@ function show_data() {/*{{{*/
     foreach ($scens as $s){echo "<th><strong>".$s."</strong></th>";};
     echo "</tr>";
 
-    for($i = 0; $i < 5; ++$i) {
+    for($i = 0; $i < 4; ++$i) {
         echo "<tr><td>".$heads[$i]."</td><td>".$units[$i]."</td>";
         foreach ($data as $d){echo "<td>".round($d[$i], 4)."</td>";};
         echo "</tr>";

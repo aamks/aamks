@@ -27,7 +27,13 @@ from zipfile import ZipFile
 
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
 
-def calc_rmse(p: float, n: float): return np.sqrt(p * (1 - p) / n)
+def calc_rmse(p: float, n: float, confidence: float = None):
+    rmse = np.sqrt(p * (1 - p) / n)
+    if not confidence:
+        return rmse
+    else:
+        return stat.norm.interval(confidence)[1] * rmse
+
 
 
 '''Import all necessary low-level results from DB'''
@@ -302,7 +308,7 @@ class RiskIteration:
             fn_mc[n_deads] += 1/i
 
             # calculate RMSE
-            rmse = [calc_rmse(fn, i) for fn in fn_mc]
+            rmse = [calc_rmse(fn, i, confidence=0.95) for fn in fn_mc]
 
 #            if max(rmse) > rmse_threshold:
 #                print(f'{i} {max(rmse)}', end='\r')
@@ -635,13 +641,13 @@ class Plot:
             fig.savefig(os.path.join(self.dir, 'picts', f'floor_{f}.png'))#, dpi=170)
             plt.close(fig)
 
-    def conv(self, data, path=None, label=None):
+    def conv(self, data, path=None, label=None, conf=0.95):
         fig, ax = plt.subplots()
         ax.plot(data, label='IR')
-        lower = [max([d-calc_rmse(d,n+1), 0]) for n, d in enumerate(data)]
-        ax.plot(lower, ls='-.', c='black', label='IR + RMSE')
-        upper = [d+calc_rmse(d,n+1) for n, d in enumerate(data)]
-        ax.plot(upper, ls='-.', c='black', label='IR - RMSE')
+        lower = [max([d-calc_rmse(d,n+1,confidence=conf), 0]) for n, d in enumerate(data)]
+        ax.plot(lower, ls='-.', c='black', label=f'IR +/- {int(conf*100)}% RMSE')
+        upper = [d+calc_rmse(d,n+1,confidence=conf) for n, d in enumerate(data)]
+        ax.plot(upper, ls='-.', c='black')
         ax.plot([data[-1]]*len(data), ls='--',c='grey', label='mean')
         ax.fill_between(range(len(data)), lower, upper, alpha=0.2)
 
@@ -769,8 +775,8 @@ class PostProcess:
                 '## all those can be furhter multiplied by probability of fire [1/year]',
                 '##Individual [-]',
                 f'{self.data["individual"]}',
-                '##Individual risk RMSE [-]',
-                f'{calc_rmse(self.data["individual"], self.n)}',
+                '##Individual risk approximation error (RMSE with 95% confidence interval included)[-]',
+                f'{calc_rmse(self.data["individual"], self.n, confidence=0.95)}',
                 '## Societal (WRI) [fatalities]',
                 f'{self.data["societal"]}',
                 '## Societal (AWR) [fatalities]',
