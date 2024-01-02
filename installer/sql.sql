@@ -75,7 +75,7 @@ CREATE TABLE simulations ( ---{{{
     min_vis_cor decimal,
     max_temp decimal,
     tot_heat decimal,
-	status text,
+	status integer,
 	animation text,
     anim_params text,
 	modified timestamp without time zone not null default now(),
