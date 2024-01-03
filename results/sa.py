@@ -70,9 +70,12 @@ class SensitivityAnalysis:
         return si
 
     def _do_hdmr(self):
-        si = hdmr.analyze(self.problem, self.samples.to_numpy(), self.results.to_numpy(), K=1,
+        try:
+            si = hdmr.analyze(self.problem, self.samples.to_numpy(), self.results.to_numpy(), K=1,
                 print_to_console=True)#, calc_second_order=second_order)
-        return si
+            return si
+        except RuntimeError:
+            return 0 
         
     def _my_plot_hdmr(self, si):
         c = ['royalblue', 'firebrick']  # 0 for non-important 1 for important
@@ -111,7 +114,8 @@ class SensitivityAnalysis:
         self._import_samples()
         self._modify_samples()
         si = self._do_hdmr()
-        self._my_plot_hdmr(si)
+        if si:
+            self._my_plot_hdmr(si)
 
 
 class SA_old:
@@ -136,7 +140,7 @@ class SA_old:
             row+=1
         return d_open
 
-    def calculate_indvidual_risk(self):
+    def calculate_indvidual_risk(self):     
         rooms, sprinklered_rooms = list(), list()
         c_id = list()
         # distinguish rooms with sprinklers
@@ -161,23 +165,28 @@ class SA_old:
         df['doors e'].replace("", "0", inplace=True)
         df['vvent'].replace("", "0", inplace=True)
         df['sprinklers'].replace("", "0,0", inplace=True)
+        # import ast
+        # for i in range(len(df['sprinklers'])):
+        #     df['sprinklers'][i] = ast.literal_eval('[' + df['sprinklers'][i] + ']')  
         df['fire origin'].replace("room", "0", inplace=True)
         df['fire origin'].replace("non_room", "1", inplace=True)
         df['fire orig open'] = ['0'] * len(df['risk'])
         df['doors open'] = ['0'] * len(df['risk'])
 
         for index, row in df.iterrows():
-            if len(sprinklered_rooms) > 0:
-                s_name = sprinklered_rooms.index(row['fname'])
+            # if len(sprinklered_rooms) > 0:
+            #     s_name = sprinklered_rooms.index(row['fname'])
                 #row['sprinklers'] = float(list(map(float, row['sprinklers'].split(',')))[s_name])
-                row['sprinklers'] = 0 
-                if row['sprinklers'] > 0:
-                    row['sprinklers'] = 0
-                else:
-                    row['sprinklers'] = 1
-            else:
-                row['sprinklers'] = 0
+            #     row['sprinklers'] = 0 
+            #     if row['sprinklers'] > 0:
+            #         row['sprinklers'] = 0
+            #     else:
+            #         row['sprinklers'] = 1
+            # else:
+            #     row['sprinklers'] = 0
                 #row['sprinklers'] = sum(map(float, row['sprinklers'].split(',')))
+            df.at[index, 'sprinklers'] = 0 
+            
             fname = rooms.index(row['fname'])
             orig_id = c_id[fname]
 
@@ -206,7 +215,7 @@ class SA_old:
 
         #df['soot yield'] = df['soot yield'].apply(float)
 
-        for colname, colvalues in df.iteritems():
+        for colname, colvalues in df.items():
             if colname=='risk':
                 continue
             if colname=='fname':
