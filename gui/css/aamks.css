@@ -370,3 +370,6 @@ letter { display: inline; padding: 0px 4px 1px 4px; background-color: #960; colo
   width: 100%;
   height: 100%;
 }
+.top_padding {
+	padding-top: 30px;
+}

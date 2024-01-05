@@ -3,13 +3,9 @@ session_name('aamks');
 require_once("inc.php"); 
 
 function projects_list(){/*{{{*/
-	# psql aamks -c 'SELECT * from projects'
-	if(!array_key_exists('nn', $_SESSION)) {
-    	header("Location: login.php?session_finished_information=1");
-	}
-
 	$current_project = $_SESSION['main']['project_name'];
 	$current_scenario = $_SESSION['main']['scenario_name'];
+	$current_scenario_id = $_SESSION['main']['scenario_id'];
 	$r=$_SESSION['nn']->query("SELECT id, project_name FROM projects WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id'] ));
 	echo '<table>';
 	echo '<tr><th>projects<th>date<th>add scenario<th>scenarios<th>delete';
@@ -32,18 +28,21 @@ function projects_list(){/*{{{*/
 	}
 	echo "</table>";
 
+	echo "<div class='top_padding'>Remove all results from scenario: $current_scenario
+	<button type=submit onclick=resetScenario()>reset scenario</button></div>";
+
 	//new project
-	echo "<br><br><br>
-	<div>Add new project:
+	echo "
+	<div class='top_padding'>Add new project:
 	<form method=POST>
 		<input autocomplete=off type=text placeholder='new project name' name=new_project required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
 		<input autocomplete=off type=submit name=submit value='add'>
-	</form>
+	</form></div>
 	";
 
 	//rename project
-	echo "<br>
-	<div>Rename current project (<i>$current_project</i>) as:
+	echo "
+	<div class='top_padding'>Rename current project (<i>$current_project</i>) as:
 	<form method=POST>
 		<input autocomplete=off type=text placeholder='new project name' name=rename_project required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
 		<input autocomplete=off type=submit name=submit value='rename'>
@@ -51,8 +50,8 @@ function projects_list(){/*{{{*/
 	";
 
 	//rename scenario
-	echo "<br>
-	<div>Rename current scenario (<i>$current_project/$current_scenario</i>) as:
+	echo "
+	<div class='top_padding'>Rename current scenario (<i>$current_project/$current_scenario</i>) as:
 	<form method=POST>
 		<input autocomplete=off type=text placeholder='new scenario name' name=rename_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
 		<input autocomplete=off type=submit name=submit value='rename'>
@@ -60,8 +59,8 @@ function projects_list(){/*{{{*/
 	";
 
 	//copy scenario
-	echo "<br>
-	<div>Copy current scenario (<i>$current_project/$current_scenario</i>) as:
+	echo "
+	<div class='top_padding'>Copy current scenario (<i>$current_project/$current_scenario</i>) as:
 	<form method=POST>
 		<input autocomplete=off type=text placeholder='new scenario name' name=copy_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
 		<input autocomplete=off type=submit name=submit value='copy'>
@@ -71,13 +70,7 @@ function projects_list(){/*{{{*/
 	exit();
 }/*}}}*/
 function delete_project() {/*{{{*/
-	#psql aamks -c 'select * from projects'
-
 	if(!isset($_GET['delete_project'])) { return; }
-	if(!array_key_exists('nn', $_SESSION))
-    {
-        header("Location: login.php?session_finished_information=1");
-    }
 	$r=$_SESSION['nn']->query("DELETE FROM projects WHERE id=$1 and user_id=$2 RETURNING project_name", array($_GET['delete_project'], $_SESSION['main']['user_id']));
 	$project_name=$r[0]['project_name'];
 	if(!empty($project_name)) { 
@@ -86,27 +79,15 @@ function delete_project() {/*{{{*/
 	}
 	header("Location: projects.php?projects_list");
 	exit();
-
 }/*}}}*/
 function ch_scenario($scenario, $header=NULL){/*{{{*/
-	#psql aamks -c 'select * from scenarios'
-	#psql aamks -c 'select * from users'
-	if(!array_key_exists('nn', $_SESSION))
-    {
-        header("Location: login.php?session_finished_information=1");
-    }
 	$r=$_SESSION['nn']->query("SELECT u.id AS user_id,u.email,s.project_id,s.id AS scenario_id,s.scenario_name, u.preferences, u.user_photo, u.user_name, p.project_name FROM scenarios s JOIN projects p ON s.project_id=p.id JOIN users u ON p.user_id=u.id WHERE s.id=$1 AND p.user_id=$2",array($scenario, $_SESSION['main']['user_id']));
 	if(empty($r[0])) { die("scenario_id=$scenario?"); }
 	$_SESSION['nn']->ch_main_vars($r[0]);
 	if(!empty($header)) { header("Location: $header"); }
 }/*}}}*/
 function new_scenario() { # {{{
-	#psql aamks -c 'select  * from scenarios'
 	if(empty($_POST['new_scenario'])) { return; }
-	if(!array_key_exists('nn', $_SESSION))
-    {
-        header("Location: login.php?session_finished_information=1");
-    }
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_POST['project_id'])), 'scenario_name');
 	if(in_array($_POST['new_scenario'], $scenarios, true)){
 		$_SESSION['header_err'][]="Scenario '$_POST[new_scenario]' already exists";
@@ -121,14 +102,8 @@ function new_scenario() { # {{{
 		}
 	}
 }
-
 function copy_scenario() { # {{{
-	#psql aamks -c 'select  * from scenarios'
 	if(empty($_POST['copy_scenario'])) { return; }
-	if(!array_key_exists('nn', $_SESSION))
-    {
-        header("Location: login.php?session_finished_information=1");
-    }
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_SESSION['main']['project_id'])), 'scenario_name');
 	if(in_array($_POST['copy_scenario'], $scenarios, true)){
 		$_SESSION['header_err'][]="Scenario '$_POST[copy_scenario]' already exists";
@@ -154,11 +129,8 @@ function copy_scenario() { # {{{
 		}
 	}
 }
-
 function rename_scenario() { # {{{
-	#psql aamks -c 'select  * from projects'
 	if(empty($_POST['rename_scenario'])) { return; }
-
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_SESSION['main']['project_id'])), 'scenario_name');
 	if(in_array($_POST['rename_scenario'], $scenarios, true)){
 		$_SESSION['header_err'][]="Scenario '$_POST[rename_scenario]' already exists";
@@ -175,15 +147,9 @@ function rename_scenario() { # {{{
 		}
 	}
 }
-
 /*}}}*/
 function new_project() { # {{{
-	#psql aamks -c 'select  * from projects'
 	if(empty($_POST['new_project'])) { return; }
-	if(!array_key_exists('nn', $_SESSION))
-    {
-        header("Location: login.php?session_finished_information=1");
-    }
 	$projects=array_column($_SESSION['nn']->query("SELECT project_name FROM projects WHERE user_id=$1", array($_SESSION['main']['user_id'] )), 'project_name');
 	if(in_array($_POST['new_project'], $projects, true)){
 		$_SESSION['header_err'][]="Project '$_POST[new_project]' already exists";
@@ -196,11 +162,8 @@ function new_project() { # {{{
 		header("Location: projects.php?projects_list");
 	}
 }
-
 function rename_project() { # {{{
-	#psql aamks -c 'select  * from projects'
 	if(empty($_POST['rename_project'])) { return; }
-
 	$projects=array_column($_SESSION['nn']->query("SELECT project_name FROM projects WHERE user_id=$1", array($_SESSION['main']['user_id'] )), 'project_name');
 	if(in_array($_POST['rename_project'], $projects, true)){
 		$_SESSION['header_err'][]="Project '$_POST[rename_project]' already exists";
@@ -216,15 +179,23 @@ function rename_project() { # {{{
 		header("Location: projects.php?projects_list");
 	}
 }
-
 /*}}}*/
-function assert_session_complete() { #{{{
+function reset_scenario() { #{{{
+	if(empty($_POST['reset_scenario'])) { return; }
+	$r=$_SESSION['nn']->query("DELETE FROM simulations WHERE scenario_id=$1", array($_SESSION['main']['scenario_id']));	
+	$delete=$_SESSION['main']['working_home']."/*";
+	system("find $delete ! -name '*.json' -type f,d -exec rm -rf {} +");
 }
 /*}}}*/
 function main() { #{{{
+	if(!array_key_exists('nn', $_SESSION))
+    {
+        header("Location: login.php?session_finished_information=1");
+    }
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; } # TODO: index.php should handle this
 	$_SESSION['nn']->htmlHead("Manage projects");
 	new_scenario();
+	reset_scenario();
 	new_project();
 	rename_project();
 	rename_scenario();
@@ -235,7 +206,9 @@ function main() { #{{{
 	if(isset($_GET['projects_list'])) { projects_list(); }
 }
 /*}}}*/
-
+#psql aamks -c 'select * from scenarios'
+#psql aamks -c 'select * from users'
+#psql aamks -c 'select * from projects'
 #psql aamks -c 'select * from users'
 #psql aamks -c 'update users set active_scenario=2 where id=25'
 main();
