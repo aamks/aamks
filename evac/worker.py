@@ -202,10 +202,10 @@ class Worker:
                     weight = float("inf")
                 else:
                     weight = self.max_exit_weight/int(exits_weights_dict[exit_id])
-                door_query = "SELECT floor, name, center_x, center_y, width, depth from aamks_geom WHERE (global_type_id="+exit_id+" and type_tri='DOOR')"
-                door = self.s.query(door_query)
-                destination_x, destination_y = self._get_door_destination(room['center_x'], room['center_y'], door[0], outside_building_doors)
-                self.vars['conf']['agents_destination'][int(door[0]['floor'])]['rooms_goals'][room['name']].append({'name':door[0]['name'], 'floor':door[0]['floor'], 'x':destination_x, 'y':destination_y, 'type':'door', 'exit_weight':weight})
+                query = "SELECT floor, name, center_x, center_y, width, depth from aamks_geom WHERE (global_type_id="+exit_id+" and type_tri='DOOR')"
+                exit = self.s.query(query)
+                destination_x, destination_y = self._get_door_destination(room['center_x'], room['center_y'], exit[0], outside_building_doors)
+                self.vars['conf']['agents_destination'][int(exit[0]['floor'])]['rooms_goals'][room['name']].append({'name':exit[0]['name'], 'floor':exit[0]['floor'], 'x':destination_x, 'y':destination_y, 'type':'door', 'exit_weight':weight})
 
         self.wlogger.info('SQLite load successfully')
 
