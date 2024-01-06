@@ -771,7 +771,6 @@ function cgStartDrawing() {//{{{
     		break;
 		}
 		document.getElementById("legend_"+activeLetter).innerHTML = content;
-
 	}
 	cgCreate();
 	underlayPointerEvents(stopDragging=1);
@@ -1272,7 +1271,7 @@ function getExternalDoors(doors,room_types_objects){
 		var is_second_side_door_point_outside = false;
 	});
 }
-function getRoomsAndAdjecentDoors(doors,room_types_objects){
+function getRoomsAndAdjecentDoors(doors,room_types_objects, holes){
 	rooms_and_adjecent_doors = {};
 	room_types_objects.forEach((room, index) => {
 		rooms_and_adjecent_doors[room[1]] = [];
@@ -1304,6 +1303,106 @@ function getRoomsAndAdjecentDoors(doors,room_types_objects){
 		});
 
 	});
+
+	joinRoomsConnectedByHoles(room_types_objects,holes)
+}
+
+function joinRoomsConnectedByHoles(room_types_objects, holes){
+
+	rooms_pairs_joined_by_holes = getJoinedRoomsPairs(room_types_objects, holes);
+	getJoinedRoomsAndAdjecentDoors(rooms_pairs_joined_by_holes);
+}
+
+function getJoinedRoomsPairs(room_types_objects, holes){
+	rooms_pairs_joined_by_holes = [];
+	holes.forEach((hole, i) => {
+		points = getMinMaxXY(hole[0]);
+		hole_min_X = points[0];
+		hole_max_X = points[2];
+		hole_min_Y = points[1];
+		hole_max_Y = points[3];
+		joined_rooms = [];
+		room_types_objects.forEach((room, index) => {
+			room_points = getMinMaxXY(room[0]);
+			room_min_X = room_points[0];
+			room_max_X = room_points[2];
+			room_min_Y = room_points[1];
+			room_max_Y = room_points[3];
+			if (hole_min_X >= room_min_X &&
+				hole_max_X <= room_max_X &&
+				(hole_min_Y < room_max_Y && hole_min_Y > room_min_Y || 
+				 hole_max_Y > room_min_Y && hole_max_Y < room_max_Y))
+				joined_rooms.push(room[1])
+			else if (hole_min_Y >= room_min_Y &&
+				hole_max_Y <= room_max_Y &&
+				(hole_min_X < room_max_X && hole_min_X > room_min_X ||
+				 hole_max_X > room_min_X && hole_max_X < room_max_X))
+				joined_rooms.push(room[1])
+		});
+		rooms_pairs_joined_by_holes.push([joined_rooms[0],joined_rooms[1]]);
+	});
+	return rooms_pairs_joined_by_holes;
+}
+
+function getJoinedRoomsAndAdjecentDoors(rooms_pairs_joined_by_holes){
+	grouped_rooms = groupRoomsByHoleConnections(rooms_pairs_joined_by_holes);
+	adjecentDoors = [];
+
+	for (let i = 0; i < grouped_rooms.length; i++) {
+		adjecentDoorsConcated = [];
+		adjecentDoors = [];
+		for (let j = 0; j < grouped_rooms[i].length; j++) {
+			adjecentDoorsConcated = adjecentDoors.concat(rooms_and_adjecent_doors[grouped_rooms[i][j]]);
+			adjecentDoors = adjecentDoorsConcated;
+		}
+
+		adjecentDoors = [...new Set(adjecentDoors)];
+
+		for (let j = 0; j < grouped_rooms[i].length; j++) {
+			rooms_and_adjecent_doors[grouped_rooms[i][j]] = adjecentDoors;
+		}
+	}
+}
+
+function groupRoomsByHoleConnections(rooms_pairs_joined_by_holes){
+	groupedRooms = [];
+	for (let k = 0; k < rooms_pairs_joined_by_holes.length; k++) {
+		room_1 = rooms_pairs_joined_by_holes[k][0];
+		room_2 = rooms_pairs_joined_by_holes[k][1];
+
+		// readOnlyGroupedRooms if only for reading, we modify groupedRooms array,
+		// both arrays are equal - deep copy
+		const readOnlyGroupedRooms = groupedRooms;
+		if (groupedRooms.length == 0)
+		{
+			groupedRooms.push([room_1,room_2]);
+			continue;
+		}
+		rooms_already_in_existing_group = false;
+		for (let i = 0; i < readOnlyGroupedRooms.length; i++) {
+			if (readOnlyGroupedRooms[i].includes(room_1) && readOnlyGroupedRooms[i].includes(room_2))
+			{
+				// this case happens then there is holes connection loop
+				rooms_already_in_existing_group = true;
+				break;
+			}
+  			else if (readOnlyGroupedRooms[i].includes(room_1))
+  			{
+  				groupedRooms[i].push(room_2);
+  				rooms_already_in_existing_group = true;
+  				break;
+  			}
+  			else if (readOnlyGroupedRooms[i].includes(room_2))
+  			{
+  				groupedRooms[i].push(room_1);
+  				rooms_already_in_existing_group = true;
+  				break;
+  			}
+		}
+		if (!rooms_already_in_existing_group)
+			groupedRooms.push([room_1,room_2]);
+	}
+	return groupedRooms;
 }
 
 function getFloorExits(){
@@ -1312,11 +1411,20 @@ function getFloorExits(){
 	dbReorder();
 	var doors =[];
 	var room_types_objects =[];
+	var holes = [];
 
 	for(var letter in gg) {
 		if (gg[letter]['t'] == 'door') { 
 			_.each(db({"floor": floor, "letter": letter}).select("cad_json","name"), function(m) {
 			doors.push(m);
+			});
+		}
+	}
+
+	for(var letter in gg) {
+		if (gg[letter]['t'] == 'hole') { 
+			_.each(db({"floor": floor, "letter": letter}).select("cad_json","name"), function(m) {
+			holes.push(m);
 			});
 		}
 	}
@@ -1334,7 +1442,7 @@ function getFloorExits(){
 	_.each(db({"floor": floor, "letter": floor_teleport_letter}).select("cad_json","name"), function(m) {
 		teleports.push(m);
 	});
-	getRoomsAndAdjecentDoors(doors, room_types_objects);
+	getRoomsAndAdjecentDoors(doors, room_types_objects, holes);
 
 	
 }
@@ -1480,6 +1588,7 @@ function saveRightBoxCgProps() {//{{{
 	}
 
 } 
+
 function getRoomExitWeight() {//{{{
 	adjecentDoors = rooms_and_adjecent_doors[cg.name];
 	adjecentDoorsWeights={};
