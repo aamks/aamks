@@ -15,29 +15,6 @@ from include import Vis
 
 from sklearn.cluster import MeanShift
 
-
-
-class AgentCluster():
-    def __init__(self, id, room, position, floor):
-        self.id = id
-        self.room = room
-        self.position = position
-        self.floor = floor
-        self.leader = 0
-        self.cluster = ""
-
-    def __str__(self) -> str:
-        return str(self.id)
-        
-
-class AllAgentsCluster():
-    def __init__(self):
-        self.list = []
-
-    def show_all(self):
-        for agent in self.list:
-            print(agent)
-
 class EvacClusters():
 
     def __init__(self):
@@ -55,30 +32,14 @@ class EvacClusters():
         
 
     def main(self):
-        self.AllAgents = AllAgentsCluster()
-        self.prepare_agents(self.AllAgents )
-        self.AllAgents.show_all()
-        # self.all_compas = self.get_all_compas() # czy dict wszystkich compas bedzie potrzebny?
-        # self.evacues_grouped_by_rooms = self.group_evacuees_by_rooms() 
-        # self.find_cluster_in_whole_building()
-        # self.write_to_json_file()
+        self.all_compas = self.get_all_compas() # czy dict wszystkich compas bedzie potrzebny?
+        self.evacues_grouped_by_rooms = self.group_evacuees_by_rooms() 
+        self.find_cluster_in_whole_building()
+        self.write_to_json_file()
         # self.new_Vis()
         # self._clustering()
         # self._vis_clusters()
         # self._update_json()
-
-    def prepare_agents(self, AllAgents):
-        id = 0
-        for floor in self.dispatched_evacuees:
-            for agent in self.dispatched_evacuees[floor]:
-                agent_pos_x = agent[0]
-                agent_pos_y = agent[1]
-                room = agent[2]
-                ac = AgentCluster(id, room, [agent_pos_x, agent_pos_y], floor)
-                self.AllAgents.list.append(ac)
-                id+=1
-
-
 
     def get_all_compas(self):
         all_compas = {}
@@ -134,7 +95,10 @@ class EvacClusters():
 
             for agent in clustered_dict[cluster]['agents']:
                 print(agent)
+                print(agent['leader'])
                 agent['leader'] = leader
+                agent['type'] = self.check_type(agent['position'], leader)
+
                 agent['color'] = "baba"
                 print(agent)
             
@@ -146,8 +110,8 @@ class EvacClusters():
 
         return clustered_dict
 
-    def check_type(self, type, leader):
-        if type == leader:
+    def check_type(self, position, leader):
+        if position == leader:
             return "leader"
         else:
             return "follower"
