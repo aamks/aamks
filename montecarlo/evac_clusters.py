@@ -39,7 +39,8 @@ class EvacClusters():
         # self.new_Vis()
         # self._clustering()
         # self._vis_clusters()
-        # self._update_json()
+        self.flatten_agents()
+        self.update_json()
 
     def get_all_compas(self):
         all_compas = {}
@@ -94,13 +95,9 @@ class EvacClusters():
             clustered_dict[cluster]['leader'] = leader
 
             for agent in clustered_dict[cluster]['agents']:
-                print(agent)
-                print(agent['leader'])
                 agent['leader'] = leader
                 agent['type'] = self.check_type(agent['position'], leader)
-
                 agent['color'] = "baba"
-                print(agent)
             
 
             # for num, xy__type_color in enumerate(clustered_dict[cluster]['agents']):
@@ -270,4 +267,34 @@ class EvacClusters():
                 data['FLOORS_DATA'][floor]["EVACUEES"][evacue]["EVACUE_TYPE"] = self.s.query( "SELECT agent_type FROM clustering_info WHERE rowid = ?", (str(num + 1),))
         self.json.write(data,"{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],*self.simulation_id))
 
+    def flatten_agents(self):
+        """ return list of agents [ {pos, lead, type},{pos, lead, type}, (...) ] in every floor"""
+        self.agents_flat = {}
+        for floor in self.evacues_grouped_by_rooms:
+            self.agents_flat[floor] = []
+            for room in self.evacues_grouped_by_rooms[floor]:
+                for cluster in self.evacues_grouped_by_rooms[floor][room]["clusters"]:
+                    for agent in self.evacues_grouped_by_rooms[floor][room]["clusters"][cluster]["agents"]:
+                        agent_data = {
+                            "position": agent["position"],
+                            "leader": agent["leader"],
+                            "type": agent['type']
+                        }
+                        self.agents_flat[floor].append(agent_data)
 
+
+
+    
+    def update_json(self):
+        data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], self.simulation_id))
+        for floor in data['FLOORS_DATA']:
+            for evacue in data['FLOORS_DATA'][floor]["EVACUEES"]:
+                position = data['FLOORS_DATA'][floor]["EVACUEES"][evacue]['ORIGIN']
+                data['FLOORS_DATA'][floor]["EVACUEES"][evacue]["leader"], data['FLOORS_DATA'][floor]["EVACUEES"][evacue]["type"] = self.get_data_of_agent(floor, position)
+        self.json.write(data,"{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self.simulation_id))
+
+
+    def get_data_of_agent(self, floor, agent_pos):
+        for agent in self.agents_flat[floor]:
+            if agent['position'] == tuple(agent_pos):
+                return agent['leader'], agent['type']
