@@ -401,7 +401,7 @@ class CfastMcarlo():
 
         pairs=[]
         for k,v in self._psql_collector[self._sim_id].items():
-            pairs.append("{}='{}'".format(k,','.join(str(x) for x in v )))
+            pairs.append("{}='{}'".format(k,','.join(str(x) for x in v ) if v else '0'))
         data=', '.join(pairs)
 
         self.p.query("UPDATE simulations SET {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(data), (self.conf['project_id'], self.conf['scenario_id'], self._sim_id))
