@@ -41,7 +41,6 @@ class GetData:
     def __init__(self, scenario_dir):
         self.dir = scenario_dir
         self.configs = self._get_json(f'{scenario_dir}/conf.json')
-        self.horisontal_time=dict({'0': 3, '1': 36, '2': 72, '3': 112, '4': 148, '5': 184, '6': 220})   # ???
         self.p = Psql()
         self.s = Sqlite(f'{self.dir}/aamks.sqlite')
         self.raw = {}
@@ -86,8 +85,6 @@ class GetData:
         data = []
         dcbe = [json.loads(i[0]) for i in r]
         for i in dcbe:
-            for key in i.keys():
-                i.update({key: (i[key] + int(self.horisontal_time[key]))})
             item = max(i.values())
             if item > 0:
                 data.append(item)
@@ -727,6 +724,8 @@ class PostProcess:
                 return stat.gaussian_kde(np.insert(sample[1:], 0, sample[0]*0.99999))
 
         def ovl(samp1, samp2, number_bins=1000):
+            if samp1.size == 0 or samp2.size == 0:
+                return 0
             arr1 = try_kde(samp1)
             arr2 = try_kde(samp2)
 
@@ -753,7 +752,10 @@ class PostProcess:
             return min_arr.sum()    
 
         def stats(x_smp: list):
-            return np.mean(x_smp), np.std(x_smp)
+            if x_smp.size != 0:
+                return np.mean(x_smp), np.std(x_smp) 
+            else:
+                return 0, 0 
 
         self.data['summary'] = {
                 'date': time.time,
