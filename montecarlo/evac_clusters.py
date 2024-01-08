@@ -80,20 +80,35 @@ class EvacClusters():
         for label in labels:
             if label not in clustered_dict:
                 clustered_dict[int(label)] = {
-                    "positions": [],
+                    "agents": [],
                     "center": "",
                     "leader": ""
                 }
 
         for position, label in zip(positions_in_room, labels):
-            clustered_dict[label]['positions'].append([position, "", 0])
+            # clustered_dict[label]['agents'].append([position, "", 0, []])
+            agent = {"position": position,
+                     "leader": "",
+                     "type": "",
+                     "color": ""
+                     }
+            clustered_dict[label]['agents'].append(agent)
         for cl_num, cluster in enumerate(clustered_dict):
             clustered_dict[cluster]['center'] = tuple([int(x) for x in cluster_centers[cluster]])
-            leader = tuple(self.find_position_nearest_center([pos_and_type[0] for pos_and_type in clustered_dict[cluster]['positions']], clustered_dict[cluster]['center']))
+            leader = tuple(self.find_position_nearest_center([agent['position'] for agent in clustered_dict[cluster]['agents']], clustered_dict[cluster]['center']))
             clustered_dict[cluster]['leader'] = leader
-            for num, xy__type_color in enumerate(clustered_dict[cluster]['positions']):
-                clustered_dict[cluster]['positions'][num][1] = self.check_type(xy__type_color[0], leader)
-                clustered_dict[cluster]['positions'][num][2] = self.add_color(xy__type_color[1], cl_num)
+
+            for agent in clustered_dict[cluster]['agents']:
+                print(agent)
+                agent['leader'] = leader
+                agent['color'] = "baba"
+                print(agent)
+            
+
+            # for num, xy__type_color in enumerate(clustered_dict[cluster]['agents']):
+            #     # clustered_dict[cluster]['agents'][num][1] = self.check_type(xy__type_color[0], leader)
+            #     # clustered_dict[cluster]['agents'][num][2] = self.add_color(xy__type_color[1], cl_num)
+            #     clustered_dict[cluster]['agents'][num][3] = leader
 
         return clustered_dict
 
