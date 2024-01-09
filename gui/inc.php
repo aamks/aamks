@@ -134,7 +134,6 @@ class Aamks {/*{{{*/
 		}
 		$menu.="</select>\n";
 		$menu.="<br>";
-		//$menu.='<div id="progress" style="color:#BBC; height:0px; padding-top:15px; font-size:16px"></div> <br>';
 		$menu.='<div id="active-sims" style="color:#BBC; height:20px; padding-top:5px; font-size:16px"> Progress </div><br>';
 		$menu.='<button id="check-sim">Check progress</button>'; 
 
@@ -142,6 +141,7 @@ class Aamks {/*{{{*/
 	}
 /*}}}*/
 	public function menu($title='') { /*{{{*/
+		ob_start();
 		$this->logoutButton();
 		$menu=$this->rawMenu();
 		echo "<left-menu-box> $menu </left-menu-box> <div id=content-main style='height: 95vh; margin-left: 150px; padding: 0px;'>";
