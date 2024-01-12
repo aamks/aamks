@@ -36,6 +36,10 @@ from include import Vis
 from scipy.optimize import root
 from scipy.special import erfc
 
+
+
+from .evac_clusters import EvacClusters
+
 # }}}
 def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99):
 
@@ -249,9 +253,18 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['BETA_V']         = round(normal(self.conf['evacuees_beta_v']['mean']      , self.conf['evacuees_beta_v']['sd'])      , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(self.conf['evacuees_max_h_speed']['mean'] , self.conf['evacuees_max_h_speed']['sd']) , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(self.conf['evacuees_max_v_speed']['mean'] , self.conf['evacuees_max_v_speed']['sd']) , 2)
-                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['type']        =  "lalal"
-                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['leader']        = "nanana"
+                # self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['type']        =  "lalal"
+                # self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['leader']        = "nanana"
+        
 
+        def add_leader_parameters():
+            # Cluster = EvacClusters()
+            for i,pos in enumerate(self.dispatched_evacuees[floor]):
+                print(i, pos)
+                # print(self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['COMPA'] ) 
+                print()
+
+        add_leader_parameters()
                 
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
         os.chmod("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)

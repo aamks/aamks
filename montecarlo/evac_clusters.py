@@ -4,8 +4,6 @@ import os
 import numpy as np
 from collections import OrderedDict
 import json
-from pprint import pprint
-from subprocess import Popen,call
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 import zipfile
 from include import Sqlite
@@ -19,12 +17,12 @@ class EvacClusters():
 
     def __init__(self):
         self.json=Json()
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-
+        # self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        print("cluster evac")
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
+        # self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.dispatched_evacuees=self.json.readdb("dispatched_evacuees")
-
+        print(self.dispatched_evacuees)
         si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
         self.simulation_id = list(range(*si.get()))
         print(self.simulation_id)
@@ -32,7 +30,7 @@ class EvacClusters():
         
 
     def main(self):
-        self.all_compas = self.get_all_compas() # czy dict wszystkich compas bedzie potrzebny?
+        # self.all_compas = self.get_all_compas() # czy dict wszystkich compas bedzie potrzebny?
         self.evacues_grouped_by_rooms = self.group_evacuees_by_rooms() 
         self.find_cluster_in_whole_building()
         self.write_to_json_file()
@@ -159,12 +157,6 @@ class EvacClusters():
         self._write_anim_zip(anim) 
         Vis({'highlight_geom': None, 'anim': None, 'title': 'Clustering', 'srv': 1, 'anim': "{self.simulation_id}/clustering.zip"})
 
-    def _write_anim_zip(self,anim):# {{{
-        zf = zipfile.ZipFile("{}/workers/{}/clustering.zip".format(os.environ['AAMKS_PROJECT'], *self.simulation_id) , mode='w', compression=zipfile.ZIP_DEFLATED)
-        try:
-            zf.writestr("anim.json", json.dumps(anim))
-        finally:
-            zf.close()
 
     def flatten_agents(self):
         """ return list of agents [ {pos, lead, type},{pos, lead, type}, (...) ] in every floor"""
@@ -181,12 +173,20 @@ class EvacClusters():
                         }
                         self.agents_flat[floor].append(agent_data)
     
+
+    def _write_anim_zip(self,anim):# {{{
+        zf = zipfile.ZipFile("{}/workers/{}/clustering.zip".format(os.environ['AAMKS_PROJECT'], *self.simulation_id) , mode='w', compression=zipfile.ZIP_DEFLATED)
+        try:
+            zf.writestr("anim.json", json.dumps(anim))
+        finally:
+            zf.close()
+
     def update_json(self):
         data = self.json.read("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'], *self.simulation_id))
         for floor in data['FLOORS_DATA']:
             for evacue in data['FLOORS_DATA'][floor]["EVACUEES"]:
                 position = data['FLOORS_DATA'][floor]["EVACUEES"][evacue]['ORIGIN']
-                data['FLOORS_DATA'][floor]["EVACUEES"][evacue]["leader"], data['FLOORS_DATA'][floor]["EVACUEES"][evacue]["type"] = self.get_data_of_agent(floor, position)
+                # data['FLOORS_DATA'][floor]["EVACUEES"][evacue]["leader"], data['FLOORS_DATA'][floor]["EVACUEES"][evacue]["type"] = self.get_data_of_agent(floor, position)
         self.json.write(data,"{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],*self.simulation_id))
 
 
