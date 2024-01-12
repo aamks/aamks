@@ -26,7 +26,8 @@ class EvacClusters():
 
     def main(self):
         self.evacues_grouped_by_rooms = self.group_by_rooms() 
-        self.find_cluster_in_whole_building()
+        # self.find_cluster_in_whole_building()
+        self.find_clusters_in_one_floor()
         self.write_to_json_file()
         self.flatten_agents()
         self.update_json()
@@ -58,7 +59,7 @@ class EvacClusters():
     
     def group_by_rooms(self):
         grouped_by_rooms = {}
-        for evacuee in self.dispatched_evacuees:
+        for id, evacuee in enumerate(self.dispatched_evacuees):
             print(evacuee)
             room = evacuee[2]
             evacuee_coordinates = tuple(evacuee[:2])
@@ -92,7 +93,6 @@ class EvacClusters():
             agent = {"position": position,
                      "leader": "",
                      "type": "",
-                     "color": ""
                      }
             clustered_dict[label]['agents'].append(agent)
         for cl_num, cluster in enumerate(clustered_dict):
@@ -126,19 +126,28 @@ class EvacClusters():
         closest_position = positions[closest_index]
         return tuple(closest_position)
 
-    def find_cluster_in_whole_building(self):
-        for floor in self.evacues_grouped_by_rooms:
-            for room in self.evacues_grouped_by_rooms[floor]:
-                clustered_room = self.cluster_one_room(self.evacues_grouped_by_rooms[floor][room]['positions'])
-                self.evacues_grouped_by_rooms[floor][room]["clusters"] = clustered_room
+    # def find_cluster_in_whole_building(self):
+    #     for floor in self.evacues_grouped_by_rooms:
+    #         for room in self.evacues_grouped_by_rooms[floor]:
+    #             clustered_room = self.cluster_one_room(self.evacues_grouped_by_rooms[floor][room]['positions'])
+    #             self.evacues_grouped_by_rooms[floor][room]["clusters"] = clustered_room
 
-    def check_types(self):
-        for floor in self.evacues_grouped_by_rooms:
-            print(type(floor), floor)
-            for room in self.evacues_grouped_by_rooms[floor]:
-                print(type(room), room)
-                for cluster in self.evacues_grouped_by_rooms[floor][room]['clusters']:
-                    print(type(cluster), cluster)
+    def find_clusters_in_one_floor(self):
+        for room in self.evacues_grouped_by_rooms:
+            clustered_room = self.cluster_one_room(self.evacues_grouped_by_rooms[room]['positions'])
+            print(clustered_room)
+            self.evacues_grouped_by_rooms[room]["clusters"] = clustered_room
+            print(self.evacues_grouped_by_rooms[room])
+            
+
+
+    # def check_types(self):
+    #     for floor in self.evacues_grouped_by_rooms:
+    #         print(type(floor), floor)
+    #         for room in self.evacues_grouped_by_rooms[floor]:
+    #             print(type(room), room)
+    #             for cluster in self.evacues_grouped_by_rooms[floor][room]['clusters']:
+    #                 print(type(cluster), cluster)
 
     def write_to_json_file(self):
         pwd = os.path.join(os.environ['AAMKS_PROJECT'], "cluster.json")

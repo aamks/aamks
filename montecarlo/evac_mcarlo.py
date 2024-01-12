@@ -259,7 +259,7 @@ class EvacMcarlo():
 
         def add_leader_parameters():
             print(self.dispatched_evacuees[floor])
-            Cluster = EvacClusters(self.dispatched_evacuees[floor])
+            # Cluster = EvacClusters(self.dispatched_evacuees[floor])
             for i,pos in enumerate(self.dispatched_evacuees[floor]):
                 print(i, pos)
                 # print(self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['COMPA'] ) 
