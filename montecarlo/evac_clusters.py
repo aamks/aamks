@@ -15,26 +15,19 @@ from sklearn.cluster import MeanShift
 
 class EvacClusters():
 
-    def __init__(self):
+    def __init__(self,dispatched_evacuees):
         self.json=Json()
-        # self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        print("cluster evac")
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        # self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
-        self.dispatched_evacuees=self.json.readdb("dispatched_evacuees")
-        print(self.dispatched_evacuees)
         si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
         self.simulation_id = list(range(*si.get()))
-        print(self.simulation_id)
+        self.dispatched_evacuees = dispatched_evacuees
         self.main()
         
 
     def main(self):
-        # self.all_compas = self.get_all_compas() # czy dict wszystkich compas bedzie potrzebny?
-        self.evacues_grouped_by_rooms = self.group_evacuees_by_rooms() 
+        self.evacues_grouped_by_rooms = self.group_by_rooms() 
         self.find_cluster_in_whole_building()
         self.write_to_json_file()
-        # self.new_Vis()
         self.flatten_agents()
         self.update_json()
 
@@ -61,6 +54,23 @@ class EvacClusters():
                     }
                 else:
                     grouped_by_rooms[floor][room_type]['positions'].append(room_coordinates)
+        return grouped_by_rooms
+    
+    def group_by_rooms(self):
+        grouped_by_rooms = {}
+        for evacuee in self.dispatched_evacuees:
+            print(evacuee)
+            room = evacuee[2]
+            evacuee_coordinates = tuple(evacuee[:2])
+            if room not in grouped_by_rooms:
+                grouped_by_rooms[room] = {
+                "positions": [evacuee_coordinates],
+                "clusters": {}
+                }
+            else:
+                grouped_by_rooms[room]['positions'].append(evacuee_coordinates)
+
+        print(grouped_by_rooms)
         return grouped_by_rooms
 
     def cluster_one_room(self, positions_in_room):
