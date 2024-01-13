@@ -569,7 +569,7 @@ class DrawAndLog:
                 (fire['floor'], fire['x0'], fire['y0'], fire['x1'], fire['y1']))[0]
 
         loc['global'] =  [fire['center_x'], fire['center_y'], fire['z0']]
-        loc['local'] = [fire['center_x'] - fire['x0'], fire['center_y'] - fire['y0']]  # seems irrelevant ? - to be investigated [WK]
+        loc['local'] = [fire['center_x'] - room['x0'], fire['center_y'] - room['y0']]
         loc['local'] = [round(i/100, 2) for i in loc['local']]
         loc['floor'] = room['floor']
         loc['fire_id'] = f"f{room['global_type_id']}"
