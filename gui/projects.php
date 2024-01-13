@@ -130,9 +130,14 @@ function copy_scenario() { # {{{
         header("Location: login.php?session_finished_information=1");
     }
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_SESSION['main']['project_id'])), 'scenario_name');
-	if(in_array($_POST['copy_scenario'], $scenarios, true)){
+	if(in_array($_POST['copy_scenario'], $scenarios, true) && $_POST['copy_scenario'] != 'draft'){
 		$_SESSION['header_err'][]="Scenario '$_POST[copy_scenario]' already exists";
 	} else {
+		if($_POST['copy_scenario'] == 'draft'){
+			$_SESSION['nn']->query("DELETE FROM scenarios WHERE scenario_name='draft'");
+			$disk_delete=implode("/", array($_SESSION['main']['user_home'], $_SESSION['main']['project_name'], 'draft'));
+			system("rm -rf $disk_delete");
+		}
 		$new_scenario_directory = implode("/", array($_SESSION['main']['user_home'],$_SESSION['main']['project_name'],$_POST['copy_scenario']));
 		if (!mkdir($new_scenario_directory, 0777, true)) {
 			$_SESSION['header_err'][]="Cannot create $_POST[project_name]/$_POST[copy_scenario]";
