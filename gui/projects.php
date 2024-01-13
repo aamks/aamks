@@ -84,6 +84,7 @@ function delete_project() {/*{{{*/
 		$delete=$_SESSION['main']['user_home']."/$project_name";
 		system("rm -rf $delete");
 	}
+	$_SESSION['nn']->query("UPDATE users SET active_scenario=(SELECT s.id from scenarios s INNER JOIN projects p ON p.id=s.project_id WHERE p.user_id=$1 ORDER BY s.id DESC LIMIT 1) WHERE id=$1", array($_SESSION['main']['user_id']));
 	header("Location: projects.php?projects_list");
 	exit();
 
