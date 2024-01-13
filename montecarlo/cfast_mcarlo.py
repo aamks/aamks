@@ -633,15 +633,15 @@ class DrawAndLog:
         Fire area is draw from pareto distrubution regarding the BS PD-7974-7. 
         There is lack of vent condition - underventilated fires
         '''
-        orig_area = math.prod([dim * 2 for dim in self.sections['FIRE']['LOCATION']]) #[m2]
+        orig_area = self.s.query(f"SELECT width*depth/10000 AS area FROM aamks_geom WHERE name='{self._fire_room_name}'")[0]['area']    # [m2]
         if self.conf['r_is']!='simple':
             fire_area = orig_area
         else:
             p = pareto(b=self.conf['fire_area']['b'], scale=self.conf['fire_area']['scale'])
-            fire_area = round(p.rvs(size=1)[0], 2)
+            fire_area = round(p.rvs(size=1)[0], 2)  #[m2]
             if fire_area > orig_area:
                 fire_area = orig_area
-        return fire_area
+        return fire_area    #[m2]
 
     def _flashover_q(self, model='max'):
         fire_room = self.s.query(f"SELECT width, depth, height FROM aamks_geom WHERE name='{self._fire_room_name}'")[0]
