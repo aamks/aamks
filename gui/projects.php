@@ -108,6 +108,10 @@ function new_scenario() { # {{{
         header("Location: login.php?session_finished_information=1");
     }
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_POST['project_id'])), 'scenario_name');
+	if($_POST['new_scenario'] == 'draft'){
+		$_SESSION['header_err'][]="Scenario name 'draft' can not be used!";
+		return;
+	}
 	if(in_array($_POST['new_scenario'], $scenarios, true)){
 		$_SESSION['header_err'][]="Scenario '$_POST[new_scenario]' already exists";
 	} else {
@@ -163,7 +167,10 @@ function copy_scenario() { # {{{
 function rename_scenario() { # {{{
 	#psql aamks -c 'select  * from projects'
 	if(empty($_POST['rename_scenario'])) { return; }
-
+	if($_POST['rename_scenario'] == 'draft'){
+		$_SESSION['header_err'][]="Scenario name 'draft' can not be used!";
+		return;
+	}
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_SESSION['main']['project_id'])), 'scenario_name');
 	if(in_array($_POST['rename_scenario'], $scenarios, true)){
 		$_SESSION['header_err'][]="Scenario '$_POST[rename_scenario]' already exists";
