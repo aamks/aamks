@@ -239,24 +239,26 @@ class EvacEnv:
                 # TODO: mimooh temporary fix
                 evacuee = self.evacuees.get_pedestrian(e)
                 position = evacuee.position
-                print(dir(evacuee))
                 if evacuee.agent_has_no_escape == True:
                     # agent is trapped, has no escape
                     continue
                 if self.evacuees.get_type_of_evacuee(e) == 'leader':
                     print(self.evacuees.get_type_of_evacuee(e))
                     exit = self._find_closest_exit(e)
+                    print(exit[0], exit[1])
                     # position = self.evacuees.get_position_of_pedestrian(e)
                     evacuee.exit_coordinates = (exit[0], exit[1])
+                    navmesh_path = exit[2]
                 else:
                     exit = self.evacuees.get_leader_of_evacuee(e)
+                    print(exit[0], exit[1])
                     evacuee.exit_coordinates = (exit[0], exit[1])
                     # leader = self.evacuees.get_leader_of_evacuee(e)
                     # position = self.evacuees.get_position_of_pedestrian(e)
                     # where_to_go = self.evacuees.get_position_of_pedestrian(leader)
                     # goal = self.nav.nav_query(src=position, dst=where_to_go, maxStraightPath=32)
 
-                navmesh_path = exit[2]
+               
                 # evacuee.exit_coordinates = (exit[0], exit[1])
                 try:
                     vis = RVOSimulator.query_visibility(self.simulator, position, navmesh_path[2], 15)
