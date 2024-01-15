@@ -644,30 +644,15 @@ class Worker:
             for floor_num in range(len(self.floors)):
                 self.floors[floor_num].agents_to_move_downstairs_or_upstairs = []
             return
-        # # downstair
-        # for num_floor in range(len(self.floors)-1):
-        #     current_floor_new_agents = [agent[2] for agent in agents_to_move if agent[0] == num_floor+1]
-        #     current_floor_new_agents_indexes = [agent[3] for agent in agents_to_move if agent[0] == num_floor+1]
-        #     for agent in current_floor_new_agents:
-        #         agent.finished = 1
-        #         agent.target_teleport_coordinates = None
-        #     self.floors[num_floor+1].delete_agents_from_floor(current_floor_new_agents_indexes)
-        #     self.floors[num_floor+1].agents_to_move_downstairs = []
-        #     self.floors[num_floor].append_evacuees(current_floor_new_agents)
-
-        # # upstair
             
         for floor_num in range(len(self.floors)):
             agents_who_leave_current_floor_indexes = [agent[3] for agent in agents_to_move if agent[0] == floor_num]
             self.floors[floor_num].delete_agents_from_floor(agents_who_leave_current_floor_indexes)
 
-
         for floor_num in range(len(self.floors)):
             agents_who_come_to_current_floor = [agent[2] for agent in agents_to_move if agent[1] == floor_num]
             self.floors[floor_num].agents_to_move_downstairs_or_upstairs = []
             self.floors[floor_num].append_evacuees(agents_who_come_to_current_floor)
-
-
 
         for agent_to_move in agents_to_move:
             agent = agent_to_move[2]

@@ -130,8 +130,8 @@ class EvacEnv:
             # now when agent is already outside (agent has beed guided by room room_exits_weights)
             _exit_dict = [exit.copy() for exit in exits_dict if (exit['x'] == evacuee.exit_coordinates[0] and exit['y'] == evacuee.exit_coordinates[1] or
                                                                  exit['x_outside'] == evacuee.exit_coordinates[0] and exit['y_outside'] == evacuee.exit_coordinates[1])]
-            # and we set the x y coordinates to x_outside y_outside in case the agent is pushed
-            # outside by rvo2 more than 100 px from the door so that it does not return to the door.
+            # and we set the x y coordinates to x_outside y_outside
+            #to put the ultimate goal behind the door, not at the door
             for exit in _exit_dict:
                 exit['x'] = exit['x_outside']
                 exit['y'] = exit['y_outside']
