@@ -30,16 +30,17 @@ class EvacClusters():
         self.find_clusters_in_one_floor()
         self.write_to_json_file()
         self.flatten_agents()
-        self.update_json()
+        self.sort_agents()
+        # self.update_json()
 
-    def get_all_compas(self):
-        all_compas = {}
-        for floor, evacuees in self.dispatched_evacuees.items():
-            all_compas[floor] = set()
-            for evacuue in evacuees:
-                comp = evacuue[2]
-                all_compas[floor].add(comp)
-        return all_compas
+    # def get_all_compas(self):
+    #     all_compas = {}
+    #     for floor, evacuees in self.dispatched_evacuees.items():
+    #         all_compas[floor] = set()
+    #         for evacuue in evacuees:
+    #             comp = evacuue[2]
+    #             all_compas[floor].add(comp)
+    #     return all_compas
     
     def group_evacuees_by_rooms(self):
         grouped_by_rooms = {}
@@ -60,7 +61,7 @@ class EvacClusters():
     def group_by_rooms(self):
         grouped_by_rooms = {}
         for id, evacuee in enumerate(self.dispatched_evacuees):
-            print(evacuee)
+            # print(id, evacuee)
             room = evacuee[2]
             evacuee_coordinates = tuple(evacuee[:2])
             if room not in grouped_by_rooms:
@@ -71,7 +72,7 @@ class EvacClusters():
             else:
                 grouped_by_rooms[room]['positions'].append(evacuee_coordinates)
 
-        print(grouped_by_rooms)
+        # print(grouped_by_rooms)
         return grouped_by_rooms
 
     def cluster_one_room(self, positions_in_room):
@@ -135,20 +136,8 @@ class EvacClusters():
     def find_clusters_in_one_floor(self):
         for room in self.evacues_grouped_by_rooms:
             clustered_room = self.cluster_one_room(self.evacues_grouped_by_rooms[room]['positions'])
-            print(clustered_room)
             self.evacues_grouped_by_rooms[room]["clusters"] = clustered_room
-            print(self.evacues_grouped_by_rooms[room])
             
-
-
-    # def check_types(self):
-    #     for floor in self.evacues_grouped_by_rooms:
-    #         print(type(floor), floor)
-    #         for room in self.evacues_grouped_by_rooms[floor]:
-    #             print(type(room), room)
-    #             for cluster in self.evacues_grouped_by_rooms[floor][room]['clusters']:
-    #                 print(type(cluster), cluster)
-
     def write_to_json_file(self):
         pwd = os.path.join(os.environ['AAMKS_PROJECT'], "cluster.json")
         with open(pwd, "w") as file:
@@ -179,19 +168,28 @@ class EvacClusters():
 
     def flatten_agents(self):
         """ return list of agents [ {pos, lead, type},{pos, lead, type}, (...) ] in every floor"""
-        self.agents_flat = {}
-        for floor in self.evacues_grouped_by_rooms:
-            self.agents_flat[floor] = []
-            for room in self.evacues_grouped_by_rooms[floor]:
-                for cluster in self.evacues_grouped_by_rooms[floor][room]["clusters"]:
-                    for agent in self.evacues_grouped_by_rooms[floor][room]["clusters"][cluster]["agents"]:
-                        agent_data = {
-                            "position": agent["position"],
-                            "leader": agent["leader"],
-                            "type": agent['type']
-                        }
-                        self.agents_flat[floor].append(agent_data)
-    
+        self.agents_flat = []
+        for room in self.evacues_grouped_by_rooms:
+            for cluster in self.evacues_grouped_by_rooms[room]["clusters"]:
+                for agent in self.evacues_grouped_by_rooms[room]["clusters"][cluster]["agents"]:
+                    agent_data = {
+                        "position": agent["position"],
+                        "leader": agent["leader"],
+                        "type": agent['type'],
+                        "id": -1
+                    }
+                    self.agents_flat.append(agent_data)
+        # print(self.agents_flat)    
+
+    def sort_agents(self):
+        for agent in self.agents_flat:
+            agent['id'] = self.get_agent(agent["position"][0],agent["position"][1])
+        self.sorted_agents_flat = sorted(self.agents_flat, key = lambda agent:agent['id'])
+
+    def get_agent(self, x, y):
+        for id, evacuee in enumerate(self.dispatched_evacuees):
+            if tuple(evacuee[:2]) == tuple((x,y)):
+                return id
 
     def _write_anim_zip(self,anim):# {{{
         zf = zipfile.ZipFile("{}/workers/{}/clustering.zip".format(os.environ['AAMKS_PROJECT'], *self.simulation_id) , mode='w', compression=zipfile.ZIP_DEFLATED)

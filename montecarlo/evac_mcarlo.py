@@ -235,6 +235,13 @@ class EvacMcarlo():
 # }}}
     def _make_evac_conf(self):# {{{
         ''' Write data to sim_id/evac.json. '''
+        def add_leader_parameters(floor):
+            clustering = EvacClusters(self.dispatched_evacuees[floor])
+            for i, agent in enumerate(clustering.sorted_agents_flat):
+                e_id='f{}'.format(i)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]["leader"] = agent["leader"] 
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]["type"] = agent["type"] 
+
         self._evac_conf['FLOORS_DATA']=OrderedDict()
         for floor in self.floors:
             self._evac_conf['FLOORS_DATA'][floor]=OrderedDict()
@@ -253,19 +260,11 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['BETA_V']         = round(normal(self.conf['evacuees_beta_v']['mean']      , self.conf['evacuees_beta_v']['sd'])      , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(self.conf['evacuees_max_h_speed']['mean'] , self.conf['evacuees_max_h_speed']['sd']) , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(self.conf['evacuees_max_v_speed']['mean'] , self.conf['evacuees_max_v_speed']['sd']) , 2)
-                # self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['type']        =  "lalal"
-                # self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['leader']        = "nanana"
+
+            add_leader_parameters(floor)
         
 
-        def add_leader_parameters():
-            print(self.dispatched_evacuees[floor])
-            # Cluster = EvacClusters(self.dispatched_evacuees[floor])
-            for i,pos in enumerate(self.dispatched_evacuees[floor]):
-                print(i, pos)
-                # print(self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['COMPA'] ) 
-                print()
 
-        add_leader_parameters()
                 
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
         os.chmod("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)

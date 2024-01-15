@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist
 
 class Evacuee:
 
-    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius) -> None:
+    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius, type, leader) -> None:
         """
 
         :type origin: tuple
@@ -40,6 +40,11 @@ class Evacuee:
         self.num_of_orca_lines = 0
         self.agent_has_no_escape = 0
         self.exit_coordinates = None
+
+        self.type = type
+        self.leader = leader
+
+
 
     def __getattr__(self, name):
         return self.__dict__[name]

@@ -207,4 +207,10 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].num_of_orca_lines = num_of_lines
 
+    def get_type_of_evacuee(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].type
 
+    def get_leader_of_evacuee(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].leader
