@@ -255,7 +255,6 @@ class CfastMcarlo():
                 collect.append(f"CRITERION='TIME' T=0,{first_percentile},{first_percentile+1} F=0,0,{how_much_open} /")
             else:
                 collect.append("CRITERION = 'TIME' T = 0 F = {} /".format(how_much_open))         # constatntly open
-            print(v['type_sec'], collect[:-1])
             txt.append(', '.join(str(j) for j in collect))
 
         self.s.executemany('UPDATE aamks_geom SET how_much_open=? WHERE name=?', hvents_setup)
