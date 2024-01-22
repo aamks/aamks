@@ -69,12 +69,15 @@ class EvacEnv:
         '''
         paths, paths_free_of_smoke = list(), list()
         evacuee = self.evacuees.get_pedestrian(e)
+        # print("general :", self.general['agents_destination'][int(self.floor)])
         for exit in self.general['agents_destination'][int(self.floor)]:
             x, y = exit['center_x'], exit['center_y']
             path = self.nav.nav_query(src=self.evacuees.get_position_of_pedestrian(e), dst=(x, y), maxStraightPath=999)
+            # print("path: ", path)
             if path[0] == 'err':
                 continue
             dist = int(((exit['center_x'] - path[-1][0])**2 + (exit['center_y'] - path[-1][1])**2)**(1/2))
+            # print("dist ", dist)
             if dist > 100:
                 continue
             if self._next_room_in_smoke(e, path) is not True:
@@ -90,10 +93,14 @@ class EvacEnv:
 
             else:
                 paths.append([x, y, LineString(path).length, exit, path])
-
+        # print("PATHS: ", paths)
+        # print("free smoke", paths_free_of_smoke)
         if len(paths_free_of_smoke) > 0:
             exits = list(zip(*paths_free_of_smoke))[2]
+            # print("exits: ",exits)
             index = exits.index(min(exits))
+            # print("index ",index)   
+            # print(paths_free_of_smoke)
             if paths_free_of_smoke[index][3]['type'] == 'teleport':
                 evacuee.target_teleport_coordinates = (paths_free_of_smoke[index][3]['direction_x'], paths_free_of_smoke[index][3]['direction_y'])
                 evacuee.agent_has_no_escape = False
@@ -242,24 +249,17 @@ class EvacEnv:
                 if evacuee.agent_has_no_escape == True:
                     # agent is trapped, has no escape
                     continue
-                if self.evacuees.get_type_of_evacuee(e) == 'leader':
-                    print(self.evacuees.get_type_of_evacuee(e))
+                if self.evacuees.get_type_of_evacuee(e) == 'follower':
                     exit = self._find_closest_exit(e)
-                    print(exit[0], exit[1])
-                    # position = self.evacuees.get_position_of_pedestrian(e)
+                    evacuee.exit_coordinates = (exit[0], exit[1])
+                    leader_id = self.evacuees.get_leader_id_of_evacuee(e)
+                    goal = [tuple(self.evacuees.get_position_of_pedestrian(leader_id))]
+                    navmesh_path = goal
+                else:
+                    exit = self._find_closest_exit(e)
                     evacuee.exit_coordinates = (exit[0], exit[1])
                     navmesh_path = exit[2]
-                else:
-                    exit = self.evacuees.get_leader_of_evacuee(e)
-                    print(exit[0], exit[1])
-                    evacuee.exit_coordinates = (exit[0], exit[1])
-                    # leader = self.evacuees.get_leader_of_evacuee(e)
-                    # position = self.evacuees.get_position_of_pedestrian(e)
-                    # where_to_go = self.evacuees.get_position_of_pedestrian(leader)
-                    # goal = self.nav.nav_query(src=position, dst=where_to_go, maxStraightPath=32)
 
-               
-                # evacuee.exit_coordinates = (exit[0], exit[1])
                 try:
                     vis = RVOSimulator.query_visibility(self.simulator, position, navmesh_path[2], 15)
                     if vis:

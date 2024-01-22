@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist
 
 class Evacuee:
 
-    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius, type, leader) -> None:
+    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius, type, leader, leader_id) -> None:
         """
 
         :type origin: tuple
@@ -43,6 +43,8 @@ class Evacuee:
 
         self.type = type
         self.leader = leader
+        self.leader_id = leader_id
+
 
 
 

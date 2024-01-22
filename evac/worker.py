@@ -279,7 +279,10 @@ class Worker:
                                     h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=pre_evac_total(i),
                                     alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
                                     node_radius=self.config['NODE_RADIUS'], 
-                                    type = floor['EVACUEES'][i]['type'], leader =  floor['EVACUEES'][i]['leader']))
+                                    type = floor['EVACUEES'][i]['type'], 
+                                    leader=floor['EVACUEES'][i]['leader'], 
+                                    leader_id = floor['EVACUEES'][i]['leader_id']
+                                  ))
             self.wlogger.debug('{} evacuee added'.format(i))
 
         e = Evacuees()

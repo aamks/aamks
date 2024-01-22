@@ -18,8 +18,7 @@ class EvacClusters():
     def __init__(self,dispatched_evacuees):
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
-        self.simulation_id = list(range(*si.get()))
+        # si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
         self.dispatched_evacuees = dispatched_evacuees
         self.main()
         
@@ -33,15 +32,6 @@ class EvacClusters():
         self.sort_agents()
         # self.update_json()
 
-    # def get_all_compas(self):
-    #     all_compas = {}
-    #     for floor, evacuees in self.dispatched_evacuees.items():
-    #         all_compas[floor] = set()
-    #         for evacuue in evacuees:
-    #             comp = evacuue[2]
-    #             all_compas[floor].add(comp)
-    #     return all_compas
-    
     def group_evacuees_by_rooms(self):
         grouped_by_rooms = {}
         for floor, evacuees in self.dispatched_evacuees.items():
@@ -176,7 +166,8 @@ class EvacClusters():
                         "position": agent["position"],
                         "leader": agent["leader"],
                         "type": agent['type'],
-                        "id": -1
+                        "id": -1,
+                        "leader_id": self.get_agent(*agent["leader"])
                     }
                     self.agents_flat.append(agent_data)
         # print(self.agents_flat)    
