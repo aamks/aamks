@@ -123,9 +123,9 @@ class Worker:
             return False
         compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
         if version == 'intel':
-            cfast_file = 'cfast_775-1000-i' if compa_no > 100 else 'cfast_775-100-i'
+            cfast_file = 'cfast_775-750-i' if compa_no > 100 else 'cfast_775-100-i'
         else:
-            cfast_file = 'cfast_775-1000' if compa_no > 100 else 'cfast_775-100'
+            cfast_file = 'cfast_775-750' if compa_no > 100 else 'cfast_775-100'
         if self.project_conf['fire_model'] == 'CFAST':
             err = False
             try:
