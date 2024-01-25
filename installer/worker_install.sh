@@ -3,12 +3,13 @@
 
 [ -z $_AAMKS_PATH ] &&  { _AAMKS_PATH="/usr/local/aamks"; }
 [ -z $_AAMKS_SERVER] && { _AAMKS_SERVER="192.168.0.10"; }
-[ -z $_AAMKS_WORKER] && { _AAMKS_WORKER="gearman"; }
+[ -z $_AAMKS_WORKER] && { _AAMKS_WORKER="redis"; }
 
 update() { #{{{
 	[ -d $_AAMKS_PATH ] || { install; }
-	echo
-	git -C $_AAMKS_PATH pull -q
+	cd $_AAMKS_PATH || exit
+	git switch dev
+	git pull
 	sudo rm -rf /etc/aamksconf.json
 	hostname
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
@@ -20,56 +21,22 @@ install() { #{{{
 	rm -rf $_AAMKS_PATH 
 	sudo locale-gen en_US.UTF-8
 	sudo apt-get update
-	sudo apt-get --yes install git python3-pip xdg-utils unzip cmake gearman ipython3 python3-urllib3 libboost-python-dev libgfortran4
-	sudo -H pip3 install --upgrade pip
-	sudo -H pip3 install shapely scipy numpy Cython
+	sudo apt-get --yes install git unzip software-properties-common
+	sudo add-apt-repository --yes ppa:deadsnakes/ppa
+	sudo apt-get --yes install python3.10 python3.10-venv 
 	sudo rm -rf /etc/aamksconf.json
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
-	[ -d aamks ] || { git clone https://github.com/aamks/aamks; }
-	sudo mv aamks $_AAMKS_PATH
+	sudo git clone https://github.com/aamks/aamks $_AAMKS_PATH
 	sudo chown -R $USER:$USER $_AAMKS_PATH
-
-	# RVO2
-	echo; echo; echo "Installing RVO2 (agents collisions library) ..."; echo; echo;
-	cd
-	[ -d Python-RVO2 ] && { git -C Python-RVO2 pull; } || { git clone https://github.com/sybrenstuvel/Python-RVO2; }
-	cd Python-RVO2
-	python3 setup.py build
-	sudo python3 setup.py install
-	cd
-
-	# recast
-	wget wget https://golang.org/dl/go1.15.1.linux-amd64.tar.gz 
-	sudo tar -C /usr/local -xzf go1.15.1.linux-amd64.tar.gz
-	echo "PATH=\"/usr/local/go/bin:\$PATH\"" >> ~/.profile
-	export PATH=$PATH:/usr/local/go/bin
-
-	echo; echo; echo "Installing recast (path finding library, navmesh producer)..."; echo; echo;
-	cd
-	go get -u github.com/arl/go-detour/cmd/recast
-	[ -f ~/go/bin/recast ] || { 
-		echo " ~/go/bin/recast is missing. It is likely that your golang version is obsolete."; 
-		echo "Perhaps the below commands can fix golang. Once you have fixed golang, you can rerun the installer.
-
-sudo add-apt-repository ppa:longsleep/golang-backports
-sudo apt update
-sudo apt install golang-go
-";
-exit; }
-
-	sudo mv ~/go/bin/recast /usr/local/bin
-	echo "Recast should be now installed"
-
-	# detour
-	echo; echo; echo "Installing detour (path finding library, navmesh navigator) ..."; echo; echo;
-	cd
-	[ -d recastlib ] && { git -C recastlib pull; } || { git clone https://github.com/layzerar/recastlib.git; }
-	cd recastlib
-	cp -rf ./Recast\(Patched\)/Detour/ ./Recast/
-	sudo python3 setup.py install
-
-	sudo mkdir /home/aamks_users
-	sudo chmod 777 /home/aamks_users
+	cd $_AAMKS_PATH || exit
+	git switch dev
+	python3.10 -m venv env
+	env/bin/pip install -r requirements.txt
+	[ "X$AAMKS_WORKER" == "Xgearman" ] && { 
+		sudo mkdir /home/aamks_users
+		sudo chmod 777 /home/aamks_users
+	}
+	
 }
 #}}}
 print_help() { #{{{

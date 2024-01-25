@@ -1,20 +1,18 @@
 # MODULES
 # {{{
 import json
-import shutil
 import os
-import re
 import sys
-import codecs
-import itertools
-import _recast as dt
-import subprocess
+from evac.polymesh import Polymesh
+sys.path.insert(1, '/usr/local/aamks')
 import copy
-
 from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from fire.partition_query import PartitionQuery
+from evac.pathfinder.navmesh_baker import NavmeshBaker
+from evac.pathfinder.navmesh import Navmesh as Pynavmesh
+import evac.pathfinder
 from shapely.ops import polygonize
 from numpy.random import uniform
 from math import sqrt
@@ -29,13 +27,6 @@ from include import Vis
 class Navmesh: 
     def __init__(self):# {{{
         ''' 
-        installer/navmesh_installer.sh installs all the dependencies.
-
-        * navmesh build from the obj geometry file
-        thanks to https://github.com/arl/go-detour !
-
-        * navmesh query
-        thanks to https://github.com/layzerar/recastlib/ !
 
         ============================================
 
@@ -57,13 +48,15 @@ class Navmesh:
         nav.nav_query(src, dst, maxStraightPath=300)
 
         '''
-
         self.json=Json()
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.s=Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         self._test_colors=[ "#f80", "#f00", "#8f0", "#08f" ]
+        self.polymesh = Polymesh()
         self.navmesh=OrderedDict()
         self.partition_query={}
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
+        self.vertex_positions = []
+        self.polygons_of_the_geometry = []
 # }}}
 
     def build(self,floor,bypass_rooms=[]):# {{{
@@ -71,89 +64,61 @@ class Navmesh:
         self.bypass_rooms=bypass_rooms
         self._get_name(bypass_rooms)
         file_obj=self._obj_make(bypass_rooms)
-        file_nav="{}/{}".format(os.environ['AAMKS_PROJECT'], self.nav_name)
-        file_conf="{}/recast.yml".format(os.environ['AAMKS_PROJECT'])
-        with open(file_conf, "w") as f: 
-            f.write('''\
-            cellsize: 0.10
-            cellheight: 0.2
-            agentheight: 2
-            agentradius: 0.30
-            agentmaxclimb: 0.1
-            agentmaxslope: 45
-            regionminsize: 8
-            regionmergesize: 20
-            edgemaxlen: 12
-            edgemaxerror: 1.3
-            vertsperpoly: 6
-            detailsampledist: 6
-            detailsamplemaxerror: 1
-            partitiontype: 1
-            tilesize: 0
-            ''')
-        subprocess.call("rm -rf {}; recast --config {} --input {} build {} 1>/dev/null 2>/dev/null".format(file_nav, file_conf, file_obj, file_nav), shell=True)
-
-        try:
-            self.NAV = dt.dtLoadSampleTileMesh(file_nav)
-        except:
-            raise SystemExit("Navmesh: cannot create {}".format(file_nav))
-# }}}
-    def nav_query(self,src,dst,maxStraightPath=16):# {{{
-        '''
-        ./Detour/Include/DetourNavMeshQuery.h: maxStraightPath: The maximum number of points the straight path arrays can hold.  [Limit: > 0]
-        We set maxStraightPath to a default low value which stops calculations early
-        If one needs to get the full path to the destination one must call us with any high value, e.g. 999999999
+        self.baker = NavmeshBaker()
+        mesh = self.polymesh.import_obj(file_obj)
+        polygons = self.get_polygons_for_pynavmesh(mesh)
+        self.baker.add_geometry(mesh.vertices, polygons)
+        self.baker.bake()
+        self.baker.save_to_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name))
+        vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name))
+        self.navmesh = Pynavmesh(vert, polygs)
+        # self.test_navmesh()
+ 
+    # def test_navmesh(self):
+    #     src = (3243,1643)
+    #     dst = (3243.000062244715, 1643.745674220584)
 
 
-        '''
-
-        filtr = dt.dtQueryFilter()
-        query = dt.dtNavMeshQuery()
-
-        status = query.init(self.NAV, 2048)
-        if dt.dtStatusFailed(status):
-            return "err", -1, status
-
-        polyPickExt = dt.dtVec3(2.0, 4.0, 2.0)
-        startPos = dt.dtVec3(src[0]/100, 1, src[1]/100)
-        endPos = dt.dtVec3(dst[0]/100, 1, dst[1]/100)
-
-        status, out = query.findNearestPoly(startPos, polyPickExt, filtr)
-        if dt.dtStatusFailed(status):
-            return "err", -2, status
-        startRef = out["nearestRef"]
-        _startPt = out["nearestPt"]
-
-        status, out = query.findNearestPoly(endPos, polyPickExt, filtr)
-        if dt.dtStatusFailed(status):
-            return "err", -3, status
-        endRef = out["nearestRef"]
-        _endPt = out["nearestPt"]
-
-        status, out = query.findPath(startRef, endRef, startPos, endPos, filtr, maxStraightPath)
-        if dt.dtStatusFailed(status):
-            return "err", -4, status
-        pathRefs = out["path"]
-
-        status, fixEndPos = query.closestPointOnPoly(pathRefs[-1], endPos)
-        if dt.dtStatusFailed(status):
-            return "err", -5, status
-
-        status, out = query.findStraightPath(startPos, fixEndPos, pathRefs, maxStraightPath, 0)
-        if dt.dtStatusFailed(status):
-            return "err", -6, status
-        straightPath = out["straightPath"]
-        straightPathFlags = out["straightPathFlags"]
-        straightPathRefs = out["straightPathRefs"]
+       
         
-        path=[]
-        for i in straightPath:
-            path.append((i[0]*100, i[2]*100))
+        
+    #     path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
 
-        if path[0]=="err":
-            return None
-        else :
-            return path
+    #     # dst = (3003, 3516)
+    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     # dst = (3172, 1661)
+    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     # dst = (3172, 1713)
+    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     print("sdfsdfsdfsdf")
+
+ 
+
+# }}}
+    def get_polygons_for_pynavmesh(self, mesh):
+        index = 0
+        polygons = []
+        for s in mesh.faces_vertex_count:
+            polygon = []
+            for i in range(s):
+                polygon.append(mesh.faces_definition[index])
+                index += 1
+                polygons.append(polygon)
+        return polygons
+
+    def nav_query(self,src,dst,maxStraightPath=16):# {{{
+        path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+        path_to_return = []
+        if len(path) > 0:
+            for i in path:
+                path_to_return.append((i[0]*100, i[2]*100))
+            return path_to_return
+        else:
+            return ['err']
+
 # }}}
     def closest_terminal(self,p0,exit_type):# {{{
         '''
@@ -237,6 +202,7 @@ class Navmesh:
                 bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
 
         bricked_wall+=self.json.readdb("obstacles")['obstacles'][self.floor]
+        
         try:
             bricked_wall.append(self.json.readdb("obstacles")['fire'][self.floor])
         except:
@@ -247,14 +213,51 @@ class Navmesh:
 # }}}
     def _obj_platform(self):# {{{
         z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (self.floor,))
+        exit_doors = self.s.query("SELECT vent_to_name,vent_from_name,width,depth,center_x, center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
         platforms=[]
         for i in z:
             platforms.append([ (i['x1'], i['y1']), (i['x1'], i['y0']), (i['x0'], i['y0']), (i['x0'], i['y1']) ])
+        for i in exit_doors:
+            # extra 150 px for each exit door point because navmesh baker bakes navigation mesh 
+            # only on the inner surface at a distance greater than approximately cell_size 
+            # plus agent_radius (read bake function in navmesh baker). If destination coordinates are in navmesh, 
+            # then search_path doesnt need to call TrianglesBVH sample function - calculation is faster
+            room_before_exit_center = self.s.query('SELECT center_x, center_y from aamks_geom WHERE name=? or name=?', (i['vent_to_name'],i['vent_from_name']))
+            
+            #the outer vestibule is a virtual room - necessary to add a navigation mesh outside 
+            #the exit door because agents disappear when they reach a target that is 1 m behind the exit door
+            min_x, max_x, min_y, max_y = self._get_outer_vestibule_coordinates(room_before_exit_center[0]['center_x'], room_before_exit_center[0]['center_y'], i)
+            platforms.append([ (min_x, min_y), (min_x, max_y), (max_x, max_y), (max_x,  min_y) ])
         return platforms
+
+    def _get_outer_vestibule_coordinates(self, last_room_center_x, last_room_center_y, door):
+        if door['width'] < door['depth']:
+            # exit door is vertical
+            vestibule_height = (door['depth']/2 +30)
+            if last_room_center_x > door['center_x']:
+                #exit door leads to the left on the building plan
+                return(door['center_x']-150, door['center_x'],door['center_y']-vestibule_height, door['center_y']+vestibule_height)
+            if last_room_center_x < door['center_x']:
+                #exit door leads to the right on the building plan
+                return(door['center_x'], door['center_x']+150,door['center_y']-vestibule_height, door['center_y']+vestibule_height)
+        else:
+            # exit door is horizontal
+            vestibule_width = (door['width']/2 +30)
+            if last_room_center_y > door['center_y']:
+                #The exit door leads downwards on the building plan
+                return(door['center_x']-vestibule_width, door['center_x']+vestibule_width,door['center_y']-150, door['center_y'])
+            
+            if last_room_center_y < door['center_x']:
+                #The exit door leads upwards on the building plan
+                return(door['center_x']-vestibule_width, door['center_x']+vestibule_width,door['center_y'], door['center_y']+150)
+            
+        raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target from building 100 cm behind exit door")
 
 # }}}
     def _obj_elem(self,face,z):# {{{
         elem=''
+        if len(face[:4]) != 4:
+            return ""
         elem+="o Face{}\n".format(self._obj_num)
         for verts in face[:4]:
             elem+="v {}\n".format(" ".join([ str(i/100) for i in [verts[0], z, verts[1]]]))

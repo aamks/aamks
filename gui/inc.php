@@ -6,6 +6,7 @@ session_start();
 ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
 ini_set('display_startup_errors',1);
+ini_set('memory_limit','512M');
 setlocale(LC_TIME, "pl_PL");
 
 # debug/*{{{*/
@@ -28,6 +29,14 @@ function dd2($arr) {
 function dd3($arr) {
 	$out="<pre>".htmlspecialchars(print_r($arr,1))."</pre>";
 	return $out;
+}
+function read_evac_config_json() {
+	$path=getenv("AAMKS_PATH");
+	$json=json_decode(file_get_contents("$path/evac/config.json"), 1);
+	if(empty($json)) { 
+		$_SESSION['nn']->fatal("Broken json: $path/evac/config.json");
+	} 
+	return $json;
 }
 
 /*}}}*/
@@ -101,7 +110,6 @@ class Aamks {/*{{{*/
 		if($saved<=0) { 
 			$_SESSION['header_err'][]="problem saving $file";
 		}
-		header("Location: $header");
 	}
 	/*}}}*/
 
@@ -110,12 +118,14 @@ class Aamks {/*{{{*/
 		$menu='';
 		$menu.="<close-left-menu-box><img src=/aamks/css/close.svg></close-left-menu-box><br>";
 		$menu.="<img width=100 src=/aamks/logo.svg><br><br>";
+		$menu.="<font color='red'>ATTENTION</font><br><font size=1>This is beta-version of<br>AAMKS. Please report<br> bugs and feedback at:<br><a href='mailto:projectaamks@gmail.com'>projectaamks@gmail.com</a></font><br><br>";
 		$menu.="<a id=menu-active-scenario-label href=/aamks/form.php?edit class=bblink>".$_SESSION['main']['scenario_name']."</a><br>";
 		$menu.="<a class=blink href=/aamks/projects.php?projects_list>Projects</a><br>";
 		$menu.="<a class=blink href=/aamks/apainter/index.php>Apainter</a><br>";
 		$menu.="<a class=blink href=/aamks/animator/index.php>Animator</a><br>";
-		$menu.="<a class=blink href=/aamks/simulations.php>Simulations</a><br>";
+		$menu.="<a class=blink href=/aamks/simulations.php>Summary</a><br>";
 		$menu.="<a class=blink id=launch_simulation>Launch</a><br>";
+		$menu.="<a class=blink href=/aamks/halt.php>Manage jobs</a><br>";
 		$menu.="<br>";
 		$menu.="Scenario<br><select id='choose_scenario'>\n";
 		$menu.="<option value=".$_SESSION['main']['scenario_id'].">".$_SESSION['main']['scenario_name']."</option>\n";
@@ -123,10 +133,15 @@ class Aamks {/*{{{*/
 			$menu.="<option value='$v[id]'>$v[scenario_name]</option>\n";
 		}
 		$menu.="</select>\n";
+		$menu.="<br>";
+		$menu.='<div id="active-sims" style="color:#BBC; height:20px; padding-top:5px; font-size:16px"> Progress </div><br>';
+		$menu.='<button id="check-sim">Check progress</button>'; 
+
 		return $menu;
 	}
 /*}}}*/
 	public function menu($title='') { /*{{{*/
+		ob_start();
 		$this->logoutButton();
 		$menu=$this->rawMenu();
 		echo "<left-menu-box> $menu </left-menu-box> <div id=content-main style='height: 95vh; margin-left: 150px; padding: 0px;'>";
@@ -331,7 +346,7 @@ public function do_google_login(){/*{{{*/
 	/*}}}*/
 
 	private function mk_default_preferences($user_id) { #{{{
-		$default_preferences='{"apainter_editor": "easy", "navmesh_debug": 0, "apainter_labels": 1, "partitioning_debug": 0 }';
+		$default_preferences='{"apainter_editor": "advanced", "navmesh_debug": 0, "apainter_labels": 1, "partitioning_debug": 0 }';
 		$this->query("UPDATE users SET preferences=$1 WHERE id=$2", array($default_preferences, $user_id));
 		return $default_preferences;
 	}

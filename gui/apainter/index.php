@@ -33,6 +33,10 @@ function site() {/*{{{*/
 }
 /*}}}*/
 function main() { /*{{{*/
+	if(!array_key_exists('nn', $_SESSION))
+	{
+		header("Location: ../login.php?session_finished_information=1");
+	}
 	$_SESSION['nn']->htmlHead("Apainter");
 	site();
 	if(isset($_SESSION['main'])) { echo " <script>var session_scenario='".$_SESSION['main']['scenario_name']."';</script>"; }

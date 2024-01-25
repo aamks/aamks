@@ -20,11 +20,13 @@ var buildingLabels;
 var ax={};
 var snapLinesSvg;
 var snapLinesArr={};
-var defaults={'door_dimz': 200, 'door_width': 90, 'floor_dimz': 350, 'window_dimz': 150, 'window_offsetz': 100 };
+var defaults={'door_dimz': 200, 'floor_teleport_width':70,'door_width': 90, 'floor_dimz': 350, 'window_dimz': 150, 'window_offsetz': 100 };
 var activeSnap={};
 var undoBuffer=[];
 var evacueeRadius;
 var threejsPlay=1;
+var floor_teleports_count=0;
+var floor_teleport_direction=0;
 //}}}
 function debug() {//{{{
 	console.clear();
@@ -156,6 +158,33 @@ function getBbox() {//{{{
 	return {'min': { 'x': p0[0], 'y': p0[1] }, 'max': {'x': p1[0], 'y': p1[1] } };
 }
 //}}}
+
+function getPointsTriangleFloorTeleport(){
+	string_points = "";
+
+	string_points += cg.polypoints[0][0].toString();
+	string_points +=",";
+	string_points += (cg.polypoints[0][1]).toString();
+	string_points += " ";
+
+	string_points += cg.polypoints[1][0].toString();
+	string_points +=",";
+	string_points += (cg.polypoints[1][1]).toString();
+	string_points += " ";
+
+	string_points += cg.polypoints[2][0].toString();
+	string_points +=",";
+	string_points += (cg.polypoints[2][1]).toString();
+	string_points += " ";
+
+	string_points += cg.polypoints[3][0].toString();
+	string_points +=",";
+	string_points += (cg.polypoints[3][1]).toString();
+
+	return string_points;
+}
+
+
 function cgSvg(pparent='auto') { //{{{
 	if(pparent=='auto')  { pparent="#floor"+cg.floor; }
 	if (cg.type == 'evacuee') { 
@@ -193,7 +222,7 @@ function cgDb(undoRegister=1) { //{{{
 	}
 	db({"name": cg.name}).remove();
 	b=getBbox();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y });
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
 	if(undoRegister==1) { undoBufferRegister('insert'); }
 }
 //}}}
@@ -556,6 +585,7 @@ function cgCreate() {//{{{
 		updatePosInfo(m);
 	});  
 	svg.on('mouseup', function() {
+		checkNegativeCords();
 		if(assertCgReady()) {
 			delete cg.growing;
 			cgUpdateSvg();
@@ -568,7 +598,19 @@ function cgCreate() {//{{{
 	});
 }
 //}}}
-
+function checkNegativeCords(){
+	var negative = false
+	cg.polypoints.forEach(function(array){array.forEach(function(x){
+		if(x < 0){
+			negative = true
+		}
+	})})
+	if(negative){
+		delete cg.growing;
+		cgInit();
+		amsg({'err':1, 'msg':"Object in negative coordinates! You can not draw here!"}); 
+	}
+}
 function updatePosInfo(m) {//{{{
 	if(cg.infant==1) {
 		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]);
@@ -597,6 +639,48 @@ function cgDecidePoints(m) {//{{{
 	if(cg.polypoints.length==0) { return; }
 
 	switch (cg.type) {
+		case 'floor_teleport':
+		switch (floor_teleport_direction % 4) {
+			//arrow left
+  			case 0:
+				p0=[px, py-10];
+				p1=[px, py+10];
+				p2=[px-defaults.floor_teleport_width, py];
+				p3=[px, py-10];
+				cg.teleport_from = [px, py]
+				cg.teleport_to = [px-defaults.floor_teleport_width, py]
+    			break;
+    		//arrow up
+  			case 1:
+				p0=[px+10, py];
+				p1=[px-10, py];
+				p2=[px, py-defaults.floor_teleport_width];
+				p3=[px+10, py];
+				cg.teleport_from = [px, py]
+				cg.teleport_to = [px, py-defaults.floor_teleport_width]
+    			break;
+			//arrow right
+  			case 2:
+				p0=[px, py+10];
+				p1=[px, py-10];
+				p2=[px+defaults.floor_teleport_width, py];
+				p3=[px, py+10];
+				cg.teleport_from = [px, py]
+				cg.teleport_to = [px+defaults.floor_teleport_width, py]
+    			break;
+			//arrow down
+  			case 3:
+				p0=[px-10, py];
+				p1=[px+10, py];
+				p2=[px, py+defaults.floor_teleport_width];
+				p3=[px-10, py];
+				cg.teleport_from = [px, py]
+				cg.teleport_to = [px, py+defaults.floor_teleport_width]
+    			break;
+  			default:
+    			break;
+			}
+			break;
 		case 'door':
 			if("x" in activeSnap) { 
 				p0=[px-16, py-defaults.door_width];
@@ -643,6 +727,7 @@ function cgDecidePoints(m) {//{{{
 }
 //}}}
 function assertCgReady() {//{{{
+	if(cg.type=='floor_teleport') { return true; }
 	if(cg.type=='evacuee') { cg.polypoints=[cg.polypoints[0]]; return true; }
 	if(cg.polypoints.length<2) { $("#"+cg.name).remove(); return false; }
 	if(cg.polypoints[0][0]==cg.polypoints[1][0] && cg.polypoints[0][1]==cg.polypoints[1][1]) { $("#"+cg.name).remove(); return false; }
@@ -657,6 +742,8 @@ function assertCgReady() {//{{{
 }
 //}}}
 function svgPolyline() {//{{{
+	if (cg.type == 'floor_teleport') 
+		return getPointsTriangleFloorTeleport();
 	points=deepcopy(cg.polypoints);
 	points.push(points[0]);
 	points.push(points[1]);
@@ -672,6 +759,30 @@ function cgStartDrawing() {//{{{
 	$('right-menu-box').fadeOut(0); 
 	legend();
 	$('#legend_'+activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
+	if (activeLetter == 'k')
+	{
+		floor_teleport_direction+=1;
+		content = "";
+		arrows = ["&#8592;", "&#8593;", "&#8594;", "&#8595;"];
+		switch (floor_teleport_direction % 4) {
+  		case 0:
+    		content = arrows[0] + " floor_teleport";
+    		break;
+  		case 1:
+    		content = arrows[1] + " floor_teleport";
+    		break;
+  		case 2:
+    		content = arrows[2] + " floor_teleport";
+    		break;
+  		case 3:
+    		content = arrows[3] + " floor_teleport";
+    		break;
+  		default:
+    		break;
+		}
+		document.getElementById("legend_"+activeLetter).innerHTML = content;
+
+	}
 	cgCreate();
 	underlayPointerEvents(stopDragging=1);
 }
@@ -708,6 +819,9 @@ function dbUpdateCadJsonStr() { //{{{
 			cad_json["evacuees_density"]=i.evacuees_density; 
 		} else if(i.type=='mvent') {
 			cad_json["mvent_throughput"]=i.mvent_throughput;
+		}else if(i.type=='floor_teleport') {
+			cad_json["teleport_from"]=i.teleport_from;
+			cad_json["teleport_to"]=i.teleport_to;
 		}
 
 		db({'name': i.name}).update({'cad_json': cad_json});
@@ -732,6 +846,60 @@ function svgGroupsInit(json) { //{{{
 	$("#floor"+floor).attr('visibility',"visible").css("opacity", 1);
 	$("#apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
 }
+
+
+function getFloorsForVirtualStaircase(record, json){
+	let stair_height_points = record['z'].substring(1, record['z'].length - 1).split(","); 
+	let z_min_stair = parseInt(stair_height_points[0]);
+	let z_max_stair = parseInt(stair_height_points[1]);
+	let floors = [];
+	let floor_z_min;
+	let floor_z_max;
+
+	for(let floor = 0; floor < floorsCount; floor++){
+		if (json && json[floor] && json[floor]["ROOM"] && json[floor]["ROOM"].length > 0)
+	    var room_heigh_points=json[floor]["ROOM"][0]["z"];
+		if(room_heigh_points != undefined) {
+			let room_heigh_point_splited = room_heigh_points.substring(1, room_heigh_points.length - 1).split(",");
+			floor_z_min = room_heigh_point_splited[0];
+			floor_z_max = room_heigh_point_splited[1];
+		}
+		else
+		{
+			floor_z_min = defaults['floor_dimz'] * floor;
+			floor_z_max = defaults['floor_dimz'] * floor + defaults['floor_dimz'];
+
+		}
+
+		if (parseInt(floor_z_min) > z_min_stair && parseInt(floor_z_max) <= z_max_stair)
+			floors.push(floor);
+	}
+
+	return floors;
+}
+
+function addVirtualFloors(jsonWithVirtualStairs, record, staircaseFloors){
+
+	_.each(staircaseFloors, function(floor){
+		if (!("VSTAI" in jsonWithVirtualStairs[floor])){
+			jsonWithVirtualStairs[floor]["VSTAI"] = [];
+		}
+		cgIdUpdate();
+		record.idx = cgID;
+		jsonWithVirtualStairs[floor]["VSTAI"].push(record)
+	})
+}
+function addUpperFloorsVirtualStairs(json){
+	jsonWithVirtualStairs = JSON.parse(JSON.stringify(json));
+	_.each(json, function(floor_data,floor) { 
+			_.each(floor_data["STAI"], function(record){ 
+				staircaseFloors = getFloorsForVirtualStaircase(record, json);
+				addVirtualFloors(jsonWithVirtualStairs, record, staircaseFloors);
+			})
+	})
+	return jsonWithVirtualStairs;
+}
+
 //}}}
 function json2db(json) { //{{{
 	// Geoms must come in order, otherwise we could see DOOR under ROOM if geoms were created in that order.
@@ -739,7 +907,9 @@ function json2db(json) { //{{{
 	var letter;
 	var arr;
 	var geom;
-	var elems=["ROOM","COR","STAI","HALL","OBST","VVENT","MVENT","HOLE","WIN","DOOR","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
+	var elems=["ROOM","COR","STAI","VSTAI","HALL","OBST","VVENT","MVENT","HOLE","WIN","DOOR","FLOOR_TELEPORT","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
+	
+	json = addUpperFloorsVirtualStairs(json);
 
 	_.each(json, function(floor_data,floor) { 
 		_.each(elems, function(elem) { 
@@ -762,6 +932,8 @@ function cgMake(floor,letter,record) { //{{{
 	cg.idx=record.idx;
 	cg.name=letter+cg.idx;
 	cg.letter=letter;
+	if(gg[letter] == undefined)
+		console.log("sdfsdfsd");
 	cg.type=gg[letter].t;
 	cg.floor=floor;
 
@@ -769,6 +941,8 @@ function cgMake(floor,letter,record) { //{{{
 	if('room_enter' in record)       { cg.room_enter=record.room_enter; }
 	if('evacuees_density' in record) { cg.evacuees_density=record.evacuees_density; }
 	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
+	if('teleport_from' in record)	 { cg.teleport_from=record.teleport_from; }
+	if('teleport_to' in record)		 { cg.teleport_to=record.teleport_to; }
 }
 //}}}
 function ajaxSaveCadJson(json_data) { //{{{

@@ -37,43 +37,51 @@ CREATE TABLE simulations ( ---{{{
     scenario_id int,
     iteration smallint,
     host text,
+    job_id text,
     run_time smallint,
     fireorig text,
     fireorigname text,
     heat_detectors text,
     smoke_detectors text,
-    hrrpeak text,
-    soot_yield text,
-    co_yield text,
-    hcl_yield text,
-    hcn_yield text,
-    alpha text,
+    hrrpeak smallint,
+    soot_yield decimal,
+    co_yield decimal,
+    hcl_yield decimal,
+    hcn_yield decimal,
+    alpha decimal,
     trace text,
-    max_area text,
-    heigh text,
-    heat_of_combustion text,
-    rad_frac text,
+    max_area decimal,
+    fireload int,
+    heigh decimal,
+    heat_of_combustion decimal,
+    rad_frac decimal,
     w text,
-    outdoor_temp text,
+    outdoor_temp decimal,
     door text,
     dcloser text,
     delectr text,
     vnt text,
     vvent text,
     sprinklers text,
+    detection integer,
     wcbe text,
     dcbe_time integer,
     dcbe_compa text,
     fed text,
+    fed_symbolic text,
     min_hgt_compa decimal,
     min_hgt_cor decimal,
     min_vis_compa decimal,
     min_vis_cor decimal,
     max_temp decimal,
-	status text,
+    tot_heat decimal,
+	status integer,
 	animation text,
-	i_risk text,
-	modified timestamp without time zone not null default now()
+    anim_params text,
+	modified timestamp without time zone not null default now(),
+    results text,
+    rescue_params text
+
 );
 ---}}}
 CREATE TABLE users (---{{{
@@ -108,7 +116,7 @@ CREATE TABLE scenarios (---{{{
 CREATE TABLE fed_growth_cells_data (---{{{
     cell_id integer,
     floor smallint, 
-    project_id integer,
+    project integer,
     scenario_id integer,
     x_min integer, 
     x_max integer,
@@ -159,7 +167,7 @@ GRANT ALL ON SEQUENCE users_id_seq TO aamks;
 
 ALTER TABLE fed_growth_cells_data OWNER TO aamks;
 ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_scenario_id FOREIGN KEY (scenario_id) REFERENCES scenarios (id) ON UPDATE CASCADE ON DELETE CASCADE;
-ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_project_id FOREIGN KEY (project_id) REFERENCES projects (id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_project_id FOREIGN KEY (project) REFERENCES projects (id) ON UPDATE CASCADE ON DELETE CASCADE;
 GRANT ALL ON TABLE fed_growth_cells_data TO aamks;
 
 ALTER TABLE projects OWNER TO aamks;

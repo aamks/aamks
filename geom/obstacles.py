@@ -33,6 +33,7 @@ class Obstacles():
         self.floors=self.floors_meta.keys()
         self.walls_width=self.world_meta['walls_width']
         self._create_obstacles('aamks_geom', 'obstacles')
+        self.s.close()
         # TODO: in future we will probably process vertical staircases outside of aamks_geoms db table
         #if self.world_meta['multifloor_building']==1:
         #    self._create_obstacles('world2d', 'world2d_obstacles')
@@ -94,7 +95,7 @@ class Obstacles():
             if isinstance(wall, MultiPolygon):
                 for i in polygonize(wall):
                     obsts.append(i)
-            elif isinstance(wall, Polygon):
+            elif isinstance(wall, Polygon) and not wall.is_empty:
                 obsts.append(wall)
         return obsts 
 # }}}

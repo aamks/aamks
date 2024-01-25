@@ -37,6 +37,7 @@ class World2d():
         self._top_proj_lines()
         self._meta_translate_y()
         self._world2d_boundaries()
+        self.s.close()
 # }}}
     def _read_floors_meta(self):# {{{
         unordered=self.json.readdb("floors_meta")

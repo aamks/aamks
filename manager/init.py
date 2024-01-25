@@ -1,11 +1,12 @@
 from collections import OrderedDict
+import datetime
 from subprocess import Popen,PIPE
+import subprocess
 import time
 import sys
 import os
 import json
 import shutil
-from distutils.dir_util import copy_tree
 from include import Json
 from include import Psql
 from include import Sqlite
@@ -14,6 +15,11 @@ from include import SimIterations
 from include import Vis
 from include import GetUserPrefs
 from geom.nav import Navmesh
+import subprocess
+import logging
+import sys
+
+logger = logging.getLogger('AAMKS.init.py')
 
 class OnInit():
     def __init__(self):# {{{
@@ -27,10 +33,11 @@ class OnInit():
         self.scenario_id=self.conf['scenario_id']
         self.p=Psql()
         self._clear_srv_anims()
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 2)
         self._clear_sqlite()
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self._setup_simulations()
         self._create_sqlite_tables()
+        self.s.close()
 # }}}
     def _clear_srv_anims(self):# {{{
         ''' 
@@ -62,7 +69,13 @@ class OnInit():
 # }}}
     def _clear_sqlite(self):# {{{
         try:
-            os.remove("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+            self.s.query("DROP TABLE dispatched_evacuees")
+            self.s.query("DROP TABLE aamks_geom")
+            self.s.query("DROP TABLE floors_meta")
+            self.s.query("DROP TABLE world_meta")
+            self.s.query("DROP TABLE obstacles")
+            self.s.query("DROP TABLE cell2compa")
+            self.s.query("DROP TABLE query_vertices")
         except:
             pass
 # }}}
@@ -93,12 +106,12 @@ class OnInit():
         ''' Simulation dir maps to id from psql's simulations table'''
 
         workers_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
-        os.makedirs(workers_dir, exist_ok=True)
+        os.makedirs(workers_dir, mode = 0o777, exist_ok=True)
 
         irange=self._create_iterations_sequence()
         for i in range(*irange):
             sim_dir="{}/{}".format(workers_dir,i)
-            os.makedirs(sim_dir, exist_ok=True)
+            os.makedirs(sim_dir, mode=0o777, exist_ok=True)
             self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
 
 # }}}
@@ -111,16 +124,21 @@ class OnInit():
 class OnEnd():
     def __init__(self):# {{{
         ''' Stuff that happens at the end of the project '''
+        logger.info('start OnEnd()')
         self.json=Json()
         self.uprefs=GetUserPrefs()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.p=Psql()
         self.project_id=self.conf['project_id']
         self.scenario_id=self.conf['scenario_id']
         if self.uprefs.get_var('navmesh_debug')==1:
-            self._test_navmesh()
+            logger.debug('start _test_navmesh()')
+            # self._test_navmesh()
         Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
+        logger.debug('start _register_works()')
         self._register_works()
+        self.s.close()
 # }}}
     def _test_navmesh(self):# {{{
         navs={}
@@ -147,17 +165,94 @@ class OnEnd():
         if os.environ['AAMKS_WORKER']=='local':
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
-                os.system("python3 worker.py http://localhost/{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i))
+                logger.info('start worker.py sim - %s', i)
+                exit_status = subprocess.run(["{}/env/bin/python3".format(os.environ['AAMKS_PATH']), "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                job_id=datetime.datetime.now().strftime("%Y%m%d")+f"-iter-{i}"
+                self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
+                if exit_status.returncode != 0:
+                    logger.error('worker exit status - %s', exit_status)
+                else:
+                    logger.info('finished worker.py sim - %s', i)
             return
 
         if os.environ['AAMKS_WORKER']=='gearman':
             try:
                 for i in range(*si.get()):
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
-                    worker = worker.replace("/home","")
-                    gearman="gearman -b -f aRun 'https://{}{}'".format(os.environ['AAMKS_SERVER'], worker)
-                    os.system(gearman)
+                    worker = worker.replace("/home","/mnt")
+                    gearman=["gearman", "-v",  "-b", "-f", "aRun", worker]
+                    job_id = subprocess.check_output(gearman, universal_newlines=True)
+                    job_id = job_id.split('Task created: ')[-1][:-1]
+                    self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
+                    logger.info(f'send {gearman}')
+
             except Exception as e:
                 print('OnEnd: {}'.format(e))
+                logger.error(f'gearman error {e}')
+
+
+        if os.environ['AAMKS_WORKER']=='redis':
+            from redis_aamks.app.main import AARedis
+            AR = AARedis()
+            try:
+                for i in range(*si.get()):
+                    worker_pwd="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
+                    messege_redis = AR.main(worker_pwd)
+                    job_id = messege_redis['id']
+                    self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
+            except Exception as e:
+                print('OnEnd: {}'.format(e))
+                logger.error(f'OnEnd: Error {e}')
+
             
+
+
 # }}}
+class Retry():# {{{
+    def __init__(self):# {{{
+        self.json=Json()
+        self.uprefs=GetUserPrefs()
+        self.conf=self.json.read("{}/conf.json".format(sys.argv[1]))
+        self.p=Psql()
+        self.project_id=self.conf['project_id']
+        self.scenario_id=self.conf['scenario_id']
+
+        logger.debug('trying to restart status 1 jobs')
+        self.stat1 = self._find_status1()
+        print(self._retry())
+# }}}
+    def _find_status1(self):
+        return self.p.query(f"SELECT iteration FROM simulations WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND status='1';")
+
+    def _retry(self):# {{{
+        if os.environ['AAMKS_WORKER']=='none':
+            return
+
+        if os.environ['AAMKS_WORKER']=='local':
+            os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
+            for i in self.stat1:
+                logger.info('start worker.py sim - %s', i)
+                exit_status = subprocess.run(["{}/env/bin/python3".format(os.environ['AAMKS_PATH']), "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                if exit_status.returncode != 0:
+                    logger.error('worker exit status - %s', exit_status)
+                else:
+                    logger.info('finished worker.py sim - %s', i)
+            return
+
+        if os.environ['AAMKS_WORKER']=='gearman':
+            for i in self.stat1:
+                worker="{}/workers/{}".format(sys.argv[1],i[0])
+                worker = worker.replace("/home","/mnt")
+                gearman=["gearman", "-v",  "-b", "-f", "aRun", worker]
+                job_id = subprocess.check_output(gearman, universal_newlines=True)
+                job_id = job_id.split('Task created: ')[-1][:-1]
+                q = f"UPDATE simulations SET job_id='{job_id}', status='' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i[0]}"
+                self.p.query(q)
+                logger.info(f'send {gearman}')
+
+        return len(self.stat1)
+
+# }}}
+if __name__ == "__main__":
+    Retry()
+

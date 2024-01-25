@@ -24,7 +24,7 @@ from numpy.random import gamma
 from numpy.random import triangular
 from numpy.random import seed
 from numpy import array as npa
-from math import sqrt
+from math import sqrt, log, exp
 
 from include import Sqlite
 from include import Json
@@ -32,10 +32,29 @@ from include import Dump as dd
 from include import SimIterations
 from include import Vis
 
-from scipy.stats.distributions import lognorm
-
+from scipy.stats import lognorm
+from scipy.optimize import root
+from scipy.special import erfc
 
 # }}}
+def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99):
+    def equations(vars):
+        m, s = vars
+        eq1 = 0.5 * erfc(-(log(x1) - m) / (s * sqrt(2))) - p1
+        eq2 = 0.5 * erfc(-(log(x2) - m) / (s * sqrt(2))) - p2
+        return [eq1, eq2]
+
+    results =  root(equations, (0, 0.1))
+    if not results.success:
+        raise RuntimeError(f'Numerical solution of lognormal distribution parameters failed.\n{params.message}')
+
+    return results.x
+
+
+def lognorm_percentiles_from_params(mu, sigma, p1=0.01, p2=0.99):
+    dist = lognorm(scale=math.exp(mu), s=sigma)
+    return [dist.ppf(p) for p in [p1, p2]]
+
 
 class EvacMcarlo():
     def __init__(self):# {{{
@@ -57,6 +76,7 @@ class EvacMcarlo():
             self._dispatch_evacuees()
             self._make_evac_conf()
         self._evacuees_static_animator()
+        self.s.close()
 
 # }}}
     def _static_evac_conf(self):# {{{
@@ -77,8 +97,8 @@ class EvacMcarlo():
         some function of fire properties.
         '''
 
-        xx=150
-        yy=150
+        xx=50
+        yy=50
 
         z=self.s.query("SELECT * FROM fire_origin") 
         i=z[0]
@@ -89,17 +109,30 @@ class EvacMcarlo():
         self.s.query("UPDATE obstacles SET json=?", (json.dumps(obstacles),)) 
 
 # }}}
+    def _get_alarming_time(self):
+        return round(normal(loc=self.conf['alarming']['mean'], scale=self.conf['alarming']['sd']), 2)
+
     def _make_pre_evacuation(self,room,type_sec):# {{{
         ''' 
-        An evacuee pre_evacuates from either ordinary room or from the room of
-        fire origin; type_sec is for future development.
+        Get values for both cases (once there is enough smoke in the room other than fire origin's,
+        agents should start to behave like they actually are in the room of fire origin though).
         '''
 
-        if room != self._evac_conf['FIRE_ORIGIN']:
-            pe=self.conf['pre_evac']
-        else:
-            pe=self.conf['pre_evac_fire_origin']
-        return round(lognorm(s=1, loc=pe['mean'], scale=pe['sd']).rvs(), 2)
+        pre_evacs = {'pre_evac': None, 'pre_evac_fire_origin': None}
+        for room_type in ['pre_evac', 'pre_evac_fire_origin']:
+            pe = self.conf[room_type]
+            if pe['mean'] and pe['sd']:
+                # if distribution parameters are given
+                params = [pe[i] for i in ['mean', 'sd']]
+            elif pe['1st'] and pe['99th']:
+                # if percentiles are given
+                params = lognorm_params_from_percentiles(pe['1st'], pe['99th'])
+            else:
+                raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
+            pre_evacs[room_type] = round(lognormal(mean=params[0], sigma=params[1]), 2)
+            
+        return pre_evacs
+
 # }}}
     def _get_density(self,name,type_sec,floor):# {{{
         ''' 
@@ -114,7 +147,10 @@ class EvacMcarlo():
             return 1/r['evacuees_density'] * 100 * 100
 
         z=self.conf['evacuees_density'][type_sec]
-        return 1/z * 100 * 100
+        if z != 0:
+            return 1/z * 100 * 100
+        else:
+            return 0
 
         raise Exception("Cannot determine the density for {}".format(name))
 
@@ -134,12 +170,14 @@ class EvacMcarlo():
         manual_rooms={}
         for i in self.s.query("SELECT name, x0, y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=?", (floor,)):
             q=(floor,i['x0'], i['y0'], i['x0'], i['y0'])
-            x=self.s.query("SELECT name,type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND x0<=? AND y0<=? AND x1>=? AND y1>=?", q)[0]
+            x=self.s.query("SELECT points, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND x0<=? AND y0<=? AND x1>=? AND y1>=?", q)[0]
             if not x['name'] in manual_rooms:
-                manual_rooms[x['name']]={'type_sec': x['type_sec'], 'positions': [] }
+                x['points']=json.loads(x['points'])
+                manual_rooms[x['name']]=x
+                manual_rooms[x['name']]['positions']= []
                 del probabilistic_rooms[x['name']]
             manual_rooms[x['name']]['positions'].append((i['x0'], i['y0'], x['name']))
-
+            
         rooms['probabilistic']=probabilistic_rooms
         rooms['manual']=manual_rooms
         return rooms
@@ -149,7 +187,7 @@ class EvacMcarlo():
         We dispatch the evacuees across the building according to the density
         distribution. 
         '''
-
+        mode = self.conf['dispatch_evacuees']
         self.dispatched_evacuees=OrderedDict() 
         self.pre_evacuation=OrderedDict() 
         self._make_floor_obstacles()
@@ -157,12 +195,20 @@ class EvacMcarlo():
             self.pre_evacuation[floor] = list()
             positions = []
             evac_rooms=self._evac_rooms(floor)
-            for name,r in evac_rooms['probabilistic'].items():
-                density=self._get_density(r['name'],r['type_sec'],floor)
-                room_positions=self._dispatch_inside_polygons(density,r['points'], floor, name)
-                positions += room_positions
-                for i in room_positions:
-                    self.pre_evacuation[floor].append(self._make_pre_evacuation(r['name'], r['type_sec']))
+            if mode != 'manual':
+                for name,r in evac_rooms['probabilistic'].items():
+                    density=self._get_density(r['name'],r['type_sec'],floor)
+                    room_positions=self._dispatch_inside_polygons(density,r['points'], floor, name)
+                    positions += room_positions
+                    for i in room_positions:
+                        self.pre_evacuation[floor].append(self._make_pre_evacuation(r['name'], r['type_sec']))
+            if mode == 'probabilistic+manual':
+                for name,r in evac_rooms['manual'].items():
+                    density=self._get_density(r['name'],r['type_sec'],floor)
+                    room_positions=self._dispatch_inside_polygons(density,r['points'], floor, name)
+                    positions += room_positions
+                    for i in room_positions:
+                        self.pre_evacuation[floor].append(self._make_pre_evacuation(r['name'], r['type_sec']))
             for name,r in evac_rooms['manual'].items():
                 positions += r['positions']
                 for i in r['positions']:
@@ -186,9 +232,12 @@ class EvacMcarlo():
         exterior_minus_obsts=exterior.difference(self._floor_obstacles[floor])
         walkable=exterior_minus_obsts.buffer(- self.evacuee_radius - 10 )
 
-        bbox=list(walkable.bounds)
-        target=int(walkable.area / density)
         positions=[]
+        bbox=list(walkable.bounds)
+        if density != 0:
+            target=int(walkable.area / density)
+        else:
+            return []            
         while len(positions) < target:
             x=uniform(bbox[0], bbox[2])
             y=uniform(bbox[1], bbox[3])
@@ -202,6 +251,7 @@ class EvacMcarlo():
         for floor in self.floors:
             self._evac_conf['FLOORS_DATA'][floor]=OrderedDict()
             self._evac_conf['FLOORS_DATA'][floor]['NUM_OF_EVACUEES']=len(self.dispatched_evacuees[floor])
+            self._evac_conf['FLOORS_DATA'][floor]['ALARMING']=self._get_alarming_time()
             self._evac_conf['FLOORS_DATA'][floor]['EVACUEES']=OrderedDict()
             z=self.s.query("SELECT z0 FROM aamks_geom WHERE floor=?", (floor,))[0]['z0']
             for i,pos in enumerate(self.dispatched_evacuees[floor]):
@@ -216,6 +266,7 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(self.conf['evacuees_max_h_speed']['mean'] , self.conf['evacuees_max_h_speed']['sd']) , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(self.conf['evacuees_max_v_speed']['mean'] , self.conf['evacuees_max_v_speed']['sd']) , 2)
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
+        os.chmod("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)
 # }}}
     def _evacuees_static_animator(self):# {{{
         ''' 
