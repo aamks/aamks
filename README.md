@@ -2,9 +2,10 @@
 
 
 Aamks is an open source, web-based platform for assessing the fire safety of humans in buildings.
-Aamks runs hundreds of fire simulations (CFAST) and evacuation simulations
+Basic concept relies on combined Mont-Carlo simulations of fire and evacuation.
+Aamks runs multiple fire simulations (CFAST) and evacuation simulations
 (Aamks.Evac) and then evaluates the results. In each simulation humans
-are moving across the building and are affected by fire and smoke. 
+are moving across the building and are affected by fire and smoke.
 
 Aamks workflow:
 
@@ -21,7 +22,13 @@ Aamks workflow:
 	- Aamks compiles the N results into distributions for the report
 	- Aamks.Animator displays the animations based on the simulations
 
-For the user Aamks is web-based so doesn't need to be installed. On the backend Aamks requires Linux, Postgres, Apache and Python. Aamks uses such technologies as Navmesh and RVO2.
+For the user Aamks is web-based so doesn't need to be installed. On the backend
+Aamks requires Linux, Postgres, Apache and Python. Aamks uses such technologies as Navmesh and RVO2.
 
-Aamks is not production ready, but you can have a look 
-on [the progress](https://aamks.szach.in/?node=devel)
+More information can be found on [wiki](https://github.com/aamks/aamks/wiki).
+
+**You can test Aamks on [Fire Univerity's server](https://aamks.apoz.edu.pl).
+No computational resources are available there, so you can go through the 
+preprocess only and get familiar with the tool.**
+
+Feel free to [contact](mailto:projectaamks@gmail.com) us.
