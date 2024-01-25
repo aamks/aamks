@@ -17,7 +17,7 @@ function projects_list(){/*{{{*/
 			echo " bgcolor='#616'";
 		}
 		echo "><td>$projects[project_name]<td style='opacity:0.2'>$date<td>";
-		echo "<form method=post><input autocomplete=off type=hidden name=project_name value='$projects[project_name]'><input autocomplete=off type=hidden name=project_id value='$projects[id]'><input autocomplete=off size=12 type=text placeholder='new scenario' name=new_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'><input autocomplete=off type=submit value='add'></form><td>";
+		echo "<form method=post><input autocomplete=off type=hidden name=project_name value='$projects[project_name]'><input autocomplete=off type=hidden name=project_id value='$projects[id]'><input autocomplete=off size=12 type=text placeholder='new scenario' name=new_scenario required pattern='\w{1,9}' title='max 9 of alphanumeric characters'><input autocomplete=off type=submit value='add'></form><td>";
 		foreach($rr as $scenarios) { 
 			echo "<a class=blink href=?ch_scenario=$scenarios[id]>$scenarios[scenario_name]</a>"; 
 		}
@@ -53,7 +53,7 @@ function projects_list(){/*{{{*/
 	echo "
 	<div class='top_padding'>Rename current scenario (<i>$current_project/$current_scenario</i>) as:
 	<form method=POST>
-		<input autocomplete=off type=text placeholder='new scenario name' name=rename_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
+		<input autocomplete=off type=text placeholder='new scenario name' name=rename_scenario required pattern='\w{1,9}' title='max 9 of alphanumeric characters'> 
 		<input autocomplete=off type=submit name=submit value='rename'>
 	</form></div>
 	";
