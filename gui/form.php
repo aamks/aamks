@@ -510,7 +510,7 @@ function form_delete() { #{{{
 	// This way we make sure there will always be a fallback in $_SESSION['main']
 
 	if($_SESSION['main']['project_name']=='demo' && in_array($_SESSION['main']['scenario_name'], array("simple", "navmesh", "three", "fds"))) { return; }
-	echo "<input style='position:absolute; left:200px;' onclick=delScenario() type=submit value='Delete this scenario'>";
+	echo "<input style='position:absolute;' onclick=delScenario() type=submit value='Delete this scenario'>";
 }
 /*}}}*/
 function delete_scenario() {/*{{{*/

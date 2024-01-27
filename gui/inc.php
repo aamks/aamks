@@ -128,7 +128,7 @@ class Aamks {/*{{{*/
 		$menu.="<a class=blink id=launch_simulation>Launch</a><br>";
 		$menu.="<a class=blink href=/aamks/halt.php>Manage jobs</a><br>";
 		$menu.="<br>";
-		$menu.="Scenario<br><select id='choose_scenario'>\n";
+		$menu.="Scenario<br><select id='choose_scenario' style='width: 120px;'>\n";
 		$menu.="<option value=".$_SESSION['main']['scenario_id'].">".$_SESSION['main']['scenario_name']."</option>\n";
 		foreach($r as $k=>$v) {
 			$menu.="<option value='$v[id]'>$v[scenario_name]</option>\n";
@@ -145,7 +145,7 @@ class Aamks {/*{{{*/
 		ob_start();
 		$this->logoutButton();
 		$menu=$this->rawMenu();
-		echo "<left-menu-box> $menu </left-menu-box> <div id=content-main style='height: 95vh; margin-left: 150px; padding: 0px;'>";
+		echo "<left-menu-box> $menu </left-menu-box> <div id=content-main style='height: 95vh; margin-left: 150px; padding-left: 10px;'>";
 		if(!empty($title)) { echo "<tt>$title</tt>"; }
 	}
 	/*}}}*/

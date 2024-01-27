@@ -35,6 +35,12 @@ function delScenario() {
 			setTimeout(() => {  window.location.href = 'projects.php?projects_list';  }, 500);
 		}}
 )};
+function resetScenario() {
+	myConfirm("Are you sure to delete all records from scenario?").then(response=>{
+		if (response) {
+			$.post('projects.php?projects_list', {'reset_scenario':'true'});
+		}}
+)};
 
 $(function()  {//{{{
 	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
