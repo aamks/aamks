@@ -124,6 +124,7 @@ class Aamks {/*{{{*/
 		$menu.="<a class=blink href=/aamks/apainter/index.php>Apainter</a><br>";
 		$menu.="<a class=blink href=/aamks/animator/index.php>Animator</a><br>";
 		$menu.="<a class=blink href=/aamks/simulations.php>Summary</a><br>";
+		$menu.="<a class=blink id=launch_draft>Draft Launch</a><br>";
 		$menu.="<a class=blink id=launch_simulation>Launch</a><br>";
 		$menu.="<a class=blink href=/aamks/halt.php>Manage jobs</a><br>";
 		$menu.="<br>";
