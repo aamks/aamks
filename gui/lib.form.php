@@ -102,7 +102,7 @@ or active systems. " ]                                                     ;
 	$help["r_to_fire"]			     = [""                       , "Maximum length (horizontal) and hydraulic head (vertical) of firehoses system [m]"];
 	$help["r_nozzles"]			     = [""                       , "Time from fire unit arrival to application of subsequent water jets [s] (-1 if never ready)"];
     $help["fire_area"]    	         = ["Pareto fire area"                        , "Parameters of Pareto distribution of fire area [m<sup>2</sup>]"];
-	$help["button_easy_form"]    	 = ["", "Save form before recalculate building profile!"];
+	$help["new_fire"]    	 = ["Additional fire options", "Randomly located additional fires trigger ignit criterion and setpoint [°C or kW/m<sup>2</sup>]"];
 
 	foreach($help as $k=>$v) { 
 		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
@@ -601,7 +601,11 @@ function get_template_defaults($q) {/*{{{*/
         "sd": "",
           "1st": 10,
           "99th": 60
-    }
+    },
+	"new_fire":{
+		"ignition": "TEMPERATURE",
+		"setpoint": 200
+	}
 }';
 
 	return json_decode($db[$q],1);

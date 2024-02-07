@@ -212,5 +212,9 @@
         "sd": "",
           "1st": 10,
           "99th": 60
+    },
+    "new_fire": {
+    	"ignition": "TEMPERATURE",
+    	"setpoint": 200
     }
 }
