@@ -480,8 +480,6 @@ class DrawAndLog:
         self._fires.append(Fire(*fire_origin))
         fire_origin.append(self._sim_id)
         self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', fire_origin)
-        self._psql_log_variables([('fireorigname', fire_origin[0]),
-                                      ('fireorig', fire_origin[1])])
 # }}}
     def _draw_compartment(self):
         # calculate probabilistic space (events and probabilities) from sqlite import format
@@ -549,8 +547,9 @@ class DrawAndLog:
         loc['height'] = fire_height
         loc['devc'] = f"t{room['global_type_id']}"
         loc['major'] = 0
+        comp_type = 'room' if room['type_sec'] == 'ROOM' else 'non_room'
 
-        return loc
+        return loc, comp_type
 
     def _deterministic_fire(self):
         comp, loc = {}, {}
@@ -574,24 +573,28 @@ class DrawAndLog:
     def _draw_fires(self):# {{{
         if len(self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")) > 0:
             comp, loc = self._deterministic_fire()
+            loc['major'] = 1
             self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
         else:
-            comps = self.s.query("SELECT name, type_sec FROM aamks_geom WHERE type_pri='COMPA'")
-            for comp in comps:
-                comp['type'] = 'room' if comp['type_sec'] == 'ROOM' else 'non_room'
-                loc = self._locate_randomly(comp['name'])
-                self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
+            comp = self._draw_compartment() 
+            loc, _ = self._locate_randomly(comp['name'])
+            loc['major'] = 1
+            self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
 
+            comps = self.s.query(f"SELECT adjacents FROM aamks_geom WHERE name='{comp['name']}'")[0]['adjacents']
+            for comp_name in comps.split(","):
+                loc, comp_type = self._locate_randomly(comp_name)
+                self._save_fire_origin([comp_name, comp_type] + list(loc.values()))
+
+        for fire in self._fires:
+            if fire.major == 1:
+                self._fire = fire
         self.sections['FIRE'] = [self._draw_major_fire_preamble(), *self._draw_fires_preamble()]
-        #     comp = self._draw_compartment() 
-        #     loc = self._locate_randomly(comp['name'])
+
 
     def _draw_major_fire_preamble(self):
-            self._fire = self._fires[0]
-            self._fire.major = 1
-            self.s.query(f"UPDATE fire_origin SET major=1 WHERE f_id='{self._fire.f_id}' AND sim_id={self._sim_id};") 
-            self._psql_log_variable('heigh', self._fire.height)
-
+            self._psql_log_variables([('heigh', self._fire.height), ('fireorigname', self._fire.room),
+                                      ('fireorig', self._fire.is_room)])
             fire = {"ID": self._fire.f_id,
                     "COMP_ID": self._fire.room,
                     "FIRE_ID": self._fire.f_id,

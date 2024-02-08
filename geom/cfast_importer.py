@@ -55,6 +55,7 @@ class CFASTimporter():
         self._auto_detectors_and_sprinklers()
         self._assert_faces_ok()
         self._assert_room_has_door()
+        self._find_intersections_within_rooms()
         self._debug()
         self.s.close()
 # }}}
@@ -164,7 +165,7 @@ class CFASTimporter():
                     record=self._prepare_geom_record(v)
                     if record != False:
                         data.append(record)
-        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, exit_type, room_enter, evacuees_density, terminal_door, points, origin_room, orig_type, has_door, teleport_from, teleport_to)")
+        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, exit_type, room_enter, evacuees_density, terminal_door, points, origin_room, orig_type, has_door, teleport_from, teleport_to, adjacents)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
     def _prepare_attrs(self,v):# {{{
@@ -235,8 +236,8 @@ class CFASTimporter():
         global_type_id=v['idx'];
         name='{}{}'.format(self.geomsMap[v['type']], global_type_id)
 
-        #self.s.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               , exit_type               , room_enter               , evacuees_density               , terminal_door , points                  , origin_room , orig_type , has_door)")
-        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] , v['attrs']['exit_type'] , v['attrs']['room_enter'] , v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None, teleport_from, teleport_to)
+        #self.s.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               , exit_type               , room_enter               , evacuees_density               , terminal_door , points                  , origin_room , orig_type , has_door,   teleport_from, teleport_to, adjacents)")
+        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] , v['attrs']['exit_type'] , v['attrs']['room_enter'] , v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None)
 
 # }}}
     def _enhancements(self):# {{{
@@ -337,8 +338,7 @@ class CFASTimporter():
         z=self.s.query("SELECT name,exit_type FROM aamks_geom WHERE (type_pri='HVENT' AND vent_to_name='OUTSIDE')")
 
         for i in z:
-            for ii in z:
-                update.append((ii['exit_type'], ii['name']))
+            update.append((i['exit_type'], i['name']))
         self.s.executemany("UPDATE aamks_geom SET terminal_door=? WHERE name=?", update)
 
 # }}}
@@ -491,6 +491,19 @@ class CFASTimporter():
                     self.fatal("{}: door intersects no rooms or more than 2 rooms.".format(name))
                 update.append((v[0], v[1], vent_id))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='HVENT'", update)
+# }}}
+    def _find_intersections_within_rooms(self):# {{{
+        update=[]
+        for floor,rooms_dict in self.aamks_polies['COMPA'].items():
+            all_rooms={z['global_type_id']: z['name'] for z in self.s.query("SELECT name, global_type_id FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY name", floor)}
+            vc_intersections={key:[] for key in all_rooms.keys() }
+            for compa1_id,compa1_poly in rooms_dict.items():
+                for compa2_id,compa2_poly in self.aamks_polies['COMPA'][floor].items():
+                    if compa1_poly.intersection(compa2_poly).length > 100 and compa1_id != compa2_id:
+                        vc_intersections[compa1_id].append(all_rooms[compa2_id])
+            for room_id, v in vc_intersections.items():        
+                update.append((",".join(v), room_id))
+        self.s.executemany("UPDATE aamks_geom SET adjacents=? where global_type_id=? and type_pri='COMPA'", update)
 
 # }}}
     def _find_intersections_between_floors(self):# {{{
