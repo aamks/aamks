@@ -22,9 +22,23 @@ from include import Sqlite, Psql
 import warnings
 import pandas as pd
 from zipfile import ZipFile
+import logging
+from pylatex import Document, Section, Itemize, Command, Figure
+from pylatex.utils import italic, NoEscape
 
-
-
+log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
+logger = logging.getLogger('AAMKS.beck.py')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler(log_file)
+fh.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+logger.addHandler(fh)
+logger.addHandler(ch)
+logger.warning('Start AAMKS post process')
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
 
 def calc_rmse(p: float, n: float, confidence: float = None):
@@ -237,7 +251,7 @@ class RiskScenario:
 
         self.risks[key] = scenario_value
         
-        print(f'[OK] {key} value for whole scenario calculated')
+        logger.debug(f'[OK] {key} value for whole scenario calculated')
 
         return scenario_value
 
@@ -254,7 +268,7 @@ class RiskScenario:
             self.risks[f'conv_{key}'].append(val)
 
 class RiskIteration:
-    def __init__(self, feds_per_floor: list(), calculate=False):
+    def __init__(self, feds_per_floor: list, calculate=False):
         self.p = self._rawFED2CDF(feds_per_floor) # probabilities of death for agents in THIS iteration
         self.n  = len(self.p)    # number of agents
         self.risks = {}
@@ -709,6 +723,7 @@ class PostProcess:
     def save(self, no_zip=False):
         self.gd.to_csv()
         self._summarize()
+        self._to_pdf()
         self._to_txt()
         if not no_zip:
             self._zip_pictures()
@@ -803,6 +818,49 @@ class PostProcess:
 
         with open(os.path.join(self.dir, 'picts', 'data.txt'), 'w') as g: 
             g.write('\n'.join(to_write))
+    def get_picts_names(self):
+        return [fn for fn in os.listdir(self.dir+'/picts') if fn.endswith('png')]
+    def _to_pdf(self):
+        doc = Document()
+        doc.preamble.append(Command('title', 'MULTISIMULATION RESULTS SUMMARY'))
+        doc.preamble.append(Command('author', 'AAMKS'))
+        doc.preamble.append(Command('date', NoEscape(r'\today')))
+        doc.append(NoEscape(r'\maketitle'))
+
+        with doc.create(Section('RISK INDICIES')):
+            with doc.create(Itemize()) as itemize:
+                itemize.add_item(f'Number of iterations: {self.n}')
+                itemize.add_item(f'Individual [-]: {self.data["individual"]}')
+                itemize.add_item(f'Individual risk approximation error (RMSE with 95% confidence interval included)[-]:\
+                        {calc_rmse(self.data["individual"], self.n, confidence=0.95)}')
+                itemize.add_item(f'Societal (WRI) [fatalities]: {self.data["societal"]}')
+                itemize.add_item(f'Societal (AWR) [fatalities]: {self.data["awr"]}')
+                itemize.add_item(f'Societal (SRI) - T=1 [(fatalities + fatalities^2)/(m^2 * year)] (to be multiplied by time share):\
+                        {self.data["sri"]/self.data["geometry"]["area"]:.4f}')              
+
+
+        with doc.create(Section('EVACUATION TIME')):
+            with doc.create(Itemize()) as itemize:
+                itemize.add_item(f'RSET mean and standard deviation value [s]: {self.data["summary"]["rset"][0]}, {self.data["summary"]["rset"][1]}')
+                itemize.add_item(f'ASET mean and standard deviation value [s]: {self.data["summary"]["aset"][0]}, {self.data["summary"]["aset"][1]}')
+                itemize.add_item(f'Overlapping Index of ASET and RSET distributions: {self.data["summary"]["ovl"]}')
+        
+        with doc.create(Section('FIRE CHARACTERISTICS')):
+            with doc.create(Itemize()) as itemize:
+                itemize.add_item(f'Maximum upper gas layer temperature mean and standard deviation value [°C]:\
+                       {self.data["summary"]["hgt"][0]:.4f}, {self.data["summary"]["hgt"][1]:.4f}')
+                itemize.add_item(f'Minimum neutral plane height mean and standard deviation value [cm]: \
+                       {self.data["summary"]["height"][0]:.4f}, {self.data["summary"]["height"][1]:.4f}')
+                itemize.add_item(f'Minimum visibility mean and standard deviation value [m]:\
+                                  {self.data["summary"]["vis"][0]:.4f}, {self.data["summary"]["vis"][1]}')
+        with doc.create(Section('IMAGES')):
+            for img in self.get_picts_names():
+                with doc.create(Figure(position = 'htbp')) as fig: 
+                    fig.add_image(f'{self.dir}/picts/{img}')
+                    fig.add_caption(f'{img}')
+
+        doc.generate_pdf(f'{self.dir}/picts/report', clean_tex=False)
+        doc.generate_tex(f'{self.dir}/picts/report')
 
     def _zip_pictures(self):
         with ZipFile(os.path.join(self.dir, 'picts', 'picts.zip'), 'w') as zf:
@@ -818,7 +876,8 @@ class PostProcess:
             try:
                 zf.write('/home/aamks_users/aamks.log', arcname='aamks.log')
             except FileNotFoundError:
-                print('[WARNING] No log file found')
+                logger.error('No log file found - /home/aamks_users/aamks.log')
+
                 
     # produce standard postprocess content
     def produce(self):
@@ -827,7 +886,7 @@ class PostProcess:
         os.makedirs(f'{self.dir}/picts')
 
         def tm(x): 
-            print(f'{x}: {time.time() - self.t}')
+            logger.debug(f'{x}: {time.time() - self.t}')
             self.t = time.time()
         p = Plot(self.dir)
         tm('Plot')
@@ -944,7 +1003,7 @@ class Comparison:
             try:
                 zf.write('/home/aamks_users/aamks.log', arcname='aamks.log')
             except FileNotFoundError:
-                print('[WARNING] No log file found')
+                logger.error('No log file found - /home/aamks_users/aamks.log')
 
             
     def produce(self):
@@ -954,7 +1013,7 @@ class Comparison:
         os.makedirs(self.dir)
 
         def tm(x): 
-            print(f'{x}: {time.time() - self.t}')
+            logger.debug(f'{x}: {time.time() - self.t}')
             self.t = time.time()
         p = Plot(go_back(self.dir))
         tm('Plot')
@@ -987,7 +1046,7 @@ if __name__ == '__main__':
             s = SA(pp.dir)
             s.main(spearman=True)
     except Exception as e:
-        print(e)
+        logger.error(e)
 
     
 
