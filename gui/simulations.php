@@ -54,19 +54,19 @@ function downloads() {/*{{{*/
         $dir = implode('-', $scens);
         $f = $f."/_comp/".$dir;
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
+        echo "&nbsp; &nbsp;  <a href=$f/picts/report.pdf download><button>Report (.PDF)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/txt.zip download><button>Summary TXT files (.ZIP)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/picts.zip download><button>Pictures (.ZIP)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/csv.zip download><button>Detailed CSV databases (.ZIP)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/data.zip download><button>Full results (.ZIP)</button></a>";
-        echo "<br><br><br><br>";
     }else{
         $f = substr($f, strpos($f, '/', 1));
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
+        echo "&nbsp; &nbsp;  <a href=$f/picts/report.pdf download><button>Report (.PDF)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/data.txt download><button>Summary file (.TXT)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/picts.zip download><button>Pictures (.ZIP)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/data.csv download><button>Detailed database (.CSV)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/data.zip download><button>Full results (.ZIP)</button></a>";
-        echo "<br><br><br><br>";
     }
 }
 /*}}}*/
@@ -75,7 +75,7 @@ function downloads() {/*{{{*/
 function last_log(){
 	$f=$_SESSION['main']['working_home'];
 
-    $cmd = 'tail -10 /home/aamks_users/aamks.log';
+    $cmd = "tail -10 $f/aamks.log";
 	$z=shell_exec("$cmd");
     echo "<br><br><br><font size=4><strong>Last logs</strong></font><br><br>";
     echo nl2br($z);
@@ -181,7 +181,7 @@ function show_results() {/*{{{*/
                 }
             }
     }
-
+	downloads();
    
     //total array size
     $total = sizeof($pictures_list);
@@ -216,10 +216,6 @@ function show_results() {/*{{{*/
         echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
 
 	show_data();
-	downloads();
-
-
-
 }
 
 function startsWith( $haystack, $needle ) {
