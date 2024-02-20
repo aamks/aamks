@@ -173,7 +173,7 @@ function launch_draft() {//{{{
 		$.post('/aamks/projects.php', {'copy_scenario':'draft' });
 		$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function () { 
 			setTimeout(function(){
-				location.assign("/aamks/animator/index.php");
+				location.assign("/aamks/halt.php");
 			}, 1500);
 		});
 	});
