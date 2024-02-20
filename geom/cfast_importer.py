@@ -499,8 +499,11 @@ class CFASTimporter():
             vc_intersections={key:[] for key in all_rooms.keys() }
             for compa1_id,compa1_poly in rooms_dict.items():
                 for compa2_id,compa2_poly in self.aamks_polies['COMPA'][floor].items():
-                    if compa1_poly.intersection(compa2_poly).length > 100 and compa1_id != compa2_id:
-                        vc_intersections[compa1_id].append(all_rooms[compa2_id])
+                    length = compa1_poly.intersection(compa2_poly).length
+                    if length > 100 and compa1_id != compa2_id:
+                        fraction_to = length/compa1_poly.length
+                        fraction_from = length/compa2_poly.length
+                        vc_intersections[compa1_id].append(f'{all_rooms[compa2_id]};{fraction_to:.3f};{fraction_from:.3f}')
             for room_id, v in vc_intersections.items():        
                 update.append((",".join(v), room_id))
         self.s.executemany("UPDATE aamks_geom SET adjacents=? where global_type_id=? and type_pri='COMPA'", update)

@@ -123,6 +123,7 @@ class CfastMcarlo():
             self._section_vvent(),
             self._section_mvent(),
             self._section_fire(),
+            self._section_connections(),
             self._section_targets(),
             self._section_heat_detectors(),
             self._section_smoke_detectors(),
@@ -310,6 +311,14 @@ class CfastMcarlo():
             self._cfast_record('FIRE'),
             self._cfast_record('CHEM'),
             self._cfast_record('TABL'),
+        )
+        return "".join(txt)
+# }}}
+    def _section_connections(self):# {{{
+        txt = (
+            '!! CONNECTIONS',
+            '\n',
+            self._cfast_record('CONN'),
         )
         return "".join(txt)
 # }}}
@@ -582,7 +591,8 @@ class DrawAndLog:
             self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
 
             comps = self.s.query(f"SELECT adjacents FROM aamks_geom WHERE name='{comp['name']}'")[0]['adjacents']
-            for comp_name in comps.split(","):
+            for comp in comps.split(","):
+                comp_name = comp.split(";")[0]
                 loc, comp_type = self._locate_randomly(comp_name)
                 self._save_fire_origin([comp_name, comp_type] + list(loc.values()))
 
@@ -837,8 +847,23 @@ class DrawAndLog:
 
             self._psql_log_variable(devc,chosen)
             self.sections[devc].append(chosen)
-
-        return self.sections[devc]
+    
+    def _draw_connections(self):
+        conn = []
+        comps = self.s.query(f"SELECT adjacents FROM aamks_geom WHERE name='{self._fire.room}'")[0]['adjacents']
+        for comp in comps.split(","):
+            comp_name, fraction_to, fraction_from = comp.split(";")
+            conn.append({'TYPE': 'WALL', #CEILING, FLOOR or WALL
+                        'COMP_ID': self._fire.room,
+                        'COMP_IDS': comp_name,
+                        'F': float(fraction_to)
+                        })
+            conn.append({'TYPE': 'WALL',
+                        'COMP_ID': comp_name,
+                        'COMP_IDS': self._fire.room,
+                        'F': float(fraction_from)
+                        })
+        self.sections['CONN'] = conn
     
     def all(self):
         #&INIT
@@ -854,6 +879,8 @@ class DrawAndLog:
         self._draw_fires_chem()
         #&TABL
         self._draw_fires_table()
+        #&CONN
+        self._draw_connections()
         #&DEVC
         self._draw_targets()
         [self._draw_triggers(d) for d in ['heat_detectors', 'smoke_detectors', 'sprinklers']]
