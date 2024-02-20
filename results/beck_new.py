@@ -23,8 +23,10 @@ import warnings
 import pandas as pd
 from zipfile import ZipFile
 import logging
-from pylatex import Document, Section, Itemize, Command, Figure
-from pylatex.utils import italic, NoEscape
+from pylatex import Document, Section, Itemize, Command, Figure, MultiColumn, Package
+from pylatex.utils import italic, bold, NoEscape
+from pylatex.table import Tabular
+from pylatex.basic import NewPage
 
 log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
 logger = logging.getLogger('AAMKS.beck.py')
@@ -710,9 +712,10 @@ class PostProcess:
 
     def __init__(self, scen_dir=None):
         if scen_dir:
-            self.dir = scen_dir
+            self.dir = os.path.abspath(scen_dir)
         else:
             self.dir = sys.argv[1] if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT')
+        self.dir = os.path.abspath(self.dir)
         self.gd = GetData(self.dir)
         self.data = {**self.gd.drop(with_fed=False), **RiskScenario(self.gd.raw['results']).all()} # results for THE SCENARIO
         self.n = len(self.gd.raw['feds'])  # number of finished iterations taken for results analysis
@@ -723,7 +726,7 @@ class PostProcess:
     def save(self, no_zip=False):
         self.gd.to_csv()
         self._summarize()
-        self._to_pdf()
+        Report(self).to_pdf(make=True)
         self._to_txt()
         if not no_zip:
             self._zip_pictures()
@@ -818,49 +821,7 @@ class PostProcess:
 
         with open(os.path.join(self.dir, 'picts', 'data.txt'), 'w') as g: 
             g.write('\n'.join(to_write))
-    def get_picts_names(self):
-        return [fn for fn in os.listdir(self.dir+'/picts') if fn.endswith('png')]
-    def _to_pdf(self):
-        doc = Document()
-        doc.preamble.append(Command('title', 'MULTISIMULATION RESULTS SUMMARY'))
-        doc.preamble.append(Command('author', 'AAMKS'))
-        doc.preamble.append(Command('date', NoEscape(r'\today')))
-        doc.append(NoEscape(r'\maketitle'))
 
-        with doc.create(Section('RISK INDICIES')):
-            with doc.create(Itemize()) as itemize:
-                itemize.add_item(f'Number of iterations: {self.n}')
-                itemize.add_item(f'Individual [-]: {self.data["individual"]}')
-                itemize.add_item(f'Individual risk approximation error (RMSE with 95% confidence interval included)[-]:\
-                        {calc_rmse(self.data["individual"], self.n, confidence=0.95)}')
-                itemize.add_item(f'Societal (WRI) [fatalities]: {self.data["societal"]}')
-                itemize.add_item(f'Societal (AWR) [fatalities]: {self.data["awr"]}')
-                itemize.add_item(f'Societal (SRI) - T=1 [(fatalities + fatalities^2)/(m^2 * year)] (to be multiplied by time share):\
-                        {self.data["sri"]/self.data["geometry"]["area"]:.4f}')              
-
-
-        with doc.create(Section('EVACUATION TIME')):
-            with doc.create(Itemize()) as itemize:
-                itemize.add_item(f'RSET mean and standard deviation value [s]: {self.data["summary"]["rset"][0]}, {self.data["summary"]["rset"][1]}')
-                itemize.add_item(f'ASET mean and standard deviation value [s]: {self.data["summary"]["aset"][0]}, {self.data["summary"]["aset"][1]}')
-                itemize.add_item(f'Overlapping Index of ASET and RSET distributions: {self.data["summary"]["ovl"]}')
-        
-        with doc.create(Section('FIRE CHARACTERISTICS')):
-            with doc.create(Itemize()) as itemize:
-                itemize.add_item(f'Maximum upper gas layer temperature mean and standard deviation value [°C]:\
-                       {self.data["summary"]["hgt"][0]:.4f}, {self.data["summary"]["hgt"][1]:.4f}')
-                itemize.add_item(f'Minimum neutral plane height mean and standard deviation value [cm]: \
-                       {self.data["summary"]["height"][0]:.4f}, {self.data["summary"]["height"][1]:.4f}')
-                itemize.add_item(f'Minimum visibility mean and standard deviation value [m]:\
-                                  {self.data["summary"]["vis"][0]:.4f}, {self.data["summary"]["vis"][1]}')
-        with doc.create(Section('IMAGES')):
-            for img in self.get_picts_names():
-                with doc.create(Figure(position = 'htbp')) as fig: 
-                    fig.add_image(f'{self.dir}/picts/{img}')
-                    fig.add_caption(f'{img}')
-
-        doc.generate_pdf(f'{self.dir}/picts/report', clean_tex=False)
-        doc.generate_tex(f'{self.dir}/picts/report')
 
     def _zip_pictures(self):
         with ZipFile(os.path.join(self.dir, 'picts', 'picts.zip'), 'w') as zf:
@@ -914,6 +875,98 @@ class PostProcess:
 
         self.save()
         tm('save')
+
+
+class Report:
+    def __init__(self, postprocess: PostProcess):
+        self.pp = postprocess
+        self.doc = Document(geometry_options={'margin': '2cm'})
+        self.title = 'MULTISIMULATION RESULTS'
+        self.author = self.pp.dir.split('/')[-3]
+        self.project = self.pp.dir.split('/')[-2]
+        self.scenario = self.pp.dir.split('/')[-1]
+
+    def _preamble(self):
+        self.doc.packages.append(Package('array'))
+        self.doc.preamble.append(Command('title', self.title))
+        self.doc.preamble.append(Command('author', self.author))
+        self.doc.preamble.append(Command('date', NoEscape(r'\today')))
+        self.doc.append(NoEscape(r'\maketitle'))
+        self.doc.append(NoEscape(r'\renewcommand{\arraystretch}{1.5}'))
+        with self.doc.create(Figure(position = 'htbp')) as fig: 
+            fig.add_image(f'/usr/local/aamks/gui/logo.png', width='4cm')
+
+        #self.doc.append(NoEscape(r'\bigskip'))
+        #self.doc.append(NoEscape(r'\tableofcontents'))
+        #self.doc.append(NewPage())
+        
+
+    def _makerows(self):
+        rows = {'General':[], 'Risk indices': [], 'Evacuation': [], 'Fire': []}
+        rows['General'].append(['Software version', 'v2.0.1', '2024-02-28'])
+        rows['General'].append(['Project name', self.project, ''])
+        rows['General'].append(['Scenario name', self.scenario, ''])
+        rows['General'].append(['Number of iterations', self.pp.n, ''])
+
+        rows['Risk indices'].append(['Individual risk', f'{self.pp.data["individual"]:.3e} [--]', f'with a 95% confidence RMSE of \
+            {calc_rmse(self.pp.data["individual"], self.pp.n, confidence=0.95):.3e}'])
+        rows['Risk indices'].append(['Societal risk (WRI)', f'{self.pp.data["societal"]:.3e} [fatal.]', 'risk aversion included'])
+        rows['Risk indices'].append(['Societal risk (AWR)', f'{self.pp.data["awr"]:.3e} [fatal.]', ''])
+
+        rows['Evacuation'].append(['RSET', f'{self.pp.data["summary"]["rset"][0]:.1f} s', f'mean with standard deviation\
+                of {self.pp.data["summary"]["rset"][1]:.1f} s'])
+        rows['Evacuation'].append(['ASET', f'{self.pp.data["summary"]["aset"][0]:.1f} s', f'mean with standard deviation\
+                of {self.pp.data["summary"]["aset"][1]:.1f} s'])
+        rows['Evacuation'].append(['Overlapping index of ASET/RSET', f'{self.pp.data["summary"]["ovl"]} s', ''])
+        
+        rows['Fire'].append(['Upper layer temperature', f'{self.pp.data["summary"]["hgt"][0]:.1f}°C', f'mean of maximum\
+                value with a standard deviation of {self.pp.data["summary"]["hgt"][1]:.1f}°C'])
+        rows['Fire'].append(['Neutral plane heihgt', f'{self.pp.data["summary"]["height"][0]:.1f} cm', f'mean of minimum\
+                value with a standard deviation of {self.pp.data["summary"]["height"][1]:.1f} cm'])
+        rows['Fire'].append(['Visibility', f'{self.pp.data["summary"]["vis"][0]:.1f} m', f'mean of minimum value with a\
+                standard deviation of {self.pp.data["summary"]["vis"][1]:.1f} m'])
+
+        return rows
+
+    def _summary(self):
+        with self.doc.create(Section('Summary sheet', numbering=False)):
+            self.doc.append(NoEscape(r'\bigskip'))
+            headers = [bold('Paramter'), bold('Value'), bold('Additional remarks')]
+
+            with self.doc.create(Tabular('|m{5cm}|m{2.5cm}|m{8cm}|')) as tab:
+                tab.add_hline()
+                tab.add_row(headers)
+                tab.add_hline()
+                for subhead, rows in self._makerows().items():
+                    tab.add_row((MultiColumn(3, align='|c|', data=bold(subhead)),))
+                    tab.add_hline()
+                    for row in rows:
+                        tab.add_row(row)
+                        tab.add_hline()
+        self.doc.append(NewPage())
+
+    def _get_picts_names(self):
+        return [fn for fn in os.listdir(self.pp.dir+'/picts') if fn.endswith('png')]
+
+    # those plots should be described and segregated
+    def _appendix(self):
+        with self.doc.create(Section('Plots', numbering=False)):
+            for img in self._get_picts_names():
+                with self.doc.create(Figure(position = 'htbp')) as fig: 
+                    fig.add_image(f'{self.pp.dir}/picts/{img}')
+                    fig.add_caption(f'{img}')
+
+    def make(self):
+        self._preamble()
+        self._summary()
+        self._appendix()
+        
+        return self.doc
+
+    def to_pdf(self, make=False, tex=False):
+        self.make() if make else None
+        self.doc.generate_pdf(f'{self.pp.dir}/picts/report', clean_tex=False)
+        self.doc.generate_tex(f'{self.pp.dir}/picts/report') if tex else None
 
 
 '''Produce results of multiple scenarios on each plot'''
@@ -1034,6 +1087,17 @@ class Comparison:
         
 
 if __name__ == '__main__':
+    if len(sys.argv) > 2:
+        comp = Comparison(sys.argv[2:], path=sys.argv[1])
+        comp.produce()
+    else:
+        pp = PostProcess()
+        pp.t = time.time()
+        pp.produce()
+        from sa import SensitivityAnalysis as SA
+        s = SA(pp.dir)
+        s.main(spearman=True)
+    exit()
     try:
         if len(sys.argv) > 2:
             comp = Comparison(sys.argv[2:], path=sys.argv[1])
