@@ -8,10 +8,11 @@ function main() {
 		header("Location: ../login.php?session_finished_information=1");
 	}
 	$_SESSION['nn']->htmlHead("Animator");
+	$_SESSION['nn']->menu();
 
 	$data = $_SESSION['nn']->query("SELECT * from simulations where project = ".$_SESSION['main']['project_id']." and scenario_id = ".$_SESSION['main']['scenario_id']." and status = '0' and status is not null;");
 	echo '
-	<section class="container" style="margin-left:150px;">
+	<section class="container">
   <h2 class="title">Search Table Record for '.$_SESSION['main']['project_name'].' / '.$_SESSION['main']['scenario_name'].'</h2>
 	<p>You can sort data by columns head and filter column using one of the comparators "<, <=, >, >=" or by intervall e.g. "10..20"</p>
   <table id="animTable">

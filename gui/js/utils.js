@@ -167,6 +167,17 @@ function launch_simulation() {//{{{
 		});
 	});
 }
+function launch_draft() {//{{{
+	$("body").on("click", "#launch_draft", function() {
+		amsg({"msg": "Trying to launch draft...", "err":0, "duration": 20000 }); 
+		$.post('/aamks/projects.php', {'copy_scenario':'draft' });
+		$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function () { 
+			setTimeout(function(){
+				location.assign("/aamks/animator/index.php");
+			}, 1500);
+		});
+	});
+}
 //}}}
 function isEmpty(obj) {//{{{
 	// Check if dict empty
@@ -191,6 +202,7 @@ deepcopy=function(x) {//{{{
 $(function() { 
 	check_progress();
 	scenario_changer();
+	launch_draft();
 	launch_simulation();
 	if(navigator.userAgent.indexOf("Chrome")==-1) { alert("Aamks is designed for Google Chrome. Aamks may work, but is not supported on other browsers"); }
 });

@@ -11,18 +11,14 @@ from numpy.random import gamma
 from numpy.random import triangular
 from numpy.random import seed
 from numpy import array as npa
-from numpy import full as npf
 from numpy import insert as npins
 from numpy import round as npround
-from numpy import mean, trapz, linspace, ndenumerate
+from numpy import mean
 from scipy.stats import pareto
-from scipy.interpolate import interp1d
 from include import Sqlite
 from include import Psql
 from include import Json
-from collections import OrderedDict
 from rescue_module.rescue import *
-import warnings
 import numpy as np
 
 from montecarlo.evac_mcarlo import lognorm_params_from_percentiles, lognorm_percentiles_from_params
@@ -85,21 +81,19 @@ class CfastMcarlo():
         elif type(self.samples[key]) == list:
             table = ''
             for i in self.samples[key]:
-                record = f'&{key} '
+                record = f'&{key}'
                 for k, v in i.items():
                     if k == 'LABELS':
                         record +=  f' {k} = ' + join2str(v, ', ', quotes=True, force=True)
                     elif type(v) == list:
                         record +=  f' {k} = ' + join2str(v, ', ')
                     else:
-                        record +=  join2str([k, v], ' = ', quotes=True)
+                        record +=  ' ' + join2str([k, v], ' = ', quotes=True)
                 table += record + '/\n'
             return table
 
     def read_json(self):
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        #if self.conf['fire_model']=='FDS':
-        return self.conf['project_id']
 
     def create_sqlite_db(self):
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -107,7 +101,7 @@ class CfastMcarlo():
         try:
             t_name = self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
         except Exception as e:
-            self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,floor,f_id,sim_id)")
+            self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,loc_x, loc_y,floor,f_id,height,devc,major,sim_id)")
             t_name = self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
         return t_name
 
@@ -129,6 +123,8 @@ class CfastMcarlo():
             self._section_vvent(),
             self._section_mvent(),
             self._section_fire(),
+            self._section_connections(),
+            self._section_targets(),
             self._section_heat_detectors(),
             self._section_smoke_detectors(),
             self._section_sprinklers(),
@@ -308,34 +304,32 @@ class CfastMcarlo():
             txt.append(', '.join(str(i) for i in collect))
         return "\n".join(txt)+"\n" if len(txt) > 1 else ""
 
-    def _deterministic_fire(self):# {{{
-        '''
-        Either deterministic fire from Apainter, or probabilistic (_draw_fire_origin()). 
-        '''
-
-        f = self.s.query("SELECT f_id, name FROM fire_origin")
-
-        collect = []
-        collect.append("&FIRE ID = '{}'".format(f[0]['f_id']))
-        collect.append("COMP_ID = '{}'".format(room[0]['name']))
-        collect.append("FIRE_ID = 'f{}'".format(f[0]['f_id']))
-        collect.append("LOCATION = {}, {} /".format(round(0.01 * (x-room[0]['x0']), 2), round(0.01 * (y-room[0]['y0']), 2)))
-
-        return ', '.join(str(i) for i in collect)
-# }}}
     def _section_fire(self):# {{{
-        fire_preamble = self._cfast_record('FIRE')
-
         txt = (
             '!! SECTION FIRE',
             '\n',
-            fire_preamble,
+            self._cfast_record('FIRE'),
             self._cfast_record('CHEM'),
             self._cfast_record('TABL'),
-            ''
         )
-        return "".join(txt)+"\n"
+        return "".join(txt)
 # }}}
+    def _section_connections(self):# {{{
+        txt = (
+            '!! CONNECTIONS',
+            '\n',
+            self._cfast_record('CONN'),
+        )
+        return "".join(txt)
+# }}}
+    def _section_targets(self):
+        if 'DEVC' in self.samples:
+            txt = (
+                '!! SECTION TARGETS',
+                '\n',
+                self._cfast_record('DEVC'),
+            )
+            return "".join(txt)
     def _section_heat_detectors(self):# {{{
         txt=['!! HEAT DETECTORS']
         for i, v in enumerate(self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND heat_detectors=1")):
@@ -407,7 +401,22 @@ class CfastMcarlo():
 
 #}}}
 
+class Fire:
+    def __init__(self, room, is_room, x, y, z, loc_x, loc_y, floor, f_id, height, devc, major):
+        self.room = room
+        self.is_room = is_room
+        self.x = x
+        self.y = y
+        self.z = z
+        self.loc_x = loc_x
+        self.loc_y = loc_y
+        self.floor = floor
+        self.f_id = f_id
+        self.height = height
+        self.devc = devc
+        self.major = major
 
+        
 class DrawAndLog:
     FUELS = {"WOOD": {"molecule":{ "CARBON": 1, "HYDROGEN": 1.7, "OXYGEN": 0.72, "NITROGEN": 0.001, "CHLORINE": 0},
                 "heatcom":  {'mean': 17.1, 'sd': 0}, 
@@ -436,26 +445,21 @@ class DrawAndLog:
              'dcloser', 'door', 'sprinklers', 'heat_of_combustion', 'delectr', 'vvent', 'rad_frac', 'fireload']
 
     def __init__(self, sim_id):
+        self._sim_id = sim_id
         self.json = Json()
         self.__read_json()
-        self.__connectDB(sim_id)
+        self.__connectDB()
         self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
         self._scen_fuel = {}
-        self._fire_id = ''
-        self._fire_height = 0
-        self._comp_type = ''
-        self._fire_room_name = ''
+        self._fire = None
+        self._fires = []
         self._fire_openings = []
-
         self.sections = {}
-
 
     def __read_json(self):
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        return self.conf['project_id']
 
-    def __connectDB(self, sim_id):
-        self._sim_id = sim_id
+    def __connectDB(self):
         self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.data_for_psql=OrderedDict()
         self.__new_psql_log()
@@ -479,17 +483,12 @@ class DrawAndLog:
         self.sections['INIT']['RELATIVE_HUMIDITY'] = round(normal(self.conf['humidity']['mean'], self.conf['humidity']['sd']))
 
         self._psql_log_variable('outdoor_temp', self.sections['INIT']['EXTERIOR_TEMPERATURE'])
-
-        return self.sections['INIT']
 # }}}
     '''&FIRE'''
     def _save_fire_origin(self, fire_origin):# {{{
+        self._fires.append(Fire(*fire_origin))
         fire_origin.append(self._sim_id)
-        fire_origin = fire_origin[:2] + fire_origin[2] + fire_origin[4:]
-        self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?,?,?)', fire_origin)
-        fr=self.s.query('SELECT * FROM fire_origin WHERE sim_id={}'.format(self._sim_id))
-        self._psql_log_variables([('fireorigname', fire_origin[0]),
-                                      ('fireorig', fire_origin[1])])
+        self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', fire_origin)
 # }}}
     def _draw_compartment(self):
         # calculate probabilistic space (events and probabilities) from sqlite import format
@@ -512,54 +511,54 @@ class DrawAndLog:
             omega, probs = prob_space(all_corridors_and_halls)
             comp['type'] = 'non_room'
         comp['name'] = str(choice(omega, p=probs))
-        self._comp_type = comp['type']
-        self._fire_room_name = comp['name']
 
         return comp
     
     def _locate_in_the_middle(self, fire_room):
-        location = {}
+        loc = {}
         # locate fire in compartment
-        compa = self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_room, ))[0]
+        room = self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_room, ))[0]
 
-        x=int(compa['x0']+compa['width']/2.0)
-        y=int(compa['y0']+compa['depth']/2.0)
-        self._fire_height = round((compa['height'] * (1-math.log10(uniform(10**0.1,10)))) / 100, 2)
-        z = int(self._fire_height * 100) + compa['z0']
+        x=int(room['x0']+room['width']/2.0)
+        y=int(room['y0']+room['depth']/2.0)
+        fire_height = round((room['height'] * (1-math.log10(uniform(10**0.1,10)))) / 100, 2)
+        z = int(fire_height * 100) + room['z0']
 
-        location['global'] = [x,y,z]    #[cm]
-        location['local'] = [round(lc/100, 2) for lc in [int(compa['width']/2), int(compa['depth']/2)]]   #[m]
-        location['floor'] = compa['floor']
-        location['fire_id'] = f"f{compa['global_type_id']}"
-        self._fire_id = location['fire_id']
+        loc['x'], loc['y'], loc['z'] = [x,y,z]    #[cm]
+        loc['loc_x'], loc['loc_y'] = [round(lc/100, 2) for lc in [int(room['width']/2), int(room['depth']/2)]]   #[m]
+        loc['floor'] = room['floor']
+        loc['fire_id'] = f"f{room['global_type_id']}"
+        loc['height'] = fire_height
+        loc['major'] = 0
 
-        self._psql_log_variable('heigh', self._fire_height)
+        self._psql_log_variable('heigh', fire_height)
 
-        return location
+        return loc
 
     def _locate_randomly(self, fire_room):
-        location = {}
+        loc = {}
         # locate fire in compartment
-        compa = self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_room, ))[0]
+        room = self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_room, ))[0]
 
         # draw location (uniform across the compartment)
-        dx = uniform(0, compa['width'])
-        dy = uniform(0, compa['depth'])
+        dx = uniform(0, room['width'])
+        dy = uniform(0, room['depth'])
 
-        x = int(compa['x0']+dx)
-        y = int(compa['y0']+dy)
-        self._fire_height = round((compa['height'] * (1-math.log10(uniform(10**0.1,10)))) / 100, 2)
-        z = int(self._fire_height * 100) + compa['z0']
+        x = int(room['x0']+dx)
+        y = int(room['y0']+dy)
+        fire_height = round((room['height'] * (1-math.log10(uniform(10**0.1,10)))) / 100, 2)
+        z = int(fire_height * 100) + room['z0']
 
-        location['global'] = [x,y,z]    #[cm]
-        location['local'] = [round(lc/100, 2) for lc in [dx, dy]]   #[m]
-        location['floor'] = compa['floor']
-        location['fire_id'] = f"f{compa['global_type_id']}"
-        self._fire_id = location['fire_id']
+        loc['x'], loc['y'], loc['z'] = [x,y,z]    #[cm]
+        loc['loc_x'], loc['loc_y'] = [round(lc/100, 2) for lc in [dx, dy]]   #[m]
+        loc['floor'] = room['floor']
+        loc['fire_id'] = f"f{room['global_type_id']}"
+        loc['height'] = fire_height
+        loc['devc'] = f"t{room['global_type_id']}"
+        loc['major'] = 0
+        comp_type = 'room' if room['type_sec'] == 'ROOM' else 'non_room'
 
-        self._psql_log_variable('heigh', self._fire_height)
-
-        return location
+        return loc, comp_type
 
     def _deterministic_fire(self):
         comp, loc = {}, {}
@@ -567,37 +566,62 @@ class DrawAndLog:
         room = self.s.query("SELECT floor,name,type_sec,global_type_id,x0,y0,z0 FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", 
                 (fire['floor'], fire['x0'], fire['y0'], fire['x1'], fire['y1']))[0]
 
-        loc['global'] =  [fire['center_x'], fire['center_y'], fire['z0']]
-        loc['local'] = [fire['center_x'] - room['x0'], fire['center_y'] - room['y0']]
-        loc['local'] = [round(i/100, 2) for i in loc['local']]
+        loc['x'], loc['y'], loc['z'] =  [fire['center_x'], fire['center_y'], fire['z0']]
+        loc['loc_x'], loc['loc_y'] = [round(i/100, 2) for i in [fire['center_x'] - room['x0'], fire['center_y'] - room['y0']]]
         loc['floor'] = room['floor']
         loc['fire_id'] = f"f{room['global_type_id']}"
-        self._fire_id = loc['fire_id']
-        self._fire_height = fire['z0'] - room['z0']
+        loc['height'] = fire['z0'] - room['z0']
+        loc['devc'] = f"t{room['global_type_id']}"
+        loc['major'] = 0
 
         comp['name'] = room['name']
         comp['type'] = 'room' if room['type_sec'] == 'ROOM' else 'non_room'
-        self._comp_type = comp['type']
-        self._fire_room_name = comp['name']
 
         return comp, loc
 
-    def _draw_fire_preamble(self):# {{{
+    def _draw_fires(self):# {{{
         if len(self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")) > 0:
             comp, loc = self._deterministic_fire()
+            loc['major'] = 1
+            self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
         else:
             comp = self._draw_compartment() 
-            loc = self._locate_randomly(comp['name'])
+            loc, _ = self._locate_randomly(comp['name'])
+            loc['major'] = 1
+            self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
 
-        self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
+            comps = self.s.query(f"SELECT adjacents FROM aamks_geom WHERE name='{comp['name']}'")[0]['adjacents']
+            for comp in comps.split(","):
+                comp_name = comp.split(";")[0]
+                loc, comp_type = self._locate_randomly(comp_name)
+                self._save_fire_origin([comp_name, comp_type] + list(loc.values()))
 
-        # save in CFAST dict
-        self.sections['FIRE'] = {"ID": loc['fire_id'],
-                                "COMP_ID": comp['name'],
-                                "FIRE_ID": loc['fire_id'],
-                                "LOCATION": loc['local']}
+        for fire in self._fires:
+            if fire.major == 1:
+                self._fire = fire
+        self.sections['FIRE'] = [self._draw_major_fire_preamble(), *self._draw_fires_preamble()]
 
-        return self.sections['FIRE']
+
+    def _draw_major_fire_preamble(self):
+            self._psql_log_variables([('heigh', self._fire.height), ('fireorigname', self._fire.room),
+                                      ('fireorig', self._fire.is_room)])
+            fire = {"ID": self._fire.f_id,
+                    "COMP_ID": self._fire.room,
+                    "FIRE_ID": self._fire.f_id,
+                    "LOCATION": [self._fire.loc_x, self._fire.loc_y]}
+            return fire
+    def _draw_fires_preamble(self):
+        fires = []
+        for fire in self._fires:
+            if fire.major != 1:
+                fires.append({"ID": fire.f_id,
+                                "COMP_ID": fire.room,
+                                "FIRE_ID": fire.f_id,
+                                "LOCATION": [fire.loc_x, fire.loc_y],
+                                "IGNITION_CRITERION": self.conf['new_fire']['ignition'],
+                                "DEVC_ID": fire.devc,
+                                "SETPOINT": self.conf['new_fire']['setpoint']})
+        return fires
 # }}}
     '''&CHEM'''
     def __draw_fuel(self):
@@ -608,31 +632,34 @@ class DrawAndLog:
         else:
             self._scen_fuel = self.FUELS[self.conf['fuel']]
 
-    def _draw_fire_chem(self):# {{{
+    def _draw_fire_chem(self, fire_id):# {{{
         if not self._scen_fuel:
             self.__draw_fuel()
 
         heat_of_combustion = round(normal(self._scen_fuel['heatcom']['mean'], self._scen_fuel['heatcom']['sd']), 0)     #[MJ/kg]
         rad_frac = round(gamma(self.conf['radfrac']['k'], self.conf['radfrac']['theta']), 3)#TODO LOW VARIABILITY, CHANGE DIST
 
-        self.sections['CHEM'] = {'ID': self.sections['FIRE']['FIRE_ID'],
+        chem = {'ID': fire_id,
                 'HEAT_OF_COMBUSTION': heat_of_combustion * 1000, 
                 'RADIATIVE_FRACTION': rad_frac}
         for spec, s_value in self._scen_fuel['molecule'].items():
-            self.sections['CHEM'][spec] = s_value
-
-        self._psql_log_variables([('heat_of_combustion', heat_of_combustion),
-                                            ('rad_frac', rad_frac)])#,
-                                                #('fuel', self._scen_fuel)])  #[MJ/kg], [-], [string]
-        return self.sections['CHEM']
+            chem[spec] = s_value
+        return chem
+    def _draw_fires_chem(self):
+        self.sections['CHEM'] = [self._draw_fire_chem(fire.f_id) for fire in self._fires]
+        for i in self.sections['CHEM']:
+            if i['ID'] == self._fire.f_id:
+                self._psql_log_variables([('heat_of_combustion', i['HEAT_OF_COMBUSTION']),
+                                                    ('rad_frac', i['RADIATIVE_FRACTION'])]) #,
+                                                    #('fuel', self._scen_fuel)])  #[MJ/kg], [-], [string]
 # }}}
     '''&TABL'''
-    def _draw_fire_maxarea(self):
+    def _draw_fire_maxarea(self, fire_room_name):
         '''
         Fire area is draw from pareto distrubution regarding the BS PD-7974-7. 
         There is lack of vent condition - underventilated fires
         '''
-        orig_area = self.s.query(f"SELECT width*depth/10000 AS area FROM aamks_geom WHERE name='{self._fire_room_name}'")[0]['area']    # [m2]
+        orig_area = self.s.query(f"SELECT width*depth/10000 AS area FROM aamks_geom WHERE name='{fire_room_name}'")[0]['area']    # [m2]
         if self.conf['r_is']!='simple':
             fire_area = orig_area
         else:
@@ -642,8 +669,8 @@ class DrawAndLog:
                 fire_area = orig_area
         return fire_area    #[m2]
 
-    def _flashover_q(self, model='max'):
-        fire_room = self.s.query(f"SELECT width, depth, height FROM aamks_geom WHERE name='{self._fire_room_name}'")[0]
+    def _flashover_q(self, fire_room_name, model='max'):
+        fire_room = self.s.query(f"SELECT width, depth, height FROM aamks_geom WHERE name='{fire_room_name}'")[0]
         a_o = sum([math.prod(o) for o in self._fire_openings])    # because openings dimensions in m
         a_t = (2 * (fire_room['width'] + fire_room['depth']) * fire_room['height']) / 1e4 - a_o    # because dimensions in cm 
         h_o = sum([o[1] for o in self._fire_openings])     # because openings dimensions in m
@@ -656,23 +683,23 @@ class DrawAndLog:
         else:
             return max([thomas, babrauskass])
 
-    def _draw_hrr_area_cont_func(self):
+    def _draw_hrr_area_cont_func(self, fire):
         hrrpua_d = self.conf['hrrpua']    # [kW/m2]
         hrr_alpha = self.conf['hrr_alpha']    # [kW/s2]
-        fire_area = self._draw_fire_maxarea()
+        fire_area = self._draw_fire_maxarea(fire.room)
         hrrpua = int(triangular(hrrpua_d['min'], hrrpua_d['mode'], hrrpua_d['max']))
         self.alpha = triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])
 
         def find_peak_hrr():
             well_vent = hrrpua * fire_area 
-            under_vent = self._flashover_q()
+            under_vent = self._flashover_q(fire.room)
             if well_vent < under_vent:
                 return int(well_vent), False
             else:
                 return int(under_vent), True
         hrr_peak, flashover = find_peak_hrr()
 
-        fire_load_d = self.conf['fire_load'][self._comp_type] # [MJ/m2]
+        fire_load_d = self.conf['fire_load'][fire.is_room] # [MJ/m2]
         if fire_load_d['mean']!='' and fire_load_d['sd']!='':
             load_density = int(lognormal(fire_load_d['mean'], fire_load_d['sd']))  # location, scale
         elif fire_load_d['1st']!='' and fire_load_d['99th']!='':
@@ -680,8 +707,6 @@ class DrawAndLog:
             load_density = int(lognormal(*params))  # location, scale
         else:
             raise ValueError(f'Invalid fire load density input data - check the form.')
-
-        self._psql_log_variable('fireload', load_density)
         
         hrr = HRR(self.conf, self._sim_id)
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
@@ -694,36 +719,44 @@ class DrawAndLog:
         areas = list(npround(npa(hrrs) / hrrpua, 2))
         flashover = t_up_to_hrr_peak if flashover else self.conf['simulation_time']*2
 
-        self._psql_log_variables([('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
+        if fire == self._fire:
+            self._psql_log_variables([('fireload', load_density), ('hrrpeak', hrr_peak), ('alpha', self.alpha), ('max_area', fire_area)])
 
         return times, hrrs, areas, flashover
 
-    def _draw_yields(self, times, flash):
+    def _draw_yields(self, times, flash, fire):
         yields_tab = {'co': [], 'soot': [], 'hcn': []}
         for t in times:
             multiplier = {'soot': 2.5, 'co': 10, 'hcn': 20} if t >= flash else {'soot': 1, 'co': 1, 'hcn': 1}
             [yields_tab[k].append(max([round(normal(v['mean'], v['sd']) * multiplier[k], 5), 0])) for k, v in self._scen_fuel['yields'].items()]      #[g/g]
-
-        self._psql_log_variables([('co_yield', mean(yields_tab['co'])),
-                                ('soot_yield', mean(yields_tab['soot'])),
-                                 ('hcn_yield', mean(yields_tab['hcn']))])
+        if fire == self._fire:
+            self._psql_log_variables([('co_yield', mean(yields_tab['co'])),
+                                    ('soot_yield', mean(yields_tab['soot'])),
+                                    ('hcn_yield', mean(yields_tab['hcn']))])
         return yields_tab
         
-    def _draw_fire_table(self):# {{{
+    def _draw_fire_table(self, fire):# {{{
         # fire curve
-        times, hrrs, areas, flash_time = self._draw_hrr_area_cont_func()
+        times, hrrs, areas, flash_time = self._draw_hrr_area_cont_func(fire)
 
         # gather parameters
-        heights = [self._fire_height] * len(times)  #constant
-        yields = self._draw_yields(times, flash_time)
+        heights = [fire.height] * len(times)  #constant
+        yields = self._draw_yields(times, flash_time, fire)
         params = {"TIME": times, "HRR": hrrs, "HEIGHT": heights, "AREA": areas, "CO_YIELD": yields['co'], "SOOT_YIELD": yields['soot'], "HCN_YIELD": yields['hcn']}
 
-        self.sections['TABL'] = [{'ID': self._fire_id, 'LABELS': list(params)}]
+        tabl = [{'ID': fire.f_id, 'LABELS': list(params)}]
         
         for step in range(len(params['TIME'])):
-            self.sections['TABL'].extend([{'ID': self._fire_id, 'DATA': [params[k][step] for k in params.keys()]}])
+            tabl.extend([{'ID': fire.f_id, 'DATA': [params[k][step] for k in params.keys()]}])
             
-        return self.sections['TABL']
+        return tabl
+    def _draw_fires_table(self):
+        tabl = []
+        for fire in self._fires:
+            tabl.extend(self._draw_fire_table(fire))
+
+        self.sections['TABL'] = tabl
+
 # }}}
     def _draw_windows_opening(self): # {{{
         ''' 
@@ -747,13 +780,10 @@ class DrawAndLog:
                         how_much_open=0 
             self.sections['windows'].append((how_much_open, v['name']))
 
-            if how_much_open and (v['vent_from'] == int(self._fire_id[1:]) or v['vent_to'] == int(self._fire_id[1:])):
+            if how_much_open and (v['vent_from'] == int(self._fire.f_id[1:]) or v['vent_to'] == int(self._fire.f_id[1:])):
                 self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
 
-            self._psql_log_variable('w',how_much_open)
-
-        return self.sections['windows']
-        
+            self._psql_log_variable('w',how_much_open)        
 # }}}
     def _draw_doors_and_holes_opening(self):# {{{
         ''' 
@@ -773,10 +803,8 @@ class DrawAndLog:
 
             self.sections['hvents'].append((how_much_open, v['name']))
 
-            if how_much_open and (v['vent_from'] == int(self._fire_id[1:]) or v['vent_to'] == int(self._fire_id[1:])):
+            if how_much_open and (v['vent_from'] == int(self._fire.f_id[1:]) or v['vent_to'] == int(self._fire.f_id[1:])):
                 self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
-
-        return self.sections['hvents']
 # }}}
     def _draw_vvents_opening(self):# {{{
         self.sections['vvents'] = []
@@ -789,7 +817,21 @@ class DrawAndLog:
 
             self.sections['vvents'].append((how_much_open, v['name']))
 
-        return self.sections['vvents']
+    def _draw_targets(self):
+        targets = []
+        for fire in self._fires:
+            if fire.major != 1:
+                targets.append({'ID': fire.devc,
+                                'COMP_ID': fire.room, 
+                                'LOCATION': [fire.loc_x, fire.loc_y, 0],
+                                'TYPE': 'PLATE',
+                                'MATL_ID': '',
+                                'SURFACE_ORIENTATION': 'CEILING',
+                                'TEMPERATURE_DEPTH': 0,
+                                'DEPTH_UNITS': 'M'
+                                })
+        if targets:
+            self.sections['DEVC'] = targets
 
     def _draw_triggers(self, devc: str):# {{{
         self.sections[devc] = []
@@ -805,24 +847,42 @@ class DrawAndLog:
 
             self._psql_log_variable(devc,chosen)
             self.sections[devc].append(chosen)
-
-        return self.sections[devc]
+    
+    def _draw_connections(self):
+        conn = []
+        comps = self.s.query(f"SELECT adjacents FROM aamks_geom WHERE name='{self._fire.room}'")[0]['adjacents']
+        for comp in comps.split(","):
+            comp_name, fraction_to, fraction_from = comp.split(";")
+            conn.append({'TYPE': 'WALL', #CEILING, FLOOR or WALL
+                        'COMP_ID': self._fire.room,
+                        'COMP_IDS': comp_name,
+                        'F': float(fraction_to)
+                        })
+            conn.append({'TYPE': 'WALL',
+                        'COMP_ID': comp_name,
+                        'COMP_IDS': self._fire.room,
+                        'F': float(fraction_from)
+                        })
+        self.sections['CONN'] = conn
     
     def all(self):
         #&INIT
         self._draw_initial()
         #&FIRE
-        self._draw_fire_preamble()
+        self._draw_fires()
         self.__draw_fuel()
         #&VENTS
         self._draw_windows_opening()
         self._draw_doors_and_holes_opening()
         self._draw_vvents_opening()
         #&CHEM
-        self._draw_fire_chem()
+        self._draw_fires_chem()
         #&TABL
-        self._draw_fire_table()
+        self._draw_fires_table()
+        #&CONN
+        self._draw_connections()
         #&DEVC
+        self._draw_targets()
         [self._draw_triggers(d) for d in ['heat_detectors', 'smoke_detectors', 'sprinklers']]
         
 

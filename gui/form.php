@@ -404,6 +404,9 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td><a class='rlink switch' id='heatcom'>Heat of combustion</a>".get_help('heatcom')."<td>".form_plain_arr_switchable2('heatcom',$heatcom,$disp); 
 	echo "<tr><td><a class='rlink switch' id='yields'>Yields</a>".get_help('yields')."<td>".form_plain_arr_switchable2('yields',$yields,$disp); 
 	echo "<tr><td><a class='rlink switch' id='fire_load'>Fire load</a>".get_help('fire_load')."<td>".form_plain_arr_switchable2('fire_load',$fire_load,True); 
+	echo "<tr><td>".get_help('new_fire')."<td><select id='new_fire' name=post[new_fire][ignition]><option value='$new_fire[ignition]'>$new_fire[ignition]</option>
+	<option value='TEMPERATURE'>TEMPERATURE</option><option value='FLUX'>FLUX</option></select>
+	<input autocomplete=off type=text automplete=off size=8 name=post[new_fire][setpoint] value='$new_fire[setpoint]'>"; 
 
     echo "<tr><td>&nbsp;</td></tr><tr><th><strong>EVACUATION SUB-MODEL</strong></th>";
 	echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($dispatch_evacuees); 
@@ -510,7 +513,7 @@ function form_delete() { #{{{
 	// This way we make sure there will always be a fallback in $_SESSION['main']
 
 	if($_SESSION['main']['project_name']=='demo' && in_array($_SESSION['main']['scenario_name'], array("simple", "navmesh", "three", "fds"))) { return; }
-	echo "<input style='position:absolute; left:200px;' onclick=delScenario() type=submit value='Delete this scenario'>";
+	echo "<input style='position:absolute;' onclick=delScenario() type=submit value='Delete this scenario'>";
 }
 /*}}}*/
 function delete_scenario() {/*{{{*/
