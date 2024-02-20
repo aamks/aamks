@@ -878,6 +878,21 @@ class PostProcess:
 
 
 class Report:
+    picts = {
+        'pie_fault': 'The share of iterations with failure of safety systems (at least one person with FED > 1)',
+        'pdf_fn': 'Fatalities histogram (PDF)', 
+        'fn_curve': 'FN curve for the scenario', 
+        'dcbe_cdf': 'Cumulative distribution function of ASET', 
+        'wcbe_cdf': 'Cumulative distribution function of RSET', 
+        'overlap': 'Probability density functions of RSET and ASET', 
+        'min_hgt_cdf': 'Cumulative distribution function of minimal hot layer height', 
+        'min_hgt_cor_cdf': 'Cumulative distribution function of minimal hot layer height on the evacuation routes', 
+        'max_temp_cdf': 'Cumulative distribution function of maximal temperature', 
+        'min_vis_cdf': 'Cumulative distribution function of the minimal visibility', 
+        'min_vis_cor_cdf': 'Cumulative distribution function of the minimal visibility on the evacuation routes', 
+        'conv_individual': 'Convergence of individual risk in subsequent iterations'
+        }
+
     def __init__(self, postprocess: PostProcess):
         self.pp = postprocess
         self.doc = Document(geometry_options={'margin': '2cm'})
@@ -889,12 +904,13 @@ class Report:
     def _preamble(self):
         self.doc.packages.append(Package('array'))
         self.doc.preamble.append(Command('title', self.title))
+        self.doc.preamble.append(NoEscape(r'\title{\includegraphics[width=4cm]{/usr/local/aamks/gui/logo.png}\\'+self.title+'}'))
         self.doc.preamble.append(Command('author', self.author))
         self.doc.preamble.append(Command('date', NoEscape(r'\today')))
+        #with self.doc.create(Figure(position = 'htbp')) as fig: 
+            #fig.add_image(f'/usr/local/aamks/gui/logo.png', width='4cm')
         self.doc.append(NoEscape(r'\maketitle'))
         self.doc.append(NoEscape(r'\renewcommand{\arraystretch}{1.5}'))
-        with self.doc.create(Figure(position = 'htbp')) as fig: 
-            fig.add_image(f'/usr/local/aamks/gui/logo.png', width='4cm')
 
         #self.doc.append(NoEscape(r'\bigskip'))
         #self.doc.append(NoEscape(r'\tableofcontents'))
@@ -933,7 +949,7 @@ class Report:
             self.doc.append(NoEscape(r'\bigskip'))
             headers = [bold('Paramter'), bold('Value'), bold('Additional remarks')]
 
-            with self.doc.create(Tabular('|m{5cm}|m{2.5cm}|m{8cm}|')) as tab:
+            with self.doc.create(Tabular('|m{3.5cm}|m{4cm}|m{8cm}|')) as tab:
                 tab.add_hline()
                 tab.add_row(headers)
                 tab.add_hline()
@@ -945,16 +961,36 @@ class Report:
                         tab.add_hline()
         self.doc.append(NewPage())
 
-    def _get_picts_names(self):
-        return [fn for fn in os.listdir(self.pp.dir+'/picts') if fn.endswith('png')]
-
     # those plots should be described and segregated
     def _appendix(self):
+        def add_pict(pict):
+            with self.doc.create(Figure(position = 'htbp')) as fig: 
+                fig.add_image(f'{self.pp.dir}/picts/{pict}.png')
+                fig.add_caption(self.picts[pict])
+
         with self.doc.create(Section('Plots', numbering=False)):
-            for img in self._get_picts_names():
-                with self.doc.create(Figure(position = 'htbp')) as fig: 
-                    fig.add_image(f'{self.pp.dir}/picts/{img}')
-                    fig.add_caption(f'{img}')
+            # convergence
+            add_pict('conv_individual')
+
+            # pie
+            add_pict('pie_fault')
+
+            # FN
+            add_pict('fn_curve')
+
+            # add PDF fatalities
+            add_pict('pdf_n')
+
+            # heatmaps
+            with self.doc.create(Figure(position = 'htbp')) as fig: 
+                i = 0
+                while True:
+                    pth = f'{self.pp.dir}/picts/floor_{i}.png'
+                    if not os.path.isfile(pth):
+                        break
+                    fig.add_image(pth)
+                    fig.add_caption(f'Heatmap of FED absorption on level {i}')
+                    i += 1
 
     def make(self):
         self._preamble()
@@ -965,8 +1001,7 @@ class Report:
 
     def to_pdf(self, make=False, tex=False):
         self.make() if make else None
-        self.doc.generate_pdf(f'{self.pp.dir}/picts/report', clean_tex=False)
-        self.doc.generate_tex(f'{self.pp.dir}/picts/report') if tex else None
+        self.doc.generate_pdf(f'{self.pp.dir}/picts/report', clean_tex=not tex)
 
 
 '''Produce results of multiple scenarios on each plot'''
