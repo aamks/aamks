@@ -23,10 +23,11 @@ import warnings
 import pandas as pd
 from zipfile import ZipFile
 import logging
-from pylatex import Document, Section, Itemize, Command, Figure, MultiColumn, Package
+from pylatex import Document, Section, Subsection, Itemize, Command, Figure, MultiColumn, Package
 from pylatex.utils import italic, bold, NoEscape
 from pylatex.table import Tabular
-from pylatex.basic import NewPage
+from pylatex.basic import NewPage, LineBreak
+from pylatex.headfoot import PageStyle, Head, simple_page_number
 
 log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
 logger = logging.getLogger('AAMKS.beck.py')
@@ -896,7 +897,7 @@ class Report:
 
     def __init__(self, postprocess: PostProcess):
         self.pp = postprocess
-        self.doc = Document(geometry_options={'margin': '2cm'})
+        self.doc = Document(geometry_options={'margin': '2cm', 'headheight': '2cm', 'headsep': '10pt'})
         self.title = 'MULTISIMULATION RESULTS'
         *_, self.author, self.project, self.scenario = self.pp.dir.split('/')
 
@@ -906,15 +907,23 @@ class Report:
         self.doc.preamble.append(NoEscape(r'\title{\includegraphics[width=4cm]{/usr/local/aamks/gui/logo.png}\\'+self.title+'}'))
         self.doc.preamble.append(Command('author', self.author))
         self.doc.preamble.append(Command('date', NoEscape(r'\today')))
-        #with self.doc.create(Figure(position = 'htbp')) as fig: 
-            #fig.add_image(f'/usr/local/aamks/gui/logo.png', width='4cm')
         self.doc.append(NoEscape(r'\maketitle'))
         self.doc.append(NoEscape(r'\renewcommand{\arraystretch}{1.5}'))
 
-        #self.doc.append(NoEscape(r'\bigskip'))
-        #self.doc.append(NoEscape(r'\tableofcontents'))
-        #self.doc.append(NewPage())
-        
+    def _generate_header(self):
+        header = PageStyle("header", header_thickness=1)
+        # Create left header
+        with header.create(Head("L")):
+            header.append(NoEscape(r'\includegraphics[width=1.5cm]{/usr/local/aamks/gui/logo.png}\\'))
+        # Create center header
+        with header.create(Head("C")):
+            header.append("Auto-generated from AAMKS webGUI")
+        # Create right header
+        with header.create(Head("R")):
+            header.append(simple_page_number())
+
+        self.doc.preamble.append(header)
+        self.doc.change_document_style("header")
 
     def _makerows(self):
         rows = {'General':[], 'Risk indices': [], 'Evacuation': [], 'Fire': []}
@@ -962,37 +971,52 @@ class Report:
 
     # those plots should be described and segregated
     def _appendix(self):
-        def add_pict(pict):
+        def add_pict(picts):
+            picts = [picts] if type(picts) == str else picts
             with self.doc.create(Figure(position = 'htbp')) as fig: 
-                fig.add_image(f'{self.pp.dir}/picts/{pict}.png')
-                fig.add_caption(self.picts[pict])
+                for pict in picts:
+                    fig.add_image(f'{self.pp.dir}/picts/{pict}.png', width=NoEscape('.6\\textwidth'))
+                    fig.add_caption(self.picts[pict])
 
         with self.doc.create(Section('Plots', numbering=False)):
-            # convergence
-            add_pict('conv_individual')
+            with self.doc.create(Subsection('Individual risk', numbering=False)):
+                add_pict('conv_individual')     # convergence
+                add_pict('pie_fault')       # pie
+                self.doc.append(NewPage())
 
-            # pie
-            add_pict('pie_fault')
+            with self.doc.create(Subsection('Societal risk', numbering=False)):
+                add_pict('fn_curve')        # FN
+                add_pict('pdf_fn')      # add PDF fatalities
+                self.doc.append(NewPage())
 
-            # FN
-            add_pict('fn_curve')
+            with self.doc.create(Subsection('Heatmaps of FED absorption', numbering=False)):
+                # heatmaps for each floor
+                with self.doc.create(Figure(position = 'htbp')) as fig: 
+                    i = 0
+                    while True:
+                        pth = f'{self.pp.dir}/picts/floor_{i}.png'
+                        if not os.path.isfile(pth):
+                            break
+                        fig.add_image(pth, width=NoEscape('.6\\textwidth'))
+                        fig.add_caption(f'Heatmap of FED absorption on level {i}')
+                        i += 1
+                self.doc.append(NewPage())
 
-            # add PDF fatalities
-            add_pict('pdf_fn')
+            with self.doc.create(Subsection('Fire submodel', numbering=False)):
+                add_pict('max_temp_cdf')      # maximum temperature CDF
+                add_pict(['min_hgt_cdf', 'min_hgt_cor_cdf'])      # minimum neutral plane height CDF
+                add_pict(['min_vis_cdf', 'min_vis_cor_cdf'])      # minimum visibility CDF
+                self.doc.append(NewPage())
 
-            # heatmaps
-            with self.doc.create(Figure(position = 'htbp')) as fig: 
-                i = 0
-                while True:
-                    pth = f'{self.pp.dir}/picts/floor_{i}.png'
-                    if not os.path.isfile(pth):
-                        break
-                    fig.add_image(pth)
-                    fig.add_caption(f'Heatmap of FED absorption on level {i}')
-                    i += 1
+            with self.doc.create(Subsection('Evacuation submodel', numbering=False)):
+                add_pict('wcbe_cdf')      # RSET CDF
+                add_pict('dcbe_cdf')        # ASET CDF
+                add_pict('overlap')      # overlapping of ASET and RSET PDFs
+                self.doc.append(NewPage())
 
     def make(self):
         self._preamble()
+        self._generate_header()
         self._summary()
         self._appendix()
         
