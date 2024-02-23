@@ -41,7 +41,7 @@ fh.setFormatter(formatter)
 ch.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
-logger.warning('Start AAMKS post process')
+
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
 
 def calc_rmse(p: float, n: float, confidence: float = None):
@@ -59,7 +59,8 @@ class GetData:
         self.dir = scenario_dir
         self.configs = self._get_json(f'{scenario_dir}/conf.json')
         self.p = Psql()
-        self.s = Sqlite(f'{self.dir}/aamks.sqlite')
+        self.s = Sqlite(f'{self.dir}/aamks.sqlite', 2)
+        self.check_results()
         self.raw = {}
 
     def _get_json(self, path):
@@ -67,7 +68,14 @@ class GetData:
         dump = json.load(f, object_pairs_hook=OrderedDict)
         f.close()
         return dump
-
+    def check_results(self):
+        sql = self.s.query('SELECT * FROM sqlite_master WHERE type="table"')
+        if not sql:
+            raise Exception(f'No sqlite database for {self.dir}')
+        q = f"SELECT status FROM simulations WHERE project = {self.configs['project_id']} AND scenario_id = {self.configs['scenario_id']}"
+        psql = np.array(self.p.query(q))
+        if  (psql == None).all():
+            raise Exception(f'No psql data for simulation {self.dir}')
     # query DB
     def _quering(self, selects: str, tab='simulations', wheres=[], raw=False, typ='int'):
         base = f"SELECT {selects} FROM {tab} WHERE project = {self.configs['project_id']} AND scenario_id = {self.configs['scenario_id']}"
@@ -1147,20 +1155,25 @@ class Comparison:
         self.save()
         tm('save')
         
-        
+def postprocess(path):
+    logger.warning('Start AAMKS post process')
+    pp = PostProcess(path)
+    pp.t = time.time()
+    pp.produce()
+    from sa import SensitivityAnalysis as SA
+    s = SA(pp.dir)
+    s.main(spearman=True)
+
+def comparepostprocess(scenarios, path):
+    logger.warning('Start AAMKS post process comparison')
+    comp = Comparison(scenarios, path)
+    comp.produce()
 
 if __name__ == '__main__':
     try:
         if len(sys.argv) > 2:
-            comp = Comparison(sys.argv[2:], path=sys.argv[1])
-            comp.produce()
+            comparepostprocess(sys.argv[2:], sys.argv[1])
         else:
-            pp = PostProcess()
-            pp.t = time.time()
-            pp.produce()
-            from sa import SensitivityAnalysis as SA
-            s = SA(pp.dir)
-            s.main(spearman=True)
+            postprocess(sys.argv[1])
     except Exception as e:
         logger.error(e)
-

@@ -113,8 +113,7 @@ sudo locale-gen en_US.UTF-8
 sudo apt-get update 
 sudo apt-get --yes install postgresql subversion python3-psycopg2 xdg-utils apache2 software-properties-common php-redis
 sudo add-apt-repository --yes ppa:deadsnakes/ppa
-sudo apt-get --yes install python3.10 python3.10-venv php-pgsql pdf2svg unzip libapache2-mod-php docker-compose
-sudo apt-get --yes install latexmk texlive-latex-extra
+sudo apt-get --yes install python3.10 python3.10-venv php-pgsql pdf2svg unzip libapache2-mod-php docker-compose pkg-php-tools
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`
