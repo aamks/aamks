@@ -494,6 +494,15 @@ class Plot:
             plot = sns.displot(data, kde=True, stat='density')
         except np.linalg.LinAlgError:
             plot = sns.displot(data, kde=False, stat='density')
+        except ValueError:
+            fig = plt.figure()
+            plt.text(0.5, 0.5, f'No valid data available for {label[0]}',
+                    horizontalalignment='center', verticalalignment='center',
+                    bbox=dict(facecolor='red', alpha=0.5))
+            if path:
+                fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
+            plt.close()
+            return 1
 
         if label:
             plot.set_axis_labels(*label)
@@ -528,15 +537,14 @@ class Plot:
 
         fig, ax = plt.subplots()
         palette = sns.color_palette()
-        if data['CDF'].size != 0:
+        try:
             for i, k in enumerate(data.keys()):
                 sns.histplot(data[k], cumulative=True, kde=True, stat='probability', bins=25, fill=True, color=palette[i],
                     kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1e6]}, ax=ax, label=k)
-        else:
+        except:
             plt.text(0.5, 0.5, f'No valid data available for {label[0]}',
                     horizontalalignment='center', verticalalignment='center',
                     bbox=dict(facecolor='red', alpha=0.5))
-
         #labels
         if label:
             plt.xlabel(label[0])
@@ -747,12 +755,14 @@ class PostProcess:
                 return stat.gaussian_kde(sample)
             except np.linalg.LinAlgError:
                 return stat.gaussian_kde(np.insert(sample[1:], 0, sample[0]*0.99999))
+            except ValueError:
+                return 0
 
         def ovl(samp1, samp2, number_bins=1000):
-            if samp1.size == 0 or samp2.size == 0:
-                return 0
             arr1 = try_kde(samp1)
             arr2 = try_kde(samp2)
+            if samp1.size == 0 or samp2.size == 0 or arr1 == 0 or arr2 == 0:
+                return 0
 
             positions = np.arange(int(max(*samp1, *samp2)*1.2))
             arr1(positions)
@@ -1140,17 +1150,17 @@ class Comparison:
         
 
 if __name__ == '__main__':
-    try:
-        if len(sys.argv) > 2:
-            comp = Comparison(sys.argv[2:], path=sys.argv[1])
-            comp.produce()
-        else:
-            pp = PostProcess()
-            pp.t = time.time()
-            pp.produce()
-            from sa import SensitivityAnalysis as SA
-            s = SA(pp.dir)
-            s.main(spearman=True)
-    except Exception as e:
-        logger.error(e)
+    # try:
+    if len(sys.argv) > 2:
+        comp = Comparison(sys.argv[2:], path=sys.argv[1])
+        comp.produce()
+    else:
+        pp = PostProcess()
+        pp.t = time.time()
+        pp.produce()
+        from sa import SensitivityAnalysis as SA
+        s = SA(pp.dir)
+        s.main(spearman=True)
+    # except Exception as e:
+    #     logger.error(e)
 
