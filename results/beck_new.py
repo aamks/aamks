@@ -527,10 +527,14 @@ class Plot:
 
         fig, ax = plt.subplots()
         palette = sns.color_palette()
-
-        for i, k in enumerate(data.keys()):
-            sns.histplot(data[k], cumulative=True, kde=True, stat='probability', bins=25, fill=True, color=palette[i],
-                kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1e6]}, ax=ax, label=k)
+        if data['CDF'].size != 0:
+            for i, k in enumerate(data.keys()):
+                sns.histplot(data[k], cumulative=True, kde=True, stat='probability', bins=25, fill=True, color=palette[i],
+                    kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1e6]}, ax=ax, label=k)
+        else:
+            plt.text(0.5, 0.5, f'No valid data available for {label[0]}',
+                    horizontalalignment='center', verticalalignment='center',
+                    bbox=dict(facecolor='red', alpha=0.5))
 
         #labels
         if label:
@@ -568,8 +572,10 @@ class Plot:
         ax.set_xlim(left=1, right=maxx)
         miny=1
         for d in data.values():
-            for j in d:
-                miny = j if 0<j<miny else miny
+            miny = min(d) if miny > min(d) else miny
+        miny = 0.75*miny
+            # for j in d:
+            #     miny = j if 0<j<miny else miny
                 
         ax.set_ylim(bottom=miny, top=1)
         fig.tight_layout()
@@ -834,11 +840,6 @@ class PostProcess:
             for f in os.scandir(os.path.join(self.dir, 'picts')):
                 if not f.name.lower().endswith('.zip'):
                     zf.write(f.path, arcname=f.name)
-            try:
-                zf.write('/home/aamks_users/aamks.log', arcname='aamks.log')
-            except FileNotFoundError:
-                logger.error('No log file found - /home/aamks_users/aamks.log')
-
                 
     # produce standard postprocess content
     def produce(self):
@@ -897,9 +898,7 @@ class Report:
         self.pp = postprocess
         self.doc = Document(geometry_options={'margin': '2cm'})
         self.title = 'MULTISIMULATION RESULTS'
-        self.author = self.pp.dir.split('/')[-3]
-        self.project = self.pp.dir.split('/')[-2]
-        self.scenario = self.pp.dir.split('/')[-1]
+        *_, self.author, self.project, self.scenario = self.pp.dir.split('/')
 
     def _preamble(self):
         self.doc.packages.append(Package('array'))
@@ -937,7 +936,7 @@ class Report:
         
         rows['Fire'].append(['Upper layer temperature', f'{self.pp.data["summary"]["hgt"][0]:.1f}°C', f'mean of maximum\
                 value with a standard deviation of {self.pp.data["summary"]["hgt"][1]:.1f}°C'])
-        rows['Fire'].append(['Neutral plane heihgt', f'{self.pp.data["summary"]["height"][0]:.1f} cm', f'mean of minimum\
+        rows['Fire'].append(['Neutral plane height', f'{self.pp.data["summary"]["height"][0]:.1f} cm', f'mean of minimum\
                 value with a standard deviation of {self.pp.data["summary"]["height"][1]:.1f} cm'])
         rows['Fire'].append(['Visibility', f'{self.pp.data["summary"]["vis"][0]:.1f} m', f'mean of minimum value with a\
                 standard deviation of {self.pp.data["summary"]["vis"][1]:.1f} m'])
@@ -947,7 +946,7 @@ class Report:
     def _summary(self):
         with self.doc.create(Section('Summary sheet', numbering=False)):
             self.doc.append(NoEscape(r'\bigskip'))
-            headers = [bold('Paramter'), bold('Value'), bold('Additional remarks')]
+            headers = [bold('Parameter'), bold('Value'), bold('Additional remarks')]
 
             with self.doc.create(Tabular('|m{3.5cm}|m{4cm}|m{8cm}|')) as tab:
                 tab.add_hline()
@@ -979,7 +978,7 @@ class Report:
             add_pict('fn_curve')
 
             # add PDF fatalities
-            add_pict('pdf_n')
+            add_pict('pdf_fn')
 
             # heatmaps
             with self.doc.create(Figure(position = 'htbp')) as fig: 
@@ -1088,11 +1087,6 @@ class Comparison:
             for f in os.scandir(os.path.join(self.dir)):
                 if not f.name.lower().endswith('.zip'):
                     zf.write(f.path, arcname=f.name)
-            try:
-                zf.write('/home/aamks_users/aamks.log', arcname='aamks.log')
-            except FileNotFoundError:
-                logger.error('No log file found - /home/aamks_users/aamks.log')
-
             
     def produce(self):
         # plot together
@@ -1122,17 +1116,6 @@ class Comparison:
         
 
 if __name__ == '__main__':
-    if len(sys.argv) > 2:
-        comp = Comparison(sys.argv[2:], path=sys.argv[1])
-        comp.produce()
-    else:
-        pp = PostProcess()
-        pp.t = time.time()
-        pp.produce()
-        from sa import SensitivityAnalysis as SA
-        s = SA(pp.dir)
-        s.main(spearman=True)
-    exit()
     try:
         if len(sys.argv) > 2:
             comp = Comparison(sys.argv[2:], path=sys.argv[1])
@@ -1146,7 +1129,4 @@ if __name__ == '__main__':
             s.main(spearman=True)
     except Exception as e:
         logger.error(e)
-
-    
-
 
