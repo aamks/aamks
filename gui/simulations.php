@@ -2,6 +2,7 @@
 
 session_name('aamks');
 require_once("inc.php"); 
+require_once("redis_client.php"); 
 
 function listing() {/*{{{*/
 	extract($_SESSION['main']);
@@ -93,29 +94,31 @@ function compare() {/*{{{*/
     $sep = implode('<>', $_POST['comp']);
 
     $cmd = "cd $aamks/results; ../env/bin/python3 beck_new.py $f ".$scens." 2>&1";
+    run_beck_new($f, $scens);
 
     // Output a 'waiting message'
-	$z=shell_exec("$cmd");
-    $_SESSION['pp_time'] =  $_SERVER['REQUEST_TIME'];
-    $URL = "/aamks/simulations.php?comp=".$sep;
-    echo '<META HTTP-EQUIV="refresh" content="0;URL=' . $URL . '">';
+	// $z=shell_exec("$cmd");
+    // $_SESSION['pp_time'] =  $_SERVER['REQUEST_TIME'];
+    // $URL = "/aamks/simulations.php?comp=".$sep;
+    // echo '<META HTTP-EQUIV="refresh" content="0;URL=' . $URL . '">';
 /*}}}*/
 }
 
 /*}}}*/
 function make_pictures() {/*{{{*/
+    
 	$f=$_SESSION['main']['working_home'];
-
+    run_beck_new($f);
+    
 	/*Generate pictures with using beck.py script*/
-	$aamks=getenv("AAMKS_PATH");
+	// $aamks=getenv("AAMKS_PATH");
 	
-    $cmd="cd $aamks/results; ../env/bin/python3 beck_new.py $f 2>&1";
-
+    // $cmd="cd $aamks/results; ../env/bin/python3 beck_new.py $f 2>&1";
     // Output a 'waiting message'
-	$z=shell_exec("$cmd");
-    $_SESSION['pp_time'] =  $_SERVER['REQUEST_TIME'];
-    $URL = "/aamks/simulations.php";
-    echo '<META HTTP-EQUIV="refresh" content="0;URL=' . $URL . '">';
+	// $z=shell_exec("$cmd");
+    // $_SESSION['pp_time'] =  $_SERVER['REQUEST_TIME'];
+    // $URL = "/aamks/simulations.php";
+    // echo '<META HTTP-EQUIV="refresh" content="0;URL=' . $URL . '">';
 /*}}}*/
 }
 

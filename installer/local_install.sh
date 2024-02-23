@@ -38,8 +38,7 @@ sudo locale-gen en_US.UTF-8
 sudo apt-get update
 sudo apt-get --yes install git unzip php-curl postgresql docker-compose software-properties-common php-redis
 sudo add-apt-repository --yes ppa:deadsnakes/ppa
-sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3.10 python3.10-venv
-sudo apt-get --yes install latexmk texlive-latex-extra
+sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3.10 python3.10-venv pkg-php-tools
 echo "{ \"AAMKS_SERVER\": \"$AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
 sudo chown -R "$USER":"$USER" /etc/aamksconf.json
 

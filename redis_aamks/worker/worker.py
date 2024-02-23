@@ -7,6 +7,7 @@ import os
 sys.path.insert(1, '/usr/local/aamks')
 sys.path.insert(1, '/usr/local/aamks/evac')
 from evac import worker as EvacWorker
+from results.beck_new import postprocess, comparepostprocess
 
 class RedisWorker:
     
@@ -35,16 +36,35 @@ class RedisWorker:
 
     def process_message(self, db, message_json: str):
         message = loads(message_json)
-        print(f"Message received: id={message['data']['sim']}")
-        sim_value = message["data"]["sim"]
-        if self.host != "127.0.0.1":
-            sim_value = sim_value.replace("home","mnt")
+        print(f"Message received: id={message['data']}")
+        if 'sim' in message['data']:
+            if self.host != "127.0.0.1":
+                message["data"]["sim"] = message["data"]["sim"].replace("home","mnt")
+            self.run_worker(message)
+        elif 'anim' in message['data']:
+            self.run_beck_anim(message)
+        elif 'aamks' in message['data']:
+            self.run_aamks(message)
+        elif 'results' in message['data']:
+            self.run_beck_new(message)
+    
+    def run_beck_new(self, message):
+        path, scenarios = message['data']['results']
+        print(f"Running beck_new: {path} - {scenarios}")
+        if scenarios:
+            comparepostprocess(scenarios.split(' '), path)
+        else:
+            postprocess(path)
+    
+        
+
+    def run_worker(self, message):
         # Try counter
         retry_count = 0
         max_retries = 3
         while retry_count < max_retries:
             try:
-                ew = EvacWorker.Worker(redis_worker_pwd=sim_value, AA=message['AA'])
+                ew = EvacWorker.Worker(redis_worker_pwd=message["data"]["sim"], AA=message['AA'])
                 ew.run_worker()
                 break  
             except Exception as e:
