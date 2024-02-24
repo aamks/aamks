@@ -9,3 +9,5 @@ shapely==2.0.2
 statsmodels==0.14.0
 redis==5.0.1
 docker==7.0.0
+PyLaTeX==1.4.2
+pdflatex==0.1.3
