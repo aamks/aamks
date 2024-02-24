@@ -1150,17 +1150,17 @@ class Comparison:
         
 
 if __name__ == '__main__':
-    # try:
-    if len(sys.argv) > 2:
-        comp = Comparison(sys.argv[2:], path=sys.argv[1])
-        comp.produce()
-    else:
-        pp = PostProcess()
-        pp.t = time.time()
-        pp.produce()
-        from sa import SensitivityAnalysis as SA
-        s = SA(pp.dir)
-        s.main(spearman=True)
-    # except Exception as e:
-    #     logger.error(e)
+    try:
+        if len(sys.argv) > 2:
+            comp = Comparison(sys.argv[2:], path=sys.argv[1])
+            comp.produce()
+        else:
+            pp = PostProcess()
+            pp.t = time.time()
+            pp.produce()
+            from sa import SensitivityAnalysis as SA
+            s = SA(pp.dir)
+            s.main(spearman=True)
+    except Exception as e:
+        logger.error(e)
 
