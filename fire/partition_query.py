@@ -276,7 +276,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
             return conditions
         else:
             for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
-                if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
+                if self._query_vertices[(x,y)]['y'][i-1] <= q[1]:
                     rx=self._query_vertices[(x,y)]['x'][i-1]
                     ry=self._query_vertices[(x,y)]['y'][i-1]
                     if (rx,ry) in self._cell2compa:

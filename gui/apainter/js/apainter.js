@@ -25,8 +25,9 @@ var activeSnap={};
 var undoBuffer=[];
 var evacueeRadius;
 var threejsPlay=1;
-var floor_teleports_count=0;
-var floor_teleport_direction=0;
+var floor_teleport_up_direction=0;
+var floor_teleport_down_direction=0;
+var teleports = [];
 //}}}
 function debug() {//{{{
 	console.clear();
@@ -162,24 +163,27 @@ function getBbox() {//{{{
 function getPointsTriangleFloorTeleport(){
 	string_points = "";
 
-	string_points += cg.polypoints[0][0].toString();
-	string_points +=",";
-	string_points += (cg.polypoints[0][1]).toString();
-	string_points += " ";
+	if (cg.polypoints !== undefined)
+	{
+		string_points += cg.polypoints[0][0].toString();
+		string_points +=",";
+		string_points += (cg.polypoints[0][1]).toString();
+		string_points += " ";
 
-	string_points += cg.polypoints[1][0].toString();
-	string_points +=",";
-	string_points += (cg.polypoints[1][1]).toString();
-	string_points += " ";
+		string_points += cg.polypoints[1][0].toString();
+		string_points +=",";
+		string_points += (cg.polypoints[1][1]).toString();
+		string_points += " ";
 
-	string_points += cg.polypoints[2][0].toString();
-	string_points +=",";
-	string_points += (cg.polypoints[2][1]).toString();
-	string_points += " ";
+		string_points += cg.polypoints[2][0].toString();
+		string_points +=",";
+		string_points += (cg.polypoints[2][1]).toString();
+		string_points += " ";
 
-	string_points += cg.polypoints[3][0].toString();
-	string_points +=",";
-	string_points += (cg.polypoints[3][1]).toString();
+		string_points += cg.polypoints[3][0].toString();
+		string_points +=",";
+		string_points += (cg.polypoints[3][1]).toString();
+	}
 
 	return string_points;
 }
@@ -640,47 +644,94 @@ function cgDecidePoints(m) {//{{{
 
 	switch (cg.type) {
 		case 'floor_teleport':
-		switch (floor_teleport_direction % 4) {
-			//arrow left
-  			case 0:
-				p0=[px, py-10];
-				p1=[px, py+10];
-				p2=[px-defaults.floor_teleport_width, py];
-				p3=[px, py-10];
-				cg.teleport_from = [px, py]
-				cg.teleport_to = [px-defaults.floor_teleport_width, py]
-    			break;
-    		//arrow up
-  			case 1:
-				p0=[px+10, py];
-				p1=[px-10, py];
-				p2=[px, py-defaults.floor_teleport_width];
-				p3=[px+10, py];
-				cg.teleport_from = [px, py]
-				cg.teleport_to = [px, py-defaults.floor_teleport_width]
-    			break;
-			//arrow right
-  			case 2:
-				p0=[px, py+10];
-				p1=[px, py-10];
-				p2=[px+defaults.floor_teleport_width, py];
-				p3=[px, py+10];
-				cg.teleport_from = [px, py]
-				cg.teleport_to = [px+defaults.floor_teleport_width, py]
-    			break;
-			//arrow down
-  			case 3:
-				p0=[px-10, py];
-				p1=[px+10, py];
-				p2=[px, py+defaults.floor_teleport_width];
-				p3=[px-10, py];
-				cg.teleport_from = [px, py]
-				cg.teleport_to = [px, py+defaults.floor_teleport_width]
-    			break;
-  			default:
-    			break;
+		if (activeLetter == 'kd')
+		{
+			switch (floor_teleport_down_direction % 4) {
+				//arrow left downstairs
+				case 0:
+					p0=[px, py-10];
+					p1=[px, py+10];
+					p2=[px-defaults.floor_teleport_width, py];
+					p3=[px, py-10];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px-defaults.floor_teleport_width, py]
+				break;
+				//arrow up downstairs
+				case 1:
+					p0=[px+10, py];
+					p1=[px-10, py];
+					p2=[px, py-defaults.floor_teleport_width];
+					p3=[px+10, py];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px, py-defaults.floor_teleport_width]
+				break;
+				//arrow right downstairs
+				case 2:
+					p0=[px, py+10];
+					p1=[px, py-10];
+					p2=[px+defaults.floor_teleport_width, py];
+					p3=[px, py+10];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px+defaults.floor_teleport_width, py]
+				break;
+				//arrow down downstairs
+				case 3:
+					p0=[px-10, py];
+					p1=[px+10, py];
+					p2=[px, py+defaults.floor_teleport_width];
+					p3=[px-10, py];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px, py+defaults.floor_teleport_width]
+				break;
+				
+				default:
+					break;
 			}
-			break;
+		}
+		else if (activeLetter == 'ku')
+		{
+			switch (floor_teleport_up_direction % 4) {
+			//arrow left upstairs
+				case 0:
+					p0=[px, py-10];
+					p1=[px, py+10];
+					p2=[px-defaults.floor_teleport_width, py];
+					p3=[px, py-10];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px-defaults.floor_teleport_width, py]
+					break;
+				//arrow up upstairs
+				case 1:
+					p0=[px+10, py];
+					p1=[px-10, py];
+					p2=[px, py-defaults.floor_teleport_width];
+					p3=[px+10, py];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px, py-defaults.floor_teleport_width]
+					break;
+				//arrow right upstairs
+				case 2:
+					p0=[px, py+10];
+					p1=[px, py-10];
+					p2=[px+defaults.floor_teleport_width, py];
+					p3=[px, py+10];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px+defaults.floor_teleport_width, py]
+					break;
+				//arrow down upstairs
+				case 3:
+					p0=[px-10, py];
+					p1=[px+10, py];
+					p2=[px, py+defaults.floor_teleport_width];
+					p3=[px-10, py];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px, py+defaults.floor_teleport_width]
+					break;
+				default:
+					break;
+			}
+		}
+		break;
 		case 'door':
 			if("x" in activeSnap) { 
 				p0=[px-16, py-defaults.door_width];
@@ -753,36 +804,61 @@ function svgPolyline() {//{{{
 function cgUpdateSvg() {  //{{{
 	$("#"+cg.name).attr({ 'points': svgPolyline() });   
 }
-//}}}
+
+function manageTeleportArrows() {//{{{
+	if (activeLetter == 'ku' || activeLetter == 'kd')
+	{
+		content = "";
+		arrows = ["&#8592;", "&#8593;", "&#8594;","&#8595;"];
+		if (activeLetter == 'ku' )
+		{
+			floor_teleport_up_direction+=1;
+			switch (floor_teleport_up_direction % 4) {
+				case 0:
+					content = arrows[0] + " floor_teleport up";
+					break;
+				case 1:
+					content = arrows[1] + " floor_teleport up";
+					break;
+				case 2:
+					content = arrows[2] + " floor_teleport up";
+					break;
+				case 3:
+					content = arrows[3] + " floor_teleport up";
+					break;
+				default:
+					break;
+				}
+		}
+		else if (activeLetter == 'kd' )
+		{
+			floor_teleport_down_direction+=1;
+			switch (floor_teleport_down_direction % 4) {
+				case 0:
+					content = arrows[0] + " floor_teleport down";
+					break;
+				case 1:
+					content = arrows[1] + " floor_teleport down";
+					break;
+				case 2:
+					content = arrows[2] + " floor_teleport down";
+					break;
+				case 3:
+					content = arrows[3] + " floor_teleport down";
+					break;
+				default:
+					break;
+				}
+		}
+		document.getElementById("legend_"+activeLetter).innerHTML = content;
+	}
+}
 
 function cgStartDrawing() {//{{{
 	$('right-menu-box').fadeOut(0); 
 	legend();
 	$('#legend_'+activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
-	if (activeLetter == 'k')
-	{
-		floor_teleport_direction+=1;
-		content = "";
-		arrows = ["&#8592;", "&#8593;", "&#8594;", "&#8595;"];
-		switch (floor_teleport_direction % 4) {
-  		case 0:
-    		content = arrows[0] + " floor_teleport";
-    		break;
-  		case 1:
-    		content = arrows[1] + " floor_teleport";
-    		break;
-  		case 2:
-    		content = arrows[2] + " floor_teleport";
-    		break;
-  		case 3:
-    		content = arrows[3] + " floor_teleport";
-    		break;
-  		default:
-    		break;
-		}
-		document.getElementById("legend_"+activeLetter).innerHTML = content;
-
-	}
+	manageTeleportArrows()
 	cgCreate();
 	underlayPointerEvents(stopDragging=1);
 }
@@ -907,7 +983,7 @@ function json2db(json) { //{{{
 	var letter;
 	var arr;
 	var geom;
-	var elems=["ROOM","COR","STAI","VSTAI","HALL","OBST","VVENT","MVENT","HOLE","WIN","DOOR","FLOOR_TELEPORT","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
+	var elems=["ROOM","COR","STAI","VSTAI","HALL","OBST","VVENT","MVENT","HOLE","WIN","DOOR","FLOOR_TELEPORT_UP","FLOOR_TELEPORT_DOWN","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
 	
 	json = addUpperFloorsVirtualStairs(json);
 

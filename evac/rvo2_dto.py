@@ -12,6 +12,7 @@ from include import Json
 import os
 from scipy.stats import norm
 from math import log
+import math
 from numpy import array, prod, zeros, ndenumerate
 from scipy.spatial.distance import cdist
 import pandas as pd
@@ -38,10 +39,12 @@ class EvacEnv:
         self.nav = None
         self.room_list = OrderedDict()
         self.rooms_in_smoke = []
-        self.agents_to_move_downstairs = []
+        self.agents_to_move_downstairs_or_upstairs = []
         self.unique_agent_id_on_floor = None
-        self.free_space_coordinates_of_telepors_destination = {}
-        self.floor_teleports_queue = {}
+        self.free_space_coordinates_of_upstair_teleport_destination = {}
+        self.free_space_coordinates_of_downstair_teleport_destination = {}
+        self.floor_upstair_teleports_queue = {}
+        self.floor_downstair_teleports_queue = {}
         self.step = 0
 
         f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
@@ -84,7 +87,7 @@ class EvacEnv:
                     if exit['type'] == 'teleport':
                         evacuee.target_teleport_coordinates = (exit['direction_x'], exit['direction_y'])
                     if evacuee.target_teleport_coordinates is not None:
-                        self.append_agents_to_move_downstairs(evacuee, e)
+                        self.append_agents_to_move_downstairs_or_upstairs(evacuee, e)
                     paths_free_of_smoke.append([x, y, 0, exit, path])
 
             else:
@@ -109,36 +112,36 @@ class EvacEnv:
             return None
 
 
-    def _next_room_in_smoke(self, evacuee, path):
-        try:
-            od_at_agent_position = self.smoke_query.get_visibility(self.evacuees.get_position_of_pedestrian(evacuee))
-        except:
-            od_at_agent_position = 0, 'outside'
+    def _next_room_in_smoke(self, evacuee, path, od_at_agent_position):
 
         self.evacuees.set_optical_density(evacuee, od_at_agent_position[0])
         self.room = od_at_agent_position[1]
 
         for point in path[1:]:
-            room = self.smoke_query.xy2room(point)
-            if room != self.room and room != 'outside':
+            od_next_point = self.smoke_query.get_visibility(point)
+            if od_next_point[1] != self.room and od_next_point[1] != 'outside':
                 if self.config['SMOKE_AWARENESS'] and len(path) > 1:
-                    od_next_room = self.smoke_query.get_visibility(point)
-                    if od_at_agent_position[0] < od_next_room[0]:
+                    if od_at_agent_position[0] < od_next_point[0]:
                         return True
                     else:
                         return False
                 else:
                     return False
+                
         return False
 
-    def set_floor_teleport_destination_queue_lists(self, floor_numbers):
-        for floor in floor_numbers:
-            for exit in self.general['agents_destination'][int(floor)]:
-                # destination of teleport on n florr is locaten on n-1 floor but queues of agents are formed on n floor
-                if exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor):
-                    self.floor_teleports_queue[(exit['direction_x'],exit['direction_y'])] = False
-                elif exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor)+1:
-                    self.free_space_coordinates_of_telepors_destination[(exit['direction_x'],exit['direction_y'])]={'min_x':exit['direction_x']-25, 'max_x':exit['direction_x']+25, 'min_y': exit['direction_y']-25, 'max_y': exit['direction_y']+25}
+    def set_floor_teleport_destination_queue_lists(self):
+        for exit in self.general['agents_destination'][int(self.floor)]['general_floor_goals']:
+            # destination of teleport on n florr is locaten on n-1 when stairs goes downstair
+            # and n+1 if stairs goes upstair. queues of agents are formed on n floor
+            if exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor) and exit['stair_direction'] == "downstairs":
+                self.floor_downstair_teleports_queue[(exit['direction_x'],exit['direction_y'])] = False
+            elif exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor) and exit['stair_direction'] == "upstairs":
+                self.floor_upstair_teleports_queue[(exit['direction_x'],exit['direction_y'])] = False
+            elif exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor)+1 and exit['stair_direction'] == "downstairs":
+                self.free_space_coordinates_of_downstair_teleport_destination[(exit['direction_x'],exit['direction_y'])]={'min_x':exit['direction_x']-25, 'max_x':exit['direction_x']+25, 'min_y': exit['direction_y']-25, 'max_y': exit['direction_y']+25}
+            elif exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor)-1 and exit['stair_direction'] == "upstairs":
+                self.free_space_coordinates_of_upstair_teleport_destination[(exit['direction_x'],exit['direction_y'])]={'min_x':exit['direction_x']-25, 'max_x':exit['direction_x']+25, 'min_y': exit['direction_y']-25, 'max_y': exit['direction_y']+25} 
             
     def read_cfast_record(self, time):
         self.smoke_query.read_cfast_record(time)
@@ -242,19 +245,18 @@ class EvacEnv:
                 if evacuee.agent_has_no_escape == True:
                     # agent is trapped, has no escape
                     continue
-                navmesh_path = exit[2]
                 evacuee.exit_coordinates = (exit[0], exit[1])
                 try:
-                    vis = RVOSimulator.query_visibility(self.simulator, position, navmesh_path[2], 15)
+                    vis = RVOSimulator.query_visibility(self.simulator, position, evacuee.path[2], 15)
                     if vis:
-                        self.evacuees.set_goal(ped_no=e, navmesh_path=navmesh_path[1:])
+                        self.evacuees.set_goal(ped_no=e, navmesh_path=evacuee.path[1:])
                     else:
-                        self.evacuees.set_goal(ped_no=e, navmesh_path=navmesh_path)
+                        self.evacuees.set_goal(ped_no=e, navmesh_path=evacuee.path)
                 except:
-                    self.evacuees.set_goal(ped_no=e, navmesh_path=navmesh_path)
+                    self.evacuees.set_goal(ped_no=e, navmesh_path=evacuee.path)
 
-    def append_agents_to_move_downstairs(self, evacuee, pedestrian_number):
-        self.agents_to_move_downstairs.append({
+    def append_agents_to_move_downstairs_or_upstairs(self, evacuee, pedestrian_number):
+        self.agents_to_move_downstairs_or_upstairs.append({
             'agent_number': pedestrian_number,
             'teleport_position': evacuee.target_teleport_coordinates,
             'distance_from_teleport': cdist([evacuee.position], [evacuee.exit_coordinates], 'euclidean')})
@@ -406,9 +408,13 @@ class EvacEnv:
             self.get_rset_time()
         return aset_bool
 
-    def reset_floor_teleport_queue_list(self):
-        for key, value in self.floor_teleports_queue.items():
-            self.floor_teleports_queue[key] = False
+    def reset_floor_downstair_teleport_queue_list(self):
+        for key, value in self.floor_downstair_teleports_queue.items():
+            self.floor_downstair_teleports_queue[key] = False
+
+    def reset_floor_upstair_teleport_queue_list(self):
+        for key, value in self.floor_upstair_teleports_queue.items():
+            self.floor_upstair_teleports_queue[key] = False
 
     def check_if_agents_reached_goal(self):
         for e in range(self.evacuees.get_number_of_pedestrians()):
@@ -419,7 +425,7 @@ class EvacEnv:
                     self.evacuees.has_agent_reached_teleport(self.floor, ped_no=e)
                     evacuee = self.evacuees.get_pedestrian(e)
                     if evacuee.target_teleport_coordinates is not None and evacuee.finished == 0:
-                        self.append_agents_to_move_downstairs(evacuee, e)
+                        self.append_agents_to_move_downstairs_or_upstairs(evacuee, e)
 
 # Total FED growth spatial function (per floor)
 class FEDDerivative:
