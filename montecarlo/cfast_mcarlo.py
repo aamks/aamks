@@ -226,10 +226,14 @@ class CfastMcarlo():
         ''' Randomize how doors are opened/close. '''
 
         pre_evac = self.conf['pre_evac']
-        try:
-            first_percentile = pre_evac['1st']
-        except KeyError:
+        if pre_evac['mean'] and pre_evac['sd']:
+            # if distribution parameters are given
             first_percentile = round(lognorm_percentiles_from_params(pre_evac['mean'], pre_evac['sd'])[0], 1)
+        elif pre_evac['1st'] and pre_evac['99th']:
+            # if percentiles are given
+            first_percentile = pre_evac['1st']
+        else:
+            raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
 
         txt=['!! SECTION DOORS AND HOLES']
         hvents_setup = self.samples['hvents']
