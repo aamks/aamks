@@ -29,20 +29,9 @@ from pylatex.table import Tabular
 from pylatex.basic import NewPage, LineBreak
 from pylatex.headfoot import PageStyle, Head, simple_page_number
 
-log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
-logger = logging.getLogger('AAMKS.beck.py')
-logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler(log_file)
-fh.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-logger.addHandler(fh)
-logger.addHandler(ch)
 
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
+
 
 def calc_rmse(p: float, n: float, confidence: float = None):
     rmse = np.sqrt(p * (1 - p) / n)
@@ -50,7 +39,6 @@ def calc_rmse(p: float, n: float, confidence: float = None):
         return rmse
     else:
         return stat.norm.interval(confidence)[1] * rmse
-
 
 
 '''Import all necessary low-level results from DB'''
@@ -232,8 +220,6 @@ class GetData:
             raw_no_fed = dict(self.raw)
             raw_no_fed.pop('feds')
             return raw_no_fed
-
-
 
 
 '''Classes for calculating values that describe risk in case of fire.
@@ -699,7 +685,6 @@ class Plot:
         plt.close(fig)
 
 
-
 '''Generating plots and results visualization - the head class'''
 class PostProcess:
     plot_type = {
@@ -1155,6 +1140,7 @@ class Comparison:
         self.save()
         tm('save')
         
+
 def postprocess(path):
     logger.warning('Start AAMKS post process')
     pp = PostProcess(path)
@@ -1164,12 +1150,27 @@ def postprocess(path):
     s = SA(pp.dir)
     s.main(spearman=True)
 
+
 def comparepostprocess(scenarios, path):
     logger.warning('Start AAMKS post process comparison')
     comp = Comparison(scenarios, path)
     comp.produce()
 
+
 if __name__ == '__main__':
+    log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
+    logger = logging.getLogger('AAMKS.beck.py')
+    logger.setLevel(logging.DEBUG)
+    fh = logging.FileHandler(log_file)
+    fh.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+
     try:
         if len(sys.argv) > 2:
             comparepostprocess(sys.argv[2:], sys.argv[1])
