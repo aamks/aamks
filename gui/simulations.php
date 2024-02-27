@@ -4,7 +4,11 @@ session_name('aamks');
 require_once("inc.php"); 
 
 function listing() {/*{{{*/
-	extract($_SESSION['main']);
+    extract($_SESSION['main']);
+    $path=$_SESSION['main']['working_home'];
+    $exploded = explode('/', $path);
+	$f = implode('/', array_slice($exploded, 0, -1));
+    $directories = glob($f . '/_comp/*' , GLOB_ONLYDIR);
     $r=$_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1 ORDER BY modified DESC", array($_SESSION['main']['project_id']));
 	echo "<form method='POST' action=''>
 			<input type='submit' style='font-size:12pt; font-weight: bold' name='btn-beck' value='Launch post-processing'>
@@ -15,6 +19,13 @@ function listing() {/*{{{*/
             echo "&nbsp;<input type='checkbox' id=$scenario name='comp[]' value=$scenario><label>$scenario</label>";
         }
             echo "<br><input type='submit' style='font-size:10pt; font-weight: bold' name='btn-comp' value='Compare scenarios'></form>";
+        
+        echo "<a href='simulations.php'><button>Results $scenario_name</button></a>";
+        foreach ($directories as $comp_path){
+            $scenarios_name = substr($comp_path, strrpos($comp_path, '/')+1);
+            $comp_link = str_replace("-", "<>", $scenarios_name);
+            echo "<a href='?comp=$comp_link'><button>Results $scenarios_name</button></a>";
+        }
 }
 /*}}}*/
 function status() {/*{{{*/
@@ -41,7 +52,7 @@ function downloads() {/*{{{*/
         $f = substr($f, 0, strrpos($f, '/'));
         $scens = explode('<>', $_GET['comp']);
         $dir = implode('-', $scens);
-        $f = $f."/".$dir;
+        $f = $f."/_comp/".$dir;
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/report.pdf download><button>Report (.PDF)</button></a>";
         echo "&nbsp; &nbsp;  <a href=$f/picts/txt.zip download><button>Summary TXT files (.ZIP)</button></a>";
@@ -87,7 +98,7 @@ function show_results() {/*{{{*/
         $scens = explode('<>', $_GET['comp']);
         $dir = implode('-', $scens);
         $text = implode(', ', $scens);
-        $f = $_SESSION['main']['user_home']."/".$_SESSION['main']['project_name']."/".$dir;
+        $f = $_SESSION['main']['user_home']."/".$_SESSION['main']['project_name']."/_comp/".$dir;
 
         $pictures_list = array(
             array('pie_fault','The share of iterations with failure of safety systems (at least one fatality) for scenarios: '.$text),
@@ -183,7 +194,7 @@ function show_data() {/*{{{*/
     if (isset($_GET['comp'])){
         $scens = explode('<>', $_GET['comp']);
         $dir = implode('-', $scens);
-        $f = $_SESSION['main']['user_home']."/".$_SESSION['main']['project_name']."/".$dir;
+        $f = $_SESSION['main']['user_home']."/".$_SESSION['main']['project_name']."/_comp/".$dir;
         
         //collect data from each scenario TXT
         foreach ($scens as $s){

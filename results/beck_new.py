@@ -1139,7 +1139,21 @@ class Comparison:
         
         self.save()
         tm('save')
-        
+
+def prepare_logger():
+    log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
+    logger = logging.getLogger('AAMKS.beck.py')
+    logger.setLevel(logging.DEBUG)
+    fh = logging.FileHandler(log_file)
+    fh.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    return logger
 
 def postprocess(path):
     logger.warning('Start AAMKS post process')
@@ -1156,21 +1170,9 @@ def comparepostprocess(scenarios, path):
     comp = Comparison(scenarios, path)
     comp.produce()
 
+logger = prepare_logger() if not logging.getLogger('AAMKS.beck.py').hasHandlers() else logging.getLogger('AAMKS.beck.py')
 
 if __name__ == '__main__':
-    log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
-    logger = logging.getLogger('AAMKS.beck.py')
-    logger.setLevel(logging.DEBUG)
-    fh = logging.FileHandler(log_file)
-    fh.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    logger.addHandler(fh)
-    logger.addHandler(ch)
-
     try:
         if len(sys.argv) > 2:
             comparepostprocess(sys.argv[2:], sys.argv[1])
