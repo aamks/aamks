@@ -1157,7 +1157,7 @@ class Comparison:
     def __init__(self, scenarios, path=None):
         self.project_path = go_back(os.getenv('AAMKS_PROJECT') if not path else path)
         self.scen_names = sorted(scenarios)
-        self.dir = os.path.join(self.project_path, '-'.join(self.scen_names), 'picts')
+        self.dir = os.path.join(self.project_path, '_comp','-'.join(self.scen_names), 'picts')
         self.scens = self._scen_init(scenarios)
         self._summarize_all()
         self.data = self._merge_scens()
@@ -1217,8 +1217,7 @@ class Comparison:
     def save(self):
         [self._zip_ext(i) for i in [('txt', '.txt'), ('picts', '.png', '.jpg', '.jpeg'), ('csv', '.csv')]]
         self._zip_full()
-        dir = self.project_path+'/'+'-'.join(self.scen_names)
-        Report(self.data, dir).make_multiple()
+        Report(self.data, self.dir.rstrip("/picts")).make_multiple()
 
     # run summarize across all scenarios and copy data
     def _summarize_all(self):
