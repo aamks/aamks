@@ -71,15 +71,21 @@ class EvacEnv:
         '''
         paths, paths_free_of_smoke = list(), list()
         evacuee = self.evacuees.get_pedestrian(e)
+        position = self.evacuees.get_position_of_pedestrian(e)
+        try:
+            od_at_agent_position = self.smoke_query.get_visibility(position)
+        except:
+            od_at_agent_position = 0, 'outside'
+
         for exit in self.general['agents_destination'][int(self.floor)]:
             x, y = exit['center_x'], exit['center_y']
-            path = self.nav.nav_query(src=self.evacuees.get_position_of_pedestrian(e), dst=(x, y), maxStraightPath=999)
+            path = self.nav.nav_query(src=position, dst=(x, y), maxStraightPath=999)
             if path[0] == 'err':
                 continue
             dist = int(((exit['center_x'] - path[-1][0])**2 + (exit['center_y'] - path[-1][1])**2)**(1/2))
             if dist > 100:
                 continue
-            if self._next_room_in_smoke(e, path) is not True:
+            if self._next_room_in_smoke(e, path, od_at_agent_position) is not True:
                 try:
                     paths_free_of_smoke.append([x, y, LineString(path).length, exit, path])
                 except:
@@ -99,6 +105,7 @@ class EvacEnv:
             if paths_free_of_smoke[index][3]['type'] == 'teleport':
                 evacuee.target_teleport_coordinates = (paths_free_of_smoke[index][3]['direction_x'], paths_free_of_smoke[index][3]['direction_y'])
                 evacuee.agent_has_no_escape = False
+            evacuee.path = paths_free_of_smoke[index][4]
             return paths_free_of_smoke[index][0], paths_free_of_smoke[index][1], paths_free_of_smoke[index][4]
         elif len(paths) > 0:
             exits = list(zip(*paths))[2]
@@ -106,9 +113,11 @@ class EvacEnv:
             if paths[index][3]['type'] == 'teleport':
                 evacuee.target_teleport_coordinates = (paths[index][3]['direction_x'], paths[index][3]['direction_y'])
                 evacuee.agent_has_no_escape = False
+            evacuee.path = path[index][4]
             return paths[index][0], paths[index][1], paths[index][4]
         else:
             evacuee.agent_has_no_escape = True
+            evacuee.path = []
             return None
 
 
@@ -131,7 +140,7 @@ class EvacEnv:
         return False
 
     def set_floor_teleport_destination_queue_lists(self):
-        for exit in self.general['agents_destination'][int(self.floor)]['general_floor_goals']:
+        for exit in self.general['agents_destination'][int(self.floor)]:
             # destination of teleport on n florr is locaten on n-1 when stairs goes downstair
             # and n+1 if stairs goes upstair. queues of agents are formed on n floor
             if exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor) and exit['stair_direction'] == "downstairs":
