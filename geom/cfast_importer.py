@@ -495,7 +495,7 @@ class CFASTimporter():
     def _find_intersections_within_rooms(self):# {{{
         update=[]
         for floor,rooms_dict in self.aamks_polies['COMPA'].items():
-            all_rooms={z['global_type_id']: z['name'] for z in self.s.query("SELECT name, global_type_id FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY name", floor)}
+            all_rooms={z['global_type_id']: z['name'].split('.')[0] for z in self.s.query("SELECT name, global_type_id FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY name", floor)}
             vc_intersections={key:[] for key in all_rooms.keys() }
             for compa1_id,compa1_poly in rooms_dict.items():
                 for compa2_id,compa2_poly in self.aamks_polies['COMPA'][floor].items():
