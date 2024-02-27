@@ -165,7 +165,8 @@ class Worker:
 
         for door in outside_building_doors:
             room_before_exit_center = self.s.query('SELECT center_x, center_y from aamks_geom WHERE name=? or name=?', (door['vent_to_name'],door['vent_from_name']))
-            destination_x, destination_y = self._get_outside_door_destination(room_before_exit_center[0]['center_x'], room_before_exit_center[0]['center_y'], door)
+            center_x, center_y = self.get_center_from_points(room_before_exit_center[0]['points'])
+            destination_x, destination_y = self._get_outside_door_destination(center_x, center_y, door)
             self.vars['conf']['agents_destination'][int(door['floor'])].append({'name':door['name'], 'floor':door['floor'], 'center_x':destination_x, 'center_y':destination_y, 'type':'door'})
 
         for teleport in floor_teleports:
@@ -183,6 +184,13 @@ class Worker:
         self.wlogger.info('SQLite load successfully')
 
 
+    def get_center_from_points(self, points):
+        points_parsed_1 = points.replace('[', '')
+        points_parsed_2 = points_parsed_1.replace(']', '')
+        points = points_parsed_2.split(', ')
+        int_points = [int(x) for x in points]
+        return((int_points[0]+int_points[2]+int_points[4]+int_points[6])/4, (int_points[1]+int_points[3]+int_points[5]+int_points[7])/4)
+        
     def _get_outside_door_destination(self, last_room_center_x, last_room_center_y, door):
         goal_from_door_distance = 100
         if door['width'] < door['depth']:
