@@ -1277,11 +1277,10 @@ def comparepostprocess(scenarios, path):
     comp.produce()
 
 if __name__ == '__main__':
-    # try:
-    if len(sys.argv) > 2:
-        comparepostprocess(sys.argv[2:], sys.argv[1])
-    else:
-        postprocess(sys.argv[1])
-    # except Exception as e:
-    #     logger.error(e)
-
+    try:
+        if len(sys.argv) > 2:
+            comparepostprocess(sys.argv[2:], sys.argv[1])
+        else:
+            postprocess(sys.argv[1])
+    except Exception as e:
+        logger.error(e)

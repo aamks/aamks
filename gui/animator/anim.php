@@ -101,11 +101,9 @@ function make_anim_pictures(){
 	$project = $_SESSION['main']['project_id'];
 	$scenario = $_SESSION['main']['scenario_id'];
 	$f=$_SESSION['main']['working_home'];
-	$aamks=getenv("AAMKS_PATH");
 	$data = $_SESSION['nn']->query("SELECT anim_params, iteration from simulations where project = '$project' and scenario_id = '$scenario' and iteration = '$iter';");
-	    $cmd="cd $aamks/results; ../env/bin/python3 beck_anim.py $f $project $scenario $iter 2>&1";
 	if (empty($data[0]['anim_params'])){
-		$z=shell_exec("$cmd");
+		run_beck_anim($f, $project, $scenario, $iter);
 	};
 }
 function main() {/*{{{*/

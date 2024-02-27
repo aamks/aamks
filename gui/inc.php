@@ -1,6 +1,7 @@
 <?php
 session_name('aamks');
 require_once("lib.form.php"); 
+require_once("redis_client.php"); 
 session_start();
 #phpinfo();
 ini_set('error_reporting', E_ALL);

@@ -11,6 +11,7 @@ from redis_aamks.app.main import AARedis
 class RedisManager:
     def __init__(self):
         self.redis_pwd = os.path.join(os.environ['AAMKS_PATH'], "redis_aamks")
+        self.server_path = os.path.join(self.redis_pwd, "worker", "server.py")
         self.worker_path = os.path.join(self.redis_pwd, "worker", "worker.py")
         self.container_name = "aamks_redis"
         self.net_conf = "/etc/aamksconf.json" 
@@ -85,7 +86,10 @@ class RedisManager:
         for data in self.host_array:
             for ip in data[2]:
                 self.ip_array.append(ip)
-
+    def start_worker_server(self):
+        print(f"Trying to start worker server")
+        cmd = ["nohup", f"{os.environ['AAMKS_PATH']}/env/bin/python3", self.server_path, "&"]
+        Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     #START WORKERS
     def start_workers_ip(self, ip, n:int):
         print(f"Trying to start {n} workers on {ip}")
@@ -178,6 +182,8 @@ class RedisManager:
         parser.add_argument('--serverstop', help='Stop redis server', required=False, action='store_true')
         parser.add_argument('--serverdelete', help='Delete all docker redis containers', required=False, action='store_true')
         parser.add_argument('--serverstatus', help='Check docker redis containers status', required=False, action='store_true')
+        #worker server
+        parser.add_argument('--workerserv', help='Run python server tasks resolver', required=False, action='store_true')
         #run
         parser.add_argument('--runall', help='Run all workers according to etc/aamksconf.json', required=False, action='store_true')
         parser.add_argument('--runone', help='Run n workers on specific ip | --runone -ip 192.168.0.184 -n 2', required=False,  action='store_true')
@@ -212,6 +218,8 @@ class RedisManager:
             self.delete_all_redis_servers()
         if args.serverstatus:
             self.show_server_status()
+        if args.workerserv:
+            self.start_worker_server()
         #run
         if args.runall:
             self.start_workers_on_all_nodes()
