@@ -36,9 +36,9 @@ function message(){
     //     "SERVER" => getenv("AAMKS_SERVER"),
     //     "PG_PASS" => getenv("AAMKS_PG_PASS")),
 }
-function run_aamks($path){
+function run_aamks($path, $user_id){
     $mess = message();
-    $mess["data"] = array("aamks" => $path);
+    $mess["data"] = array("aamks" => [$path, $user_id]);
     push($mess);
 }
 function run_beck_anim($path, $project, $scenario, $iter){

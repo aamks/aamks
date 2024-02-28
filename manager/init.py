@@ -24,9 +24,6 @@ logger = logging.getLogger('AAMKS.init.py')
 class OnInit():
     def __init__(self):# {{{
         ''' Stuff that happens at the beggining of the project '''
-
-        if len(sys.argv) > 1: os.environ["AAMKS_PROJECT"]=sys.argv[1]
-        if len(sys.argv) > 2: os.environ["AAMKS_USER_ID"]=sys.argv[2]
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']

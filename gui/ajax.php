@@ -88,7 +88,7 @@ function ajaxLaunchSimulation() { #{{{
 		return;
 	}
 
-	run_aamks($working_home);
+	run_aamks($working_home, $user_id);
 	echo json_encode(array("msg"=>"$nos simulations launched", "err"=>0, "data"=>''));
 	
 }

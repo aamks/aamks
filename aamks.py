@@ -30,13 +30,13 @@ def prepare_logger(path):
     logger.addHandler(ch)
     return logger
 
-def start_aamks(path):
-    logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')
+def start_aamks(path, user_id):
+    os.environ["AAMKS_PROJECT"] = path
+    os.environ["AAMKS_USER_ID"] = user_id
     json = Json()
-    if path:
-        conf = json.read("{}/conf.json".format(path))
-    else:
-        conf = json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+    conf = json.read("{}/conf.json".format(path))
+    logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')
+
     logger.warning('Start AAMKS application. Read conf.json')
     logger.info('calling OnInit()')
     OnInit()
@@ -72,4 +72,12 @@ def start_aamks(path):
         
 
 if __name__ == '__main__':
-    start_aamks(sys.argv[1])
+    if len(sys.argv) > 2:
+        os.environ["AAMKS_PROJECT"]=sys.argv[1]
+        os.environ["AAMKS_USER_ID"]=sys.argv[2]
+        start_aamks(sys.argv[1], sys.argv[2])
+    elif len(sys.argv) > 1:
+        os.environ["AAMKS_PROJECT"]=sys.argv[1]
+        start_aamks(sys.argv[1], os.environ['AAMKS_USER_ID'])
+    else:
+        start_aamks(os.environ['AAMKS_PROJECT'], os.environ['AAMKS_USER_ID'])

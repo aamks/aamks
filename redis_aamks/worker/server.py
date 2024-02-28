@@ -46,8 +46,8 @@ class RedisWorkerServer:
             self.run_beck_new(message)
     
     def run_aamks(self, message):
-        path = message['data']['aamks']
-        start_aamks(path)
+        path, user_id = message['data']['aamks']
+        start_aamks(path, user_id)
     
     def run_beck_anim(self, message):
         path, project, scenario, iter = message['data']['anim']
