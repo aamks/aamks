@@ -182,8 +182,6 @@ class RedisManager:
         parser.add_argument('--serverstop', help='Stop redis server', required=False, action='store_true')
         parser.add_argument('--serverdelete', help='Delete all docker redis containers', required=False, action='store_true')
         parser.add_argument('--serverstatus', help='Check docker redis containers status', required=False, action='store_true')
-        #worker server
-        parser.add_argument('--workerserv', help='Run python server tasks resolver', required=False, action='store_true')
         #run
         parser.add_argument('--runall', help='Run all workers according to etc/aamksconf.json', required=False, action='store_true')
         parser.add_argument('--runone', help='Run n workers on specific ip | --runone -ip 192.168.0.184 -n 2', required=False,  action='store_true')
@@ -212,14 +210,13 @@ class RedisManager:
         #server
         if args.serverstart:
             self.run_redis_server()
+            self.start_worker_server()
         if args.serverstop:
             self.stop_redis_server()
         if args.serverdelete:
             self.delete_all_redis_servers()
         if args.serverstatus:
             self.show_server_status()
-        if args.workerserv:
-            self.start_worker_server()
         #run
         if args.runall:
             self.start_workers_on_all_nodes()

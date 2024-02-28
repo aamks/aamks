@@ -59,10 +59,12 @@ class GetData:
     def check_results(self):
         sql = self.s.query('SELECT * FROM sqlite_master WHERE type="table"')
         if not sql:
+            logger.error(f'No sqlite database for {self.dir}')
             raise Exception(f'No sqlite database for {self.dir}')
         q = f"SELECT status FROM simulations WHERE project = {self.configs['project_id']} AND scenario_id = {self.configs['scenario_id']}"
         psql = np.array(self.p.query(q))
         if  (psql == None).all():
+            logger.error(f'No psql data for simulation {self.dir}')
             raise Exception(f'No psql data for simulation {self.dir}')
     # query DB
     def _quering(self, selects: str, tab='simulations', wheres=[], raw=False, typ='int'):
@@ -729,7 +731,6 @@ class PostProcess:
         self.n = len(self.gd.raw['feds'])  # number of finished iterations taken for results analysis
         self.probs = []#{}
 
-
     # save data
     def save(self, no_zip=False):
         self.gd.to_csv()
@@ -1140,8 +1141,8 @@ class Comparison:
         self.save()
         tm('save')
 
-def prepare_logger():
-    log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
+def prepare_logger(path):
+    log_file = path + '/aamks.log' if path else os.getenv('AAMKS_PROJECT') + '/aamks.log'
     logger = logging.getLogger('AAMKS.beck.py')
     logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler(log_file)
@@ -1156,6 +1157,8 @@ def prepare_logger():
     return logger
 
 def postprocess(path):
+    global logger
+    logger = prepare_logger(path) if not logging.getLogger('AAMKS.beck.py').hasHandlers() else logging.getLogger('AAMKS.beck.py')
     logger.warning('Start AAMKS post process')
     pp = PostProcess(path)
     pp.t = time.time()
@@ -1166,11 +1169,12 @@ def postprocess(path):
 
 
 def comparepostprocess(scenarios, path):
+    global logger
+    logger = prepare_logger(path) if not logging.getLogger('AAMKS.beck.py').hasHandlers() else logging.getLogger('AAMKS.beck.py')
     logger.warning('Start AAMKS post process comparison')
     comp = Comparison(scenarios, path)
     comp.produce()
 
-logger = prepare_logger() if not logging.getLogger('AAMKS.beck.py').hasHandlers() else logging.getLogger('AAMKS.beck.py')
 
 if __name__ == '__main__':
     try:

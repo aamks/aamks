@@ -15,34 +15,29 @@ from include import SimIterations
 from include import Json
 import logging
 
-def start_aamks(path):
-    json = Json()
-    if path:
-        conf = json.read("{}/conf.json".format(path))
-        log_file = path + '/aamks.log'
-    else:
-        conf = json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        log_file = os.environ['AAMKS_PROJECT'] + '/aamks.log'
-
+def prepare_logger(path):
+    log_file = path + '/aamks.log' if path else os.getenv('AAMKS_PROJECT') + '/aamks.log'
     logger = logging.getLogger('AAMKS')
     logger.setLevel(logging.DEBUG)
-    # create file handler which logs even debug messages
     fh = logging.FileHandler(log_file)
     fh.setLevel(logging.DEBUG)
-    # create console handler 
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
-    # create formatter and add it to the handlers
     formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     ch.setFormatter(formatter)
-    # add the handlers to the logger
     logger.addHandler(fh)
     logger.addHandler(ch)
+    return logger
 
+def start_aamks(path):
+    logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')
+    json = Json()
+    if path:
+        conf = json.read("{}/conf.json".format(path))
+    else:
+        conf = json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
     logger.warning('Start AAMKS application. Read conf.json')
-
-    ##
     logger.info('calling OnInit()')
     OnInit()
     logger.info('finished OnInit()')
@@ -74,6 +69,7 @@ def start_aamks(path):
     OnEnd()
     logger.info('finished OnEnd()')
     logger.info('AAMKS application finished successfully')
+        
 
 if __name__ == '__main__':
     start_aamks(sys.argv[1])
