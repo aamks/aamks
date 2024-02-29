@@ -155,7 +155,7 @@ class OnEnd():
         '''
 
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
-
+        logger.info(f"run job {os.environ['AAMKS_WORKER']}")
         if os.environ['AAMKS_WORKER']=='none':
             return
 
