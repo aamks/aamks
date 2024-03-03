@@ -4,8 +4,8 @@ set -ueo pipefail
 # e - stop installing when exit != 0
 # o - invalid | 
 
-# Download local_config and set parameters
-source local_config
+# Download config and set parameters
+source config
 
 USER=$(id -ru)
 USERNAME=$(id -nu)
@@ -24,6 +24,7 @@ echo "AAMKS_SERVER: $AAMKS_SERVER"
 echo "AAMKS_PATH: $AAMKS_PATH"
 echo "AAMKS_PROJECT: $AAMKS_PROJECT"
 echo "AAMKS_PG_PASS: $AAMKS_PG_PASS"
+echo "AAMKS_REDIS_PASS: $AAMKS_REDIS_PASS"
 echo "AAMKS_WORKER: $AAMKS_WORKER"
 echo "AAMKS_SALT: $AAMKS_SALT"
 echo "AAMKS_USE_MAIL: $AAMKS_USE_MAIL"
@@ -35,9 +36,10 @@ echo "<Enter> accepts, <ctrl+c> cancels";
 read
 sudo locale-gen en_US.UTF-8
 sudo apt-get update
-sudo apt-get --yes install git unzip php-curl postgresql docker-compose software-properties-common
-sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt-get --yes install git unzip php-curl postgresql docker-compose software-properties-common php-redis
+sudo add-apt-repository --yes ppa:deadsnakes/ppa
 sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3.10 python3.10-venv
+sudo apt-get --yes install latexmk texlive-latex-extra
 echo "{ \"AAMKS_SERVER\": \"$AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
 sudo chown -R "$USER":"$USER" /etc/aamksconf.json
 
@@ -154,6 +156,8 @@ echo; echo; echo;
 echo "AAMKS installed successfully. You can start using it at http://127.0.0.1/aamks"
 echo "Default user email: demo@aamks"
 echo "Password: AAMKSisthe1!"
-echo "In order to run simulations in redis mode configure workers in network or start worker via redis manager.";
+echo "In order to run simulations in redis mode configure workers in network or start worker via redis manager."
+echo "You can start redis server and worker via command:"
+echo "python3 $AAMKS_PATH/redis_aamks/manager.py --serverstart"
 echo "python3 $AAMKS_PATH/redis_aamks/manager.py --runlocal -n 1";
 echo "Log out and log in to reload USER group settings"

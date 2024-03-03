@@ -15,6 +15,8 @@ function set_help($show=false) {
     '15' => 'Downloading cfast.in failed',
     '16' => 'Downloading $AAMKS_PATH/evac/conf.json failed',
     '17' => 'Loading evac.json failed',
+    '18' => 'Started worker - running CFAST simulation',
+    '19' => 'CFAST simulation calculated with success',
     '20' => 'Unknown CFAST error',
     '21' => 'CFAST timeout (after 600 s)',
     '22' => 'CFAST pressure error',
@@ -25,6 +27,9 @@ function set_help($show=false) {
     '33' => 'Error reading smoke query record (fires.partition_query.PartitionQuery.cfast_has_time())',
     '90' => 'Iteration halted remotely (cancelled at the queuing stage)',
     '91' => 'Iteration halted manually (also this code has to be set by hand)',
+    '100' => 'Started worker',
+    '101' => 'Started running CFAST simulation',
+    '102' => 'CFAST simulation calculated with success',
     '' => 'Job submitted. No data has been received from worker yet',
     'halted' => 'deprecated code 90',
 ];
@@ -98,6 +103,8 @@ function check_stat($r) {
     '15' => 0,
     '16' => 0,
     '17' => 0,
+    '18' => 0,
+    '19' => 0,
     '20' => 0,
     '21' => 0,
     '22' => 0,
@@ -108,6 +115,9 @@ function check_stat($r) {
     '33' => 0,
     '90' => 0,
     '91' => 0,
+    '100' => 0,
+    '101' => 0,
+    '102' => 0,
     '' => 0,
     'in progress' => 0,
 ];
@@ -119,15 +129,15 @@ function check_stat($r) {
 		echo "<tr>";
 		echo "<td align='center'>".$element['iteration']."</td>";
 
-        if ($element['status'] > 1000){
+        if ($element['status'] >= 1000){
             $sum += 1;
             $statuses['in progress'] += 1;
-            echo "<td>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
+            echo "<td align='center'>".($element['status']-1000)."%</td><td>Job in progress</td></tr>"; // Add a line break after each inner array
         }
         else{
 			$statuses[$element['status']] += 1;
 			$sum += 1;
-			echo "<td>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
+			echo "<td align='center'>".$element['status']."</td><td>".$_SESSION['codes'][$element['status']]."</td></tr>"; // Add a line break after each inner array
 		}
 
 	
@@ -140,7 +150,7 @@ function check_stat($r) {
 }
 
 
-function stop($r) {
+function stop_redis($r) {
     $sum = 0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
     echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
@@ -154,13 +164,40 @@ function stop($r) {
             # Redis delete
             $element_job_id = $element['job_id'];
             delete_from_redis($redis, $element_job_id);
-            echo "<td align='center'>$element_job_id</td><td></td>";
+            echo "<td align='center'>OK</td><td></td>";
             $r = $_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id']));
             $sum += 1;
         } else {
             echo "<td align='center'>NO</td><td align='center'>" . $element['status'] . "</td>";
         }
         echo "<tr>";
+    }
+    echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>";
+}
+
+
+
+function stop_gearman($r) {
+    $sum=0;
+    echo "<table><tr><th>Details</th><th>Summary</th></tr><tr><td valign='top'>";
+	echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
+
+	foreach ($r as $element) {
+        echo "<tr><td>".$element['iteration']."</td>";
+        if ($element['status']==''){
+            $cmd = "gearadmin --cancel-job=".$element['job_id'];
+            $z=shell_exec("$cmd");
+            echo "<td align='center'>$z</td><td></td>";
+            if(!array_key_exists('nn', $_SESSION))
+            {
+                header("Location: login.php?session_finished_information=1");
+            }
+            $r=$_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id'] ));
+            $sum += 1;
+        }else{
+            echo "<td align='center'>NO</td><td align='center'>".$element['status']."</td>";
+        }
+    echo "<tr>";
     }
     echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>";
 }
@@ -256,12 +293,11 @@ function delete_from_redis($redis, $id){
     $redis_queue_key = 'aamks_queue';
     $elements = $redis->lrange($redis_queue_key, 0, -1);
     foreach ($elements as $element) {
-        // Decode JSON
         $decoded_element = json_decode($element, true);
         if ($decoded_element['id'] == $element_id_to_remove) {
             // delete element from DB
             $redis->lrem($redis_queue_key, $element, 0);
-            break; // break when id found
+            break; 
         }
     }
 }
@@ -280,11 +316,23 @@ function main() {/*{{{*/
 	//if halt stop()
 	if (isset($_POST['btn-halt'])) {
 		set_help();
-		stop(query_any());
+        if (getenv('AAMKS_WORKER') == "gearman"){
+            stop_gearman(query_any());
+        }
+        elseif (getenv('AAMKS_WORKER') == "redis"){
+            stop_redis(query_any());
+        }
+        
 	}
 	elseif (isset($_POST['btn-halt-cur'])) {
 		set_help();
-		stop(query_cur());
+        if (getenv('AAMKS_WORKER') == "gearman"){
+            stop_gearman(query_cur());
+        }
+        elseif (getenv('AAMKS_WORKER') == "redis"){
+            stop_redis(query_cur());
+        }
+		
     }
 	elseif (isset($_POST['btn-check-status'])) {
 		set_help();

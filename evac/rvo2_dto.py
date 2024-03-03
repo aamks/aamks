@@ -442,7 +442,7 @@ class EvacEnv:
         if (exited > len(finished) * 0.98) and self.per_9 == 0:
             self.rset = self.current_time + 30
         # all egressed but ...?
-        if all(x == 0 for x in finished) and self.rset == 0:
+        if all(x == 0 for x in finished) and self.rset == 0 and len(finished) != 0:
             self.rset = self.current_time + 30
 
     def do_simulation(self, step):

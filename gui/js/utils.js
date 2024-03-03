@@ -35,6 +35,12 @@ function delScenario() {
 			setTimeout(() => {  window.location.href = 'projects.php?projects_list';  }, 500);
 		}}
 )};
+function resetScenario() {
+	myConfirm("Are you sure to delete all records from scenario?").then(response=>{
+		if (response) {
+			$.post('projects.php?projects_list', {'reset_scenario':'true'});
+		}}
+)};
 
 $(function()  {//{{{
 	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
@@ -106,43 +112,6 @@ function amsg(r) {//{{{
 	}
 }
 //}}}
-function searchTable() {
-	var input, filter, found, table, tr, td, i, j;
-	input = document.getElementById("search");
-	filter = input.value.toUpperCase();
-	table = document.getElementById("sim");
-	tr = table.getElementsByTagName("tr");
-	for (i = 0; i < tr.length; i++) {
-		td = tr[i].getElementsByTagName("td");
-		for (j = 0; j < td.length; j++) {
-			if (td[j].innerHTML.toUpperCase().indexOf(filter) > -1) {
-				found = true;
-			}
-		}
-		if (found) {
-			tr[i].style.display = "";
-			found = false;
-		} else {
-			tr[i].style.display = "none";
-		}
-	}
-}
-function sortTable(){
-	document.getElementById("animcheck").checked="checked";
-	document.getElementById('trAnim').style.cursor = 'pointer';
-	const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
-
-	const comparer = (idx, asc) => (a, b) => ((v1, v2) => 
-	v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
-	)(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
-
-	document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
-	const table = th.closest('table');
-	Array.from(table.querySelectorAll('tr:not(thead tr)'))
-		.sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
-		.forEach(tr => table.appendChild(tr) );
-	})));
-}
 function scenario_changer() {//{{{
 	$("body").on("change", "#choose_scenario", function() {
 		$.post('/aamks/ajax.php?ajaxChangeActiveScenario', {'ch_scenario':$(this).val() }, function (json) { 
@@ -198,6 +167,17 @@ function launch_simulation() {//{{{
 		});
 	});
 }
+function launch_draft() {//{{{
+	$("body").on("click", "#launch_draft", function() {
+		amsg({"msg": "Trying to launch draft...", "err":0, "duration": 20000 }); 
+		$.post('/aamks/projects.php', {'copy_scenario':'draft' });
+		$.post('/aamks/ajax.php?ajaxLaunchSimulation', { }, function () { 
+			setTimeout(function(){
+				location.assign("/aamks/halt.php");
+			}, 1500);
+		});
+	});
+}
 //}}}
 function isEmpty(obj) {//{{{
 	// Check if dict empty
@@ -222,6 +202,7 @@ deepcopy=function(x) {//{{{
 $(function() { 
 	check_progress();
 	scenario_changer();
+	launch_draft();
 	launch_simulation();
 	if(navigator.userAgent.indexOf("Chrome")==-1) { alert("Aamks is designed for Google Chrome. Aamks may work, but is not supported on other browsers"); }
 });

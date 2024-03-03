@@ -589,6 +589,7 @@ function cgCreate() {//{{{
 		updatePosInfo(m);
 	});  
 	svg.on('mouseup', function() {
+		checkNegativeCords();
 		if(assertCgReady()) {
 			delete cg.growing;
 			cgUpdateSvg();
@@ -601,7 +602,19 @@ function cgCreate() {//{{{
 	});
 }
 //}}}
-
+function checkNegativeCords(){
+	var negative = false
+	cg.polypoints.forEach(function(array){array.forEach(function(x){
+		if(x < 0){
+			negative = true
+		}
+	})})
+	if(negative){
+		delete cg.growing;
+		cgInit();
+		amsg({'err':1, 'msg':"Object in negative coordinates! You can not draw here!"}); 
+	}
+}
 function updatePosInfo(m) {//{{{
 	if(cg.infant==1) {
 		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]);

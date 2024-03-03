@@ -126,7 +126,6 @@ function ajaxAnimsList() { /*{{{*/
 function ajaxAnimsStatic() { /*{{{*/
 	$f=$_SESSION['main']['working_home']."/workers/static.json";
 	if(is_file($f)) {
-		chmod($f, 0666); 
 		$data=json_decode(file_get_contents($f));
 		if(empty($data)) { 
 			echo json_encode(array("msg"=>"Empty or broken json $f", "err"=>1, "data"=>''));

@@ -473,7 +473,8 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
 #        finals['dcbe']=max(hgt, ulod, ult)
 
         # min(HGT_COR) 
-        finals['min_hgt_cor']=self.sf.query("SELECT MIN(value) FROM finals WHERE compa_type='c' AND param='HGT'")[0]['MIN(value)']
+        q = self.sf.query("SELECT MIN(value) FROM finals WHERE compa_type='c' AND param='HGT'")[0]['MIN(value)']
+        finals['min_hgt_cor']= (q if q else 0)
 
         # min(HGT_COMPA)
         finals['min_hgt_compa']=self.sf.query("SELECT MIN(value) FROM finals WHERE param='HGT'")[0]['MIN(value)']
@@ -488,8 +489,11 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
 
         c_const = self.project_conf['c_const']
         # min(ULOD_COR)
-        ul_od_cor = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='c' AND param='ULOD'")[0]['MAX(value)']
-        if ul_od_cor == 0:
+        q = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='c' AND param='ULOD'")[0]['MAX(value)']
+        ul_od_cor = (q if q else 0)
+        if not q:
+            finals['min_vis_cor'] = 0
+        elif ul_od_cor == 0:
             finals['min_vis_cor'] = 30
         else:
             finals['min_vis_cor'] = c_const / (ul_od_cor * 2.303)

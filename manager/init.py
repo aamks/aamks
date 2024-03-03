@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import datetime
 from subprocess import Popen,PIPE
 import subprocess
 import time
@@ -18,7 +19,6 @@ import subprocess
 import logging
 import sys
 
-from redis_aamks.app.main import AARedis
 logger = logging.getLogger('AAMKS.init.py')
 
 class OnInit():
@@ -167,6 +167,8 @@ class OnEnd():
             for i in range(*si.get()):
                 logger.info('start worker.py sim - %s', i)
                 exit_status = subprocess.run(["{}/env/bin/python3".format(os.environ['AAMKS_PATH']), "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                job_id=datetime.datetime.now().strftime("%Y%m%d")+f"-iter-{i}"
+                self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                 if exit_status.returncode != 0:
                     logger.error('worker exit status - %s', exit_status)
                 else:
@@ -190,6 +192,7 @@ class OnEnd():
 
 
         if os.environ['AAMKS_WORKER']=='redis':
+            from redis_aamks.app.main import AARedis
             AR = AARedis()
             try:
                 for i in range(*si.get()):
