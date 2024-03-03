@@ -212,9 +212,7 @@ class Worker:
 
 
     def get_center_from_points(self, points):
-        points_parsed_1 = points.replace('[', '')
-        points_parsed_2 = points_parsed_1.replace(']', '')
-        points = points_parsed_2.split(', ')
+        points = points.replace('[', '').replace(']', '').split(', ')
         int_points = [int(x) for x in points]
         return((int_points[0]+int_points[2]+int_points[4]+int_points[6])/4, (int_points[1]+int_points[3]+int_points[5]+int_points[7])/4)
 
@@ -580,7 +578,7 @@ class Worker:
 
     def get_agents_to_move(self):
         if len(self.floors) == 1:
-            return
+            return []
         # agents_to_move_downstairs = []
         agents_to_move = []
         for i in range(0,len(self.floors)):
