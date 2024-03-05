@@ -72,7 +72,10 @@ class RedisManager:
         except:
             print("Redis container does not exist")
 
-    def get_hosts(self):
+        try:
+            self.queue.connect()
+        except:
+            print('Error connecting to database queue manager')
         #Get all nodes from aamkconf.json
         with open(self.net_conf, "r") as file:
             data = json.load(file)
@@ -255,33 +258,46 @@ class RedisManager:
             self.kill_serv()
         #queue
         elif args.q:
+            self.queue.connect()
             self.queue.show(short=True)
         elif args.qa:
+            self.queue.connect()
             self.queue.show()
         elif args.sq:
+            self.queue.connect()
             self.queue.show_server(short=True)
         elif args.sqa:
+            self.queue.connect()
             self.queue.show_server()
         elif args.w:
+            self.queue.connect()
             self.queue.clients(short=True)
         elif args.wa:
+            self.queue.connect()
             self.queue.clients()
         elif args.status:
+            self.queue.connect()
             self.queue.status()
         elif args.s:
+            self.queue.connect()
             self.queue.status(short=True)
         elif args.d:
+            self.queue.connect()
             self.queue.remove_all('work')
         elif args.sd:
+            self.queue.connect()
             self.queue.remove_all('serv')
 
 
 class QueueManago:
     def __init__(self):
-        self.r = AARedis().redis_db()
+        self.r = ''
         self.name = 'aamks_queue'
         self.name_server = 'server_queue'
-    
+
+    def connect(self):
+        self.r = AARedis().redis_db()
+
     def show(self, short=False, left=0, right=-1):
         jobs = self.r.lrange(self.name, left, right)
         if short:
