@@ -42,6 +42,7 @@ class Worker:
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
+        # self.working_dir = "/home/aamks_users/hubert@hubert.com/clustering/c1/workers/237" 
         self.project_dir=self.working_dir.split("/workers/")[0]
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)

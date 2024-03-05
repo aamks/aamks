@@ -239,10 +239,14 @@ class EvacMcarlo():
             clustering = EvacClusters(self.dispatched_evacuees[floor])
             for i, agent in enumerate(clustering.sorted_agents_flat):
                 e_id='f{}'.format(i)
+                pre_ev_time = agent["leader_id"] * 2.99 +1
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]["leader"] = agent["leader"]
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]["leader_id"] = agent["leader_id"]  
-                # print(agent["leader_id"])
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]["type"] = agent["type"] 
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION']['pre_evac'] = pre_ev_time
+                print("e",pre_ev_time)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION']['pre_evac_fire_origin'] = pre_ev_time 
+
 
         self._evac_conf['FLOORS_DATA']=OrderedDict()
         for floor in self.floors:

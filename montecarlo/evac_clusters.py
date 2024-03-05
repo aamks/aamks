@@ -10,7 +10,7 @@ from include import Sqlite
 from include import Json
 from include import SimIterations
 from include import Vis
-
+from random import randint, randrange
 from sklearn.cluster import MeanShift
 
 class EvacClusters():
@@ -20,6 +20,9 @@ class EvacClusters():
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         # si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
         self.dispatched_evacuees = dispatched_evacuees
+        self.all_leaders_id = []
+        self.all_followers_id = []
+       
         self.main()
         
 
@@ -30,6 +33,7 @@ class EvacClusters():
         self.write_to_json_file()
         self.flatten_agents()
         self.sort_agents()
+        self.get_all_leders()
         # self.update_json()
 
     def group_evacuees_by_rooms(self):
@@ -51,7 +55,6 @@ class EvacClusters():
     def group_by_rooms(self):
         grouped_by_rooms = {}
         for id, evacuee in enumerate(self.dispatched_evacuees):
-            # print(id, evacuee)
             room = evacuee[2]
             evacuee_coordinates = tuple(evacuee[:2])
             if room not in grouped_by_rooms:
@@ -61,8 +64,6 @@ class EvacClusters():
                 }
             else:
                 grouped_by_rooms[room]['positions'].append(evacuee_coordinates)
-
-        # print(grouped_by_rooms)
         return grouped_by_rooms
 
     def cluster_one_room(self, positions_in_room):
@@ -80,7 +81,6 @@ class EvacClusters():
                 }
 
         for position, label in zip(positions_in_room, labels):
-            # clustered_dict[label]['agents'].append([position, "", 0, []])
             agent = {"position": position,
                      "leader": "",
                      "type": "",
@@ -90,7 +90,6 @@ class EvacClusters():
             clustered_dict[cluster]['center'] = tuple([int(x) for x in cluster_centers[cluster]])
             leader = tuple(self.find_position_nearest_center([agent['position'] for agent in clustered_dict[cluster]['agents']], clustered_dict[cluster]['center']))
             clustered_dict[cluster]['leader'] = leader
-
             for agent in clustered_dict[cluster]['agents']:
                 agent['leader'] = leader
                 agent['type'] = self.check_type(agent['position'], leader)
@@ -161,16 +160,18 @@ class EvacClusters():
         self.agents_flat = []
         for room in self.evacues_grouped_by_rooms:
             for cluster in self.evacues_grouped_by_rooms[room]["clusters"]:
+                pre_evac_time = float(randrange(20,120,20))
+                print(pre_evac_time)
                 for agent in self.evacues_grouped_by_rooms[room]["clusters"][cluster]["agents"]:
                     agent_data = {
                         "position": agent["position"],
                         "leader": agent["leader"],
                         "type": agent['type'],
                         "id": -1,
-                        "leader_id": self.get_agent(*agent["leader"])
+                        "leader_id": self.get_agent(*agent["leader"]),
+                        "pre_evac": pre_evac_time
                     }
                     self.agents_flat.append(agent_data)
-        # print(self.agents_flat)    
 
     def sort_agents(self):
         for agent in self.agents_flat:
@@ -202,3 +203,8 @@ class EvacClusters():
         for agent in self.agents_flat[floor]:
             if agent['position'] == tuple(agent_pos):
                 return agent['leader'], agent['type']
+
+    def get_all_leders(self):
+        for agent in self.sorted_agents_flat:
+            if agent['type'] == "leader":
+                self.all_leaders_id.append(agent['id'])
