@@ -22,9 +22,26 @@ from include import Sqlite, Psql
 import warnings
 import pandas as pd
 from zipfile import ZipFile
+import logging
+from pylatex import Document, Section, Subsection, Itemize, Command, Figure, MultiColumn, Package
+from pylatex.utils import italic, bold, NoEscape
+from pylatex.table import Tabular
+from pylatex.basic import NewPage, LineBreak
+from pylatex.headfoot import PageStyle, Head, simple_page_number
 
-
-
+log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
+logger = logging.getLogger('AAMKS.beck.py')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler(log_file)
+fh.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+logger.addHandler(fh)
+logger.addHandler(ch)
+logger.warning('Start AAMKS post process')
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
 
 def calc_rmse(p: float, n: float, confidence: float = None):
@@ -237,7 +254,7 @@ class RiskScenario:
 
         self.risks[key] = scenario_value
         
-        print(f'[OK] {key} value for whole scenario calculated')
+        logger.debug(f'[OK] {key} value for whole scenario calculated')
 
         return scenario_value
 
@@ -254,7 +271,7 @@ class RiskScenario:
             self.risks[f'conv_{key}'].append(val)
 
 class RiskIteration:
-    def __init__(self, feds_per_floor: list(), calculate=False):
+    def __init__(self, feds_per_floor: list, calculate=False):
         self.p = self._rawFED2CDF(feds_per_floor) # probabilities of death for agents in THIS iteration
         self.n  = len(self.p)    # number of agents
         self.risks = {}
@@ -477,6 +494,15 @@ class Plot:
             plot = sns.displot(data, kde=True, stat='density')
         except np.linalg.LinAlgError:
             plot = sns.displot(data, kde=False, stat='density')
+        except ValueError:
+            fig = plt.figure()
+            plt.text(0.5, 0.5, f'No valid data available for {label[0]}',
+                    horizontalalignment='center', verticalalignment='center',
+                    bbox=dict(facecolor='red', alpha=0.5))
+            if path:
+                fig.savefig(os.path.join(self.dir, 'picts', f'{path}.png'))
+            plt.close()
+            return 1
 
         if label:
             plot.set_axis_labels(*label)
@@ -511,11 +537,14 @@ class Plot:
 
         fig, ax = plt.subplots()
         palette = sns.color_palette()
-
-        for i, k in enumerate(data.keys()):
-            sns.histplot(data[k], cumulative=True, kde=True, stat='probability', bins=25, fill=True, color=palette[i],
-                kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1e6]}, ax=ax, label=k)
-
+        try:
+            for i, k in enumerate(data.keys()):
+                sns.histplot(data[k], cumulative=True, kde=True, stat='probability', bins=25, fill=True, color=palette[i],
+                    kde_kws={'cut': 1, 'bw_adjust': 0.4, 'clip': [0, 1e6]}, ax=ax, label=k)
+        except:
+            plt.text(0.5, 0.5, f'No valid data available for {label[0]}',
+                    horizontalalignment='center', verticalalignment='center',
+                    bbox=dict(facecolor='red', alpha=0.5))
         #labels
         if label:
             plt.xlabel(label[0])
@@ -552,8 +581,10 @@ class Plot:
         ax.set_xlim(left=1, right=maxx)
         miny=1
         for d in data.values():
-            for j in d:
-                miny = j if 0<j<miny else miny
+            miny = min(d) if miny > min(d) else miny
+        miny = 0.75*miny
+            # for j in d:
+            #     miny = j if 0<j<miny else miny
                 
         ax.set_ylim(bottom=miny, top=1)
         fig.tight_layout()
@@ -696,9 +727,10 @@ class PostProcess:
 
     def __init__(self, scen_dir=None):
         if scen_dir:
-            self.dir = scen_dir
+            self.dir = os.path.abspath(scen_dir)
         else:
             self.dir = sys.argv[1] if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT')
+        self.dir = os.path.abspath(self.dir)
         self.gd = GetData(self.dir)
         self.data = {**self.gd.drop(with_fed=False), **RiskScenario(self.gd.raw['results']).all()} # results for THE SCENARIO
         self.n = len(self.gd.raw['feds'])  # number of finished iterations taken for results analysis
@@ -709,6 +741,7 @@ class PostProcess:
     def save(self, no_zip=False):
         self.gd.to_csv()
         self._summarize()
+        Report(self).to_pdf(make=True)
         self._to_txt()
         if not no_zip:
             self._zip_pictures()
@@ -722,12 +755,14 @@ class PostProcess:
                 return stat.gaussian_kde(sample)
             except np.linalg.LinAlgError:
                 return stat.gaussian_kde(np.insert(sample[1:], 0, sample[0]*0.99999))
+            except ValueError:
+                return 0
 
         def ovl(samp1, samp2, number_bins=1000):
-            if samp1.size == 0 or samp2.size == 0:
-                return 0
             arr1 = try_kde(samp1)
             arr2 = try_kde(samp2)
+            if samp1.size == 0 or samp2.size == 0 or arr1 == 0 or arr2 == 0:
+                return 0
 
             positions = np.arange(int(max(*samp1, *samp2)*1.2))
             arr1(positions)
@@ -804,6 +839,7 @@ class PostProcess:
         with open(os.path.join(self.dir, 'picts', 'data.txt'), 'w') as g: 
             g.write('\n'.join(to_write))
 
+
     def _zip_pictures(self):
         with ZipFile(os.path.join(self.dir, 'picts', 'picts.zip'), 'w') as zf:
             for f in os.scandir(os.path.join(self.dir, 'picts')):
@@ -815,10 +851,6 @@ class PostProcess:
             for f in os.scandir(os.path.join(self.dir, 'picts')):
                 if not f.name.lower().endswith('.zip'):
                     zf.write(f.path, arcname=f.name)
-            try:
-                zf.write('/home/aamks_users/aamks.log', arcname='aamks.log')
-            except FileNotFoundError:
-                print('[WARNING] No log file found')
                 
     # produce standard postprocess content
     def produce(self):
@@ -827,7 +859,7 @@ class PostProcess:
         os.makedirs(f'{self.dir}/picts')
 
         def tm(x): 
-            print(f'{x}: {time.time() - self.t}')
+            logger.debug(f'{x}: {time.time() - self.t}')
             self.t = time.time()
         p = Plot(self.dir)
         tm('Plot')
@@ -855,6 +887,154 @@ class PostProcess:
 
         self.save()
         tm('save')
+
+
+class Report:
+    picts = {
+        'pie_fault': 'The share of iterations with failure of safety systems (at least one person with FED > 1)',
+        'pdf_fn': 'Fatalities histogram (PDF)', 
+        'fn_curve': 'FN curve for the scenario', 
+        'dcbe_cdf': 'Cumulative distribution function of ASET', 
+        'wcbe_cdf': 'Cumulative distribution function of RSET', 
+        'overlap': 'Probability density functions of RSET and ASET', 
+        'min_hgt_cdf': 'Cumulative distribution function of minimal hot layer height', 
+        'min_hgt_cor_cdf': 'Cumulative distribution function of minimal hot layer height on the evacuation routes', 
+        'max_temp_cdf': 'Cumulative distribution function of maximal temperature', 
+        'min_vis_cdf': 'Cumulative distribution function of the minimal visibility', 
+        'min_vis_cor_cdf': 'Cumulative distribution function of the minimal visibility on the evacuation routes', 
+        'conv_individual': 'Convergence of individual risk in subsequent iterations'
+        }
+
+    def __init__(self, postprocess: PostProcess):
+        self.pp = postprocess
+        self.doc = Document(geometry_options={'margin': '2cm', 'headheight': '2cm', 'headsep': '10pt'})
+        self.title = 'MULTISIMULATION RESULTS'
+        *_, self.author, self.project, self.scenario = self.pp.dir.split('/')
+
+    def _preamble(self):
+        self.doc.packages.append(Package('array'))
+        self.doc.preamble.append(Command('title', self.title))
+        self.doc.preamble.append(NoEscape(r'\title{\includegraphics[width=4cm]{/usr/local/aamks/gui/logo.png}\\'+self.title+'}'))
+        self.doc.preamble.append(Command('author', self.author))
+        self.doc.preamble.append(Command('date', NoEscape(r'\today')))
+        self.doc.append(NoEscape(r'\maketitle'))
+        self.doc.append(NoEscape(r'\renewcommand{\arraystretch}{1.5}'))
+
+    def _generate_header(self):
+        header = PageStyle("header", header_thickness=1)
+        # Create left header
+        with header.create(Head("L")):
+            header.append(NoEscape(r'\includegraphics[width=1.5cm]{/usr/local/aamks/gui/logo.png}\\'))
+        # Create center header
+        with header.create(Head("C")):
+            header.append("Auto-generated from AAMKS webGUI")
+        # Create right header
+        with header.create(Head("R")):
+            header.append(simple_page_number())
+
+        self.doc.preamble.append(header)
+        self.doc.change_document_style("header")
+
+    def _makerows(self):
+        rows = {'General':[], 'Risk indices': [], 'Evacuation': [], 'Fire': []}
+        rows['General'].append(['Software version', 'v2.0.1', '2024-02-28'])
+        rows['General'].append(['Project name', self.project, ''])
+        rows['General'].append(['Scenario name', self.scenario, ''])
+        rows['General'].append(['Number of iterations', self.pp.n, ''])
+
+        rows['Risk indices'].append(['Individual risk', f'{self.pp.data["individual"]:.3e} [--]', f'with a 95% confidence RMSE of \
+            {calc_rmse(self.pp.data["individual"], self.pp.n, confidence=0.95):.3e}'])
+        rows['Risk indices'].append(['Societal risk (WRI)', f'{self.pp.data["societal"]:.3e} [fatal.]', 'risk aversion included'])
+        rows['Risk indices'].append(['Societal risk (AWR)', f'{self.pp.data["awr"]:.3e} [fatal.]', ''])
+
+        rows['Evacuation'].append(['RSET', f'{self.pp.data["summary"]["rset"][0]:.1f} s', f'mean with standard deviation\
+                of {self.pp.data["summary"]["rset"][1]:.1f} s'])
+        rows['Evacuation'].append(['ASET', f'{self.pp.data["summary"]["aset"][0]:.1f} s', f'mean with standard deviation\
+                of {self.pp.data["summary"]["aset"][1]:.1f} s'])
+        rows['Evacuation'].append(['Overlapping index of ASET/RSET', f'{self.pp.data["summary"]["ovl"]} s', ''])
+        
+        rows['Fire'].append(['Upper layer temperature', f'{self.pp.data["summary"]["hgt"][0]:.1f}°C', f'mean of maximum\
+                value with a standard deviation of {self.pp.data["summary"]["hgt"][1]:.1f}°C'])
+        rows['Fire'].append(['Neutral plane height', f'{self.pp.data["summary"]["height"][0]:.1f} cm', f'mean of minimum\
+                value with a standard deviation of {self.pp.data["summary"]["height"][1]:.1f} cm'])
+        rows['Fire'].append(['Visibility', f'{self.pp.data["summary"]["vis"][0]:.1f} m', f'mean of minimum value with a\
+                standard deviation of {self.pp.data["summary"]["vis"][1]:.1f} m'])
+
+        return rows
+
+    def _summary(self):
+        with self.doc.create(Section('Summary sheet', numbering=False)):
+            self.doc.append(NoEscape(r'\bigskip'))
+            headers = [bold('Parameter'), bold('Value'), bold('Additional remarks')]
+
+            with self.doc.create(Tabular('|m{3.5cm}|m{4cm}|m{8cm}|')) as tab:
+                tab.add_hline()
+                tab.add_row(headers)
+                tab.add_hline()
+                for subhead, rows in self._makerows().items():
+                    tab.add_row((MultiColumn(3, align='|c|', data=bold(subhead)),))
+                    tab.add_hline()
+                    for row in rows:
+                        tab.add_row(row)
+                        tab.add_hline()
+        self.doc.append(NewPage())
+
+    # those plots should be described and segregated
+    def _appendix(self):
+        def add_pict(picts):
+            picts = [picts] if type(picts) == str else picts
+            with self.doc.create(Figure(position = 'htbp')) as fig: 
+                for pict in picts:
+                    fig.add_image(f'{self.pp.dir}/picts/{pict}.png', width=NoEscape('.6\\textwidth'))
+                    fig.add_caption(self.picts[pict])
+
+        with self.doc.create(Section('Plots', numbering=False)):
+            with self.doc.create(Subsection('Individual risk', numbering=False)):
+                add_pict('conv_individual')     # convergence
+                add_pict('pie_fault')       # pie
+                self.doc.append(NewPage())
+
+            with self.doc.create(Subsection('Societal risk', numbering=False)):
+                add_pict('fn_curve')        # FN
+                add_pict('pdf_fn')      # add PDF fatalities
+                self.doc.append(NewPage())
+
+            with self.doc.create(Subsection('Heatmaps of FED absorption', numbering=False)):
+                # heatmaps for each floor
+                with self.doc.create(Figure(position = 'htbp')) as fig: 
+                    i = 0
+                    while True:
+                        pth = f'{self.pp.dir}/picts/floor_{i}.png'
+                        if not os.path.isfile(pth):
+                            break
+                        fig.add_image(pth, width=NoEscape('.6\\textwidth'))
+                        fig.add_caption(f'Heatmap of FED absorption on level {i}')
+                        i += 1
+                self.doc.append(NewPage())
+
+            with self.doc.create(Subsection('Fire submodel', numbering=False)):
+                add_pict('max_temp_cdf')      # maximum temperature CDF
+                add_pict(['min_hgt_cdf', 'min_hgt_cor_cdf'])      # minimum neutral plane height CDF
+                add_pict(['min_vis_cdf', 'min_vis_cor_cdf'])      # minimum visibility CDF
+                self.doc.append(NewPage())
+
+            with self.doc.create(Subsection('Evacuation submodel', numbering=False)):
+                add_pict('wcbe_cdf')      # RSET CDF
+                add_pict('dcbe_cdf')        # ASET CDF
+                add_pict('overlap')      # overlapping of ASET and RSET PDFs
+                self.doc.append(NewPage())
+
+    def make(self):
+        self._preamble()
+        self._generate_header()
+        self._summary()
+        self._appendix()
+        
+        return self.doc
+
+    def to_pdf(self, make=False, tex=False):
+        self.make() if make else None
+        self.doc.generate_pdf(f'{self.pp.dir}/picts/report', clean_tex=not tex)
 
 
 '''Produce results of multiple scenarios on each plot'''
@@ -941,11 +1121,6 @@ class Comparison:
             for f in os.scandir(os.path.join(self.dir)):
                 if not f.name.lower().endswith('.zip'):
                     zf.write(f.path, arcname=f.name)
-            try:
-                zf.write('/home/aamks_users/aamks.log', arcname='aamks.log')
-            except FileNotFoundError:
-                print('[WARNING] No log file found')
-
             
     def produce(self):
         # plot together
@@ -954,7 +1129,7 @@ class Comparison:
         os.makedirs(self.dir)
 
         def tm(x): 
-            print(f'{x}: {time.time() - self.t}')
+            logger.debug(f'{x}: {time.time() - self.t}')
             self.t = time.time()
         p = Plot(go_back(self.dir))
         tm('Plot')
@@ -987,8 +1162,5 @@ if __name__ == '__main__':
             s = SA(pp.dir)
             s.main(spearman=True)
     except Exception as e:
-        print(e)
-
-    
-
+        logger.error(e)
 

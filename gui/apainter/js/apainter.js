@@ -25,8 +25,11 @@ var activeSnap={};
 var undoBuffer=[];
 var evacueeRadius;
 var threejsPlay=1;
-var floor_teleports_count=0;
-var floor_teleport_direction=0;
+var floor_teleport_up_direction=0;
+var floor_teleport_down_direction=0;
+var external_doors = [];
+var teleports = [];
+var rooms_and_adjecent_doors_and_holes = [];
 //}}}
 function debug() {//{{{
 	console.clear();
@@ -161,26 +164,27 @@ function getBbox() {//{{{
 
 function getPointsTriangleFloorTeleport(){
 	string_points = "";
+	if (cg.polypoints !== undefined)
+	{
+		string_points += cg.polypoints[0][0].toString();
+		string_points +=",";
+		string_points += (cg.polypoints[0][1]).toString();
+		string_points += " ";
 
-	string_points += cg.polypoints[0][0].toString();
-	string_points +=",";
-	string_points += (cg.polypoints[0][1]).toString();
-	string_points += " ";
+		string_points += cg.polypoints[1][0].toString();
+		string_points +=",";
+		string_points += (cg.polypoints[1][1]).toString();
+		string_points += " ";
 
-	string_points += cg.polypoints[1][0].toString();
-	string_points +=",";
-	string_points += (cg.polypoints[1][1]).toString();
-	string_points += " ";
+		string_points += cg.polypoints[2][0].toString();
+		string_points +=",";
+		string_points += (cg.polypoints[2][1]).toString();
+		string_points += " ";
 
-	string_points += cg.polypoints[2][0].toString();
-	string_points +=",";
-	string_points += (cg.polypoints[2][1]).toString();
-	string_points += " ";
-
-	string_points += cg.polypoints[3][0].toString();
-	string_points +=",";
-	string_points += (cg.polypoints[3][1]).toString();
-
+		string_points += cg.polypoints[3][0].toString();
+		string_points +=",";
+		string_points += (cg.polypoints[3][1]).toString();
+	}
 	return string_points;
 }
 
@@ -222,7 +226,7 @@ function cgDb(undoRegister=1) { //{{{
 	}
 	db({"name": cg.name}).remove();
 	b=getBbox();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cg.cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput,"exit_weight":cg.exit_weight,"room_exits_weights":cg.room_exits_weights, "exit_type": cg.exit_type, "room_enter": cg.room_enter, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
 	if(undoRegister==1) { undoBufferRegister('insert'); }
 }
 //}}}
@@ -640,47 +644,94 @@ function cgDecidePoints(m) {//{{{
 
 	switch (cg.type) {
 		case 'floor_teleport':
-		switch (floor_teleport_direction % 4) {
-			//arrow left
-  			case 0:
-				p0=[px, py-10];
-				p1=[px, py+10];
-				p2=[px-defaults.floor_teleport_width, py];
-				p3=[px, py-10];
-				cg.teleport_from = [px, py]
-				cg.teleport_to = [px-defaults.floor_teleport_width, py]
-    			break;
-    		//arrow up
-  			case 1:
-				p0=[px+10, py];
-				p1=[px-10, py];
-				p2=[px, py-defaults.floor_teleport_width];
-				p3=[px+10, py];
-				cg.teleport_from = [px, py]
-				cg.teleport_to = [px, py-defaults.floor_teleport_width]
-    			break;
-			//arrow right
-  			case 2:
-				p0=[px, py+10];
-				p1=[px, py-10];
-				p2=[px+defaults.floor_teleport_width, py];
-				p3=[px, py+10];
-				cg.teleport_from = [px, py]
-				cg.teleport_to = [px+defaults.floor_teleport_width, py]
-    			break;
-			//arrow down
-  			case 3:
-				p0=[px-10, py];
-				p1=[px+10, py];
-				p2=[px, py+defaults.floor_teleport_width];
-				p3=[px-10, py];
-				cg.teleport_from = [px, py]
-				cg.teleport_to = [px, py+defaults.floor_teleport_width]
-    			break;
-  			default:
-    			break;
+		if (activeLetter == 'kd')
+		{
+			switch (floor_teleport_down_direction % 4) {
+				//arrow left downstairs
+				case 0:
+					p0=[px, py-10];
+					p1=[px, py+10];
+					p2=[px-defaults.floor_teleport_width, py];
+					p3=[px, py-10];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px-defaults.floor_teleport_width, py]
+				break;
+				//arrow up downstairs
+				case 1:
+					p0=[px+10, py];
+					p1=[px-10, py];
+					p2=[px, py-defaults.floor_teleport_width];
+					p3=[px+10, py];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px, py-defaults.floor_teleport_width]
+				break;
+				//arrow right downstairs
+				case 2:
+					p0=[px, py+10];
+					p1=[px, py-10];
+					p2=[px+defaults.floor_teleport_width, py];
+					p3=[px, py+10];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px+defaults.floor_teleport_width, py]
+				break;
+				//arrow down downstairs
+				case 3:
+					p0=[px-10, py];
+					p1=[px+10, py];
+					p2=[px, py+defaults.floor_teleport_width];
+					p3=[px-10, py];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px, py+defaults.floor_teleport_width]
+				break;
+				
+				default:
+					break;
 			}
-			break;
+		}
+		else if (activeLetter == 'ku')
+		{
+			switch (floor_teleport_up_direction % 4) {
+			//arrow left upstairs
+				case 0:
+					p0=[px, py-10];
+					p1=[px, py+10];
+					p2=[px-defaults.floor_teleport_width, py];
+					p3=[px, py-10];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px-defaults.floor_teleport_width, py]
+					break;
+				//arrow up upstairs
+				case 1:
+					p0=[px+10, py];
+					p1=[px-10, py];
+					p2=[px, py-defaults.floor_teleport_width];
+					p3=[px+10, py];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px, py-defaults.floor_teleport_width]
+					break;
+				//arrow right upstairs
+				case 2:
+					p0=[px, py+10];
+					p1=[px, py-10];
+					p2=[px+defaults.floor_teleport_width, py];
+					p3=[px, py+10];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px+defaults.floor_teleport_width, py]
+					break;
+				//arrow down upstairs
+				case 3:
+					p0=[px-10, py];
+					p1=[px+10, py];
+					p2=[px, py+defaults.floor_teleport_width];
+					p3=[px-10, py];
+					cg.teleport_from = [px, py]
+					cg.teleport_to = [px, py+defaults.floor_teleport_width]
+					break;
+				default:
+					break;
+			}
+		}
+		break;
 		case 'door':
 			if("x" in activeSnap) { 
 				p0=[px-16, py-defaults.door_width];
@@ -755,34 +806,60 @@ function cgUpdateSvg() {  //{{{
 }
 //}}}
 
+function manageTeleportArrows() {//{{{
+	if (activeLetter == 'ku' || activeLetter == 'kd')
+	{
+		content = "";
+		arrows = ["&#8592;", "&#8593;", "&#8594;","&#8595;"];
+		if (activeLetter == 'ku' )
+		{
+			floor_teleport_up_direction+=1;
+			switch (floor_teleport_up_direction % 4) {
+				case 0:
+					content = arrows[0] + " floor_teleport up";
+					break;
+				case 1:
+					content = arrows[1] + " floor_teleport up";
+					break;
+				case 2:
+					content = arrows[2] + " floor_teleport up";
+					break;
+				case 3:
+					content = arrows[3] + " floor_teleport up";
+					break;
+				default:
+					break;
+				}
+		}
+		else if (activeLetter == 'kd' )
+		{
+			floor_teleport_down_direction+=1;
+			switch (floor_teleport_down_direction % 4) {
+				case 0:
+					content = arrows[0] + " floor_teleport down";
+					break;
+				case 1:
+					content = arrows[1] + " floor_teleport down";
+					break;
+				case 2:
+					content = arrows[2] + " floor_teleport down";
+					break;
+				case 3:
+					content = arrows[3] + " floor_teleport down";
+					break;
+				default:
+					break;
+				}
+		}
+		document.getElementById("legend_"+activeLetter).innerHTML = content;
+	}
+}
+
 function cgStartDrawing() {//{{{
 	$('right-menu-box').fadeOut(0); 
 	legend();
 	$('#legend_'+activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
-	if (activeLetter == 'k')
-	{
-		floor_teleport_direction+=1;
-		content = "";
-		arrows = ["&#8592;", "&#8593;", "&#8594;", "&#8595;"];
-		switch (floor_teleport_direction % 4) {
-  		case 0:
-    		content = arrows[0] + " floor_teleport";
-    		break;
-  		case 1:
-    		content = arrows[1] + " floor_teleport";
-    		break;
-  		case 2:
-    		content = arrows[2] + " floor_teleport";
-    		break;
-  		case 3:
-    		content = arrows[3] + " floor_teleport";
-    		break;
-  		default:
-    		break;
-		}
-		document.getElementById("legend_"+activeLetter).innerHTML = content;
-
-	}
+	manageTeleportArrows()
 	cgCreate();
 	underlayPointerEvents(stopDragging=1);
 }
@@ -814,14 +891,17 @@ function dbUpdateCadJsonStr() { //{{{
 
 		if(i.type=='door') {
 			cad_json["exit_type"]=i.exit_type;
+			cad_json["exit_weight"]=i.exit_weight;
 		} else if(i.type=='room') {
 			cad_json["room_enter"]=i.room_enter; 
 			cad_json["evacuees_density"]=i.evacuees_density; 
+			cad_json["room_exits_weights"]=i.room_exits_weights; 
 		} else if(i.type=='mvent') {
 			cad_json["mvent_throughput"]=i.mvent_throughput;
 		}else if(i.type=='floor_teleport') {
 			cad_json["teleport_from"]=i.teleport_from;
 			cad_json["teleport_to"]=i.teleport_to;
+			cad_json["exit_weight"]=i.exit_weight;
 		}
 
 		db({'name': i.name}).update({'cad_json': cad_json});
@@ -907,7 +987,7 @@ function json2db(json) { //{{{
 	var letter;
 	var arr;
 	var geom;
-	var elems=["ROOM","COR","STAI","VSTAI","HALL","OBST","VVENT","MVENT","HOLE","WIN","DOOR","FLOOR_TELEPORT","DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
+	var elems=["ROOM","COR","STAI","VSTAI","HALL","OBST","VVENT","MVENT","HOLE","WIN","DOOR","FLOOR_TELEPORT_UP","FLOOR_TELEPORT_DOWN", "DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
 	
 	json = addUpperFloorsVirtualStairs(json);
 
@@ -932,17 +1012,20 @@ function cgMake(floor,letter,record) { //{{{
 	cg.idx=record.idx;
 	cg.name=letter+cg.idx;
 	cg.letter=letter;
-	if(gg[letter] == undefined)
-		console.log("sdfsdfsd");
 	cg.type=gg[letter].t;
 	cg.floor=floor;
 
+	if('exit_weight' in record)        { cg.exit_weight=record.exit_weight; }
+	else { cg.exit_weight=undefined; }
+	if('room_exits_weights' in record) { cg.room_exits_weights=record.room_exits_weights; }
+	else { cg.room_exits_weights=undefined;}
 	if('exit_type' in record)        { cg.exit_type=record.exit_type; }
 	if('room_enter' in record)       { cg.room_enter=record.room_enter; }
 	if('evacuees_density' in record) { cg.evacuees_density=record.evacuees_density; }
 	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
 	if('teleport_from' in record)	 { cg.teleport_from=record.teleport_from; }
 	if('teleport_to' in record)		 { cg.teleport_to=record.teleport_to; }
+	
 }
 //}}}
 function ajaxSaveCadJson(json_data) { //{{{
@@ -1009,7 +1092,7 @@ function dbReorder() {//{{{
 	var idx=1;
 	for (var i in ee) {
 		ee[i]['idx']=idx;
-		ee[i]['name']="e"+idx;
+		ee[i]['name']="f"+idx;
 		db.insert(ee[i]);
 		idx++;
 	}
@@ -1057,12 +1140,13 @@ function floorCopy() {	//{{{
 		activeLetter=m.letter;
 		cgIdUpdate();
 		cg=deepcopy(m);
+		cg.exit_weight=undefined;
+		cg.room_exits_weights=undefined;
 		cg.floor=c2f;
 		cg.idx=cgID;
 		cg.name=cg.letter + cgID;
 		cg.z[0]=z0 + m.z[0];
 		cg.z[1]=z0 + m.z[1];
-		console.log(cg);
 		cgDb(undoRegister=0);
 		cgSvg();
 	});
@@ -1119,6 +1203,27 @@ function roomProps() {//{{{
 	if(cg.type=='room') {
 		v=db({'name':cg.name}).get()[0];
 		pp='';
+		adjecentDoorsAndHoles = rooms_and_adjecent_doors_and_holes[cg.name];
+		if (adjecentDoorsAndHoles.length > 0){
+			pp+= "<tr><td colspan=2 style='text-align: center'>set the weight of the exit doors from this room";
+			pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
+			pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
+			adjecentDoorsAndHoles.forEach(function(obj){
+				var obj_name = obj[1];
+				var points = obj[0].points;
+
+				if (obj_name.charAt(0)=="z")
+					pp+= "<tr><td>exit hole " +obj_name+" weight:";
+				else
+					pp+= "<tr><td>exit door " +obj_name+" weight:";
+
+				if ('room_exits_weights' in v && v.room_exits_weights !== undefined && v.room_exits_weights[obj[0].idx] !== undefined)
+					pp+= "<td><input type=number id=room_exits_weights_"+cg.name+ "_"+obj_name+" name=room_exits_weights_"+cg.name+ "_"+obj_name+" min=0 max=10 value="+v.room_exits_weights[obj[0].idx]+">";
+				else
+					pp+= "<td><input type=number id=room_exits_weights_"+cg.name+ "_"+obj_name+" name=room_exits_weights_"+cg.name+ "_"+obj_name+" min=0 max=10 value=10>";
+
+			});
+		}
 		pp+="<tr><td>enter <withHelp>?<help><orange>yes</orange> agents can evacuate via this room<br><hr><orange>no</orange> agents can not evacuate via this room</help></withHelp>";
 		pp+="<td><select id=alter-room-enter>";
 		pp+="<option value="+v.room_enter+">"+v.room_enter+"</option>";
@@ -1141,10 +1246,24 @@ function mventProps() {//{{{
 }
 //}}}
 function doorProps() {//{{{
-	pp="<input id=alter-exit-type type=hidden value=0>";
+	pp="";
 	if(cg.type=='door') {
 		v=db({'name':cg.name}).get()[0];
 		pp='';
+		external_doors.forEach((door, index) => {
+			var door_name = door[1];
+			if (door_name == v.name){
+				pp+= "<tr><td colspan=2 style='text-align: center'>set the general weight of the exit";
+				pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
+				pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
+				pp+= "<tr><td>exit door " +door_name+" weight:";
+				if ('exit_weight' in v && v.exit_weight !== undefined)
+					pp+= "<td><input type=number id=floor_exits_weights_"+door_name+ " name="+door_name+" min=0 max=10 value="+v.exit_weight+">";
+				else
+					pp+= "<td><input type=number id=floor_exits_weights_"+door_name+ " name="+door_name+" min=0 max=10 value=10>";
+			}
+		});
+
 		pp+="<tr><td>exit <withHelp>?<help><orange>auto</orange> any evacuee can use this door<br><hr><orange>primary</orange> many evacuees have had used this door to get in and will use it to get out<br><hr><orange>secondary</orange> extra door known to the personel</help></withHelp>";
 		pp+="<td><select id=alter-exit-type>";
 		pp+="<option value="+v.exit_type+">"+v.exit_type+"</option>";
@@ -1152,6 +1271,29 @@ function doorProps() {//{{{
 		pp+="<option value='primary'>primary</option>";
 		pp+="<option value='secondary'>secondary</option>";
 		pp+="</select>";
+
+	}
+	return pp;
+}
+//}}}
+function teleportProps() {//{{{
+	pp="";
+	if(cg.type=='floor_teleport') {
+		v=db({'name':cg.name}).get()[0];
+		pp='';
+		teleports.forEach((teleport, index) => {
+			teleport_name = teleport[1];
+			if (teleport_name == v.name){
+				pp+= "<tr><td colspan=2 style='text-align: center'>set the general weight of the exit";
+				pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
+				pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
+				pp+= "<tr><td>teleport " +teleport_name+" weight:";
+				if ('exit_weight' in v && v.exit_weight !== undefined)
+					pp+= "<td><input type=number id=floor_exits_weights_"+teleport_name+ " name=floor_exits_weights_"+teleport_name+" min=0 max=10 value="+v.exit_weight+">";
+				else
+					pp+= "<td><input type=number id=floor_exits_weights_"+teleport_name+ " name=floor_exits_weights_"+teleport_name+" min=0 max=10 value=10>";
+			}
+		});
 	}
 	return pp;
 }
@@ -1165,6 +1307,243 @@ function rightBoxShow(html, close_button=1) {//{{{
 	underlayPointerEvents();
 }
 //}}}
+
+function getMinMaxXY(object){
+	var points = JSON.parse(object['points'])
+	x_min = points[0][0];
+	x_max = points[0][0];
+	y_min = points[0][1];
+	y_max = points[0][1];
+	for (const [key, value] of Object.entries(points)) {
+		if (value[0] < x_min)
+			x_min = value[0];
+		else if (value[0] > x_max)
+			x_max = value[0];
+
+		if (value[1] < y_min)
+			y_min = value[1];
+		else if (value[1] > y_max)
+			y_max = value[1];
+	}
+
+	return [x_min, y_min, x_max, y_max];
+
+}
+
+function getExternalDoors(doors,room_types_objects){
+	external_doors = [];
+	doors.forEach((door, index) => {
+		var points = getMinMaxXY(door[0]);
+		var first_side_door_point = [points[0], points[1]];
+		var second_side_door_point = [points[2], points[3]];
+		var is_first_side_door_point_outside = false;
+		var is_second_side_door_point_outside = false;
+		room_types_objects.forEach((room, index) => {
+			room_points = getMinMaxXY(room[0]);
+			room_min_X = room_points[0];
+			room_max_X = room_points[2];
+			room_min_Y = room_points[1];
+			room_max_Y = room_points[3];
+			if (first_side_door_point[0] < room_max_X && 
+				first_side_door_point[0] > room_min_X &&
+				first_side_door_point[1] < room_max_Y &&
+				first_side_door_point[1] > room_min_Y)
+				is_first_side_door_point_outside = true;
+			if (second_side_door_point[0] < room_max_X && 
+				second_side_door_point[0] > room_min_X &&
+				second_side_door_point[1] < room_max_Y &&
+				second_side_door_point[1] > room_min_Y)
+				is_second_side_door_point_outside = true;
+		});
+		if (is_first_side_door_point_outside == false ||
+			is_second_side_door_point_outside == false)
+				external_doors.push(door);
+		var is_first_side_door_point_outside = false;
+		var is_second_side_door_point_outside = false;
+	});
+}
+function getRoomsAndAdjecentDoorsAndHoles(doors_and_holes,room_types_objects, holes){
+	rooms_and_adjecent_doors_and_holes = {};
+	room_types_objects.forEach((room, index) => {
+		rooms_and_adjecent_doors_and_holes[room[1]] = [];
+		var room_points = getMinMaxXY(room[0]);
+		var room_min_X = room_points[0];
+		var room_max_X = room_points[2];
+		var room_min_Y = room_points[1];
+		var room_max_Y = room_points[3];
+		doors_and_holes.forEach((obj, i) => {
+			var IsAdjecantToRoom = false;
+			points = getMinMaxXY(obj[0]);
+			min_X = points[0];
+			max_X = points[2];
+			min_Y = points[1];
+			max_Y = points[3];
+			if (min_X >= room_min_X &&
+				max_X <= room_max_X &&
+				(min_Y < room_max_Y && min_Y > room_min_Y || 
+				 max_Y > room_min_Y && max_Y < room_max_Y))
+				IsAdjecantToRoom = true;
+			if (min_Y >= room_min_Y &&
+				max_Y <= room_max_Y &&
+				(min_X < room_max_X && min_X > room_min_X ||
+				 max_X > room_min_X && max_X < room_max_X))
+				IsAdjecantToRoom = true;
+
+			if (IsAdjecantToRoom == true)
+				rooms_and_adjecent_doors_and_holes[room[1]].push(obj);
+		});
+
+	});
+
+	joinRoomsConnectedByHoles(room_types_objects,holes)
+}
+
+function joinRoomsConnectedByHoles(room_types_objects, holes){
+
+	rooms_pairs_joined_by_holes = getJoinedRoomsPairs(room_types_objects, holes);
+	getJoinedRoomsAndAdjecentDoors(rooms_pairs_joined_by_holes);
+}
+
+function getJoinedRoomsPairs(room_types_objects, holes){
+	rooms_pairs_joined_by_holes = [];
+	holes.forEach((hole, i) => {
+		points = getMinMaxXY(hole[0]);
+		hole_min_X = points[0];
+		hole_max_X = points[2];
+		hole_min_Y = points[1];
+		hole_max_Y = points[3];
+		joined_rooms = [];
+		room_types_objects.forEach((room, index) => {
+			room_points = getMinMaxXY(room[0]);
+			room_min_X = room_points[0];
+			room_max_X = room_points[2];
+			room_min_Y = room_points[1];
+			room_max_Y = room_points[3];
+			if (hole_min_X >= room_min_X &&
+				hole_max_X <= room_max_X &&
+				(hole_min_Y < room_max_Y && hole_min_Y > room_min_Y || 
+				 hole_max_Y > room_min_Y && hole_max_Y < room_max_Y))
+				joined_rooms.push(room[1])
+			else if (hole_min_Y >= room_min_Y &&
+				hole_max_Y <= room_max_Y &&
+				(hole_min_X < room_max_X && hole_min_X > room_min_X ||
+				 hole_max_X > room_min_X && hole_max_X < room_max_X))
+				joined_rooms.push(room[1])
+		});
+		rooms_pairs_joined_by_holes.push([joined_rooms[0],joined_rooms[1]]);
+	});
+	return rooms_pairs_joined_by_holes;
+}
+
+function getJoinedRoomsAndAdjecentDoors(rooms_pairs_joined_by_holes){
+	grouped_rooms = groupRoomsByHoleConnections(rooms_pairs_joined_by_holes);
+	adjecentDoorsAndHoles = [];
+
+	for (let i = 0; i < grouped_rooms.length; i++) {
+		adjecentDoorsAndHolesConcated = [];
+		adjecentDoorsAndHoles = [];
+		for (let j = 0; j < grouped_rooms[i].length; j++) {
+			adjecentDoorsAndHolesConcated = adjecentDoorsAndHoles.concat(rooms_and_adjecent_doors_and_holes[grouped_rooms[i][j]]);
+			adjecentDoorsAndHoles = adjecentDoorsAndHolesConcated;
+		}
+
+		adjecentDoorsAndHoles = [...new Set(adjecentDoorsAndHoles)];
+
+		for (let j = 0; j < grouped_rooms[i].length; j++) {
+			rooms_and_adjecent_doors_and_holes[grouped_rooms[i][j]] = adjecentDoorsAndHoles;
+		}
+	}
+}
+
+function groupRoomsByHoleConnections(rooms_pairs_joined_by_holes){
+	groupedRooms = [];
+	for (let k = 0; k < rooms_pairs_joined_by_holes.length; k++) {
+		room_1 = rooms_pairs_joined_by_holes[k][0];
+		room_2 = rooms_pairs_joined_by_holes[k][1];
+
+		// readOnlyGroupedRooms if only for reading, we modify groupedRooms array,
+		// both arrays are equal - deep copy
+		const readOnlyGroupedRooms = groupedRooms;
+		if (groupedRooms.length == 0)
+		{
+			groupedRooms.push([room_1,room_2]);
+			continue;
+		}
+		rooms_already_in_existing_group = false;
+		for (let i = 0; i < readOnlyGroupedRooms.length; i++) {
+			if (readOnlyGroupedRooms[i].includes(room_1) && readOnlyGroupedRooms[i].includes(room_2))
+			{
+				// this case happens then there is holes connection loop
+				rooms_already_in_existing_group = true;
+				break;
+			}
+  			else if (readOnlyGroupedRooms[i].includes(room_1))
+  			{
+  				groupedRooms[i].push(room_2);
+  				rooms_already_in_existing_group = true;
+  				break;
+  			}
+  			else if (readOnlyGroupedRooms[i].includes(room_2))
+  			{
+  				groupedRooms[i].push(room_1);
+  				rooms_already_in_existing_group = true;
+  				break;
+  			}
+		}
+		if (!rooms_already_in_existing_group)
+			groupedRooms.push([room_1,room_2]);
+	}
+	return groupedRooms;
+}
+
+function getFloorExits(){
+	cgEscapeCreate();
+	verifyIntersections();
+	dbReorder();
+	var doors =[];
+	var holes = [];
+	var room_types_objects =[];
+	var doors_and_holes = [];
+
+	for(var letter in gg) {
+		if (gg[letter]['t'] == 'door') { 
+			_.each(db({"floor": floor, "letter": letter}).select("cad_json","name"), function(m) {
+			doors.push(m);
+			doors_and_holes.push(m);
+			});
+		}
+	}
+
+	for(var letter in gg) {
+		if (gg[letter]['t'] == 'hole') { 
+			_.each(db({"floor": floor, "letter": letter}).select("cad_json","name"), function(m) {
+			doors_and_holes.push(m);
+			holes.push(m);
+			});
+		}
+	}
+
+	for(var letter in gg) {
+		if (gg[letter]['t'] == 'room' || gg[letter]['t'] == 'vroom') { 
+			_.each(db({"floor": floor, "letter": letter}).select("cad_json","name"), function(m) {
+				room_types_objects.push(m);
+			});
+		}
+	}
+	getExternalDoors(doors,room_types_objects);
+	var floor_teleport_up_letter = 'ku';
+	var floor_teleport_down_letter = 'kd';
+	teleports = []
+	_.each(db({"floor": floor, "letter": floor_teleport_up_letter}).select("cad_json","name"), function(m) {
+		teleports.push(m);
+	});
+	_.each(db({"floor": floor, "letter": floor_teleport_down_letter}).select("cad_json","name"), function(m) {
+	teleports.push(m);
+	});
+	getRoomsAndAdjecentDoorsAndHoles(doors_and_holes, room_types_objects, holes);
+
+	
+}
 function showGeneralBox() { //{{{
 	rightBoxShow(
 		"<table class=nobreak>"+
@@ -1221,8 +1600,8 @@ function showCgPropsBox() {//{{{
 	if(cg.letter==undefined)					 { return; }   // mouse leaving right boxes
 	if(db({'name':cg.name}).get()[0]==undefined) { return; }   // clicking right boxes while new element is very infant
 	if($("#uimg_remove").length)				 { return; }   // return if underlay menu
-
 	showBuildingLabels(1);
+	getFloorExits();
 	activeLetter=cg.letter;
 	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
@@ -1233,6 +1612,7 @@ function showCgPropsBox() {//{{{
 		"<table>"+
 		roomProps()+
 		doorProps()+
+		teleportProps()+
 		mventProps()+
 		"</table>"+
 		"<br><wheat><letter>x</letter> delete, <letter>l</letter> list</wheat>"+
@@ -1252,7 +1632,6 @@ function saveRightBoxGeneral() {//{{{
 	defaults.window_offsetz=Number($("#default_window_offsetz").val());
 	legend();
 }
-//}}}
 function checkGeomReplacement() {//{{{
 	var origGeomName=$("#alter-geom-name-replaced").val();
 	if(cg.name != origGeomName) {
@@ -1289,6 +1668,10 @@ function saveRightBoxCgProps() {//{{{
 		cg.room_enter=$("#alter-room-enter").val();
 		cg.evacuees_density=$("#alter-evacuees-density").val();
 		cg.exit_type=$("#alter-exit-type").val();
+		cg.exit_weight=$("#floor_exits_weights_"+cg.name).val();
+		if (cg.type == 'room'){
+			cg.room_exits_weights = getRoomExitWeight(cg.name);
+		}
 		cg.letter=$("#alter-geom-letter").val();
 		cg.mvent_throughput=Number($("#alter-mvent-throughput").val());
 		validateForm();
@@ -1303,6 +1686,17 @@ function saveRightBoxCgProps() {//{{{
 	}
 
 } 
+
+function getRoomExitWeight() {//{{{
+	adjecentDoorsAndHoles = rooms_and_adjecent_doors_and_holes[cg.name];
+	adjecentDoorsAndHolesWeights={};
+	adjecentDoorsAndHoles.forEach(function(obj){
+		var obj_name = obj[1];
+		adjecentDoorsAndHolesWeights[obj[0].idx] = $("#room_exits_weights_"+cg.name+"_"+obj_name).val();
+	});
+	return adjecentDoorsAndHolesWeights;
+}
+
 //}}}
 function saveRightBox() {//{{{
 	if ($("#general_setup").val() != null)   { saveRightBoxGeneral(); }

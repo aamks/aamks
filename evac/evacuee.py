@@ -40,6 +40,8 @@ class Evacuee:
         self.num_of_orca_lines = 0
         self.agent_has_no_escape = 0
         self.exit_coordinates = None
+        self.agent_leaves_floor = False
+        self.path = None
 
     def __getattr__(self, name):
         return self.__dict__[name]
@@ -76,14 +78,14 @@ class Evacuee:
         if self.exit_coordinates is None:
             return
         dist = cdist([self.position], [self.exit_coordinates], 'euclidean')
-        if dist < 50 and self.target_teleport_coordinates is not None:
+        if dist < 50 and self.target_teleport_coordinates is not None and self.agent_leaves_floor is True:
             self.finished = 0
 
     def check_if_agent_reached_outside_door(self):
         if self.exit_coordinates is None:
             return
         dist = cdist([self.position], [self.exit_coordinates], 'euclidean')
-        if dist < 50 and self.target_teleport_coordinates is None:
+        if dist < 50 and self.target_teleport_coordinates is None and self.agent_leaves_floor is True:
             self.finished = 0
             return True
         return False
@@ -92,9 +94,10 @@ class Evacuee:
         assert isinstance(navmesh_path, list), '%goal is not a list'
         if self.agent_has_no_escape == 1:
             return
-        dist_navmesh = cdist([self.position], [navmesh_path[-1]], 'euclidean')
+        dist_last_navmesh_point = cdist([self.position], [navmesh_path[-1]], 'euclidean')
+        dist_first_navmesh_point = cdist([self.position], [navmesh_path[0]], 'euclidean')
         dist_coordinates = cdist([self.position], [self.exit_coordinates], 'euclidean')
-        if (dist_coordinates < 50 or dist_navmesh < 50):
+        if ((dist_coordinates < 50 or dist_last_navmesh_point < 50) and dist_first_navmesh_point > 0.001):
             self.goal = [int(navmesh_path[0][0]), int(navmesh_path[0][1])]
         else:
             try:

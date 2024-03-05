@@ -17,7 +17,7 @@ function projects_list(){/*{{{*/
 			echo " bgcolor='#616'";
 		}
 		echo "><td>$projects[project_name]<td style='opacity:0.2'>$date<td>";
-		echo "<form method=post><input autocomplete=off type=hidden name=project_name value='$projects[project_name]'><input autocomplete=off type=hidden name=project_id value='$projects[id]'><input autocomplete=off size=12 type=text placeholder='new scenario' name=new_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'><input autocomplete=off type=submit value='add'></form><td>";
+		echo "<form method=post><input autocomplete=off type=hidden name=project_name value='$projects[project_name]'><input autocomplete=off type=hidden name=project_id value='$projects[id]'><input autocomplete=off size=12 type=text placeholder='new scenario' name=new_scenario required pattern='\w{1,9}' title='max 9 of alphanumeric characters'><input autocomplete=off type=submit value='add'></form><td>";
 		foreach($rr as $scenarios) { 
 			echo "<a class=blink href=?ch_scenario=$scenarios[id]>$scenarios[scenario_name]</a>"; 
 		}
@@ -53,7 +53,7 @@ function projects_list(){/*{{{*/
 	echo "
 	<div class='top_padding'>Rename current scenario (<i>$current_project/$current_scenario</i>) as:
 	<form method=POST>
-		<input autocomplete=off type=text placeholder='new scenario name' name=rename_scenario required pattern='\w{1,15}' title='max 15 of alphanumeric characters'> 
+		<input autocomplete=off type=text placeholder='new scenario name' name=rename_scenario required pattern='\w{1,9}' title='max 9 of alphanumeric characters'> 
 		<input autocomplete=off type=submit name=submit value='rename'>
 	</form></div>
 	";
@@ -91,6 +91,10 @@ function ch_scenario($scenario, $header=NULL){/*{{{*/
 function new_scenario() { # {{{
 	if(empty($_POST['new_scenario'])) { return; }
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_POST['project_id'])), 'scenario_name');
+	if($_POST['new_scenario'] == 'draft'){
+		$_SESSION['header_err'][]="Scenario name 'draft' can not be used!";
+		return;
+	}
 	if(in_array($_POST['new_scenario'], $scenarios, true)){
 		$_SESSION['header_err'][]="Scenario '$_POST[new_scenario]' already exists";
 	} else {
@@ -107,9 +111,14 @@ function new_scenario() { # {{{
 function copy_scenario() { # {{{
 	if(empty($_POST['copy_scenario'])) { return; }
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_SESSION['main']['project_id'])), 'scenario_name');
-	if(in_array($_POST['copy_scenario'], $scenarios, true)){
+	if(in_array($_POST['copy_scenario'], $scenarios, true) && $_POST['copy_scenario'] != 'draft'){
 		$_SESSION['header_err'][]="Scenario '$_POST[copy_scenario]' already exists";
 	} else {
+		if($_POST['copy_scenario'] == 'draft'){
+			$_SESSION['nn']->query("DELETE FROM scenarios WHERE scenario_name='draft'");
+			$disk_delete=implode("/", array($_SESSION['main']['user_home'], $_SESSION['main']['project_name'], 'draft'));
+			system("rm -rf $disk_delete");
+		}
 		$new_scenario_directory = implode("/", array($_SESSION['main']['user_home'],$_SESSION['main']['project_name'],$_POST['copy_scenario']));
 		if (!mkdir($new_scenario_directory, 0777, true)) {
 			$_SESSION['header_err'][]="Cannot create $_POST[project_name]/$_POST[copy_scenario]";
@@ -133,6 +142,10 @@ function copy_scenario() { # {{{
 }
 function rename_scenario() { # {{{
 	if(empty($_POST['rename_scenario'])) { return; }
+	if($_POST['rename_scenario'] == 'draft'){
+		$_SESSION['header_err'][]="Scenario name 'draft' can not be used!";
+		return;
+	}
 	$scenarios=array_column($_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1", array($_SESSION['main']['project_id'])), 'scenario_name');
 	if(in_array($_POST['rename_scenario'], $scenarios, true)){
 		$_SESSION['header_err'][]="Scenario '$_POST[rename_scenario]' already exists";
