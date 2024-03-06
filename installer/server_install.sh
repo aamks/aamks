@@ -113,7 +113,7 @@ sudo locale-gen en_US.UTF-8
 sudo apt-get update 
 sudo apt-get --yes install postgresql subversion python3-psycopg2 xdg-utils apache2 software-properties-common php-redis
 sudo add-apt-repository --yes ppa:deadsnakes/ppa
-sudo apt-get --yes install python3.10 python3.10-venv php-pgsql pdf2svg unzip libapache2-mod-php docker-compose pkg-php-tools
+sudo apt-get --yes install python3.10 python3.10-venv php-pgsql pdf2svg unzip libapache2-mod-php docker-compose
 
 # www-data user needs AAMKS_PG_PASS
 temp=`mktemp`
@@ -157,7 +157,7 @@ echo "export USERNAME='$USERNAME'" >> "$temp"
 echo "export LOGNAME='$(id -un)'" >> "$temp"
 echo "export HOSTNAME='$HOSTNAME'" >> "$temp"
 echo "alias aamks='cd /usr/local/aamks/'" >> "$temp"
-echo "alias aamks.manager='cd /usr/local/aamks/manager; python3 manager.py'" >> "$temp"
+echo "alias aamks.manager='/usr/local/aamks/env/bin/python3 /usr/local/aamks/redis_aamks/manager.py'" >> "$temp"
 echo "alias AA='cd /usr/local/aamks/; env/bin/python3 aamks.py; cd $AAMKS_PROJECT/workers;'" >> "$temp"
 echo "alias AP='cd $AAMKS_PROJECT'" >> "$temp"
 
@@ -165,6 +165,7 @@ echo "Add some variables to your .bashrc"
 sudo cp "$temp" ~/.bashrc
 rm "$temp"
 
+sudo groupadd docker
 sudo usermod -a -G docker $USERNAME
 cd "$AAMKS_PATH"/redis_aamks || exit
 sudo docker-compose up -d
@@ -211,6 +212,6 @@ echo "host	aamks	all 	0.0.0.0/0 	md5"
 echo "You can find location of configuration file below:"
 locate pg_hba.conf 
 echo "You can start redis server and worker via command:"
-echo "python3 $AAMKS_PATH/redis_aamks/manager.py --serverstart"
-echo "python3 $AAMKS_PATH/redis_aamks/manager.py --runlocal -n 1";
+echo "$AAMKS_PATH/env/bin/python3 $AAMKS_PATH/redis_aamks/manager.py --serverstart"
+echo "$AAMKS_PATH/env/bin/python3 $AAMKS_PATH/redis_aamks/manager.py --runlocal -n 1"
 echo "Log out and log in to reload USER group settings"

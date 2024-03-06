@@ -13,7 +13,6 @@ class RedisManager:
         self.redis_pwd = os.path.join(os.environ['AAMKS_PATH'], "redis_aamks")
         self.server_path = os.path.join(self.redis_pwd, "worker", "server.py")
         self.worker_path = os.path.join(self.redis_pwd, "worker", "worker.py")
-        self.server_path = os.path.join(self.redis_pwd, "worker", "server.py")
         self.container_name = "aamks_redis"
         self.net_conf = "/etc/aamksconf.json" 
         self.host_array = []
@@ -72,10 +71,7 @@ class RedisManager:
         except:
             print("Redis container does not exist")
 
-        try:
-            self.queue.connect()
-        except:
-            print('Error connecting to database queue manager')
+    def get_hosts(self):
         #Get all nodes from aamkconf.json
         with open(self.net_conf, "r") as file:
             data = json.load(file)
@@ -227,8 +223,10 @@ class RedisManager:
             self.start_worker_server()
         if args.serverstop:
             self.stop_redis_server()
+            self.kill_serv()
         if args.serverdelete:
             self.delete_all_redis_servers()
+            self.kill_serv()
         if args.serverstatus:
             self.show_server_status()
         #run
