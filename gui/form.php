@@ -388,6 +388,9 @@ function form_fields_advanced() { #{{{
 	echo building_fields($building_profile, 'advanced');
 	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
 	echo "<tr><td>".get_help('windows')."<td>".form_arr('windows',$windows); 
+	echo "<tr><td>".get_help('windows_break')."<td><select id='windows_break' name=post[windows_break][criterion]><option value='$windows_break[criterion]'>$windows_break[criterion]</option>
+	<option value='TEMPERATURE'>TEMPERATURE</option><option value='FLUX'>FLUX</option></select>
+	<input autocomplete=off type=text automplete=off size=8 name=post[windows_break][setpoint] value='$windows_break[setpoint]'>";
 	echo "<tr><td>".get_help('vents_open')."<td>".form_assoc('vents_open',$vents_open); 
 	echo "<tr><td><a class='rlink switch' id='heat_detectors'>Heat detectors</a>".get_help('heat_detectors')."<td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
 	echo "<tr><td><a class='rlink switch' id='smoke_detectors'>Smoke detectors</a>".get_help('smoke_detectors')."<td>".form_plain_arr_switchable('smoke_detectors',$smoke_detectors); 
@@ -404,7 +407,7 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td><a class='rlink switch' id='heatcom'>Heat of combustion</a>".get_help('heatcom')."<td>".form_plain_arr_switchable2('heatcom',$heatcom,$disp); 
 	echo "<tr><td><a class='rlink switch' id='yields'>Yields</a>".get_help('yields')."<td>".form_plain_arr_switchable2('yields',$yields,$disp); 
 	echo "<tr><td><a class='rlink switch' id='fire_load'>Fire load</a>".get_help('fire_load')."<td>".form_plain_arr_switchable2('fire_load',$fire_load,True); 
-	echo "<tr><td>".get_help('new_fire')."<td><select id='new_fire' name=post[new_fire][ignition]><option value='$new_fire[ignition]'>$new_fire[ignition]</option>
+	echo "<tr><td>".get_help('new_fire')."<td><select id='new_fire' name=post[new_fire][criterion]><option value='$new_fire[criterion]'>$new_fire[criterion]</option>
 	<option value='TEMPERATURE'>TEMPERATURE</option><option value='FLUX'>FLUX</option></select>
 	<input autocomplete=off type=text automplete=off size=8 name=post[new_fire][setpoint] value='$new_fire[setpoint]'>"; 
 

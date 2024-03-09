@@ -103,6 +103,7 @@ or active systems. " ]                                                     ;
 	$help["r_nozzles"]			     = [""                       , "Time from fire unit arrival to application of subsequent water jets [s] (-1 if never ready)"];
     $help["fire_area"]    	         = ["Pareto fire area"                        , "Parameters of Pareto distribution of fire area [m<sup>2</sup>]"];
 	$help["new_fire"]    	 = ["Subsequent fires trigger", "Threshold value for ignition in adjacent room: surface temperature OR incident heat flux [°C or kW/m<sup>2</sup>]"];
+	$help["windows_break"]    	 = ["Windows breaking criterion", "Threshold value for breaking glass and fully opening window: surface temperature OR incident heat flux [°C or kW/m<sup>2</sup>]"];
 
 	foreach($help as $k=>$v) { 
 		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
@@ -498,6 +499,10 @@ function get_template_defaults($q) {/*{{{*/
             "full": 0.3
         }
     ],
+	"windows_break": {
+		"criterion": "TEMPERATURE",
+		"setpoint": 200
+	},
     "vents_open": {
         "DELECTR": 0.04,
         "DCLOSER": 0.14,
@@ -603,7 +608,7 @@ function get_template_defaults($q) {/*{{{*/
           "99th": 60
     },
 	"new_fire":{
-		"ignition": "TEMPERATURE",
+		"criterion": "TEMPERATURE",
 		"setpoint": 200
 	}
 }';
