@@ -830,8 +830,7 @@ class DrawAndLog:
                                 'COMP_ID': fire.room, 
                                 'LOCATION': [fire.loc_x, fire.loc_y, 0],
                                 'TYPE': 'PLATE',
-                                'MATL_ID': '',
-                                'SURFACE_ORIENTATION': 'CEILING',
+                                'NORMAL': [0., 0., 1.],
                                 'TEMPERATURE_DEPTH': 0,
                                 'DEPTH_UNITS': 'M'
                                 })
@@ -844,21 +843,24 @@ class DrawAndLog:
             if v['face'] == 'RIGHT':
                 x = 0
                 y = round((v['depth']-v['face_offset']-v['wdepth']*0.5)/100, 2)
+                normal = [1., 0., 0.]
             if v['face'] == 'LEFT':
                 x = v['width']/100
                 y = round((v['face_offset']+v['wdepth']*0.5)/100, 2)
+                normal = [-1., 0., 0.]
             if v['face'] == 'REAR':
                 x = round((v['width']-v['face_offset']-v['wwidth']*0.5)/100, 2)
                 y = v['depth']/100
+                normal = [0., -1., 0.]
             if v['face'] == 'FRONT':
                 x = round((v['face_offset']+v['wwidth']*0.5)/100, 2)
                 y = 0
+                normal = [0., 1., 0.]
             targets.append({'ID': f"t_{v['name']}",
                             'COMP_ID': v['vent_from_name'],
                             'LOCATION': [x, y, z],
                             'TYPE': 'PLATE',
-                            'MATL_ID': '',
-                            'SURFACE_ORIENTATION': 'CEILING',
+                            'NORMAL': normal,
                             'TEMPERATURE_DEPTH': 0,
                             'DEPTH_UNITS': 'M'
                             })
