@@ -746,6 +746,8 @@ class PostProcess:
 
     # save data
     def save(self, zip=True):
+        if not os.path.exists(self.dir+'/picts'):
+            os.makedirs(self.dir+'/picts')
         self.gd.to_csv()
         self._summarize()
         self._to_txt()
@@ -1276,11 +1278,11 @@ def comparepostprocess(scenarios, path):
     comp.produce()
 
 if __name__ == '__main__':
-    # try:
-    if len(sys.argv) > 2:
-        comparepostprocess(sys.argv[2:], sys.argv[1])
-    else:
-        postprocess(sys.argv[1])
-    # except Exception as e:
-    #     logger.error(e)
+    try:
+        if len(sys.argv) > 2:
+            comparepostprocess(sys.argv[2:], sys.argv[1])
+        else:
+            postprocess(sys.argv[1])
+    except Exception as e:
+        logger.error(e)
 
