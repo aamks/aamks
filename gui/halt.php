@@ -59,7 +59,6 @@ function listing() {/*{{{*/
 	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-status-cur' value='Check status'><withHelp>?<help>Check what is the status of this scenario iterations</help></withHelp>&nbsp;&nbsp;
 	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-check-conv-cur' value='Calc uncertainties'><withHelp>?<help>Show convergence of individual risk<br>and perform sensitivity analysis</help></withHelp>&nbsp;&nbsp;
 	    <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-status' value='Status table'><br>
-	    <input type='submit' style='font-size:12pt; font-weight: bold' name='btn-retry' value='Retry'><withHelp>?<help>Retry jobs finished with status 1</help></withHelp>&nbsp;&nbsp;
         </form>
         <form method='POST' action=''>
         Developers only:&nbsp;
@@ -204,20 +203,7 @@ function stop_gearman($r) {
 
 function runPP() {
 	$f=$_SESSION['main']['working_home'];
-	$aamks=getenv("AAMKS_PATH");
-
-	$cmd="$aamks/env/bin/python3 $aamks/results/beck_new.py $f 2>&1";
-	$z=shell_exec("$cmd");
-	echo "Postprocess finished<br>";
-}
-
-function retry() {
-   $f=$_SESSION['main']['working_home'];
-   $aamks=getenv("AAMKS_PATH");
-   $cmd="cd $aamks/manager; ../env/bin/python3 init.py $f 2>&1";
-
-   $z=shell_exec("$cmd");
-   echo "$z jobs retried<br>";
+    run_beck_new($f);
 }
 
 function prevNext($k, $t, $d) {
@@ -347,9 +333,8 @@ function main() {/*{{{*/
 		check_conv_current();
     }	elseif (isset($_POST['btn-status'])) {
 		set_help(true);
-    }  elseif (isset($_POST['btn-retry'])) {
-       retry();
-    }else{
+    }  
+    else{
 	    check_conv_current();
     }
 

@@ -39,7 +39,6 @@ sudo apt-get update
 sudo apt-get --yes install git unzip php-curl postgresql docker-compose software-properties-common php-redis
 sudo add-apt-repository --yes ppa:deadsnakes/ppa
 sudo apt-get --yes install subversion apache2 php-pgsql pdf2svg libapache2-mod-php python3.10 python3.10-venv
-sudo apt-get --yes install latexmk texlive-latex-extra
 echo "{ \"AAMKS_SERVER\": \"$AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
 sudo chown -R "$USER":"$USER" /etc/aamksconf.json
 
@@ -104,7 +103,7 @@ echo "export USERNAME='$USERNAME'" >> "$temp"
 echo "export LOGNAME='$(id -un)'" >> "$temp"
 echo "export HOSTNAME='$HOSTNAME'" >> "$temp"
 echo "alias aamks='cd /usr/local/aamks/'" >> "$temp"
-echo "alias aamks.manager='cd /usr/local/aamks/manager; python3 manager.py'" >> "$temp"
+echo "alias aamks.manager='/usr/local/aamks/env/bin/python3 /usr/local/aamks/redis_aamks/manager.py'" >> "$temp"
 echo "alias AA='cd /usr/local/aamks/; env/bin/python3 aamks.py; cd $AAMKS_PROJECT/workers;'" >> "$temp"
 echo "alias AP='cd $AAMKS_PROJECT'" >> "$temp"
 
@@ -112,6 +111,7 @@ echo "Add some variables to your .bashrc"
 sudo cp "$temp" ~/.bashrc
 rm "$temp"
 
+sudo groupadd docker
 sudo usermod -a -G docker $USERNAME
 cd "$AAMKS_PATH"/redis_aamks || exit
 sudo docker-compose up -d
@@ -158,6 +158,6 @@ echo "Default user email: demo@aamks"
 echo "Password: AAMKSisthe1!"
 echo "In order to run simulations in redis mode configure workers in network or start worker via redis manager."
 echo "You can start redis server and worker via command:"
-echo "python3 $AAMKS_PATH/redis_aamks/manager.py --serverstart"
-echo "python3 $AAMKS_PATH/redis_aamks/manager.py --runlocal -n 1";
+echo "$AAMKS_PATH/env/bin/python3 $AAMKS_PATH/redis_aamks/manager.py --serverstart"
+echo "$AAMKS_PATH/env/bin/python3 $AAMKS_PATH/redis_aamks/manager.py --runlocal -n 1"
 echo "Log out and log in to reload USER group settings"
