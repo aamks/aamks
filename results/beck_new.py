@@ -25,20 +25,8 @@ from pylatex.table import Tabular
 from pylatex.basic import NewPage, LineBreak
 from pylatex.headfoot import PageStyle, Head, simple_page_number
 
-log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
-logger = logging.getLogger('AAMKS.beck.py')
-logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler(log_file)
-fh.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
-fh.setFormatter(formatter)
-ch.setFormatter(formatter)
-logger.addHandler(fh)
-logger.addHandler(ch)
-
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
+
 
 def calc_rmse(p: float, n: float, confidence: float = None):
     rmse = np.sqrt(p * (1 - p) / n)
@@ -46,7 +34,6 @@ def calc_rmse(p: float, n: float, confidence: float = None):
         return rmse
     else:
         return stat.norm.interval(confidence)[1] * rmse
-
 
 
 '''Import all necessary low-level results from DB'''
@@ -228,8 +215,6 @@ class GetData:
             raw_no_fed = dict(self.raw)
             raw_no_fed.pop('feds')
             return raw_no_fed
-
-
 
 
 '''Classes for calculating values that describe risk in case of fire.
@@ -698,7 +683,6 @@ class Plot:
         plt.close(fig)
 
 
-
 '''Generating plots and results visualization - the head class'''
 class PostProcess:
     plot_type = {
@@ -742,7 +726,6 @@ class PostProcess:
         self.data = {**self.gd.drop(with_fed=False), **RiskScenario(self.gd.raw['results']).all()} # results for THE SCENARIO
         self.n = len(self.gd.raw['feds'])  # number of finished iterations taken for results analysis
         self.probs = []#{}
-
 
     # save data
     def save(self, zip=True):
@@ -919,7 +902,11 @@ class Report:
         self.dir = dir
         self.doc = Document(geometry_options={'margin': '2cm', 'headheight': '2cm', 'headsep': '10pt'})
         self.title = 'MULTISIMULATION RESULTS'
-        *_, self.author, self.project, self.scenario = dir.split('/')
+        dirs = dir.split('/')[-4:]
+        if "_comp" in dirs:
+            self.author, self.project, _, self.scenario = dirs
+        else:
+            _, self.author, self.project, self.scenario = dirs
         self.scenario_no = len(self.scenario.split('-'))
 
     def _preamble(self):
@@ -1145,13 +1132,13 @@ class Report:
         self._generate_header()
         self._summary()
         self._appendix()
-        self.doc.generate_pdf(f'{self.dir}/picts/report', clean_tex=tex)
+        self.doc.generate_pdf(f'{self.dir}/picts/report', clean_tex=not tex)
     def make_multiple(self, tex=False):
         self._preamble()
         self._generate_header()
         self._summary_many()
         self._appendix_many()
-        self.doc.generate_pdf(f'{self.dir}/picts/report', clean_tex=tex)
+        self.doc.generate_pdf(f'{self.dir}/picts/report', clean_tex=not tex)
 
 
 '''Produce results of multiple scenarios on each plot'''
@@ -1262,9 +1249,26 @@ class Comparison:
         
         self.save()
         tm('save')
-        
+
+def prepare_logger(path):
+    log_file = path + '/aamks.log' if path else os.getenv('AAMKS_PROJECT') + '/aamks.log'
+    logger = logging.getLogger('AAMKS.beck.py')
+    logger.setLevel(logging.DEBUG)
+    fh = logging.FileHandler(log_file)
+    fh.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    return logger
+
 def postprocess(path):
-    logger.warning('Start AAMKS post process')
+    global logger
+    logger = prepare_logger(path) if not logging.getLogger('AAMKS.beck.py').hasHandlers() else logging.getLogger('AAMKS.beck.py')
+    logger.debug('Start AAMKS post process')
     pp = PostProcess(path)
     pp.t = time.time()
     pp.produce()
@@ -1272,10 +1276,14 @@ def postprocess(path):
     s = SA(pp.dir)
     s.main(spearman=True)
 
+
 def comparepostprocess(scenarios, path):
-    logger.warning('Start AAMKS post process comparison')
+    global logger
+    logger = prepare_logger(path) if not logging.getLogger('AAMKS.beck.py').hasHandlers() else logging.getLogger('AAMKS.beck.py')
+    logger.debug('Start AAMKS post process comparison')
     comp = Comparison(scenarios, path)
     comp.produce()
+
 
 if __name__ == '__main__':
     try:
@@ -1285,4 +1293,3 @@ if __name__ == '__main__':
             postprocess(sys.argv[1])
     except Exception as e:
         logger.error(e)
-
