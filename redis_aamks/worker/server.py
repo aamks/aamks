@@ -1,3 +1,4 @@
+import logging
 import random
 from json import loads
 import sys
@@ -32,41 +33,78 @@ class RedisWorkerServer:
     def redis_queue_pop(self, db):
         # pop from head of the queue (right of the list)
         # the `b` in `brpop` indicates this is a blocking call (waits until an item becomes available)
-        _, message_json = db.brpop('server_queue')
+        _, message = db.brpop('server_queue')
+        message_json = loads(message)
+        logger.debug(f'pop from head of queue \n{message_json}')
         return message_json
 
-    def process_message(self, db, message_json: str):
-        message = loads(message_json)
-        print(f"Message received: id={message['data']}")
-        if 'anim' in message['data']:
-            self.run_beck_anim(message)
-        elif 'aamks' in message['data']:
-            self.run_aamks(message)
-        elif 'results' in message['data']:
-            self.run_beck_new(message)
+    def process_message(self, message_json: str):
+        if 'anim' in message_json['data']:
+            logger.debug('starting anim function')
+            self.run_beck_anim(message_json)
+        elif 'aamks' in message_json['data']:
+            logger.debug('starting aamks function')
+            self.run_aamks(message_json)
+        elif 'results' in message_json['data']:
+            logger.debug('starting results function')
+            self.run_beck_new(message_json)
     
     def run_aamks(self, message):
         path, user_id = message['data']['aamks']
-        start_aamks(path, user_id)
+        logger.debug('running aamks...')
+        try:
+            start_aamks(path, user_id)
+            logger.debug('finished aamks')
+        except Exception as e:
+            logger.error(f'from aamks.py: {e}')
+
     
     def run_beck_anim(self, message):
         path, project, scenario, iter = message['data']['anim']
-        Beck_Anim(path, project, scenario, iter)
+        logger.debug('running anim...')
+        try:
+            Beck_Anim(path, project, scenario, iter)
+            logger.debug('finished anim')
+        except Exception as e:
+            logger.error(f'from beck_anim.py: {e}')
 
     def run_beck_new(self, message):
         path, scenarios = message['data']['results']
-        if scenarios:
-            comparepostprocess(scenarios.split(' '), path)
-        else:
-            postprocess(path)
+        logger.debug('running results...')
+        try:
+            if scenarios:
+                comparepostprocess(scenarios.split(' '), path)
+            else:
+                postprocess(path)
+            logger.debug('finished results')
+        except Exception as e:
+            logger.error(f'from beck_new.py: {e}')
 
     def main(self):
         """Consumes items from the Redis queue"""
-        print('starting')
+        logger.debug('started worker server')
         db = self.redis_db()
         while True:
             message_json = self.redis_queue_pop(db) 
-            self.process_message(db, message_json)
+            self.process_message(message_json)
 
+
+def prepare_logger(name):
+    log_file = config.main_path + '/aamks.log'
+    logger = logging.getLogger(f'{name} - AAMKS_SERVER')
+    logger.setLevel(logging.DEBUG)
+    fh = logging.FileHandler(log_file)
+    fh.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    # ch = logging.StreamHandler()
+    # ch.setLevel(logging.DEBUG)
+    # ch.setFormatter(formatter)
+    # logger.addHandler(ch)
+    return logger
+
+host_name = os.uname()[1]
+logger = prepare_logger(host_name) if not logging.getLogger(f'{host_name} - AAMKS_SERVER').hasHandlers() else logging.getLogger(f'{host_name} - AAMKS_SERVER')
 AAWorker = RedisWorkerServer()
 AAWorker.main()
