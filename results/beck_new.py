@@ -735,7 +735,6 @@ class PostProcess:
             os.makedirs(self.dir+'/picts')
         self.gd.to_csv()
         self._summarize()
-        Report(self).to_pdf(make=True)
         self._to_txt()
         if zip:
             self._zip_pictures()
