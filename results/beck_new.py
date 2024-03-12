@@ -25,8 +25,8 @@ from pylatex.table import Tabular
 from pylatex.basic import NewPage, LineBreak
 from pylatex.headfoot import PageStyle, Head, simple_page_number
 
-def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
 
+def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
 
 def calc_rmse(p: float, n: float, confidence: float = None):
     rmse = np.sqrt(p * (1 - p) / n)
@@ -218,8 +218,9 @@ class GetData:
 
 
 '''Classes for calculating values that describe risk in case of fire.
-Basic references: Krasuski A., "Multisimulation: Stochastic simulations for the assessment of building fire safety", 2019; Jokman et al. "An overview of quantitative risk measures for loss of life and economic damage", 2003;  Meacham B., Ultimate Health & Safety (UHS) Quantification: Individual and Societal Risk Quantification for Use in National Construction Code (NCC), 2016'''
-
+Basic references: Krasuski A., "Multisimulation: Stochastic simulations for the assessment of building fire safety", 2019; Jokman et al. "An overview 
+of quantitative risk measures for loss of life and economic damage", 2003;  Meacham B., Ultimate Health & Safety (UHS) Quantification: Individual and 
+Societal Risk Quantification for Use in National Construction Code (NCC), 2016'''
 class RiskScenario:
     def __init__(self, results_from_psql: list, fire_prob=1):
         self.iterations = results_from_psql    # list of iterations (results from RiskIteration)
@@ -261,6 +262,7 @@ class RiskScenario:
         for n, i in enumerate(self.iterations):
             val = np.mean([self.iterations[j][key] for j in range(n+1)])
             self.risks[f'conv_{key}'].append(val)
+
 
 class RiskIteration:
     def __init__(self, feds_per_floor: list, calculate=False):
@@ -733,6 +735,7 @@ class PostProcess:
             os.makedirs(self.dir+'/picts')
         self.gd.to_csv()
         self._summarize()
+        Report(self).to_pdf(make=True)
         self._to_txt()
         if zip:
             self._zip_pictures()
@@ -1275,7 +1278,6 @@ def postprocess(path):
     from sa import SensitivityAnalysis as SA
     s = SA(pp.dir)
     s.main(spearman=True)
-
 
 def comparepostprocess(scenarios, path):
     global logger
