@@ -104,6 +104,7 @@ or active systems. " ]                                                     ;
     $help["fire_area"]    	         = ["Pareto fire area"                        , "Parameters of Pareto distribution of fire area [m<sup>2</sup>]"];
 	$help["new_fire"]    	 = ["Subsequent fires trigger", "Threshold value for ignition in adjacent room: surface temperature OR incident heat flux [°C or kW/m<sup>2</sup>]"];
 	$help["windows_break"]    	 = ["Windows breaking criterion", "Threshold value for breaking glass and fully opening window: surface temperature OR incident heat flux [°C or kW/m<sup>2</sup>]"];
+	$help["doors_break"]    	 = ["Doors breaking criterion", "Threshold value for breaking and fully opening door: surface temperature OR incident heat flux [°C or kW/m<sup>2</sup>]"];
 
 	foreach($help as $k=>$v) { 
 		$help[$k][1]="<withHelp>?<help>$v[1]</help></withHelp>";
@@ -500,6 +501,10 @@ function get_template_defaults($q) {/*{{{*/
         }
     ],
 	"windows_break": {
+		"criterion": "TEMPERATURE",
+		"setpoint": 200
+	},
+	"doors_break": {
 		"criterion": "TEMPERATURE",
 		"setpoint": 200
 	},

@@ -391,6 +391,9 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('windows_break')."<td><select id='windows_break' name=post[windows_break][criterion]><option value='$windows_break[criterion]'>$windows_break[criterion]</option>
 	<option value='TEMPERATURE'>TEMPERATURE</option><option value='FLUX'>FLUX</option></select>
 	<input autocomplete=off type=text automplete=off size=8 name=post[windows_break][setpoint] value='$windows_break[setpoint]'>";
+	echo "<tr><td>".get_help('doors_break')."<td><select id='doors_break' name=post[doors_break][criterion]><option value='$doors_break[criterion]'>$doors_break[criterion]</option>
+	<option value='TEMPERATURE'>TEMPERATURE</option><option value='FLUX'>FLUX</option></select>
+	<input autocomplete=off type=text automplete=off size=8 name=post[doors_break][setpoint] value='$doors_break[setpoint]'>";
 	echo "<tr><td>".get_help('vents_open')."<td>".form_assoc('vents_open',$vents_open); 
 	echo "<tr><td><a class='rlink switch' id='heat_detectors'>Heat detectors</a>".get_help('heat_detectors')."<td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
 	echo "<tr><td><a class='rlink switch' id='smoke_detectors'>Smoke detectors</a>".get_help('smoke_detectors')."<td>".form_plain_arr_switchable('smoke_detectors',$smoke_detectors); 
