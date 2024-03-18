@@ -68,7 +68,8 @@ class CfastMcarlo():
         self.samples = d.sections
         self._psql_collector = d.data_for_psql
     
-    def _cfast_record(self, key):
+    def _cfast_record(self, key, name=None):
+        name = name if name is not None else key
         if type(self.samples[key]) == dict:
             record = ''
             for k, v in self.samples[key].items():
@@ -76,12 +77,12 @@ class CfastMcarlo():
                     record +=  ', '.join([f'{k} = {join2str(v, ", ")}' ]) + ', '
                 else:
                     record += join2str([k, v], ' = ', quotes=True) + ', '
-            return f'&{key} ' + record[:-2] + ' /\n'
+            return f'&{name} ' + record[:-2] + ' /\n'
         #&TABL
         elif type(self.samples[key]) == list:
             table = ''
             for i in self.samples[key]:
-                record = f'&{key}'
+                record = f'&{name}'
                 for k, v in i.items():
                     if k == 'LABELS':
                         record +=  f' {k} = ' + join2str(v, ', ', quotes=True, force=True)
@@ -199,67 +200,21 @@ class CfastMcarlo():
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
     def _section_windows(self):# {{{
-        ''' Randomize how windows are opened/closed. '''
-        txt=['!! SECTION WINDOWS']
-        for i, v in enumerate(self.s.query("SELECT * FROM aamks_geom WHERE type_tri='WIN' ORDER BY vent_from,vent_to")):
-            how_much_open = self.samples['windows'][i][0]
-            if how_much_open == 0:
-                continue
-            collect=[]
-            collect.append("&VENT TYPE = 'WALL'")
-            collect.append("ID = '{}'".format(v['name']))
-            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
-            collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))
-            collect.append("TOP = {}".format(round((v['sill']+v['height'])/100.0, 2)))
-            collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))
-            collect.append("OFFSET = {}".format(round(v['face_offset']/100.0, 2)))
-            collect.append("FACE = '{}'".format(v['face']))
-            collect.append("CRITERION = 'TIME' T = 0,1 F = 0,{} /".format(how_much_open))
-            txt.append(', '.join(str(j) for j in collect))
-
-        self.s.executemany('UPDATE aamks_geom SET how_much_open=? WHERE name=?', self.samples['windows'])
-
-        return "\n".join(txt)+"\n" if len(txt)>1 else ""
+        txt = (
+            '!! SECTION WINDOWS',
+            '\n',
+            self._cfast_record('VENT'),
+        )
+        return "".join(txt)
 # }}}
 
     def _section_doors_and_holes(self):# {{{
-        ''' Randomize how doors are opened/close. '''
-
-        pre_evac = self.conf['pre_evac']
-        if pre_evac['mean'] and pre_evac['sd']:
-            # if distribution parameters are given
-            first_percentile = round(lognorm_percentiles_from_params(pre_evac['mean'], pre_evac['sd'])[0], 1)
-        elif pre_evac['1st'] and pre_evac['99th']:
-            # if percentiles are given
-            first_percentile = pre_evac['1st']
-        else:
-            raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
-
-        txt=['!! SECTION DOORS AND HOLES']
-        hvents_setup = self.samples['hvents']
-        for i, v in enumerate(self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from, vent_to")):
-            how_much_open = self.samples['hvents'][i][0]
-            if how_much_open == 0:
-                continue
-            collect=[]
-            collect.append("&VENT TYPE = 'WALL'")                                             # TYPE
-            collect.append("ID = '{}'".format(v['name']))                                    # VENT ID
-            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
-            collect.append("WIDTH = {}".format(round(v['cfast_width']/100.0, 2)))            # WIDTH
-            collect.append("TOP = {}".format(round((v['sill']+v['height'])/100.0, 2)))       # TOP (height of the top of the hvent relative to the floor)
-            collect.append("BOTTOM = {}".format(round(v['sill']/100.0, 2)))                  # BOTTOM
-            collect.append("OFFSET = {}".format(round(v['face_offset']/100.0, 2)))           # COMPARTMENT1_OFFSET
-            collect.append("FACE = '{}'".format(v['face']))                                  # FACE
-            if v['type_tri'] == 'DOOR':
-                # open after 1st percentile of evacuees run
-                collect.append(f"CRITERION='TIME' T=0,{first_percentile},{first_percentile+1} F=0,0,{how_much_open} /")
-            else:
-                collect.append("CRITERION = 'TIME' T = 0 F = {} /".format(how_much_open))         # constatntly open
-            txt.append(', '.join(str(j) for j in collect))
-
-        self.s.executemany('UPDATE aamks_geom SET how_much_open=? WHERE name=?', hvents_setup)
-
-        return "\n".join(txt)+"\n" if len(txt)>1 else ""
+        txt = (
+            '!! SECTION DOORS AND HOLES',
+            '\n',
+            self._cfast_record('DOORS', 'VENT'),
+        )
+        return "".join(txt)
 # }}}
     def _section_vvent(self):# {{{
         # VVENT AREA, SHAPE, INITIAL_FRACTION
@@ -558,7 +513,7 @@ class DrawAndLog:
         loc['floor'] = room['floor']
         loc['fire_id'] = f"f{room['global_type_id']}"
         loc['height'] = fire_height
-        loc['devc'] = f"t{room['global_type_id']}"
+        loc['devc'] = f"t_f{room['global_type_id']}"
         loc['major'] = 0
         comp_type = 'room' if room['type_sec'] == 'ROOM' else 'non_room'
 
@@ -575,7 +530,7 @@ class DrawAndLog:
         loc['floor'] = room['floor']
         loc['fire_id'] = f"f{room['global_type_id']}"
         loc['height'] = fire['z0'] - room['z0']
-        loc['devc'] = f"t{room['global_type_id']}"
+        loc['devc'] = f"t_f{room['global_type_id']}"
         loc['major'] = 0
 
         comp['name'] = room['name']
@@ -622,7 +577,7 @@ class DrawAndLog:
                                 "COMP_ID": fire.room,
                                 "FIRE_ID": fire.f_id,
                                 "LOCATION": [fire.loc_x, fire.loc_y],
-                                "IGNITION_CRITERION": self.conf['new_fire']['ignition'],
+                                "IGNITION_CRITERION": self.conf['new_fire']['criterion'],
                                 "DEVC_ID": fire.devc,
                                 "SETPOINT": self.conf['new_fire']['setpoint']})
         return fires
@@ -764,51 +719,101 @@ class DrawAndLog:
 # }}}
     def _draw_windows_opening(self): # {{{
         ''' 
-        Windows are open / close based on outside temperatures but even
-        still, there's a distribution of users willing to open/close the
-        windows. Windows can be full-open (1), quarter-open (0.25) or closed
-        (0). 
+        Windows are open / close based on outside temperatures.
+        Windows can be full-open (1), quarter-open (0.25) or closed (0).
+        If window is closed can be fully opened by reaching temperature or heat flux.
         '''
-        self.sections['windows'] = []
+        windows = []
         outdoor_temp = self.sections['INIT']['EXTERIOR_TEMPERATURE']
         for v in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='WIN' ORDER BY vent_from,vent_to"):
             draw_value = uniform(0, 1)
-            how_much_open = 0
+            win = { "TYPE": 'WALL',
+                    "ID": v['name'],
+                    "COMP_IDS": [f"'{v['vent_from_name']}'", f"'{v['vent_to_name']}'"],
+                    "WIDTH": round(v['cfast_width']/100.0, 2),
+                    "TOP": round((v['sill']+v['height'])/100.0, 2),
+                    "BOTTOM": round(v['sill']/100.0, 2),
+                    "OFFSET": round(v['face_offset']/100.0, 2),
+                    "FACE": v['face']}
             for i in self.conf['windows']:
                 if outdoor_temp > i['min'] and outdoor_temp <= i['max']:
                     if draw_value < i['full']:
                         how_much_open=1 
+                        win['CRITERION'] = ["'TIME'", 'T = 0,1', "F = 0,{}".format(how_much_open)]
                     elif draw_value < i['full'] + i['quarter']:
                         how_much_open=0.25 
+                        win['CRITERION'] = ["'TIME'", 'T = 0,1', "F = 0,{}".format(how_much_open)]
                     else:
-                        how_much_open=0 
-            self.sections['windows'].append((how_much_open, v['name']))
+                        how_much_open=0
+                        win['CRITERION'] = self.conf['windows_break']['criterion']
+                        win['SETPOINT'] = self.conf['windows_break']['setpoint']
+                        win['PRE_FRACTION'] = 0
+                        win['POST_FRACTION'] = 1
+                        win['DEVC_ID'] = f"t_{v['name']}"
+            windows.append(win)
+            self.s.query(f"UPDATE aamks_geom SET how_much_open={how_much_open} WHERE name='{v['name']}'") 
 
             if how_much_open and (v['vent_from'] == int(self._fire.f_id[1:]) or v['vent_to'] == int(self._fire.f_id[1:])):
                 self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
 
-            self._psql_log_variable('w',how_much_open)        
+            self._psql_log_variable('w',how_much_open)
+
+        self.sections.setdefault('VENT', []).extend(windows)
 # }}}
     def _draw_doors_and_holes_opening(self):# {{{
         ''' 
         Door may be open or closed, but Hole is always open and we don't need
         to log that.
         '''
-        self.sections['hvents'] = []
+        doors = []
+        pre_evac = self.conf['pre_evac']
+        if pre_evac['mean'] and pre_evac['sd']:
+            # if distribution parameters are given
+            first_percentile = round(lognorm_percentiles_from_params(pre_evac['mean'], pre_evac['sd'])[0], 1)
+        elif pre_evac['1st'] and pre_evac['99th']:
+            # if percentiles are given
+            first_percentile = pre_evac['1st']
+        else:
+            raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
+        
         for v in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from, vent_to"):
             vents = self.conf['vents_open']
-            Type = v['type_sec']
-
-            if Type=='HOLE':
+            v_type = v['type_sec']
+            door = { "TYPE": 'WALL',
+                    "ID": v['name'],
+                    "COMP_IDS": [f"'{v['vent_from_name']}'", f"'{v['vent_to_name']}'"],
+                    "WIDTH": round(v['cfast_width']/100.0, 2),
+                    "TOP": round((v['sill']+v['height'])/100.0, 2),
+                    "BOTTOM": round(v['sill']/100.0, 2),
+                    "OFFSET": round(v['face_offset']/100.0, 2),
+                    "FACE": v['face']}
+            
+            if v_type=='HOLE':
                 how_much_open=1
+                door['CRITERION'] = ["'TIME'", f'T = 0', f'F = {how_much_open}']
             else:
-                how_much_open=binomial(1,vents[Type])
-                self._psql_log_variable(Type.lower(),how_much_open)
+                how_much_open=binomial(1,vents[v_type])
+                self._psql_log_variable(v_type.lower(),how_much_open)
 
-            self.sections['hvents'].append((how_much_open, v['name']))
+            if how_much_open == 0:
+                door['CRITERION'] = self.conf['doors_break']['criterion']
+                door['SETPOINT'] = self.conf['doors_break']['setpoint']
+                door['PRE_FRACTION'] = 0
+                door['POST_FRACTION'] = 1
+                door['DEVC_ID'] = f"t_{v['name']}"               
+            else:
+                # open after 1st percentile of evacuees run
+                if 'CRITERION' not in door:
+                    door['CRITERION'] = ["'TIME'", f'T = 0,{first_percentile},{first_percentile+1}', f'F=0,0,{how_much_open}']
+            
+            doors.append(door)
+
+            self.s.query(f"UPDATE aamks_geom SET how_much_open={how_much_open} WHERE name='{v['name']}'")
 
             if how_much_open and (v['vent_from'] == int(self._fire.f_id[1:]) or v['vent_to'] == int(self._fire.f_id[1:])):
                 self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
+        
+        self.sections['DOORS'] = doors
 # }}}
     def _draw_vvents_opening(self):# {{{
         self.sections['vvents'] = []
@@ -821,7 +826,7 @@ class DrawAndLog:
 
             self.sections['vvents'].append((how_much_open, v['name']))
 
-    def _draw_targets(self):
+    def _draw_fire_targets(self):
         targets = []
         for fire in self._fires:
             if fire.major != 1:
@@ -829,13 +834,42 @@ class DrawAndLog:
                                 'COMP_ID': fire.room, 
                                 'LOCATION': [fire.loc_x, fire.loc_y, 0],
                                 'TYPE': 'PLATE',
-                                'MATL_ID': '',
-                                'SURFACE_ORIENTATION': 'CEILING',
+                                'NORMAL': [0., 0., 1.],
                                 'TEMPERATURE_DEPTH': 0,
                                 'DEPTH_UNITS': 'M'
                                 })
         if targets:
-            self.sections['DEVC'] = targets
+            self.sections.setdefault('DEVC', []).extend(targets)
+    def _draw_window_and_door_targets(self):
+        targets = []
+        for v in self.s.query("SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.how_much_open=0 AND (v.type_sec='WIN' OR v.type_sec='DOOR')"):
+            z = round((v['sill']+v['height']*0.5)/100, 2)
+            if v['face'] == 'RIGHT':
+                x = 0
+                y = round((v['depth']-v['face_offset']-v['wdepth']*0.50)/100, 2)
+                normal = [1., 0., 0.]
+            if v['face'] == 'LEFT':
+                x = v['width']/100
+                y = round((v['face_offset']+v['wdepth']*0.5)/100, 2)
+                normal = [-1., 0., 0.]
+            if v['face'] == 'REAR':
+                x = round((v['width']-v['face_offset']-v['wwidth']*0.5)/100, 2)
+                y = v['depth']/100
+                normal = [0., -1., 0.]
+            if v['face'] == 'FRONT':
+                x = round((v['face_offset']+v['wwidth']*0.5)/100, 2)
+                y = 0
+                normal = [0., 1., 0.]
+            targets.append({'ID': f"t_{v['name']}",
+                            'COMP_ID': v['vent_from_name'],
+                            'LOCATION': [x, y, z],
+                            'TYPE': 'PLATE',
+                            'NORMAL': normal,
+                            'TEMPERATURE_DEPTH': 0,
+                            'DEPTH_UNITS': 'M'
+                            })
+        if targets:
+            self.sections.setdefault('DEVC', []).extend(targets)
 
     def _draw_triggers(self, devc: str):# {{{
         self.sections[devc] = []
@@ -886,7 +920,8 @@ class DrawAndLog:
         #&CONN
         self._draw_connections()
         #&DEVC
-        self._draw_targets()
+        self._draw_fire_targets()
+        self._draw_window_and_door_targets()
         [self._draw_triggers(d) for d in ['heat_detectors', 'smoke_detectors', 'sprinklers']]
         
 
