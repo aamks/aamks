@@ -102,7 +102,7 @@ function make_anim_pictures(){
 	$scenario = $_SESSION['main']['scenario_id'];
 	$f=$_SESSION['main']['working_home'];
 	$data = $_SESSION['nn']->query("SELECT anim_params, iteration from simulations where project = '$project' and scenario_id = '$scenario' and iteration = '$iter';");
-	if (empty($data[0]['anim_params'])){
+	if (empty($data[0]['anim_params']) || ($data[0]['anim_params'] === "NULL")){
 		run_beck_anim($f, $project, $scenario, $iter);
 	};
 }

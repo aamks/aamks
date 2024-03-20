@@ -98,10 +98,10 @@ def prepare_logger(name):
     formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
-    # ch = logging.StreamHandler()
-    # ch.setLevel(logging.DEBUG)
-    # ch.setFormatter(formatter)
-    # logger.addHandler(ch)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
     return logger
 
 host_name = os.uname()[1]
