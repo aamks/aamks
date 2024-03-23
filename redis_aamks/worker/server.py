@@ -1,6 +1,6 @@
 import logging
 import random
-from json import loads
+from json import loads, load, dump
 import sys
 import redis
 import config
@@ -48,6 +48,9 @@ class RedisWorkerServer:
         elif 'results' in message_json['data']:
             logger.debug('starting results function')
             self.run_beck_new(message_json)
+        elif 'conf_dir' in message_json['data']:
+            logger.debug('starting conf_subst function')
+            self.run_conf_dir(message_json)
     
     def run_aamks(self, message):
         path, user_id = message['data']['aamks']
@@ -79,6 +82,21 @@ class RedisWorkerServer:
             logger.debug('finished results')
         except Exception as e:
             logger.error(f'from beck_new.py: {e}')
+    def run_conf_dir(self, message):
+        logger.debug('substitution conf...')
+        try:
+            path, pid, sid, nid, tid = message['data']['conf_dir']
+            for scenario in [('simple', sid), ('navmesh', nid), ('three', tid)]:
+                with open(f"{path}/demo/{scenario[0]}/conf.json", 'r') as f:
+                    conf = load(f)
+                    conf['project_id'] = pid
+                    conf['scenario_id'] = scenario[1]
+                with open(f"{path}/demo/{scenario[0]}/conf.json", 'w') as f:
+                    dump(conf, f,  indent=4)
+            logger.debug('finished with conf')
+        except Exception as e:
+            logger.error(f'from subst conf: {e}')
+
 
     def main(self):
         """Consumes items from the Redis queue"""
