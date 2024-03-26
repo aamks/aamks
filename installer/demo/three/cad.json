@@ -119,7 +119,8 @@
     "VVENT": [],
     "MVENT": [],
     "EVACUEE": [],
-    "FLOOR_TELEPORT": [],
+    "FLOOR_TELEPORT_UP": [],
+    "FLOOR_TELEPORT_DOWN": [],
     "FIRE": [],
     "UNDERLAY_IMG": {
       "opacity": "1",
@@ -236,31 +237,32 @@
     ],
     "MVENT": [],
     "EVACUEE": [],
-    "FLOOR_TELEPORT": [
+    "FLOOR_TELEPORT_UP": [],
+    "FLOOR_TELEPORT_DOWN": [
       {
-        "points": "[[760,805],[740,805],[750,735],[760,805]]",
+        "points": "[[765,790],[745,790],[755,720],[765,790]]",
         "idx": 1,
         "z": "[350,700]",
         "teleport_from": [
-          750,
-          805
+          755,
+          790
         ],
         "teleport_to": [
-          750,
-          735
+          755,
+          720
         ]
       },
       {
-        "points": "[[3395,1010],[3375,1010],[3385,940],[3395,1010]]",
+        "points": "[[3385,975],[3365,975],[3375,905],[3385,975]]",
         "idx": 2,
         "z": "[350,700]",
         "teleport_from": [
-          3385,
-          1010
+          3375,
+          975
         ],
         "teleport_to": [
-          3385,
-          940
+          3375,
+          905
         ]
       }
     ],
@@ -348,18 +350,19 @@
     ],
     "MVENT": [],
     "EVACUEE": [],
-    "FLOOR_TELEPORT": [
+    "FLOOR_TELEPORT_UP": [],
+    "FLOOR_TELEPORT_DOWN": [
       {
-        "points": "[[3430,1010],[3410,1010],[3420,940],[3430,1010]]",
+        "points": "[[3430,1025],[3410,1025],[3420,955],[3430,1025]]",
         "idx": 3,
         "z": "[700,1050]",
         "teleport_from": [
           3420,
-          1010
+          1025
         ],
         "teleport_to": [
           3420,
-          940
+          955
         ]
       }
     ],

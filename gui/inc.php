@@ -202,7 +202,7 @@ class Aamks {/*{{{*/
 		$setup_user="<a href=/aamks/users.php?edit_user class=blink>".$_SESSION['main']['user_name']."</a>";
 		echo "
 		<div style='position:fixed; top: 20px; right: 10px; text-align:right'>
-		<a href=login.php?logout=1 class=blink >Logout</a><br>
+		<a href=/aamks/login.php?logout=1 class=blink >Logout</a><br>
 		$setup_user
 		</div>
 		";

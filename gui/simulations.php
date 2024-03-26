@@ -54,19 +54,19 @@ function downloads() {/*{{{*/
         $dir = implode('-', $scens);
         $f = $f."/_comp/".$dir;
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/report.pdf download><button>Report (.PDF)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/txt.zip download><button>Summary TXT files (.ZIP)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/picts.zip download><button>Pictures (.ZIP)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/csv.zip download><button>Detailed CSV databases (.ZIP)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/data.zip download><button>Full results (.ZIP)</button></a>";
+        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/report.pdf')>Report (.PDF)</button>";
+        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/txt.zip')>Summary TXT files (.ZIP)</button>";
+        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/picts.zip')>Pictures (.ZIP)</button>";
+        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/csv.zip')>Detailed CSV databases (.ZIP)</button>";
+        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/data.zip')>Full results (.ZIP)</button>";
     }else{
         $f = substr($f, strpos($f, '/', 1));
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/report.pdf download><button>Report (.PDF)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/data.txt download><button>Summary file (.TXT)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/picts.zip download><button>Pictures (.ZIP)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/data.csv download><button>Detailed database (.CSV)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/data.zip download><button>Full results (.ZIP)</button></a>";
+        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/report.pdf')>Report (.PDF)</button>";
+        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/data.txt')>Summary file (.TXT)</button>";
+        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/picts.zip')>Pictures (.ZIP)</button>";
+        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/data.csv')>Detailed database (.CSV)</button>";
+        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/data.zip')>Full results (.ZIP)</button>";
     }
 }
 /*}}}*/

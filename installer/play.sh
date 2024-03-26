@@ -13,6 +13,10 @@ DELETE FROM scenarios;
 INSERT INTO scenarios(project_id,scenario_name) values(1,'simple');
 INSERT INTO scenarios(project_id,scenario_name) values(1,'navmesh');
 INSERT INTO scenarios(project_id,scenario_name) values(1,'three');
+
+COPY simulations FROM '$PWD/simulations.csv' DELIMITER ',' CSV HEADER;
+
+SELECT SETVAL((SELECT PG_GET_SERIAL_SEQUENCE('"simulations"', 'id')), (SELECT (MAX("id") + 1) FROM "simulations"), FALSE);
 ";
 
 # psql aamks -c "SELECT * FROM projects"

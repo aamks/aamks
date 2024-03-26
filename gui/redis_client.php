@@ -51,5 +51,10 @@ function run_beck_new($path, $scenarios = ""){
     $mess["data"] = array("results" => [$path, $scenarios]);
     push($mess);
 }
+function run_conf_subst($user_dir, $pid, $sid, $nid, $tid){
+    $mess = message();
+    $mess["data"] = array("conf_dir" => [$user_dir, $pid, $sid, $nid, $tid]);
+    push($mess);
+}
 
 ?>

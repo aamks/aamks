@@ -36,6 +36,7 @@ window.onload = function() {
 function createSelect(){
 	var anim_params = document.getElementById("anim_params").textContent;
 	anim_params = JSON.parse(anim_params)[0]['anim_params'];
+	if (anim_params != 'NULL'){
 	anim_params = JSON.parse(anim_params)
 	var rooms = ['Select room'];
 	for(var r in anim_params){
@@ -70,6 +71,7 @@ function createSelect(){
 	selectParams.addEventListener("change", (event) => {
 		loadImage(event.target.value+"_"+room+".png");
 	});
+	}
 }
 function loadImage(file){
 	const urlParams = new URLSearchParams(window.location.search);

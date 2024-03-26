@@ -41,7 +41,19 @@ function resetScenario() {
 			$.post('projects.php?projects_list', {'reset_scenario':'true'});
 		}}
 )};
-
+function checkUrl(url) {
+	$.get(url).done(function () {
+		const a = document.createElement('a')
+		a.href = url
+		a.download = url.split('/').pop()
+		document.body.appendChild(a)
+		a.click()
+		document.body.removeChild(a)
+	}).fail(function (){
+		var f = url.split('/').pop()
+		amsg({"msg": "File "+f+" not exists!", "err":2, "duration": 3000 }); 
+	})
+}
 $(function()  {//{{{
 	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
 		if($('left-menu-box').length==0) { 
@@ -109,6 +121,13 @@ function amsg(r) {//{{{
 			var duration=1500;
 		}
 		$('#amsg').delay(duration).fadeOut(400);
+	} else if(r['err']==2){
+		$('#amsg').css('display', 'none');
+		$('#amsg').css('display', 'none');
+		$('#amsg').html(r['msg']);
+		$('#amsg').css('display', 'block');
+		$('#amsg').css('background-color', "#800");
+		$('#amsg').delay(r['duration']).fadeOut(400);
 	}
 }
 //}}}

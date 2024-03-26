@@ -1,0 +1,28 @@
+# MULTISIMULATION RESULTS SUMMARY
+## Number of iterations: 10
+# RISK INDICIES
+## all those can be furhter multiplied by probability of fire [1/year]
+##Individual [-]
+1.198590835613202e-09
+##Individual risk approximation error (RMSE with 95% confidence interval included)[-]
+2.145771966531104e-05
+## Societal (WRI) [fatalities]
+0.0
+## Societal (AWR) [fatalities]
+1.5581680862971626e-07
+## Societal (SRI) - T=1 [(fatalities + fatalities^2)/(m^2 * year)] (to be multiplied by time share)
+8.807862837999474e-09
+# EVACUATION TIME
+## RSET mean and standard deviation value [s]
+463.4,69.15374176427477
+## ASET mean and standard deviation value [s]
+1000.0,0.0
+## Overlapping Index of ASET and RSET distributions
+0.0
+# FIRE CHARACTERISTICS
+## Maximum upper gas layer temperature mean and standard deviation value [°C]
+94.77095,29.47069907403793
+## Minimum neutral plane height mean and standard deviation value [cm]
+96.39886,46.06045635918515
+## Minimum visibility mean and standard deviation value [m]
+1.5421067091477942,1.3914253982825235
