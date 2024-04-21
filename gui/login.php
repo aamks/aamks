@@ -1,4 +1,5 @@
 <?php
+require_once("inc.php");
 function sendMail($to, $subject, $fields, $template_name) { #{{{
 	if(getenv("AAMKS_USE_MAIL")==0) {
 		$url = $fields['url'];
@@ -200,10 +201,21 @@ function activate_user(){/*{{{*/
 		$_SESSION['nn']->fatal("Activation token not valid");
 	} else {
 		$_SESSION['nn']->query("UPDATE users SET activation_token='already activated' WHERE id=$1", array($r[0]['id'])) ;
-		$pid=$_SESSION['nn']->query("insert into projects (user_id, project_name) values ($1,$2) RETURNING id", array($r[0]['id'], 'demo'));
-		$_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'three'));
-		$_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'navmesh'));
-		$sid=$_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'simple'));
+		$pid = $_SESSION['nn']->query("insert into projects (user_id, project_name) values ($1,$2) RETURNING id", array($r[0]['id'], 'demo'));
+		$tid = $_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'three'));
+		$nid = $_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'navmesh'));
+		$sid = $_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'simple'));
+
+		$_SESSION['nn']->query("CREATE TEMP TABLE tmp (like simulations)");
+		$_SESSION['nn']->query("INSERT INTO tmp SELECT * FROM simulations WHERE project = 1 AND scenario_id IN (1, 2, 3) AND iteration IN (1,2,3,4,5,6,7,8,9,10)");
+		$_SESSION['nn']->query("UPDATE tmp SET id = nextval('simulations_id_seq')");
+		$_SESSION['nn']->query("UPDATE tmp SET project = $1", array($pid[0]['id']));
+		$_SESSION['nn']->query("UPDATE tmp SET scenario_id = $1 WHERE scenario_id = 1", array($sid[0]['id']));
+		$_SESSION['nn']->query("UPDATE tmp SET scenario_id = $1 WHERE scenario_id = 2", array($nid[0]['id']));
+		$_SESSION['nn']->query("UPDATE tmp SET scenario_id = $1 WHERE scenario_id = 3", array($tid[0]['id']));
+		$_SESSION['nn']->query("INSERT INTO simulations SELECT * from tmp");
+		$_SESSION['nn']->query("DROP TABLE tmp");
+
 		$_SESSION['nn']->query("update users set active_scenario = $1 where id=$2", array($sid[0]['id'], $r[0]['id']));
 		$ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.id=$1", array($r[0]['id']));
 
@@ -214,6 +226,7 @@ function activate_user(){/*{{{*/
 			mkdir -p $user_dir
 			cp -r $AAMKS_PATH/installer/demo/ $user_dir
 		");
+		run_conf_subst($user_dir, $pid[0]['id'], $sid[0]['id'], $nid[0]['id'], $tid[0]['id']);
 		//$_SESSION['nn']->ch_main_vars($ret[0]);
 		$_SESSION['nn']->msg("Account activated! You can login now!");
 		//header("location:/aamks/login.php"); 
