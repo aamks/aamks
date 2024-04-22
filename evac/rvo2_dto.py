@@ -258,6 +258,7 @@ class EvacEnv:
                         navmesh_path = exit[2]
                     else:
                         print("samodzielnie")
+                        # find last leader exit  ?
                         exit = self._find_closest_exit(e)
                         evacuee.exit_coordinates = (exit[0], exit[1])
                         navmesh_path = exit[2]
