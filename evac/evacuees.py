@@ -16,9 +16,6 @@ class Evacuees:
 
     def remove_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
-        # if ped_no >= len(self.pedestrians):
-        #     print("sdfsdfsdfsf")
-        #     return;
         del self.pedestrians[ped_no]
 
     def add_pedestrian(self, pedestrian):
@@ -125,13 +122,13 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].has_agent_reached_teleport()
 
-    def set_exit_door(self, ped_no: int, exit_door: list) -> object:
+    def set_exit_coordinates(self, ped_no: int, exit_coordinates: list) -> object:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
-        self.pedestrians[ped_no].exit_door = exit_door
+        self.pedestrians[ped_no].exit_coordinates = exit_coordinates
 
-    def get_exit_door(self, ped_no):
+    def get_exit_coordinates(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
-        return self.pedestrians[ped_no].exit_door
+        return self.pedestrians[ped_no].exit_coordinates
 
     def mark_exit_as_blocked(self, ped_no, blocked_exit_door):
         assert isinstance(ped_no, int), '%ped_no is not an integer'

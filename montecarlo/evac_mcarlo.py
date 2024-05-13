@@ -122,7 +122,7 @@ class EvacMcarlo():
         agents should start to behave like they actually are in the room of fire origin though).
         '''
 
-        pre_evacs = {'pre_evac': None, 'pre_evac_fire_origin': None}
+        pre_evacs = {'pre_evac': 0, 'pre_evac_fire_origin': 0}
         for room_type in ['pre_evac', 'pre_evac_fire_origin']:
             pe = self.conf[room_type]
             if pe['mean'] and pe['sd']:
@@ -255,13 +255,11 @@ class EvacMcarlo():
             clustering = EvacClusters(self.dispatched_evacuees[floor])
             for i, agent in enumerate(clustering.sorted_agents_flat):
                 e_id='f{}'.format(i)
-                pre_ev_time = agent["leader_id"] * 2.99 +1
-                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]["leader"] = agent["leader"]
+                pre_ev_time = round(agent["leader_id"] * 2.99 + 1, 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]["leader_id"] = agent["leader_id"]  
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]["type"] = agent["type"] 
-                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION']['pre_evac'] = pre_ev_time
-                print("e",pre_ev_time)
-                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION']['pre_evac_fire_origin'] = pre_ev_time 
+                # self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION']['pre_evac'] = pre_ev_time
+                # self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION']['pre_evac_fire_origin'] = pre_ev_time 
 
 
         self._evac_conf['FLOORS_DATA']=OrderedDict()

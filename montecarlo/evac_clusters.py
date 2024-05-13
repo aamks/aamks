@@ -67,10 +67,32 @@ class EvacClusters():
         return grouped_by_rooms
 
     def cluster_one_room(self, positions_in_room):
-        ms = MeanShift()
-        ms.fit(np.array(positions_in_room))
+        ms = MeanShift(bandwidth=200)
+        positions_in_room =np.array(positions_in_room)
+        ms.fit(positions_in_room)
         cluster_centers = ms.cluster_centers_
         labels = ms.labels_
+        # import matplotlib.pyplot as plt
+        # plt.figure(1)
+        # plt.clf()
+        # colors = ["#dede00", "#377eb8", "#f781bf","#CD5C5C","#E9967A","#DFFF00","#6495ED"]
+        # markers = ["o", "^"]*3
+        # labels_unique = np.unique(labels)
+        # n_clusters_ = len(labels_unique)
+        # for k, col in zip(range(n_clusters_), colors):
+        #     my_members = labels == k
+        #     cluster_center = cluster_centers[k]
+        #     plt.plot(positions_in_room[my_members, 0], positions_in_room[my_members, 1], markers[k], color=col)
+        #     plt.plot(
+        #         cluster_center[0],
+        #         cluster_center[1],
+        #         markers[k],
+        #         markerfacecolor=col,
+        #         markeredgecolor="k",
+        #         markersize=14,
+        #     )
+        # plt.title("Estimated number of clusters: %d" % n_clusters_)
+        # plt.show()
         clustered_dict = {}
         for label in labels:
             if label not in clustered_dict:
@@ -81,7 +103,7 @@ class EvacClusters():
                 }
 
         for position, label in zip(positions_in_room, labels):
-            agent = {"position": position,
+            agent = {"position": tuple(position.tolist()),
                      "leader": "",
                      "type": "",
                      }
@@ -161,7 +183,6 @@ class EvacClusters():
         for room in self.evacues_grouped_by_rooms:
             for cluster in self.evacues_grouped_by_rooms[room]["clusters"]:
                 pre_evac_time = float(randrange(20,120,20))
-                print(pre_evac_time)
                 for agent in self.evacues_grouped_by_rooms[room]["clusters"][cluster]["agents"]:
                     agent_data = {
                         "position": agent["position"],

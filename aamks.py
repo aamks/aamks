@@ -13,11 +13,6 @@ from montecarlo.cfast_mcarlo import CfastMcarlo
 from montecarlo.evac_mcarlo import EvacMcarlo
 from include import SimIterations
 from include import Json
-<<<<<<< HEAD
-from redis_aamks.manager import RedisManager
-from montecarlo.evac_clusters import EvacClusters
-=======
->>>>>>> dev
 import logging
 
 def prepare_logger(path):
