@@ -1,11 +1,13 @@
 <?php
 session_name('aamks');
 require_once("lib.form.php"); 
+require_once("redis_client.php"); 
 session_start();
 #phpinfo();
 ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
 ini_set('display_startup_errors',1);
+ini_set('memory_limit','512M');
 setlocale(LC_TIME, "pl_PL");
 
 # debug/*{{{*/
@@ -28,6 +30,14 @@ function dd2($arr) {
 function dd3($arr) {
 	$out="<pre>".htmlspecialchars(print_r($arr,1))."</pre>";
 	return $out;
+}
+function read_evac_config_json() {
+	$path=getenv("AAMKS_PATH");
+	$json=json_decode(file_get_contents("$path/evac/config.json"), 1);
+	if(empty($json)) { 
+		$_SESSION['nn']->fatal("Broken json: $path/evac/config.json");
+	} 
+	return $json;
 }
 
 /*}}}*/
@@ -98,11 +108,9 @@ class Aamks {/*{{{*/
 		$data=$this->assert_json_ids($data);
 		$file=$_SESSION['main']['working_home']."/conf.json";
 		$saved=file_put_contents($file, $data);
-		chmod($file, 0666);
 		if($saved<=0) { 
 			$_SESSION['header_err'][]="problem saving $file";
 		}
-		header("Location: $header");
 	}
 	/*}}}*/
 
@@ -117,17 +125,17 @@ class Aamks {/*{{{*/
 		$menu.="<a class=blink href=/aamks/apainter/index.php>Apainter</a><br>";
 		$menu.="<a class=blink href=/aamks/animator/index.php>Animator</a><br>";
 		$menu.="<a class=blink href=/aamks/simulations.php>Summary</a><br>";
+		$menu.="<a class=blink id=launch_draft>Draft Launch</a><br>";
 		$menu.="<a class=blink id=launch_simulation>Launch</a><br>";
 		$menu.="<a class=blink href=/aamks/halt.php>Manage jobs</a><br>";
 		$menu.="<br>";
-		$menu.="Scenario<br><select id='choose_scenario'>\n";
+		$menu.="Scenario<br><select id='choose_scenario' style='width: 120px;'>\n";
 		$menu.="<option value=".$_SESSION['main']['scenario_id'].">".$_SESSION['main']['scenario_name']."</option>\n";
 		foreach($r as $k=>$v) {
 			$menu.="<option value='$v[id]'>$v[scenario_name]</option>\n";
 		}
 		$menu.="</select>\n";
 		$menu.="<br>";
-		//$menu.='<div id="progress" style="color:#BBC; height:0px; padding-top:15px; font-size:16px"></div> <br>';
 		$menu.='<div id="active-sims" style="color:#BBC; height:20px; padding-top:5px; font-size:16px"> Progress </div><br>';
 		$menu.='<button id="check-sim">Check progress</button>'; 
 
@@ -135,9 +143,10 @@ class Aamks {/*{{{*/
 	}
 /*}}}*/
 	public function menu($title='') { /*{{{*/
+		ob_start();
 		$this->logoutButton();
 		$menu=$this->rawMenu();
-		echo "<left-menu-box> $menu </left-menu-box> <div id=content-main style='height: 95vh; margin-left: 150px; padding: 0px;'>";
+		echo "<left-menu-box> $menu </left-menu-box> <div id=content-main style='height: 95vh; margin-left: 150px; padding-left: 10px;'>";
 		if(!empty($title)) { echo "<tt>$title</tt>"; }
 	}
 	/*}}}*/
@@ -193,7 +202,7 @@ class Aamks {/*{{{*/
 		$setup_user="<a href=/aamks/users.php?edit_user class=blink>".$_SESSION['main']['user_name']."</a>";
 		echo "
 		<div style='position:fixed; top: 20px; right: 10px; text-align:right'>
-		<a href=login.php?logout=1 class=blink >Logout</a><br>
+		<a href=/aamks/login.php?logout=1 class=blink >Logout</a><br>
 		$setup_user
 		</div>
 		";

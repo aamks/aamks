@@ -58,6 +58,8 @@ class Beck_Anim:
             for param in self.dct[room].keys():
                 if not all(v == 0 for v in self.dct[room][param]):
                     self.functioning_params[room].append(param)
+                    if len(self.dct['Time']['Time']) != len(self.dct[room][param]):
+                        continue
                     draw(self.dct['Time']['Time'], self.dct[room][param], 'Time', param, f'{self.path}/picts/{self.iter}_{param}_{room}')
     
     def push_params(self):
@@ -66,6 +68,5 @@ class Beck_Anim:
 
 
 if __name__ == '__main__':
-    print("run")
     Beck_Anim(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
     #Beck_Anim('/home/aamks_users/demo@aamks/demo/three', '1', '3', '2')

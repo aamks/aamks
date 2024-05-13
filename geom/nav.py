@@ -1,18 +1,11 @@
 # MODULES
 # {{{
 import json
-import shutil
 import os
-import re
 import sys
 from evac.polymesh import Polymesh
 sys.path.insert(1, '/usr/local/aamks')
-import codecs
-import itertools
-import _recast as dt
-import subprocess
 import copy
-
 from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
@@ -229,14 +222,21 @@ class Navmesh:
             # only on the inner surface at a distance greater than approximately cell_size 
             # plus agent_radius (read bake function in navmesh baker). If destination coordinates are in navmesh, 
             # then search_path doesnt need to call TrianglesBVH sample function - calculation is faster
-            room_before_exit_center = self.s.query('SELECT center_x, center_y from aamks_geom WHERE name=? or name=?', (i['vent_to_name'],i['vent_from_name']))
-            
+            room_before_exit_center = self.s.query('SELECT points from aamks_geom WHERE name=? or name=?', (i['vent_to_name'],i['vent_from_name']))
+            center_x, center_y = self.get_center_from_points(room_before_exit_center[0]['points'])
             #the outer vestibule is a virtual room - necessary to add a navigation mesh outside 
             #the exit door because agents disappear when they reach a target that is 1 m behind the exit door
-            min_x, max_x, min_y, max_y = self._get_outer_vestibule_coordinates(room_before_exit_center[0]['center_x'], room_before_exit_center[0]['center_y'], i)
+            min_x, max_x, min_y, max_y = self._get_outer_vestibule_coordinates(center_x, center_y, i)
             platforms.append([ (min_x, min_y), (min_x, max_y), (max_x, max_y), (max_x,  min_y) ])
         return platforms
 
+    def get_center_from_points(self, points):
+        points_parsed_1 = points.replace('[', '')
+        points_parsed_2 = points_parsed_1.replace(']', '')
+        points = points_parsed_2.split(', ')
+        int_points = [int(x) for x in points]
+        return((int_points[0]+int_points[2]+int_points[4]+int_points[6])/4, (int_points[1]+int_points[3]+int_points[5]+int_points[7])/4)
+    
     def _get_outer_vestibule_coordinates(self, last_room_center_x, last_room_center_y, door):
         if door['width'] < door['depth']:
             # exit door is vertical

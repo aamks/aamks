@@ -70,6 +70,7 @@ class Sqlite: # {{{
         '''
         must_exist=0: we are creating the database
         must_exist=1: Exception if there's no such file
+        must_exist=2: Creating database with read|write permissions
         '''
         if must_exist == 1:
             assert os.path.exists(handle), "Expected to find an existing sqlite file at: {}.\nCWD: {}".format(handle, os.getcwd())

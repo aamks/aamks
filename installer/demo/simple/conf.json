@@ -4,7 +4,7 @@
     "fire_model": "CFAST",
     "dispatch_evacuees": "manual+probabilistic",
     "number_of_simulations": 1,
-    "simulation_time": 100,
+    "simulation_time": 1000,
     "indoor_temperature": {
         "mean": 22,
         "sd": 2
@@ -32,15 +32,15 @@
         "thickness": 0.3
     },
     "heat_detectors": {
-        "mean": "",
-        "sd": "",
-        "RTI": "",
-        "not_broken": ""
+        "mean": 60,
+        "sd": 5,
+        "RTI": 5,
+        "not_broken": 0.9
     },
     "smoke_detectors": {
-        "mean": "",
-        "sd": "",
-        "not_broken": ""
+        "mean": 23,
+        "sd": 2,
+        "not_broken": 0.9
     },
     "sprinklers": {
         "mean": 60,
@@ -51,49 +51,30 @@
         "not_broken": 0.95
     },
     "NSHEVS": {
-        "activation_time": "",
-        "startup_time": ""
+        "activation_time": 60,
+        "startup_time": 60
     },
-    "RESCUE": {
-        "is_rescue": 0,
-        "electronic": 0,
-        "detection": 20,
-        "t1": 20,
-        "t2": 20,
-	"CPR": 1, 
-        "dist_short": 4,
-        "dist_long": 8,
-        "fire_distance_horizontal": 20,
-        "fire_distance_vertical":5
-    },
-    "NOZZLES": {
-	"time_1" : 0,
-	"time_2": 40,
-	"time_3": 80,
-	"time_4": -1
-    },
-
-    "r_is":"simple",
+    "r_is":"complex",
     "r_trans":"phone",
-    "r_cpr":0,
+    "r_cpr":1,
     "r_times": {
-        "detection": "",
-        "t1": "",
-        "t2": ""},
+        "detection": 30,
+        "t1": 30,
+        "t2": 90
+    },
     "r_distances": {
-        "1st": "",
-        "2nd": ""},
+        "1st": 5,
+        "2nd": 20},
     "r_to_fire": {
-        "horizontal": "",
-        "vertical": ""},
+        "horizontal": 50,
+        "vertical": 5
+    },
     "r_nozzles": {
-        "1st": "",
-        "2nd": "",
-        "3rd": "",
-        "4th": ""},
-
-
-	        
+        "1st": 30,
+        "2nd": 60,
+        "3rd": -1,
+        "4th": -1
+    },
     "outdoor_temperature": {
         "mean": 10,
         "sd": 10
@@ -217,8 +198,8 @@
 		"HALL": 0.05 
 	},
     "alarming": {
-        "mean": 0,
-        "sd": 0
+        "mean": 120,
+        "sd": 30
     },
     "pre_evac": {
         "mean": "",
@@ -231,5 +212,17 @@
         "sd": "",
           "1st": 10,
           "99th": 60
+    },
+    "new_fire": {
+        "criterion": "TEMPERATURE",
+        "setpoint": 200
+    },
+    "windows_break": {
+        "criterion": "TEMPERATURE",
+        "setpoint": 200
+    },
+    "doors_break": {
+        "criterion": "TEMPERATURE",
+        "setpoint": 200
     }
 }

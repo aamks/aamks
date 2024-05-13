@@ -87,14 +87,10 @@ function ajaxLaunchSimulation() { #{{{
 		echo json_encode(array("msg"=>"Problem with the number of simulations. <a class=blink href=/aamks/form.php?edit>Setup scenario</a>", "err"=>1, "data"=>''));
 		return;
 	}
-	$cmd="cd $aamks; python3 aamks.py $working_home $user_id  2>&1"; 
 
-	$z=shell_exec("$cmd");
-	if(empty($z)) { 
-		echo json_encode(array("msg"=>"$nos simulations launched", "err"=>0, "data"=>''));
-	} else {
-		echo json_encode(array("msg"=>"$z", "err"=>1, "data"=>$z));
-	}
+	run_aamks($working_home, $user_id);
+	echo json_encode(array("msg"=>"$nos simulations launched", "err"=>0, "data"=>''));
+	
 }
 /*}}}*/
 function ajaxMenuContent() { /*{{{*/
@@ -126,7 +122,6 @@ function ajaxAnimsList() { /*{{{*/
 function ajaxAnimsStatic() { /*{{{*/
 	$f=$_SESSION['main']['working_home']."/workers/static.json";
 	if(is_file($f)) {
-		chmod($f, 0666); 
 		$data=json_decode(file_get_contents($f));
 		if(empty($data)) { 
 			echo json_encode(array("msg"=>"Empty or broken json $f", "err"=>1, "data"=>''));

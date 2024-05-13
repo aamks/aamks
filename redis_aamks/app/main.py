@@ -11,15 +11,18 @@ import json
 
 class AARedis:
     def redis_db(self):
-        db = redis.Redis(
-            host=config.redis_host,
-            port=config.redis_port,
-            db=config.redis_db_number,
-            password=config.redis_password,
-            decode_responses=True,
-        )
-        db.ping()
-        return db
+        try:
+            db = redis.Redis(
+                host=config.redis_host,
+                port=config.redis_port,
+                db=config.redis_db_number,
+                password=config.redis_password,
+                decode_responses=True,
+            )
+            db.ping()
+            return db
+        except:
+            raise Exception('Cannot open redis database!')
 
     def redis_queue_push(self, db, message):
         # Push to tail of the queue (left of the list)

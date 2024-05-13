@@ -31,6 +31,9 @@ function prefs_form() { # {{{
 
 		echo "<div>";
 			dd($_SESSION['main']);
+			$path=getenv("AAMKS_PATH");
+			echo "<tt>$path/evac/config.json</tt>";
+			dd(read_evac_config_json());
 			$z=shell_exec("env | grep AAMKS | grep -v PASS | grep -v SALT");
 			echo "<tt>/etc/apache2/envvars conf</tt>";
 			dd($z);

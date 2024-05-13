@@ -14,13 +14,13 @@ from fire.partition_query import PartitionQuery
 from include import Sqlite
 import time
 import logging
-from logging.handlers import TimedRotatingFileHandler
 from include import Json
 import json
 from collections import OrderedDict, defaultdict
 from subprocess import run, TimeoutExpired
 import zipfile
 import pandas as pd
+from io import StringIO
 from include import Psql
 
 SIMULATION_TYPE = 1
@@ -68,12 +68,13 @@ class Worker:
         self.detection_time = None
         self.rooms_det_time = {}
         self.start_time = time.time()
+        self.max_exit_weight = 10
 
 
     def get_logger(self, logger_name):
         FORMATTER = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
-        LOG_FILE = f"{self.project_dir}/aamks.log"
-        file_handler = TimedRotatingFileHandler(LOG_FILE, when='midnight')
+        LOG_FILE = f"{self.working_dir}/aamks.log"
+        file_handler = logging.FileHandler(LOG_FILE)
         file_handler.setFormatter(FORMATTER)
         file_handler.setLevel(logging.INFO)
 
@@ -108,21 +109,25 @@ class Worker:
         self.project_conf=self.json.read("../../conf.json")
 
         self.sim_id = self.vars['conf']['SIM_ID']
-        self.host_name = os.uname()[1]
         #this statement prevents redis_aamks/worker/worker.py from creating new loggers during every iteration
-        if not logging.getLogger("worker.py").handlers:
-         self.wlogger = self.get_logger('worker.py')
+        if not logging.getLogger(f'{self.host_name} - worker.py').handlers:
+            self.wlogger = self.get_logger(f'{self.host_name} - worker.py')
         else:
-            self.wlogger = logging.getLogger("worker.py")
-        if not logging.getLogger("evac.py").handlers: 
-            self.vars['conf']['logger'] = self.get_logger('evac.py')
+            self.wlogger = logging.getLogger(f'{self.host_name} - worker.py')
+        if not logging.getLogger(f'{self.host_name} - evac.py').handlers: 
+            self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py')
         else:
-            self.vars['conf']['logger'] = logging.getLogger("evac.py")
+            self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py')
 
-    def run_cfast_simulations(self):
-        cfast_file = 'cfast7_linux_64'
+    def run_cfast_simulations(self, version='intel', attempt=0):
+        self.send_report(e={"status":101})
+        if attempt >= 2:
+            return False
         compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
-        cfast_file = 'cfast_775-1000-i' if compa_no > 100 else 'cfast_775-100-i'
+        if version == 'intel':
+            cfast_file = 'cfast_775-750-i' if compa_no > 100 else 'cfast_775-100-i'
+        else:
+            cfast_file = 'cfast_775-750' if compa_no > 100 else 'cfast_775-100'
         if self.project_conf['fire_model'] == 'CFAST':
             err = False
             try:
@@ -141,60 +146,132 @@ class Worker:
                         else:
                             self.send_report(e={"status":20})
 
-            inf = 'Iteration skipped due to CFAST error' if err else 'CFAST simulation calculated with success' 
-            self.wlogger.info(inf)
-            return not err
+            if not err:
+                self.wlogger.info('CFAST simulation calculated with success')
+                self.send_report(e={"status":102})
+                return True
+            else:
+                self.wlogger.warning(f'Iteration skipped due to CFAST error, attempt = {attempt+1}')
+                return self.run_cfast_simulations("gnu", attempt+1)
 
     def create_geom_database(self):
-
         self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
-        outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door from aamks_geom WHERE terminal_door IS NOT NULL')
-        floor_teleports = self.s.query("SELECT floor, name, teleport_from, teleport_to from aamks_geom WHERE name LIKE 'k%'")
+        outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL')
+        floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%'")
+        rooms_with_exits_weights_set = self.s.query('SELECT floor, name, center_x, center_y, room_exits_weights from aamks_geom WHERE room_exits_weights IS NOT NULL')
 
         self.vars['conf']['agents_destination'] = []
         for floor in sorted(self.obstacles['obstacles'].keys()):
             self.vars['conf']['agents_destination'].append([])
+            self.vars['conf']['agents_destination'][int(floor)]= {}
+            self.vars['conf']['agents_destination'][int(floor)]['general_floor_goals'] = []
+            self.vars['conf']['agents_destination'][int(floor)]['rooms_goals'] = {}
 
         for door in outside_building_doors:
-            room_before_exit_center = self.s.query('SELECT center_x, center_y from aamks_geom WHERE name=? or name=?', (door['vent_to_name'],door['vent_from_name']))
-            destination_x, destination_y = self._get_outside_door_destination(room_before_exit_center[0]['center_x'], room_before_exit_center[0]['center_y'], door)
-            self.vars['conf']['agents_destination'][int(door['floor'])].append({'name':door['name'], 'floor':door['floor'], 'center_x':destination_x, 'center_y':destination_y, 'type':'door'})
+            room_before_exit_center = self.s.query('SELECT points from aamks_geom WHERE name=? or name=?', (door['vent_to_name'],door['vent_from_name']))
+            center_x, center_y = self.get_center_from_points(room_before_exit_center[0]['points'])
+            destination_x, destination_y = self._get_outside_door_destination(center_x, center_y, door)
+            if door['exit_weight'] is not None:
+                if door['exit_weight'] == '0':
+                    weight = float("inf")
+                else:
+                    weight = self.max_exit_weight/int(door['exit_weight'])
+            else:
+                weight = 1
+            self.vars['conf']['agents_destination'][int(door['floor'])]['general_floor_goals'].append({'name':door['name'], 'floor':door['floor'],'x_outside':destination_x,'y_outside':destination_y, 'x':door['center_x'], 'y':door['center_y'], 'type':'door', 'exit_weight':weight})
 
         for teleport in floor_teleports:
             teleport_from_coordinates = teleport['teleport_from'].replace('[', '').replace(']','').replace(' ', '').split(',')
             int_teleport_from_coordinates = [int(t) for t in teleport_from_coordinates]
-            center_x = int_teleport_from_coordinates[0]
-            center_y = int_teleport_from_coordinates[1]
+            x = int_teleport_from_coordinates[0]
+            y = int_teleport_from_coordinates[1]
 
             teleport_to_coordinates = teleport['teleport_to'].replace('[', '').replace(']','').replace(' ', '').split(',')
             int_teleport_to_coordinates = [int(t) for t in teleport_to_coordinates]
             direction_x = int_teleport_to_coordinates[0]
             direction_y = int_teleport_to_coordinates[1]
 
-            self.vars['conf']['agents_destination'][int(teleport['floor'])].append({'name':teleport['name'], 'floor':teleport['floor'], 'center_x':center_x, 'center_y':center_y, 'type':'teleport', 'direction_x':direction_x, 'direction_y':direction_y})
+            if teleport['exit_weight'] is not None:
+                if teleport['exit_weight'] == '0':
+                    weight = float("inf")
+                else:
+                    weight = self.max_exit_weight/int(teleport['exit_weight'])
+            else:
+                weight = 1
+
+            self.vars['conf']['agents_destination'][int(teleport['floor'])]['general_floor_goals'].append({'name':teleport['name'], 'floor':teleport['floor'], 'x':x, 'y':y, 'type':'teleport', 'direction_x':direction_x, 'direction_y':direction_y,'exit_weight':weight,'stair_direction':teleport['stair_direction']})
+        
+        for room in rooms_with_exits_weights_set:
+            self.vars['conf']['agents_destination'][int(room['floor'])]['rooms_goals'][room['name']] = []
+
+            exits_weights_dict = dict(eval(room['room_exits_weights']))
+            for exit_id in exits_weights_dict.keys():
+                if exits_weights_dict[exit_id] == '0':
+                    weight = float("inf")
+                else:
+                    weight = self.max_exit_weight/int(exits_weights_dict[exit_id])
+                query = "SELECT floor, name, center_x, center_y, width, depth from aamks_geom WHERE (global_type_id="+exit_id+" and type_tri='DOOR')"
+                exit = self.s.query(query)
+                destination_x, destination_y = self._get_door_destination(room['center_x'], room['center_y'], exit[0], outside_building_doors)
+                self.vars['conf']['agents_destination'][int(exit[0]['floor'])]['rooms_goals'][room['name']].append({'name':exit[0]['name'], 'floor':exit[0]['floor'], 'x_outside':destination_x,'y_outside':destination_y, 'x':exit[0]['center_x'], 'y':exit[0]['center_y'], 'type':'door', 'exit_weight':weight})
+
         self.wlogger.info('SQLite load successfully')
 
 
+    def get_center_from_points(self, points):
+        points = points.replace('[', '').replace(']', '').split(', ')
+        int_points = [int(x) for x in points]
+        return((int_points[0]+int_points[2]+int_points[4]+int_points[6])/4, (int_points[1]+int_points[3]+int_points[5]+int_points[7])/4)
+
     def _get_outside_door_destination(self, last_room_center_x, last_room_center_y, door):
+        goal_from_door_distance = 100
         if door['width'] < door['depth']:
             # exit door is vertical
             if last_room_center_x > door['center_x']:
                 #exit door leads to the left on the building plan
-                return(door['center_x']-100, door['center_y'])
+                return(door['center_x']-goal_from_door_distance, door['center_y'])
             if last_room_center_x < door['center_x']:
                 #exit door leads to the right on the building plan
-                return(door['center_x']+100, door['center_y'])
+                return(door['center_x']+goal_from_door_distance, door['center_y'])
         else:
             # exit door is horizontal
             if last_room_center_y > door['center_y']:
                 #The exit door leads downwards on the building plan
-                return(door['center_x'], door['center_y']-100)
+                return(door['center_x'], door['center_y']-goal_from_door_distance)
             if last_room_center_y < door['center_x']:
                 #The exit door leads upwards on the building plan
-                return(door['center_x'], door['center_y']+100)
+                return(door['center_x'], door['center_y']+goal_from_door_distance)
             
-        raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target from building 100 cm behind exit door")
+        raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target from building "+ str(goal_from_door_distance) +"cm behind exit door")
+
+    def _get_door_destination(self, last_room_center_x, last_room_center_y, door, outside_building_doors):
+        goal_from_door_distance=25
+        for outside_door in outside_building_doors:
+            if outside_door['name'] == door['name']:
+                # doors are terminal - leads outside
+                goal_from_door_distance=100
+                break
+
+        if door['width'] < door['depth']:
+            # exit door is vertical
+            if last_room_center_x > door['center_x']:
+                #exit door leads to the left on the building plan
+                return(door['center_x']-goal_from_door_distance, door['center_y'])
+            if last_room_center_x < door['center_x']:
+                #exit door leads to the right on the building plan
+                return(door['center_x']+goal_from_door_distance, door['center_y'])
+        else:
+            # exit door is horizontal
+            if last_room_center_y > door['center_y']:
+                #The exit door leads downwards on the building plan
+                return(door['center_x'], door['center_y']-goal_from_door_distance)
+            if last_room_center_y < door['center_x']:
+                #The exit door leads upwards on the building plan
+                return(door['center_x'], door['center_y']+goal_from_door_distance)
+
+
+        raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target "+ str(goal_from_door_distance) +"cm behind door")
 
 
     def _get_detection_time_device(self):
@@ -267,7 +344,9 @@ class Worker:
 
             # other rooms
             elif floor['EVACUEES'][i]['COMPA'] in self.rooms_det_time.keys():
-                if det > self.rooms_det_time[floor['EVACUEES'][i]['COMPA']]:
+                default_t = det + alarm + pre
+                conditional_t = self.rooms_det_time[floor['EVACUEES'][i]['COMPA']] + pres['pre_evac_fire_origin']
+                if default_t > conditional_t:
                     det = self.rooms_det_time[floor['EVACUEES'][i]['COMPA']]
                     alarm = 0
                     pre = pres['pre_evac_fire_origin']
@@ -348,7 +427,7 @@ class Worker:
             eenv.place_evacuees(e)
             eenv.prepare_rooms_list()
             self.wlogger.info('Room list prepared on floor: {}'.format(floor))
-            eenv.set_floor_teleport_destination_queue_lists(floor_numers)
+            eenv.set_floor_teleport_destination_queue_lists()
             self.floors.append(eenv)
 
 
@@ -364,19 +443,57 @@ class Worker:
             else:
                 self.wlogger.info('Smoke query connected to floor: {}'.format(floor.floor))
 
-    def process_agents_queuing_when_moving_downstairs(self):
-        for i in range(0,len(self.floors)-1):
-            floor = self.floors[i]
-            floor_above = self.floors[i+1]
-            floor_above.reset_floor_teleport_queue_list()
-            for e in range(floor.evacuees.get_number_of_pedestrians()):
-                position = floor.evacuees.get_position_of_pedestrian(e)
-                x = position[0]
-                y = position[1]
-                for cords, cords_range in floor.free_space_coordinates_of_telepors_destination.items():
-                    if cords_range['min_x'] < x < cords_range['max_x'] and cords_range['min_y'] < y < cords_range['max_y']:
-                        floor_above.floor_teleports_queue[cords] = True;
+    def process_agents_queuing_when_moving_downstairs_and_upstairs(self):
+        if len(self.floors) == 1:
+            return
 
+        for i in range(0,len(self.floors)):
+            # floor is first floor, only downstair movement is possible to floor
+            if i == 0:
+                floor = self.floors[i]
+                floor_above = self.floors[i+1]
+                floor_above.reset_floor_downstair_teleport_queue_list()
+                for e in range(floor.evacuees.get_number_of_pedestrians()):
+                    position = floor.evacuees.get_position_of_pedestrian(e)
+                    x = position[0]
+                    y = position[1]
+                    for cords, cords_range in floor.free_space_coordinates_of_downstair_teleport_destination.items():
+                        if cords_range['min_x'] < x < cords_range['max_x'] and cords_range['min_y'] < y < cords_range['max_y']:
+                            floor_above.floor_downstair_teleports_queue[cords] = True;
+
+
+            # floor is last floor, only upstair movement is possible to floor
+            elif i == (len(self.floors)-1):
+                floor_below = self.floors[i-1]
+                floor = self.floors[i]
+                floor_below.reset_floor_upstair_teleport_queue_list()
+                for e in range(floor.evacuees.get_number_of_pedestrians()):
+                    position = floor.evacuees.get_position_of_pedestrian(e)
+                    x = position[0]
+                    y = position[1]
+                    for cords, cords_range in floor.free_space_coordinates_of_upstair_teleport_destination.items():
+                        if cords_range['min_x'] < x < cords_range['max_x'] and cords_range['min_y'] < y < cords_range['max_y']:
+                            floor_below.floor_upstair_teleports_queue[cords] = True;
+
+            # floors in between first and last floors, both upstair and downstair 
+            # movement is possible to this floors
+            # this case happens only when builing has 3 storeys or more
+            else:
+                floor = self.floors[i]
+                floor_below = self.floors[i-1]
+                floor_above = self.floors[i+1]
+                floor_below.reset_floor_upstair_teleport_queue_list()
+                floor_above.reset_floor_downstair_teleport_queue_list()
+                for e in range(floor.evacuees.get_number_of_pedestrians()):
+                    position = floor.evacuees.get_position_of_pedestrian(e)
+                    x = position[0]
+                    y = position[1]
+                    for cords, cords_range in floor.free_space_coordinates_of_upstair_teleport_destination.items():
+                        if cords_range['min_x'] < x < cords_range['max_x'] and cords_range['min_y'] < y < cords_range['max_y']:
+                            floor_below.floor_upstair_teleports_queue[cords] = True;
+                    for cords, cords_range in floor.free_space_coordinates_of_downstair_teleport_destination.items():
+                        if cords_range['min_x'] < x < cords_range['max_x'] and cords_range['min_y'] < y < cords_range['max_y']:
+                            floor_above.floor_downstair_teleports_queue[cords] = True;
 
     def do_simulation(self):
         self.wlogger.info('Starting simulations')
@@ -418,8 +535,8 @@ class Worker:
                             aset = i.current_time
 
                     # move agents downstairs
-                    self.process_agents_queuing_when_moving_downstairs() 
-                    self.process_agents_downstairs_movement(step_no, time_frame)
+                    self.process_agents_queuing_when_moving_downstairs_and_upstairs() 
+                    self.process_agents_upstairs_and_downstairs_movement(step_no, time_frame)
 
                     # prepare visualization on all floors
                     for i in self.floors:       
@@ -455,51 +572,103 @@ class Worker:
         self.wlogger.info('Final results gathered')
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
 
-    def process_agents_downstairs_movement(self, step, time):
-        agents_to_move = self.get_agents_to_move_downstairs()
-        self.move_agents_downstairs(agents_to_move, step, time)
+    def process_agents_upstairs_and_downstairs_movement(self, step, time):
+        agents_to_move = self.get_agents_to_move()
+        self.move_agents(agents_to_move, step, time)
     
-    def get_one_agent_per_tp(self, agents_to_move_downstairs_sorted_by_distance_from_tp, floor):
-        agents_to_move_downstairs_one_per_tp = []
+    def get_one_agent_per_tp(self, agents_to_move_sorted_by_distance_from_tp, floor):
+        agents_to_move_one_per_tp = []
         teleports_taken = []
-        for a in agents_to_move_downstairs_sorted_by_distance_from_tp:
+        for a in agents_to_move_sorted_by_distance_from_tp:
             if a['teleport_position'] not in teleports_taken:
-                agents_to_move_downstairs_one_per_tp.append(a)
+                agents_to_move_one_per_tp.append(a)
                 teleports_taken.append(a['teleport_position'])
             else:
                 agent = floor.evacuees.get_pedestrian(a['agent_number'])
                 agent.finished = 1
-        return agents_to_move_downstairs_one_per_tp
+        return agents_to_move_one_per_tp
 
-    def get_agents_to_move_downstairs(self):
+    def get_agents_to_move(self):
+        if len(self.floors) == 1:
+            return []
+        # agents_to_move_downstairs = []
         agents_to_move = []
-        for num_floor in range(1, len(self.floors)):
-            floor = self.floors[num_floor]
-            agents_to_move_downstairs_sorted_by_distance_from_tp = sorted(floor.agents_to_move_downstairs, key=lambda d: d['distance_from_teleport']) 
-            agents_to_move_downstair_one_per_teleport = self.get_one_agent_per_tp(agents_to_move_downstairs_sorted_by_distance_from_tp, floor)
-            for i in agents_to_move_downstair_one_per_teleport:
-                agent = floor.evacuees.get_pedestrian(i['agent_number'])
-                if floor.floor_teleports_queue[i['teleport_position']] == False:
-                    agent.set_position_to_pedestrian(i['teleport_position'])
-                    agents_to_move.append(tuple([num_floor, agent, i['agent_number']]))
-                else:
-                    agent.finished = 1
+        for i in range(0,len(self.floors)):
+            # floor is first floor, only upstair movement is possible from floor
+            if i == 0:
+                floor = self.floors[i]
+                agents_to_move_upstairs_sorted_by_distance_from_tp = sorted(floor.agents_to_move_downstairs_or_upstairs, key=lambda d: d['distance_from_teleport'])
+                agents_to_move_upstairs_one_per_teleport = self.get_one_agent_per_tp(agents_to_move_upstairs_sorted_by_distance_from_tp, floor)
+                for j in agents_to_move_upstairs_one_per_teleport:
+                    agent = floor.evacuees.get_pedestrian(j['agent_number'])
+                    if (j['teleport_position'] in floor.floor_upstair_teleports_queue and 
+                        floor.floor_upstair_teleports_queue[j['teleport_position']] == False):
+                        agent.set_position_to_pedestrian(j['teleport_position'])
+                        destination_floor = i+1
+                        agents_to_move.append(tuple([i, destination_floor, agent, j['agent_number']]))
+                    else:
+                        agent.finished = 1
+            # floor is last floor, only downstair movement is possible from floor
+            elif i == (len(self.floors)-1):
+                floor = self.floors[i]
+                agents_to_move_downstairs_sorted_by_distance_from_tp = sorted(floor.agents_to_move_downstairs_or_upstairs, key=lambda d: d['distance_from_teleport'])
+                agents_to_move_downstairs_one_per_teleport = self.get_one_agent_per_tp(agents_to_move_downstairs_sorted_by_distance_from_tp, floor)
+                for j in agents_to_move_downstairs_one_per_teleport:
+                    agent = floor.evacuees.get_pedestrian(j['agent_number'])
+                    if (j['teleport_position'] in floor.floor_downstair_teleports_queue and 
+                        floor.floor_downstair_teleports_queue[j['teleport_position']] == False):
+                        agent.set_position_to_pedestrian(j['teleport_position'])
+                        destination_floor = i-1
+                        agents_to_move.append(tuple([i, destination_floor, agent, j['agent_number']]))
+                    else:
+                        agent.finished = 1
+            # floors in between first and last floors, both upstair and downstair 
+            # movements are possible from these floors
+            # this case happens only when builing has 3 storeys or more
+            else:
+                floor = self.floors[i]
+                agents_to_move_sorted_by_distance_from_tp = sorted(floor.agents_to_move_downstairs_or_upstairs, key=lambda d: d['distance_from_teleport'])
+                agents_to_move_one_per_teleport = self.get_one_agent_per_tp(agents_to_move_sorted_by_distance_from_tp, floor)
+                for j in agents_to_move_one_per_teleport:
+                    agent = floor.evacuees.get_pedestrian(j['agent_number'])
+                    # downstair movement from floor
+                    if (j['teleport_position'] in floor.floor_downstair_teleports_queue and 
+                        floor.floor_downstair_teleports_queue[j['teleport_position']] == False): 
+                        agent.set_position_to_pedestrian(j['teleport_position'])
+                        destination_floor = i-1
+                        agents_to_move.append(tuple([i, destination_floor, agent, j['agent_number']]))
+                    # upstair movement from floor
+                    elif (j['teleport_position'] in floor.floor_upstair_teleports_queue and 
+                        floor.floor_upstair_teleports_queue[j['teleport_position']] == False):   
+                        agent.set_position_to_pedestrian(j['teleport_position'])
+                        destination_floor = i+1
+                        agents_to_move.append(tuple([i, destination_floor, agent, j['agent_number']]))
+                    else:
+                        agent.finished = 1
+
         return agents_to_move
 
-    def move_agents_downstairs(self, agents_to_move, step, time):
+
+    def move_agents(self, agents_to_move, step, time):
         if len(agents_to_move) == 0:
-            for num_floor in range(len(self.floors)-1):
-                self.floors[num_floor+1].agents_to_move_downstairs = []
+            for floor_num in range(len(self.floors)):
+                self.floors[floor_num].agents_to_move_downstairs_or_upstairs = []
             return
-        for num_floor in range(len(self.floors)-1):
-            current_floor_new_agents = [agent[1] for agent in agents_to_move if agent[0] == num_floor+1]
-            current_floor_new_agents_indexes = [agent[2] for agent in agents_to_move if agent[0] == num_floor+1]
-            for agent in current_floor_new_agents:
-                agent.finished = 1
-                agent.target_teleport_coordinates = None
-            self.floors[num_floor+1].delete_agents_from_floor(current_floor_new_agents_indexes)
-            self.floors[num_floor+1].agents_to_move_downstairs = []
-            self.floors[num_floor].append_evacuees(current_floor_new_agents)
+            
+        for floor_num in range(len(self.floors)):
+            agents_who_leave_current_floor_indexes = [agent[3] for agent in agents_to_move if agent[0] == floor_num]
+            self.floors[floor_num].delete_agents_from_floor(agents_who_leave_current_floor_indexes)
+
+        for floor_num in range(len(self.floors)):
+            agents_who_come_to_current_floor = [agent[2] for agent in agents_to_move if agent[1] == floor_num]
+            self.floors[floor_num].agents_to_move_downstairs_or_upstairs = []
+            self.floors[floor_num].append_evacuees(agents_who_come_to_current_floor)
+
+        for agent_to_move in agents_to_move:
+            agent = agent_to_move[2]
+            agent.finished = 1
+            agent.target_teleport_coordinates = None
+
 
     def send_report(self, e=False): # {{{
         '''
@@ -625,6 +794,7 @@ class Worker:
 
     def main(self):
         self.get_config()
+        self.send_report(e={"status":100})
         self.create_geom_database()
         if self.run_cfast_simulations():
             self.prepare_simulations()
@@ -658,7 +828,7 @@ class LocalResultsCollector:
         fed = json.dumps(self.meta['psql']['fed'])
         fed_symbolic = json.dumps(self.meta['psql']['fed_symbolic'])
         rset = json.dumps(self.meta['psql']['rset'])
-        dfeds = [pd.read_json(i) for i in self.meta['psql']['dfed'].values()]
+        dfeds = [pd.read_json(StringIO(i)) for i in self.meta['psql']['dfed'].values()]
 
         # fed_growth_cells table
         def check_for_data(x, floor):
@@ -706,12 +876,7 @@ class LocalResultsCollector:
 if __name__ == "__main__":
     w = Worker()
     try:
-        if SIMULATION_TYPE == 'NO_CFAST':
-            print('Working in NO_CFAST mode')
-            w.test()
-        else:
-            w.main()
+        w.run_worker()
     except Exception as error:
         w.wlogger.error(error)
         w.send_report(e={'status': 1})
-

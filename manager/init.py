@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import datetime
 from subprocess import Popen,PIPE
 import subprocess
 import time
@@ -18,15 +19,11 @@ import subprocess
 import logging
 import sys
 
-from redis_aamks.app.main import AARedis
 logger = logging.getLogger('AAMKS.init.py')
 
 class OnInit():
     def __init__(self):# {{{
         ''' Stuff that happens at the beggining of the project '''
-
-        if len(sys.argv) > 1: os.environ["AAMKS_PROJECT"]=sys.argv[1]
-        if len(sys.argv) > 2: os.environ["AAMKS_USER_ID"]=sys.argv[2]
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.project_id=self.conf['project_id']
@@ -158,7 +155,7 @@ class OnEnd():
         '''
 
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
-
+        logger.info(f"run job {os.environ['AAMKS_WORKER']}")
         if os.environ['AAMKS_WORKER']=='none':
             return
 
@@ -166,7 +163,9 @@ class OnEnd():
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
                 logger.info('start worker.py sim - %s', i)
-                exit_status = subprocess.run(["python3", "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                exit_status = subprocess.run(["{}/env/bin/python3".format(os.environ['AAMKS_PATH']), "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
+                job_id=datetime.datetime.now().strftime("%Y%m%d")+f"-iter-{i}"
+                self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                 if exit_status.returncode != 0:
                     logger.error('worker exit status - %s', exit_status)
                 else:
@@ -190,6 +189,7 @@ class OnEnd():
 
 
         if os.environ['AAMKS_WORKER']=='redis':
+            from redis_aamks.app.main import AARedis
             AR = AARedis()
             try:
                 for i in range(*si.get()):
@@ -201,55 +201,4 @@ class OnEnd():
                 print('OnEnd: {}'.format(e))
                 logger.error(f'OnEnd: Error {e}')
 
-            
-
-
 # }}}
-class Retry():# {{{
-    def __init__(self):# {{{
-        self.json=Json()
-        self.uprefs=GetUserPrefs()
-        self.conf=self.json.read("{}/conf.json".format(sys.argv[1]))
-        self.p=Psql()
-        self.project_id=self.conf['project_id']
-        self.scenario_id=self.conf['scenario_id']
-
-        logger.debug('trying to restart status 1 jobs')
-        self.stat1 = self._find_status1()
-        print(self._retry())
-# }}}
-    def _find_status1(self):
-        return self.p.query(f"SELECT iteration FROM simulations WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND status='1';")
-
-    def _retry(self):# {{{
-        if os.environ['AAMKS_WORKER']=='none':
-            return
-
-        if os.environ['AAMKS_WORKER']=='local':
-            os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
-            for i in self.stat1:
-                logger.info('start worker.py sim - %s', i)
-                exit_status = subprocess.run(["python3", "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
-                if exit_status.returncode != 0:
-                    logger.error('worker exit status - %s', exit_status)
-                else:
-                    logger.info('finished worker.py sim - %s', i)
-            return
-
-        if os.environ['AAMKS_WORKER']=='gearman':
-            for i in self.stat1:
-                worker="{}/workers/{}".format(sys.argv[1],i[0])
-                worker = worker.replace("/home","/mnt")
-                gearman=["gearman", "-v",  "-b", "-f", "aRun", worker]
-                job_id = subprocess.check_output(gearman, universal_newlines=True)
-                job_id = job_id.split('Task created: ')[-1][:-1]
-                q = f"UPDATE simulations SET job_id='{job_id}', status='' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i[0]}"
-                self.p.query(q)
-                logger.info(f'send {gearman}')
-
-        return len(self.stat1)
-
-# }}}
-if __name__ == "__main__":
-    Retry()
-
