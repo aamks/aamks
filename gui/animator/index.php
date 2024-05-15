@@ -10,7 +10,7 @@ function main() {
 	$_SESSION['nn']->htmlHead("Animator");
 	$_SESSION['nn']->menu();
 
-	$data = $_SESSION['nn']->query("SELECT * from simulations where project = ".$_SESSION['main']['project_id']." and scenario_id = ".$_SESSION['main']['scenario_id']." and status = '0' and status is not null;");
+	$data = $_SESSION['nn']->query("SELECT * from simulations where project = ".$_SESSION['main']['project_id']." and scenario_id = ".$_SESSION['main']['scenario_id']." and status = '0' and status is not null order by iteration desc;");
 	echo '
 	<section class="container">
   <h2 class="title">Search Table Record for '.$_SESSION['main']['project_name'].' / '.$_SESSION['main']['scenario_name'].'</h2>

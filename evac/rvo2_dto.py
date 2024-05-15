@@ -95,32 +95,31 @@ class EvacEnv:
             return None
 
     def _find_exit_based_on_leader(self, e, evacuee):
-        if evacuee.target_teleport_coordinates:
-            exit = evacuee.target_teleport_coordinates
+        if self.evacuees.check_if_agent_exists(evacuee.leader):
+            if evacuee.leader.exit_coordinates:
+                exit = evacuee.leader.exit_coordinates
+            else:
+                exit = evacuee.leader.position
+
+            try:
+                od_at_agent_position = self.smoke_query.get_visibility(evacuee.position)
+            except:
+                od_at_agent_position = 0, 'outside'
+            paths = self._get_path(e, evacuee, evacuee.position, od_at_agent_position, False)
+            if len(paths) > 0:
+                exits = list(zip(*paths))[2]
+                index = exits.index(min(exits))
+                if paths[index][3]['type'] == 'teleport':
+                    evacuee.target_teleport_coordinates = (paths[index][3]['direction_x'], paths[index][3]['direction_y'])
+                    evacuee.agent_has_no_escape = False
+                if paths[index][3]['name'] in self.terminal_exits_names:
+                    evacuee.agent_leaves_floor = True
+            else:
+                evacuee.agent_has_no_escape = True
             path = self.nav.nav_query(src=evacuee.position, dst=exit, maxStraightPath=999)
             return exit, path
-        if evacuee.leader.exit_coordinates:
-            exit = evacuee.leader.exit_coordinates
         else:
-            exit = evacuee.leader.position
-
-        try:
-            od_at_agent_position = self.smoke_query.get_visibility(evacuee.position)
-        except:
-            od_at_agent_position = 0, 'outside'
-        paths = self._get_path(e, evacuee, evacuee.position, od_at_agent_position, False)
-        if len(paths) > 0:
-            exits = list(zip(*paths))[2]
-            index = exits.index(min(exits))
-            if paths[index][3]['type'] == 'teleport':
-                evacuee.target_teleport_coordinates = (paths[index][3]['direction_x'], paths[index][3]['direction_y'])
-                evacuee.agent_has_no_escape = False
-            if paths[index][3]['name'] in self.terminal_exits_names:
-                evacuee.agent_leaves_floor = True
-        else:
-            evacuee.agent_has_no_escape = True
-        path = self.nav.nav_query(src=evacuee.position, dst=exit, maxStraightPath=999)
-        return exit, path
+            return self._find_closest_exit(e)
 
     def _get_path(self, e, evacuee, position, od_at_agent_position, is_goal_in_rooms_goals):
         paths, paths_free_of_smoke = list(), list()
