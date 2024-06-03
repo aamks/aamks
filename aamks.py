@@ -70,6 +70,7 @@ def start_aamks(path, user_id):
     logger.info('finished OnEnd()')
     logger.info('AAMKS application finished successfully')
 
+
 if __name__ == '__main__':
     if len(sys.argv) > 2:
         os.environ["AAMKS_PROJECT"]=sys.argv[1]

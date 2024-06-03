@@ -41,10 +41,11 @@ class Evacuee:
         self.exit_coordinates = None
         self.agent_leaves_floor = False
         self.path = None
-
+        
         self.type = type
         self.leader = None
         self.leader_id = leader_id
+
 
     def __getattr__(self, name):
         return self.__dict__[name]

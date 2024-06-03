@@ -147,7 +147,6 @@ class EvacEnv:
             for exit in _exit_dict:
                 exit['x'] = exit['x_outside']
                 exit['y'] = exit['y_outside']
-
         else:
             _exit_dict = exits_dict
         for exit in _exit_dict:
@@ -187,6 +186,7 @@ class EvacEnv:
             return paths_free_of_smoke
         else:
             return paths
+          
     def set_OD_to_agent(self, e, od_at_agent_position):
         self.evacuees.set_optical_density(e, od_at_agent_position[0])
 
