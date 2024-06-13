@@ -179,6 +179,10 @@ function new_project() { # {{{
 }
 function rename_project() { # {{{
 	if(empty($_POST['rename_project'])) { return; }
+	if($_SESSION['main']['project_name'] == 'demo'){
+		$_SESSION['header_err'][]="Project name 'demo' can not be changed!";
+		return;
+	}
 	$projects=array_column($_SESSION['nn']->query("SELECT project_name FROM projects WHERE user_id=$1", array($_SESSION['main']['user_id'] )), 'project_name');
 	if(in_array($_POST['rename_project'], $projects, true)){
 		$_SESSION['header_err'][]="Project '$_POST[rename_project]' already exists";
