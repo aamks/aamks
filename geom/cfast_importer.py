@@ -316,12 +316,8 @@ class CFASTimporter():
         for hi,lo in self.towers_parents.items():
             z=self.s.query("SELECT name,vent_from,vent_from_name,vent_to_name,vent_to FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
             for i in z:
-                mmin=min(lo,i['vent_from'])
-                mmax=max(lo,i['vent_from'])
-                if mmin == i['vent_from'] or i['vent_to_name'] == 'OUTSIDE':
-                    update.append((mmin, mmax, i['vent_from_name'], i['vent_to_name'], i['name']))
-                else:
-                    update.append((mmin, mmax, i['vent_to_name'], i['vent_from_name'], i['name']))
+                if i['vent_from_name'] == 'OUTSIDE':
+                    update.append((i['vent_to'], i['vent_from'], i['vent_to_name'], i['vent_from_name'], i['name']))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=?, vent_from_name=?, vent_to_name=?  WHERE name=?", update)
 
 # }}}
