@@ -14,45 +14,6 @@ function sendMail($to, $subject, $fields, $template_name) { #{{{
 		}
 		$_SESSION['nn']->fatal($msg);
 		}
-	require_once 'vendor/autoload.php';
-
-	// Configure API key authorization: apikey
-	$config = ElasticEmail\Configuration::getDefaultConfiguration()->setApiKey('X-ElasticEmail-ApiKey', getenv("AAMKS_MAIL_API_KEY"));
-	// Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-	// $config = ElasticEmail\Configuration::getDefaultConfiguration()->setApiKeyPrefix('X-ElasticEmail-ApiKey', 'Bearer');
- 
- 
-	$apiInstance = new ElasticEmail\Api\EmailsApi(
-    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
-    // This is optional, `GuzzleHttp\Client` will be used as default.
-    new GuzzleHttp\Client(),
-    $config
-	);
-	$email_message_data = new \ElasticEmail\Model\EmailTransactionalMessageData([
-		"recipients" => new \ElasticEmail\Model\TransactionalRecipient([
-			"to" => [$to],
-		]),
-		"content" => new \ElasticEmail\Model\EmailContent([
-			"body" => [new \ElasticEmail\Model\BodyPart([
-					"content_type" => "HTML",
-					"charset" => "utf-8",
-					"content" => "",
-					//"content" => $msg,
-				])
-			],
-			//"merge" => ["url" => "www.google.pl"],
-			"merge" => $fields,
-			"template_name" => $template_name,
-			"from" => getenv("AAMKS_MAIL_SENDER"),
-			"subject" => $subject,
-			"reply_to" => getenv("AAMKS_MAIL_SENDER"),
-		])
-	]);
-	try {
-		$response = $apiInstance->emailsTransactionalPost($email_message_data);
-	} catch (Exception $e) {
-		echo 'Exception when calling EE API: ', $e->getMessage(), PHP_EOL;
-	}
 }
 /*}}}*/
 function loginphp(){/*{{{*/
@@ -152,6 +113,7 @@ function do_register(){/*{{{*/
 	$_SESSION['nn']->query("insert into users (user_name, email, password, activation_token,active_scenario) values ($1,$2,$3,$4,$5)", array($name, $email, $salted,$token,1));
 	$_SESSION['nn']->msg("We send you email to activation account. Check inbox or spam folder for activation link!");
 	sendMail($email,"AAMKS activation account",["url" => "https://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token"], "activation");
+	run_activate_email("https://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token", $email);
 	
 	//echo "<br>activation account <a href=login.php?activation_token=$token>Click here</a>";  
 	//header("Location: login.php"); // Finland only
@@ -269,6 +231,7 @@ function reset_password(){/*{{{*/
 				$_SESSION['nn']->msg("Email sent, check inbox or spam folder for reset link!");
 				$_SESSION['reset_email'] = $reset_email;
 				sendMail($reset_email,"AAMKS reset password",["url" => "https://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token"], "password_reset");
+				run_reset_email("https://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token", $reset_email);
 				//echo "Email sent to $reset_email" ;
 				//echo " <a href=".loginphp()."?reset=$token>HERE</a>";
 			}

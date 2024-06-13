@@ -10,6 +10,7 @@ sys.path.insert(1, '/usr/local/aamks/results')
 from results.beck_new import postprocess, comparepostprocess
 from results.beck_anim import Beck_Anim
 from aamks import start_aamks
+from gui.email_service import activate, reset
 
 class RedisWorkerServer:
     
@@ -51,6 +52,15 @@ class RedisWorkerServer:
         elif 'conf_dir' in message_json['data']:
             logger.debug('starting conf_subst function')
             self.run_conf_dir(message_json)
+        elif 'activate_email' in message_json['data']:
+            logger.debug('starting activate_email function')
+            self.run_activate_email(message_json)
+        elif 'reset_email' in message_json['data']:
+            logger.debug('starting reset_email function')
+            self.run_reset_email(message_json)
+        else:
+            logger.error("Unknown function ")
+            logger.debug(message_json)
     
     def run_aamks(self, message):
         path, user_id = message['data']['aamks']
@@ -96,6 +106,24 @@ class RedisWorkerServer:
             logger.debug('finished with conf')
         except Exception as e:
             logger.error(f'from subst conf: {e}')
+
+    def run_activate_email(self, message):
+        link, email = message['data']['activate_email']
+        logger.debug('running activate_email...')
+        try:
+            logger.debug(activate(link, email))
+            logger.debug('finished activate_email')
+        except Exception as e:
+            logger.error(f'from email_service.py: {e}')
+
+    def run_reset_email(self, message):
+        link, email = message['data']['reset_email']
+        logger.debug('running reset_email...')
+        try:
+            logger.debug(reset(link, email))
+            logger.debug('finished reset_email')
+        except Exception as e:
+            logger.error(f'from email_service.py: {e}')
 
 
     def main(self):

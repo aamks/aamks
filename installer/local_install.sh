@@ -29,7 +29,6 @@ echo "AAMKS_WORKER: $AAMKS_WORKER"
 echo "AAMKS_SALT: $AAMKS_SALT"
 echo "AAMKS_USE_MAIL: $AAMKS_USE_MAIL"
 echo "AAMKS_MAIL_API_KEY: $AAMKS_MAIL_API_KEY"
-echo "AAMKS_MAIL_SENDER: $AAMKS_MAIL_SENDER"
 echo "PYTHONPATH: $PYTHONPATH"
 echo; echo;
 echo "<Enter> accepts, <ctrl+c> cancels";
@@ -77,7 +76,6 @@ echo "export AAMKS_REDIS_PASS='$AAMKS_REDIS_PASS'" >> "$temp"
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> "$temp"
 echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> "$temp"
 echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> "$temp"
-echo "export AAMKS_MAIL_SENDER='$AAMKS_MAIL_SENDER'" >> "$temp"
 echo "export PYTHONPATH='$PYTHONPATH'" >> "$temp"
 sudo cp "$temp" /etc/apache2/envvars
 rm "$temp"
@@ -93,7 +91,6 @@ echo "export AAMKS_REDIS_PASS='$AAMKS_REDIS_PASS'" >> "$temp"
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> "$temp"
 echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> "$temp"
 echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> "$temp"
-echo "export AAMKS_MAIL_SENDER='$AAMKS_MAIL_SENDER'" >> "$temp" 
 echo "export PYTHONPATH='$PYTHONPATH'" >> "$temp"
 echo "export PYTHONIOENCODING='UTF-8'" >> "$temp"
 echo "export AAMKS_PROJECT='$AAMKS_PROJECT'" >> "$temp"
@@ -117,12 +114,6 @@ sudo usermod -a -G docker $USERNAME
 cd "$AAMKS_PATH"/redis_aamks || exit
 sudo docker-compose up -d
 
-[ "X$AAMKS_USE_MAIL" == "X1" ] && { 
-	# TODO - instructables for sending mail via mail
-	sudo apt-get --yes install composer
-	cd $AAMKS_PATH/gui
-	composer install
-}
 echo; echo; echo  "sudo service apache2 restart..."
 sudo service apache2 restart
 
