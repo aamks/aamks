@@ -56,5 +56,15 @@ function run_conf_subst($user_dir, $pid, $sid, $nid, $tid){
     $mess["data"] = array("conf_dir" => [$user_dir, $pid, $sid, $nid, $tid]);
     push($mess);
 }
+function run_activate_email($link, $email){
+    $mess = message();
+    $mess["data"] = array("activate_email" => [$link, $email]);
+    push($mess);
+}
+function run_reset_email($link, $email){
+    $mess = message();
+    $mess["data"] = array("reset_email" => [$link, $email]);
+    push($mess);
+}
 
 ?>
