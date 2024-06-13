@@ -405,25 +405,19 @@ class DrawAndLog:
 
     def __init__(self, sim_id):
         self._sim_id = sim_id
-        self.json = Json()
-        self.__read_json()
-        self.__connectDB()
-        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
         self._scen_fuel = {}
         self._fire = None
         self._fires = []
         self._fire_openings = []
         self.sections = {}
-
-    def __read_json(self):
-        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-
-    def __connectDB(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.data_for_psql=OrderedDict()
-        self.__new_psql_log()
+        self.json = Json()
+        self.conf = self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
+        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self._new_psql_log()
 
-    def __new_psql_log(self):#{{{
+    def _new_psql_log(self):#{{{
         ''' Init the collector for storing montecarlo cfast setup. Variables will be registered later one at a time. '''
         self.data_for_psql[self._sim_id]=OrderedDict([(h,  []) for h in self.PSQL_HEADERS])
 
@@ -583,7 +577,7 @@ class DrawAndLog:
         return fires
 # }}}
     '''&CHEM'''
-    def __draw_fuel(self):
+    def _draw_fuel(self):
         if self.conf['fuel'] == 'random':
             self._scen_fuel = self.FUELS[choice(list(self.FUELS))]
         elif self.conf['fuel'] == 'user':
@@ -593,7 +587,7 @@ class DrawAndLog:
 
     def _draw_fire_chem(self, fire_id):# {{{
         if not self._scen_fuel:
-            self.__draw_fuel()
+            self._draw_fuel()
 
         heat_of_combustion = round(normal(self._scen_fuel['heatcom']['mean'], self._scen_fuel['heatcom']['sd']), 0)     #[MJ/kg]
         rad_frac = round(gamma(self.conf['radfrac']['k'], self.conf['radfrac']['theta']), 3)#TODO LOW VARIABILITY, CHANGE DIST
@@ -604,6 +598,7 @@ class DrawAndLog:
         for spec, s_value in self._scen_fuel['molecule'].items():
             chem[spec] = s_value
         return chem
+    
     def _draw_fires_chem(self):
         self.sections['CHEM'] = [self._draw_fire_chem(fire.f_id) for fire in self._fires]
         for i in self.sections['CHEM']:
@@ -908,7 +903,7 @@ class DrawAndLog:
         self._draw_initial()
         #&FIRE
         self._draw_fires()
-        self.__draw_fuel()
+        self._draw_fuel()
         #&VENTS
         self._draw_windows_opening()
         self._draw_doors_and_holes_opening()

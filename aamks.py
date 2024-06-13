@@ -62,6 +62,7 @@ def start_aamks(path, user_id):
         logger.info('calling cfast_mc.do_iterations()')
         cfast_mc.do_iterations()
         logger.info('finished cfast_mc.do_iterations()')
+        exit()
     logger.info('calling EvacMcarlo()')
     EvacMcarlo()
     logger.info('finished EvacMcarlo()')
