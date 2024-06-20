@@ -9,6 +9,7 @@ var evacueeRadius;
 var velocitiesSize;
 var eData=[];
 var roomsOpacity=[];
+var doorsOpening=[];
 var dstatic;
 var dstaticAllFloors;
 var paused=0;
@@ -37,40 +38,40 @@ function createSelect(){
 	var anim_params = document.getElementById("anim_params").textContent;
 	anim_params = JSON.parse(anim_params)[0]['anim_params'];
 	if (anim_params != 'NULL'){
-	anim_params = JSON.parse(anim_params)
-	var rooms = ['Select room'];
-	for(var r in anim_params){
-		rooms.push(r);
-	}
-	rooms.sort()
-	var selectRooms = document.getElementById('selRooms');
-	for (var i = 0; i < rooms.length; i++) {
-		var option = document.createElement("option");
-		option.value = rooms[i];
-		option.text = rooms[i];
-		selectRooms.appendChild(option);
-	}
-	var selectParams = document.getElementById('selParams');
-	var room = "";
-	selectRooms.addEventListener("change", (event) => {
-		room = event.target.value;
-		selectParams.innerHTML = '';
-		var params = [];
-		params.push(anim_params[room]);
-		var option = document.createElement("option");
-			option.value = "";
-			option.text = "Select param";
-			selectParams.appendChild(option);
-		for (var i = 0; i < params[0].length; i++) {
-			var option = document.createElement("option");
-			option.value = params[0][i];
-			option.text = params[0][i];
-			selectParams.appendChild(option);
+		anim_params = JSON.parse(anim_params)
+		var rooms = ['Select room'];
+		for(var r in anim_params){
+			rooms.push(r);
 		}
-	});
-	selectParams.addEventListener("change", (event) => {
-		loadImage(event.target.value+"_"+room+".png");
-	});
+		rooms.sort()
+		var selectRooms = document.getElementById('selRooms');
+		for (var i = 0; i < rooms.length; i++) {
+			var option = document.createElement("option");
+			option.value = rooms[i];
+			option.text = rooms[i];
+			selectRooms.appendChild(option);
+		}
+		var selectParams = document.getElementById('selParams');
+		var room = "";
+		selectRooms.addEventListener("change", (event) => {
+			room = event.target.value;
+			selectParams.innerHTML = '';
+			var params = [];
+			params.push(anim_params[room]);
+			var option = document.createElement("option");
+				option.value = "";
+				option.text = "Select param";
+				selectParams.appendChild(option);
+			for (var i = 0; i < params[0].length; i++) {
+				var option = document.createElement("option");
+				option.value = params[0][i];
+				option.text = params[0][i];
+				selectParams.appendChild(option);
+			}
+		});
+		selectParams.addEventListener("change", (event) => {
+			loadImage(event.target.value+"_"+room+".png");
+		});
 	}
 }
 function loadImage(file){
@@ -88,6 +89,7 @@ function loadImage(file){
 function initLayers() {//{{{
 	new Layer({'name': 'rooms'});
 	new Layer({'name': 'roomSmoke'});
+	new Layer({'name': 'doorsOpening'});
 	new Layer({'name': 'roomFire'});
 	new Layer({'name': 'highlight'});
 	new Layer({'name': 'animated'});
@@ -338,7 +340,9 @@ function showAnimation() {//{{{
 		currentAnimData=JSON.parse(response['data']);
 		eData=currentAnimData.animations.evacuees;
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
+		doorsOpening=currentAnimData.animations.doors;
 		initRoomSmoke();
+		initDoorsOpening();
 		initAnimAgents();
 		initSpeed();
 	});
@@ -900,6 +904,38 @@ function roomsSmokeInFrame() {//{{{
 		project.layers.roomSmoke.children[key].opacity=roomsOpacity[frame][i.floor][i.name]*0.8;
 	});
 }
+
+function initDoorsOpening() {//{{{
+	project.layers.doorsOpening.activate();
+	var rw, rh;
+
+	for (var ffloor in doorsOpening[0]) {
+		if(dstatic.floors[ffloor]===undefined) { continue; }
+        var ty=dstatic.floors[ffloor].floor_meta.ty;
+        var tx=dstatic.floors[ffloor].floor_meta.tx;
+		for (var door in doorsOpening[0][ffloor]) {
+            var pp=JSON.parse(dstatic.floors[ffloor]['doors'][door]['points']);
+			points=[];
+			_.each(pp, function(i) { points.push([i[0]+tx, i[1]+ty]); });
+
+			rw=points[1][0] - points[0][0];
+			rh=points[2][1] - points[1][1];
+
+			group=new Group();
+			group.name=door;
+			group.floor=ffloor;
+			group.addChild(new Path.Rectangle({point: new Point(points[0][0], points[0][1]), fillColor:"#010", size: new Size(rw,rh)}));
+		}
+	}
+}
+//}}}
+function doorsOpeningInFrame() {//{{{
+	if (eData.length<1) { return; }
+	_.each(project.layers.doorsOpening.getItems(), function(i,key) { 
+		if(doorsOpening[frame][i.floor][i.name]==1) { project.layers.doorsOpening.children[key].opacity=0; }
+		else if(doorsOpening[frame][i.floor][i.name]==0) { project.layers.doorsOpening.children[key].opacity=0.5; }
+	});
+}
 //}}}
 function resizeAndRedrawCanvas() {//{{{
 	wWidth = $(window).width()-20;
@@ -920,6 +956,7 @@ view.onFrame=function(event) {//{{{
 		updateAgentNumbersOnFloors();
 		evacueesInFrame();
 		roomsSmokeInFrame();
+		doorsOpeningInFrame();
 		afterLerpFrame();
 	} 
 }
