@@ -69,7 +69,7 @@ def start_aamks(path, user_id):
     OnEnd()
     logger.info('finished OnEnd()')
     logger.info('AAMKS application finished successfully')
-        
+
 
 if __name__ == '__main__':
     if len(sys.argv) > 2:

@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist
 
 class Evacuee:
 
-    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius) -> None:
+    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius, type, leader_id) -> None:
         """
 
         :type origin: tuple
@@ -15,7 +15,6 @@ class Evacuee:
 
         self.origin = origin
         self.goal = None
-        self.exit_door = None
         self.blocked_exits = list()
         self.fed = 0
         self.dfed = 0
@@ -42,6 +41,11 @@ class Evacuee:
         self.exit_coordinates = None
         self.agent_leaves_floor = False
         self.path = None
+        
+        self.type = type
+        self.leader = None
+        self.leader_id = leader_id
+
 
     def __getattr__(self, name):
         return self.__dict__[name]
@@ -83,7 +87,7 @@ class Evacuee:
 
     def check_if_agent_reached_outside_door(self):
         if self.exit_coordinates is None:
-            return
+            return 
         dist = cdist([self.position], [self.exit_coordinates], 'euclidean')
         if dist < 50 and self.target_teleport_coordinates is None and self.agent_leaves_floor is True:
             self.finished = 0

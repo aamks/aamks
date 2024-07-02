@@ -46,14 +46,13 @@ class Worker:
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
+        # self.working_dir = "/home/aamks_users/hubert@hubert.com/clustering/c1/workers/237" 
         self.project_dir=self.working_dir.split("/workers/")[0]
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
         self.vars = OrderedDict()
         self.results = dict()
         self.obstacles = None
-        self.trajectory = None
-        self.velocity = None
         self.floor_dims = None
         self.evacuees = None
         self.fire_dto = None
@@ -340,7 +339,7 @@ class Worker:
                 self.rooms_det_time[room] = dct["Time"]["Time"][indexes[0]]
 
     def _create_evacuees(self, floor: int):
-        evacuees = []
+        evacuees_list = []
         self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
         floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
@@ -371,17 +370,22 @@ class Worker:
 
 
         for i in floor['EVACUEES'].keys():
-            evacuees.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
+            evacuees_list.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
                                     h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=pre_evac_total(i),
                                     alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
-                                    node_radius=self.config['NODE_RADIUS']))
+                                    node_radius=self.config['NODE_RADIUS'], 
+                                    type = floor['EVACUEES'][i]['type'], 
+                                    leader_id = floor['EVACUEES'][i]['leader_id']
+                                  ))
             self.wlogger.debug('{} evacuee added'.format(i))
 
-        e = Evacuees()
-        [e.add_pedestrian(i) for i in evacuees]
+        evacuees = Evacuees()
+        for e in evacuees_list:
+            e.leader = evacuees_list[e.leader_id]
+            evacuees.add_pedestrian(e)
 
-        self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees)))
-        return e
+        self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees_list)))
+        return evacuees
 
     def prepare_staircases(self, floor):
         rows = self.s.query("SELECT x0, y0, width, depth from aamks_geom WHERE type_sec='STAI' AND floor = floor")
@@ -627,7 +631,7 @@ class Worker:
 
         while 1:
             time_frame += cfast_step    # increase upper limit of time_frame
-            # check for user time limit
+
             if time_frame == (self.vars['conf']['simulation_time']):
                 self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
                 self.simulation_time = time_frame

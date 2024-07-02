@@ -36,6 +36,10 @@ from scipy.stats import lognorm
 from scipy.optimize import root
 from scipy.special import erfc
 
+
+
+from .evac_clusters import EvacClusters
+
 # }}}
 def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99):
     def equations(vars):
@@ -118,7 +122,7 @@ class EvacMcarlo():
         agents should start to behave like they actually are in the room of fire origin though).
         '''
 
-        pre_evacs = {'pre_evac': None, 'pre_evac_fire_origin': None}
+        pre_evacs = {'pre_evac': 0, 'pre_evac_fire_origin': 0}
         for room_type in ['pre_evac', 'pre_evac_fire_origin']:
             pe = self.conf[room_type]
             if pe['mean'] and pe['sd']:
@@ -247,6 +251,17 @@ class EvacMcarlo():
 # }}}
     def _make_evac_conf(self):# {{{
         ''' Write data to sim_id/evac.json. '''
+        def add_leader_parameters(floor):
+            clustering = EvacClusters(self.dispatched_evacuees[floor])
+            for i, agent in enumerate(clustering.sorted_agents_flat):
+                e_id='f{}'.format(i)
+                pre_ev_time = round(agent["leader_id"] * 2.99 + 1, 2)
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]["leader_id"] = agent["leader_id"]  
+                self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]["type"] = agent["type"] 
+                # self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION']['pre_evac'] = pre_ev_time
+                # self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['PRE_EVACUATION']['pre_evac_fire_origin'] = pre_ev_time 
+
+
         self._evac_conf['FLOORS_DATA']=OrderedDict()
         for floor in self.floors:
             self._evac_conf['FLOORS_DATA'][floor]=OrderedDict()
@@ -264,9 +279,20 @@ class EvacMcarlo():
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['BETA_V']         = round(normal(self.conf['evacuees_beta_v']['mean']      , self.conf['evacuees_beta_v']['sd'])      , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['H_SPEED']        = round(normal(self.conf['evacuees_max_h_speed']['mean'] , self.conf['evacuees_max_h_speed']['sd']) , 2)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]['V_SPEED']        = round(normal(self.conf['evacuees_max_v_speed']['mean'] , self.conf['evacuees_max_v_speed']['sd']) , 2)
+
+            add_leader_parameters(floor)
+        
+
+
+                
         self.json.write(self._evac_conf, "{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id))
         os.chmod("{}/workers/{}/evac.json".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)
 # }}}
+
+        
+
+
+
     def _evacuees_static_animator(self):# {{{
         ''' 
         For the animator. We just pick a single, newest sim_id and display
