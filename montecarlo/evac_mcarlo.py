@@ -268,7 +268,6 @@ class EvacMcarlo():
             self._evac_conf['FLOORS_DATA'][floor]['NUM_OF_EVACUEES']=len(self.dispatched_evacuees[floor])
             self._evac_conf['FLOORS_DATA'][floor]['ALARMING']=self._get_alarming_time()
             self._evac_conf['FLOORS_DATA'][floor]['EVACUEES']=OrderedDict()
-            z=self.s.query("SELECT z0 FROM aamks_geom WHERE floor=?", (floor,))[0]['z0']
             for i,pos in enumerate(self.dispatched_evacuees[floor]):
                 e_id='f{}'.format(i)
                 self._evac_conf['FLOORS_DATA'][floor]['EVACUEES'][e_id]=OrderedDict()

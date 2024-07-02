@@ -316,12 +316,7 @@ class CFASTimporter():
         for hi,lo in self.towers_parents.items():
             z=self.s.query("SELECT name,vent_from,vent_from_name,vent_to_name,vent_to FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
             for i in z:
-                mmin=min(lo,i['vent_from'])
-                mmax=max(lo,i['vent_from'])
-                if mmin == i['vent_from'] or i['vent_to_name'] == 'OUTSIDE':
-                    update.append((mmin, mmax, i['vent_from_name'], i['vent_to_name'], i['name']))
-                else:
-                    update.append((mmin, mmax, i['vent_to_name'], i['vent_from_name'], i['name']))
+                update.append((i['vent_from'], lo, i['vent_from_name'], i['vent_to_name'], i['name']))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=?, vent_from_name=?, vent_to_name=?  WHERE name=?", update)
 
 # }}}
@@ -412,13 +407,15 @@ class CFASTimporter():
                 compa_poly=self.aamks_polies['COMPA'][floor][i['compa_id']]
                 compa=[(round(x),round(y)) for x,y in compa_poly.exterior.coords]
                 lines=OrderedDict()
-                lines['LEFT']=LineString([compa[0], compa[1]])
+                lines['RIGHT']=LineString([compa[0], compa[1]])
                 lines['REAR']=LineString([compa[1], compa[2]])
-                lines['RIGHT']=LineString([compa[2], compa[3]])
+                lines['LEFT']=LineString([compa[2], compa[3]])
                 lines['FRONT']=LineString([compa[3], compa[0]])
                 for key, line in lines.items():
                     if hvent_poly.intersection(line).length > self.doors_width:
                         pt=list(zip(*line.xy))[0]
+                        if key =='REAR' or key =='LEFT':
+                            pt=list(zip(*line.xy))[1]
                         face=key
                         offset=hvent_poly.distance(Point(pt))
                         self.s.query("UPDATE aamks_geom SET face=?, face_offset=? WHERE global_type_id=? AND type_pri='HVENT'", (face,offset,i['vent_id'])) 

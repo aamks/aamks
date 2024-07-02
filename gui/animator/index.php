@@ -55,7 +55,7 @@ function main() {
 		<td>" . number_format($sim['min_vis_compa'], 4, ".", "") . " </td>
 		<td>" . number_format($sim['min_vis_cor'], 1, ".", "") . " </td>
 		<td>" . number_format($sim['tot_heat'], 1, ".", "") . " </td>
-		<td>" . number_format($wcbe['0'], 0, ".", "") . " </td>
+		<td>" . number_format(max($wcbe), 0, ".", "") . " </td>
 		<td>" . number_format($sim['dcbe_time'], 0, ".", "") . " </td>
 		<td>" . sprintf("%.4e", $results['individual']) . "</td>
 		<td>" . sprintf("%.4e", $results['societal']) . "</td>

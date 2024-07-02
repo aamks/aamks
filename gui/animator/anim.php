@@ -66,7 +66,7 @@ function site() {/*{{{*/
     </thead>
     <tbody>
 	<tr>
-	<td>" . number_format($wcbe['0'], 0, ".", "") . " </td>
+	<td>" . number_format(max($wcbe), 0, ".", "") . " </td>
 	<td>" . number_format($data[0]['dcbe_time'], 0, ".", "") . " </td>
 	<td>" . sprintf("%.4e", $results['individual']) . "</td>
 	</tr></tbody></table>
