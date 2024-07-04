@@ -19,6 +19,7 @@ from include import Sqlite
 from include import Json
 from include import Dump as dd
 from include import Vis
+from copy import deepcopy
 
 # }}}
 
@@ -539,7 +540,9 @@ class CFASTimporter():
             vc_intersections={key:[] for key in all_vvents }
             for vent_id,vent_poly in vents_dict.items():
                 try:
-                    two_floors=self.aamks_polies['COMPA'][floor]+self.aamks_polies['COMPA'][floor+1]
+                    two_floors=deepcopy(self.aamks_polies['COMPA'][floor])
+                    for k in self.aamks_polies['COMPA'][str(int(floor)+1)].keys():
+                        two_floors[k]=deepcopy(self.aamks_polies['COMPA'][str(int(floor)+1)][k])
                 except:
                     two_floors=self.aamks_polies['COMPA'][floor]
                 for compa_id,compa_poly in two_floors.items():
@@ -554,7 +557,7 @@ class CFASTimporter():
                     name=self.s.query("SELECT name FROM aamks_geom WHERE type_pri='VVENT' AND global_type_id=?", (vent_id,))[0]['name']
                     self.fatal('{}: vvent intersects no rooms or more than 2 rooms.'.format(name))
                 update.append((v[0], v[1], vent_id))
-        self.s.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
+        self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='VVENT'", update)
 
 # }}}
     def _towers_slices(self):# {{{
