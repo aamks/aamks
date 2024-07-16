@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist
 
 class Evacuee:
 
-    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius, type, leader_id) -> None:
+    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius, type, current_floor) -> None:
         """
 
         :type origin: tuple
@@ -44,7 +44,7 @@ class Evacuee:
         
         self.type = type
         self.leader = None
-        self.leader_id = leader_id
+        self.current_floor = None
 
 
     def __getattr__(self, name):
@@ -117,7 +117,7 @@ class Evacuee:
         self.unnorm_vector = tuple(map(sub, self.goal, self.position))
         self.distance = (sqrt(self.unnorm_vector[0] ** 2 + self.unnorm_vector[1] ** 2))
 
-        if current_time > self.pre_evacuation_time:
+        if current_time > self.leader.pre_evacuation_time:
             try:
                 norm_vector = tuple((self.unnorm_vector[0] / self.distance, self.unnorm_vector[1] / self.distance))
                 self.velocity = (norm_vector[0] * self.speed, norm_vector[1] * self.speed)

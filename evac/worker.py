@@ -46,7 +46,7 @@ class Worker:
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
-        # self.working_dir = "/home/aamks_users/hubert@hubert.com/clustering/c1/workers/237" 
+        # self.working_dir = "/mnt/aamks_users/akamienski@consultrisk.pl/dddd/kuziora/workers/3" 
         self.project_dir=self.working_dir.split("/workers/")[0]
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
@@ -368,20 +368,21 @@ class Worker:
 
             return det + alarm + pre
 
-
+        leaders_id_list = []
         for i in floor['EVACUEES'].keys():
             evacuees_list.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
                                     h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=pre_evac_total(i),
                                     alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
                                     node_radius=self.config['NODE_RADIUS'], 
                                     type = floor['EVACUEES'][i]['type'], 
-                                    leader_id = floor['EVACUEES'][i]['leader_id']
+                                    current_floor = floor
                                   ))
+            leaders_id_list.append(floor['EVACUEES'][i]['leader_id'])
             self.wlogger.debug('{} evacuee added'.format(i))
 
         evacuees = Evacuees()
         for e in evacuees_list:
-            e.leader = evacuees_list[e.leader_id]
+            e.leader = evacuees_list[leaders_id_list.pop(0)]
             evacuees.add_pedestrian(e)
 
         self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees_list)))
@@ -832,6 +833,7 @@ class Worker:
             agent = agent_to_move[2]
             agent.finished = 1
             agent.target_teleport_coordinates = None
+            agent.current_floor = agent_to_move[1]
 
 
     def send_report(self, e=False): # {{{
@@ -1042,8 +1044,7 @@ class LocalResultsCollector:
 
 if __name__ == "__main__":
     w = Worker()
-    try:
-        w.run_worker()
-    except Exception as error:
-        w.wlogger.error(error)
-        w.send_report(e={'status': 1})
+    w.run_worker()
+    # except Exception as error:
+    #     w.wlogger.error(error)
+    #     w.send_report(e={'status': 1})

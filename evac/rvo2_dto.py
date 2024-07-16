@@ -56,8 +56,8 @@ class EvacEnv:
 
         self.dfed = FEDDerivative(self.floor)
 
-    def _find_closest_exit(self, e):
-        evacuee = self.evacuees.get_pedestrian(e)
+
+    def _find_closest_exit(self, evacuee):
         position = evacuee.position
         try:
             od_at_agent_position = self.smoke_query.get_visibility(position)
@@ -69,59 +69,63 @@ class EvacEnv:
 
         if od_at_agent_position[1] in self.general['agents_destination'][int(self.floor)]['rooms_goals']:
         # exit doors were defined for this room so agent will reach goal from rooms_goals dict
-            paths = self._get_path(e, evacuee, position, od_at_agent_position, True)
+            paths = self._get_path(evacuee, position, od_at_agent_position, True)
         else:
             # exit doors were not defined for this room so agent will reach goal from general_floor_goals dict
-            paths = self._get_path(e, evacuee, position,od_at_agent_position, False)
+            paths = self._get_path(evacuee, position, od_at_agent_position, False)
 
         if len(paths) > 0:
             exits = list(zip(*paths))[2]
             # index of exit with the smallest weight equal to the product of distance and output weight
             index = exits.index(min(exits))
-            # variable target_teleport_coordinates which flags that goal will be teleport
-            if paths[index][3]['type'] == 'teleport':
-                evacuee.target_teleport_coordinates = (paths[index][3]['direction_x'], paths[index][3]['direction_y'])
-                evacuee.agent_has_no_escape = False
+            exit = paths[index][3]
 
-            # if chosen goal is teleport or outside door, then agent will leave floor            
-            if paths[index][3]['name'] in self.terminal_exits_names:
-                evacuee.agent_leaves_floor = True
-            # else, the goal is only to the next room on the floor, so the agent will not leave the floor, he will go through the next room
-            else:
-                evacuee.agent_leaves_floor = False
-            return (paths[index][0], paths[index][1]), paths[index][4]
+            self.set_path_flags_depending_on_exit_type(evacuee, exit)
+
+            x = paths[index][0]
+            y = paths[index][1]
+            navmesh_path = paths[index][4]
+            return (x, y), navmesh_path, exit
         else:
             evacuee.agent_has_no_escape = True
             return None
 
-    def _find_exit_based_on_leader(self, e, evacuee):
+    def set_path_flags_depending_on_exit_type(self, evacuee, exit):
+            # variable target_teleport_coordinates which flags that goal will be teleport
+            if exit['type'] == 'teleport':
+                evacuee.target_teleport_coordinates = (exit['direction_x'], exit['direction_y'])
+                # evacuee.agent_has_no_escape = False
+
+            # if chosen goal is teleport or outside door, then agent will leave floor            
+            if exit['name'] in self.terminal_exits_names:
+                evacuee.agent_leaves_floor = True
+            # else, the goal is only to the next room on the floor, so the agent will not leave the floor, he will go through the next room
+            else:
+                evacuee.agent_leaves_floor = False
+
+    def _find_exit_based_on_leader(self, evacuee):
         if self.evacuees.check_if_agent_exists(evacuee.leader):
-            if evacuee.leader.exit_coordinates:
-                exit = evacuee.leader.exit_coordinates
-            else:
-                exit = evacuee.leader.position
+            if evacuee.current_floor != evacuee.leader.current_floor:
+                return self._find_closest_exit(evacuee)
+            exit = evacuee.leader.exit
 
-            try:
-                od_at_agent_position = self.smoke_query.get_visibility(evacuee.position)
-            except:
-                od_at_agent_position = 0, 'outside'
-            paths = self._get_path(e, evacuee, evacuee.position, od_at_agent_position, False)
-            if len(paths) > 0:
-                exits = list(zip(*paths))[2]
-                index = exits.index(min(exits))
-                if paths[index][3]['type'] == 'teleport':
-                    evacuee.target_teleport_coordinates = (paths[index][3]['direction_x'], paths[index][3]['direction_y'])
-                    evacuee.agent_has_no_escape = False
-                if paths[index][3]['name'] in self.terminal_exits_names:
-                    evacuee.agent_leaves_floor = True
-            else:
-                evacuee.agent_has_no_escape = True
-            path = self.nav.nav_query(src=evacuee.position, dst=exit, maxStraightPath=999)
-            return exit, path
+            x, y = exit['x'], exit['y']
+            if LineString([(x,y), (evacuee.position[0], evacuee.position[1])]).length < 100 and exit['type'] == 'door':
+                x, y = exit['x_outside'], exit['y_outside']
+            
+            navmesh_path = self.nav.nav_query(src=evacuee.position, dst=(x, y), maxStraightPath=999)
+
+            if navmesh_path[0] == 'err':
+                # agent cannot find path to his leader exit_coordinates 
+                # so he finds normal exit path
+                return self._find_closest_exit(evacuee)
+            
+            self.set_path_flags_depending_on_exit_type(evacuee, exit)
+            return (x, y), navmesh_path, exit
         else:
-            return self._find_closest_exit(e)
+            return self._find_closest_exit(evacuee)
 
-    def _get_path(self, e, evacuee, position, od_at_agent_position, is_goal_in_rooms_goals):
+    def _get_path(self, evacuee, position, od_at_agent_position, is_goal_in_rooms_goals):
         paths, paths_free_of_smoke = list(), list()
         room_name = od_at_agent_position[1]
         if is_goal_in_rooms_goals:
@@ -158,23 +162,14 @@ class EvacEnv:
             path = self.nav.nav_query(src=position, dst=(x, y), maxStraightPath=999)
             if path[0] == 'err':
                 continue
-            self.set_OD_to_agent(e, od_at_agent_position)
+            self.set_OD_to_agent(evacuee, od_at_agent_position)
             path_length = LineString(path).length
             if self._next_room_in_smoke(path, od_at_agent_position) is not True:
-                try:
-                    if math.isinf(exit['exit_weight']):
-                        exit_dist_considering_weight = path_length*100000
-                    else:
-                        exit_dist_considering_weight = path_length*exit['exit_weight']
-                    paths_free_of_smoke.append([x, y, exit_dist_considering_weight, exit, path])
-                except:
-                    self.evacuees.set_finish_to_agent(e)
-                    if exit['type'] == 'teleport':
-                        evacuee.target_teleport_coordinates = (exit['direction_x'], exit['direction_y'])
-                    if evacuee.target_teleport_coordinates is not None:
-                        self.append_agents_to_move_downstairs_or_upstairs(evacuee, e)
-                    paths_free_of_smoke.append([x, y, 0, exit, path])
-
+                if math.isinf(exit['exit_weight']):
+                    exit_dist_considering_weight = path_length*100000
+                else:
+                    exit_dist_considering_weight = path_length*exit['exit_weight']
+                paths_free_of_smoke.append([x, y, exit_dist_considering_weight, exit, path])
             else:
                 if math.isinf(exit['exit_weight']):
                     exit_dist_considering_weight = path_length*100000
@@ -187,8 +182,8 @@ class EvacEnv:
         else:
             return paths
           
-    def set_OD_to_agent(self, e, od_at_agent_position):
-        self.evacuees.set_optical_density(e, od_at_agent_position[0])
+    def set_OD_to_agent(self, evacuee, od_at_agent_position):
+        evacuee.optical_density_at_position = od_at_agent_position[0]
 
     def _next_room_in_smoke(self, path, od_at_agent_position):
         room = od_at_agent_position[1]
@@ -299,8 +294,8 @@ class EvacEnv:
 
 
     def set_goal(self):
-        for e in range(self.evacuees.get_number_of_pedestrians()):
-            evacuee = self.evacuees.get_pedestrian(e)
+        sorted_evacuees = sorted(self.evacuees.pedestrians, key=lambda evacuee: evacuee.type == 'follower')
+        for evacuee in sorted_evacuees:
             if evacuee.finished == 0:
                 continue
             else:                  
@@ -310,22 +305,24 @@ class EvacEnv:
                     # agent is trapped, has no escape
                     continue
                 elif evacuee.type == 'follower':
-                    exit, path = self._find_exit_based_on_leader(e, evacuee)
-                    evacuee.exit_coordinates = exit
+                    exit_coordinates, path, exit = self._find_exit_based_on_leader(evacuee)
+                    evacuee.exit_coordinates = exit_coordinates
                     evacuee.path = path
+                    evacuee.exit = exit
                 else:
-                    exit, path = self._find_closest_exit(e)
-                    evacuee.exit_coordinates = exit
+                    exit_coordinates, path, exit = self._find_closest_exit(evacuee)
+                    evacuee.exit_coordinates = exit_coordinates
                     evacuee.path = path
+                    evacuee.exit = exit
 
                 try:
                     vis = RVOSimulator.query_visibility(self.simulator, position, evacuee.path[2], 15)
                     if vis:
-                        self.evacuees.set_goal(ped_no=e, navmesh_path=evacuee.path[1:])
+                        evacuee.set_goal(navmesh_path=evacuee.path[1:])
                     else:
-                        self.evacuees.set_goal(ped_no=e, navmesh_path=evacuee.path)
+                        evacuee.set_goal(navmesh_path=evacuee.path)
                 except:
-                    self.evacuees.set_goal(ped_no=e, navmesh_path=evacuee.path)
+                    evacuee.set_goal(navmesh_path=evacuee.path)
 
     def append_agents_to_move_downstairs_or_upstairs(self, evacuee, pedestrian_number):
         self.agents_to_move_downstairs_or_upstairs.append({

@@ -36,7 +36,9 @@ install() { #{{{
 		sudo mkdir /home/aamks_users
 		sudo chmod 777 /home/aamks_users
 	}
-	
+
+	chmod a+x /usr/local/aamks/fire/cfast7_linux_64
+
 }
 #}}}
 print_help() { #{{{

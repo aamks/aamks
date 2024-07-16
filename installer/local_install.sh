@@ -52,6 +52,7 @@ else
 fi
 
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
+chmod a+x /usr/local/aamks/fire/cfast7_linux_64
 cd "$AAMKS_PATH" || exit
 git switch dev
 python3.10 -m venv env
