@@ -1044,7 +1044,8 @@ class LocalResultsCollector:
 
 if __name__ == "__main__":
     w = Worker()
-    w.run_worker()
-    # except Exception as error:
-    #     w.wlogger.error(error)
-    #     w.send_report(e={'status': 1})
+    try:
+        w.run_worker()
+    except Exception as error:
+        w.wlogger.error(error)
+        w.send_report(e={'status': 1})
