@@ -238,7 +238,7 @@ class Worker:
             if last_room_center_y > door['center_y']:
                 #The exit door leads downwards on the building plan
                 return(door['center_x'], door['center_y']-goal_from_door_distance)
-            if last_room_center_y < door['center_x']:
+            if last_room_center_y < door['center_y']:
                 #The exit door leads upwards on the building plan
                 return(door['center_x'], door['center_y']+goal_from_door_distance)
             
