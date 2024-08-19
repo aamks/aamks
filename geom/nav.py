@@ -254,7 +254,7 @@ class Navmesh:
                 #The exit door leads downwards on the building plan
                 return(door['center_x']-vestibule_width, door['center_x']+vestibule_width,door['center_y']-150, door['center_y'])
             
-            if last_room_center_y < door['center_x']:
+            if last_room_center_y < door['center_y']:
                 #The exit door leads upwards on the building plan
                 return(door['center_x']-vestibule_width, door['center_x']+vestibule_width,door['center_y'], door['center_y']+150)
             
