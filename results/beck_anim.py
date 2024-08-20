@@ -39,7 +39,7 @@ class Beck_Anim:
             reader = csv.reader(csvfile, delimiter=',')
             params = [re.sub('_\d.*', '', field) for field in next(reader)]
             next(reader) # describe params
-            rooms = [re.sub('f.*', 'fire', field)for field in next(reader)]
+            rooms = [re.sub('f', 'fire', field)for field in next(reader)]
             uniq_rooms = set(rooms)
             dct = {}
             for room in uniq_rooms:
