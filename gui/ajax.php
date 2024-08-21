@@ -71,6 +71,13 @@ function ajaxUserInfo() { #{{{
 }
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{
+	//check if user is allowed to run - uncomment lines below to enable
+	//$r=$_SESSION['nn']->query("SELECT valid_to FROM access WHERE user_id=$1",array($_SESSION['main']['user_id']));
+	//if (empty($r) OR $r[0]['valid_to'] < date("Y-m-d H:i:s")) {
+		//cho json_encode(array("msg"=>"This is a demo version - you need to be authorized to run calculations. Please contact <a class=blink href=mailto:aamks@apoz.edu.pl>aamks@apoz.edu.pl</a>", "err"=>1, "data"=>''));
+		//return;
+	//}
+
 	$aamks=getenv("AAMKS_PATH");
 	$working_home=$_SESSION['main']['working_home'];
 	$user_id=$_SESSION['main']['user_id'];

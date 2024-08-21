@@ -126,6 +126,11 @@ CREATE TABLE fed_growth_cells_data (---{{{
     samples_number integer,
     modified timestamp without time zone not null default now()
 );
+CREATE TABLE access (---{{{
+	id serial PRIMARY KEY, 
+	user_id integer,
+	valid_to timestamp
+);
 ---}}}
 ---{{{ TRIGGERS
 CREATE TRIGGER update_modified BEFORE UPDATE ON categories FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
