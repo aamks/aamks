@@ -64,9 +64,6 @@ function ajaxUserPreferences() { #{{{
 	$r=$_SESSION['nn']->query("SELECT preferences FROM users WHERE id=$1",array($_SESSION['main']['user_id']));
 	echo json_encode(array("msg"=>"", "err"=>0, "data"=>json_decode($r[0]['preferences'],1)));
 }
-function ajaxUserInfo() { #{{{
-	echo json_encode($_SESSION['main']['working_home']."/picts/", 1);
-}
 /*}}}*/
 function ajaxLaunchSimulation() { #{{{
 	$aamks=getenv("AAMKS_PATH");
@@ -302,7 +299,6 @@ function main() { /*{{{*/
 		if(isset($_GET['ajaxMenuContent']))             { ini_set('display_errors', 0) ; ajaxMenuContent()          ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxLaunchSimulation']))        { ini_set('display_errors', 0) ; ajaxLaunchSimulation()     ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxUserPreferences']))         { ini_set('display_errors', 0) ; ajaxUserPreferences()      ; ini_set('display_errors', 1) ; }
-		if(isset($_GET['ajaxUserInfo']))         		{ ini_set('display_errors', 0) ; ajaxUserInfo()      		; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenario']))    { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxChangeActiveScenarioAlt'])) { ini_set('display_errors', 0) ; ajaxChangeActiveScenario() ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxGetUnderlay']))             { ini_set('display_errors', 0) ; ajaxGetUnderlay()          ; ini_set('display_errors', 1) ; }
