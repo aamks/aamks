@@ -16,8 +16,6 @@ update() { #{{{
 }
 #}}}
 install() { #{{{
-	cd
-	rm -rf $_AAMKS_PATH 
 	sudo locale-gen en_US.UTF-8
 	sudo apt-get update
 	sudo apt-get --yes install git unzip software-properties-common
@@ -26,13 +24,7 @@ install() { #{{{
 	sudo rm -rf /etc/aamksconf.json
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
 
-# clear $AAMKS_PATH if there is already any content
-if [ -d "$AAMKS_PATH" ]; then
-	sudo rm -r "$AAMKS_PATH"
-fi
-	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
-
-	sudo chown -R $USER:$USER $_AAMKS_PATH
+sudo chown -R $USER:$USER $_AAMKS_PATH
 	cd $_AAMKS_PATH || exit
 	python3.10 -m venv env
 	env/bin/pip install -r requirements.txt
