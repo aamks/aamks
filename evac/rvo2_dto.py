@@ -154,16 +154,16 @@ class EvacEnv:
             _exit_dict = exits_dict
 
         self.set_OD_to_agent(evacuee, od_at_agent_position)
-        paths = get_paths_nav_query(_exit_dict, False)
+        paths = self.get_paths_nav_query(position,_exit_dict, False)
 
         if len(paths) == 0:
             # there is no passage through smoke-free rooms, so 
             # the agent must escape through the smoke
-            paths = get_paths_nav_query(_exit_dict, True)
+            paths = self.get_paths_nav_query(position,_exit_dict, True)
 
         return paths
 
-    def get_paths_nav_query(self, exit_dict, walk_through_the_smoke):
+    def get_paths_nav_query(self, position, exit_dict, walk_through_the_smoke):
         paths = list()
         for exit in exit_dict:
             # in order to prevent from walking through the adjacent door
