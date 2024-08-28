@@ -25,7 +25,9 @@ from include import Psql
 import socket
 import threading
 import subprocess
-
+import shutil
+import evac.pathfinder
+from evac.pathfinder.navmesh import Navmesh as Pynavmesh
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
@@ -46,6 +48,7 @@ class Worker:
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
+
         # self.working_dir = "/mnt/aamks_users/akamienski@consultrisk.pl/dddd/kuziora/workers/3" 
         self.project_dir=self.working_dir.split("/workers/")[0]
         os.environ["AAMKS_PROJECT"] = self.project_dir
@@ -76,6 +79,7 @@ class Worker:
         self.server_socket = None
         self.connection_thread = None
         self.cfast_door_opening_level = {}
+        self.rooms = {}
 
 
     def get_logger(self, logger_name):
@@ -149,6 +153,15 @@ class Worker:
         floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%'")
         rooms_with_exits_weights_set = self.s.query('SELECT floor, name, center_x, center_y, room_exits_weights from aamks_geom WHERE room_exits_weights IS NOT NULL')
         internal_building_doors = self.s.query("SELECT floor, name, center_x, center_y, how_much_open, points from aamks_geom WHERE type_sec = 'DOOR' and terminal_door IS NULL")
+        all_rooms = self.s.query("SELECT name, floor, points from aamks_geom WHERE type_pri = 'COMPA'")
+        for room in all_rooms:
+            points = room['points'].replace('[', '').replace(']', '').split(', ')
+            int_points = [int(x) for x in points]
+            x_min = min(int_points[0],int_points[2],int_points[4],int_points[6])
+            x_max = max(int_points[0],int_points[2],int_points[4],int_points[6])
+            y_min = min(int_points[1],int_points[3],int_points[5],int_points[7])
+            y_max = max(int_points[1],int_points[3],int_points[5],int_points[7])
+            self.rooms[room['name']]={'floor': room['floor'], 'x_min':x_min, 'x_max':x_max, 'y_min':y_min,'y_max':y_max}
 
         self.vars['conf']['internal_doors'] = []
         for floor in sorted(self.obstacles['obstacles'].keys()):
@@ -254,7 +267,7 @@ class Worker:
             if last_room_center_y > door['center_y']:
                 #The exit door leads downwards on the building plan
                 return(door['center_x'], door['center_y']-goal_from_door_distance)
-            if last_room_center_y < door['center_x']:
+            if last_room_center_y < door['center_y']:
                 #The exit door leads upwards on the building plan
                 return(door['center_x'], door['center_y']+goal_from_door_distance)
             
@@ -627,6 +640,8 @@ class Worker:
         #first_evacuue = []
         # iterate over CFAST time frames (results saving interval)
         time_frame = 0 - cfast_step
+        if os.path.exists(self.working_dir + "/door_opening_changes"):
+            shutil.rmtree(self.working_dir + "/door_opening_changes")
         os.mkdir(self.working_dir + "/door_opening_changes")
         self.initialize_doors_opening_level()
 
@@ -640,6 +655,7 @@ class Worker:
                 break
 
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
+
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
                 aset = self.vars['conf']['simulation_time']
@@ -674,6 +690,7 @@ class Worker:
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
                         self.doors_opening.append(self.get_door_opening_level_for_vis())
+                        self.change_pynavmesh_due_to_smoke()
 
                 # determine RSET and smoke on all floors
                 for i in self.floors:
@@ -703,6 +720,79 @@ class Worker:
         self.wlogger.info('Final results gathered')
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
 
+    def change_pynavmesh_due_to_smoke(self):
+        critical_conditions_rooms = {}
+        for f in self.floors:
+            critical_conditions_rooms[f.floor] = []
+        for floor, rooms_smoke in self.smoke_opacity[-1].items():
+            for room_id, room_od in rooms_smoke.items():
+                    if room_od > 0.666:
+                        critical_conditions_rooms[self.rooms[room_id]['floor']].append(room_id)
+        for floor in self.floors:
+            if len(critical_conditions_rooms[floor.floor]) > 0:
+                self.generate_new_pynavmesh(floor, critical_conditions_rooms[floor.floor])
+
+    def generate_new_pynavmesh(self, floor, floor_critical_rooms):
+        figure_points = []
+        first_pynavmesh = open("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav_first'))
+        lines = first_pynavmesh.readlines()
+        points = lines[0].split()
+        x_list = points[::3]
+        z_list = points[2::3]
+        figures_points = lines[1].split()
+        polygons = lines[2].split()
+
+        count = 0
+        all_figures = []
+        index = -1
+
+        for poly in polygons:
+            index +=1
+            poly_sides_count = int(poly)
+            for i in range (poly_sides_count):
+                figure_points.append((float(x_list[int(figures_points[count])]), float(z_list[int(figures_points[count])])))
+                count+=1
+            x = []
+            for co in figure_points:
+                x.append([co[0], co[1]])
+            all_figures.append((index,x))
+            x = []
+            figure_points = []
+
+        figures_points_after_removal = []
+        polygons_after_removal = []
+
+        for id, coordinates in all_figures:
+            skip_outer1 = False
+            skip_outer2 = False 
+            for floor_critical_room in floor_critical_rooms:
+                x_min = self.rooms[floor_critical_room]['x_min']/100
+                x_max = self.rooms[floor_critical_room]['x_max']/100
+                y_min = self.rooms[floor_critical_room]['y_min']/100
+                y_max = self.rooms[floor_critical_room]['y_max']/100
+                for x, y in coordinates:
+                    if x_min < x and x_max > x and y_min < y and y_max > y:
+                        figures_points = figures_points[int(polygons[id]):]
+                        skip_outer1 = True
+                        skip_outer2 = True
+                        break
+                if skip_outer1:
+                    break
+            if skip_outer2:
+                continue
+            polygons_after_removal.append(polygons[id])
+            elements_to_move = figures_points[:int(polygons[id])]
+            figures_points = figures_points[int(polygons[id]):]
+            figures_points_after_removal.extend(elements_to_move)
+
+        with open("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav'), 'w') as file:
+            file.write(' '.join(points) + '\n')
+            file.write(' '.join(figures_points_after_removal) + '\n')
+            file.write(' '.join(polygons_after_removal))
+
+        vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav'))
+        floor.nav.navmesh = Pynavmesh(vert, polygs)
+
 
     def cfast_socket_communication_handle(self, time_frame):
         # socket with cfast handler
@@ -720,7 +810,8 @@ class Worker:
                         plik.write(self.cfast_door_opening_level[door_id])
                     else:
                         plik.write(self.cfast_door_opening_level[door_id] +",")
-
+        if os.path.exists(self.working_dir +"/doors_opening_level_frame.txt"):
+            os.remove(self.working_dir +"/doors_opening_level_frame.txt")
         f2 = open(self.working_dir +"/doors_opening_level_frame.txt", "w+")
         f2.write(doors_opening_level)
         f2.close()
