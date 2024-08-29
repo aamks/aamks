@@ -50,7 +50,7 @@ fi
 	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
 
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
-chmod a+x /usr/local/aamks/fire/cfast7_linux_64
+chmod a+x "$AAMKS_PATH/fire/cfast7_linux_64"
 cd "$AAMKS_PATH" || exit
 python3.10 -m venv env
 env/bin/pip install -r requirements.txt
