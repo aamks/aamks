@@ -170,6 +170,10 @@ ALTER TABLE users OWNER TO aamks;
 GRANT ALL ON TABLE users TO aamks;
 GRANT ALL ON SEQUENCE users_id_seq TO aamks;
 
+ALTER TABLE access OWNER TO aamks;
+GRANT ALL ON TABLE access TO aamks;
+GRANT ALL ON SEQUENCE access_id_seq TO aamks;
+
 ALTER TABLE fed_growth_cells_data OWNER TO aamks;
 ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_scenario_id FOREIGN KEY (scenario_id) REFERENCES scenarios (id) ON UPDATE CASCADE ON DELETE CASCADE;
 ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_project_id FOREIGN KEY (project) REFERENCES projects (id) ON UPDATE CASCADE ON DELETE CASCADE;
