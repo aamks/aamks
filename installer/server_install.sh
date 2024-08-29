@@ -100,6 +100,12 @@ EOF
 }
 
 
+# clear $AAMKS_PATH if there is already any content
+if [ -d "$AAMKS_PATH" ]; then
+	sudo rm -r "$AAMKS_PATH"
+fi
+	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
+
 
 sudo mkdir -p /var/www/ssl/
 sudo rm -rf /var/www/ssl/aamks 

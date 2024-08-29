@@ -8,7 +8,6 @@
 update() { #{{{
 	[ -d $_AAMKS_PATH ] || { install; }
 	cd $_AAMKS_PATH || exit
-	git switch dev
 	git pull
 	sudo rm -rf /etc/aamksconf.json
 	hostname
@@ -17,8 +16,6 @@ update() { #{{{
 }
 #}}}
 install() { #{{{
-	cd
-	rm -rf $_AAMKS_PATH 
 	sudo locale-gen en_US.UTF-8
 	sudo apt-get update
 	sudo apt-get --yes install git unzip software-properties-common
@@ -26,19 +23,13 @@ install() { #{{{
 	sudo apt-get --yes install python3.10 python3.10-venv 
 	sudo rm -rf /etc/aamksconf.json
 	echo "{ \"AAMKS_SERVER\": \"$_AAMKS_SERVER\" }"  | sudo tee /etc/aamksconf.json
-	sudo git clone https://github.com/aamks/aamks $_AAMKS_PATH
 	sudo chown -R $USER:$USER $_AAMKS_PATH
-	cd $_AAMKS_PATH || exit
-	git switch dev
-	python3.10 -m venv env
-	env/bin/pip install -r requirements.txt
+	
 	[ "X$AAMKS_WORKER" == "Xgearman" ] && { 
 		sudo mkdir /home/aamks_users
 		sudo chmod 777 /home/aamks_users
 	}
-
-	chmod a+x /usr/local/aamks/fire/cfast7_linux_64
-
+	chmod a+x "$_AAMKS_PATH/fire/cfast7_linux_64"
 }
 #}}}
 print_help() { #{{{

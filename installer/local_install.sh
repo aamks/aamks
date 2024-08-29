@@ -46,15 +46,12 @@ sudo chown -R "$USER":"$USER" /etc/aamksconf.json
 # clear $AAMKS_PATH if there is already any content
 if [ -d "$AAMKS_PATH" ]; then
 	sudo rm -r "$AAMKS_PATH"
-	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
-else
-	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
 fi
+	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
 
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
-chmod a+x /usr/local/aamks/fire/cfast7_linux_64
+chmod a+x "$AAMKS_PATH/fire/cfast7_linux_64"
 cd "$AAMKS_PATH" || exit
-git switch dev
 python3.10 -m venv env
 env/bin/pip install -r requirements.txt
 # mkdir if there is not any
