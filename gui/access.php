@@ -36,15 +36,15 @@ function saveForm(){
     }
 }
 function showTable(){
-	$r=$_SESSION['nn']->query("SELECT a.user_id, a.valid_to, u.email, u.user_name FROM access a JOIN users u ON a.user_id = u.id;");
+	$r=$_SESSION['nn']->query("SELECT u.id, a.valid_to, u.email, u.user_name FROM access a RIGHT JOIN users u ON a.user_id = u.id;");
     echo '<table cellpadding="15">';
-    echo '<tr><th>User ID</th><th>Valid To</th><th>Email</th><th>User Name</th></tr>';
+    echo '<tr><th>User ID</th><th>Email</th><th>User Name</th><th>Valid to</th></tr>';
     foreach ($r as $row) {
         echo '<tr>';
-        echo '<td>' . $row['user_id'] . '</td>';
-        echo '<td>' . $row['valid_to'] . '</td>';
+        echo '<td>' . $row['id'] . '</td>';
         echo '<td>' . $row['email'] . '</td>';
         echo '<td>' . $row['user_name'] . '</td>';
+        echo '<td>' . $row['valid_to'] . '</td>';
         echo '</tr>';
     }
     echo '</table>';
