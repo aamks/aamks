@@ -9,12 +9,10 @@ from itertools import combinations
 import seaborn as sns
 import numpy as np
 import sys
-sys.path.insert(0, '/usr/local/aamks')
 import os
 import time
 import shutil
 import scipy.stats as stat
-from include import Sqlite, Psql
 import warnings
 import pandas as pd
 from zipfile import ZipFile
@@ -24,6 +22,8 @@ from pylatex.utils import italic, bold, NoEscape
 from pylatex.table import Tabular
 from pylatex.basic import NewPage, LineBreak
 from pylatex.headfoot import PageStyle, Head, simple_page_number
+
+from aamks.include import Sqlite, Psql
 
 
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])

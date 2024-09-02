@@ -418,6 +418,7 @@ class DrawAndLog:
         self.sections = {}
 
     def __read_json(self):
+        [print(i, j) for i,j in os.environ.items()]
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 
     def __connectDB(self):

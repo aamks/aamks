@@ -3,10 +3,10 @@ session_name('aamks');
 require_once("lib.form.php"); 
 
 $aamks_worker=getenv('AAMKS_WORKER');
-if ($aamks_worker=='redis'){
+if ($aamks_worker=='redis') {
     require_once("redis_client.php"); 
-}elseif($aamks_worker=='slurm'){
-    require_once("slurm.php")
+} elseif ($aamks_worker=='slurm') {
+    require_once("slurm.php");
 };
 
 session_start();
@@ -40,9 +40,9 @@ function dd3($arr) {
 }
 function read_evac_config_json() {
 	$path=getenv("AAMKS_PATH");
-	$json=json_decode(file_get_contents("$path/evac/config.json"), 1);
+	$json=json_decode(file_get_contents("$path/aamks/evac/config.json"), 1);
 	if(empty($json)) { 
-		$_SESSION['nn']->fatal("Broken json: $path/evac/config.json");
+		$_SESSION['nn']->fatal("Broken json: $path/aamks/evac/config.json");
 	} 
 	return $json;
 }

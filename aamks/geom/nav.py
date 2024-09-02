@@ -3,19 +3,20 @@
 import json
 import os
 import sys
-from evac.polymesh import Polymesh
-sys.path.insert(1, '/usr/local/aamks')
 import copy
 from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
-from fire.partition_query import PartitionQuery
-from evac.pathfinder.navmesh_baker import NavmeshBaker
-from evac.pathfinder.navmesh import Navmesh as Pynavmesh
-import evac.pathfinder
 from shapely.ops import polygonize
 from numpy.random import uniform
 from math import sqrt
+
+from aamks.evac.polymesh import Polymesh
+from aamks.fire.partition_query import PartitionQuery
+from aamks.evac.pathfinder.navmesh_baker import NavmeshBaker
+from aamks.evac.pathfinder.navmesh import Navmesh as Pynavmesh
+import aamks.evac.pathfinder
+
 from include import Sqlite
 from include import Json
 from include import Dump as dd

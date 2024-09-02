@@ -87,7 +87,7 @@ function compare() {/*{{{*/
 }
 function make_pictures() {/*{{{*/
 	$f=$_SESSION['main']['working_home'];
-    run_beck_new($f);
+    echo run_beck_new($f);
 /*}}}*/
 }
 function prevNext($k, $t, $d) {

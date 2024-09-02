@@ -158,7 +158,7 @@ function stop_slurm($r) {
         echo "<tr><td>" . $element['iteration'] . "</td>";
         if ($element['status'] == '') {
             $element_job_id = $element['job_id'];
-            stop($r)
+            stop($r);
             echo "<td align='center'>OK</td><td></td>";
             $r = $_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id']));
             $sum += 1;
@@ -326,6 +326,9 @@ function main() {/*{{{*/
         }
         elseif (getenv('AAMKS_WORKER') == "redis"){
             stop_redis(query_cur());
+        }
+        elseif ($aamks_worker == "slurm"){
+            stop_slurm(query_cur());
         }
 		
     }

@@ -5,8 +5,9 @@ from collections import defaultdict
 import re
 import sys
 import numpy as np
-from include import Psql
 from matplotlib import pyplot as plt
+
+from aamks.include import Psql
 
 relevant_params = ('Time', 'Outside', 'HRR', 'HRR_E1', 'HGT','LLOD', 'ULOD', 'ULCO', 'LLCO','ULCO2','LLCO2','ULHCN','LLHCN','ULHCL', 'LLHCL')
 

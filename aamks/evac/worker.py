@@ -76,6 +76,7 @@ class Worker:
         self.server_socket = None
         self.connection_thread = None
         self.cfast_door_opening_level = {}
+        self.exit_code = None
 
 
     def get_logger(self, logger_name):
@@ -887,6 +888,7 @@ class Worker:
             report['psql']['detection'] = int(self.detection_time)
             report['psql']['status'] = 0
             
+        self.exit_code = report['psql']['status']
         self.wlogger.info('Metadata prepared successfully')
 
         return report
@@ -969,7 +971,9 @@ class Worker:
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
-        self.wlogger.info('Simulation ended successfully')
+        self.wlogger.info(f'Simulation ended with status {self.exit_status}')
+
+        return self.exit_status
 
     def test(self):
         self.get_config()

@@ -7,19 +7,17 @@ import sys
 import os
 import json
 import shutil
-from include import Json
-from include import Psql
-from include import Sqlite
-from include import Dump as dd
-from include import SimIterations
-from include import Vis
-from include import GetUserPrefs
-from geom.nav import Navmesh
 import subprocess
 import logging
 import sys
 
+from aamks.include import Json, Psql, Sqlite, SimIterations, Vis, GetUserPrefs
+from aamks.include import Dump as dd
+from aamks.geom.nav import Navmesh
+
+
 logger = logging.getLogger('AAMKS.init.py')
+
 
 class OnInit():
     def __init__(self):# {{{
@@ -32,6 +30,8 @@ class OnInit():
         self._clear_srv_anims()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 2)
         self._clear_sqlite()
+        self.irange = SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations']).get()
+        
         self._setup_simulations()
         self._create_sqlite_tables()
         self.s.close()
@@ -105,8 +105,7 @@ class OnInit():
         workers_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
         os.makedirs(workers_dir, mode = 0o777, exist_ok=True)
 
-        irange=self._create_iterations_sequence()
-        for i in range(*irange):
+        for i in range(*self.irange):
             sim_dir="{}/{}".format(workers_dir,i)
             os.makedirs(sim_dir, mode=0o777, exist_ok=True)
             self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
