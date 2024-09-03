@@ -12,6 +12,10 @@ import os
 import sqlite3
 import sys
 
+# load envvars directly to python
+from dotenv import load_dotenv
+load_dotenv()
+
 
 class Dump:# {{{
     def __init__(self,*args):
@@ -192,7 +196,7 @@ class Psql: # {{{
 
     def dump(self):
         self.json=Json()
-        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.conf=self.json.read(os.path.join("os.environ['AAMKS_PROJECT']", "aamks", "conf.json"))
         print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         for i in self.query("SELECT id,project,iteration,to_char(current_timestamp, 'Mon.DD HH24:MI'),data FROM simulations WHERE project=%s ORDER BY id", (self._project_name,) ):
             print(i)

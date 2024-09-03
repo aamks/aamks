@@ -5,7 +5,6 @@ import os
 import random
 import re
 import sys
-sys.path.insert(1, '/usr/local/aamks')
 from numpy import array, prod, log, where, diff
 from results.beck_new import RiskIteration as RI
 from evac.evacuee import Evacuee
@@ -35,8 +34,6 @@ if 'AAMKS_SKIP_CFAST' in os.environ:
 class Worker:
 
     def __init__(self, redis_worker_pwd = None, AA=None):
-        self.json=Json()
-        self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
         if AA:
             AA['PROJECT'] = AA['PROJECT'].replace("home","mnt")
             os.environ['AAMKS_PROJECT'] = AA['PROJECT']
@@ -46,8 +43,16 @@ class Worker:
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
-        # self.working_dir = "/mnt/aamks_users/akamienski@consultrisk.pl/dddd/kuziora/workers/3" 
-        self.project_dir=self.working_dir.split("/workers/")[0]
+        self.project_dir, sim_id = self.working_dir.split("/workers/")
+
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.json=Json()
+        self.json.s = self.s
+        self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
         self.vars = OrderedDict()
@@ -100,7 +105,7 @@ class Worker:
 
     def get_config(self):
         try:
-            f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
+            f = open(os.path.join(os.environ['AAMKS_PATH'], 'aamks', 'evac', 'config.json'), 'r')
             self.config = json.load(f)
         except Exception as e:
             print(e)
@@ -133,10 +138,12 @@ class Worker:
         if self.project_conf['fire_model'] == 'CFAST':
             if os.getcwd() != self.working_dir:
                 os.chdir(self.working_dir)
-            os.system('ln -s /usr/local/aamks/fire/cfast7_linux_64 .')
-            os.system('ln -s /usr/local/aamks/fire/c_socket_handler.so .')
+            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/aamks/fire/cfast7_linux_64 .')
+            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/aamks/fire/c_socket_handler.so .')
             command = ["./cfast7_linux_64", "cfast.in", "arg1", "arg2"]
-            subprocess.Popen(command)
+            
+            if not subprocess.Popen(command):
+                raise RuntimeError('Error while executing cfast')
             self.connection_thread.join()
             #below message is is the first message received from cfastafter cfast_compartemnts.csv already has row t=0s.
             #it is needed for proper functioning of the self.prepare_simulations() function.
@@ -144,7 +151,6 @@ class Worker:
             
 
     def create_geom_database(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL')
         floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%'")
@@ -412,7 +418,7 @@ class Worker:
             try:
                 self.prepare_staircases(str(floor))
                 self.vars['conf']['project_dir'] = self.project_dir
-                eenv = EvacEnv(self.vars['conf'])
+                eenv = EvacEnv(self.vars['conf'], self.sim_id)
                 eenv.floor = floor
             except Exception as e:
                 self.wlogger.error(e)
@@ -453,7 +459,7 @@ class Worker:
 
         for floor in self.floors:
             try:
-                floor.smoke_query = PartitionQuery(floor=floor.floor)
+                floor.smoke_query = PartitionQuery(floor=floor.floor, sim_id=self.sim_id)
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":32})

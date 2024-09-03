@@ -6,9 +6,7 @@ function projects_list(){/*{{{*/
 	$current_project = $_SESSION['main']['project_name'];
 	$current_scenario = $_SESSION['main']['scenario_name'];
 	$current_scenario_id = $_SESSION['main']['scenario_id'];
-    echo $current_project.' | ';
-    echo$current_scenario.' | ';
-    echo $current_scenario_id.' | ';
+    echo var_dump(getenv());
 	$r=$_SESSION['nn']->query("SELECT id, project_name FROM projects WHERE user_id=$1 ORDER BY modified DESC", array($_SESSION['main']['user_id'] ));
 	echo '<table>';
 	echo '<tr><th>projects<th>date<th>add scenario<th>scenarios<th>delete';

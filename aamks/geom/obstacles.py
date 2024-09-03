@@ -23,11 +23,16 @@ from include import Vis
 # }}}
 
 class Obstacles():
-    def __init__(self):# {{{
+    def __init__(self, sim_id=None):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.fire_model=self.conf['fire_model'];
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.json.s = self.s
         self.world_meta=self.json.readdb("world_meta")
         self.floors_meta=self.json.readdb("floors_meta")
         self.floors=self.floors_meta.keys()

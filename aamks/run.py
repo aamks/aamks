@@ -2,18 +2,18 @@ import locale
 import os
 import sys
 import logging
-locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+#locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
-from aamks.manager.init import OnInit, OnEnd
-from aamks.geom.cfast_importer import CFASTimporter
-from aamks.geom.world2d import World2d
-from aamks.geom.obstacles import Obstacles
-from aamks.fire.cfast_partition import CfastPartition
-from aamks.fire.partition_query import PartitionQuery
-from aamks.montecarlo.cfast_mcarlo import CfastMcarlo
-from aamks.montecarlo.evac_mcarlo import EvacMcarlo
-from aamks.include import SimIterations
-from aamks.include import Json
+from manager.init import OnInit, OnEnd
+from geom.cfast_importer import CFASTimporter
+from geom.world2d import World2d
+from geom.obstacles import Obstacles
+from fire.cfast_partition import CfastPartition
+from fire.partition_query import PartitionQuery
+from montecarlo.cfast_mcarlo import CfastMcarlo
+from montecarlo.evac_mcarlo import EvacMcarlo
+from include import SimIterations, Json
+from evac.worker import Worker
 
 def prepare_logger(path):
     log_file = path + '/aamks.log' if path else os.getenv('AAMKS_PROJECT') + '/aamks.log'
@@ -83,23 +83,23 @@ def start_aamks_with_slurm(path: str, user_id: int, sim_id: int):
 
     logger.warning(f'Preparing {sim_id} - conf.json imported')
     logger.info('calling OnInit()')
-    OnInit()
+    OnInit(sim_id=sim_id)
     logger.info('finished OnInit()')
     
     logger.info('calling CFASTimporter()')
-    CFASTimporter()
+    CFASTimporter(sim_id=sim_id)
     logger.info('finished CFASTimporter()')
 
     logger.info('calling World2d()')
-    World2d()
+    World2d(sim_id=sim_id)
     logger.info('finished World2d()')
 
     logger.info('calling Obstacles()')
-    Obstacles()
+    Obstacles(sim_id=sim_id)
     logger.info('finished Obstacles()')
 
     logger.info('calling CfastPartition()')
-    CfastPartition()
+    CfastPartition(sim_id=sim_id)
     logger.info('finished CfastPartition()')
 
     logger.info('calling CfastMcarlo()')
@@ -117,13 +117,18 @@ def start_aamks_with_slurm(path: str, user_id: int, sim_id: int):
     logger.info('calling evac_mc.do_iterations()')
     evac_mc.do_iterations()
     logger.info('finished evac_mc.do_iterations()')
+
     logger.info(f'{sim_id} prepared successfully. Launching...')
 
     logger.info('calling evac.Worker')
-    w = Worker()
+    w = Worker(redis_worker_pwd=os.path.join(path, "workers", sim_id))
     status = w.run_worker()
-    
     logger.info('finished evac.Worker')
+    
+    logger.info('calling OnEnd()')
+    OnEnd(sim_id=sim_id)
+    logger.info('finished OnEnd()')
+
     logger.info(f'{sim_id} finished with status {status}')
 
 

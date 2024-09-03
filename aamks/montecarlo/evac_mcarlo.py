@@ -65,8 +65,13 @@ class EvacMcarlo:
         self._sim_id = sim_id
         ''' Generate montecarlo evac.conf. '''
 
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{self._sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
+        self.json.s = self.s
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
@@ -298,8 +303,8 @@ class EvacMcarlo:
         self.s.query('INSERT INTO dispatched_evacuees VALUES (?)', (json.dumps(m),))
         
     
-    def do_iteration():
-        seed(self._sim_id)
+    def do_iterations(self):
+        #seed(self._sim_id)
         self._fire_obstacle()
         self._static_evac_conf()
         self._dispatch_evacuees()

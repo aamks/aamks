@@ -11,16 +11,16 @@ import subprocess
 import logging
 import sys
 
-from aamks.include import Json, Psql, Sqlite, SimIterations, Vis, GetUserPrefs
-from aamks.include import Dump as dd
-from aamks.geom.nav import Navmesh
+from include import Json, Psql, Sqlite, SimIterations, Vis, GetUserPrefs
+from include import Dump as dd
+from geom.nav import Navmesh
 
 
 logger = logging.getLogger('AAMKS.init.py')
 
 
-class OnInit():
-    def __init__(self):# {{{
+class OnInit:
+    def __init__(self, sim_id=None):# {{{
         ''' Stuff that happens at the beggining of the project '''
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -29,6 +29,10 @@ class OnInit():
         self.p=Psql()
         self._clear_srv_anims()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 2)
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            shutil.copy(os.path.join(os.environ['AAMKS_PROJECT'], "aamks.sqlite"), new_sql_path)
+            self.s=Sqlite(new_sql_path)
         self._clear_sqlite()
         self.irange = SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations']).get()
         
@@ -118,9 +122,15 @@ class OnInit():
 # }}}
 
 class OnEnd():
-    def __init__(self):# {{{
+    def __init__(self, sim_id=None):# {{{
         ''' Stuff that happens at the end of the project '''
         logger.info('start OnEnd()')
+        if os.environ['AAMKS_WORKER']=='slurm':
+            # works will be registered as slurm array by slurm.py
+            # nothing to do except for removing sim aamks.sqlite
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            os.remove(new_sql_path)
+            return
         self.json=Json()
         self.uprefs=GetUserPrefs()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))

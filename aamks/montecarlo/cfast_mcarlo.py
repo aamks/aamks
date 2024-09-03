@@ -54,11 +54,11 @@ class CfastMcarlo():
         ''' Generate montecarlo cfast.in. Log what was drawn to psql. '''
         self.json=Json()
         self.read_json()
-        self.create_sqlite_db()
         self._sim_id = sim_id
+        self.create_sqlite_db()
         # why seed is used - it eliminates 'free' nature of pseudo-random
         #seed(self._sim_id)
-        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
+        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'aamks', 'evac', 'config.json'))
         self.p = Psql()
         self.__draw()
 
@@ -94,10 +94,15 @@ class CfastMcarlo():
             return table
 
     def read_json(self):
+        print(os.environ['AAMKS_PROJECT'])
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 
     def create_sqlite_db(self):
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{self._sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         t_name= ""
         try:
             t_name = self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
@@ -135,7 +140,7 @@ class CfastMcarlo():
 
         with open("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), "w") as output:
             output.write("\n".join(filter(None,txt)))
-        os.chmod("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)
+        #os.chmod("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)
 # }}}
     def _section_preamble(self):# {{{
         if self.conf['simulation_time'] > 3600 or self.config['SMOKE_QUERY_RESOLUTION'] != 1:
@@ -410,7 +415,7 @@ class DrawAndLog:
         self.json = Json()
         self.__read_json()
         self.__connectDB()
-        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
+        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'aamks', 'evac', 'config.json'))
         self._scen_fuel = {}
         self._fire = None
         self._fires = []
@@ -422,7 +427,11 @@ class DrawAndLog:
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 
     def __connectDB(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{self._sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.data_for_psql=OrderedDict()
         self.__new_psql_log()
 

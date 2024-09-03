@@ -2,37 +2,54 @@ import argparse
 from simple_slurm import Slurm
 import os
 
-from aamks.manager.init import OnInit, OnEnd
-from aamks.include import SimIterations, Psql
+from include import SimIterations, Psql, Json
 
+def_args = [
+        '--cpus_per_task', 1, 
+        '--output', "slurm.out",
+        '--error', "slurm.err"
+        ]
+python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "python")}'
 
 # launch aamks jobs
 def launch(path: str, user_id: int):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
-    slaunch = Slurm(partition='aamks-worker', cpus_per_task=1)
-    # OnInit loads config, creates iteration sequence, creates directories and insert template records into DB
-    oi = OnInit()
+    slurm = Slurm()
+    slurm.add_arguments(*def_args)
+    slurm.set_partition('aamks-worker')
+    slurm.set_account(user_id)
+    slurm.set_chdir(path)
+    # we need to define job array
+    conf = Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+    irange = SimIterations(conf['project_id'], conf['scenario_id'], conf['number_of_simulations']).get()
+    irange = []
+    irange.append(Psql().query(f"SELECT max(iteration)+1 FROM simulations WHERE project={conf['project_id']} AND scenario_id={conf['scenario_id']}")[0][0])
+    irange.append(irange[0] + conf['number_of_simulations'])
     # we use slurm array to quickly batch many jobs
-    slaunch.array=range(*oi.irange)
+    slurm.set_array(range(*irange))
     # res/mgr/aamks prepares simulation files (cfast and evac) and starts worker process afterwards
-    slaunch.job_name = f'{oi.project_id}:{oi.scenario_id}'
+    slurm.job_name = f'{conf["project_id"]}:{conf["scenario_id"]}'
     try:
-        job_id = slaunch.sbatch(f'python {os.path.join(os.environ["AAMKS_PATH"], "aamks.py")} {path} {user_id}', slaunch.SLURM_ARRAY_TASK_ID)
+        job_id = slurm.sbatch(f'{python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "aamks", "run.py")} {path} {user_id}', slurm.SLURM_ARRAY_TASK_ID)
     except AssertionError:
         raise AssertionError("sbatch was unable to launch your jobs. Make sure slurmctld is running and set properly.")
     # log slurm job_id to PSQL (that could be done in PSQL itself with generate_series - to be considered
-    for i in range(*oi.irange):
-        Psql().query(f"""UPDATE simulations SET job_id='{job_id}_{i}'
-                WHERE project={oi.project_id} AND scenario_id={oi.scenario_id} AND iteration={i}""")
+    print(slurm)
+    for i in range(*irange):
+        Psql().query("INSERT INTO simulations(iteration,project,scenario_id,job_id) VALUES(%s,%s,%s,%s)", (i,conf['project_id'], conf['scenario_id'], f'{job_id}_{i}'))
 
 
 
 # launch postprocessing
 def postprocess(path: str, scenarios: str):
-    spostprocess = Slurm(partition='aamks-server', cpus_per_task=1)
+    slurm = Slurm()
+    slurm.add_arguments(*def_args)
+    slurm.set_partition('aamks-server')
+    slurm.set_account('aamks')
+    slurm.set_chdir(path)
     try:
-        job_id = spostprocess.sbatch(f'python {os.path.join(os.environ["AAMKS_PATH"], "results", "beck_new.py")} {path} {scenarios}')
+        job_id = slurm.sbatch(f'{python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "results", "beck_new.py")} {path} {scenarios}')
     except AssertionError:
         raise AssertionError("sbatch was unable to launch your jobs. Make sure slurmctld is running and set properly.")
     return job_id
@@ -40,9 +57,13 @@ def postprocess(path: str, scenarios: str):
 
 # prepare animation files
 def animation(path: str, project_id: int, scenario_id: id, iteration: int):
-    sanimation = Slurm(partition='aamks-server', cpus_per_task=1)
+    slurm = Slurm()
+    slurm.add_arguments(*def_args)
+    slurm.set_partition('aamks-server')
+    slurm.set_account('aamks')
+    slurm.set_chdir(path)
     try:
-        job_id = sanimation.sbatch(f'python {os.path.join(os.environ["AAMKS_PATH"], "results", "beck_anim.py")} {path} {project_id} {scenario_id} {iteration}')
+        job_id = slurm.sbatch(f'{python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "results", "beck_anim.py")} {path} {project_id} {scenario_id} {iteration}')
     except AssertionError:
         raise AssertionError("sbatch was unable to launch your jobs. Make sure slurmctld is running and set properly.")
     return job_id
