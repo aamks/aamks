@@ -24,8 +24,8 @@ def launch(path: str, user_id: int):
     slurm.set_partition('aamks-worker')
     slurm.set_account(user_id)
     slurm.set_chdir(path)
-    slurm.set_output(f'slurm_%a.out')
-    slurm.set_error(f'slurm_%a.err')
+    slurm.set_output(f'workers/%a/slurm.out')
+    slurm.set_error(f'workers/%a/slurm.err')
 
     # we need to define job array
     max_iter_query = f'SELECT max(iteration)+1 FROM simulations WHERE project={p_id} AND scenario_id={s_id}'
@@ -47,7 +47,6 @@ def launch(path: str, user_id: int):
         raise AssertionError("sbatch was unable to launch your jobs. Make sure slurm is running and set properly.")
 
     # log slurm job_id to PSQL (that could be done in PSQL itself with generate_series - to be considered
-    print(slurm)    # development feature - to be removed in prod
     for i in range(*irange):
         Psql().query("INSERT INTO simulations(iteration,project,scenario_id,job_id) VALUES(%s,%s,%s,%s)", 
                 (i,conf['project_id'], conf['scenario_id'], f'{job_id}_{i}'))

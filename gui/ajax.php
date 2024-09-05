@@ -96,9 +96,13 @@ function ajaxLaunchSimulation() { #{{{
 
 	$exit_code = run_aamks($working_home, $user_id);
     if ($exit_code){
-        echo json_encode(array("msg"=>"Error in launching simulations: ($exit_code)", "err"=>1, "data"=>''));
+	    if (strpos($exit_code, "Submitted batch job") !== false){
+		echo json_encode(array("msg"=>"$nos ".getenv('AAMKS_WORKER')." simulations launched ($exit_code)", "err"=>0, "data"=>''));
+	    }else{
+		echo json_encode(array("msg"=>"Error in launching simulations: ($exit_code)", "err"=>1, "data"=>''));
+		    }
     }else{
-        echo json_encode(array("msg"=>"$nos ".getenv('AAMKS_WORKER')." simulations launched ($exit_code)", "err"=>0, "data"=>''));
+        echo json_encode(array("msg"=>"$nos ".getenv('AAMKS_WORKER')." simulations launched", "err"=>0, "data"=>''));
     }
 
 }
