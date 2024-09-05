@@ -977,9 +977,9 @@ class Worker:
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
-        self.wlogger.info(f'Simulation ended with status {self.exit_status}')
+        self.wlogger.info(f'Simulation ended with status {self.exit_code}')
 
-        return self.exit_status
+        return self.exit_code
 
     def test(self):
         self.get_config()

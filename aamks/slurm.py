@@ -5,9 +5,8 @@ import os
 from include import SimIterations, Psql, Json
 
 def_args = [
-        '--cpus_per_task', 1, 
-        '--output', "slurm.out",
-        '--error', "slurm.err"
+        '--ntasks', 1,
+        '--ntasks_per_core', 1,
         ]
 python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "python")}'
 
@@ -15,57 +14,85 @@ python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "pyth
 def launch(path: str, user_id: int):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
+    conf = Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+    p_id = conf['project_id']
+    s_id = conf['scenario_id']
+
+    # initiate slurm wrapper
     slurm = Slurm()
     slurm.add_arguments(*def_args)
     slurm.set_partition('aamks-worker')
     slurm.set_account(user_id)
     slurm.set_chdir(path)
+    slurm.set_output(f'slurm_%a.out')
+    slurm.set_error(f'slurm_%a.err')
+
     # we need to define job array
-    conf = Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-    irange = SimIterations(conf['project_id'], conf['scenario_id'], conf['number_of_simulations']).get()
+    max_iter_query = f'SELECT max(iteration)+1 FROM simulations WHERE project={p_id} AND scenario_id={s_id}'
+    max_iter = Psql().query(max_iter_query)[0][0] 
     irange = []
-    irange.append(Psql().query(f"SELECT max(iteration)+1 FROM simulations WHERE project={conf['project_id']} AND scenario_id={conf['scenario_id']}")[0][0])
+    irange.append(max_iter if max_iter else 1)
     irange.append(irange[0] + conf['number_of_simulations'])
-    # we use slurm array to quickly batch many jobs
+
+    # instead of default loop in aamks.py we use slurm array to quickly batch many jobs
     slurm.set_array(range(*irange))
-    # res/mgr/aamks prepares simulation files (cfast and evac) and starts worker process afterwards
-    slurm.job_name = f'{conf["project_id"]}:{conf["scenario_id"]}'
+
+    # run.py (former aamks.py) prepares simulation files (cfast and evac) and starts worker process afterwards
+    # with slurm those tasks are performed for each iteration separately
+    slurm.job_name = f'{p_id}:{s_id}'
+    command = f'srun {python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "aamks", "run.py")} {path} {user_id}'
     try:
-        job_id = slurm.sbatch(f'{python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "aamks", "run.py")} {path} {user_id}', slurm.SLURM_ARRAY_TASK_ID)
+        job_id = slurm.sbatch(command, slurm.SLURM_ARRAY_TASK_ID)
     except AssertionError:
-        raise AssertionError("sbatch was unable to launch your jobs. Make sure slurmctld is running and set properly.")
+        raise AssertionError("sbatch was unable to launch your jobs. Make sure slurm is running and set properly.")
+
     # log slurm job_id to PSQL (that could be done in PSQL itself with generate_series - to be considered
-    print(slurm)
+    print(slurm)    # development feature - to be removed in prod
     for i in range(*irange):
-        Psql().query("INSERT INTO simulations(iteration,project,scenario_id,job_id) VALUES(%s,%s,%s,%s)", (i,conf['project_id'], conf['scenario_id'], f'{job_id}_{i}'))
+        Psql().query("INSERT INTO simulations(iteration,project,scenario_id,job_id) VALUES(%s,%s,%s,%s)", 
+                (i,conf['project_id'], conf['scenario_id'], f'{job_id}_{i}'))
 
 
 
 # launch postprocessing
-def postprocess(path: str, scenarios: str):
+def postprocess(path: str, scenarios: list):
+    # initiate slurm wrapper
     slurm = Slurm()
     slurm.add_arguments(*def_args)
     slurm.set_partition('aamks-server')
     slurm.set_account('aamks')
     slurm.set_chdir(path)
+    slurm.set_output(f'slurm_pp.out')
+    slurm.set_error(f'slurm_pp.err')
+
+    # add a job to priority aamks-server partition
+    command = f'{python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "aamks", "results", "beck_new.py")} {path} {" ".join(scenarios)}'
+    print(slurm)
+    print(command)
     try:
-        job_id = slurm.sbatch(f'{python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "results", "beck_new.py")} {path} {scenarios}')
+        job_id = slurm.sbatch(command)
     except AssertionError:
-        raise AssertionError("sbatch was unable to launch your jobs. Make sure slurmctld is running and set properly.")
+        raise AssertionError("sbatch was unable to launch your jobs. Make sure slurm is running and set properly.")
     return job_id
 
 
 # prepare animation files
-def animation(path: str, project_id: int, scenario_id: id, iteration: int):
+def animation(path: str, project_id: int, scenario_id: int, iteration: int):
+    # initiate slurm wrapper
     slurm = Slurm()
     slurm.add_arguments(*def_args)
     slurm.set_partition('aamks-server')
     slurm.set_account('aamks')
     slurm.set_chdir(path)
+    slurm.set_output(f'slurm_a.out')
+    slurm.set_error(f'slurm_a.err')
+
+    # add a job to priority aamks-server partition
+    command = f'{python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "aamks", "results", "beck_anim.py")} {path} {project_id} {scenario_id} {iteration}'
     try:
-        job_id = slurm.sbatch(f'{python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "results", "beck_anim.py")} {path} {project_id} {scenario_id} {iteration}')
+        job_id = slurm.sbatch(command)
     except AssertionError:
-        raise AssertionError("sbatch was unable to launch your jobs. Make sure slurmctld is running and set properly.")
+        raise AssertionError("sbatch was unable to launch your jobs. Make sure slurm is running and set properly.")
     return job_id
 
 
@@ -90,7 +117,7 @@ def _argparse():
     parser.add_argument('-p', '--path', help='Path to AAMKS scenario', required=False)
     parser.add_argument('-u','--userid', help='AAMKS user ID', required=False)
     parser.add_argument('-r', '--project', help='AAMKS project ID', required=False)
-    parser.add_argument('-s', '--scenario', help='AAMKS scenario ID or scenario names to be compared (see results.beck_new)', required=False, default="")
+    parser.add_argument('-s', '--scenario', nargs='*', help='AAMKS scenario ID or scenario names to be compared (see results.beck_new)', required=False, default=[])
     parser.add_argument('-i', '--iteration', help='Iteration no.', required=False)
 
     return parser.parse_args()
@@ -112,7 +139,7 @@ if __name__ == '__main__':
     elif args.type in ['a', 'animation']:
         if not all([args.path, args.project, args.scenario, args.iteration]):
             raise Exception('Specify path, project, scenario and iteration arguments with -p, -r, -s and -i flags')
-        animation(args.path, args.project, args.scenario, args.iteration)
+        animation(args.path, args.project, int(args.scenario[0]), args.iteration)
 
     elif args.type in ['d', 'removejobs']:
         if not all([args.path, args.userid, args.scenario]):

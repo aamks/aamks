@@ -880,7 +880,14 @@ class PostProcess:
 
         self.save()
         tm('save')
-        Report(self.data, self.dir).make()
+        try:
+            Report(self.data, self.dir).make()
+            tm('report saved OK')
+            return True
+        except:
+            tm('report not saved ERROR')
+            return False
+
 
 
 class Report:
@@ -914,7 +921,7 @@ class Report:
     def _preamble(self):
         self.doc.packages.append(Package('array'))
         self.doc.preamble.append(Command('title', self.title))
-        self.doc.preamble.append(NoEscape(r'\title{\includegraphics[width=4cm]{/usr/local/aamks/gui/logo.png}\\'+self.title+'}'))
+        self.doc.preamble.append(NoEscape(r'\title{\includegraphics[width=4cm]{'+os.environ["AAMKS_PATH"]+r'/gui/logo.png}\\'+self.title+'}'))
         self.doc.preamble.append(Command('author', self.author))
         self.doc.preamble.append(Command('date', NoEscape(r'\today')))
         self.doc.append(NoEscape(r'\maketitle'))
@@ -924,7 +931,7 @@ class Report:
         header = PageStyle("header", header_thickness=1)
         # Create left header
         with header.create(Head("L")):
-            header.append(NoEscape(r'\includegraphics[width=1.5cm]{/usr/local/aamks/gui/logo.png}\\'))
+            header.append(NoEscape(r'\includegraphics[width=1.5cm]{'+os.environ["AAMKS_PATH"]+'/gui/logo.png}\\'))
         # Create center header
         with header.create(Head("C")):
             header.append("Auto-generated from AAMKS webGUI")
@@ -1208,7 +1215,13 @@ class Comparison:
     def save(self):
         [self._zip_ext(i) for i in [('txt', '.txt'), ('picts', '.png', '.jpg', '.jpeg'), ('csv', '.csv')]]
         self._zip_full()
-        Report(self.data, self.dir.rstrip("/picts")).make_multiple()
+        try:
+            Report(self.data, self.dir.rstrip("/picts")).make_multiple()
+            tm('report saved OK')
+            return True
+        except:
+            tm('report not saved ERROR')
+            return False
 
     # run summarize across all scenarios and copy data
     def _summarize_all(self):

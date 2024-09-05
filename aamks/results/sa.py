@@ -2,8 +2,7 @@ import sys
 import numpy as np
 import os
 import re
-sys.path.insert(0, '/usr/local/aamks')
-from include import Sqlite, Psql, Json
+from aamks.include import Sqlite, Psql, Json
 import json
 from statistics import mean 
 from scipy.stats import spearmanr

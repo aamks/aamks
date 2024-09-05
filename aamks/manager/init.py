@@ -112,7 +112,8 @@ class OnInit:
         for i in range(*self.irange):
             sim_dir="{}/{}".format(workers_dir,i)
             os.makedirs(sim_dir, mode=0o777, exist_ok=True)
-            self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
+            if os.environ['AAMKS_WORKER'] != 'slurm':
+                self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
 
 # }}}
     def _create_sqlite_tables(self): # {{{
@@ -127,9 +128,10 @@ class OnEnd():
         logger.info('start OnEnd()')
         if os.environ['AAMKS_WORKER']=='slurm':
             # works will be registered as slurm array by slurm.py
-            # nothing to do except for removing sim aamks.sqlite
+            # nothing to do except for updating aamks.sqlite with latest sim sqlite and Vis (possible conflicts?)
             new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
-            os.remove(new_sql_path)
+            os.replace(new_sql_path, os.path.join(os.environ['AAMKS_PROJECT'], "aamks.sqlite"))
+            Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
             return
         self.json=Json()
         self.uprefs=GetUserPrefs()
