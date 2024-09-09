@@ -653,12 +653,24 @@ function validation_advanced(){
 	fuel.addEventListener('change', (e) => {
 		const molecule_table = document.getElementById('molecule-table')
 		const molecule_switch = document.getElementById('molecule-switch')
+		const heat_table = document.getElementById('heatcom-table')
+		const heat_switch = document.getElementById('heatcom-switch')
+		const yields_table = document.getElementById('yields-table')
+		const yields_switch = document.getElementById('yields-switch')
 		if(e.target.value == 'user'){ 
 			molecule_table.className = 'noborder';
 			molecule_switch.className = 'no-display';
+			heat_table.className = 'noborder';
+			heat_switch.className = 'no-display';
+			yields_table.className = 'noborder';
+			yields_switch.className = 'no-display';
 		}else{
 			molecule_table.className = 'noborder no-display';
 			molecule_switch.className = 'grey';
+			heat_table.className = 'noborder no-display';
+			heat_switch.className = 'grey';
+			yields_table.className = 'noborder no-display';
+			yields_switch.className = 'grey';
 		}
 	});
 	document.getElementById('form').addEventListener('submit', function(e) {

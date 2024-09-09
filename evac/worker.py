@@ -883,7 +883,7 @@ class Worker:
                 report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
                 report['floor'] = num_floor
             report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
-
+            # report['psql']['i_risk'] = report['psql']['i_risk'][:-1] + ", " + json.dumps(self.project_conf)[1:]
             report['psql']['detection'] = int(self.detection_time)
             report['psql']['status'] = 0
             

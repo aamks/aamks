@@ -21,7 +21,7 @@ from zipfile import ZipFile
 import logging
 from pylatex import Document, Section, Subsection, Itemize, Command, Figure, MultiColumn, Package
 from pylatex.utils import italic, bold, NoEscape
-from pylatex.table import Tabular
+from pylatex.table import Tabular, LongTable
 from pylatex.basic import NewPage, LineBreak
 from pylatex.headfoot import PageStyle, Head, simple_page_number
 
@@ -40,17 +40,19 @@ def calc_rmse(p: float, n: float, confidence: float = None):
 class GetData:
     def __init__(self, scenario_dir):
         self.dir = scenario_dir
+        self.raw = {}
         self.configs = self._get_json(f'{scenario_dir}/conf.json')
         self.p = Psql()
         self.s = Sqlite(f'{self.dir}/aamks.sqlite', 2)
         self.check_results()
-        self.raw = {}
 
     def _get_json(self, path):
         f = open(path, 'r')
         dump = json.load(f, object_pairs_hook=OrderedDict)
         f.close()
+        self.raw['input_data'] = dump
         return dump
+
     def check_results(self):
         sql = self.s.query('SELECT * FROM sqlite_master WHERE type="table"')
         if not sql:
@@ -935,6 +937,127 @@ class Report:
         self.doc.preamble.append(header)
         self.doc.change_document_style("header")
 
+    def _make_input_rows(self, scen):
+        data = {}
+        if self.scenario_no > 1:
+            data['input_data'] = self.data['input_data'][scen]
+        else:
+            data['input_data'] = self.data['input_data']
+        rows = {'FIRE SUB-MODEL':[], 'EVACUATION SUB-MODEL':[], 'RESCUE SUB-MODEL':[]}
+        rows['FIRE SUB-MODEL'].append(['Indoor temperature', f'mean - {data["input_data"]["indoor_temperature"]["mean"]} ℃',
+                                       f'sd - {data["input_data"]["indoor_temperature"]["sd"]} ℃'])
+        rows['FIRE SUB-MODEL'].append(['Outdoor temperature', f'mean - {data["input_data"]["outdoor_temperature"]["mean"]} ℃',
+                                       f'sd - {data["input_data"]["outdoor_temperature"]["sd"]} ℃'])
+        rows['FIRE SUB-MODEL'].append(['Pressure', f'mean - {data["input_data"]["pressure"]["mean"]}',
+                                       f'sd - {data["input_data"]["pressure"]["sd"]}'])
+        rows['FIRE SUB-MODEL'].append(['Humidity', f'mean - {data["input_data"]["humidity"]["mean"]}',
+                                       f'sd - {data["input_data"]["humidity"]["sd"]}'])
+        rows['FIRE SUB-MODEL'].append(['Ceiling', f'material - {data["input_data"]["material_ceiling"]["type"]}',
+                                       f'thickness - {data["input_data"]["material_ceiling"]["thickness"]}'])
+        rows['FIRE SUB-MODEL'].append(['Floor', f'material - {data["input_data"]["material_floor"]["type"]}',
+                                       f'thickness - {data["input_data"]["material_floor"]["thickness"]}'])
+        rows['FIRE SUB-MODEL'].append(['Wall', f'material - {data["input_data"]["material_wall"]["type"]}',
+                                       f'thickness - {data["input_data"]["material_wall"]["thickness"]}'])
+        windows = data["input_data"]["windows"]
+        for window in windows:
+            rows['FIRE SUB-MODEL'].append(['Windows openness', f'{window["min"]} ℃ - {window["max"]} ℃',
+                                       f'probability: quarter {window["quarter"]}, full {window["full"]}'])
+        rows['FIRE SUB-MODEL'].append(['Windows breaking criterion', f'{data["input_data"]["windows_break"]["criterion"].lower()}',
+                                       f'setpoint - {data["input_data"]["windows_break"]["setpoint"]} [℃ / kW/m2]'])
+        rows['FIRE SUB-MODEL'].append(['Doors breaking criterion', f'{data["input_data"]["doors_break"]["criterion"].lower()}',
+                                       f'setpoint - {data["input_data"]["doors_break"]["setpoint"]} [℃ / kW/m2]'])
+        rows['FIRE SUB-MODEL'].append(['Openings', f'DELECTR - {data["input_data"]["vents_open"]["DELECTR"]}, '\
+                                       f'DCLOSER - {data["input_data"]["vents_open"]["DCLOSER"]}',
+                                       f'DOOR - {data["input_data"]["vents_open"]["DOOR"]}, '\
+                                       f'VVENT - {data["input_data"]["vents_open"]["VVENT"]}'])
+        rows['FIRE SUB-MODEL'].append(['Heat detectors', f'mean - {data["input_data"]["heat_detectors"]["mean"]} ℃, sd - {data["input_data"]["heat_detectors"]["sd"]} ℃',
+                                       f'RTI - {data["input_data"]["heat_detectors"]["RTI"]}, reliability - {data["input_data"]["heat_detectors"]["not_broken"]}'])
+        rows['FIRE SUB-MODEL'].append(['Smoke detectors', f'mean - {data["input_data"]["smoke_detectors"]["mean"]} ℃, sd - {data["input_data"]["smoke_detectors"]["sd"]} ℃',
+                                       f'reliability - {data["input_data"]["heat_detectors"]["not_broken"]}'])
+        rows['FIRE SUB-MODEL'].append(['Sprinklers', f'mean - {data["input_data"]["sprinklers"]["mean"]} ℃, sd - {data["input_data"]["sprinklers"]["sd"]} ℃',
+                                       f'density mean - {data["input_data"]["sprinklers"]["density_mean"]}, density sd - {data["input_data"]["sprinklers"]["density_sd"]}, '\
+                                       f'RTI - {data["input_data"]["sprinklers"]["RTI"]}, reliability - {data["input_data"]["sprinklers"]["not_broken"]}'])
+        rows['FIRE SUB-MODEL'].append(['NSHEVS', f'activation time - {data["input_data"]["NSHEVS"]["activation_time"]} s',
+                                       f'start-up - {data["input_data"]["NSHEVS"]["startup_time"]} s'])
+        rows['FIRE SUB-MODEL'].append(['C constant', f'{data["input_data"]["c_const"]}',""])
+        rows['FIRE SUB-MODEL'].append(['Probability of fire in "ROOM"', f'{data["input_data"]["fire_starts_in_a_room"]}', ''])
+        rows['FIRE SUB-MODEL'].append(['HRRPUA', f'min - {data["input_data"]["hrrpua"]["min"]}, mode - {data["input_data"]["hrrpua"]["mode"]}',
+                                       f'max - {data["input_data"]["hrrpua"]["max"]}'])
+        rows['FIRE SUB-MODEL'].append(['Fire growth rate', f'min - {data["input_data"]["hrr_alpha"]["min"]}',
+                                       f'mode - {data["input_data"]["hrr_alpha"]["mode"]}, max - {data["input_data"]["hrr_alpha"]["max"]}'])
+        rows['FIRE SUB-MODEL'].append(['Radiative fraction', f'k - {data["input_data"]["radfrac"]["k"]}',f'theta - {data["input_data"]["radfrac"]["theta"]}'])
+        rows['FIRE SUB-MODEL'].append(['Fuel', f'{data["input_data"]["fuel"]}',''])
+        if data["input_data"]["fuel"] == 'user':
+            rows['FIRE SUB-MODEL'].append(['Molecule', 'C', f'{data["input_data"]["molecule"]["C"]}'])
+            rows['FIRE SUB-MODEL'].append(['Molecule', 'H', f'{data["input_data"]["molecule"]["H"]}'])
+            rows['FIRE SUB-MODEL'].append(['Molecule', 'O', f'{data["input_data"]["molecule"]["O"]}'])
+            rows['FIRE SUB-MODEL'].append(['Molecule', 'N', f'{data["input_data"]["molecule"]["N"]}'])
+            rows['FIRE SUB-MODEL'].append(['Molecule', 'Cl', f'{data["input_data"]["molecule"]["Cl"]}'])
+            rows['FIRE SUB-MODEL'].append(['Heat of combustion', f'mean - {data["input_data"]["heatcom"]["mean"]}',
+                                           f'sd - {data["input_data"]["heatcom"]["sd"]}'])
+            rows['FIRE SUB-MODEL'].append(['Yields soot', f'mean - {data["input_data"]["yields"]["soot"]["mean"]}',
+                                           f'sd - {data["input_data"]["yields"]["soot"]["sd"]}'])
+            rows['FIRE SUB-MODEL'].append(['Yields co', f'mean - {data["input_data"]["yields"]["co"]["mean"]}',
+                                           f'sd - {data["input_data"]["yields"]["co"]["sd"]}'])
+            rows['FIRE SUB-MODEL'].append(['Yields hcn', f'mean - {data["input_data"]["yields"]["hcn"]["mean"]}',
+                                           f'sd - {data["input_data"]["yields"]["hcn"]["sd"]}'])
+        if data["input_data"]["fire_load"]["room"]["mean"]:
+            rows['FIRE SUB-MODEL'].append(['Fire load', f'room mean - {data["input_data"]["fire_load"]["room"]["mean"]}',
+                                           f'room sd - {data["input_data"]["fire_load"]["room"]["sd"]}'])
+            rows['FIRE SUB-MODEL'].append(['Fire load', f'non room mean - {data["input_data"]["fire_load"]["non_room"]["mean"]}',
+                                           f'non room sd - {data["input_data"]["fire_load"]["non_room"]["sd"]}'])
+        else:
+            rows['FIRE SUB-MODEL'].append(['Fire load', f'room 1st - {data["input_data"]["fire_load"]["room"]["1st"]}',
+                                           f'room 99th - {data["input_data"]["fire_load"]["room"]["99th"]}'])
+            rows['FIRE SUB-MODEL'].append(['Fire load', f'non room 1st - {data["input_data"]["fire_load"]["non_room"]["1st"]}',
+                                           f'non room 99th - {data["input_data"]["fire_load"]["non_room"]["99th"]}'])
+        rows['FIRE SUB-MODEL'].append(['Subsequent fires trigger', f'criterion - {data["input_data"]["new_fire"]["criterion"].lower()}',
+                                        f'setpoint - {data["input_data"]["new_fire"]["setpoint"]} [℃ / kW/m2]'])
+        rows['EVACUATION SUB-MODEL'].append(['Evacuees dispatch mode',f'{data["input_data"]["dispatch_evacuees"]}', ''])
+        rows['EVACUATION SUB-MODEL'].append(['Alarming time',f'mean - {data["input_data"]["alarming"]["mean"]} s',
+                                            f'sd - {data["input_data"]["alarming"]["sd"]} s'])
+        if data["input_data"]["pre_evac"]["mean"]:
+            rows['EVACUATION SUB-MODEL'].append(['Pre-evacuation time',f'mean - {data["input_data"]["pre_evac"]["mean"]} s',
+                                                f'sd - {data["input_data"]["pre_evac"]["sd"]} s'])
+        else:
+            rows['EVACUATION SUB-MODEL'].append(['Pre-evacuation time',f'1st - {data["input_data"]["pre_evac"]["1st"]} s',
+                                                f'99th - {data["input_data"]["pre_evac"]["99th"]} s'])
+        if data["input_data"]["pre_evac_fire_origin"]["mean"]:
+            rows['EVACUATION SUB-MODEL'].append(['Pre-evacuation time in fire origin',f'mean - {data["input_data"]["pre_evac_fire_origin"]["mean"]} s',
+                                                f'sd - {data["input_data"]["pre_evac_fire_origin"]["sd"]} s'])
+        else:
+            rows['EVACUATION SUB-MODEL'].append(['Pre-evacuation time in fire origin',f'1st - {data["input_data"]["pre_evac_fire_origin"]["1st"]} s',
+                                                f'99th - {data["input_data"]["pre_evac_fire_origin"]["99th"]} s'])
+        rows['EVACUATION SUB-MODEL'].append(['Horizontal speed',f'mean - {data["input_data"]["evacuees_max_h_speed"]["mean"]}',
+                                            f'sd - {data["input_data"]["evacuees_max_h_speed"]["sd"]}'])
+        rows['EVACUATION SUB-MODEL'].append(['Vertical speed',f'mean - {data["input_data"]["evacuees_max_v_speed"]["mean"]}',
+                                            f'sd - {data["input_data"]["evacuees_max_v_speed"]["sd"]}'])
+        rows['EVACUATION SUB-MODEL'].append(['Alpha speed',f'mean - {data["input_data"]["evacuees_alpha_v"]["mean"]}',
+                                            f'sd - {data["input_data"]["evacuees_alpha_v"]["sd"]}'])
+        rows['EVACUATION SUB-MODEL'].append(['Beta speed',f'mean - {data["input_data"]["evacuees_beta_v"]["mean"]}',
+                                            f'sd - {data["input_data"]["evacuees_beta_v"]["sd"]}'])
+        rows['EVACUATION SUB-MODEL'].append(['Evacuees density',f'ROOM - {data["input_data"]["evacuees_density"]["ROOM"]}',
+                                            f'COR - {data["input_data"]["evacuees_density"]["COR"]}'])
+        rows['EVACUATION SUB-MODEL'].append(['Evacuees density',f'STAI - {data["input_data"]["evacuees_density"]["STAI"]}',
+                                            f'HALL - {data["input_data"]["evacuees_density"]["HALL"]}'])
+        rows['RESCUE SUB-MODEL'].append(['Model',f'{data["input_data"]["r_is"]}',''])
+        rows['RESCUE SUB-MODEL'].append(['Pareto fire area',f'b - {data["input_data"]["fire_area"]["b"]}',
+                                        f'scale - {data["input_data"]["fire_area"]["scale"]}'])
+        rows['RESCUE SUB-MODEL'].append(['Transmission',f'{data["input_data"]["r_trans"]}',''])
+        if data["input_data"]["r_times"]["detection"]:
+            rows['RESCUE SUB-MODEL'].append(['Times',f'detection - {data["input_data"]["r_times"]["detection"]}',
+                                            f'T1 - {data["input_data"]["r_times"]["t1"]}, T2 - {data["input_data"]["r_times"]["t2"]}'])
+        rows['RESCUE SUB-MODEL'].append(['CPR',f'{"TRUE" if data["input_data"]["r_cpr"] == 1 else "FALSE"}',''])
+        rows['RESCUE SUB-MODEL'].append(['Fire Unit [km]',f'1st - {data["input_data"]["r_distances"]["1st"]}',
+                                        f'2nd - {data["input_data"]["r_distances"]["2nd"]}'])
+        rows['RESCUE SUB-MODEL'].append(['Firehoses',f'horizontal - {data["input_data"]["r_to_fire"]["horizontal"]}',
+                                        f'vertical - {data["input_data"]["r_to_fire"]["vertical"]}'])
+        rows['RESCUE SUB-MODEL'].append(['Nozzles',f'1st - {data["input_data"]["r_nozzles"]["1st"]}',
+                                        f'2nd - {data["input_data"]["r_nozzles"]["2nd"]}'])
+        rows['RESCUE SUB-MODEL'].append(['Nozzles',f'3rd - {data["input_data"]["r_nozzles"]["3rd"]}',
+                                        f'4th - {data["input_data"]["r_nozzles"]["4th"]}'])
+        return rows
+
     def _makerows(self):
         rows = {'General':[], 'Risk indices': [], 'Evacuation': [], 'Fire': []}
         rows['General'].append(['Software version', 'v2.0.1', '2024-02-28'])
@@ -951,7 +1074,7 @@ class Report:
                 of {self.data["summary"]["rset"][1]:.1f} s'])
         rows['Evacuation'].append(['ASET', f'{self.data["summary"]["aset"][0]:.1f} s', f'mean with standard deviation\
                 of {self.data["summary"]["aset"][1]:.1f} s'])
-        rows['Evacuation'].append(['Overlapping index of ASET/RSET', f'{self.data["summary"]["ovl"]} s', ''])
+        rows['Evacuation'].append(['Overlapping index of ASET/RSET', f'{self.data["summary"]["ovl"]:.10f} s', ''])
         
         rows['Fire'].append(['Upper layer temperature', f'{self.data["summary"]["hgt"][0]:.1f}°C', f'mean of maximum\
                 value with a standard deviation of {self.data["summary"]["hgt"][1]:.1f}°C'])
@@ -961,6 +1084,7 @@ class Report:
                 standard deviation of {self.data["summary"]["vis"][1]:.1f} m'])
 
         return rows
+
     def _makerows_many(self):
         rows = {'General':[], 'Scenario': [], 'Risk indices': [], 'Evacuation': [], 'Fire': []}
         rows['General'].append(['Software version', 'v2.0.1', '2024-02-28', *(self.scenario_no-1)*['']])
@@ -986,7 +1110,7 @@ class Report:
             title.append(bold(key))
             rset.append(f'{self.data["summary"][key]["rset"][0]:.1f} s ({self.data["summary"][key]["rset"][1]:.1f})')
             aset.append(f'{self.data["summary"][key]["aset"][0]:.1f} s ({self.data["summary"][key]["aset"][1]:.1f})')
-            ovl.append(f'{self.data["summary"][key]["ovl"]} s')
+            ovl.append(f'{self.data["summary"][key]["ovl"]:.10f} s')
             hgt.append(f'{self.data["summary"][key]["hgt"][0]:.1f}°C ({self.data["summary"][key]["hgt"][1]:.1f})')
             height.append(f'{self.data["summary"][key]["height"][0]:.1f} cm ({self.data["summary"][key]["height"][1]:.1f})')
             vis.append(f'{self.data["summary"][key]["vis"][0]:.1f} m ({self.data["summary"][key]["vis"][1]:.1f})')
@@ -1007,6 +1131,24 @@ class Report:
 
         return rows
     
+    def _input_info(self):
+        for i in range(self.scenario_no):
+            scen = self.scenario.split('-')[i]
+            with self.doc.create(Section(f'Input data - {scen}', numbering=False)):
+                self.doc.append(NoEscape(r'\bigskip'))
+                headers = [bold('Parameter'), bold('Value'), bold('Additional remarks')]
+                with self.doc.create(LongTable('|m{3.5cm}|m{4cm}|m{8cm}|')) as tab:
+                    tab.add_hline()
+                    tab.add_row(headers)
+                    tab.add_hline()
+                    for subhead, rows in self._make_input_rows(scen).items():
+                        tab.add_row((MultiColumn(3, align='|c|', data=bold(subhead)),))
+                        tab.add_hline()
+                        for row in rows:
+                            tab.add_row(row)
+                            tab.add_hline()
+            self.doc.append(NewPage())
+
     def _summary(self):
         with self.doc.create(Section('Summary sheet', numbering=False)):
             self.doc.append(NoEscape(r'\bigskip'))
@@ -1129,17 +1271,22 @@ class Report:
                 add_pict('dcbe_cdf')        # ASET CDF
                 #add_pict('overlap')      # overlapping of ASET and RSET PDFs
                 self.doc.append(NewPage())
+        self.doc.append(NewPage())
+
     def make(self, tex=False):
         self._preamble()
         self._generate_header()
         self._summary()
         self._appendix()
+        self._input_info()
         self.doc.generate_pdf(f'{self.dir}/picts/report', clean_tex=not tex)
+
     def make_multiple(self, tex=False):
         self._preamble()
         self._generate_header()
         self._summary_many()
         self._appendix_many()
+        self._input_info()
         self.doc.generate_pdf(f'{self.dir}/picts/report', clean_tex=not tex)
 
 
