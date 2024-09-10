@@ -378,8 +378,9 @@ class Worker:
                     alarm = 0
                     pre = pres['pre_evac_fire_origin']
 
-            # for navmesh rvo tests uncomment below line
+            # for navmesh rvo tests uncomment below 2 lines
             # det = 0
+            # alarm = 0
             return det + alarm + pre
 
         leaders_id_list = []

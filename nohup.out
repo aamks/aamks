@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/usr/local/aamks/redis_aamks/worker/worker.py", line 87, in <module>
+    logger = prepare_logger(host_name) if not logging.getLogger(f'{host_name} - AAMKS_WORKER').hasHandlers() else logging.getLogger(f'{host_name} - AAMKS_WORKER')
+  File "/usr/local/aamks/redis_aamks/worker/worker.py", line 75, in prepare_logger
+    fh = logging.FileHandler(log_file)
+  File "/usr/lib/python3.10/logging/__init__.py", line 1169, in __init__
+    StreamHandler.__init__(self, self._open())
+  File "/usr/lib/python3.10/logging/__init__.py", line 1201, in _open
+    return open_func(self.baseFilename, self.mode,
+PermissionError: [Errno 13] Permission denied: '/mnt/aamks_users/aamks.log'
