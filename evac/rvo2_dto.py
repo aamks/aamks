@@ -104,16 +104,27 @@ class EvacEnv:
                 evacuee.agent_leaves_floor = False
 
     def _find_exit_based_on_leader(self, evacuee):
+        position = evacuee.position
+        try:
+            od_at_agent_position = self.smoke_query.get_visibility(position)
+        except:
+            od_at_agent_position = 0, 'outside'
+
+        room_name = od_at_agent_position[1]
+
         if self.evacuees.check_if_agent_exists(evacuee.leader):
-            if evacuee.current_floor != evacuee.leader.current_floor:
+            if evacuee.current_floor != evacuee.leader.current_floor or evacuee.leader.exit is None:
                 return self._find_closest_exit(evacuee)
             exit = evacuee.leader.exit
 
             x, y = exit['x'], exit['y']
             if LineString([(x,y), (evacuee.position[0], evacuee.position[1])]).length < 100 and exit['type'] == 'door':
                 x, y = exit['x_outside'], exit['y_outside']
-            
-            navmesh_path = self.nav.nav_query(src=evacuee.position, dst=(x, y), maxStraightPath=999)
+
+            if room_name in self.rooms_in_smoke:
+                navmesh_path = self.nav.nav_query_first_navmesh(src=evacuee.position, dst=(x, y), maxStraightPath=999)
+            else:
+                navmesh_path = self.nav.nav_query(src=evacuee.position, dst=(x, y), maxStraightPath=999)
 
             if navmesh_path[0] == 'err':
                 # agent cannot find path to his leader exit_coordinates 
@@ -153,12 +164,16 @@ class EvacEnv:
         else:
             _exit_dict = exits_dict
 
+        paths = list()
         self.set_OD_to_agent(evacuee, od_at_agent_position)
-        paths = self.get_paths_nav_query(position,_exit_dict, False)
+
+        if room_name not in self.rooms_in_smoke:
+            paths = self.get_paths_nav_query(position,_exit_dict, False)
 
         if len(paths) == 0:
-            # there is no passage through smoke-free rooms, so 
-            # the agent must escape through the smoke
+            # agent room is in smoke or there is no passage 
+            # through smoke-free rooms, so 
+            # agent must escape through the smoke
             paths = self.get_paths_nav_query(position,_exit_dict, True)
 
         return paths
@@ -301,16 +316,23 @@ class EvacEnv:
                     # agent is trapped, has no escape
                     continue
                 elif evacuee.type == 'follower':
-                    exit_coordinates, path, exit = self._find_exit_based_on_leader(evacuee)
-                    evacuee.exit_coordinates = exit_coordinates
-                    evacuee.path = path
-                    evacuee.exit = exit
+                    result = self._find_exit_based_on_leader(evacuee)
+                    if result is not None:
+                        exit_coordinates, path, exit = result
+                        evacuee.exit_coordinates = exit_coordinates
+                        evacuee.path = path
+                        evacuee.exit = exit
                 else:
-                    exit_coordinates, path, exit = self._find_closest_exit(evacuee)
-                    evacuee.exit_coordinates = exit_coordinates
-                    evacuee.path = path
-                    evacuee.exit = exit
+                    result = self._find_closest_exit(evacuee)
+                    if result is not None:
+                        exit_coordinates, path, exit = result
+                        evacuee.exit_coordinates = exit_coordinates
+                        evacuee.path = path
+                        evacuee.exit = exit
 
+                if evacuee.agent_has_no_escape == True:
+                    # this happens only during 1st set_goal function call
+                    continue
                 try:
                     vis = RVOSimulator.query_visibility(self.simulator, position, evacuee.path[2], 15)
                     if vis:

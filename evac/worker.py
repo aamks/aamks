@@ -48,7 +48,7 @@ class Worker:
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
-        # self.working_dir = "/mnt/aamks_users/akamienski@consultrisk.pl/dddd/kuziora/workers/3" 
+        #self.working_dir = "/home/aamks_users/akamienski@consultrisk.pl/next_room_s/macy/workers/34" 
         self.project_dir=self.working_dir.split("/workers/")[0]
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
@@ -378,6 +378,8 @@ class Worker:
                     alarm = 0
                     pre = pres['pre_evac_fire_origin']
 
+            # for navmesh rvo tests uncomment below line
+            # det = 0
             return det + alarm + pre
 
         leaders_id_list = []
@@ -1139,4 +1141,3 @@ if __name__ == "__main__":
     except Exception as error:
         w.wlogger.error(error)
         w.send_report(e={'status': 1})
-        
