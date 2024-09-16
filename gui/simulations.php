@@ -48,25 +48,57 @@ function status() {/*{{{*/
 function downloads() {/*{{{*/
 	$f=$_SESSION['main']['working_home'];
     if (isset($_GET['comp'])){ 
-        $f = substr($f, strpos($f, '/', 1));
         $f = substr($f, 0, strrpos($f, '/'));
         $scens = explode('<>', $_GET['comp']);
         $dir = implode('-', $scens);
         $f = $f."/_comp/".$dir;
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
-        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/report.pdf')>Report (.PDF)</button>";
-        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/txt.zip')>Summary TXT files (.ZIP)</button>";
-        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/picts.zip')>Pictures (.ZIP)</button>";
-        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/csv.zip')>Detailed CSV databases (.ZIP)</button>";
-        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/data.zip')>Full results (.ZIP)</button>";
+        echo "
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/report.pdf' />
+        <button type='submit'>Report (.PDF)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/txt.zip' />
+        <button type='submit'>Summary TXT files (.ZIP)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/picts.zip' />
+        <button type='submit'>Pictures (.ZIP)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/csv.zip' />
+        <button type='submit'>Detailed CSV databases (.ZIP)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/data.zip' />
+        <button type='submit'>Full results (.ZIP)</button>
+        </form>
+        ";
     }else{
-        $f = substr($f, strpos($f, '/', 1));
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
-        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/report.pdf')>Report (.PDF)</button>";
-        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/data.txt')>Summary file (.TXT)</button>";
-        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/picts.zip')>Pictures (.ZIP)</button>";
-        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/data.csv')>Detailed database (.CSV)</button>";
-        echo "&nbsp; &nbsp;  <button onclick=checkUrl('$f/picts/data.zip')>Full results (.ZIP)</button>";
+        echo "
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/report.pdf' />
+        <button type='submit'>Report (.PDF)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/data.txt' />
+        <button type='submit'>Summary file (.TXT)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/picts.zip' />
+        <button type='submit'>Pictures (.ZIP)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/data.csv' />
+        <button type='submit'>Detailed database (.CSV)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/data.zip' />
+        <button type='submit'>Full results (.ZIP)</button>
+        </form>
+        ";
     }
 }
 /*}}}*/
