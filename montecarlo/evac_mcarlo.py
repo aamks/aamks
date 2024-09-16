@@ -14,6 +14,7 @@ from subprocess import Popen,call
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 from shapely.ops import unary_union
 import zipfile
+import random 
 
 from numpy.random import choice
 from numpy.random import uniform
@@ -124,6 +125,8 @@ class EvacMcarlo():
 
         pre_evacs = {'pre_evac': 0, 'pre_evac_fire_origin': 0}
         for room_type in ['pre_evac', 'pre_evac_fire_origin']:
+            # for navmesh and rvo tests comment every line below in this block
+            # and uncomment last line in block with random.randint function
             pe = self.conf[room_type]
             if pe['mean'] and pe['sd']:
                 # if distribution parameters are given
@@ -133,8 +136,11 @@ class EvacMcarlo():
                 params = lognorm_params_from_percentiles(pe['1st'], pe['99th'])
             else:
                 raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
+            
             pre_evacs[room_type] = round(lognormal(mean=params[0], sigma=params[1]), 2)
             
+            # pre_evacs[room_type] = random.randint(0, self._evac_conf['simulation_time'])
+
         return pre_evacs
 
 # }}}
