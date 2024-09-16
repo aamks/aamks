@@ -32,9 +32,6 @@ def prepare_logger(path):
 
 def start_aamks(path, user_id):
     os.environ["AAMKS_PROJECT"] = path
-    # os.environ['AAMKS_PROJECT']= '/home/aamks_users/akamienski@consultrisk.pl/next_room_s/macy'
-    # path= '/home/aamks_users/akamienski@consultrisk.pl/next_room_s/macy'
-
     os.environ["AAMKS_USER_ID"] = user_id
     json = Json()
     conf = json.read("{}/conf.json".format(path))
