@@ -71,6 +71,7 @@ class Navmesh:
         self.baker.bake()
         self.baker.save_to_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name+'_first'))
         vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name+'_first'))
+
         self.first_navmesh = Pynavmesh(vert, polygs)
         self.navmesh = Pynavmesh(vert, polygs)
         # self.test_navmesh()
@@ -119,7 +120,7 @@ class Navmesh:
             return path_to_return
         else:
             return ['err']
-
+        
     def nav_query_first_navmesh(self,src,dst,maxStraightPath=16):# {{{
         path = self.first_navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
         path_to_return = []
