@@ -6,7 +6,7 @@ from scipy.spatial.distance import cdist
 
 class Evacuee:
 
-    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius) -> None:
+    def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, alpha_v, beta_v, node_radius, type, current_floor) -> None:
         """
 
         :type origin: tuple
@@ -15,7 +15,6 @@ class Evacuee:
 
         self.origin = origin
         self.goal = None
-        self.exit_door = None
         self.blocked_exits = list()
         self.fed = 0
         self.dfed = 0
@@ -40,8 +39,14 @@ class Evacuee:
         self.num_of_orca_lines = 0
         self.agent_has_no_escape = 0
         self.exit_coordinates = None
+        self.exit = None
         self.agent_leaves_floor = False
         self.path = None
+        
+        self.type = type
+        self.leader = None
+        self.current_floor = None
+
 
     def __getattr__(self, name):
         return self.__dict__[name]
@@ -83,7 +88,7 @@ class Evacuee:
 
     def check_if_agent_reached_outside_door(self):
         if self.exit_coordinates is None:
-            return
+            return 
         dist = cdist([self.position], [self.exit_coordinates], 'euclidean')
         if dist < 50 and self.target_teleport_coordinates is None and self.agent_leaves_floor is True:
             self.finished = 0
@@ -113,7 +118,7 @@ class Evacuee:
         self.unnorm_vector = tuple(map(sub, self.goal, self.position))
         self.distance = (sqrt(self.unnorm_vector[0] ** 2 + self.unnorm_vector[1] ** 2))
 
-        if current_time > self.pre_evacuation_time:
+        if current_time > self.leader.pre_evacuation_time:
             try:
                 norm_vector = tuple((self.unnorm_vector[0] / self.distance, self.unnorm_vector[1] / self.distance))
                 self.velocity = (norm_vector[0] * self.speed, norm_vector[1] * self.speed)

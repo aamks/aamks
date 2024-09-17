@@ -58,6 +58,8 @@ class Beck_Anim:
             for param in self.dct[room].keys():
                 if not all(v == 0 for v in self.dct[room][param]):
                     self.functioning_params[room].append(param)
+                    if len(self.dct['Time']['Time']) != len(self.dct[room][param]):
+                        continue
                     draw(self.dct['Time']['Time'], self.dct[room][param], 'Time', param, f'{self.path}/picts/{self.iter}_{param}_{room}')
     
     def push_params(self):

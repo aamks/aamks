@@ -2,6 +2,7 @@
 
 import csv
 import os
+import random
 import re
 import sys
 sys.path.insert(1, '/usr/local/aamks')
@@ -17,11 +18,16 @@ import logging
 from include import Json
 import json
 from collections import OrderedDict, defaultdict
-from subprocess import run, TimeoutExpired
 import zipfile
 import pandas as pd
 from io import StringIO
 from include import Psql
+import socket
+import threading
+import subprocess
+import shutil
+import evac.pathfinder
+from evac.pathfinder.navmesh import Navmesh as Pynavmesh
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
@@ -41,15 +47,13 @@ class Worker:
             os.environ['AAMKS_PG_PASS'] = AA['PG_PASS']
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
         if redis_worker_pwd: 
-            self.working_dir = redis_worker_pwd 
+            self.working_dir = redis_worker_pwd
         self.project_dir=self.working_dir.split("/workers/")[0]
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
         self.vars = OrderedDict()
         self.results = dict()
         self.obstacles = None
-        self.trajectory = None
-        self.velocity = None
         self.floor_dims = None
         self.evacuees = None
         self.fire_dto = None
@@ -61,6 +65,7 @@ class Worker:
         self.time_shift = None
         self.animation_data = []
         self.smoke_opacity = []
+        self.doors_opening = []
         self.rooms_in_smoke = dict()
         self.position_fed_tables_information = []
         self.rows_to_insert = []
@@ -68,6 +73,11 @@ class Worker:
         self.rooms_det_time = {}
         self.start_time = time.time()
         self.max_exit_weight = 10
+        self.connection = None
+        self.server_socket = None
+        self.connection_thread = None
+        self.cfast_door_opening_level = {}
+        self.rooms = {}
 
 
     def get_logger(self, logger_name):
@@ -118,40 +128,21 @@ class Worker:
         else:
             self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py')
 
-    def run_cfast_simulations(self, version='intel', attempt=0):
-        self.send_report(e={"status":101})
-        if attempt >= 2:
-            return False
-        compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
-        if version == 'intel':
-            cfast_file = 'cfast_775-750-i' if compa_no > 100 else 'cfast_775-100-i'
-        else:
-            cfast_file = 'cfast_775-750' if compa_no > 100 else 'cfast_775-100'
-        if self.project_conf['fire_model'] == 'CFAST':
-            err = False
-            try:
-                p = run([f"/usr/local/aamks/fire/{cfast_file}","cfast.in"], timeout=600, capture_output=True, text=True)
-            except TimeoutExpired as e:
-                self.wlogger.error(e)
-                self.send_report(e={"status":21})
-                err = True
-            else:
-                for line in p.stdout.split('\n'):
-                    if line.startswith("***Error") or err:
-                        err = True
-                        self.wlogger.error(Exception(f'CFAST:{line}'))
-                        if 'essure' in p.stdout:
-                            self.send_report(e={"status":22})
-                        else:
-                            self.send_report(e={"status":20})
 
-            if not err:
-                self.wlogger.info('CFAST simulation calculated with success')
-                self.send_report(e={"status":102})
-                return True
-            else:
-                self.wlogger.warning(f'Iteration skipped due to CFAST error, attempt = {attempt+1}')
-                return self.run_cfast_simulations("gnu", attempt+1)
+    def run_cfast_simulations(self):
+        self.send_report(e={"status":101})
+        if self.project_conf['fire_model'] == 'CFAST':
+            if os.getcwd() != self.working_dir:
+                os.chdir(self.working_dir)
+            os.system('ln -s /usr/local/aamks/fire/cfast7_linux_64 .')
+            os.system('ln -s /usr/local/aamks/fire/c_socket_handler.so .')
+            command = ["./cfast7_linux_64", "cfast.in", "arg1", "arg2"]
+            subprocess.Popen(command)
+            self.connection_thread.join()
+            #below message is is the first message received from cfastafter cfast_compartemnts.csv already has row t=0s.
+            #it is needed for proper functioning of the self.prepare_simulations() function.
+            self.connection.recv(1024).decode()
+            
 
     def create_geom_database(self):
         self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
@@ -159,6 +150,24 @@ class Worker:
         outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL')
         floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%'")
         rooms_with_exits_weights_set = self.s.query('SELECT floor, name, center_x, center_y, room_exits_weights from aamks_geom WHERE room_exits_weights IS NOT NULL')
+        internal_building_doors = self.s.query("SELECT floor, name, center_x, center_y, how_much_open, points from aamks_geom WHERE type_sec = 'DOOR' and terminal_door IS NULL")
+        all_rooms = self.s.query("SELECT name, floor, points from aamks_geom WHERE type_pri = 'COMPA'")
+        for room in all_rooms:
+            points = room['points'].replace('[', '').replace(']', '').split(', ')
+            int_points = [int(x) for x in points]
+            x_min = min(int_points[0],int_points[2],int_points[4],int_points[6])
+            x_max = max(int_points[0],int_points[2],int_points[4],int_points[6])
+            y_min = min(int_points[1],int_points[3],int_points[5],int_points[7])
+            y_max = max(int_points[1],int_points[3],int_points[5],int_points[7])
+            self.rooms[room['name']]={'floor': room['floor'], 'x_min':x_min, 'x_max':x_max, 'y_min':y_min,'y_max':y_max}
+
+        self.vars['conf']['internal_doors'] = []
+        for floor in sorted(self.obstacles['obstacles'].keys()):
+            self.vars['conf']['internal_doors'].append([])
+            self.vars['conf']['internal_doors'][int(floor)]= {}
+        for door in internal_building_doors:
+            longer_projection = self.get_longer_projection_with_average(door['points'])
+            self.vars['conf']['internal_doors'][int(door['floor'])][door['name']]= {'center_x':door['center_x'], 'center_y': door['center_y'], 'how_much_open':door['how_much_open'], 'door_side_coordinates':longer_projection,'agents_id_moving_towards_door':[]}
 
         self.vars['conf']['agents_destination'] = []
         for floor in sorted(self.obstacles['obstacles'].keys()):
@@ -223,6 +232,24 @@ class Worker:
         int_points = [int(x) for x in points]
         return((int_points[0]+int_points[2]+int_points[4]+int_points[6])/4, (int_points[1]+int_points[3]+int_points[5]+int_points[7])/4)
 
+    def get_longer_projection_with_average(self, points):
+        points = points.replace('[', '').replace(']', '').split(', ')
+        int_points = [int(x) for x in points]
+        x_coords = int_points[0::2]
+        y_coords = int_points[1::2]
+        min_x, max_x = min(x_coords), max(x_coords)
+        min_y, max_y = min(y_coords), max(y_coords)
+        x_length = max_x - min_x
+        y_length = max_y - min_y
+        avg_x = sum(x_coords) / len(x_coords)
+        avg_y = sum(y_coords) / len(y_coords)
+        
+        if x_length >= y_length:
+            return ((min_x, avg_y), (max_x, avg_y))
+        else:
+            return ((avg_x, min_y), (avg_x, max_y))
+    
+    
     def _get_outside_door_destination(self, last_room_center_x, last_room_center_y, door):
         goal_from_door_distance = 100
         if door['width'] < door['depth']:
@@ -323,7 +350,7 @@ class Worker:
                 self.rooms_det_time[room] = dct["Time"]["Time"][indexes[0]]
 
     def _create_evacuees(self, floor: int):
-        evacuees = []
+        evacuees_list = []
         self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
         floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
@@ -350,21 +377,30 @@ class Worker:
                     alarm = 0
                     pre = pres['pre_evac_fire_origin']
 
+            # for navmesh rvo tests uncomment below 2 lines
+            # det = 0
+            # alarm = 0
             return det + alarm + pre
 
-
+        leaders_id_list = []
         for i in floor['EVACUEES'].keys():
-            evacuees.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
+            evacuees_list.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
                                     h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=pre_evac_total(i),
                                     alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
-                                    node_radius=self.config['NODE_RADIUS']))
+                                    node_radius=self.config['NODE_RADIUS'], 
+                                    type = floor['EVACUEES'][i]['type'], 
+                                    current_floor = floor
+                                  ))
+            leaders_id_list.append(floor['EVACUEES'][i]['leader_id'])
             self.wlogger.debug('{} evacuee added'.format(i))
 
-        e = Evacuees()
-        [e.add_pedestrian(i) for i in evacuees]
+        evacuees = Evacuees()
+        for e in evacuees_list:
+            e.leader = evacuees_list[leaders_id_list.pop(0)]
+            evacuees.add_pedestrian(e)
 
-        self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees)))
-        return e
+        self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees_list)))
+        return evacuees
 
     def prepare_staircases(self, floor):
         rows = self.s.query("SELECT x0, y0, width, depth from aamks_geom WHERE type_sec='STAI' AND floor = floor")
@@ -490,22 +526,135 @@ class Worker:
                         if cords_range['min_x'] < x < cords_range['max_x'] and cords_range['min_y'] < y < cords_range['max_y']:
                             floor_above.floor_downstair_teleports_queue[cords] = True;
 
+    def handle_connection(self, server_socket):
+        # Accept incoming connection
+        self.connection, address = server_socket.accept()
+        print(f"Connection established with {address}")
+
+    def start_socket_server(self):
+        free_port = self.find_free_port()
+        self.save_port(free_port)
+
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind(('localhost', free_port))
+        self.server_socket.listen(1)
+
+        print("Server is waiting for a connection...")
+
+        self.connection_thread = threading.Thread(target=self.handle_connection, args=(self.server_socket,))
+        self.connection_thread.start()
+
+
+    def find_free_port(self):
+        # creating temporary port
+        temp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        temp_socket.bind(('localhost', 0)) 
+        _, port = temp_socket.getsockname() 
+        temp_socket.close()
+        return port
+
+    def save_port(self, free_port):
+        f = open(self.working_dir +"/cfast_evac_socket_port.txt", "w+")
+        f.write(str(free_port))
+        f.close()
+
+    def is_moving_towards_door(self, evacuee, door_props):
+        (x1, y1), (x2, y2) = door_props['door_side_coordinates']
+        ex, ey = evacuee.position
+        vec_to_v1_x = x1 - ex
+        vec_to_v1_y = y1 - ey
+        vec_to_v2_x = x2 - ex
+        vec_to_v2_y = y2 - ey  
+        velocity_vec_x, velocity_vec_y = evacuee.velocity
+        cross1 = vec_to_v1_x * velocity_vec_y - vec_to_v1_y * velocity_vec_x
+        cross2 = vec_to_v2_x * velocity_vec_y - vec_to_v2_y * velocity_vec_x
+        if cross1 * cross2 < 0:
+            return True
+        else:
+            return False
+
+    def is_close_to_door(self, evacuee, door_position):
+        distance = 120
+
+        difference_in_the_x_axis = door_position['center_x'] - evacuee.position[0]
+        difference_in_the_y_axis = door_position['center_y'] - evacuee.position[1]
+
+        squared_distance = difference_in_the_x_axis ** 2 + difference_in_the_y_axis ** 2
+        if squared_distance >= distance ** 2:
+            return False
+        else:
+            return True
+        
+    def initialize_doors_opening_level(self):
+        for floor in self.floors:
+            for door_id, door_postion in self.vars['conf']['internal_doors'][int(floor.floor)].items():   
+                self.cfast_door_opening_level[door_id] = str(door_postion['how_much_open'])
+
+    def get_doors_opening_level(self):
+        doors_opening_level = ""
+        for floor in self.floors:
+            for door_id, door_props in self.vars['conf']['internal_doors'][int(floor.floor)].items():   
+                is_moving_out_of_the_door = False
+                is_moving_towards_door = False
+                for evacuee in floor.evacuees.pedestrians:
+                    if self.is_close_to_door(evacuee, door_props):
+                        if evacuee.velocity[0] == 0 and evacuee.velocity[1] == 0:
+                            continue
+                        else:
+                            if self.is_moving_towards_door(evacuee, door_props):
+                                is_moving_towards_door = True
+                                door_props['agents_id_moving_towards_door'].append(evacuee.unique_agent_id_on_different_floors)
+                if not is_moving_towards_door:
+                    if len(door_props['agents_id_moving_towards_door']) > 0:
+                        door_props['agents_id_moving_towards_door'] = []
+                        is_moving_out_of_the_door = True
+                if (is_moving_towards_door):
+                    self.cfast_door_opening_level[door_id] = '1'
+                    door_props['how_much_open'] = 1
+                elif(is_moving_out_of_the_door):
+                    # We assume that there is a 50 percent chance
+                    # that someone will close the door behind them
+                    if random.random() < 0.5:
+                        self.cfast_door_opening_level[door_id] = '0'
+                        door_props['how_much_open'] = 0
+                else:
+                    self.cfast_door_opening_level[door_id] = str(door_props['how_much_open'])
+
+                is_moving_towards_door = False
+                is_moving_out_of_the_door = False
+
+        for door_id, opening_level in self.cfast_door_opening_level.items():
+            doors_opening_level += door_id
+            doors_opening_level += '='
+            doors_opening_level += opening_level
+            doors_opening_level += ','
+
+        doors_opening_level = doors_opening_level[:-1]
+
+        return doors_opening_level
+
+
     def do_simulation(self):
         self.wlogger.info('Starting simulations')
         cfast_step = self.floors[0].config['SMOKE_QUERY_RESOLUTION']
         aevac_step = self.floors[0].config['TIME_STEP']
-        time_frame = 0
         #first_evacuue = []
         # iterate over CFAST time frames (results saving interval)
+        time_frame = 0 - cfast_step
+        if os.path.exists(self.working_dir + "/door_opening_changes"):
+            shutil.rmtree(self.working_dir + "/door_opening_changes")
+        os.mkdir(self.working_dir + "/door_opening_changes")
+        self.initialize_doors_opening_level()
+
         while 1:
             time_frame += cfast_step    # increase upper limit of time_frame
-            # check for user time limit
-            if time_frame > (self.vars['conf']['simulation_time']):
+
+            if time_frame == (self.vars['conf']['simulation_time']):
                 self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
+                self.simulation_time = time_frame
+                self.time_shift = 0
                 break
 
-            #self.floors[0].smoke_query.cfast_has_time(time_frame)
-            # read CFAST results at given time_frame if they exist
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
 
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
@@ -529,7 +678,7 @@ class Worker:
                         if i.do_simulation(step_no) and aset > i.current_time:
                             aset = i.current_time
 
-                    # move agents downstairs
+                    # move agents downstairs and upstairs
                     self.process_agents_queuing_when_moving_downstairs_and_upstairs() 
                     self.process_agents_upstairs_and_downstairs_movement(step_no, time_frame)
 
@@ -541,12 +690,14 @@ class Worker:
                     if len(time_row) > 0:
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
+                        self.doors_opening.append(self.get_door_opening_level_for_vis())
+                        self.change_pynavmesh_due_to_smoke()
 
                 # determine RSET and smoke on all floors
                 for i in self.floors:
                     rsets.append(i.rset)
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
-                progress = round(time_frame/self.vars["conf"]["simulation_time"] * 100, 1)
+                progress = round((time_frame+cfast_step)/self.vars["conf"]["simulation_time"] * 100, 1)
                 self.wlogger.info(f'Progress: {progress}%')
                 progres_status = int(1000+progress)
                 self.send_report(e={"status":progres_status})
@@ -561,12 +712,122 @@ class Worker:
                 self.send_report(e={"status":33})
                 break
 
+            self.cfast_socket_communication_handle(time_frame)
+
+        self.server_socket.close()
         # gather results of the whole simulation (multisimulation iteration)
         self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
         self.cross_building_results['dcbe'] = aset
         self.wlogger.info('Final results gathered')
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
 
+    def change_pynavmesh_due_to_smoke(self):
+        critical_conditions_rooms = {}
+        for f in self.floors:
+            critical_conditions_rooms[f.floor] = []
+        for floor, rooms_smoke in self.smoke_opacity[-1].items():
+            for room_id, room_od in rooms_smoke.items():
+                    if room_od > 0.666:
+                        critical_conditions_rooms[self.rooms[room_id]['floor']].append(room_id)
+        for floor in self.floors:
+            if len(critical_conditions_rooms[floor.floor]) > 0:
+                self.generate_new_pynavmesh(floor, critical_conditions_rooms[floor.floor])
+
+    def generate_new_pynavmesh(self, floor, floor_critical_rooms):
+        figure_points = []
+        first_pynavmesh = open("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav_first'))
+        lines = first_pynavmesh.readlines()
+        points = lines[0].split()
+        x_list = points[::3]
+        z_list = points[2::3]
+        figures_points = lines[1].split()
+        polygons = lines[2].split()
+
+        count = 0
+        all_figures = []
+        index = -1
+
+        for poly in polygons:
+            index +=1
+            poly_sides_count = int(poly)
+            for i in range (poly_sides_count):
+                figure_points.append((float(x_list[int(figures_points[count])]), float(z_list[int(figures_points[count])])))
+                count+=1
+            x = []
+            for co in figure_points:
+                x.append([co[0], co[1]])
+            all_figures.append((index,x))
+            x = []
+            figure_points = []
+
+        figures_points_after_removal = []
+        polygons_after_removal = []
+
+        for id, coordinates in all_figures:
+            skip_outer1 = False
+            skip_outer2 = False 
+            for floor_critical_room in floor_critical_rooms:
+                x_min = self.rooms[floor_critical_room]['x_min']/100
+                x_max = self.rooms[floor_critical_room]['x_max']/100
+                y_min = self.rooms[floor_critical_room]['y_min']/100
+                y_max = self.rooms[floor_critical_room]['y_max']/100
+                for x, y in coordinates:
+                    if x_min < x and x_max > x and y_min < y and y_max > y:
+                        figures_points = figures_points[int(polygons[id]):]
+                        skip_outer1 = True
+                        skip_outer2 = True
+                        break
+                if skip_outer1:
+                    break
+            if skip_outer2:
+                continue
+            polygons_after_removal.append(polygons[id])
+            elements_to_move = figures_points[:int(polygons[id])]
+            figures_points = figures_points[int(polygons[id]):]
+            figures_points_after_removal.extend(elements_to_move)
+
+        with open("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav'), 'w') as file:
+            file.write(' '.join(points) + '\n')
+            file.write(' '.join(figures_points_after_removal) + '\n')
+            file.write(' '.join(polygons_after_removal))
+
+        vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav'))
+        floor.nav.navmesh = Pynavmesh(vert, polygs)
+
+
+    def cfast_socket_communication_handle(self, time_frame):
+        # socket with cfast handler
+        doors_opening_level = self.get_doors_opening_level()
+        for i in self.floors:
+            for door_id, door_postion in self.vars['conf']['internal_doors'][int(i.floor)].items(): 
+                with open(self.working_dir + "/door_opening_changes/" + door_id +".txt", 'a') as plik:
+                    # add door opening changes to door txt files
+                    if time_frame == 0:
+                        plik.write("X,")
+                        plik.write(self.cfast_door_opening_level[door_id] +",")
+                    elif time_frame == (self.vars['conf']['simulation_time']-1):
+                        return
+                    elif time_frame == (self.vars['conf']['simulation_time']-2):
+                        plik.write(self.cfast_door_opening_level[door_id])
+                    else:
+                        plik.write(self.cfast_door_opening_level[door_id] +",")
+        if os.path.exists(self.working_dir +"/doors_opening_level_frame.txt"):
+            os.remove(self.working_dir +"/doors_opening_level_frame.txt")
+        f2 = open(self.working_dir +"/doors_opening_level_frame.txt", "w+")
+        f2.write(doors_opening_level)
+        f2.close()
+        message = "ok"
+        self.connection.send(message.encode())
+        self.connection.recv(1024).decode()
+
+    def get_door_opening_level_for_vis(self):
+        door_opening_level_result_dict = {}
+        for floor in self.floors:
+            door_opening_level_result_dict[int(floor.floor)]={}
+            for door_id, door_postion in self.vars['conf']['internal_doors'][int(floor.floor)].items():   
+                door_opening_level_result_dict[int(floor.floor)][door_id]=self.cfast_door_opening_level[door_id]
+        return door_opening_level_result_dict
+    
     def process_agents_upstairs_and_downstairs_movement(self, step, time):
         agents_to_move = self.get_agents_to_move()
         self.move_agents(agents_to_move, step, time)
@@ -586,7 +847,6 @@ class Worker:
     def get_agents_to_move(self):
         if len(self.floors) == 1:
             return []
-        # agents_to_move_downstairs = []
         agents_to_move = []
         for i in range(0,len(self.floors)):
             # floor is first floor, only upstair movement is possible from floor
@@ -652,7 +912,9 @@ class Worker:
             
         for floor_num in range(len(self.floors)):
             agents_who_leave_current_floor_indexes = [agent[3] for agent in agents_to_move if agent[0] == floor_num]
-            self.floors[floor_num].delete_agents_from_floor(agents_who_leave_current_floor_indexes)
+            if agents_who_leave_current_floor_indexes:
+                self.floors[floor_num].rset = time
+                self.floors[floor_num].delete_agents_from_floor(agents_who_leave_current_floor_indexes)
 
         for floor_num in range(len(self.floors)):
             agents_who_come_to_current_floor = [agent[2] for agent in agents_to_move if agent[1] == floor_num]
@@ -663,6 +925,7 @@ class Worker:
             agent = agent_to_move[2]
             agent.finished = 1
             agent.target_teleport_coordinates = None
+            agent.current_floor = agent_to_move[1]
 
 
     def send_report(self, e=False): # {{{
@@ -712,7 +975,7 @@ class Worker:
                 report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
                 report['floor'] = num_floor
             report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
-
+            # report['psql']['i_risk'] = report['psql']['i_risk'][:-1] + ", " + json.dumps(self.project_conf)[1:]
             report['psql']['detection'] = int(self.detection_time)
             report['psql']['status'] = 0
             
@@ -745,7 +1008,8 @@ class Worker:
                         'time_shift': self.time_shift,
                         'animations': {
                             'evacuees': self.animation_data,
-                            'rooms_opacity': smoke_data
+                            'rooms_opacity': smoke_data,
+                            'doors':self.doors_opening
                         }
                         }
         zf = zipfile.ZipFile("{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
@@ -791,16 +1055,18 @@ class Worker:
         self.get_config()
         self.send_report(e={"status":100})
         self.create_geom_database()
-        if self.run_cfast_simulations():
-            self.prepare_simulations()
-            self.connect_rvo2_with_smoke_query()
-            self.do_simulation()
-            self.send_report()
-            self.wlogger.info('Simulation ended successfully')
+        self.start_socket_server()
+        self.run_cfast_simulations()
+        self.prepare_simulations()
+        self.connect_rvo2_with_smoke_query()
+        self.do_simulation()
+        self.send_report()
+        self.wlogger.info('Simulation ended successfully')
 
     def test(self):
         self.get_config()
         self.create_geom_database()
+        self.start_socket_server()
         self.prepare_simulations()
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()

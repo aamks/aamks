@@ -9,6 +9,7 @@ var evacueeRadius;
 var velocitiesSize;
 var eData=[];
 var roomsOpacity=[];
+var doorsOpening=[];
 var dstatic;
 var dstaticAllFloors;
 var paused=0;
@@ -36,56 +37,59 @@ window.onload = function() {
 function createSelect(){
 	var anim_params = document.getElementById("anim_params").textContent;
 	anim_params = JSON.parse(anim_params)[0]['anim_params'];
-	anim_params = JSON.parse(anim_params)
-	var rooms = ['Select room'];
-	for(var r in anim_params){
-		rooms.push(r);
-	}
-	rooms.sort()
-	var selectRooms = document.getElementById('selRooms');
-	for (var i = 0; i < rooms.length; i++) {
-		var option = document.createElement("option");
-		option.value = rooms[i];
-		option.text = rooms[i];
-		selectRooms.appendChild(option);
-	}
-	var selectParams = document.getElementById('selParams');
-	var room = "";
-	selectRooms.addEventListener("change", (event) => {
-		room = event.target.value;
-		selectParams.innerHTML = '';
-		var params = [];
-		params.push(anim_params[room]);
-		var option = document.createElement("option");
-			option.value = "";
-			option.text = "Select param";
-			selectParams.appendChild(option);
-		for (var i = 0; i < params[0].length; i++) {
-			var option = document.createElement("option");
-			option.value = params[0][i];
-			option.text = params[0][i];
-			selectParams.appendChild(option);
+	if (anim_params != 'NULL'){
+		anim_params = JSON.parse(anim_params)
+		var rooms = ['Select room'];
+		for(var r in anim_params){
+			rooms.push(r);
 		}
-	});
-	selectParams.addEventListener("change", (event) => {
-		loadImage(event.target.value+"_"+room+".png");
-	});
+		rooms.sort()
+		var selectRooms = document.getElementById('selRooms');
+		for (var i = 0; i < rooms.length; i++) {
+			var option = document.createElement("option");
+			option.value = rooms[i];
+			option.text = rooms[i];
+			selectRooms.appendChild(option);
+		}
+		var selectParams = document.getElementById('selParams');
+		var room = "";
+		selectRooms.addEventListener("change", (event) => {
+			room = event.target.value;
+			selectParams.innerHTML = '';
+			var params = [];
+			params.push(anim_params[room]);
+			var option = document.createElement("option");
+				option.value = "";
+				option.text = "Select param";
+				selectParams.appendChild(option);
+			for (var i = 0; i < params[0].length; i++) {
+				var option = document.createElement("option");
+				option.value = params[0][i];
+				option.text = params[0][i];
+				selectParams.appendChild(option);
+			}
+		});
+		selectParams.addEventListener("change", (event) => {
+			loadImage(event.target.value+"_"+room+".png");
+		});
+	}
 }
 function loadImage(file){
 	const urlParams = new URLSearchParams(window.location.search);
 	const iter = urlParams.get('iter');
-	$.get('/aamks/ajax.php?ajaxUserInfo', function (response) { 
+	$.get('/aamks/ajax.php?ajaxShowImage&img='+iter+'_'+file, function (response) {
 		var _img = document.getElementById('image');
 		var newImg = new Image;
 		newImg.onload = function() {
 			_img.src = this.src;
 		}
-		newImg.src = response.slice(5)+iter+"_"+file;
+		newImg.src = response
 	})
 }
 function initLayers() {//{{{
 	new Layer({'name': 'rooms'});
 	new Layer({'name': 'roomSmoke'});
+	new Layer({'name': 'doorsOpening'});
 	new Layer({'name': 'roomFire'});
 	new Layer({'name': 'highlight'});
 	new Layer({'name': 'animated'});
@@ -98,24 +102,24 @@ function listenForSpeedChange() {//{{{
 		paused=0;
 	})
 
-	$("body").on("keyup", '#speed', function() { 
+	$("body").on("keyup", '#speed', function() {
 		clearEvacueesLabels();
 		paused=0;
 		changeSpeed(parseInt($('#speed').val()));
 	});
 
-	$(this).keydown((e) => { 
-		if (e.keyCode == 32) { 
+	$(this).keydown((e) => {
+		if (e.keyCode == 32) {
 			$("input").blur();
 			$("select").blur();
-			if(paused==1) { 
+			if(paused==1) {
 				clearEvacueesLabels();
 				paused=0;
-			} else { 
-				showEvacueesLabels(); 
+			} else {
+				showEvacueesLabels();
 				paused=1;
 			}
-			$("canvas-mouse-coords").delay(1500).fadeOut('slow'); 
+			$("canvas-mouse-coords").delay(1500).fadeOut('slow');
 		}
 	});
 }
@@ -142,7 +146,7 @@ function listenEvents() {//{{{
 
 
 	$('body').on('change', '#style-change', function() {
-		if (this.value == "Light") { 
+		if (this.value == "Light") {
 			setColors('light');
 		} else {
 			setColors('dark');
@@ -167,11 +171,11 @@ function right_menu_box() {//{{{
 	$("body").on("click", "close-right-menu-box", function() {
 		project.layers.highlight.removeChildren();
 	});
-    $("body").on("click", '#button-info', function() { 
+    $("body").on("click", '#button-info', function() {
 		if ($("#animator-canvas").width() >= $(window).width()-20){
 			$("#animator-canvas").width('73%');
 		} else {
-			$("#animator-canvas").width('100%'); 
+			$("#animator-canvas").width('100%');
 		}
 	});
 	$("body").on("click", '#button-setup', function() { $('right-menu-box').fadeIn(); });
@@ -181,7 +185,7 @@ function setColors(mode) {//{{{
 	colors={};
 	for (var i in incDB['aamksGeoms']) {
 		colors[incDB['aamksGeoms'][i]['x']]=_.cloneDeep(incDB['aamksGeoms'][i]);
-		if(mode=='light') { 
+		if(mode=='light') {
 			colors[incDB['aamksGeoms'][i]['x']]['c']=colors[incDB['aamksGeoms'][i]['x']]['lightc'];
 			colors[incDB['aamksGeoms'][i]['x']]['stroke']="#000";
 		}
@@ -193,7 +197,7 @@ $.getJSON("inc.json", function(x) {//{{{
 	incDB=x;
     evacueeRadius=incDB['evacueeRadius'];
 	setColors("dark");
-	$.post('/aamks/ajax.php?ajaxAnimsList', function (response) { 
+	$.post('/aamks/ajax.php?ajaxAnimsList', function (response) {
 		amsg(response);
 		animsList=response['data'];
 		currentAnimMeta=animsList[0];
@@ -206,7 +210,7 @@ function makeChooseVis() {//{{{
 	var items = [];
 	items.push("<select id=choose-vis>");
 	items.push( "<option value=''>" + currentAnimMeta['title'].substr(0,24) + " " + currentAnimMeta['time'] +"</option>" );
-	for (var i=0; i < animsList.length; i++) { 
+	for (var i=0; i < animsList.length; i++) {
 		items.push( "<option value='" + i + "'>" + animsList[i]["title"].substr(0,24) + " " + animsList[i]["time"] +"</option>" );
 	}
 	items.push("</select>");
@@ -215,12 +219,12 @@ function makeChooseVis() {//{{{
 		lerpFrame=0;
 		frame=0;
 		currentAnimMeta=animsList[this.value];
-		showStaticImage(); 
+		showStaticImage();
 	});
 };
 //}}}
 function rescaleCanvas(meta) {//{{{
-	if(meta=='world2d') { 
+	if(meta=='world2d') {
 		var center=dstatic.world_meta.center;
 		var xdim=dstatic.world_meta.xdim;
 		var ydim=dstatic.world_meta.ydim;
@@ -231,7 +235,7 @@ function rescaleCanvas(meta) {//{{{
 	}
 	var scale=Math.min(($(window).width() - 20) / xdim, ($(window).height() - 70) / ydim)*0.9;
 	view.setScaling(scale);
-	view.center = new Point(center); 
+	view.center = new Point(center);
 	scaleAnims();
 }
 //}}}
@@ -239,7 +243,7 @@ function switchFloor(chosen_floor) {//{{{
 	dstatic=_.cloneDeep(dstaticAllFloors);
 	if(chosen_floor!='all') {
 		_.each(dstatic.floors, function(ffloor,floor_name) {
-			if(floor_name!=chosen_floor) { 
+			if(floor_name!=chosen_floor) {
 				delete dstatic.floors[floor_name];
 			}
 		});
@@ -271,7 +275,7 @@ function showStaticImage() {//{{{
 	// After we read a record from anims.json we reset the current visualization and setup a new one.
 	// We can only start animation after we are done with static rooms, doors etc.
 
-	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) { 
+	$.post('/aamks/ajax.php?ajaxAnimsStatic', function(response) {
 		amsg(response);
 		dstatic=response['data'];
 		floors_ranges();
@@ -297,7 +301,7 @@ function showEvacueesLabels() {//{{{
 			x=evacueesGroup[ffloor].children[i].position.x;
 			y=evacueesGroup[ffloor].children[i].position.y;
 			addEvacueeLabel(ffloor, i, x, y)
-			
+
 		})
 	})
 }
@@ -324,19 +328,21 @@ function clearEvacueesLabels() {//{{{
 function changeSpeed(speed) {//{{{
 	lerps=Math.round(100/(speed+0.0000000000000000001))+1;
 	lerpFrame=Math.floor(sliderPos*lastFrame*lerps/100);
-	$('.canvas_slider_rect').attr("fill", "#333"); 
+	$('.canvas_slider_rect').attr("fill", "#333");
 }
 //}}}
 function showAnimation() {//{{{
 	// After static data is loaded to paperjs we can run animations.
-	
-	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': currentAnimMeta['anim'] }, function(response) { 
+
+	$.post('/aamks/ajax.php?ajaxSingleAnim', { 'unzip': currentAnimMeta['anim'] }, function(response) {
 		amsg(response);
 		paused=0;
 		currentAnimData=JSON.parse(response['data']);
 		eData=currentAnimData.animations.evacuees;
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
+		doorsOpening=currentAnimData.animations.doors;
 		initRoomSmoke();
+		initDoorsOpening();
 		initAnimAgents();
 		initSpeed();
 	});
@@ -349,7 +355,7 @@ function scaleAnims() {//{{{
 //}}}
 function resetCanvas() {//{{{
 	// Reset on new visualization, on scaling walls, etc.
-	
+
 	eData=[];
 	project.clear();
 	initLayers();
@@ -403,18 +409,18 @@ function highlightDroplist() {//{{{
 	items.push("<option value=''></option>");
 	items.push("<option value=''>ROOMS</option>");
 	_.each(dstatic.floors, function(ffloor,floor_name) {
-        _.each(ffloor.rooms, function(d) { 
+        _.each(ffloor.rooms, function(d) {
 			items.push("<option value="+d['name']+">"+floor_name+": "+d['name']+"</option>");
 		})
 	})
 
 	items.push("<option value=''>DOORS</option>");
 	_.each(dstatic.floors, function(ffloor,floor_name) {
-        _.each(ffloor.doors, function(d) { 
+        _.each(ffloor.doors, function(d) {
 			items.push("<option value="+d['name']+">"+floor_name+": "+d['name']+"</option>");
 		})
 	})
-		
+
 	items.push("</select>");
 	$("highlight-geoms").html(items.join());
 };
@@ -426,7 +432,7 @@ function letItBurn() {//{{{
 	var smokeOrig;
 	var fire;
 	if(!(currentAnimMeta['fire_origin']['floor'] in dstatic.floors)) { return; }
-	var tx=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.tx; 
+	var tx=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.tx;
 	var ty=dstatic.floors[currentAnimMeta['fire_origin']['floor']].floor_meta.ty;
 
 	project.layers.roomFire.importSVG("smoke.svg", function (item) {
@@ -446,15 +452,15 @@ function letItBurn() {//{{{
 
 	var intervalId;
 	clearInterval(intervalId);
-	intervalId=setInterval(function(){ 
+	intervalId=setInterval(function(){
 		smoke.opacity-=0.008;
-		if (smoke.opacity<=0.15) { 
-			smoke.opacity=0.5; 
+		if (smoke.opacity<=0.15) {
+			smoke.opacity=0.5;
 			smoke.setBounds(smokeOrig);
 		}
 		smoke.setPosition(smoke.getPosition().x, smoke.getPosition().y-2);
 		smoke.scale(1.02);
-		
+
 	},500);
 }
 //}}}
@@ -507,10 +513,10 @@ function drawLabel(type,data,tx,ty) {//{{{
 		pos=[points[0][0] + tx + 30, points[0][1] + ty + 70];
 	}
 	if(type=='DOOR') {
-		if(points[1][0] - points[0][0] > 32) { 
+		if(points[1][0] - points[0][0] > 32) {
 			// horizontal door
 			ttx=20; tty=30;
-		} else { 
+		} else {
 			ttx=0; tty=50;
 		}
 		fillColor = colors.fg.c;
@@ -524,12 +530,12 @@ function drawLabel(type,data,tx,ty) {//{{{
 function drawStaticEvacuees(data,tx,ty) {//{{{
     var points=[];
     _.each(data, function(pp) { points.push(JSON.parse(pp))});
-	if(currentAnimMeta["anim"] == undefined) { 
+	if(currentAnimMeta["anim"] == undefined) {
 		radius=evacueeRadius;
-		strokeWidth=0; 
+		strokeWidth=0;
 		fillColor: colors['color_N']['c'];
 
-		_.each(points, function(point) { 
+		_.each(points, function(point) {
 			new Path.Circle({ center: new Point(point[0]+tx, point[1]+ty), radius: radius, strokeWidth:strokeWidth , fillColor: fillColor });
 		});
 	}
@@ -585,11 +591,11 @@ function initStaticGeoms() {//{{{
 		drawStaticEvacuees(ffloor.evacuees, tx, ty);
         drawDDGeoms(ffloor.dd_geoms, tx, ty);
 		project.layers.info.activate();
-        drawMeta(ffloor['floor_meta']['name'],tx,ty); 
+        drawMeta(ffloor['floor_meta']['name'],tx,ty);
     });
 
 
-} 
+}
 //}}}
 function initAnimAgents() { //{{{
 	// velocitiesGroup are the ---------> vectors attached to each ball
@@ -624,15 +630,15 @@ function updateAgentNumbersOnFloors(){
 	// 		sdfsdfsdsdf()
 		return;
 	}
-		
+
 	_.each(evacueesGroup, function(data,ffloor) {
-		if(ffloor in dstatic.floors) { 
+		if(ffloor in dstatic.floors) {
 			if(Object.keys(eData[frame][ffloor]).length != data.children.length){
-				updateEvacueesOnEachFloor();	
+				updateEvacueesOnEachFloor();
 				frame_to_skip = frame;
 				return;
 			}
-		}	
+		}
 	})
 }
 
@@ -640,15 +646,15 @@ function updateAgentNumbersOnFloors(){
 
 function updateEvacueesOnEachFloor(){
 	// _.each(evacueesGroup, function(data,ffloor) {
-	// 	if(ffloor in dstatic.floors) { 
+	// 	if(ffloor in dstatic.floors) {
 	// 		if(eData[frame][ffloor].length > data.children.length){
-	// 			for (var i=0; i < eData[frame][ffloor].length-data.children.length; i++) { 
+	// 			for (var i=0; i < eData[frame][ffloor].length-data.children.length; i++) {
 	// 				addAgentToFloor(ffloor,)
 	// 				removaAgentFromFloor(ffloor+1,)
-	// 				data.AddChild(new Path.Circle({center: 
+	// 				data.AddChild(new Path.Circle({center:
 	// 					new Point(
-	// 						eData[frame][ffloor][eData[frame][ffloor].length-i-1][0], 
-	// 						eData[frame][ffloor][eData[frame][ffloor].length-i-1][1]), 
+	// 						eData[frame][ffloor][eData[frame][ffloor].length-i-1][0],
+	// 						eData[frame][ffloor][eData[frame][ffloor].length-i-1][1]),
 	// 						radius: evacueeRadius}));
 	// 				}
 	// 		}
@@ -673,17 +679,17 @@ function updateEvacueesOnEachFloor(){
 		});
 
 	// _.each(evacueesGroup, function(data,ffloor) {
-	// 	if(ffloor in dstatic.floors) { 
+	// 	if(ffloor in dstatic.floors) {
 	// 		_.each(data.children, function(e,i) {
-	// 			e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c']; 
-	// 			e.position.x = eData[frame][ffloor][i][0]; 
-	// 			e.position.y = eData[frame][ffloor][i][1]; 
+	// 			e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c'];
+	// 			e.position.x = eData[frame][ffloor][i][0];
+	// 			e.position.y = eData[frame][ffloor][i][1];
 	// 		})
 	// 	}
 	// })
 
 	// _.each(velocitiesGroup, function(data,ffloor) {
-	// 	if(ffloor in dstatic.floors) { 
+	// 	if(ffloor in dstatic.floors) {
 	// 		_.each(data.children, function(e,i) {
 	// 			e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
 	// 			e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
@@ -695,11 +701,11 @@ function updateEvacueesOnEachFloor(){
 
 
 		// _.each(evacueesGroup, function(data,ffloor) {
-		// 	if(ffloor in dstatic.floors) { 
+		// 	if(ffloor in dstatic.floors) {
 		// 		_.each(data.children, function(e,i) {
-		// 			e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c']; 
-		// 			e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps; 
-		// 			e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
+		// 			e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c'];
+		// 			e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps;
+		// 			e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps;
 		// 		})
 		// 	}
 		// })
@@ -710,17 +716,17 @@ function updateEvacueesOnEachFloor(){
 // function sdfsdfsdsdf(){
 
 // 	_.each(evacueesGroup, function(data,ffloor) {
-// 		if(ffloor in dstatic.floors) { 
+// 		if(ffloor in dstatic.floors) {
 // 			_.each(data.children, function(e,i) {
-// 				e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c']; 
-// 				e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps; 
-// 				e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps; 
+// 				e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c'];
+// 				e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps;
+// 				e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps;
 // 			})
 // 		}
 // 	})
 
 // 	_.each(velocitiesGroup, function(data,ffloor) {
-// 		if(ffloor in dstatic.floors) { 
+// 		if(ffloor in dstatic.floors) {
 // 			_.each(data.children, function(e,i) {
 // 				e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
 // 				e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
@@ -732,48 +738,48 @@ function updateEvacueesOnEachFloor(){
 
 // }
 function evacueesInFrame() {//{{{
-	// Lerps are Linear Interpolations. 
+	// Lerps are Linear Interpolations.
 	// There is eData for each frame. Within each frame there are evacueesGroup positions. We take first frame and loop thru each evacuee. But we are not done with this frame yet:
-	// We can have say 1 or 1000 of lerps (invented positions) between each two frames. This is for both smoothening animations and for slow/fast playbacks. 
+	// We can have say 1 or 1000 of lerps (invented positions) between each two frames. This is for both smoothening animations and for slow/fast playbacks.
 	// We remove an evacuee by making it transparent. When we rewind, then we initialize all opacities with 1 again.
-	
 
 
-	// check whether current frame is related to the change in the number of agents 
+
+	// check whether current frame is related to the change in the number of agents
 	// on any floor (going downstairs by agents) if so, update the evacueesGroup data
 	// to make proper numer of agents on each floor
 
 
 
-	
+
 	// _.each(evacueesGroup, function(data,ffloor) {
-	// 	if(ffloor in dstatic.floors) { 
+	// 	if(ffloor in dstatic.floors) {
 	// 		if(data.children.length < Object.keys(eData[frame][ffloor]).length)
 	// 			addEvacueesAndVelocities(data.children.length, ffloor)
-	// 		}	
+	// 		}
 	// })
 
 	_.each(evacueesGroup, function(data,ffloor) {
-		if(ffloor in dstatic.floors) { 
+		if(ffloor in dstatic.floors) {
 			agentsOnFloorKeys = Object.keys(eData[frame][ffloor])
 			_.each(data.children, function(e,i) {
 				if(agentsOnFloorKeys[i] in eData[frame+1][ffloor]){
-					e.fillColor=colors['color_'+eData[frame][ffloor][agentsOnFloorKeys[i]][4]]['c']; 
-					e.position.x = eData[frame][ffloor][agentsOnFloorKeys[i]][0] + (eData[frame+1][ffloor][agentsOnFloorKeys[i]][0] - eData[frame][ffloor][agentsOnFloorKeys[i]][0]) * (lerpFrame%lerps)/lerps; 
-					e.position.y = eData[frame][ffloor][agentsOnFloorKeys[i]][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][agentsOnFloorKeys[i]][1] - eData[frame][ffloor][agentsOnFloorKeys[i]][1] ) * (lerpFrame%lerps)/lerps; 
+					e.fillColor=colors['color_'+eData[frame][ffloor][agentsOnFloorKeys[i]][4]]['c'];
+					e.position.x = eData[frame][ffloor][agentsOnFloorKeys[i]][0] + (eData[frame+1][ffloor][agentsOnFloorKeys[i]][0] - eData[frame][ffloor][agentsOnFloorKeys[i]][0]) * (lerpFrame%lerps)/lerps;
+					e.position.y = eData[frame][ffloor][agentsOnFloorKeys[i]][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][agentsOnFloorKeys[i]][1] - eData[frame][ffloor][agentsOnFloorKeys[i]][1] ) * (lerpFrame%lerps)/lerps;
 				}
 				else{
-					e.fillColor=colors['color_'+eData[frame][ffloor][agentsOnFloorKeys[i]][4]]['c']; 
+					e.fillColor=colors['color_'+eData[frame][ffloor][agentsOnFloorKeys[i]][4]]['c'];
 					e.position.x = eData[frame][ffloor][agentsOnFloorKeys[i]][0];
 					e.position.y = eData[frame][ffloor][agentsOnFloorKeys[i]][1] + dstatic.floors[ffloor].floor_meta.ty
 				}
-				
+
 			})
 		}
 	})
 
 	_.each(velocitiesGroup, function(data,ffloor) {
-		if(ffloor in dstatic.floors) { 
+		if(ffloor in dstatic.floors) {
 			agentsOnFloorKeys = Object.keys(eData[frame][ffloor])
 			_.each(data.children, function(e,i) {
 				e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
@@ -798,11 +804,11 @@ function afterLerpFrame() {//{{{
 	}
 
 	// We need to rewind animation to the beginning before someone calls [frame+1]
-	if(frame >= lastFrame) { 
-		frame=0; 
-		lerpFrame=0; 
+	if(frame >= lastFrame) {
+		frame=0;
+		lerpFrame=0;
 		frame_to_skip = 9999999;
-	} 
+	}
 
 }
 //}}}
@@ -826,7 +832,7 @@ tool.onMouseDown=function(event) {//{{{
 //}}}
 function animFormatTime() {//{{{
 	var date=new Date(null);
-	if (eData.length>0) { 
+	if (eData.length>0) {
 		var t=currentAnimData.time_shift + (currentAnimData.simulation_time - currentAnimData.time_shift) * sliderPos / 100
 	}
 	if(isNaN(t))   { t=0; }
@@ -840,7 +846,7 @@ function highlightGeom(key) {//{{{
 	_.each(dstatic.floors, function(ffloor) {
         tx=ffloor.floor_meta.tx;
         ty=ffloor.floor_meta.ty;
-        _.each(ffloor.rooms, function(d) { 
+        _.each(ffloor.rooms, function(d) {
 			if (d['name']==key) {
                 var points=JSON.parse(d.points)
 				rw=points[1][0] - points[0][0];
@@ -849,7 +855,7 @@ function highlightGeom(key) {//{{{
 				return;
 			}
 		})
-        _.each(ffloor.doors, function(d) { 
+        _.each(ffloor.doors, function(d) {
 			if (d['name']==key) {
                 var points=JSON.parse(d.points)
 				cx=points[0][0] + 0.5 * (points[1][0] - points[0][0]);
@@ -894,8 +900,40 @@ function initRoomSmoke() {//{{{
 //}}}
 function roomsSmokeInFrame() {//{{{
 	if (eData.length<1) { return; }
-	_.each(project.layers.roomSmoke.getItems(), function(i,key) { 
+	_.each(project.layers.roomSmoke.getItems(), function(i,key) {
 		project.layers.roomSmoke.children[key].opacity=roomsOpacity[frame][i.floor][i.name]*0.8;
+	});
+}
+
+function initDoorsOpening() {//{{{
+	project.layers.doorsOpening.activate();
+	var rw, rh;
+
+	for (var ffloor in doorsOpening[0]) {
+		if(dstatic.floors[ffloor]===undefined) { continue; }
+        var ty=dstatic.floors[ffloor].floor_meta.ty;
+        var tx=dstatic.floors[ffloor].floor_meta.tx;
+		for (var door in doorsOpening[0][ffloor]) {
+            var pp=JSON.parse(dstatic.floors[ffloor]['doors'][door]['points']);
+			points=[];
+			_.each(pp, function(i) { points.push([i[0]+tx, i[1]+ty]); });
+
+			rw=points[1][0] - points[0][0];
+			rh=points[2][1] - points[1][1];
+
+			group=new Group();
+			group.name=door;
+			group.floor=ffloor;
+			group.addChild(new Path.Rectangle({point: new Point(points[0][0], points[0][1]), fillColor:"#010", size: new Size(rw,rh)}));
+		}
+	}
+}
+//}}}
+function doorsOpeningInFrame() {//{{{
+	if (eData.length<1) { return; }
+	_.each(project.layers.doorsOpening.getItems(), function(i,key) {
+		if(doorsOpening[frame][i.floor][i.name]==1) { project.layers.doorsOpening.children[key].opacity=0; }
+		else if(doorsOpening[frame][i.floor][i.name]==0) { project.layers.doorsOpening.children[key].opacity=0.5; }
 	});
 }
 //}}}
@@ -911,15 +949,16 @@ function resizeAndRedrawCanvas() {//{{{
 //}}}
 view.onFrame=function(event) {//{{{
 	if(paused==1) { return; }
-	if (eData.length<3) { 
-		showEvacueesLabels(); 
-		paused=1; 
+	if (eData.length<3) {
+		showEvacueesLabels();
+		paused=1;
 	} else {
 		updateAgentNumbersOnFloors();
 		evacueesInFrame();
 		roomsSmokeInFrame();
+		doorsOpeningInFrame();
 		afterLerpFrame();
-	} 
+	}
 }
 //}}}
 

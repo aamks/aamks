@@ -41,7 +41,6 @@ function resetScenario() {
 			$.post('projects.php?projects_list', {'reset_scenario':'true'});
 		}}
 )};
-
 $(function()  {//{{{
 	$.post('/aamks/ajax.php?ajaxMenuContent', { }, function (json) { 
 		if($('left-menu-box').length==0) { 
@@ -109,6 +108,13 @@ function amsg(r) {//{{{
 			var duration=1500;
 		}
 		$('#amsg').delay(duration).fadeOut(400);
+	} else if(r['err']==2){
+		$('#amsg').css('display', 'none');
+		$('#amsg').css('display', 'none');
+		$('#amsg').html(r['msg']);
+		$('#amsg').css('display', 'block');
+		$('#amsg').css('background-color', "#800");
+		$('#amsg').delay(r['duration']).fadeOut(400);
 	}
 }
 //}}}

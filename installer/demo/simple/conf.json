@@ -214,7 +214,15 @@
           "99th": 60
     },
     "new_fire": {
-        "ignition": "TEMPERATURE",
+        "criterion": "TEMPERATURE",
+        "setpoint": 200
+    },
+    "windows_break": {
+        "criterion": "TEMPERATURE",
+        "setpoint": 200
+    },
+    "doors_break": {
+        "criterion": "TEMPERATURE",
         "setpoint": 200
     }
 }

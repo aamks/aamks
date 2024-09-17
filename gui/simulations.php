@@ -4,27 +4,29 @@ session_name('aamks');
 require_once("inc.php"); 
 
 function listing() {/*{{{*/
-	extract($_SESSION['main']);
-	$sim="$project_id/$scenario_id";
-	$path=$_SESSION['main']['working_home'];
+    extract($_SESSION['main']);
+    $path=$_SESSION['main']['working_home'];
     $exploded = explode('/', $path);
 	$f = implode('/', array_slice($exploded, 0, -1));
-    $directories = glob($f . '/*' , GLOB_ONLYDIR);
+    $directories = glob($f . '/_comp/*' , GLOB_ONLYDIR);
+    $r=$_SESSION['nn']->query("SELECT scenario_name FROM scenarios WHERE project_id=$1 ORDER BY modified DESC", array($_SESSION['main']['project_id']));
 	echo "<form method='POST' action=''>
 			<input type='submit' style='font-size:12pt; font-weight: bold' name='btn-beck' value='Launch post-processing'>
             <input type='submit' style='font-size:10pt; font-weight: bold' name='btn-log' value='Check log'>
             <br><br> Scenarios to be compared:";
-        foreach ($directories as $d) {
-            $lab = explode('/', $d);
-            $lab = end($lab);
-            if ($lab != '_comp') {
-            echo "&nbsp;<input type='checkbox' id=$d name='comp[]' value=$lab><label for=$d>$lab</label>";
-            }
+        foreach ($r as $s) {
+            $scenario = $s['scenario_name'];
+            echo "&nbsp;<input type='checkbox' id=$scenario name='comp[]' value=$scenario><label>$scenario</label>";
         }
             echo "<br><input type='submit' style='font-size:10pt; font-weight: bold' name='btn-comp' value='Compare scenarios'></form>";
+        
+        echo "<a href='simulations.php'><button>Results $scenario_name</button></a>";
+        foreach ($directories as $comp_path){
+            $scenarios_name = substr($comp_path, strrpos($comp_path, '/')+1);
+            $comp_link = str_replace("-", "<>", $scenarios_name);
+            echo "<a href='?comp=$comp_link'><button>Results $scenarios_name</button></a>";
+        }
 }
-
-
 /*}}}*/
 function status() {/*{{{*/
 	extract($_SESSION['main']);
@@ -43,36 +45,64 @@ function status() {/*{{{*/
         }
 }
 /*}}}*/
-
-/*}}}*/
 function downloads() {/*{{{*/
 	$f=$_SESSION['main']['working_home'];
     if (isset($_GET['comp'])){ 
-        $f = substr($f, strpos($f, '/', 1));
         $f = substr($f, 0, strrpos($f, '/'));
         $scens = explode('<>', $_GET['comp']);
         $dir = implode('-', $scens);
         $f = $f."/_comp/".$dir;
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/report.pdf download><button>Report (.PDF)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/txt.zip download><button>Summary TXT files (.ZIP)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/picts.zip download><button>Pictures (.ZIP)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/csv.zip download><button>Detailed CSV databases (.ZIP)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/data.zip download><button>Full results (.ZIP)</button></a>";
+        echo "
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/report.pdf' />
+        <button type='submit'>Report (.PDF)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/txt.zip' />
+        <button type='submit'>Summary TXT files (.ZIP)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/picts.zip' />
+        <button type='submit'>Pictures (.ZIP)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/csv.zip' />
+        <button type='submit'>Detailed CSV databases (.ZIP)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/data.zip' />
+        <button type='submit'>Full results (.ZIP)</button>
+        </form>
+        ";
     }else{
-        $f = substr($f, strpos($f, '/', 1));
         echo "<br><br><br><font size=4><strong>Download results</strong></font><br><br>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/report.pdf download><button>Report (.PDF)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/data.txt download><button>Summary file (.TXT)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/picts.zip download><button>Pictures (.ZIP)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/data.csv download><button>Detailed database (.CSV)</button></a>";
-        echo "&nbsp; &nbsp;  <a href=$f/picts/data.zip download><button>Full results (.ZIP)</button></a>";
+        echo "
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/report.pdf' />
+        <button type='submit'>Report (.PDF)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/data.txt' />
+        <button type='submit'>Summary file (.TXT)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/picts.zip' />
+        <button type='submit'>Pictures (.ZIP)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/data.csv' />
+        <button type='submit'>Detailed database (.CSV)</button>
+        </form>
+        <form action='download.php' method='POST'>
+        <input type='hidden' name='file_path' value='$f/picts/data.zip' />
+        <button type='submit'>Full results (.ZIP)</button>
+        </form>
+        ";
     }
 }
 /*}}}*/
-
-
-function last_log(){
+function last_log(){/*{{{*/
 	$f=$_SESSION['main']['working_home'];
 
     $cmd = "tail -10 $f/aamks.log";
@@ -81,48 +111,20 @@ function last_log(){
     echo nl2br($z);
     $_POST['btn-log'] = False;
 }
-
-/*}}}*/
 function compare() {/*{{{*/
 	$f=$_SESSION['main']['working_home'];
-
-	/*Generate pictures with using beck.py script*/
-	$aamks=getenv("AAMKS_PATH");
-
     $scens = implode(' ', $_POST['comp']);
-    $sep = implode('<>', $_POST['comp']);
-
-    $cmd = "cd $aamks/results; ../env/bin/python3 beck_new.py $f ".$scens." 2>&1";
-
-    // Output a 'waiting message'
-	$z=shell_exec("$cmd");
-    $_SESSION['pp_time'] =  $_SERVER['REQUEST_TIME'];
-    $URL = "/aamks/simulations.php?comp=".$sep;
-    echo '<META HTTP-EQUIV="refresh" content="0;URL=' . $URL . '">';
+    run_beck_new($f, $scens);
 /*}}}*/
 }
-
-/*}}}*/
 function make_pictures() {/*{{{*/
 	$f=$_SESSION['main']['working_home'];
-
-	/*Generate pictures with using beck.py script*/
-	$aamks=getenv("AAMKS_PATH");
-	
-    $cmd="cd $aamks/results; ../env/bin/python3 beck_new.py $f 2>&1";
-
-    // Output a 'waiting message'
-	$z=shell_exec("$cmd");
-    $_SESSION['pp_time'] =  $_SERVER['REQUEST_TIME'];
-    $URL = "/aamks/simulations.php";
-    echo '<META HTTP-EQUIV="refresh" content="0;URL=' . $URL . '">';
+    run_beck_new($f);
 /*}}}*/
 }
-
 function prevNext($k, $t, $d) {
     return ($r=($k+$d)%$t)>=0?$r:$r+=$t;
 }
-
 function show_results() {/*{{{*/
     if (isset($_GET['comp'])){ 
         $scens = explode('<>', $_GET['comp']);
@@ -142,10 +144,6 @@ function show_results() {/*{{{*/
             array('min_vis_cdf','Cumulative distribution function of the minimal visibility for scenarios: '.$text), 
             array('min_vis_cor_cdf','Cumulative distribution function of the minimal visibility on the evacuation routes for scenarios: '.$text), 
         );
-
-
-
-
     }else{
         $f=$_SESSION['main']['working_home'];
 	$path = $f."/picts/";
@@ -153,7 +151,6 @@ function show_results() {/*{{{*/
 		echo '<br><br><font size=4><strong>No data available. Launch postprocessing first.</font></strong>';
 		return False;
 	}
-
         $pictures_list = array(
             array('pie_fault','The share of iterations with failure of safety systems (at least one fatality)'),
             array('pdf_fn','Fatalities histogram (PDF)'), 
@@ -193,7 +190,6 @@ function show_results() {/*{{{*/
     $button_left='<<< Previous figure';
     $button_right='Next figure >>>';
 
-
     //displays the current image
     if(isset($_GET['pid'])){
         $k = $_GET['pid'];
@@ -205,7 +201,6 @@ function show_results() {/*{{{*/
     }else{
         $j = "";
         }
-        
         echo "<br><br><br><font size=4><strong>Figures</strong></font><br><br>";
         echo '<br><a href="simulations.php?pid='.prevNext($k, $total, -1).$j.'"><button>', $button_left, '</button></a>';
         echo '    <a href="simulations.php?pid='.prevNext($k, $total, 1).$j.'"><button>', $button_right, '</button></a>';
@@ -214,15 +209,12 @@ function show_results() {/*{{{*/
         $data64=shell_exec("base64 $file");
         echo "<br><p>Figure ". ($k+1) .". <strong>".$pictures_list[$k][1]."</strong></p>";
         echo "<img class='results-pictures' style='width:".$size_info[0]."px;height:".$size_info[1]."px;' src='data:image/png;base64, $data64'/>";
-
 	show_data();
 }
-
 function startsWith( $haystack, $needle ) {
      $length = strlen( $needle );
      return substr( $haystack, 0, $length ) === $needle;
 }
-
 function show_data() {/*{{{*/
 	$f=$_SESSION['main']['working_home'];
 
@@ -259,9 +251,7 @@ function show_data() {/*{{{*/
             };
             $data['Value'] = $d;
         };
-
     }
-
     //Risk indices table
     echo "<br><br><br><font size=4><strong>Risk indices</strong></font><br><br>";
     echo "<table><tr><th><strong>Parameter</strong></th><th><strong>Unit</strong></th>";
@@ -330,8 +320,6 @@ function main() {/*{{{*/
 	if (isset($_POST['btn-comp'])) {
         compare();
     }
-
-
 }
 /*}}}*/
 

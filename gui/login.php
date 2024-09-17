@@ -1,57 +1,39 @@
 <?php
-function sendMail($to, $subject, $fields, $template_name) { #{{{
-	if(getenv("AAMKS_USE_MAIL")==0) {
-		$url = $fields['url'];
-		$msg="<h3>You don't have configured email server. To continue go to url presented below.</h3><br>";
-		$msg .= "<h4><a href=$url>Click link here</a></h4><br>";
-		$msg .= "<h4>Email would be sent to: $to, </h4><br>";
-		$msg .= "<h4>With subject: $subject, </h4><br>";
-		$msg .= "<h4>Used template name: $template_name,</h4><br>";
-		$msg .= "<h4>Sending fields:</h4><br>";
-		foreach ($fields as $key => $value) {
-			$msg .= "$key: $value\n";
-		}
-		$_SESSION['nn']->fatal($msg);
-		}
-	require_once 'vendor/autoload.php';
+use PHPMailer\PHPMailer\PHPMailer;
 
-	// Configure API key authorization: apikey
-	$config = ElasticEmail\Configuration::getDefaultConfiguration()->setApiKey('X-ElasticEmail-ApiKey', getenv("AAMKS_MAIL_API_KEY"));
-	// Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
-	// $config = ElasticEmail\Configuration::getDefaultConfiguration()->setApiKeyPrefix('X-ElasticEmail-ApiKey', 'Bearer');
- 
- 
-	$apiInstance = new ElasticEmail\Api\EmailsApi(
-    // If you want use custom http client, pass your client which implements `GuzzleHttp\ClientInterface`.
-    // This is optional, `GuzzleHttp\Client` will be used as default.
-    new GuzzleHttp\Client(),
-    $config
-	);
-	$email_message_data = new \ElasticEmail\Model\EmailTransactionalMessageData([
-		"recipients" => new \ElasticEmail\Model\TransactionalRecipient([
-			"to" => [$to],
-		]),
-		"content" => new \ElasticEmail\Model\EmailContent([
-			"body" => [new \ElasticEmail\Model\BodyPart([
-					"content_type" => "HTML",
-					"charset" => "utf-8",
-					"content" => "",
-					//"content" => $msg,
-				])
-			],
-			//"merge" => ["url" => "www.google.pl"],
-			"merge" => $fields,
-			"template_name" => $template_name,
-			"from" => getenv("AAMKS_MAIL_SENDER"),
-			"subject" => $subject,
-			"reply_to" => getenv("AAMKS_MAIL_SENDER"),
-		])
-	]);
-	try {
-		$response = $apiInstance->emailsTransactionalPost($email_message_data);
-	} catch (Exception $e) {
-		echo 'Exception when calling EE API: ', $e->getMessage(), PHP_EOL;
+require_once("inc.php");
+function sendMail($to, $subject, $message) { #{{{
+	if(getenv("AAMKS_USE_MAIL")==0) {
+		$_SESSION['nn']->cannot($message);
 	}
+	require_once('vendor/autoload.php');
+	$mail = new PHPMailer();
+	$mail->CharSet = 'UTF-8';
+	$mail->Encoding = 'base64';
+	$mail->isSMTP();
+	$mail->Host = 'smtp.office365.com';
+	$mail->Port = 587;
+	$mail->SMTPSecure = 'tls';
+	$mail->SMTPAuth = true; // false?
+	// $mail->SMTPKeepAlive = true;
+	// $mail->Mailer = “smtp”;
+	$mail->Username = getenv("AAMKS_MAIL_SENDER");
+	$mail->Password = getenv("AAMKS_MAIL_PASSWORD");
+	$mail->addAddress($to);
+	$mail->Subject = $subject;
+	$mail->isHTML(true);
+	$mail->Body = "$message";
+	$mail->AltBody = "$message";
+	$mail->setFrom(getenv("AAMKS_MAIL_SENDER"), 'AAMKS');
+	#$mail->SMTPDebug = 2;
+	$mail->send();
+	$_SESSION['nn']->cannot($mail->ErrorInfo);
+}
+function update_template($url, $template){
+	$path = getenv("AAMKS_PATH");
+	$str = file_get_contents("$path/gui/mail_template/$template.html");
+	$str = str_replace("{url}", $url, $str);
+	return $str;
 }
 /*}}}*/
 function loginphp(){/*{{{*/
@@ -128,11 +110,7 @@ function do_login() { #{{{
 			$_SESSION['nn']->fatal("Email address not activated!");
 		}
 	}else{
-		$_SESSION['reset_email']=$_POST['email'];
 		$_SESSION['nn']->cannot("Wrong email or password");
-		echo "<center><br><br><br><br><br>Generate new password for email ".$_POST['email']." click <a href=?reset>HERE</a> or try to login once more<br><br>
-			<br><br> <br><br> <br><br> <br><br> <br><br> <br>
-			";
 	}
 	if(isset($_POST['register'])){
 		echo"Register";
@@ -150,14 +128,14 @@ function do_register(){/*{{{*/
 	$token=md5(time());
 	$_SESSION['nn']->query("insert into users (user_name, email, password, activation_token,active_scenario) values ($1,$2,$3,$4,$5)", array($name, $email, $salted,$token,1));
 	$_SESSION['nn']->msg("We send you email to activation account. Check inbox or spam folder for activation link!");
-	sendMail($email,"AAMKS activation account",["url" => "https://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token"], "activation");
-	
-	//echo "<br>activation account <a href=login.php?activation_token=$token>Click here</a>";  
+	sendMail($email,"AAMKS activation account",update_template("https://$_SERVER[SERVER_NAME]/aamks/login.php?activation_token=$token", 'activation'));
+
+	//echo "<br>activation account <a href=login.php?activation_token=$token>Click here</a>";
 	//header("Location: login.php"); // Finland only
 }/*}}}*/
 function do_logout() { #{{{
 
-	#echo "<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google 
+	#echo "<div class='g-signin2' data-onsuccess='onSignIn' data-theme='dark'  data-longtitle='true' style='display:none' ></div>"; //to sign out of google
 	#TODO FINLAND
 	$_SESSION=[];
 	session_destroy();
@@ -200,23 +178,35 @@ function activate_user(){/*{{{*/
 		$_SESSION['nn']->fatal("Activation token not valid");
 	} else {
 		$_SESSION['nn']->query("UPDATE users SET activation_token='already activated' WHERE id=$1", array($r[0]['id'])) ;
-		$pid=$_SESSION['nn']->query("insert into projects (user_id, project_name) values ($1,$2) RETURNING id", array($r[0]['id'], 'demo'));
-		$_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'three'));
-		$_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'navmesh'));
-		$sid=$_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'simple'));
+		$pid = $_SESSION['nn']->query("insert into projects (user_id, project_name) values ($1,$2) RETURNING id", array($r[0]['id'], 'demo'));
+		$tid = $_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'three'));
+		$nid = $_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'navmesh'));
+		$sid = $_SESSION['nn']->query("insert into scenarios (project_id, scenario_name) values ($1,$2) RETURNING id", array($pid[0]['id'], 'simple'));
+
+		$_SESSION['nn']->query("CREATE TEMP TABLE tmp (like simulations)");
+		$_SESSION['nn']->query("INSERT INTO tmp SELECT * FROM simulations WHERE project = 1 AND scenario_id IN (1, 2, 3) AND iteration IN (1,2,3,4,5,6,7,8,9,10)");
+		$_SESSION['nn']->query("UPDATE tmp SET id = nextval('simulations_id_seq')");
+		$_SESSION['nn']->query("UPDATE tmp SET project = $1", array($pid[0]['id']));
+		$_SESSION['nn']->query("UPDATE tmp SET scenario_id = $1 WHERE scenario_id = 1", array($sid[0]['id']));
+		$_SESSION['nn']->query("UPDATE tmp SET scenario_id = $1 WHERE scenario_id = 2", array($nid[0]['id']));
+		$_SESSION['nn']->query("UPDATE tmp SET scenario_id = $1 WHERE scenario_id = 3", array($tid[0]['id']));
+		$_SESSION['nn']->query("INSERT INTO simulations SELECT * from tmp");
+		$_SESSION['nn']->query("DROP TABLE tmp");
+
 		$_SESSION['nn']->query("update users set active_scenario = $1 where id=$2", array($sid[0]['id'], $r[0]['id']));
 		$ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.id=$1", array($r[0]['id']));
 
-		$AAMKS_PATH=getenv("AAMKS_PATH"); 
+		$AAMKS_PATH=getenv("AAMKS_PATH");
 		$user_dir="/home/aamks_users/".$ret[0]['email'];
 
 		system("
 			mkdir -p $user_dir
 			cp -r $AAMKS_PATH/installer/demo/ $user_dir
 		");
+		run_conf_subst($user_dir, $pid[0]['id'], $sid[0]['id'], $nid[0]['id'], $tid[0]['id']);
 		//$_SESSION['nn']->ch_main_vars($ret[0]);
 		$_SESSION['nn']->msg("Account activated! You can login now!");
-		//header("location:/aamks/login.php"); 
+		//header("location:/aamks/login.php");
 	}
 
 	# psql aamks -c 'select * from users';
@@ -249,13 +239,12 @@ function reset_password(){/*{{{*/
 			if(empty($result)){
 				echo "<center><br><br><a href=https://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 				$_SESSION['nn']->fatal("There is no such email in our database!");
-				header("location:/aamks/login.php"); 
+				header("location:/aamks/login.php");
 				exit();
 			}else{
 				$ret=$_SESSION['nn']->query("UPDATE users SET reset_token = $1, access_time = $2 where email = $3 returning id", array($token, $expDate, $reset_email));
 				$_SESSION['nn']->msg("Email sent, check inbox or spam folder for reset link!");
-				$_SESSION['reset_email'] = $reset_email;
-				sendMail($reset_email,"AAMKS reset password",["url" => "https://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token"], "password_reset");
+				sendMail($reset_email,"AAMKS reset password",update_template("https://$_SERVER[SERVER_NAME]/aamks/login.php?reset=$token", "password_reset"));
 				//echo "Email sent to $reset_email" ;
 				//echo " <a href=".loginphp()."?reset=$token>HERE</a>";
 			}
@@ -263,26 +252,39 @@ function reset_password(){/*{{{*/
 	}else{
 /*{{{FORM*/
 	   $form = "
-		<form method=POST> <center>
+		<form method=POST id='passForm'> <center>
 		<br><br>
 		<div class=frame>
 		<table>
-		<tr><td>Your e-mail<td><input type=email name=email value='$_SESSION[reset_email]' readonly size=32 >
-		<tr><td>Set new password<td><input type=password name='password' size=32 placeholder='new password' >
+		<tr><td>Set new password<td><input type=password id='password' size=32 placeholder='new password' >
+		<tr><td>Confirm password<td><input type=password id='password2' size=32 placeholder='new password' >
 		</table><br>
 		<input type=submit name=reset value='RESET'>
 		</div>
 		</form>
-		</center> ";/*}}}*/
+		</center>
+		<script>
+		document.getElementById('passForm').addEventListener('submit', function(event){
+			const regex = /^(?=.*[!@#$%^&*(),.?:{}|<>])(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+			const pass = document.getElementById('password').value;
+			const pass2 = document.getElementById('password2').value;
+			if (!regex.test(pass) ) {
+				event.preventDefault();
+				amsg({'msg': 'Password must be at least 8 characters long, contain at least one special character, one lowercase letter, one uppercase letter, and one digit!', 'err':2, 'duration': 3000 });
+			} else if (pass !== pass2) {
+				event.preventDefault();
+				amsg({'msg': 'Password do not match!', 'err':2, 'duration': 3000 });
+			}
+		});
+		</script>";/*}}}*/
 		if(!isset($_POST['reset'])){//show reset form
 	# echo 'select * from users' | psql aamks
 		echo $form;
 		}else{//do the reseting
-			$reset_email = $_SESSION['reset_email'];
-			$result = $_SESSION['nn']->query("SELECT * FROM users WHERE reset_token = $1 AND email=$2", array($_GET['reset'], $reset_email));
+			$result = $_SESSION['nn']->query("SELECT * FROM users WHERE reset_token = $1", array($_GET['reset']));
 			if(!empty($result)){
 				if($result[0]['access_time'] >= date("Y-m-d H:i:s")){
-					if($ret=$_SESSION['nn']->query("UPDATE users SET password = $1, reset_token = NULL, access_time = NULL where email = $2 AND reset_token = $3 returning *", array(salt($_POST['password']), $_SESSION['reset_email'], $_GET['reset']))){
+					if($ret=$_SESSION['nn']->query("UPDATE users SET password = $1, reset_token = NULL, access_time = NULL where email = $2 AND reset_token = $3 returning *", array(salt($_POST['password']), $result[0]['email'], $_GET['reset']))){
 						$_SESSION['header_ok'][]="Password changed!";
 						$ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.id=$1", array($ret[0]['id']));
 						$_SESSION['nn']->ch_main_vars($ret[0]);
@@ -332,11 +334,11 @@ function edit_user(){/*{{{*/
 		$_SESSION['header_ok'][]="SAVED";
 		header("location:".loginphp());
 		}
-	edit_user_form();	
+	edit_user_form();
 }/*}}}*/
 
 function main() { /*{{{*/
-	require_once("inc.php"); 
+	require_once("inc.php");
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	$_SESSION['nn']->htmlHead("Aamks");
 	if(isset($_GET['edit_user'])) { edit_user();}

@@ -126,6 +126,11 @@ CREATE TABLE fed_growth_cells_data (---{{{
     samples_number integer,
     modified timestamp without time zone not null default now()
 );
+CREATE TABLE access (---{{{
+	id serial PRIMARY KEY, 
+	user_id integer,
+	valid_to timestamp
+);
 ---}}}
 ---{{{ TRIGGERS
 CREATE TRIGGER update_modified BEFORE UPDATE ON categories FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
@@ -164,6 +169,10 @@ GRANT ALL ON SEQUENCE simulations_id_seq TO aamks;
 ALTER TABLE users OWNER TO aamks;
 GRANT ALL ON TABLE users TO aamks;
 GRANT ALL ON SEQUENCE users_id_seq TO aamks;
+
+ALTER TABLE access OWNER TO aamks;
+GRANT ALL ON TABLE access TO aamks;
+GRANT ALL ON SEQUENCE access_id_seq TO aamks;
 
 ALTER TABLE fed_growth_cells_data OWNER TO aamks;
 ALTER TABLE fed_growth_cells_data ADD CONSTRAINT fed_growth_cells_data_scenario_id FOREIGN KEY (scenario_id) REFERENCES scenarios (id) ON UPDATE CASCADE ON DELETE CASCADE;

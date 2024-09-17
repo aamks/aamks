@@ -6,7 +6,7 @@ AAMKS_PG_PASS='hulakula'
 AAMKS_REDIS_PASS='hulakula'
 AAMKS_SALT='aamksisthebest'
 AAMKS_USE_MAIL=0											# needed if we allow users to register accounts and reset passwords
-AAMKS_MAIL_API_KEY='none'								    # check documentation on github and set your own values
+AAMKS_MAIL_PASSWORD='none'								    # check documentation on github and set your own values
 AAMKS_MAIL_SENDER='none'                                    # set your verified sending email 
 
 # Aamks uses postgres (user:aamks, db:aamks) for collecting the simulations data.

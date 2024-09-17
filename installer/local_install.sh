@@ -28,7 +28,7 @@ echo "AAMKS_REDIS_PASS: $AAMKS_REDIS_PASS"
 echo "AAMKS_WORKER: $AAMKS_WORKER"
 echo "AAMKS_SALT: $AAMKS_SALT"
 echo "AAMKS_USE_MAIL: $AAMKS_USE_MAIL"
-echo "AAMKS_MAIL_API_KEY: $AAMKS_MAIL_API_KEY"
+echo "AAMKS_MAIL_PASSWORD: $AAMKS_MAIL_PASSWORD"
 echo "AAMKS_MAIL_SENDER: $AAMKS_MAIL_SENDER"
 echo "PYTHONPATH: $PYTHONPATH"
 echo; echo;
@@ -46,14 +46,12 @@ sudo chown -R "$USER":"$USER" /etc/aamksconf.json
 # clear $AAMKS_PATH if there is already any content
 if [ -d "$AAMKS_PATH" ]; then
 	sudo rm -r "$AAMKS_PATH"
-	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
-else
-	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
 fi
+	sudo git clone https://github.com/aamks/aamks "$AAMKS_PATH"
 
 sudo chown -R "$USER":"$USER" "$AAMKS_PATH"
+chmod a+x "$AAMKS_PATH/fire/cfast7_linux_64"
 cd "$AAMKS_PATH" || exit
-git switch dev
 python3.10 -m venv env
 env/bin/pip install -r requirements.txt
 # mkdir if there is not any
@@ -76,7 +74,7 @@ echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> "$temp"
 echo "export AAMKS_REDIS_PASS='$AAMKS_REDIS_PASS'" >> "$temp"
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> "$temp"
 echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> "$temp"
-echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> "$temp"
+echo "export AAMKS_MAIL_PASSWORD='$AAMKS_MAIL_PASSWORD'" >> "$temp"
 echo "export AAMKS_MAIL_SENDER='$AAMKS_MAIL_SENDER'" >> "$temp"
 echo "export PYTHONPATH='$PYTHONPATH'" >> "$temp"
 sudo cp "$temp" /etc/apache2/envvars
@@ -92,7 +90,7 @@ echo "export AAMKS_PG_PASS='$AAMKS_PG_PASS'" >> "$temp"
 echo "export AAMKS_REDIS_PASS='$AAMKS_REDIS_PASS'" >> "$temp"
 echo "export AAMKS_SALT='$AAMKS_SALT'" >> "$temp"
 echo "export AAMKS_USE_MAIL='$AAMKS_USE_MAIL'" >> "$temp"
-echo "export AAMKS_MAIL_API_KEY='$AAMKS_MAIL_API_KEY'" >> "$temp"
+echo "export AAMKS_MAIL_PASSWORD='$AAMKS_MAIL_PASSWORD'" >> "$temp"
 echo "export AAMKS_MAIL_SENDER='$AAMKS_MAIL_SENDER'" >> "$temp" 
 echo "export PYTHONPATH='$PYTHONPATH'" >> "$temp"
 echo "export PYTHONIOENCODING='UTF-8'" >> "$temp"
@@ -104,7 +102,7 @@ echo "export USERNAME='$USERNAME'" >> "$temp"
 echo "export LOGNAME='$(id -un)'" >> "$temp"
 echo "export HOSTNAME='$HOSTNAME'" >> "$temp"
 echo "alias aamks='cd /usr/local/aamks/'" >> "$temp"
-echo "alias aamks.manager='cd /usr/local/aamks/manager; python3 manager.py'" >> "$temp"
+echo "alias aamks.manager='/usr/local/aamks/env/bin/python3 /usr/local/aamks/redis_aamks/manager.py'" >> "$temp"
 echo "alias AA='cd /usr/local/aamks/; env/bin/python3 aamks.py; cd $AAMKS_PROJECT/workers;'" >> "$temp"
 echo "alias AP='cd $AAMKS_PROJECT'" >> "$temp"
 
@@ -112,15 +110,15 @@ echo "Add some variables to your .bashrc"
 sudo cp "$temp" ~/.bashrc
 rm "$temp"
 
+sudo groupadd docker
 sudo usermod -a -G docker $USERNAME
 cd "$AAMKS_PATH"/redis_aamks || exit
 sudo docker-compose up -d
 
 [ "X$AAMKS_USE_MAIL" == "X1" ] && { 
-	# TODO - instructables for sending mail via mail
 	sudo apt-get --yes install composer
 	cd $AAMKS_PATH/gui
-	composer install
+	composer require phpmailer/phpmailer
 }
 echo; echo; echo  "sudo service apache2 restart..."
 sudo service apache2 restart
@@ -158,6 +156,6 @@ echo "Default user email: demo@aamks"
 echo "Password: AAMKSisthe1!"
 echo "In order to run simulations in redis mode configure workers in network or start worker via redis manager."
 echo "You can start redis server and worker via command:"
-echo "python3 $AAMKS_PATH/redis_aamks/manager.py --serverstart"
-echo "python3 $AAMKS_PATH/redis_aamks/manager.py --runlocal -n 1";
+echo "$AAMKS_PATH/env/bin/python3 $AAMKS_PATH/redis_aamks/manager.py --serverstart"
+echo "$AAMKS_PATH/env/bin/python3 $AAMKS_PATH/redis_aamks/manager.py --runlocal -n 1"
 echo "Log out and log in to reload USER group settings"
