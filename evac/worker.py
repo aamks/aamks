@@ -938,8 +938,7 @@ class Worker:
         itself.
         '''
         if not e:
-            self._write_animation_zips()
-            self._animation_save_psql()
+            self._animation_save()
             LocalResultsCollector(self._get_meta(e)).psql_report()
         else:
             LocalResultsCollector(self._get_meta(e)).psql_error()
@@ -1019,20 +1018,27 @@ class Worker:
         finally:
             zf.close()
 
-    def _animation_save_psql(self):# {{{
+    def _animation_save(self):# {{{
         params=OrderedDict()
-        params['sort_id']=self.sim_id
-        params['title']="sim.{}".format(self.sim_id)
-        params['time']=time.strftime("%H:%M %d.%m", time.gmtime())
-        params['srv']=0
-        params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
-        params['highlight_geom']=None
-        params['anim']="{}/{}_{}_{}_anim.zip".format(self.sim_id, self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
         p = Psql()
-        p.query(f"""UPDATE simulations SET animation = '{json.dumps(params)}'
-                WHERE project={self.vars['conf']['project_id']} AND scenario_id={self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")
+        is_anim = p.query(f"""SELECT is_anim FROM simulations WHERE project={self.vars['conf']['project_id']} AND scenario_id=
+                          {self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")[0][0]
+        if is_anim:
+            params['sort_id']=self.sim_id
+            params['title']="sim.{}".format(self.sim_id)
+            params['time']=time.strftime("%H:%M %d.%m", time.gmtime())
+            params['srv']=0
+            params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
+            params['highlight_geom']=None
+            params['anim']="{}/{}_{}_{}_anim.zip".format(self.sim_id, self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
+            p.query(f"""UPDATE simulations SET animation = '{json.dumps(params)}'
+                    WHERE project={self.vars['conf']['project_id']} AND scenario_id={self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")
+            self.wlogger.info("Animation saved to psql")
 
-        self.wlogger.info("Animation saved to psql")
+            self._write_animation_zips()
+
+        else:
+            self.wlogger.info("Iteration without animation")
     # }}}
 
     # gather data across all floors
@@ -1050,6 +1056,22 @@ class Worker:
 
         return collected_fed
 
+    def cleanup(self):
+        os.remove("finals.sqlite")
+        os.remove("cfast_devices.csv")
+        os.remove("cfast_vents.csv")
+        os.remove("cfast_walls.csv")
+        os.remove("cfast_masses.csv")
+        os.remove("cfast_zone.csv")
+        os.remove("cfast.log")
+        os.remove("cfast.smv")
+        os.remove("cfast.out")
+        os.remove("cfast.plt")
+        os.remove("cfast.status")
+        os.remove("cfast_evac_socket_port.txt")
+        # os.remove("doors_opening_level_frame.txt") #fortran issue
+        # os.remove("times.txt")
+        shutil.rmtree("door_opening_changes")
 
     def main(self):
         self.get_config()
@@ -1061,6 +1083,7 @@ class Worker:
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
+        self.cleanup()
         self.wlogger.info('Simulation ended successfully')
 
     def test(self):

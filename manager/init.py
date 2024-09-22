@@ -155,6 +155,7 @@ class OnEnd():
         '''
 
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
+        animations_number = self.conf['animations_number']
         logger.info(f"run job {os.environ['AAMKS_WORKER']}")
         if os.environ['AAMKS_WORKER']=='none':
             return
@@ -162,10 +163,15 @@ class OnEnd():
         if os.environ['AAMKS_WORKER']=='local':
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
+                job_id=datetime.datetime.now().strftime("%Y%m%d")+f"-iter-{i}"
+                if animations_number > 0:
+                    is_anim = 1
+                    animations_number -= 1
+                else:
+                    is_anim = 0
+                self.p.query(f"UPDATE simulations SET job_id='{job_id}', is_anim={is_anim} WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                 logger.info('start worker.py sim - %s', i)
                 exit_status = subprocess.run(["{}/env/bin/python3".format(os.environ['AAMKS_PATH']), "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
-                job_id=datetime.datetime.now().strftime("%Y%m%d")+f"-iter-{i}"
-                self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                 if exit_status.returncode != 0:
                     logger.error('worker exit status - %s', exit_status)
                 else:
@@ -175,6 +181,12 @@ class OnEnd():
         if os.environ['AAMKS_WORKER']=='gearman':
             try:
                 for i in range(*si.get()):
+                    if animations_number > 0:
+                        is_anim = 1
+                        animations_number -= 1
+                    else:
+                        is_anim = 0
+                    self.p.query(f"UPDATE simulations SET is_anim={is_anim} WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                     worker = worker.replace("/home","/mnt")
                     gearman=["gearman", "-v",  "-b", "-f", "aRun", worker]
@@ -193,6 +205,12 @@ class OnEnd():
             AR = AARedis()
             try:
                 for i in range(*si.get()):
+                    if animations_number > 0:
+                        is_anim = 1
+                        animations_number -= 1
+                    else:
+                        is_anim = 0
+                    self.p.query(f"UPDATE simulations SET is_anim={is_anim} WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                     worker_pwd="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                     messege_redis = AR.main(worker_pwd)
                     job_id = messege_redis['id']
