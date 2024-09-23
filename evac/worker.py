@@ -78,6 +78,7 @@ class Worker:
         self.connection_thread = None
         self.cfast_door_opening_level = {}
         self.rooms = {}
+        self.is_anim = 0
 
 
     def get_logger(self, logger_name):
@@ -1021,9 +1022,9 @@ class Worker:
     def _animation_save(self):# {{{
         params=OrderedDict()
         p = Psql()
-        is_anim = p.query(f"""SELECT is_anim FROM simulations WHERE project={self.vars['conf']['project_id']} AND scenario_id=
+        self.is_anim = p.query(f"""SELECT is_anim FROM simulations WHERE project={self.vars['conf']['project_id']} AND scenario_id=
                           {self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")[0][0]
-        if is_anim:
+        if self.is_anim:
             params['sort_id']=self.sim_id
             params['title']="sim.{}".format(self.sim_id)
             params['time']=time.strftime("%H:%M %d.%m", time.gmtime())
@@ -1057,21 +1058,22 @@ class Worker:
         return collected_fed
 
     def cleanup(self):
-        os.remove("finals.sqlite")
-        os.remove("cfast_devices.csv")
-        os.remove("cfast_vents.csv")
-        os.remove("cfast_walls.csv")
-        os.remove("cfast_masses.csv")
-        os.remove("cfast_zone.csv")
-        os.remove("cfast.log")
-        os.remove("cfast.smv")
-        os.remove("cfast.out")
-        os.remove("cfast.plt")
-        os.remove("cfast.status")
-        os.remove("cfast_evac_socket_port.txt")
-        # os.remove("doors_opening_level_frame.txt") #fortran issue
-        # os.remove("times.txt")
-        shutil.rmtree("door_opening_changes")
+        if not self.is_anim:
+            os.remove("finals.sqlite")
+            os.remove("cfast_devices.csv")
+            os.remove("cfast_vents.csv")
+            os.remove("cfast_walls.csv")
+            os.remove("cfast_masses.csv")
+            os.remove("cfast_zone.csv")
+            os.remove("cfast.log")
+            os.remove("cfast.smv")
+            os.remove("cfast.out")
+            os.remove("cfast.plt")
+            os.remove("cfast.status")
+            os.remove("cfast_evac_socket_port.txt")
+            # os.remove("doors_opening_level_frame.txt") #fortran issue
+            # os.remove("times.txt")
+            shutil.rmtree("door_opening_changes")
 
     def main(self):
         self.get_config()
