@@ -450,10 +450,6 @@ class CfastMcarlo():
             collect.append(f"CRITERION = 'TIME' T = {activation_delay},{activation_delay+start_up} F = 0,1 /")
             txt.append(', '.join(str(i) for i in collect))
         return "\n".join(txt)+"\n" if len(txt) > 1 else ""
-    
-    
-
-
 
     def _section_mvent_cfast_100(self):# {{{
         txt=['!! SECTION MECHANICAL VENT']
@@ -480,42 +476,6 @@ class CfastMcarlo():
             collect.append("ORIENTATIONS = '{}'".format(orientation)) # ONLY FOR VISUALISATION
             collect.append("OFFSETS = {}, {}".format(0, 0)) # ONLY FOR VISUALISATION
             # x, y must be relative to room, not absolute
-            # TODO add detection time to running mechanical ventilation
-            activation_delay = self.conf['NSHEVS']['activation_time']
-            start_up = self.conf['NSHEVS']['startup_time']
-            collect.append(f"CRITERION = 'TIME' T = {activation_delay},{activation_delay+start_up} F = 0,1 /")
-            txt.append(', '.join(str(i) for i in collect))
-        
-        return "\n".join(txt)+"\n" if len(txt) > 1 else ""
-    
-    
-
-
-
-    def _section_mvent_cfast_100(self):# {{{
-        txt=['!! SECTION MECHANICAL VENT']
-        for v in self.s.query( "SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
-            if v['vent_from_name'] not in self.cfast_100_compartments_names and v['vent_to_name'] not in self.cfast_100_compartments_names:
-                continue
-            if v['mvent_throughput'] < 0:
-                comp_ids = [cfast_name(v['vent_from_name']), 'OUTSIDE']
-            else:
-                comp_ids = ['OUTSIDE', cfast_name(v['vent_from_name'])]
-            if v['is_vertical'] is True:
-                orientation = 'VERTICAL'
-            else:
-                orientation = 'HORIZONTAL'
-            collect=[]
-            collect.append("&VENT TYPE = 'MECHANICAL'")
-            collect.append("ID = '{}'".format(v['name']))
-            collect.append("COMP_IDS = '{}', '{}'".format(comp_ids[0], comp_ids[1]))
-            area = round((v['width']*v['depth'])/1e4, 2)
-            collect.append("AREAS = {}, {}".format(area, area))
-            collect.append("HEIGHTS = {}, {}".format(round(v['height']/100, 2), round(v['height'], 2)))
-            collect.append("FLOW = {}".format(abs(v['mvent_throughput'])))
-            collect.append("CUTOFFS = 200, 300")
-            collect.append("ORIENTATIONS = '{}'".format(orientation))
-            collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))
             # TODO add detection time to running mechanical ventilation
             activation_delay = self.conf['NSHEVS']['activation_time']
             start_up = self.conf['NSHEVS']['startup_time']
