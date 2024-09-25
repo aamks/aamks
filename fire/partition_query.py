@@ -496,7 +496,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         elif ul_od_cor == 0:
             finals['min_vis_cor'] = 30
         else:
-            finals['min_vis_cor'] = c_const / (ul_od_cor * 2.303)
+            finals['min_vis_cor'] = min([30, c_const / (ul_od_cor * 2.303)])
 
 
         # min(ULOD_COMPA)
@@ -504,7 +504,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         if ul_od_compa == 0:
             finals['min_vis_compa'] = 30
         else:
-            finals['min_vis_compa'] = c_const /(ul_od_compa * 2.303)
+            finals['min_vis_compa'] = min([30, c_const /(ul_od_compa * 2.303)])
 
         # total heat released
         hrrs = self.sf.query("SELECT value FROM finals WHERE param='HRR' AND param_sec='1'")
