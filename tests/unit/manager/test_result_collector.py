@@ -1,11 +1,11 @@
 from unittest import TestCase
-from manager.results_collector import ResultsCollector
+from redis_aamks.manager import RedisManager
 
 
 class TestEvacuee(TestCase):
     @classmethod
     def setUp(cls) -> None:
-        cls.ResultCollector = ResultsCollector(1)
+        cls.ResultCollector = RedisManager()
 
     def test_read_json(self):
         expected_id = 4

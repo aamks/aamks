@@ -673,8 +673,8 @@ class Worker:
 
         while 1:
             time_frame += cfast_step    # increase upper limit of time_frame
-
-            if time_frame == (self.vars['conf']['simulation_time']):
+            # check for user time limit
+            if time_frame >= (self.vars['conf']['simulation_time']):
                 self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
                 self.simulation_time = time_frame
                 self.time_shift = 0
