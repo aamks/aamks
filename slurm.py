@@ -17,6 +17,7 @@ def launch(path: str, user_id: int):
     conf = Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
     p_id = conf['project_id']
     s_id = conf['scenario_id']
+    animations_number = conf['animations_number']
 
     # initiate slurm wrapper
     slurm = Slurm()
@@ -48,8 +49,13 @@ def launch(path: str, user_id: int):
 
     # log slurm job_id to PSQL (that could be done in PSQL itself with generate_series - to be considered
     for i in range(*irange):
-        Psql().query("INSERT INTO simulations(iteration,project,scenario_id,job_id) VALUES(%s,%s,%s,%s)", 
-                (i,conf['project_id'], conf['scenario_id'], f'{job_id}_{i}'))
+        if animations_number > 0:
+            is_anim = 1
+            animations_number -= 1
+        else:
+            is_anim = 0
+        Psql().query("INSERT INTO simulations(iteration,project,scenario_id,job_id,is_anim) VALUES(%s,%s,%s,%s,%s)", 
+                (i,conf['project_id'], conf['scenario_id'], f'{job_id}_{i}', is_anim))
 
 
 
