@@ -212,6 +212,7 @@ class Worker:
         self.exit_code = None
         self.rooms = {}
         self.is_anim = 0
+        self.previous_critical_rooms = {}
 
 
     def get_logger(self, logger_name):
@@ -511,7 +512,7 @@ class Worker:
 
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
-            eenv.generate_nav_mesh()
+            eenv.generate_nav_mesh(self.working_dir)
             self.wlogger.debug('Added obstacles on floor: {}, number of vercites: {}'.format(1, num_of_vertices))
 
             e = self._create_evacuees(floor)
@@ -787,21 +788,22 @@ class Worker:
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
 
     def change_pynavmesh_due_to_smoke(self):
-        critical_conditions_rooms = {}
-        for f in self.floors:
-            critical_conditions_rooms[f.floor] = []
-        for floor, rooms_smoke in self.smoke_opacity[-1].items():
-            for room_id, room_od in rooms_smoke.items():
-                    if room_od > 0.666:
-                        critical_conditions_rooms[self.rooms[room_id]['floor']].append(room_id)
+        # use floor parameter instead of reading opacity from smoke_opacity
+        # avoid recreating pynavmesh if not necessary
         for floor in self.floors:
-            if len(critical_conditions_rooms[floor.floor]) > 0:
-                self.generate_new_pynavmesh(floor, critical_conditions_rooms[floor.floor])
+            try:
+                self.previous_critical_rooms[floor.floor]
+            except KeyError:
+                self.previous_critical_rooms[floor.floor] = []
+            if floor.unavailable_rooms != self.previous_critical_rooms[floor.floor]:
+                if len(floor.unavailable_rooms) > 0:
+                    self.generate_new_pynavmesh(floor, floor.unavailable_rooms)
+                    self.previous_critical_rooms[floor.floor] = floor.unavailable_rooms
 
     def generate_new_pynavmesh(self, floor, floor_critical_rooms):
         figure_points = []
-        first_pynavmesh = open("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav_first'))
-        lines = first_pynavmesh.readlines()
+        with open(os.path.join(self.working_dir, f'pynavmesh{floor.floor}.nav_first')) as first_pynavmesh:
+            lines = first_pynavmesh.readlines()
         points = lines[0].split()
         x_list = points[::3]
         z_list = points[2::3]
@@ -851,12 +853,13 @@ class Worker:
             figures_points = figures_points[int(polygons[id]):]
             figures_points_after_removal.extend(elements_to_move)
 
-        with open("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav'), 'w') as file:
+        new_navmesh_path = os.path.join(self.working_dir, f'pynavmesh{floor.floor}.nav')
+        with open(new_navmesh_path, 'w') as file:
             file.write(' '.join(points) + '\n')
             file.write(' '.join(figures_points_after_removal) + '\n')
             file.write(' '.join(polygons_after_removal))
 
-        vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav'))
+        vert, polygs = evac.pathfinder.read_from_text(new_navmesh_path)
         floor.nav.navmesh = Pynavmesh(vert, polygs)
 
 
@@ -1139,6 +1142,11 @@ class Worker:
             # os.remove("doors_opening_level_frame.txt") #fortran issue
             # os.remove("times.txt")
             shutil.rmtree("door_opening_changes")
+            for floor in self.floors:
+                try:
+                    os.remove(f'pynavmesh{floor.floor}.nav')
+                except FileNotFoundError:
+                    continue
 
     def main(self):
         self.get_config()
