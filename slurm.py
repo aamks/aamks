@@ -9,6 +9,7 @@ def_args = [
         '--ntasks_per_core', 1,
         ]
 python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "python")}'
+python_env_aamks_server = f'{os.path.join(os.environ["AAMKS_PATH"], "env-server", "bin", "python")}'
 
 # launch aamks jobs
 def launch(path: str, user_id: int):
@@ -23,7 +24,7 @@ def launch(path: str, user_id: int):
     slurm = Slurm()
     slurm.add_arguments(*def_args)
     slurm.set_partition('aamks-worker')
-    slurm.set_account(user_id)
+    slurm.set_account(f'aamks-{user_id}')
     slurm.set_chdir(path)
     slurm.set_output(f'workers/%a/slurm.out')
     slurm.set_error(f'workers/%a/slurm.err')
@@ -71,7 +72,7 @@ def postprocess(path: str, scenarios: list):
     slurm.set_error(f'slurm_pp.err')
 
     # add a job to priority aamks-server partition
-    command = f'{python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "results", "beck_new.py")} {path} {" ".join(scenarios)}'
+    command = f'{python_env_aamks_server} {os.path.join(os.environ["AAMKS_PATH"], "results", "beck_new.py")} {path} {" ".join(scenarios)}'
     print(slurm)
     print(command)
     try:
@@ -93,7 +94,7 @@ def animation(path: str, project_id: int, scenario_id: int, iteration: int):
     slurm.set_error(f'slurm_a.err')
 
     # add a job to priority aamks-server partition
-    command = f'{python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "results", "beck_anim.py")} {path} {project_id} {scenario_id} {iteration}'
+    command = f'{python_env_aamks_server} {os.path.join(os.environ["AAMKS_PATH"], "results", "beck_anim.py")} {path} {project_id} {scenario_id} {iteration}'
     try:
         job_id = slurm.sbatch(command)
     except AssertionError:

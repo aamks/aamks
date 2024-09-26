@@ -196,7 +196,7 @@ class Psql: # {{{
 
     def dump(self):
         self.json=Json()
-        self.conf=self.json.read(os.path.join("os.environ['AAMKS_PROJECT']", "aamks", "conf.json"))
+        self.conf=self.json.read(os.path.join("os.environ['AAMKS_PROJECT']", "conf.json"))
         print("dump() from caller: {}, {}".format(inspect.stack()[1][1], inspect.stack()[1][3]))
         for i in self.query("SELECT id,project,iteration,to_char(current_timestamp, 'Mon.DD HH24:MI'),data FROM simulations WHERE project=%s ORDER BY id", (self._project_name,) ):
             print(i)

@@ -249,6 +249,8 @@ class Worker:
             self.send_report(e={"status":17})
             sys.exit(1)
 
+        self.detection_time = self.config['DETECTION_TIME']
+
         self.project_conf=self.json.read("../../conf.json")
 
         self.sim_id = self.vars['conf']['SIM_ID']
