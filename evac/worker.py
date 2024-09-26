@@ -284,7 +284,6 @@ class Worker:
             
 
     def create_geom_database(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL')
         floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%'")
@@ -776,7 +775,7 @@ class Worker:
             else:
                 self.wlogger.error(f'There was no data found at {time_frame} s in CFAST results.')
                 self.send_report(e={"status":33})
-                break
+                exit()   # return status 33 - we don't want to continue from here
 
             self.cfast_socket_communication_handle(time_frame)
 

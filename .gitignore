@@ -1,6 +1,7 @@
 /.idea
 .vscode
 /env
+/env-server
 __pycache__/
 /htmlcov
 .coverage
