@@ -452,7 +452,7 @@ class Worker:
 
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
-            eenv.generate_nav_mesh()
+            eenv.generate_nav_mesh(self.working_dir)
             self.wlogger.debug('Added obstacles on floor: {}, number of vercites: {}'.format(1, num_of_vertices))
 
             e = self._create_evacuees(floor)
@@ -738,8 +738,8 @@ class Worker:
 
     def generate_new_pynavmesh(self, floor, floor_critical_rooms):
         figure_points = []
-        first_pynavmesh = open("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav_first'))
-        lines = first_pynavmesh.readlines()
+        with open(os.path.join(self.working_dir, f'pynavmesh{floor.floor}.nav_first')) as first_pynavmesh:
+            lines = first_pynavmesh.readlines()
         points = lines[0].split()
         x_list = points[::3]
         z_list = points[2::3]

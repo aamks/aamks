@@ -417,9 +417,9 @@ class EvacEnv:
         RVOSimulator.process_obstacles(self.simulator)
         return self.simulator.get_obstacles_count(), 2
 
-    def generate_nav_mesh(self):
+    def generate_nav_mesh(self, working_dir):
         self.nav = Navmesh()
-        self.nav.build(floor=str(self.floor))
+        self.nav.build(floor=str(self.floor), wd=working_dir)
 
     def prepare_rooms_list(self):
         self.s = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")

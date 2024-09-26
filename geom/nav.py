@@ -59,7 +59,7 @@ class Navmesh:
         self.polygons_of_the_geometry = []
 # }}}
 
-    def build(self,floor,bypass_rooms=[]):# {{{
+    def build(self,floor,wd,bypass_rooms=[]):# {{{
         self.floor=floor
         self.bypass_rooms=bypass_rooms
         self._get_name(bypass_rooms)
@@ -69,8 +69,9 @@ class Navmesh:
         polygons = self.get_polygons_for_pynavmesh(mesh)
         self.baker.add_geometry(mesh.vertices, polygons)
         self.baker.bake()
-        self.baker.save_to_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name+'_first'))
-        vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name+'_first'))
+        first_navmesh_path = '/'.join([wd, 'pynavmesh'+self.nav_name+'_first'])
+        self.baker.save_to_text(first_navmesh_path)
+        vert, polygs = evac.pathfinder.read_from_text(first_navmesh_path)
         self.first_navmesh = Pynavmesh(vert, polygs)
         self.navmesh = Pynavmesh(vert, polygs)
         # self.test_navmesh()
