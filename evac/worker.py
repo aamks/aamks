@@ -721,7 +721,8 @@ class Worker:
                         self.send_report(e={"status":23})
                         break
                     #first_evacuue.append(i.evacuees.get_first_evacuees_time())
-                self.detection_time = min(self.detection_time, floor_det)
+                if floor_det:
+                    self.detection_time = min(self.detection_time, floor_det)
 
                 # iterate with AEvac time step over CFAST time_frame
                 for step_no in range(0, int(cfast_step / aevac_step)):
