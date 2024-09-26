@@ -80,7 +80,8 @@ CREATE TABLE simulations ( ---{{{
     anim_params text,
 	modified timestamp without time zone not null default now(),
     results text,
-    rescue_params text
+    rescue_params text,
+    is_anim integer
 
 );
 ---}}}

@@ -24,7 +24,9 @@ from include import Psql
 import socket
 import threading
 import subprocess
-
+import shutil
+import evac.pathfinder
+from evac.pathfinder.navmesh import Navmesh as Pynavmesh
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
@@ -82,6 +84,8 @@ class Worker:
         self.connection_thread = None
         self.cfast_door_opening_level = {}
         self.exit_code = None
+        self.rooms = {}
+        self.is_anim = 0
 
 
     def get_logger(self, logger_name):
@@ -105,7 +109,7 @@ class Worker:
 
     def get_config(self):
         try:
-            f = open(os.path.join(os.environ['AAMKS_PATH'], 'aamks', 'evac', 'config.json'), 'r')
+            f = open(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'), 'r')
             self.config = json.load(f)
         except Exception as e:
             print(e)
@@ -138,10 +142,10 @@ class Worker:
         if self.project_conf['fire_model'] == 'CFAST':
             if os.getcwd() != self.working_dir:
                 os.chdir(self.working_dir)
-            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/aamks/fire/cfast7_linux_64 .')
-            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/aamks/fire/c_socket_handler.so .')
+            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/fire/cfast7_linux_64 .')
+            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/fire/c_socket_handler.so .')
             command = ["./cfast7_linux_64", "cfast.in", "arg1", "arg2"]
-            
+
             if not subprocess.Popen(command):
                 raise RuntimeError('Error while executing cfast')
             self.connection_thread.join()
@@ -151,11 +155,21 @@ class Worker:
             
 
     def create_geom_database(self):
+        self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL')
         floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%'")
         rooms_with_exits_weights_set = self.s.query('SELECT floor, name, center_x, center_y, room_exits_weights from aamks_geom WHERE room_exits_weights IS NOT NULL')
         internal_building_doors = self.s.query("SELECT floor, name, center_x, center_y, how_much_open, points from aamks_geom WHERE type_sec = 'DOOR' and terminal_door IS NULL")
+        all_rooms = self.s.query("SELECT name, floor, points from aamks_geom WHERE type_pri = 'COMPA'")
+        for room in all_rooms:
+            points = room['points'].replace('[', '').replace(']', '').split(', ')
+            int_points = [int(x) for x in points]
+            x_min = min(int_points[0],int_points[2],int_points[4],int_points[6])
+            x_max = max(int_points[0],int_points[2],int_points[4],int_points[6])
+            y_min = min(int_points[1],int_points[3],int_points[5],int_points[7])
+            y_max = max(int_points[1],int_points[3],int_points[5],int_points[7])
+            self.rooms[room['name']]={'floor': room['floor'], 'x_min':x_min, 'x_max':x_max, 'y_min':y_min,'y_max':y_max}
 
         self.vars['conf']['internal_doors'] = []
         for floor in sorted(self.obstacles['obstacles'].keys()):
@@ -261,7 +275,7 @@ class Worker:
             if last_room_center_y > door['center_y']:
                 #The exit door leads downwards on the building plan
                 return(door['center_x'], door['center_y']-goal_from_door_distance)
-            if last_room_center_y < door['center_x']:
+            if last_room_center_y < door['center_y']:
                 #The exit door leads upwards on the building plan
                 return(door['center_x'], door['center_y']+goal_from_door_distance)
             
@@ -373,6 +387,9 @@ class Worker:
                     alarm = 0
                     pre = pres['pre_evac_fire_origin']
 
+            # for navmesh rvo tests uncomment below 2 lines
+            # det = 0
+            # alarm = 0
             return det + alarm + pre
 
         leaders_id_list = []
@@ -634,6 +651,8 @@ class Worker:
         #first_evacuue = []
         # iterate over CFAST time frames (results saving interval)
         time_frame = 0 - cfast_step
+        if os.path.exists(self.working_dir + "/door_opening_changes"):
+            shutil.rmtree(self.working_dir + "/door_opening_changes")
         os.mkdir(self.working_dir + "/door_opening_changes")
         self.initialize_doors_opening_level()
 
@@ -681,6 +700,7 @@ class Worker:
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
                         self.doors_opening.append(self.get_door_opening_level_for_vis())
+                        self.change_pynavmesh_due_to_smoke()
 
                 # determine RSET and smoke on all floors
                 for i in self.floors:
@@ -710,6 +730,79 @@ class Worker:
         self.wlogger.info('Final results gathered')
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
 
+    def change_pynavmesh_due_to_smoke(self):
+        critical_conditions_rooms = {}
+        for f in self.floors:
+            critical_conditions_rooms[f.floor] = []
+        for floor, rooms_smoke in self.smoke_opacity[-1].items():
+            for room_id, room_od in rooms_smoke.items():
+                    if room_od > 0.666:
+                        critical_conditions_rooms[self.rooms[room_id]['floor']].append(room_id)
+        for floor in self.floors:
+            if len(critical_conditions_rooms[floor.floor]) > 0:
+                self.generate_new_pynavmesh(floor, critical_conditions_rooms[floor.floor])
+
+    def generate_new_pynavmesh(self, floor, floor_critical_rooms):
+        figure_points = []
+        first_pynavmesh = open("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav_first'))
+        lines = first_pynavmesh.readlines()
+        points = lines[0].split()
+        x_list = points[::3]
+        z_list = points[2::3]
+        figures_points = lines[1].split()
+        polygons = lines[2].split()
+
+        count = 0
+        all_figures = []
+        index = -1
+
+        for poly in polygons:
+            index +=1
+            poly_sides_count = int(poly)
+            for i in range (poly_sides_count):
+                figure_points.append((float(x_list[int(figures_points[count])]), float(z_list[int(figures_points[count])])))
+                count+=1
+            x = []
+            for co in figure_points:
+                x.append([co[0], co[1]])
+            all_figures.append((index,x))
+            x = []
+            figure_points = []
+
+        figures_points_after_removal = []
+        polygons_after_removal = []
+
+        for id, coordinates in all_figures:
+            skip_outer1 = False
+            skip_outer2 = False
+            for floor_critical_room in floor_critical_rooms:
+                x_min = self.rooms[floor_critical_room]['x_min']/100
+                x_max = self.rooms[floor_critical_room]['x_max']/100
+                y_min = self.rooms[floor_critical_room]['y_min']/100
+                y_max = self.rooms[floor_critical_room]['y_max']/100
+                for x, y in coordinates:
+                    if x_min < x and x_max > x and y_min < y and y_max > y:
+                        figures_points = figures_points[int(polygons[id]):]
+                        skip_outer1 = True
+                        skip_outer2 = True
+                        break
+                if skip_outer1:
+                    break
+            if skip_outer2:
+                continue
+            polygons_after_removal.append(polygons[id])
+            elements_to_move = figures_points[:int(polygons[id])]
+            figures_points = figures_points[int(polygons[id]):]
+            figures_points_after_removal.extend(elements_to_move)
+
+        with open("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav'), 'w') as file:
+            file.write(' '.join(points) + '\n')
+            file.write(' '.join(figures_points_after_removal) + '\n')
+            file.write(' '.join(polygons_after_removal))
+
+        vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav'))
+        floor.nav.navmesh = Pynavmesh(vert, polygs)
+
 
     def cfast_socket_communication_handle(self, time_frame):
         # socket with cfast handler
@@ -727,7 +820,8 @@ class Worker:
                         plik.write(self.cfast_door_opening_level[door_id])
                     else:
                         plik.write(self.cfast_door_opening_level[door_id] +",")
-
+        if os.path.exists(self.working_dir +"/doors_opening_level_frame.txt"):
+            os.remove(self.working_dir +"/doors_opening_level_frame.txt")
         f2 = open(self.working_dir +"/doors_opening_level_frame.txt", "w+")
         f2.write(doors_opening_level)
         f2.close()
@@ -853,8 +947,7 @@ class Worker:
         itself.
         '''
         if not e:
-            self._write_animation_zips()
-            self._animation_save_psql()
+            self._animation_save()
             LocalResultsCollector(self._get_meta(e)).psql_report()
         else:
             LocalResultsCollector(self._get_meta(e)).psql_error()
@@ -935,20 +1028,27 @@ class Worker:
         finally:
             zf.close()
 
-    def _animation_save_psql(self):# {{{
+    def _animation_save(self):# {{{
         params=OrderedDict()
-        params['sort_id']=self.sim_id
-        params['title']="sim.{}".format(self.sim_id)
-        params['time']=time.strftime("%H:%M %d.%m", time.gmtime())
-        params['srv']=0
-        params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
-        params['highlight_geom']=None
-        params['anim']="{}/{}_{}_{}_anim.zip".format(self.sim_id, self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
         p = Psql()
-        p.query(f"""UPDATE simulations SET animation = '{json.dumps(params)}'
-                WHERE project={self.vars['conf']['project_id']} AND scenario_id={self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")
+        self.is_anim = p.query(f"""SELECT is_anim FROM simulations WHERE project={self.vars['conf']['project_id']} AND scenario_id=
+                          {self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")[0][0]
+        if self.is_anim:
+            params['sort_id']=self.sim_id
+            params['title']="sim.{}".format(self.sim_id)
+            params['time']=time.strftime("%H:%M %d.%m", time.gmtime())
+            params['srv']=0
+            params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0]
+            params['highlight_geom']=None
+            params['anim']="{}/{}_{}_{}_anim.zip".format(self.sim_id, self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
+            p.query(f"""UPDATE simulations SET animation = '{json.dumps(params)}'
+                    WHERE project={self.vars['conf']['project_id']} AND scenario_id={self.vars['conf']['scenario_id']} AND iteration={self.sim_id}""")
+            self.wlogger.info("Animation saved to psql")
 
-        self.wlogger.info("Animation saved to psql")
+            self._write_animation_zips()
+
+        else:
+            self.wlogger.info("Iteration without animation")
     # }}}
 
     # gather data across all floors
@@ -966,6 +1066,23 @@ class Worker:
 
         return collected_fed
 
+    def cleanup(self):
+        if not self.is_anim:
+            os.remove("finals.sqlite")
+            os.remove("cfast_devices.csv")
+            os.remove("cfast_vents.csv")
+            os.remove("cfast_walls.csv")
+            os.remove("cfast_masses.csv")
+            os.remove("cfast_zone.csv")
+            os.remove("cfast.log")
+            os.remove("cfast.smv")
+            os.remove("cfast.out")
+            os.remove("cfast.plt")
+            os.remove("cfast.status")
+            os.remove("cfast_evac_socket_port.txt")
+            # os.remove("doors_opening_level_frame.txt") #fortran issue
+            # os.remove("times.txt")
+            shutil.rmtree("door_opening_changes")
 
     def main(self):
         self.get_config()
@@ -977,6 +1094,7 @@ class Worker:
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()
         self.send_report()
+        self.cleanup()
         self.wlogger.info(f'Simulation ended with status {self.exit_code}')
 
         return self.exit_code

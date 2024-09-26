@@ -39,6 +39,7 @@ class Evacuee:
         self.num_of_orca_lines = 0
         self.agent_has_no_escape = 0
         self.exit_coordinates = None
+        self.exit = None
         self.agent_leaves_floor = False
         self.path = None
         

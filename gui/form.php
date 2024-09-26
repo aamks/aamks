@@ -378,6 +378,7 @@ function form_fields_advanced() { #{{{
 	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
 	echo "<tr><td>".get_help('number_of_simulations')."<td><input autocomplete=off type=text automplete=off size=10 id='number_of_simulations' name=post[number_of_simulations] value='$number_of_simulations'>"; 
 	echo "<tr><td>".get_help('simulation_time')."<td><input autocomplete=off type=text automplete=off size=10 id='simulation_time' name=post[simulation_time] value='$simulation_time'>"; 
+	echo "<tr><td>".get_help('animations_number')."<td><input autocomplete=off type=text automplete=off size=10 id='animations_number' name=post[animations_number] value='$animations_number'>"; 
 
     echo "<tr><td>&nbsp;</td></tr><tr><th><strong>FIRE SUB-MODEL</strong></th>";
 	echo "<tr><td>".get_help('fire_model')."<td>".droplist_fire_model($fire_model); 
@@ -449,6 +450,7 @@ function form_fields_easy() { #{{{
 	echo "/$scenario_id	<input autocomplete=off type=hidden name=post[scenario_id] value='$scenario_id'>"; 
 	echo "<tr><td>".get_help('number_of_simulations')."<td><input autocomplete=off type=text automplete=off size=10 id='number_of_simulations' name=post[number_of_simulations] value='$number_of_simulations'>"; 
 	echo "<tr><td>".get_help('simulation_time')."<td><input autocomplete=off type=text automplete=off size=10 id='simulation_time' name=post[simulation_time] value='$simulation_time'>"; 
+	echo "<tr><td>".get_help('animations_number')."<td><input autocomplete=off type=text automplete=off size=10 id='animations_number' name=post[animations_number] value='$animations_number'>"; 
 	echo building_fields($building_profile, 'easy');
 	echo "<tr><td>".get_help('material')."<td>".form_material($json); 
 	echo "<tr><td><a class='rlink switch' id='heat_detectors'>Heat detectors</a>".get_help('heat_detectors')."<td>".form_plain_arr_switchable('heat_detectors',$heat_detectors); 
@@ -653,12 +655,24 @@ function validation_advanced(){
 	fuel.addEventListener('change', (e) => {
 		const molecule_table = document.getElementById('molecule-table')
 		const molecule_switch = document.getElementById('molecule-switch')
+		const heat_table = document.getElementById('heatcom-table')
+		const heat_switch = document.getElementById('heatcom-switch')
+		const yields_table = document.getElementById('yields-table')
+		const yields_switch = document.getElementById('yields-switch')
 		if(e.target.value == 'user'){ 
 			molecule_table.className = 'noborder';
 			molecule_switch.className = 'no-display';
+			heat_table.className = 'noborder';
+			heat_switch.className = 'no-display';
+			yields_table.className = 'noborder';
+			yields_switch.className = 'no-display';
 		}else{
 			molecule_table.className = 'noborder no-display';
 			molecule_switch.className = 'grey';
+			heat_table.className = 'noborder no-display';
+			heat_switch.className = 'grey';
+			yields_table.className = 'noborder no-display';
+			yields_switch.className = 'grey';
 		}
 	});
 	document.getElementById('form').addEventListener('submit', function(e) {
