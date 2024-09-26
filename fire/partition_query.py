@@ -491,16 +491,15 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         # min(ULOD_COR)
         q = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='c' AND param='ULOD'")[0]['MAX(value)']
         ul_od_cor = (q if q else 0)
-        if not q:
-            finals['min_vis_cor'] = 0
-        elif ul_od_cor == 0:
+        if ul_od_cor == 0:
             finals['min_vis_cor'] = 30
         else:
             finals['min_vis_cor'] = min([30, c_const / (ul_od_cor * 2.303)])
 
 
         # min(ULOD_COMPA)
-        ul_od_compa = self.sf.query("SELECT MAX(value) FROM finals WHERE param='ULOD'")[0]['MAX(value)']
+        q = self.sf.query("SELECT MAX(value) FROM finals WHERE param='ULOD'")[0]['MAX(value)']
+        ul_od_compa = (q if q else 0)
         if ul_od_compa == 0:
             finals['min_vis_compa'] = 30
         else:
