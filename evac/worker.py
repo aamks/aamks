@@ -72,7 +72,10 @@ class Detection:
 
     def _od_to_vis(self, optical_density):
         # convert optical density to visibility
-        return min([30, self.project_conf['c_const'] / (optical_density * log(10))])
+        if optical_density:
+            return min([30, self.project_conf['c_const'] / (optical_density * log(10))])
+        else:
+            return 30
 
     def _is_fire_from_sensor(self, sensor):
         # return sensor state
@@ -153,6 +156,8 @@ class Detection:
             self._update_rooms_state()
             # update evacuees pre-evac times
             self._update_delays()
+        # return floor detection time
+        return self.state['floor']
 
 
 class Worker:
@@ -710,12 +715,13 @@ class Worker:
                 for i in self.floors:
                     try:
                         i.read_cfast_record(time_frame)
-                        i.detection.update()
+                        floor_det = i.detection.update()    # floor_det is checked for ALL compartments (all floors)
                     except IndexError:
                         self.wlogger.error(f'Unable to read CFAST results at {time_frame} s')
                         self.send_report(e={"status":23})
                         break
                     #first_evacuue.append(i.evacuees.get_first_evacuees_time())
+                self.detection_time = min(self.detection_time, floor_det)
 
                 # iterate with AEvac time step over CFAST time_frame
                 for step_no in range(0, int(cfast_step / aevac_step)):
@@ -1208,9 +1214,8 @@ class LocalResultsCollector:
 
 if __name__ == "__main__":
     w = Worker()
-    w.run_worker()
     try:
-        pass#w.run_worker()
+        w.run_worker()
     except Exception as error:
         w.wlogger.error(error)
         w.send_report(e={'status': 1})
