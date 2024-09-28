@@ -45,7 +45,8 @@ function salt($password){/*{{{*/
 }/*}}}*/
 function login_form(){/*{{{*/
 	if(isset($_SESSION['main']['user_id'])) { return; }
- // echo "<center><br><br><img src=logo_m.svg><br><br><br>We are changing for you!<br><i><a href='mailto:projectaamks@gmail.com'>Let us know </a> if you want to recieve a notification when service is up again</i></center>";
+ ////maintenance
+ // echo "<center><br><br><img src=logo_m.svg><br><br><br>We are changing for you!<br><i><a href='mailto:aamks@apoz.edu.pl'>Let us know </a> if you want to receive a notification when service is up again</i></center>";
  // exit();
 	$inf = "";
 	if(isset($_GET['session_finished_information'])) {
@@ -87,9 +88,14 @@ function changes(){/*{{{*/
     <center>
 	<strong>Recent updates</strong><br>
     <table>
-	<tr><td>date</td><td>--></td><td>Brief description of changes</td></tr>
-    </table><br>
+    <tr><td>2024-09-30</td><td>--></td><td>Server update with important bugfixes for v2.1.0</td></tr>
+    <tr><td>2024-09-17</td><td>--></td><td>Animator <a href=https://github.com/aamks/aamks/pull/318>patch</a> applied for backward compatibility</td></tr>
+    <tr><td>2024-09-13</td><td>--></td><td>Server update to <a href=https://github.com/aamks/aamks/releases/tag/v2.1.0>AAMKS v2.1.0</a></td></tr>
+    <tr><td>2024-03-05</td><td>--></td><td>Server update to <a href=https://github.com/aamks/aamks/releases/tag/v2.0.1>AAMKS v2.0.1</a></td></tr>
+    <tr><td>2024-01-25</td><td>--></td><td>Server update to <a href=https://github.com/aamks/aamks/releases/tag/v2.0.0>AAMKS v2.0.0</a></td></tr>    </table><br>
 	Visit our <a href='https://github.com/aamks/aamks/'>GitHub</a> or <a href='https://github.com/aamks/aamks/wiki'>wiki</a> to find out more.
+    <br><br>Feel free to contact us if you would like to test full version of AAMKS or need any support.
+    <br>Contact person: Wojciech Kowalski <a href='mailto:aamks@apoz.edu.pl'>aamks@apoz.edu.pl</a>
     </center>
 	";
 	exit();
@@ -286,7 +292,9 @@ function reset_password(){/*{{{*/
 				if($result[0]['access_time'] >= date("Y-m-d H:i:s")){
 					if($ret=$_SESSION['nn']->query("UPDATE users SET password = $1, reset_token = NULL, access_time = NULL where email = $2 AND reset_token = $3 returning *", array(salt($_POST['password']), $result[0]['email'], $_GET['reset']))){
 						$_SESSION['header_ok'][]="Password changed!";
-						$ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.id=$1", array($ret[0]['id']));
+						//$ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE s.id=u.active_scenario AND u.id=$1", array($ret[0]['id']));
+                        // [WK] bug - wrong active scenario. I suppose it is not crucial to sustain actvie scenario when resetting the account
+                        $ret=$_SESSION['nn']->query("SELECT *,u.id AS user_id, s.id AS scenario_id, p.id AS project_id FROM users u LEFT JOIN projects p ON (u.id=p.user_id) LEFT JOIN scenarios s ON (p.id=s.project_id) WHERE u.id=$1", array($ret[0]['id']));
 						$_SESSION['nn']->ch_main_vars($ret[0]);
 						header("Location: projects.php");
 						exit();

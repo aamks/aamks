@@ -147,7 +147,7 @@ class CfastMcarlo():
             raise Exception('The simulation time must be less than 3600 seconds and the frequency of saving cfast simulation results to csv files must be equal to 1s for the dynamic modification of cfast simulation parameters via sockets to work properly')
         txt=(
         f"&HEAD VERSION = 7724, TITLE = 'P_ID_{self.conf['project_id']}_S_ID_{self.conf['scenario_id']}' /",
-        f"&TIME SIMULATION = {self.conf['simulation_time']}, PRINT = {self.config['SMOKE_QUERY_RESOLUTION']}, SMOKEVIEW = {self.config['SMOKE_QUERY_RESOLUTION']}, SPREADSHEET = {self.config['SMOKE_QUERY_RESOLUTION']} /",
+        f"&TIME SIMULATION = {self.conf['simulation_time']+1}, PRINT = {self.config['SMOKE_QUERY_RESOLUTION']}, SMOKEVIEW = {self.config['SMOKE_QUERY_RESOLUTION']}, SPREADSHEET = {self.config['SMOKE_QUERY_RESOLUTION']} /",
         self._cfast_record('INIT'),
         f"&MISC LOWER_OXYGEN_LIMIT = 0.15, MAX_TIME_STEP = 0.1/",
         '',

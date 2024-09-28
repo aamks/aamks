@@ -718,7 +718,7 @@ class Worker:
                 self.time_shift = 0
                 break
 
-            if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
+            if self.floors[0].smoke_query.cfast_has_time(time_frame) or time_frame == 0:
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
                 aset = self.vars['conf']['simulation_time']

@@ -28,6 +28,7 @@ def launch(path: str, user_id: int):
     slurm.set_chdir(path)
     slurm.set_output(f'workers/%a/slurm.out')
     slurm.set_error(f'workers/%a/slurm.err')
+    slurm.set_time('01:00:00')
 
     # we need to define job array
     max_iter_query = f'SELECT max(iteration)+1 FROM simulations WHERE project={p_id} AND scenario_id={s_id}'

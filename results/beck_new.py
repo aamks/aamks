@@ -853,7 +853,7 @@ class PostProcess:
             shutil.rmtree(f'{self.dir}/picts')
         os.makedirs(f'{self.dir}/picts')
 
-        def tm(x): 
+        def tm(x):
             logger.debug(f'{x}: {time.time() - self.t}')
             self.t = time.time()
         p = Plot(self.dir)
@@ -1360,6 +1360,9 @@ class Comparison:
     
     # save data
     def save(self):
+        def tm(x):
+            logger.debug(f'{x}: {time.time() - self.t}')
+            self.t = time.time()
         [self._zip_ext(i) for i in [('txt', '.txt'), ('picts', '.png', '.jpg', '.jpeg'), ('csv', '.csv')]]
         self._zip_full()
         try:
@@ -1447,6 +1450,19 @@ def comparepostprocess(scenarios, path):
 
 
 if __name__ == '__main__':
+    log_file = sys.argv[1] + '/aamks.log' if len(sys.argv) > 1 else os.getenv('AAMKS_PROJECT') + '/aamks.log'
+    logger = logging.getLogger('AAMKS.beck.py')
+    logger.setLevel(logging.DEBUG)
+    fh = logging.FileHandler(log_file)
+    fh.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    logger.warning('Start AAMKS post process')
     try:
         if len(sys.argv) > 2:
             comparepostprocess(sys.argv[2:], sys.argv[1])

@@ -2,6 +2,7 @@ import locale
 import os
 import sys
 import logging
+from dotenv import load_dotenv
 #locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
 from manager.init import OnInit, OnEnd
@@ -134,6 +135,7 @@ def start_aamks_with_slurm(path: str, user_id: int, sim_id: int):
 
 if __name__ == '__main__':
     if os.environ["AAMKS_WORKER"] == 'slurm':
+        load_dotenv()
         start_aamks_with_slurm(*sys.argv[1:])
     else:
         if len(sys.argv) > 2:
