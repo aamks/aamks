@@ -40,9 +40,9 @@ function dd3($arr) {
 }
 function read_evac_config_json() {
 	$path=getenv("AAMKS_PATH");
-	$json=json_decode(file_get_contents("$path/aamks/evac/config.json"), 1);
+	$json=json_decode(file_get_contents("$path/evac/config.json"), 1);
 	if(empty($json)) { 
-		$_SESSION['nn']->fatal("Broken json: $path/aamks/evac/config.json");
+		$_SESSION['nn']->fatal("Broken json: $path/evac/config.json");
 	} 
 	return $json;
 }
