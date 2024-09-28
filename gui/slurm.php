@@ -15,7 +15,7 @@ function run_beck_anim($path, $project, $scenario, $iter){
 }
 function run_beck_new($path, $scenarios = NULL){
     $AAMKS_PATH=getenv('AAMKS_PATH');
-    $command = $AAMKS_PATH.'/env/bin-server/python3 '.$AAMKS_PATH.'/slurm.py -t p -p'.$path.' -s '.$scenarios.' 2>&1';
+    $command = $AAMKS_PATH.'/env-server/bin/python3 '.$AAMKS_PATH.'/slurm.py -t p -p'.$path.' -s '.$scenarios.' 2>&1';
     $output = shell_exec($command);
     return $output;
 }
