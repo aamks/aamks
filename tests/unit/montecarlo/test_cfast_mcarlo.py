@@ -56,9 +56,10 @@ class TestDrawAndLog(TestCase):
                 return [OrderedDict([('width', 980), ('depth', 945), ('height', 350)])]
             if query.startswith("SELECT name from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1"):
                 return [OrderedDict([('name', 'r1')]), OrderedDict([('name', 'c2')])]
-            if query.startswith("SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.how_much_open=0 AND v.type_sec='WIN'"):
+            if query.startswith("SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.how_much_open=0 AND (v.type_sec='WIN' OR v.type_sec='DOOR')"):
                 return [OrderedDict([('name', 'w3'), ('vent_from_name', 'c3'), ('face', 'LEFT'), ('face_offset', 110.0), ('wwidth', 32), ('wdepth', 285), ('sill', 100), ('height', 150), ('width', 2705), ('depth', 515), ('type_sec', 'COR')]),
-                        OrderedDict([('name', 'w4'), ('vent_from_name', 's1.1'), ('face', 'LEFT'), ('face_offset', 110.0), ('wwidth', 32), ('wdepth', 285), ('sill', 100), ('height', 150), ('width', 2705), ('depth', 515), ('type_sec', 'STAI')])]
+                        OrderedDict([('name', 'w4'), ('vent_from_name', 's1.1'), ('face', 'LEFT'), ('face_offset', 110.0), ('wwidth', 32), ('wdepth', 285), ('sill', 100), ('height', 150), ('width', 2705), ('depth', 515), ('type_sec', 'STAI')]),
+                        OrderedDict([('name', 'd5'), ('vent_from_name', 'r2'), ('face', 'REAR'), ('face_offset', 459.0), ('wwidth', 86), ('wdepth', 32), ('sill', 0), ('height', 200), ('width', 1035), ('depth', 945), ('type_sec', 'ROOM')])]
             else:
                 raise Exception("Unknown query: " + query)
         self.mock_sqlite_instance.query.side_effect = side_effect
@@ -270,7 +271,8 @@ class TestDrawAndLog(TestCase):
 
         self.assertEqual(self.draw.sections['DEVC'], 
         [{'ID': 't_w3', 'COMP_ID': 'c3', 'LOCATION': [27.05, 2.52, 0.75], 'TYPE': 'PLATE', 'NORMAL': [-1.0, 0.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'},
-         {'ID': 't_w4', 'COMP_ID': 's1', 'LOCATION': [27.05, 2.52, 1.75], 'TYPE': 'PLATE', 'NORMAL': [-1.0, 0.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'}])
+         {'ID': 't_w4', 'COMP_ID': 's1', 'LOCATION': [27.05, 2.52, 1.75], 'TYPE': 'PLATE', 'NORMAL': [-1.0, 0.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'},
+         {'ID': 't_d5', 'COMP_ID': 'r2', 'LOCATION': [5.33, 9.45, 1.0], 'TYPE': 'PLATE', 'NORMAL': [0.0, -1.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'}])
 
     @patch('montecarlo.cfast_mcarlo.binomial')
     def test_draw_triggers(self, mock_binomial):
