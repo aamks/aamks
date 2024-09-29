@@ -9,7 +9,6 @@ from numpy.random import lognormal
 from numpy.random import binomial
 from numpy.random import gamma
 from numpy.random import triangular
-from numpy.random import seed
 from numpy import array as npa
 from numpy import insert as npins
 from numpy import round as npround
@@ -20,9 +19,8 @@ from include import Psql
 from include import Json
 from rescue_module.rescue import *
 import numpy as np
-
-from montecarlo.evac_mcarlo import lognorm_params_from_percentiles, lognorm_percentiles_from_params
-
+from geom.choose_100_rooms_cfast import CFAST100Choice
+from montecarlo.evac_mcarlo import lognorm_params_from_percentiles
 # }}}
 def join2str(l, sep, quotes=False, force=False):
     joined = []
@@ -52,22 +50,24 @@ class CfastMcarlo():
             }
     def __init__(self, sim_id):# {{{
         ''' Generate montecarlo cfast.in. Log what was drawn to psql. '''
-        self.json=Json()
-        self.read_json()
-        self.create_sqlite_db()
         self._sim_id = sim_id
-        # why seed is used - it eliminates 'free' nature of pseudo-random
-        #seed(self._sim_id)
-        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
+        self.create_sqlite_db()
         self.p = Psql()
-        self.__draw()
+        self.json=Json()
+        self.conf = self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
+        self._draw()
+        self.cfast_100_choice = CFAST100Choice()
+        self.cfast_100_compartments_ids = []
+        self.cfast_100_compartments_names = []
+        self.cfast_100_compartments_doors_and_holes = set()
 
-    def __draw(self):
+    def _draw(self):
         d = DrawAndLog(self._sim_id)
         d.all()
         self.samples = d.sections
         self._psql_collector = d.data_for_psql
-    
+
     def _cfast_record(self, key, name=None):
         name = name if name is not None else key
         if type(self.samples[key]) == dict:
@@ -93,8 +93,114 @@ class CfastMcarlo():
                 table += record + '/\n'
             return table
 
-    def read_json(self):
-        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+    
+    def _cfast_record_cfast_100(self, key, name=None):
+        continue_flag = 0
+        name = name if name is not None else key
+        if type(self.samples[key]) == dict:
+            record = ''
+            for k, v in self.samples[key].items():
+                if type(v) == list:
+                    record +=  ', '.join([f'{k} = {join2str(v, ", ")}' ]) + ', '
+                else:
+                    record += join2str([k, v], ' = ', quotes=True) + ', '
+            return f'&{name} ' + record[:-2] + ' /\n'
+        #&TABL
+        elif type(self.samples[key]) == list:
+            table = ''
+            for i in self.samples[key]:
+                record = f'&{name}'
+                continue_flag = 0
+                for k, v in i.items():
+                    if continue_flag == 1:
+                        continue
+                    if key == 'DEVC':
+                        if i['COMP_ID'] not in self.cfast_100_compartments_names:
+                            continue_flag = 1
+                            continue
+                    if key == 'CONN':
+                        room1 = i['COMP_ID']
+                        room2 = i['COMP_IDS']
+                        if room1 not in self.cfast_100_compartments_names or room2 not in self.cfast_100_compartments_names:
+                            if room1 != 'OUTSIDE' or room2 != 'OUTSIDE':
+                                continue_flag = 1
+                                continue
+                    if key == 'VENT':    
+                        if i['COMP_IDS'][0][1:-1] not in self.cfast_100_compartments_names and i['COMP_IDS'][1][1:-1] not in self.cfast_100_compartments_names:
+                            continue_flag = 1
+                            continue
+                    if key == 'DOORS':
+                        room1 = i['COMP_IDS'][0][1:-1]
+                        room2 = i['COMP_IDS'][1][1:-1]
+                        if room1 not in self.cfast_100_compartments_names or room2 not in self.cfast_100_compartments_names:
+                            if room1 != 'OUTSIDE' or room2 != 'OUTSIDE':
+                                continue_flag = 1
+                                continue
+                        else:
+                            self.cfast_100_compartments_doors_and_holes.add(i["ID"])
+                    if k == 'LABELS':
+                        record +=  f' {k} = ' + join2str(v, ', ', quotes=True, force=True)
+                    elif type(v) == list:
+                        record +=  f' {k} = ' + join2str(v, ', ')
+                    else:
+                        record +=  ' ' + join2str([k, v], ' = ', quotes=True)
+                if continue_flag == 0:
+                    table += record + '/\n'
+            return table
+
+    def _cfast_record_cfast_100(self, key, name=None):
+        continue_flag = 0
+        name = name if name is not None else key
+        if type(self.samples[key]) == dict:
+            record = ''
+            for k, v in self.samples[key].items():
+                if type(v) == list:
+                    record +=  ', '.join([f'{k} = {join2str(v, ", ")}' ]) + ', '
+                else:
+                    record += join2str([k, v], ' = ', quotes=True) + ', '
+            return f'&{name} ' + record[:-2] + ' /\n'
+        #&TABL
+        elif type(self.samples[key]) == list:
+            table = ''
+            for i in self.samples[key]:
+                record = f'&{name}'
+                continue_flag = 0
+                for k, v in i.items():
+                    if continue_flag == 1:
+                        continue
+                    if key == 'DEVC':
+                        if i['COMP_ID'] not in self.cfast_100_compartments_names:
+                            continue_flag = 1
+                            continue
+                    if key == 'CONN':
+                        room1 = i['COMP_ID']
+                        room2 = i['COMP_IDS']
+                        if room1 not in self.cfast_100_compartments_names or room2 not in self.cfast_100_compartments_names:
+                            if room1 != 'OUTSIDE' or room2 != 'OUTSIDE':
+                                continue_flag = 1
+                                continue
+                    if key == 'VENT':    
+                        if i['COMP_IDS'][0][1:-1] not in self.cfast_100_compartments_names and i['COMP_IDS'][1][1:-1] not in self.cfast_100_compartments_names:
+                            continue_flag = 1
+                            continue
+                    if key == 'DOORS':
+                        room1 = i['COMP_IDS'][0][1:-1]
+                        room2 = i['COMP_IDS'][1][1:-1]
+                        if room1 not in self.cfast_100_compartments_names or room2 not in self.cfast_100_compartments_names:
+                            if room1 != 'OUTSIDE' or room2 != 'OUTSIDE':
+                                continue_flag = 1
+                                continue
+                        else:
+                            self.cfast_100_compartments_doors_and_holes.add(i["ID"])
+                    if k == 'LABELS':
+                        record +=  f' {k} = ' + join2str(v, ', ', quotes=True, force=True)
+                    elif type(v) == list:
+                        record +=  f' {k} = ' + join2str(v, ', ')
+                    else:
+                        record +=  ' ' + join2str([k, v], ' = ', quotes=True)
+                if continue_flag == 0:
+                    table += record + '/\n'
+            return table
 
     def create_sqlite_db(self):
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -114,24 +220,47 @@ class CfastMcarlo():
 # CFAST SECTIONS
     def _make_cfast(self):# {{{
         ''' Compose cfast.in sections '''
-
-        txt=(
-            self._section_preamble(),
-            self._section_matl(),
-            self._section_compa(),
-            self._section_windows(),
-            self._section_doors_and_holes(),
-            self._section_vvent(),
-            self._section_mvent(),
-            self._section_fire(),
-            self._section_connections(),
-            self._section_targets(),
-            self._section_heat_detectors(),
-            self._section_smoke_detectors(),
-            self._section_sprinklers(),
-            '',
-            '&TAIL /'
-        )
+        comp_number = self.s.query("SELECT Count(*) as count FROM aamks_geom WHERE type_pri = 'COMPA' and fire_model_ignore=0 ")[0]
+        if comp_number['count'] >= 100:
+            txt=(
+                self._section_preamble(),
+                self._section_matl(),
+                self._section_compa(),
+                self._section_windows(),
+                self._section_doors_and_holes(),
+                self._section_vvent(),
+                self._section_mvent(),
+                self._section_fire(),
+                self._section_connections(),
+                self._section_targets(),
+                self._section_heat_detectors(),
+                self._section_smoke_detectors(),
+                self._section_sprinklers(),
+                '',
+                '&TAIL /'
+            )
+        else:
+            room_in_fire_name = self.s.query("SELECT name FROM fire_origin WHERE sim_id="+str(self._sim_id))[0]['name']
+            room_in_fire_id = self.s.query("SELECT global_type_id FROM aamks_geom WHERE name = '"+room_in_fire_name+"'")[0]['global_type_id']
+            self.cfast_100_compartments_ids = [item[0] for item in self.cfast_100_choice.get_100_closest_rooms(room_in_fire_id)]
+            txt=(
+                self._section_preamble(),
+                self._section_matl(),
+                self._section_compa_cfast_100(),
+                self._section_windows_cfast_100(),
+                self._section_doors_and_holes_cfast_100(),
+                self._section_vvent_cfast_100(),
+                self._section_mvent_cfast_100(),
+                self._section_fire(),
+                self._section_connections_cfast_100(),
+                self._section_targets_cfast_100(),
+                self._section_heat_detectors_cfast_100(),
+                self._section_smoke_detectors_cfast_100(),
+                self._section_sprinklers_cfast_100(),
+                self._save_cfast_100_compartments_doors_and_holes_for_workers(),
+                '',
+                '&TAIL /'
+            )
 
         with open("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), "w") as output:
             output.write("\n".join(filter(None,txt)))
@@ -143,9 +272,8 @@ class CfastMcarlo():
         txt=(
         f"&HEAD VERSION = 7724, TITLE = 'P_ID_{self.conf['project_id']}_S_ID_{self.conf['scenario_id']}' /",
         f"&TIME SIMULATION = {self.conf['simulation_time']}, PRINT = {self.config['SMOKE_QUERY_RESOLUTION']}, SMOKEVIEW = {self.config['SMOKE_QUERY_RESOLUTION']}, SPREADSHEET = {self.config['SMOKE_QUERY_RESOLUTION']} /",
+        f"&MISC LOWER_OXYGEN_LIMIT = 0.15, MAX_TIME_STEP = 0.1 /",
         self._cfast_record('INIT'),
-        f"&MISC LOWER_OXYGEN_LIMIT = 0.15, MAX_TIME_STEP = 0.1/",
-        '',
         )
         return "\n".join(txt)
 
@@ -201,6 +329,30 @@ class CfastMcarlo():
             txt.append(', '.join(str(i) for i in c_row))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
+    def _section_compa_cfast_100(self):# {{{
+        txt=['!! SECTION COMPA']
+        query = (
+            f"SELECT * from aamks_geom WHERE type_pri='COMPA' "
+            f"AND fire_model_ignore!=1 AND global_type_id in ({','.join(['?' for _ in self.cfast_100_compartments_ids])}) "
+            "ORDER BY global_type_id"
+        )
+        for v in self.s.query(query, self.cfast_100_compartments_ids):
+            name = v['name']
+            self.cfast_100_compartments_names.append(name)
+            width = round(v['width'] / 100.0, 2)
+            depth = round(v['depth']/100.0, 2)
+            height = round(v['height']/100.0, 2)
+            ceiling_matl = self.conf['material_ceiling']
+            wall_matl  = self.conf['material_wall']
+            floor_matl = self.conf['material_floor']
+            type_sec = v['type_sec']
+            origin = [round(v['x0']/100.0, 2), round(v['y0']/100.0, 2), round(v['z0']/100.0, 2)]
+            leak_area = [3.5E-4, 5.2E-5]
+            grid = [50, 50, 50]
+            c_row = self._build_compa_row(name, width, depth, height, ceiling_matl, wall_matl, floor_matl, type_sec, origin, leak_area, grid)
+            txt.append(', '.join(str(i) for i in c_row))
+        return "\n".join(txt)+"\n" if len(txt)>1 else ""
+# }}}
     def _section_windows(self):# {{{
         txt = (
             '!! SECTION WINDOWS',
@@ -209,7 +361,14 @@ class CfastMcarlo():
         )
         return "".join(txt)
 # }}}
-
+    def _section_windows_cfast_100(self):# {{{
+        txt = (
+            '!! SECTION WINDOWS',
+            '\n',
+            self._cfast_record_cfast_100('VENT'),
+        )
+        return "".join(txt)
+# }}}
     def _section_doors_and_holes(self):# {{{
         txt = (
             '!! SECTION DOORS AND HOLES',
@@ -218,10 +377,18 @@ class CfastMcarlo():
         )
         return "".join(txt)
 # }}}
+    def _section_doors_and_holes_cfast_100(self):# {{{
+        txt = (
+            '!! SECTION DOORS AND HOLES',
+            '\n',
+            self._cfast_record_cfast_100('DOORS', 'VENT'),
+        )
+        return "".join(txt)
+# }}}
     def _section_vvent(self):# {{{
         # VVENT AREA, SHAPE, INITIAL_FRACTION
         txt=['!! SECTION NATURAL VENT']
-        for i, v in enumerate(self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to")):
+        for i, v in enumerate(self.s.query("SELECT name, vent_from_name, vent_to_name, width, depth FROM aamks_geom WHERE type_sec='VVENT' ORDER BY vent_from, vent_to")):
             how_much_open = self.samples['vvents'][i][0]           # end state with probability of working
             collect=[]
             collect.append("&VENT TYPE = 'CEILING'")                                                  # VENT TYPE
@@ -229,21 +396,39 @@ class CfastMcarlo():
             collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
             collect.append("AREA = {}".format(round((v['width']*v['depth'])/1e4, 2)))               # AREA OF THE VENT,
             collect.append("SHAPE = 'SQUARE'")
-            collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))           # COMPARTMENT1_OFFSET
+            collect.append("OFFSETS = {}, {}".format(0, 0))  # ONLY FOR VISUALISATION
+            # x, y must be relative to room, not absolute
             collect.append("CRITERION = 'TIME' T = 0,90 F = 0,{} /".format(how_much_open))         # OPEN CLOSE
-
             txt.append(', '.join(str(j) for j in collect))
-
+        return "\n".join(txt)+"\n" if len(txt)>1 else ""
+# }}}
+    def _section_vvent_cfast_100(self):# {{{
+        # VVENT AREA, SHAPE, INITIAL_FRACTION
+        txt=['!! SECTION NATURAL VENT']
+        for i, v in enumerate(self.s.query("SELECT name, vent_from_name, vent_to_name, width, depth FROM aamks_geom WHERE type_sec='VVENT' ORDER BY vent_from, vent_to")):
+            if v['vent_from_name'] not in self.cfast_100_compartments_names and v['vent_to_name'] not in self.cfast_100_compartments_names:
+                continue
+            how_much_open = self.samples['vvents'][i][0]           # end state with probability of working
+            collect=[]
+            collect.append("&VENT TYPE = 'CEILING'")                                                  # VENT TYPE
+            collect.append("ID = '{}'".format(v['name']))                                             # VENT ID
+            collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
+            collect.append("AREA = {}".format(round((v['width']*v['depth'])/1e4, 2)))               # AREA OF THE VENT,
+            collect.append("SHAPE = 'SQUARE'")
+            collect.append("OFFSETS = {}, {}".format(0, 0))  # ONLY FOR VISUALISATION
+            # x, y must be relative to room, not absolute
+            collect.append("CRITERION = 'TIME' T = 0,90 F = 0,{} /".format(how_much_open))         # OPEN CLOSE
+            txt.append(', '.join(str(j) for j in collect))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
     def _section_mvent(self):# {{{
         txt=['!! SECTION MECHANICAL VENT']
-        for v in self.s.query( "SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
+        for v in self.s.query( "SELECT name, vent_from_name, vent_to_name, width, depth, height, mvent_throughput, is_vertical FROM aamks_geom WHERE type_sec = 'MVENT'"):
             if v['mvent_throughput'] < 0:
                 comp_ids = [cfast_name(v['vent_from_name']), 'OUTSIDE']
             else:
                 comp_ids = ['OUTSIDE', cfast_name(v['vent_from_name'])]
-            if v['is_vertical'] is True:
+            if v['is_vertical'] == 1:
                 orientation = 'VERTICAL'
             else:
                 orientation = 'HORIZONTAL'
@@ -256,13 +441,47 @@ class CfastMcarlo():
             collect.append("HEIGHTS = {}, {}".format(round(v['height']/100, 2), round(v['height'], 2)))
             collect.append("FLOW = {}".format(abs(v['mvent_throughput'])))
             collect.append("CUTOFFS = 200, 300")
-            collect.append("ORIENTATIONS = '{}'".format(orientation))
-            collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))
+            collect.append("ORIENTATIONS = '{}'".format(orientation)) # ONLY FOR VISUALISATION
+            collect.append("OFFSETS = {}, {}".format(0, 0)) # ONLY FOR VISUALISATION
+            # x, y must be relative to room, not absolute
             # TODO add detection time to running mechanical ventilation
             activation_delay = self.conf['NSHEVS']['activation_time']
             start_up = self.conf['NSHEVS']['startup_time']
             collect.append(f"CRITERION = 'TIME' T = {activation_delay},{activation_delay+start_up} F = 0,1 /")
             txt.append(', '.join(str(i) for i in collect))
+        return "\n".join(txt)+"\n" if len(txt) > 1 else ""
+
+    def _section_mvent_cfast_100(self):# {{{
+        txt=['!! SECTION MECHANICAL VENT']
+        for v in self.s.query( "SELECT name, vent_from_name, vent_to_name, width, depth, height, mvent_throughput, is_vertical FROM aamks_geom WHERE type_sec = 'MVENT'"):
+            if v['vent_from_name'] not in self.cfast_100_compartments_names and v['vent_to_name'] not in self.cfast_100_compartments_names:
+                continue
+            if v['mvent_throughput'] < 0:
+                comp_ids = [cfast_name(v['vent_from_name']), 'OUTSIDE']
+            else:
+                comp_ids = ['OUTSIDE', cfast_name(v['vent_from_name'])]
+            if v['is_vertical'] == 1:
+                orientation = 'VERTICAL'
+            else:
+                orientation = 'HORIZONTAL'
+            collect=[]
+            collect.append("&VENT TYPE = 'MECHANICAL'")
+            collect.append("ID = '{}'".format(v['name']))
+            collect.append("COMP_IDS = '{}', '{}'".format(comp_ids[0], comp_ids[1]))
+            area = round((v['width']*v['depth'])/1e4, 2)
+            collect.append("AREAS = {}, {}".format(area, area))
+            collect.append("HEIGHTS = {}, {}".format(round(v['height']/100, 2), round(v['height'], 2)))
+            collect.append("FLOW = {}".format(abs(v['mvent_throughput'])))
+            collect.append("CUTOFFS = 200, 300")
+            collect.append("ORIENTATIONS = '{}'".format(orientation)) # ONLY FOR VISUALISATION
+            collect.append("OFFSETS = {}, {}".format(0, 0)) # ONLY FOR VISUALISATION
+            # x, y must be relative to room, not absolute
+            # TODO add detection time to running mechanical ventilation
+            activation_delay = self.conf['NSHEVS']['activation_time']
+            start_up = self.conf['NSHEVS']['startup_time']
+            collect.append(f"CRITERION = 'TIME' T = {activation_delay},{activation_delay+start_up} F = 0,1 /")
+            txt.append(', '.join(str(i) for i in collect))
+        
         return "\n".join(txt)+"\n" if len(txt) > 1 else ""
 
     def _section_fire(self):# {{{
@@ -283,6 +502,14 @@ class CfastMcarlo():
         )
         return "".join(txt)
 # }}}
+    def _section_connections_cfast_100(self):# {{{
+        txt = (
+            '!! CONNECTIONS',
+            '\n',
+            self._cfast_record_cfast_100('CONN'),
+        )
+        return "".join(txt)
+# }}}
     def _section_targets(self):
         if 'DEVC' in self.samples:
             txt = (
@@ -291,16 +518,42 @@ class CfastMcarlo():
                 self._cfast_record('DEVC'),
             )
             return "".join(txt)
+# }}}
+    def _section_targets_cfast_100(self):
+        if 'DEVC' in self.samples:
+            txt = (
+                '!! SECTION TARGETS',
+                '\n',
+                self._cfast_record_cfast_100('DEVC'),
+            )
+            return "".join(txt)
+
     def _section_heat_detectors(self):# {{{
         txt=['!! HEAT DETECTORS']
-        for i, v in enumerate(self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND heat_detectors=1")):
-            #temp = self._draw_heat_detectors_triggers()
+        for i, v in enumerate(self.s.query("SELECT global_type_id, name, width, depth, height from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND heat_detectors=1")):
+            temp = self.samples['heat_detectors'][i]
+            if temp == 0:
+                continue
+            else:
+                collect=[]
+                collect.append("&DEVC ID = 'hd{}' TYPE = 'HEAT_DETECTOR'".format(v['global_type_id']))
+                collect.append("COMP_ID = '{}'".format(v['name']))
+                collect.append("LOCATION = {}, {}, {}".format(round(v['width']/(2.0*100), 2), round(v['depth']/(2.0*100), 2), round(v['height']/100.0, 2)))
+                collect.append("SETPOINT = {}".format(temp))
+                collect.append("RTI = {} /".format(self.conf['heat_detectors']['RTI']))
+                txt.append(', '.join(str(j) for j in collect))
+        return "\n".join(txt)+"\n" if len(txt)>1 else ""
+
+    def _section_heat_detectors_cfast_100(self):# {{{
+        txt=['!! HEAT DETECTORS']
+        for i, v in enumerate(self.s.query("SELECT global_type_id, name, width, depth, height from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND heat_detectors=1")):
+            if v['name'] not in self.cfast_100_compartments_names:
+                continue
             temp = self.samples['heat_detectors'][i]
             if temp == 0:
                 collect = [] 
             else: 
                 collect=[]
-
                 collect.append("&DEVC ID = 'hd{}' TYPE = 'HEAT_DETECTOR'".format(v['global_type_id']))
                 collect.append("COMP_ID = '{}'".format(v['name']))
                 collect.append("LOCATION = {}, {}, {}".format(round(v['width']/(2.0*100), 2), round(v['depth']/(2.0*100), 2), round(v['height']/100.0, 2)))
@@ -308,11 +561,28 @@ class CfastMcarlo():
                 collect.append("RTI = {} /".format(self.conf['heat_detectors']['RTI']))
                 txt.append(','.join(str(j) for j in collect))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
-
 # }}}
     def _section_smoke_detectors(self):# {{{
         txt=['!! SMOKE DETECTORS']
-        for i, v in enumerate(self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND smoke_detectors=1")):
+        for i, v in enumerate(self.s.query("SELECT global_type_id, name, width, depth, height from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND smoke_detectors=1")):
+            smoke_obscuration = self.samples['smoke_detectors'][i]
+            if smoke_obscuration == 0:
+                continue
+            else:
+                collect=[]
+                collect.append("&DEVC ID = 'sd{}' TYPE = 'SMOKE_DETECTOR'".format(v['global_type_id']))
+                collect.append("COMP_ID = '{}'".format(v['name']))
+                collect.append("LOCATION = {}, {}, {}".format(round(v['width']/(2.0*100), 2), round(v['depth']/(2.0*100), 2), round(v['height']/100.0, 2)))
+                collect.append("SETPOINT = {} /".format(smoke_obscuration))
+                txt.append(', '.join(str(i) for i in collect))
+        return "\n".join(txt)+"\n" if len(txt)>1 else ""
+    
+# }}}
+    def _section_smoke_detectors_cfast_100(self):# {{{
+        txt=['!! SMOKE DETECTORS']
+        for i, v in enumerate(self.s.query("SELECT global_type_id, name, width, depth, height from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND smoke_detectors=1")):
+            if v['name'] not in self.cfast_100_compartments_names:
+                continue
             smoke_obscuration = self.samples['smoke_detectors'][i]
             if smoke_obscuration == 0:
                 collect = [] 
@@ -324,11 +594,30 @@ class CfastMcarlo():
                 collect.append("SETPOINT = {} /".format(smoke_obscuration))
                 txt.append(','.join(str(i) for i in collect))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
-
 # }}}
     def _section_sprinklers(self):# {{{
         txt=['!! SECTION SPRINKLERS']
-        for i, v in enumerate(self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1")):
+        for i, v in enumerate(self.s.query("SELECT global_type_id, name, width, depth, height from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1")):
+            try:
+                temp, dens = self.samples['sprinklers'][i]    # ACTIVATION_TEMPERATURE,
+            except:
+                continue
+            else:
+                collect=[]
+                collect.append("&DEVC ID = 'sp{}' TYPE = 'SPRINKLER'".format(v['global_type_id']))
+                collect.append("COMP_ID = '{}'".format(v['name']))
+                collect.append("LOCATION = {}, {}, {}".format(round(v['width']/(2.0*100), 2), round(v['depth']/(2.0*100), 2), round(v['height']/100.0, 2)))
+                collect.append(f"SETPOINT = {temp}")
+                collect.append(f"RTI = {self.conf['sprinklers']['RTI']}")
+                collect.append(f"SPRAY_DENSITY = {dens} /")
+                txt.append(', '.join(str(i) for i in collect))
+        return "\n".join(txt)+"\n" if len(txt)>1 else ""
+# }}}
+    def _section_sprinklers_cfast_100(self):# {{{
+        txt=['!! SECTION SPRINKLERS']
+        for i, v in enumerate(self.s.query("SELECT global_type_id, name, width, depth, height from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1")):
+            if v['name'] not in self.cfast_100_compartments_names:
+                continue
             try:
                 temp, dens = self.samples['sprinklers'][i]    # ACTIVATION_TEMPERATURE,
             except TypeError:
@@ -344,13 +633,16 @@ class CfastMcarlo():
                 txt.append(', '.join(str(i) for i in collect))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
+    def _save_cfast_100_compartments_doors_and_holes_for_workers(self):
+        set_string = ', '.join(map(str, self.cfast_100_compartments_doors_and_holes))
+        with open("{}/cfast_100_compartments_doors_and_holes.txt".format(os.environ['AAMKS_PROJECT']), 'w') as file:
+            file.write(set_string)
 # }}}
-#}}}
     def _write(self):#{{{
-        ''' 
+        '''
         Write cfast variables to postgres. Both column names and the values for
         psql come from trusted source, so there should be no security issues
-        with just joining dict data (non-parametrized query). 
+        with just joining dict data (non-parametrized query).
         '''
 
         pairs=[]
@@ -359,7 +651,6 @@ class CfastMcarlo():
         data=', '.join(pairs)
 
         self.p.query("UPDATE simulations SET {} WHERE project=%s AND scenario_id=%s AND iteration=%s".format(data), (self.conf['project_id'], self.conf['scenario_id'], self._sim_id))
-
 #}}}
 
 class Fire:
@@ -377,28 +668,28 @@ class Fire:
         self.devc = devc
         self.major = major
 
-        
+
 class DrawAndLog:
     FUELS = {"WOOD": {"molecule":{ "CARBON": 1, "HYDROGEN": 1.7, "OXYGEN": 0.72, "NITROGEN": 0.001, "CHLORINE": 0},
-                "heatcom":  {'mean': 17.1, 'sd': 0}, 
+                "heatcom":  {'mean': 17.1, 'sd': 0},
                 "yields": {"soot": {'mean': 0.015, 'sd': 0}, "co": {'mean': 0.004, 'sd': 0}, "hcn": {'mean': 0.126, 'sd': 0}}},
              "PVC": {"molecule":{ "CARBON": 2, "HYDROGEN": 3, "OXYGEN": 0, "NITROGEN": 0, "CHLORINE": 1},
-                "heatcom":  {'mean': 16.4, 'sd': 0}, 
+                "heatcom":  {'mean': 16.4, 'sd': 0},
                 "yields": {"soot": {'mean': 0.113, 'sd': 0}, "co": {'mean': 0.903, 'sd': 0}, "hcn": {'mean': 0, 'sd': 0}}},
              "PMMA": {"molecule":{ "CARBON": 5, "HYDROGEN": 8, "OXYGEN": 2, "NITROGEN": 0, "CHLORINE": 0},
-                "heatcom":  {'mean': 25.2, 'sd': 0}, 
+                "heatcom":  {'mean': 25.2, 'sd': 0},
                 "yields": {"soot": {'mean': 0.022, 'sd': 0}, "co": {'mean': 0.010, 'sd': 0}, "hcn": {'mean': 0, 'sd': 0}}},
              "PP": {"molecule":{ "CARBON": 3, "HYDROGEN": 6, "OXYGEN": 0, "NITROGEN": 0, "CHLORINE": 0},
-                "heatcom":  {'mean': 43.4, 'sd': 0}, 
+                "heatcom":  {'mean': 43.4, 'sd': 0},
                 "yields": {"soot": {'mean': 0.059, 'sd': 0}, "co": {'mean': 0.024, 'sd': 0}, "hcn": {'mean': 0, 'sd': 0}}},
              "PE": {"molecule":{ "CARBON": 2, "HYDROGEN": 4, "OXYGEN": 0, "NITROGEN": 0, "CHLORINE": 0},
-                "heatcom":  {'mean': 43.6, 'sd': 0}, 
+                "heatcom":  {'mean': 43.6, 'sd': 0},
                 "yields": {"soot": {'mean': 0.06, 'sd': 0}, "co": {'mean': 0.024, 'sd': 0}, "hcn": {'mean': 0, 'sd': 0}}},
              "PU": {"molecule":{ "CARBON": 1, "HYDROGEN": 1.2, "OXYGEN": 0.2, "NITROGEN": 0.08, "CHLORINE": 0},
-                "heatcom":  {'mean': 28, 'sd': 0}, 
+                "heatcom":  {'mean': 28, 'sd': 0},
                 "yields": {"soot": {'mean': 0.113, 'sd': 0}, "co": {'mean': 0.024, 'sd': 0}, "hcn": {'mean': 0, 'sd': 0}}},
              "PS": {"molecule":{ "CARBON": 8, "HYDROGEN": 8, "OXYGEN": 0, "NITROGEN": 0, "CHLORINE": 0},
-                "heatcom":  {'mean': 39.2, 'sd': 0}, 
+                "heatcom":  {'mean': 39.2, 'sd': 0},
                 "yields": {"soot": {'mean': 0.164, 'sd': 0}, "co": {'mean': 0.06, 'sd': 0}, "hcn": {'mean': 0, 'sd': 0}}}}
         #TODO to be imported from postgres
     PSQL_HEADERS = ['fireorig', 'fireorigname', 'heat_detectors', 'smoke_detectors', 'hrrpeak', 'soot_yield',
@@ -407,25 +698,19 @@ class DrawAndLog:
 
     def __init__(self, sim_id):
         self._sim_id = sim_id
-        self.json = Json()
-        self.__read_json()
-        self.__connectDB()
-        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
         self._scen_fuel = {}
         self._fire = None
         self._fires = []
         self._fire_openings = []
         self.sections = {}
-
-    def __read_json(self):
-        self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-
-    def __connectDB(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.data_for_psql=OrderedDict()
-        self.__new_psql_log()
+        self.json = Json()
+        self.conf = self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
+        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self._new_psql_log()
 
-    def __new_psql_log(self):#{{{
+    def _new_psql_log(self):#{{{
         ''' Init the collector for storing montecarlo cfast setup. Variables will be registered later one at a time. '''
         self.data_for_psql[self._sim_id]=OrderedDict([(h,  []) for h in self.PSQL_HEADERS])
 
@@ -463,7 +748,7 @@ class DrawAndLog:
         is_origin_in_room = binomial(True, self.conf['fire_starts_in_a_room'])
         all_corridors_and_halls = [[z['name'], z['width']*z['depth']] for z in self.s.query("SELECT name, width, depth FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND type_sec in('COR','HALL') ORDER BY global_type_id") ]
         all_rooms = [[z['name'], z['width']*z['depth']] for z in self.s.query("SELECT name, width, depth FROM aamks_geom WHERE type_sec='ROOM' ORDER BY global_type_id") ]
-        
+
         comp = {}
         if is_origin_in_room or not all_corridors_and_halls:
             omega, probs = prob_space(all_rooms)
@@ -474,7 +759,7 @@ class DrawAndLog:
         comp['name'] = str(choice(omega, p=probs))
 
         return comp
-    
+
     def _locate_in_the_middle(self, fire_room):
         loc = {}
         # locate fire in compartment
@@ -524,7 +809,7 @@ class DrawAndLog:
     def _deterministic_fire(self):
         comp, loc = {}, {}
         fire = self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")[0]
-        room = self.s.query("SELECT floor,name,type_sec,global_type_id,x0,y0,z0 FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?", 
+        room = self.s.query("SELECT floor,name,type_sec,global_type_id,x0,y0,z0 FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?",
                 (fire['floor'], fire['x0'], fire['y0'], fire['x1'], fire['y1']))[0]
 
         loc['x'], loc['y'], loc['z'] =  [fire['center_x'], fire['center_y'], fire['z0']]
@@ -546,7 +831,7 @@ class DrawAndLog:
             loc['major'] = 1
             self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
         else:
-            comp = self._draw_compartment() 
+            comp = self._draw_compartment()
             loc, _ = self._locate_randomly(comp['name'])
             loc['major'] = 1
             self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
@@ -585,7 +870,7 @@ class DrawAndLog:
         return fires
 # }}}
     '''&CHEM'''
-    def __draw_fuel(self):
+    def _draw_fuel(self):
         if self.conf['fuel'] == 'random':
             self._scen_fuel = self.FUELS[choice(list(self.FUELS))]
         elif self.conf['fuel'] == 'user':
@@ -595,17 +880,18 @@ class DrawAndLog:
 
     def _draw_fire_chem(self, fire_id):# {{{
         if not self._scen_fuel:
-            self.__draw_fuel()
+            self._draw_fuel()
 
         heat_of_combustion = round(normal(self._scen_fuel['heatcom']['mean'], self._scen_fuel['heatcom']['sd']), 0)     #[MJ/kg]
         rad_frac = round(gamma(self.conf['radfrac']['k'], self.conf['radfrac']['theta']), 3)#TODO LOW VARIABILITY, CHANGE DIST
 
         chem = {'ID': fire_id,
-                'HEAT_OF_COMBUSTION': heat_of_combustion * 1000, 
+                'HEAT_OF_COMBUSTION': heat_of_combustion * 1000,
                 'RADIATIVE_FRACTION': rad_frac}
         for spec, s_value in self._scen_fuel['molecule'].items():
             chem[spec] = s_value
         return chem
+
     def _draw_fires_chem(self):
         self.sections['CHEM'] = [self._draw_fire_chem(fire.f_id) for fire in self._fires]
         for i in self.sections['CHEM']:
@@ -617,7 +903,7 @@ class DrawAndLog:
     '''&TABL'''
     def _draw_fire_maxarea(self, fire_room_name):
         '''
-        Fire area is draw from pareto distrubution regarding the BS PD-7974-7. 
+        Fire area is draw from pareto distrubution regarding the BS PD-7974-7.
         There is lack of vent condition - underventilated fires
         '''
         orig_area = self.s.query(f"SELECT width*depth/10000 AS area FROM aamks_geom WHERE name='{fire_room_name}'")[0]['area']    # [m2]
@@ -633,7 +919,7 @@ class DrawAndLog:
     def _flashover_q(self, fire_room_name, model='max'):
         fire_room = self.s.query(f"SELECT width, depth, height FROM aamks_geom WHERE name='{fire_room_name}'")[0]
         a_o = sum([math.prod(o) for o in self._fire_openings])    # because openings dimensions in m
-        a_t = (2 * (fire_room['width'] + fire_room['depth']) * fire_room['height']) / 1e4 - a_o    # because dimensions in cm 
+        a_t = (2 * (fire_room['width'] + fire_room['depth']) * fire_room['height']) / 1e4 - a_o    # because dimensions in cm
         h_o = sum([o[1] for o in self._fire_openings])     # because openings dimensions in m
         thomas =  7.83 * a_t + 378 * a_o * h_o ** 0.5
         babrauskass = 750 * a_o * h_o ** 0.5
@@ -652,7 +938,7 @@ class DrawAndLog:
         self.alpha = triangular(hrr_alpha['min'], hrr_alpha['mode'], hrr_alpha['max'])
 
         def find_peak_hrr():
-            well_vent = hrrpua * fire_area 
+            well_vent = hrrpua * fire_area
             under_vent = self._flashover_q(fire.room)
             if well_vent < under_vent:
                 return int(well_vent), False
@@ -668,7 +954,7 @@ class DrawAndLog:
             load_density = int(lognormal(*params))  # location, scale
         else:
             raise ValueError(f'Invalid fire load density input data - check the form.')
-        
+
         hrr = HRR(self.conf, self._sim_id)
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
         hrr.add_tsquared([0, t_up_to_hrr_peak], self.alpha)
@@ -695,7 +981,7 @@ class DrawAndLog:
                                     ('soot_yield', mean(yields_tab['soot'])),
                                     ('hcn_yield', mean(yields_tab['hcn']))])
         return yields_tab
-        
+
     def _draw_fire_table(self, fire):# {{{
         # fire curve
         times, hrrs, areas, flash_time = self._draw_hrr_area_cont_func(fire)
@@ -706,10 +992,10 @@ class DrawAndLog:
         params = {"TIME": times, "HRR": hrrs, "HEIGHT": heights, "AREA": areas, "CO_YIELD": yields['co'], "SOOT_YIELD": yields['soot'], "HCN_YIELD": yields['hcn']}
 
         tabl = [{'ID': fire.f_id, 'LABELS': list(params)}]
-        
+
         for step in range(len(params['TIME'])):
             tabl.extend([{'ID': fire.f_id, 'DATA': [params[k][step] for k in params.keys()]}])
-            
+
         return tabl
     def _draw_fires_table(self):
         tabl = []
@@ -720,7 +1006,7 @@ class DrawAndLog:
 
 # }}}
     def _draw_windows_opening(self): # {{{
-        ''' 
+        '''
         Windows are open / close based on outside temperatures.
         Windows can be full-open (1), quarter-open (0.25) or closed (0).
         If window is closed can be fully opened by reaching temperature or heat flux.
@@ -740,10 +1026,10 @@ class DrawAndLog:
             for i in self.conf['windows']:
                 if outdoor_temp > i['min'] and outdoor_temp <= i['max']:
                     if draw_value < i['full']:
-                        how_much_open=1 
+                        how_much_open=1
                         win['CRITERION'] = ["'TIME'", 'T = 0,1', "F = 0,{}".format(how_much_open)]
                     elif draw_value < i['full'] + i['quarter']:
-                        how_much_open=0.25 
+                        how_much_open=0.25
                         win['CRITERION'] = ["'TIME'", 'T = 0,1', "F = 0,{}".format(how_much_open)]
                     else:
                         how_much_open=0
@@ -753,7 +1039,7 @@ class DrawAndLog:
                         win['POST_FRACTION'] = 1
                         win['DEVC_ID'] = f"t_{v['name']}"
             windows.append(win)
-            self.s.query(f"UPDATE aamks_geom SET how_much_open={how_much_open} WHERE name='{v['name']}'") 
+            self.s.query(f"UPDATE aamks_geom SET how_much_open={how_much_open} WHERE name='{v['name']}'")
 
             if how_much_open and (v['vent_from'] == int(self._fire.f_id[1:]) or v['vent_to'] == int(self._fire.f_id[1:])):
                 self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
@@ -763,21 +1049,11 @@ class DrawAndLog:
         self.sections.setdefault('VENT', []).extend(windows)
 # }}}
     def _draw_doors_and_holes_opening(self):# {{{
-        ''' 
+        '''
         Door may be open or closed, but Hole is always open and we don't need
         to log that.
         '''
         doors = []
-        pre_evac = self.conf['pre_evac']
-        if pre_evac['mean'] and pre_evac['sd']:
-            # if distribution parameters are given
-            first_percentile = round(lognorm_percentiles_from_params(pre_evac['mean'], pre_evac['sd'])[0], 1)
-        elif pre_evac['1st'] and pre_evac['99th']:
-            # if percentiles are given
-            first_percentile = pre_evac['1st']
-        else:
-            raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
-        
         for v in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from, vent_to"):
             vents = self.conf['vents_open']
             v_type = v['type_sec']
@@ -789,13 +1065,13 @@ class DrawAndLog:
                     "BOTTOM": round(v['sill']/100.0, 2),
                     "OFFSET": round(v['face_offset']/100.0, 2),
                     "FACE": v['face']}
-            
+
             if v_type=='HOLE':
                 how_much_open=1
                 door['CRITERION'] = ["'TIME'", f'T = 0', f'F = {how_much_open}']
             else:
                 how_much_open=binomial(1,vents[v_type])
-                self._psql_log_variable(v_type.lower(),how_much_open)
+                self._psql_log_variable('door', how_much_open)
 
             times = ",".join(str(x) for x in range(0, self.conf['simulation_time'], 1))
             if how_much_open == 0:
@@ -804,7 +1080,7 @@ class DrawAndLog:
                 how_much_open_list = ",".join("1" for _ in range(int(self.conf['simulation_time']/1)))
 
             if 'CRITERION' not in door:
-                door['CRITERION'] = ["'TIME'", f'T = {times}', f'F={how_much_open_list}']
+                door['CRITERION'] = ["'TIME'", f'T={times}', f'F={how_much_open_list}']
             
             doors.append(door)
 
@@ -812,18 +1088,15 @@ class DrawAndLog:
 
             if (v['vent_from'] == int(self._fire.f_id[1:]) or v['vent_to'] == int(self._fire.f_id[1:])):
                 self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
-        
+
         self.sections['DOORS'] = doors
 # }}}
     def _draw_vvents_opening(self):# {{{
         self.sections['vvents'] = []
-        for v in self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from, v.vent_to, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to"):
-            vents = self.conf['vents_open']
-            Type = v['type_sec']
-
-            how_much_open=binomial(1,vents[Type])
-            self._psql_log_variable(Type.lower(),how_much_open)
-
+        vents = self.conf['vents_open']['VVENT']
+        for v in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='VVENT' ORDER BY vent_from, vent_to"):
+            how_much_open=binomial(1,vents)
+            self._psql_log_variable('vvent', how_much_open)
             self.sections['vvents'].append((how_much_open, v['name']))
 
     def _draw_fire_targets(self):
@@ -831,7 +1104,7 @@ class DrawAndLog:
         for fire in self._fires:
             if fire.major != 1:
                 targets.append({'ID': fire.devc,
-                                'COMP_ID': fire.room, 
+                                'COMP_ID': fire.room,
                                 'LOCATION': [fire.loc_x, fire.loc_y, 0],
                                 'TYPE': 'PLATE',
                                 'NORMAL': [0., 0., 1.],
@@ -842,8 +1115,10 @@ class DrawAndLog:
             self.sections.setdefault('DEVC', []).extend(targets)
     def _draw_window_and_door_targets(self):
         targets = []
-        for v in self.s.query("SELECT v.name, v.vent_from_name, v.vent_to_name, v.face, v.face_offset, v.type_sec, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.type_sec='WIN' OR v.type_sec='DOOR'"):
-            z = round((v['sill']+v['height']*0.5)/100, 2)
+        for v in self.s.query("SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.how_much_open=0 AND (v.type_sec='WIN' OR v.type_sec='DOOR')"):
+            z = round((v['height']*0.5)/100, 2)
+            if v['type_sec'] == 'STAI':
+                z += v['sill']/100
             if v['face'] == 'RIGHT':
                 x = 0
                 y = round((v['depth']-v['face_offset']-v['wdepth']*0.50)/100, 2)
@@ -883,7 +1158,7 @@ class DrawAndLog:
 
     def _draw_triggers(self, devc: str):# {{{
         self.sections[devc] = []
-        for v in self.s.query(f"SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND {devc}=1"):
+        for v in self.s.query(f"SELECT name from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND {devc}=1"):
             if binomial(1,self.conf[devc]['not_broken']):
                 chosen = max(round(normal(self.conf[devc]['mean'], self.conf[devc]['sd']),2), 0)
                 try:
@@ -895,7 +1170,7 @@ class DrawAndLog:
 
             self._psql_log_variable(devc,chosen)
             self.sections[devc].append(chosen)
-    
+
     def _draw_connections(self):
         conn = []
         comps = self.s.query(f"SELECT adjacents FROM aamks_geom WHERE name='{self._fire.room}'")[0]['adjacents']
@@ -912,13 +1187,13 @@ class DrawAndLog:
                         'F': float(fraction_from)
                         })
         self.sections['CONN'] = conn
-    
+
     def all(self):
         #&INIT
         self._draw_initial()
         #&FIRE
         self._draw_fires()
-        self.__draw_fuel()
+        self._draw_fuel()
         #&VENTS
         self._draw_windows_opening()
         self._draw_doors_and_holes_opening()
@@ -933,7 +1208,7 @@ class DrawAndLog:
         self._draw_fire_targets()
         self._draw_window_and_door_targets()
         [self._draw_triggers(d) for d in ['heat_detectors', 'smoke_detectors', 'sprinklers']]
-        
+
 
 class HRR:
     def __init__(self, conf, _sim_id):
@@ -959,7 +1234,7 @@ class HRR:
                 return False
             raise ValueError(f'Lower and upper limits must not be equal {t}')
 
-        add_i = 0 
+        add_i = 0
         for i, domain in enumerate(self.domains):
             # break the domain in two if necessary (be careful about indexes here)
             for tb in t:
@@ -1000,7 +1275,7 @@ class HRR:
                 self.functions = self.functions[:i+1]
                 return True
         return False
-            
+
     def _check_for_positive(self):
         for i, f in enumerate(self.functions):
             roots = np.roots(f[::-1])
@@ -1008,7 +1283,7 @@ class HRR:
             for r in real_roots:
                 if self.domains[i][0] < r < self.domains[i][1]:
                     self.clear([r, self.sim_time])
-                    return r 
+                    return r
 
     def clear(self, domain):
         self._break_domains(domain)
@@ -1020,7 +1295,7 @@ class HRR:
         new_f = function
         self._break_domains(domain)
         self._update_funcs(domain, function)
-                
+
     def subtract(self, domain, function):
         function *= -1
         self.add(domain, function)
@@ -1050,7 +1325,7 @@ class HRR:
         alpha *= -1
         self.add_inversed_tsquared(domain, alpha, rising=rising)
 
-    def _mirror(self, t): 
+    def _mirror(self, t):
         self._mirror_functions(self._mirror_domains(t))
 
     def _mirror_domains(self, t):
@@ -1075,7 +1350,7 @@ class HRR:
                 self.add(self.domains[-j-1], [0, -f[1], 0])
             if f[2]:
                 self.add_inversed_tsquared(self.domains[-j-1], f[2])
-            # HRR functions are limited to second degree 
+            # HRR functions are limited to second degree
 
     def fuel_control(self, fireload):
         def df_dt(f): return npa([n * x**(n-1) for n, x in enumerate(f)])
@@ -1083,7 +1358,7 @@ class HRR:
         def int_d(f, d, c=0): return sum([c] + [x * (d[1]**(n+1)-d[0]**(n+1)) / (n+1) for n, x in enumerate(f)])
 
         fireload *= 1000 #[kJ]
-        
+
         sum_q = 0
         # iterate over time domains
         for i, domain in enumerate(self.domains):
@@ -1141,8 +1416,8 @@ class HRR:
         self._check_for_sim_time()
         self._check_for_positive()
 
-    def is_rescue(self): 
-        # Trying to get rescue parameter which old projects don't have 
+    def is_rescue(self):
+        # Trying to get rescue parameter which old projects don't have
         try:
             if self.conf["r_is"] == 'complex':
                 return True
@@ -1158,7 +1433,7 @@ class HRR:
             print(f"Error during getting rescue parameter: {e}")
             return False
 
-    
+
     def _val(self, t, lim=0):
         for i, domain in enumerate(self.domains):
             if any([domain[0] > t or t > domain[1], t == domain[1] and lim>0, t == domain[0] and lim<0]):
@@ -1168,7 +1443,7 @@ class HRR:
 
     def _is_linear(self, f):
         return True if sum(f[2:]) == 0 else False
-                
+
     def get_old_format(self, resolution=5, plot=False):
         def pl(t, hs):
             import matplotlib.pyplot as plt
@@ -1178,11 +1453,11 @@ class HRR:
         times, hrrs = [], []
         for i, domain in enumerate(self.domains):
             if self._is_linear(self.functions[i]):
-                times.extend(domain)
+                times.extend(npround(domain))
                 hrrs.extend([self._val(domain[0], lim=1), self._val(domain[1], lim=-1)])
             else:
                 for j in range(int(npround(domain[0])), int(npround(domain[1])), resolution):
-                    times.append(j)
+                    times.append(round(j))
                     hrrs.append(self._val(j))
 
         #CFAST has 199 records limit
@@ -1193,5 +1468,3 @@ class HRR:
                 break
         pl(times,hrrs) if plot else None
         return times, hrrs
-
-

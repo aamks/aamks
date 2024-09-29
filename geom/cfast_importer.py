@@ -19,6 +19,7 @@ from include import Sqlite
 from include import Json
 from include import Dump as dd
 from include import Vis
+from copy import deepcopy
 
 # }}}
 
@@ -316,7 +317,8 @@ class CFASTimporter():
         for hi,lo in self.towers_parents.items():
             z=self.s.query("SELECT name,vent_from,vent_from_name,vent_to_name,vent_to FROM aamks_geom WHERE type_pri='HVENT' AND vent_from=? OR vent_to=? ORDER BY name", (hi,hi))
             for i in z:
-                update.append((i['vent_from'], lo, i['vent_from_name'], i['vent_to_name'], i['name']))
+                if i['vent_from_name'] == 'OUTSIDE':
+                    update.append((i['vent_to'], i['vent_from'], i['vent_to_name'], i['vent_from_name'], i['name']))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=?, vent_from_name=?, vent_to_name=?  WHERE name=?", update)
 
 # }}}
@@ -540,7 +542,9 @@ class CFASTimporter():
             vc_intersections={key:[] for key in all_vvents }
             for vent_id,vent_poly in vents_dict.items():
                 try:
-                    two_floors=self.aamks_polies['COMPA'][floor]+self.aamks_polies['COMPA'][floor+1]
+                    two_floors=deepcopy(self.aamks_polies['COMPA'][floor])
+                    for k in self.aamks_polies['COMPA'][str(int(floor)+1)].keys():
+                        two_floors[k]=deepcopy(self.aamks_polies['COMPA'][str(int(floor)+1)][k])
                 except:
                     two_floors=self.aamks_polies['COMPA'][floor]
                 for compa_id,compa_poly in two_floors.items():
@@ -555,7 +559,7 @@ class CFASTimporter():
                     name=self.s.query("SELECT name FROM aamks_geom WHERE type_pri='VVENT' AND global_type_id=?", (vent_id,))[0]['name']
                     self.fatal('{}: vvent intersects no rooms or more than 2 rooms.'.format(name))
                 update.append((v[0], v[1], vent_id))
-        self.s.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
+        self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='VVENT'", update)
 
 # }}}
     def _towers_slices(self):# {{{

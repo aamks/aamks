@@ -29,6 +29,8 @@ import shutil
 import evac.pathfinder
 from evac.pathfinder.navmesh import Navmesh as Pynavmesh
 
+
+
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
     if os.environ['AAMKS_SKIP_CFAST'] == '1':
@@ -47,7 +49,9 @@ class Worker:
             os.environ['AAMKS_PG_PASS'] = AA['PG_PASS']
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
         if redis_worker_pwd: 
-            self.working_dir = redis_worker_pwd
+            self.working_dir = redis_worker_pwd 
+        # self.working_dir = "/home/aamks_users/akamienski@consultrisk.pl/next_room_s/macy/workers/37" 
+            
         self.project_dir=self.working_dir.split("/workers/")[0]
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
@@ -162,13 +166,35 @@ class Worker:
             y_max = max(int_points[1],int_points[3],int_points[5],int_points[7])
             self.rooms[room['name']]={'floor': room['floor'], 'x_min':x_min, 'x_max':x_max, 'y_min':y_min,'y_max':y_max}
 
+
+
         self.vars['conf']['internal_doors'] = []
+        doors_and_holes_cfast_100_names = []
+        
+        # if there is more than 100 rooms we choose only 100 rooms for cfast simulation
+        if os.path.exists("{}/cfast_100_compartments_doors_and_holes.txt".format(self.project_dir)):
+            with open("{}/cfast_100_compartments_doors_and_holes.txt".format(self.project_dir), 'r') as file:
+                content = file.read()
+            doors_and_holes_cfast_100_names = content.split(', ') 
+
+
         for floor in sorted(self.obstacles['obstacles'].keys()):
             self.vars['conf']['internal_doors'].append([])
             self.vars['conf']['internal_doors'][int(floor)]= {}
-        for door in internal_building_doors:
-            longer_projection = self.get_longer_projection_with_average(door['points'])
-            self.vars['conf']['internal_doors'][int(door['floor'])][door['name']]= {'center_x':door['center_x'], 'center_y': door['center_y'], 'how_much_open':door['how_much_open'], 'door_side_coordinates':longer_projection,'agents_id_moving_towards_door':[]}
+
+        #  there is more than 100 rooms, we choose only 100 rooms for cfast simulation
+        if len(doors_and_holes_cfast_100_names) > 0:
+            for door in internal_building_doors:
+                if door['name'] in doors_and_holes_cfast_100_names:
+                    longer_projection = self.get_longer_projection_with_average(door['points'])
+                    self.vars['conf']['internal_doors'][int(door['floor'])][door['name']]= {'center_x':door['center_x'], 'center_y': door['center_y'], 'how_much_open':door['how_much_open'], 'door_side_coordinates':longer_projection,'agents_id_moving_towards_door':[]}
+        # there is less than 100 rooms
+        else:
+            for door in internal_building_doors:
+                longer_projection = self.get_longer_projection_with_average(door['points'])
+                self.vars['conf']['internal_doors'][int(door['floor'])][door['name']]= {'center_x':door['center_x'], 'center_y': door['center_y'], 'how_much_open':door['how_much_open'], 'door_side_coordinates':longer_projection,'agents_id_moving_towards_door':[]}
+
+
 
         self.vars['conf']['agents_destination'] = []
         for floor in sorted(self.obstacles['obstacles'].keys()):
@@ -377,10 +403,9 @@ class Worker:
                     det = self.rooms_det_time[floor['EVACUEES'][i]['COMPA']]
                     alarm = 0
                     pre = pres['pre_evac_fire_origin']
-
             # for navmesh rvo tests uncomment below 2 lines
-            # det = 0
             # alarm = 0
+            # det = 0
             return det + alarm + pre
 
         leaders_id_list = []
@@ -649,15 +674,14 @@ class Worker:
 
         while 1:
             time_frame += cfast_step    # increase upper limit of time_frame
-
-            if time_frame == (self.vars['conf']['simulation_time']):
+            # check for user time limit
+            if time_frame >= (self.vars['conf']['simulation_time']):
                 self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
                 self.simulation_time = time_frame
                 self.time_shift = 0
                 break
 
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
-
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
                 aset = self.vars['conf']['simulation_time']
@@ -795,7 +819,6 @@ class Worker:
         vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+floor.floor+'.nav'))
         floor.nav.navmesh = Pynavmesh(vert, polygs)
 
-
     def cfast_socket_communication_handle(self, time_frame):
         # socket with cfast handler
         doors_opening_level = self.get_doors_opening_level()
@@ -812,6 +835,8 @@ class Worker:
                         plik.write(self.cfast_door_opening_level[door_id])
                     else:
                         plik.write(self.cfast_door_opening_level[door_id] +",")
+
+
         if os.path.exists(self.working_dir +"/doors_opening_level_frame.txt"):
             os.remove(self.working_dir +"/doors_opening_level_frame.txt")
         f2 = open(self.working_dir +"/doors_opening_level_frame.txt", "w+")

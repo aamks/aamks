@@ -204,7 +204,10 @@ class EvacEnv:
         return paths
 
     def set_OD_to_agent(self, evacuee, od_at_agent_position):
-        evacuee.optical_density_at_position = od_at_agent_position[0]
+        if od_at_agent_position[0] is None:
+            evacuee.optical_density_at_position = 0.0
+        else:
+            evacuee.optical_density_at_position = od_at_agent_position[0]
 
     def set_floor_teleport_destination_queue_lists(self):
         for exit in self.general['agents_destination'][int(self.floor)]['general_floor_goals']:
@@ -445,6 +448,8 @@ class EvacEnv:
         return smoke_opacity
 
     def _OD_to_VIS(self, OD):
+        if OD is None:
+            OD = 0.0
         self.elog.debug('TIME: {}, optical density: {}'.format(self.current_time, OD))
         if OD <= 1:
             return 0.0
