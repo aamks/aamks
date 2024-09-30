@@ -1,12 +1,12 @@
 IMPORT_BINARY = False
 if IMPORT_BINARY:
     try:
-        import pathfinder.pyrvo.rvo2 as rvo  # type: ignore
+        import evac.pathfinder.pyrvo.rvo2 as rvo  # type: ignore
     except Exception as e:
         print("Fails to load binary RVO2 library, switch to Python version")
         IMPORT_BINARY = False
 if IMPORT_BINARY is False:
-    from pathfinder.pyrvo.rvo_simulator import RVOSimulator
+    from evac.pathfinder.pyrvo.rvo_simulator import RVOSimulator
 from typing import Tuple, List, Optional
 
 # -------------------------------------
