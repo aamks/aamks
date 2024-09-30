@@ -94,7 +94,6 @@ class CfastMcarlo():
             return table
 
     def read_json(self):
-        print(os.environ['AAMKS_PROJECT'])
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 
     def create_sqlite_db(self):
@@ -423,7 +422,6 @@ class DrawAndLog:
         self.sections = {}
 
     def __read_json(self):
-        [print(i, j) for i,j in os.environ.items()]
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 
     def __connectDB(self):
