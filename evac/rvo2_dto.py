@@ -1,29 +1,28 @@
 import copy
 import warnings
-from collections import OrderedDict
-from pyrvo.rvo_simulator import RVOSimulator
-warnings.simplefilter('ignore', RuntimeWarning)
-from evac.evacuees import Evacuees
-from evac.evacuee import Evacuee
-from math import ceil
 import json
-from geom.nav import Navmesh
-from shapely.geometry import LineString
-from include import Sqlite
-from include import Json
 import os
-from scipy.stats import norm
-from math import log
-import math
-from numpy import array, prod, zeros, ndenumerate
-from scipy.spatial.distance import cdist
 import pandas as pd
+from collections import OrderedDict
+from math import ceil, log, isinf
+from shapely.geometry import LineString
+from include import Sqlite, Json
+from numpy import array, prod, zeros, ndenumerate
+from scipy.stats import norm
+from scipy.spatial.distance import cdist
 
+
+from geom.nav import Navmesh
+from evac.pyrvo.rvo_simulator import RVOSimulator
+from evac.evacuees import Evacuees
+
+warnings.simplefilter('ignore', RuntimeWarning)
 
 class EvacEnv:
 
-    def __init__(self, aamks_vars):
+    def __init__(self, aamks_vars, sim_id=None):
         self.json = Json()
+        self.sim_id = sim_id
         self.evacuees = Evacuees
         self.max_speed = 0
         self.current_time = 0
@@ -42,7 +41,7 @@ class EvacEnv:
         self.step = 0
         self.terminal_exits_names = []
 
-        f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
+        f = open(os.path.join(os.environ['AAMKS_PATH'], 'evac','config.json'), 'r')
         self.config = json.load(f)
 
         self.general = aamks_vars
@@ -55,8 +54,13 @@ class EvacEnv:
         
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
 
-        self.dfed = FEDDerivative(self.floor)
+        self.dfed = FEDDerivative(self.floor, sim_id=sim_id)
         self.detection = Detection(self)
 
     def _find_closest_exit(self, evacuee):
@@ -173,8 +177,8 @@ class EvacEnv:
             paths = self.get_paths_nav_query(position,_exit_dict, False)
 
         if len(paths) == 0:
-            # agent room is in smoke or there is no passage 
-            # through smoke-free rooms, so 
+            # agent room is in smoke or there is no passage
+            # through smoke-free rooms, so
             # agent must escape through the smoke
             paths = self.get_paths_nav_query(position,_exit_dict, True)
 
@@ -197,7 +201,7 @@ class EvacEnv:
                 continue
 
             path_length = LineString(path).length
-            if math.isinf(exit['exit_weight']):
+            if isinf(exit['exit_weight']):
                 exit_dist_considering_weight = path_length*100000
             else:
                 exit_dist_considering_weight = path_length*exit['exit_weight']
@@ -417,11 +421,10 @@ class EvacEnv:
         return self.simulator.get_obstacles_count(), 2
 
     def generate_nav_mesh(self):
-        self.nav = Navmesh()
+        self.nav = Navmesh(sim_id=self.sim_id)
         self.nav.build(floor=str(self.floor))
 
     def prepare_rooms_list(self):
-        self.s = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})
@@ -519,7 +522,13 @@ class EvacEnv:
 
 # Total FED growth spatial function (per floor)
 class FEDDerivative:
-    def __init__(self, floor: int):
+    def __init__(self, floor: int, sim_id=None):
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+
         self.floor = floor
         self.dim = self._find_2dims()
 
@@ -532,9 +541,8 @@ class FEDDerivative:
 
     # find dimensions of the plane returns list: [[xmin, ymin], [xmax, ymax]]
     def _find_2dims(self):
-        aamks_sqlite = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         dims = []
-        q = aamks_sqlite.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
+        q = self.s.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
                 (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%' or a.name LIKE 's%');")
         def minmax(pts):
             ret = []

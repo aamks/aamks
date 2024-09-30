@@ -1,1 +1,0 @@
-../gui/js/beck.js

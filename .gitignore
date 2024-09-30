@@ -8,3 +8,4 @@ __pycache__/
 coverage.xml
 gui/composer.lock
 gui/vendor/
+.env

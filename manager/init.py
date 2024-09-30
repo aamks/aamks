@@ -7,22 +7,20 @@ import sys
 import os
 import json
 import shutil
-from include import Json
-from include import Psql
-from include import Sqlite
-from include import Dump as dd
-from include import SimIterations
-from include import Vis
-from include import GetUserPrefs
-from geom.nav import Navmesh
 import subprocess
 import logging
 import sys
 
+from include import Json, Psql, Sqlite, SimIterations, Vis, GetUserPrefs
+from include import Dump as dd
+from geom.nav import Navmesh
+
+
 logger = logging.getLogger('AAMKS.init.py')
 
-class OnInit():
-    def __init__(self):# {{{
+
+class OnInit:
+    def __init__(self, sim_id=None):# {{{
         ''' Stuff that happens at the beggining of the project '''
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -31,7 +29,13 @@ class OnInit():
         self.p=Psql()
         self._clear_srv_anims()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 2)
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            shutil.copy(os.path.join(os.environ['AAMKS_PROJECT'], "aamks.sqlite"), new_sql_path)
+            self.s=Sqlite(new_sql_path)
         self._clear_sqlite()
+        self.irange = SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations']).get()
+        
         self._setup_simulations()
         self._create_sqlite_tables()
         self.s.close()
@@ -105,11 +109,11 @@ class OnInit():
         workers_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
         os.makedirs(workers_dir, mode = 0o777, exist_ok=True)
 
-        irange=self._create_iterations_sequence()
-        for i in range(*irange):
+        for i in range(*self.irange):
             sim_dir="{}/{}".format(workers_dir,i)
             os.makedirs(sim_dir, mode=0o777, exist_ok=True)
-            self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
+            if os.environ['AAMKS_WORKER'] != 'slurm':
+                self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
 
 # }}}
     def _create_sqlite_tables(self): # {{{
@@ -119,9 +123,16 @@ class OnInit():
 # }}}
 
 class OnEnd():
-    def __init__(self):# {{{
+    def __init__(self, sim_id=None):# {{{
         ''' Stuff that happens at the end of the project '''
         logger.info('start OnEnd()')
+        if os.environ['AAMKS_WORKER']=='slurm':
+            # works will be registered as slurm array by slurm.py
+            # nothing to do except for updating aamks.sqlite with latest sim sqlite and Vis (possible conflicts?)
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            os.replace(new_sql_path, os.path.join(os.environ['AAMKS_PROJECT'], "aamks.sqlite"))
+            Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
+            return
         self.json=Json()
         self.uprefs=GetUserPrefs()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))

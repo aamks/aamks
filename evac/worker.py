@@ -5,7 +5,6 @@ import os
 import random
 import re
 import sys
-sys.path.insert(1, '/usr/local/aamks')
 from numpy import array, prod, log, where, diff
 from results.beck_new import RiskIteration as RI
 from evac.evacuee import Evacuee
@@ -38,8 +37,6 @@ if 'AAMKS_SKIP_CFAST' in os.environ:
 class Worker:
 
     def __init__(self, redis_worker_pwd = None, AA=None):
-        self.json=Json()
-        self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
         if AA:
             AA['PROJECT'] = AA['PROJECT'].replace("home","mnt")
             os.environ['AAMKS_PROJECT'] = AA['PROJECT']
@@ -47,9 +44,19 @@ class Worker:
             os.environ['AAMKS_SERVER'] = AA['SERVER']
             os.environ['AAMKS_PG_PASS'] = AA['PG_PASS']
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
-        if redis_worker_pwd:
-            self.working_dir = redis_worker_pwd
-        self.project_dir=self.working_dir.split("/workers/")[0]
+
+        if redis_worker_pwd: 
+            self.working_dir = redis_worker_pwd 
+        self.project_dir, sim_id = self.working_dir.split("/workers/")
+
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.json=Json()
+        self.json.s = self.s
+        self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
         self.vars = OrderedDict()
@@ -78,6 +85,7 @@ class Worker:
         self.server_socket = None
         self.connection_thread = None
         self.cfast_door_opening_level = {}
+        self.exit_code = None
         self.rooms = {}
         self.is_anim = 0
 
@@ -103,7 +111,7 @@ class Worker:
 
     def get_config(self):
         try:
-            f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
+            f = open(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'), 'r')
             self.config = json.load(f)
         except Exception as e:
             print(e)
@@ -138,10 +146,12 @@ class Worker:
         if self.project_conf['fire_model'] == 'CFAST':
             if os.getcwd() != self.working_dir:
                 os.chdir(self.working_dir)
-            os.system('ln -s /usr/local/aamks/fire/cfast7_linux_64 .')
-            os.system('ln -s /usr/local/aamks/fire/c_socket_handler.so .')
+            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/fire/cfast7_linux_64 .')
+            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/fire/c_socket_handler.so .')
             command = ["./cfast7_linux_64", "cfast.in", "arg1", "arg2"]
-            subprocess.Popen(command)
+
+            if not subprocess.Popen(command):
+                raise RuntimeError('Error while executing cfast')
             self.connection_thread.join()
             #below message is is the first message received from cfastafter cfast_compartemnts.csv already has row t=0s.
             #it is needed for proper functioning of the self.prepare_simulations() function.
@@ -149,7 +159,6 @@ class Worker:
             
 
     def create_geom_database(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL')
         floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%'")
@@ -352,7 +361,7 @@ class Worker:
             try:
                 self.prepare_staircases(str(floor))
                 self.vars['conf']['project_dir'] = self.project_dir
-                eenv = EvacEnv(self.vars['conf'])
+                eenv = EvacEnv(self.vars['conf'], self.sim_id)
                 eenv.floor = floor
             except Exception as e:
                 self.wlogger.error(e)
@@ -393,7 +402,7 @@ class Worker:
 
         for floor in self.floors:
             try:
-                floor.smoke_query = PartitionQuery(floor=floor.floor)
+                floor.smoke_query = PartitionQuery(floor=floor.floor, sim_id=self.sim_id)
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":32})
@@ -583,7 +592,6 @@ class Worker:
                 break
 
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
-
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
                 aset = self.vars['conf']['simulation_time']
@@ -695,7 +703,7 @@ class Worker:
 
         for id, coordinates in all_figures:
             skip_outer1 = False
-            skip_outer2 = False 
+            skip_outer2 = False
             for floor_critical_room in floor_critical_rooms:
                 x_min = self.rooms[floor_critical_room]['x_min']/100
                 x_max = self.rooms[floor_critical_room]['x_max']/100
@@ -904,10 +912,11 @@ class Worker:
                 report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
                 report['floor'] = num_floor
             report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
-            # report['psql']['i_risk'] = report['psql']['i_risk'][:-1] + ", " + json.dumps(self.project_conf)[1:]
+
             report['psql']['detection'] = int(self.detection_time)
             report['psql']['status'] = 0
             
+        self.exit_code = report['psql']['status']
         self.wlogger.info('Metadata prepared successfully')
 
         return report
@@ -1015,7 +1024,9 @@ class Worker:
         self.do_simulation()
         self.send_report()
         self.cleanup()
-        self.wlogger.info('Simulation ended successfully')
+        self.wlogger.info(f'Simulation ended with status {self.exit_code}')
+
+        return self.exit_code
 
     def test(self):
         self.get_config()
