@@ -412,7 +412,7 @@ class DrawAndLog:
         self.json = Json()
         self.__read_json()
         self.__connectDB()
-        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'aamks', 'evac', 'config.json'))
+        self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
         self._scen_fuel = {}
         self._fire = None
         self._fires = []
