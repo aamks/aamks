@@ -1,6 +1,6 @@
 # Not for production
 
-# should match /usr/local/aamks/gui/inc.php: private function mk_default_preferences()
+# should match $AAMKS_PATH/gui/inc.php: private function mk_default_preferences()
 PREFS='{"apainter_editor": "advanced", "navmesh_debug": 1, "apainter_labels": 1, "partitioning_debug": 0 }'; 
 sudo -u postgres psql -f sql.sql
 sudo -u postgres psql aamks -c "

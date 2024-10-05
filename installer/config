@@ -8,6 +8,7 @@ AAMKS_SALT='aamksisthebest'
 AAMKS_USE_MAIL=0											# needed if we allow users to register accounts and reset passwords
 AAMKS_MAIL_PASSWORD='none'								    # check documentation on github and set your own values
 AAMKS_MAIL_SENDER='none'                                    # set your verified sending email 
+AAMKS_DEMO=0
 
 # Aamks uses postgres (user:aamks, db:aamks) for collecting the simulations data.
 

@@ -1,14 +1,9 @@
-import sys
-import re
 import os
 import numpy as np
 from collections import OrderedDict
 import json
-from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
 import zipfile
-from include import Sqlite
 from include import Json
-from include import SimIterations
 from include import Vis
 from random import randint, randrange
 from sklearn.cluster import MeanShift
@@ -18,7 +13,6 @@ class EvacClusters():
     def __init__(self,dispatched_evacuees):
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        # si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
         self.dispatched_evacuees = dispatched_evacuees
         self.all_leaders_id = []
         self.all_followers_id = []
