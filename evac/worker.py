@@ -619,8 +619,7 @@ class Worker:
             file.write(' '.join(points) + '\n')
             file.write(' '.join(figures_points_after_removal) + '\n')
             file.write(' '.join(polygons_after_removal))
-
-        vert, polygs = read_from_text(new_navmesh_path)
+        vert, polygs = read_from_text(new_navmesh_path
         floor.nav.navmesh = Pynavmesh(vert, polygs)
 
     def process_agents_upstairs_and_downstairs_movement(self, step, time):
