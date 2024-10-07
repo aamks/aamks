@@ -23,7 +23,7 @@ def launch(path: str, user_id: int):
     slurm = Slurm()
     slurm.add_arguments(*def_args)
     slurm.set_partition('aamks-worker')
-    slurm.set_account(user_id)
+    slurm.set_account(f'aamks-{user_id}')
     slurm.set_chdir(path)
     slurm.set_output(f'workers/%a/slurm.out')
     slurm.set_error(f'workers/%a/slurm.err')

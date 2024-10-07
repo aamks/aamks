@@ -89,7 +89,6 @@ function loadImage(file){
 function initLayers() {//{{{
 	new Layer({'name': 'rooms'});
 	new Layer({'name': 'roomSmoke'});
-	new Layer({'name': 'doorsOpening'});
 	new Layer({'name': 'roomFire'});
 	new Layer({'name': 'highlight'});
 	new Layer({'name': 'animated'});
@@ -340,9 +339,7 @@ function showAnimation() {//{{{
 		currentAnimData=JSON.parse(response['data']);
 		eData=currentAnimData.animations.evacuees;
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
-		doorsOpening=currentAnimData.animations.doors;
 		initRoomSmoke();
-		initDoorsOpening();
 		initAnimAgents();
 		initSpeed();
 	});
@@ -958,7 +955,6 @@ view.onFrame=function(event) {//{{{
 		updateAgentNumbersOnFloors();
 		evacueesInFrame();
 		roomsSmokeInFrame();
-		doorsOpeningInFrame();
 		afterLerpFrame();
 	}
 }
