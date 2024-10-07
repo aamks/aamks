@@ -735,7 +735,7 @@ class Worker:
             if len(floor.unavailable_rooms) > 0:
                 if floor.unavailable_rooms != self.previous_critical_rooms[floor.floor]:
                     self.generate_new_pynavmesh(floor, floor.unavailable_rooms)
-                    self.previous_critical_rooms[floor.floor] = floor.unavailable_rooms
+                    self.previous_critical_rooms[floor.floor] = copy(floor.unavailable_rooms)
 
     def generate_new_pynavmesh(self, floor, floor_critical_rooms):
         figure_points = []
