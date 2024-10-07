@@ -551,8 +551,8 @@ class FEDDerivative:
         def minmax(pts):
             ret = []
             xys = list(zip(*pts))
-            ret.append([min(xys[i]) for i in range(2)])
-            ret.append([max(xys[i]) for i in range(2)])
+            ret.append([min(xys[i])-100 for i in range(2)])
+            ret.append([max(xys[i])+100 for i in range(2)])
             return ret
 
         for i in q:
