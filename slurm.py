@@ -6,7 +6,7 @@ from include import SimIterations, Psql, Json
 
 def_args = [
         '--ntasks', 1,
-        '--ntasks_per_core', 1,
+        '--cpu_per_task', 1,
         ]
 python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "python")}'
 python_env_aamks_server = f'{os.path.join(os.environ["AAMKS_PATH"], "env-server", "bin", "python")}'
@@ -23,7 +23,7 @@ def launch(path: str, user_id: int):
     # initiate slurm wrapper
     slurm = Slurm()
     slurm.add_arguments(*def_args)
-    slurm.set_partition('aamks-worker')
+    slurm.set_partition('aamks-worker-4,aamks-worker-6')
     slurm.set_account(f'aamks-{user_id}')
     slurm.set_chdir(path)
     slurm.set_output(f'workers/%a/slurm.out')
