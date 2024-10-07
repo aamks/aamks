@@ -1,5 +1,5 @@
 // globals//{{{
-// cd /usr/local/aamks/gui/apainter/js/; git log -p apainter.js | v
+// cd $AAMKS_PATH/gui/apainter/js/; git log -p apainter.js | v
 //
 var win=[ $(window).width()-30, $(window).height()-50];
 var db=TAFFY(); // http://taffydb.com/working_with_data.html

@@ -5,6 +5,7 @@ function make_help() { /*{{{*/
 	$help["project_id"]              = ["Project & scenario"               , "Project ID/scenario ID"]                                                         ;
 	$help["number_of_simulations"]   = ["Number of simulations"            , "The number of simulation to be launched"]                                                              ;
 	$help["simulation_time"]         = ["Simulation time"                  , "Prescribed duration of single simulation (iteration) [s]"]                                                              ;
+	$help["animations_number"]    	 = ["Number of animations"				, "The number of animations to be created for this launch"];
 	$help["fire_model"]				 = ["Fire model"                       , "CFAST | FDS | None !!!currently only CFAST available!!!"]                                                              ;
     //FIRE MODEL
 	$help["indoor_temperature"]      = ["Initial indoor temperature"               , "Parameters of normal distribution of initial indoor temperature [°C]"]                                                              ;

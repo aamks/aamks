@@ -54,8 +54,8 @@ class CfastMcarlo():
         ''' Generate montecarlo cfast.in. Log what was drawn to psql. '''
         self.json=Json()
         self.read_json()
-        self.create_sqlite_db()
         self._sim_id = sim_id
+        self.create_sqlite_db()
         # why seed is used - it eliminates 'free' nature of pseudo-random
         #seed(self._sim_id)
         self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
@@ -97,7 +97,11 @@ class CfastMcarlo():
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 
     def create_sqlite_db(self):
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{self._sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         t_name= ""
         try:
             t_name = self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
@@ -135,11 +139,9 @@ class CfastMcarlo():
 
         with open("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), "w") as output:
             output.write("\n".join(filter(None,txt)))
-        os.chmod("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)
+        #os.chmod("{}/workers/{}/cfast.in".format(os.environ['AAMKS_PROJECT'],self._sim_id), 0o666)
 # }}}
     def _section_preamble(self):# {{{
-        if self.conf['simulation_time'] > 3600 or self.config['SMOKE_QUERY_RESOLUTION'] != 1:
-            raise Exception('The simulation time must be less than 3600 seconds and the frequency of saving cfast simulation results to csv files must be equal to 1s for the dynamic modification of cfast simulation parameters via sockets to work properly')
         txt=(
         f"&HEAD VERSION = 7724, TITLE = 'P_ID_{self.conf['project_id']}_S_ID_{self.conf['scenario_id']}' /",
         f"&TIME SIMULATION = {self.conf['simulation_time']+1}, PRINT = {self.config['SMOKE_QUERY_RESOLUTION']}, SMOKEVIEW = {self.config['SMOKE_QUERY_RESOLUTION']}, SPREADSHEET = {self.config['SMOKE_QUERY_RESOLUTION']} /",
@@ -421,7 +423,11 @@ class DrawAndLog:
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 
     def __connectDB(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{self._sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.data_for_psql=OrderedDict()
         self.__new_psql_log()
 
@@ -797,20 +803,23 @@ class DrawAndLog:
                 how_much_open=binomial(1,vents[v_type])
                 self._psql_log_variable(v_type.lower(),how_much_open)
 
-            times = ",".join(str(x) for x in range(0, self.conf['simulation_time'], 1))
             if how_much_open == 0:
-                how_much_open_list = ",".join("0" for _ in range(int(self.conf['simulation_time']/1)))
+                door['CRITERION'] = self.conf['doors_break']['criterion']
+                door['SETPOINT'] = self.conf['doors_break']['setpoint']
+                door['PRE_FRACTION'] = 0
+                door['POST_FRACTION'] = 1
+                door['DEVC_ID'] = f"t_{v['name']}"
             else:
-                how_much_open_list = ",".join("1" for _ in range(int(self.conf['simulation_time']/1)))
+                # open after 1st percentile of evacuees run
+                if 'CRITERION' not in door:
+                    door['CRITERION'] = ["'TIME'", f'T = 0,{first_percentile},{first_percentile+1}', f'F=0,0,{how_much_open}']
 
-            if 'CRITERION' not in door:
-                door['CRITERION'] = ["'TIME'", f'T = {times}', f'F={how_much_open_list}']
-            
             doors.append(door)
 
             self.s.query(f"UPDATE aamks_geom SET how_much_open={how_much_open} WHERE name='{v['name']}'")
 
-            if (v['vent_from'] == int(self._fire.f_id[1:]) or v['vent_to'] == int(self._fire.f_id[1:])):
+            if how_much_open and (v['vent_from'] == int(self._fire.f_id[1:]) or
+                                  v['vent_to'] == int(self._fire.f_id[1:])):
                 self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
         
         self.sections['DOORS'] = doors
@@ -842,8 +851,10 @@ class DrawAndLog:
             self.sections.setdefault('DEVC', []).extend(targets)
     def _draw_window_and_door_targets(self):
         targets = []
-        for v in self.s.query("SELECT v.name, v.vent_from_name, v.vent_to_name, v.face, v.face_offset, v.type_sec, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.type_sec='WIN' OR v.type_sec='DOOR'"):
-            z = round((v['sill']+v['height']*0.5)/100, 2)
+        for v in self.s.query("SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.how_much_open=0 AND (v.type_sec='WIN' OR v.type_sec='DOOR')"):
+            z = round((v['height']*0.5)/100, 2)
+            if v['type_sec'] == 'STAI':
+                z += v['sill']/100
             if v['face'] == 'RIGHT':
                 x = 0
                 y = round((v['depth']-v['face_offset']-v['wdepth']*0.50)/100, 2)

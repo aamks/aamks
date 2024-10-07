@@ -13,7 +13,7 @@ import numpy as np
 # }}}
 
 class PartitionQuery:
-    def __init__(self, floor):# {{{
+    def __init__(self, floor, sim_id=None):# {{{
         '''
         * On class init we read cell2compa map and and query_vertices from sqlite.
         * We are getting read_cfast_record(T) calls in say 10s intervals:
@@ -35,14 +35,20 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         ''' 
 
         self.json = Json()
-        try:
-            self.s=Sqlite("aamks.sqlite", 1) # We are the worker with aamks.sqlite copy in our working dir
-        except:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 1) # We are the server
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.json.s = self.s
+        #try:
+        #    self.s=Sqlite("aamks.sqlite", 1) # We are the worker with aamks.sqlite copy in our working dir
+        #except:
+        #    self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 1) # We are the server
 
         self.floor=str(floor)
         self.floors_meta=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
-        self.config=self.json.read('{}/evac/config.json'.format(os.environ['AAMKS_PATH']))
+        self.config=self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
         self.project_conf=self.json.read('{}/conf.json'.format(os.environ['AAMKS_PROJECT']))
 
         self._sqlite_query_vertices()
@@ -491,20 +497,19 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         # min(ULOD_COR)
         q = self.sf.query("SELECT MAX(value) FROM finals WHERE compa_type='c' AND param='ULOD'")[0]['MAX(value)']
         ul_od_cor = (q if q else 0)
-        if not q:
-            finals['min_vis_cor'] = 0
-        elif ul_od_cor == 0:
+        if ul_od_cor == 0:
             finals['min_vis_cor'] = 30
         else:
-            finals['min_vis_cor'] = c_const / (ul_od_cor * 2.303)
+            finals['min_vis_cor'] = min([30, c_const / (ul_od_cor * 2.303)])
 
 
         # min(ULOD_COMPA)
-        ul_od_compa = self.sf.query("SELECT MAX(value) FROM finals WHERE param='ULOD'")[0]['MAX(value)']
+        q = self.sf.query("SELECT MAX(value) FROM finals WHERE param='ULOD'")[0]['MAX(value)']
+        ul_od_compa = (q if q else 0)
         if ul_od_compa == 0:
             finals['min_vis_compa'] = 30
         else:
-            finals['min_vis_compa'] = c_const /(ul_od_compa * 2.303)
+            finals['min_vis_compa'] = min([30, c_const /(ul_od_compa * 2.303)])
 
         # total heat released
         hrrs = self.sf.query("SELECT value FROM finals WHERE param='HRR' AND param_sec='1'")

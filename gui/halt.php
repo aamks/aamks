@@ -149,6 +149,26 @@ function check_stat($r) {
 }
 
 
+function stop_slurm($r) {
+    $sum = 0;
+    echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
+    echo "<table><tr><th>Iteration</th><th>Halted?</th><th>Status</th></tr>";
+
+    foreach ($r as $element) {
+        echo "<tr><td>" . $element['iteration'] . "</td>";
+        if ($element['status'] == '') {
+            $element_job_id = $element['job_id'];
+            stop($r);
+            echo "<td align='center'>OK</td><td></td>";
+            $r = $_SESSION['nn']->query("UPDATE simulations SET status='90' WHERE job_id=$1", array($element['job_id']));
+            $sum += 1;
+        } else {
+            echo "<td align='center'>NO</td><td align='center'>" . $element['status'] . "</td>";
+        }
+        echo "<tr>";
+    }
+    echo "</table></td><td valign='top'>$sum jobs removed from queue</td></tr></table>";
+}
 function stop_redis($r) {
     $sum = 0;
     echo "<table><tr><th>Detailes</th><th>Summary</th></tr><tr><td valign='top'>";
@@ -274,20 +294,6 @@ function check_conv_current() {/*{{{*/
 	//echo "</td></tr></table>";
 }
 
-function delete_from_redis($redis, $id){ 
-    $element_id_to_remove = $id;
-    $redis_queue_key = 'aamks_queue';
-    $elements = $redis->lrange($redis_queue_key, 0, -1);
-    foreach ($elements as $element) {
-        $decoded_element = json_decode($element, true);
-        if ($decoded_element['id'] == $element_id_to_remove) {
-            // delete element from DB
-            $redis->lrem($redis_queue_key, $element, 0);
-            break; 
-        }
-    }
-}
-
 
 
 function main() {/*{{{*/
@@ -308,6 +314,9 @@ function main() {/*{{{*/
         elseif (getenv('AAMKS_WORKER') == "redis"){
             stop_redis(query_any());
         }
+        elseif ($aamks_worker == "slurm"){
+            stop_slurm(query_any());
+        }
         
 	}
 	elseif (isset($_POST['btn-halt-cur'])) {
@@ -317,6 +326,9 @@ function main() {/*{{{*/
         }
         elseif (getenv('AAMKS_WORKER') == "redis"){
             stop_redis(query_cur());
+        }
+        elseif ($aamks_worker == "slurm"){
+            stop_slurm(query_cur());
         }
 		
     }

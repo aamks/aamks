@@ -113,13 +113,17 @@ function last_log(){/*{{{*/
 }
 function compare() {/*{{{*/
 	$f=$_SESSION['main']['working_home'];
-    $scens = implode(' ', $_POST['comp']);
-    run_beck_new($f, $scens);
+	$scens = implode(' ', $_POST['comp']);
+	run_beck_new($f, $scens);
+	echo "<br><br><br><font size=4>Request sent to the server.<br>
+	       	Postprocessing may take a few seconds or minutes. Refresh the site or click Results [scenario] button in a while.</font><br><br>";
 /*}}}*/
 }
 function make_pictures() {/*{{{*/
 	$f=$_SESSION['main']['working_home'];
     run_beck_new($f);
+	echo "<br><br><br><font size=4>Request sent to the server.<br>
+	       	Postprocessing may take a few seconds or minutes. Refresh the site or click Results [scenario] button in a while.</font><br><br>";
 /*}}}*/
 }
 function prevNext($k, $t, $d) {
