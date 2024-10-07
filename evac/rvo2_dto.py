@@ -424,7 +424,7 @@ class EvacEnv:
         return self.simulator.get_obstacles_count(), 2
 
     def generate_nav_mesh(self, working_dir):
-        self.nav = Navmesh()
+        self.nav = Navmesh(self.sim_id)
         self.nav.build(floor=str(self.floor), wd=working_dir)
 
     def prepare_rooms_list(self):

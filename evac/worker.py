@@ -108,14 +108,14 @@ class Worker:
         except Exception as e:
             print(e)
             self.send_report(e={"status":16})
-            sys.exit(1)
+            sys.exit(16)
         try:
             f = open('evac.json', 'r')
             self.vars['conf'] = json.load(f)
         except Exception as e:
             print('Cannot load evac.json from directory: {}'.format(str(e)))
             self.send_report(e={"status":17})
-            sys.exit(1)
+            sys.exit(17)
 
         self.detection_time = self.config['DETECTION_TIME']
 
@@ -164,6 +164,10 @@ class Worker:
                 self.send_report(e={"status": 102})
                 return True
             else:
+                if attempt == 1:
+                    self.wlogger.error('CFAST stuck - unable to calculate with Intel nor GNU compiled sources')
+                    self.send_report(e={'status': 21})
+                    sys.exit(21)
                 self.wlogger.warning(f'Iteration skipped due to CFAST error, attempt = {attempt + 1}')
                 return self.run_cfast_simulations("gnu", attempt + 1)
 
@@ -407,7 +411,7 @@ class Worker:
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":32})
-                exit(1)
+                sys.exit(32)
             else:
                 self.wlogger.info('Smoke query connected to floor: {}'.format(floor.floor))
 
@@ -616,7 +620,7 @@ class Worker:
             file.write(' '.join(figures_points_after_removal) + '\n')
             file.write(' '.join(polygons_after_removal))
 
-        vert, polygs = evac.pathfinder.read_from_text(new_navmesh_path)
+        vert, polygs = read_from_text(new_navmesh_path)
         floor.nav.navmesh = Pynavmesh(vert, polygs)
 
     def process_agents_upstairs_and_downstairs_movement(self, step, time):
