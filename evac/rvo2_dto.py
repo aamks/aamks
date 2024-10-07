@@ -39,6 +39,7 @@ class EvacEnv:
         self.floor_downstair_teleports_queue = {}
         self.step = 0
         self.terminal_exits_names = []
+        self.unavailable_rooms = []
 
         f = open(os.path.join(os.environ['AAMKS_PATH'], 'evac','config.json'), 'r')
         self.config = json.load(f)
@@ -126,7 +127,9 @@ class EvacEnv:
             if LineString([(x,y), (evacuee.position[0], evacuee.position[1])]).length < 100 and exit['type'] == 'door':
                 x, y = exit['x_outside'], exit['y_outside']
 
-            if room_name in self.rooms_in_smoke:
+            # unavailable_rooms -> opacity > 2/3 | visibility < 10 m
+            # rooms_in_smoke    -> opacity > 0.0 | visibility < 30 m
+            if room_name in self.unavailable_rooms:
                 navmesh_path = self.nav.nav_query_first_navmesh(src=evacuee.position, dst=(x, y), maxStraightPath=999)
             else:
                 navmesh_path = self.nav.nav_query(src=evacuee.position, dst=(x, y), maxStraightPath=999)
@@ -419,9 +422,9 @@ class EvacEnv:
         RVOSimulator.process_obstacles(self.simulator)
         return self.simulator.get_obstacles_count(), 2
 
-    def generate_nav_mesh(self):
+    def generate_nav_mesh(self, working_dir):
         self.nav = Navmesh(sim_id=self.sim_id)
-        self.nav.build(floor=str(self.floor))
+        self.nav.build(floor=str(self.floor), wd=working_dir)
 
     def prepare_rooms_list(self):
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
@@ -432,27 +435,27 @@ class EvacEnv:
 
     def update_room_opacity(self):
         smoke_opacity = dict()
+        self.unavailable_rooms = []    # rooms can be available again
         for room in self.room_list.keys():
-            opacity =  0.0
             hgt = self.smoke_query.compa_conditions[str(room)]['HGT']
             if hgt == None:
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room).split('.')[0]]['ULOD'])
             elif hgt <= self.config['LAYER_HEIGHT']:
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['ULOD'])
             else:
-                od = self.smoke_query.compa_conditions[str(room)]['LLOD']
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['LLOD'])
+
             if opacity > 0.0 and room not in self.rooms_in_smoke:
                 self.rooms_in_smoke.append(room)
+            if opacity > 2/3:
+                self.unavailable_rooms.append(room)
             smoke_opacity.update({room: round(opacity, 2)})
             self.elog.debug('ROOM: {}, opacity: {}'.format(room, round(opacity, 2)))
         return smoke_opacity
 
     def _OD_to_VIS(self, OD):
         self.elog.debug('TIME: {}, optical density: {}'.format(self.current_time, OD))
-        if OD <= 1:
-            return 0.0
-        else:
+        if OD:
             vis = self.general['c_const'] / (log(10) * OD)
             if vis <= 3:
                 return 1.0
@@ -460,6 +463,8 @@ class EvacEnv:
                 return 0.0
             else:
                 return (30-vis)/30
+        else:
+            return 0.
 
     def update_time(self):
         self.current_time += self.config['TIME_STEP']
