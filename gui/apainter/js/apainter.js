@@ -1060,7 +1060,7 @@ function legend() { //{{{
 	for(var letter in gg) {
 		if(gg[letter].legendary==1) { 
 			var x=db({"letter": letter}).select("name");
-			$('legend1').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"'>"+letter+" "+gg[letter].x+"</div>");
+			$('legend1').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"' title='"+gg[letter].description+"'>"+letter+" "+gg[letter].fourLetter+"</div>");
 		}
 	}
 
