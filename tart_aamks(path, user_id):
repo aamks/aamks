@@ -1,0 +1,133 @@
+[1mdiff --git a/aamks.py b/aamks.py[m
+[1mindex fcb09c8..8911824 100644[m
+[1m--- a/aamks.py[m
+[1m+++ b/aamks.py[m
+[36m@@ -33,6 +33,8 @@[m [mdef prepare_logger(path):[m
+ def start_aamks(path, user_id):[m
+     os.environ["AAMKS_PROJECT"] = path[m
+     os.environ["AAMKS_USER_ID"] = user_id[m
+[32m+[m[32m    os.environ["AAMKS_PROJECT"] = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtekkk2'[m
+[32m+[m[32m    path = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtekkk2'[m
+     json = Json()[m
+     conf = json.read("{}/conf.json".format(path))[m
+     logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')[m
+[1mdiff --git a/evac/config.json b/evac/config.json[m
+[1mindex 6b41663..02332e5 100644[m
+[1m--- a/evac/config.json[m
+[1m+++ b/evac/config.json[m
+[36m@@ -2,7 +2,7 @@[m
+     "LAYER_HEIGHT": 1.8,[m
+     "PRE_EVAC_TIME_ZONE_REDUCTION": 0.9,[m
+     "LOWEST_VIS": 15,[m
+[31m-    "DETECTION_TIME": 1800,[m
+[32m+[m[32m    "DETECTION_TIME": 70,[m
+     "TIME_STEP": 0.05,[m
+     "SMOKE_QUERY_RESOLUTION": 10,[m
+     "NEIGHBOR_DISTANCE": 60,[m
+[1mdiff --git a/evac/worker.py b/evac/worker.py[m
+[1mindex 2faf8d9..410de78 100644[m
+[1m--- a/evac/worker.py[m
+[1m+++ b/evac/worker.py[m
+[36m@@ -41,6 +41,10 @@[m [mclass Worker:[m
+             os.environ['AAMKS_PG_PASS'] = AA['PG_PASS'][m
+         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])[m
+ [m
+[32m+[m[32m        self.working_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtekkk2/workers/8'[m
+[32m+[m[32m        # os.environ["AAMKS_PATH"] = '/usr/local/aamks'[m
+[32m+[m[32m        os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtekkk2'[m
+[32m+[m
+         if redis_worker_pwd: [m
+             self.working_dir = redis_worker_pwd [m
+         self.project_dir, sim_id = self.working_dir.split("/workers/")[m
+[36m@@ -381,7 +385,7 @@[m [mclass Worker:[m
+                 y_min = min(i[1] for i in obst)[m
+                 y_max = max(i[1] for i in obst)[m
+                 obstacles.append([(x_min,y_min),(x_max,y_min),(x_max,y_max),(x_min,y_max),(x_min,y_min),(x_max,y_min)])[m
+[31m-            if str(floor) in self.obstacles['fire']:[m
+[32m+[m[32m            if 'fire' in self.obstacles and str(floor) in self.obstacles['fire']:[m
+                 fire_obst = self.obstacles['fire'][str(floor)][m
+                 x_min = min(i[0] for i in fire_obst)[m
+                 x_max = max(i[0] for i in fire_obst)[m
+[36m@@ -824,7 +828,8 @@[m [mclass Worker:[m
+             params['title']="sim.{}".format(self.sim_id)[m
+             params['time']=time.strftime("%H:%M %d.%m", time.gmtime())[m
+             params['srv']=0[m
+[31m-            params['fire_origin'] = self.s.query("select floor, x, y from fire_origin where sim_id=?", (self.sim_id,))[0][m
+[32m+[m[32m            query = "select floor, x, y from fire_origin where sim_id="+str(self.sim_id)[m
+[32m+[m[32m            params['fire_origin'] = self.s.query(query)[0][m
+             params['highlight_geom']=None[m
+             params['anim']="{}/{}_{}_{}_anim.zip".format(self.sim_id, self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)[m
+             p.query(f"""UPDATE simulations SET animation = '{json.dumps(params)}'[m
+[36m@@ -961,8 +966,8 @@[m [mclass LocalResultsCollector:[m
+ [m
+ if __name__ == "__main__":[m
+     w = Worker()[m
+[31m-    try:[m
+[31m-        w.run_worker()[m
+[31m-    except Exception as error:[m
+[31m-        w.wlogger.error(error)[m
+[31m-        w.send_report(e={'status': 1})[m
+[32m+[m[32m    #try:[m
+[32m+[m[32m    w.run_worker()[m
+[32m+[m[32m    #except Exception as error:[m
+[32m+[m[32m    #    w.wlogger.error(error)[m
+[32m+[m[32m    #    w.send_report(e={'status': 1})[m
+[1mdiff --git a/geom/navmesh_and_obj_vis.py b/geom/navmesh_and_obj_vis.py[m
+[1mindex 298032f..704152a 100644[m
+[1m--- a/geom/navmesh_and_obj_vis.py[m
+[1m+++ b/geom/navmesh_and_obj_vis.py[m
+[36m@@ -101,7 +101,7 @@[m [mpolygons_navmesh = [][m
+ figure_points = [][m
+ #file2 = open('/home/aamks_users/majster1281@wp.pl/444/13/pynavmesh1.nav', 'r')[m
+ # file2 = open('/home/alek/Downloads/pynavmesh0 (1).nav', 'r')[m
+[31m-file2 = open('/mnt/aamks_users/majster1281@wp.pl/7/pynav/pynavmesh0.nav', 'r')[m
+[32m+[m[32mfile2 = open('/home/aamks_users/majster1020@wp.pl/testtttt/wojtekkk2/workers/7/pynavmesh0.nav', 'r')[m
+ [m
+ # file2 = open('/home/aamks_users/majster1281@wp.pl/444/21/pynavmesh0.nav','r')[m
+ Lines = file2.readlines()[m
+[1mdiff --git a/manager/init.py b/manager/init.py[m
+[1mindex 2f1547f..5c08e1d 100644[m
+[1m--- a/manager/init.py[m
+[1m+++ b/manager/init.py[m
+[36m@@ -145,6 +145,9 @@[m [mclass OnEnd():[m
+         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])[m
+         animations_number = self.conf['animations_number'][m
+         logger.info(f"run job {os.environ['AAMKS_WORKER']}")[m
+[32m+[m
+[32m+[m[32m        os.environ['AAMKS_WORKER']='local'[m
+[32m+[m
+         if os.environ['AAMKS_WORKER']=='none':[m
+             return[m
+ [m
+[36m@@ -159,11 +162,11 @@[m [mclass OnEnd():[m
+                     is_anim = 0[m
+                 self.p.query(f"UPDATE simulations SET job_id='{job_id}', is_anim={is_anim} WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")[m
+                 logger.info('start worker.py sim - %s', i)[m
+[31m-                exit_status = subprocess.run(["{}/env/bin/python3".format(os.environ['AAMKS_PATH']), "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])[m
+[31m-                if exit_status.returncode != 0:[m
+[31m-                    logger.error('worker exit status - %s', exit_status)[m
+[31m-                else:[m
+[31m-                    logger.info('finished worker.py sim - %s', i)[m
+[32m+[m[32m                # exit_status = subprocess.run(["{}/env/bin/python3".format(os.environ['AAMKS_PATH']), "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])[m
+[32m+[m[32m                # if exit_status.returncode != 0:[m
+[32m+[m[32m                #     logger.error('worker exit status - %s', exit_status)[m
+[32m+[m[32m                # else:[m
+[32m+[m[32m                #     logger.info('finished worker.py sim - %s', i)[m
+             return[m
+ [m
+         if os.environ['AAMKS_WORKER']=='gearman':[m
+[1mdiff --git a/montecarlo/evac_mcarlo.py b/montecarlo/evac_mcarlo.py[m
+[1mindex e40e158..df37224 100644[m
+[1m--- a/montecarlo/evac_mcarlo.py[m
+[1m+++ b/montecarlo/evac_mcarlo.py[m
+[36m@@ -98,8 +98,8 @@[m [mclass EvacMcarlo:[m
+ [m
+         xx=50[m
+         yy=50[m
+[31m-[m
+[31m-        z=self.s.query("SELECT * FROM fire_origin") [m
+[32m+[m[32m        query = "SELECT * FROM fire_origin where sim_id ==" + str(self._sim_id)[m
+[32m+[m[32m        z=self.s.query(query)[m[41m [m
+         i=z[0][m
+         points=[ [i['x']-xx, i['y']-yy, 0], [i['x']+xx, i['y']-yy, 0], [i['x']+xx, i['y']+yy, 0], [i['x']-xx, i['y']+yy, 0], [i['x']-xx, i['y']-yy, 0] ][m
+ [m
