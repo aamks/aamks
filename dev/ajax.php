@@ -1,1 +1,0 @@
-../gui/ajax.php

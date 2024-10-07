@@ -22,13 +22,18 @@ from geom.obstacles import Obstacles
 
 # }}}
 
-class World2d():
+class World2d:
     ''' World2d is a display of all floors in a single 2d world '''
-    def __init__(self):# {{{
+    def __init__(self, sim_id=None):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.json.s = self.s 
         self.world_meta=self.json.readdb("world_meta")
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self._read_floors_meta()
         self.floors=self.floors_meta.keys()
         self.walls_width=self.world_meta['walls_width']
