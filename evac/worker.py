@@ -728,7 +728,7 @@ class Worker:
         Runs on a worker. Write /home/aamks/project/sim_id.json on each aRun
         completion. Then inform gearman server to scp to itself
         /home/aamks/project/sim_id.json via aOut service. Gearman server will
-        process this json via /usr/local/aamks/manager/results_collector.py.
+        process this json via $AAMKS_PATH/manager/results_collector.py.
         Gearman server will psql insert and will scp the worker's animation to
         itself.
         '''

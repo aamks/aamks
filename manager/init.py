@@ -80,29 +80,6 @@ class OnInit:
         except:
             pass
 # }}}
-    def _create_iterations_sequence(self):# {{{
-        '''
-        For a given project we may run simulation 0 to 999. Then we may wish to
-        run 100 simulations more and have them numbered here: from=1000 to=1099
-        These from and to numbers are unique for the project and are used as
-        rand seeds in later aamks modules. This is similar, but distinct from
-        SimIterations() - we are creating the sequence, and the later reads the
-        sequence from/to. Remember that range(1,4) returns 1,2,3; hence SELECT
-        max(iteration)+1 
-        '''
-
-        how_many=self.conf['number_of_simulations']
-
-        r=[]
-        try:
-            # If the project already exists in simulations table (e.g. adding 100 simulations to existing 1000); try: fails on addition on int+None.
-            r.append(self.p.query('SELECT max(iteration)+1 FROM simulations WHERE project=%s AND scenario_id=%s', (self.project_id, self.scenario_id))[0][0])
-            r.append(r[0]+how_many)
-        except:
-            # If a new project
-            r=[1, how_many+1]
-        return r
-# }}}
     def _setup_simulations(self):# {{{
         ''' Simulation dir maps to id from psql's simulations table'''
 

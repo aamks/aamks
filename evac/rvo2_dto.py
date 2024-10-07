@@ -10,11 +10,10 @@ from include import Sqlite, Json
 from numpy import array, prod, zeros, ndenumerate
 from scipy.stats import norm
 from scipy.spatial.distance import cdist
-
-
 from geom.nav import Navmesh
 from evac.pyrvo.rvo_simulator import RVOSimulator
-from evac.evacuees import Evacuee, Evacuees
+from evac.evacuees import Evacuees
+from evac.evacuee import Evacuee
 
 warnings.simplefilter('ignore', RuntimeWarning)
 
