@@ -1,11 +1,10 @@
 #!/usr/bin/python3
-
+import copy
 import csv
 import os
 import random
 import re
 import sys
-sys.path.insert(1, '/usr/local/aamks')
 from numpy import array, prod, log, where, diff
 from results.beck_new import RiskIteration as RI
 from evac.evacuee import Evacuee
@@ -34,11 +33,10 @@ if 'AAMKS_SKIP_CFAST' in os.environ:
     if os.environ['AAMKS_SKIP_CFAST'] == '1':
         SIMULATION_TYPE = 'NO_CFAST'
 
+
 class Worker:
 
     def __init__(self, redis_worker_pwd = None, AA=None):
-        self.json=Json()
-        self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
         if AA:
             AA['PROJECT'] = AA['PROJECT'].replace("home","mnt")
             os.environ['AAMKS_PROJECT'] = AA['PROJECT']
@@ -46,9 +44,19 @@ class Worker:
             os.environ['AAMKS_SERVER'] = AA['SERVER']
             os.environ['AAMKS_PG_PASS'] = AA['PG_PASS']
         self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
+
         if redis_worker_pwd: 
-            self.working_dir = redis_worker_pwd
-        self.project_dir=self.working_dir.split("/workers/")[0]
+            self.working_dir = redis_worker_pwd 
+        self.project_dir, sim_id = self.working_dir.split("/workers/")
+
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.json=Json()
+        self.json.s = self.s
+        self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
         self.vars = OrderedDict()
@@ -77,6 +85,7 @@ class Worker:
         self.server_socket = None
         self.connection_thread = None
         self.cfast_door_opening_level = {}
+        self.exit_code = None
         self.rooms = {}
         self.is_anim = 0
         self.previous_critical_rooms = {}
@@ -103,7 +112,7 @@ class Worker:
 
     def get_config(self):
         try:
-            f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
+            f = open(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'), 'r')
             self.config = json.load(f)
         except Exception as e:
             print(e)
@@ -116,6 +125,8 @@ class Worker:
             print('Cannot load evac.json from directory: {}'.format(str(e)))
             self.send_report(e={"status":17})
             sys.exit(1)
+
+        self.detection_time = self.config['DETECTION_TIME']
 
         self.project_conf=self.json.read("../../conf.json")
 
@@ -136,10 +147,12 @@ class Worker:
         if self.project_conf['fire_model'] == 'CFAST':
             if os.getcwd() != self.working_dir:
                 os.chdir(self.working_dir)
-            os.system('ln -s /usr/local/aamks/fire/cfast7_linux_64 .')
-            os.system('ln -s /usr/local/aamks/fire/c_socket_handler.so .')
+            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/fire/cfast7_linux_64 .')
+            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/fire/c_socket_handler.so .')
             command = ["./cfast7_linux_64", "cfast.in", "arg1", "arg2"]
-            subprocess.Popen(command)
+
+            if not subprocess.Popen(command):
+                raise RuntimeError('Error while executing cfast')
             self.connection_thread.join()
             #below message is is the first message received from cfastafter cfast_compartemnts.csv already has row t=0s.
             #it is needed for proper functioning of the self.prepare_simulations() function.
@@ -147,7 +160,6 @@ class Worker:
             
 
     def create_geom_database(self):
-        self.s = Sqlite("{}/aamks.sqlite".format(self.project_dir))
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL')
         floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%'")
@@ -301,93 +313,18 @@ class Worker:
 
         raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target "+ str(goal_from_door_distance) +"cm behind door")
 
-
-    def _get_detection_time_device(self):
-        heat = any(self.project_conf['smoke_detectors'].values())
-        smoke = any(self.project_conf['heat_detectors'].values())
-        sprink = any(self.project_conf['sprinklers'].values())
-        if any([heat, smoke, sprink]):
-            df = pd.read_csv('cfast_devices.csv')[3:].astype(float)
-            if (df.filter(like='SENSACT').iloc[-1] == 1).any():
-                det = df['Time'][df[(df.filter(like='SENSACT') == 1) == True].idxmax().min()]
-            del df
-        try:
-            return det
-        except NameError:
-            return self.config['DETECTION_TIME']
-
-    def _read_compartments(self):
-        f = f"{self.working_dir}/cfast_compartments.csv"
-        with open(f, 'r') as csvfile:
-            reader = csv.reader(csvfile, delimiter=',')
-            params = [re.sub('_\d.*', '', field) for field in next(reader)]
-            next(reader) # describe params
-            rooms = [re.sub('f.*', 'fire', field) for field in next(reader)]
-            uniq_rooms = set(rooms)
-            dct = {}
-            for room in uniq_rooms:
-                dct[room] = defaultdict(list)
-            next(reader) # units
-            for row in reader:
-                for i, val in enumerate(row):
-                    if params[i] in ["HGT", "ULOD", "Time"]:
-                        dct[rooms[i]][params[i]].append(float(val))
-        for room in dct.keys():
-            for x in dct[room]["ULOD"]:
-                vis = min([30, self.vars['conf']['c_const'] / (x * log(10))])
-                dct[room]["VIS"].append(vis)
-
-        return dct
-    
-    def _get_detection_time_room(self):
-        dct = self._read_compartments()
-        for room in dct.keys():
-            if room.startswith('s') or room in ['Time', 'Outside', 'fire']:
-                continue
-            condition_hgt = self.config['PRE_EVAC_TIME_ZONE_REDUCTION'] * dct[room]["HGT"][0]
-            condition_vis = self.config['LOWEST_VIS']
-            arr = array(list(zip(dct[room]["HGT"], dct[room]["VIS"])))
-            indexes = where((arr[:, 0] < condition_hgt) & (arr[:, 1] < condition_vis))[0]
-            if indexes.size > 0:
-                self.rooms_det_time[room] = dct["Time"]["Time"][indexes[0]]
-
     def _create_evacuees(self, floor: int):
         evacuees_list = []
         self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
         floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
 
-            
-        def pre_evac_total(i):
-            det = self._get_detection_time_device()     # detection time for the building
-            alarm = floor['ALARMING']   # alarming time for the floor
-            pres = floor['EVACUEES'][i]['PRE_EVACUATION']   # pre-evacuation times [default, fire origin] for the agent
-            pre = pres['pre_evac']  # default pre-evacuation time for agent
-
-            # fire origin room
-            if floor['EVACUEES'][i]['COMPA'] == self.vars['conf']['FIRE_ORIGIN']:
-                det = 0
-                alarm = 0
-                pre = pres['pre_evac_fire_origin']
-
-            # other rooms
-            elif floor['EVACUEES'][i]['COMPA'] in self.rooms_det_time.keys():
-                default_t = det + alarm + pre
-                conditional_t = self.rooms_det_time[floor['EVACUEES'][i]['COMPA']] + pres['pre_evac_fire_origin']
-                if default_t > conditional_t:
-                    det = self.rooms_det_time[floor['EVACUEES'][i]['COMPA']]
-                    alarm = 0
-                    pre = pres['pre_evac_fire_origin']
-
-            # for navmesh rvo tests uncomment below 2 lines
-            # det = 0
-            # alarm = 0
-            return det + alarm + pre
-
         leaders_id_list = []
         for i in floor['EVACUEES'].keys():
             evacuees_list.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
-                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=pre_evac_total(i),
+                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=self.config['DETECTION_TIME'],
+                                    detection_constituents= floor['EVACUEES'][i]['PRE_EVACUATION'],
+                                    detection_compa= floor['EVACUEES'][i]['COMPA'],
                                     alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
                                     node_radius=self.config['NODE_RADIUS'], 
                                     type = floor['EVACUEES'][i]['type'], 
@@ -418,8 +355,6 @@ class Worker:
         return stair_cases
 
     def prepare_simulations(self):
-        self._get_detection_time_room()
-        self.detection_time = self._get_detection_time_device() #rough - with CFAST SPREADSHEET resolution
         floor_numers = sorted(self.obstacles['obstacles'].keys())
         for floor in floor_numers:
             eenv = None
@@ -427,7 +362,7 @@ class Worker:
             try:
                 self.prepare_staircases(str(floor))
                 self.vars['conf']['project_dir'] = self.project_dir
-                eenv = EvacEnv(self.vars['conf'])
+                eenv = EvacEnv(self.vars['conf'], self.sim_id)
                 eenv.floor = floor
             except Exception as e:
                 self.wlogger.error(e)
@@ -468,7 +403,7 @@ class Worker:
 
         for floor in self.floors:
             try:
-                floor.smoke_query = PartitionQuery(floor=floor.floor)
+                floor.smoke_query = PartitionQuery(floor=floor.floor, sim_id=self.sim_id)
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":32})
@@ -658,18 +593,20 @@ class Worker:
                 break
 
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
-
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
                 aset = self.vars['conf']['simulation_time']
                 for i in self.floors:
                     try:
                         i.read_cfast_record(time_frame)
+                        floor_det = i.detection.update()    # floor_det is checked for ALL compartments (all floors)
                     except IndexError:
                         self.wlogger.error(f'Unable to read CFAST results at {time_frame} s')
                         self.send_report(e={"status":23})
                         break
                     #first_evacuue.append(i.evacuees.get_first_evacuees_time())
+                if floor_det:
+                    self.detection_time = min(self.detection_time, floor_det)
 
                 # iterate with AEvac time step over CFAST time_frame
                 for step_no in range(0, int(cfast_step / aevac_step)):
@@ -769,7 +706,7 @@ class Worker:
 
         for id, coordinates in all_figures:
             skip_outer1 = False
-            skip_outer2 = False 
+            skip_outer2 = False
             for floor_critical_room in floor_critical_rooms:
                 x_min = self.rooms[floor_critical_room]['x_min']/100
                 x_max = self.rooms[floor_critical_room]['x_max']/100
@@ -938,7 +875,7 @@ class Worker:
         Runs on a worker. Write /home/aamks/project/sim_id.json on each aRun
         completion. Then inform gearman server to scp to itself
         /home/aamks/project/sim_id.json via aOut service. Gearman server will
-        process this json via /usr/local/aamks/manager/results_collector.py.
+        process this json via $AAMKS_PATH/manager/results_collector.py.
         Gearman server will psql insert and will scp the worker's animation to
         itself.
         '''
@@ -979,10 +916,11 @@ class Worker:
                 report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
                 report['floor'] = num_floor
             report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
-            # report['psql']['i_risk'] = report['psql']['i_risk'][:-1] + ", " + json.dumps(self.project_conf)[1:]
+
             report['psql']['detection'] = int(self.detection_time)
             report['psql']['status'] = 0
             
+        self.exit_code = report['psql']['status']
         self.wlogger.info('Metadata prepared successfully')
 
         return report
@@ -1095,7 +1033,9 @@ class Worker:
         self.do_simulation()
         self.send_report()
         self.cleanup()
-        self.wlogger.info('Simulation ended successfully')
+        self.wlogger.info(f'Simulation ended with status {self.exit_code}')
+
+        return self.exit_code
 
     def test(self):
         self.get_config()

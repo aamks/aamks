@@ -3,7 +3,6 @@ import math
 import time
 import struct
 import sys
-sys.path.insert(1, '/usr/local/aamks')
 from evac.pathfinder.navmesh import Navmesh
 import evac.pathfinder.pyrvo as rvo
 

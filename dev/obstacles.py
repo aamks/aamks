@@ -1,1 +1,0 @@
-../geom/obstacles.py

@@ -3,29 +3,27 @@
 import json
 import os
 import sys
-from evac.polymesh import Polymesh
-sys.path.insert(1, '/usr/local/aamks')
 import copy
 from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
+from shapely.ops import polygonize
+from numpy.random import uniform
+from math import sqrt
+
+from evac.polymesh import Polymesh
 from fire.partition_query import PartitionQuery
 from evac.pathfinder.navmesh_baker import NavmeshBaker
 from evac.pathfinder.navmesh import Navmesh as Pynavmesh
 import evac.pathfinder
-from shapely.ops import polygonize
-from numpy.random import uniform
-from math import sqrt
-from include import Sqlite
-from include import Json
+
+from include import Sqlite, Json, DDgeoms, Vis
 from include import Dump as dd
-from include import DDgeoms 
-from include import Vis
 
 # }}}
 
 class Navmesh: 
-    def __init__(self):# {{{
+    def __init__(self, sim_id=None):# {{{
         ''' 
 
         ============================================
@@ -49,7 +47,12 @@ class Navmesh:
 
         '''
         self.json=Json()
-        self.s=Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.json.s = self.s
         self._test_colors=[ "#f80", "#f00", "#8f0", "#08f" ]
         self.polymesh = Polymesh()
         self.navmesh=OrderedDict()
