@@ -5,8 +5,6 @@ import sys
 import redis
 import config
 import os
-sys.path.insert(1, '/usr/local/aamks')
-sys.path.insert(1, '/usr/local/aamks/evac')
 from evac import worker as EvacWorker
 
 class RedisWorker:

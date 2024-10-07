@@ -59,9 +59,9 @@ class SimIterations:# {{{
         self.r=[]
         try:
             # If project already exists in simulations table (e.g. adding 100 simulations to existing 1000)
-            _max=self.p.query("SELECT max(iteration)+1 FROM simulations WHERE project={} AND scenario_id={}".format(self.project,self.scenario_id))[0][0]
-            self.r.append(_max-self.how_many)
+            _max=self.p.query("SELECT max(iteration)+1 FROM simulations WHERE project={} AND scenario_id={} AND host IS NOT NULL".format(self.project,self.scenario_id))[0][0]
             self.r.append(_max)
+            self.r.append(_max+self.how_many)
         except:
             # If a new project
             self.r=[1, self.how_many+1]

@@ -30,8 +30,6 @@ from math import sqrt, log, exp
 from include import Sqlite
 from include import Json
 from include import Dump as dd
-from include import SimIterations
-from include import Vis
 
 from scipy.stats import lognorm
 from scipy.optimize import root

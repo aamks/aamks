@@ -2,7 +2,7 @@ import argparse
 from simple_slurm import Slurm
 import os
 
-from include import SimIterations, Psql, Json
+from include import Psql, Json
 
 def_args = [
         '--ntasks', 1,

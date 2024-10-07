@@ -5,8 +5,6 @@ import sys
 import redis
 import config
 import os
-sys.path.insert(1, '/usr/local/aamks')
-sys.path.insert(1, '/usr/local/aamks/results')
 from results.beck_new import postprocess, comparepostprocess
 from results.beck_anim import Beck_Anim
 from aamks import start_aamks
