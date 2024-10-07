@@ -306,7 +306,7 @@ class Navmesh:
         for face in self._obj_platform():
             obj+=self._obj_elem(face,0)
         
-        path="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], self.nav_name)
+        path = f"{self.nav_name}.obj"
         with open(path, "w") as f: 
             f.write(obj)
         return path
