@@ -31,4 +31,4 @@ More information can be found on [wiki](https://github.com/aamks/aamks/wiki).
 No computational resources are available there, so you can go through the 
 preprocess only and get familiar with the tool.**
 
-Feel free to [contact](mailto:projectaamks@gmail.com) us.
+Feel free to [contact](aamks@apoz.edu.pl) us.
