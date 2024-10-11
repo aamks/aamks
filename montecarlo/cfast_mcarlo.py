@@ -803,13 +803,14 @@ class DrawAndLog:
                 how_much_open=binomial(1,vents[v_type])
                 self._psql_log_variable(v_type.lower(),how_much_open)
 
-            if how_much_open == 0:
+            # only regular door can be burnt through
+            if how_much_open == 0 and v_type == 'DOOR':
                 door['CRITERION'] = self.conf['doors_break']['criterion']
                 door['SETPOINT'] = self.conf['doors_break']['setpoint']
                 door['PRE_FRACTION'] = 0
                 door['POST_FRACTION'] = 1
                 door['DEVC_ID'] = f"t_{v['name']}"
-            else:
+            elif how_much_open > 0:
                 # open after 1st percentile of evacuees run
                 if 'CRITERION' not in door:
                     door['CRITERION'] = ["'TIME'", f'T = 0,{first_percentile},{first_percentile+1}', f'F=0,0,{how_much_open}']
