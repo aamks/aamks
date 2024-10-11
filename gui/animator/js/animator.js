@@ -89,7 +89,6 @@ function loadImage(file){
 function initLayers() {//{{{
 	new Layer({'name': 'rooms'});
 	new Layer({'name': 'roomSmoke'});
-	new Layer({'name': 'doorsOpening'});
 	new Layer({'name': 'roomFire'});
 	new Layer({'name': 'highlight'});
 	new Layer({'name': 'animated'});
@@ -340,9 +339,7 @@ function showAnimation() {//{{{
 		currentAnimData=JSON.parse(response['data']);
 		eData=currentAnimData.animations.evacuees;
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
-		doorsOpening=currentAnimData.animations.doors;
 		initRoomSmoke();
-		initDoorsOpening();
 		initAnimAgents();
 		initSpeed();
 	});
@@ -909,25 +906,25 @@ function initDoorsOpening() {//{{{
 	project.layers.doorsOpening.activate();
 	var rw, rh;
 
-    if (!doorsOpening===undefined){
-        for (var ffloor in doorsOpening[0]) {
-            if(dstatic.floors[ffloor]===undefined) { continue; }
-            var ty=dstatic.floors[ffloor].floor_meta.ty;
-            var tx=dstatic.floors[ffloor].floor_meta.tx;
-            for (var door in doorsOpening[0][ffloor]) {
-                var pp=JSON.parse(dstatic.floors[ffloor]['doors'][door]['points']);
-                points=[];
-                _.each(pp, function(i) { points.push([i[0]+tx, i[1]+ty]); });
+	if (!doorsOpening===undefined){
+		for (var ffloor in doorsOpening[0]) {
+			if(dstatic.floors[ffloor]===undefined) { continue; }
+	        var ty=dstatic.floors[ffloor].floor_meta.ty;
+	        var tx=dstatic.floors[ffloor].floor_meta.tx;
+			for (var door in doorsOpening[0][ffloor]) {
+	            var pp=JSON.parse(dstatic.floors[ffloor]['doors'][door]['points']);
+				points=[];
+				_.each(pp, function(i) { points.push([i[0]+tx, i[1]+ty]); });
 
-                rw=points[1][0] - points[0][0];
-                rh=points[2][1] - points[1][1];
+				rw=points[1][0] - points[0][0];
+				rh=points[2][1] - points[1][1];
 
-                group=new Group();
-                group.name=door;
-                group.floor=ffloor;
-                group.addChild(new Path.Rectangle({point: new Point(points[0][0], points[0][1]), fillColor:"#010", size: new Size(rw,rh)}));
-            }
-        }
+				group=new Group();
+				group.name=door;
+				group.floor=ffloor;
+				group.addChild(new Path.Rectangle({point: new Point(points[0][0], points[0][1]), fillColor:"#010", size: new Size(rw,rh)}));
+			}
+		}
 	}
 }
 //}}}
@@ -958,7 +955,6 @@ view.onFrame=function(event) {//{{{
 		updateAgentNumbersOnFloors();
 		evacueesInFrame();
 		roomsSmokeInFrame();
-		doorsOpeningInFrame();
 		afterLerpFrame();
 	}
 }

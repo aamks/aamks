@@ -1,3 +1,4 @@
+import copy
 import warnings
 import json
 import os
@@ -9,11 +10,10 @@ from include import Sqlite, Json
 from numpy import array, prod, zeros, ndenumerate
 from scipy.stats import norm
 from scipy.spatial.distance import cdist
-
-
 from geom.nav import Navmesh
 from evac.pyrvo.rvo_simulator import RVOSimulator
 from evac.evacuees import Evacuees
+from evac.evacuee import Evacuee
 
 warnings.simplefilter('ignore', RuntimeWarning)
 
@@ -46,7 +46,7 @@ class EvacEnv:
 
         self.general = aamks_vars
         self.simulator = RVOSimulator(neighbor_dist=self.config['NEIGHBOR_DISTANCE'],
-                                     max_neighbors=self.config['MAX_NEIGHBOR'],
+                                     mnletax_neighbors=self.config['MAX_NEIGHBOR'],
                                      time_horizon=self.config['TIME_HORIZON'],
                                      time_horizon_obst=self.config['TIME_HORIZON_OBSTACLE'],
                                      radius=self.config['RADIUS'],
@@ -61,7 +61,7 @@ class EvacEnv:
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
 
         self.dfed = FEDDerivative(self.floor, sim_id=sim_id)
-
+        self.detection = Detection(self)
 
     def _find_closest_exit(self, evacuee):
         position = evacuee.position
@@ -608,3 +608,129 @@ class FEDDerivative:
                         'ymin': self._cell2dim(i[1], axis=1), 'ymax': self._cell2dim(i[1]+1, axis=1), 'total_dfed': v}
                 exp.append(row)
         return pd.DataFrame(exp).to_json()
+
+
+class Detection:
+    def __init__(self, eenv: EvacEnv):
+        self.evac_conf = eenv.general    # more data in conf from worker vars to be inherited in the future
+        self.eenv = eenv
+        self.time = eenv.current_time
+        self.config = eenv.config
+        self.state = {}
+        self.rooms = []
+        self.sensors = []
+        self.conditions = []
+        self.room_heights = {}
+
+    def _get_rooms_sensors(self, all_compas):
+        for entity in all_compas:
+            if entity.startswith(('sd', 'sp', 'hd')):
+                self.sensors.append(entity)
+            elif entity.startswith('t_'):
+                # we don't care about targets - those are for fire spread
+                continue
+            else:
+                self.rooms.append(entity)
+
+    def _initialize(self):
+        self.conditions = self.eenv.smoke_query.compa_conditions
+        self._get_rooms_sensors(self.eenv.smoke_query.all_compas)
+        self.room_heights = {room: None for room in self.rooms}
+        self.state = dict(rooms={room: None for room in self.rooms}, floor=None)
+        # initial heights
+        initial = copy.deepcopy(self.conditions)
+        for r in self.rooms:
+            self.room_heights[r] = initial[r]['HGT']
+        del initial
+
+        # set fire origin room detection to 0.001 (can't be 0 because bool(0) = False)
+        self.state['rooms'][self.evac_conf['FIRE_ORIGIN']] = .001
+
+    def _od_to_vis(self, optical_density):
+        # convert optical density to visibility
+        if optical_density:
+            return min([30, self.evac_conf['c_const'] / (optical_density * log(10))])
+        else:
+            return 30
+
+    def _is_fire_from_sensor(self, sensor):
+        # return sensor state
+        return bool(self.conditions[sensor]['SENSACT'])
+
+    def _is_fire_symptom(self, room: str):
+        actual_ulod = self.conditions[room]['ULOD']
+        actual_height = self.conditions[room]['HGT']
+        initial_height = self.room_heights[room]
+        # check for fire symptoms in room
+        if not initial_height and not actual_height:
+            # one-zone model
+            if self._od_to_vis(actual_ulod) >= self.config['LOWEST_VIS']:
+                return True
+        elif actual_height <= self.config['PRE_EVAC_TIME_ZONE_REDUCTION'] * initial_height:
+            # two-zone model
+            if self._od_to_vis(actual_ulod) >= self.config['LOWEST_VIS']:
+                return True
+        return False
+
+    def _update_floor_state(self):
+        # iterate over sensors to evaluate their state
+        if not self.state['floor']:
+            for sensor in self.sensors:
+                if self._is_fire_from_sensor(sensor):
+                    self.state['floor'] = self.time
+
+    def _update_rooms_state(self):
+        # iterate over rooms to evaluate rooms' conditions and state
+        for room in self.rooms:
+            if self.state['rooms'][room]:
+                continue
+            if self._is_fire_symptom(room):
+                self.state['rooms'][room] = self.time
+
+    def _delay_from_room(self, room: str, pre_evac: float):
+        # calculate total delay time for room that is in fire
+        room_detection = self.state['rooms'][room]
+        if room_detection:
+            return room_detection + pre_evac
+        else:
+            return self.config['DETECTION_TIME']
+
+    def _delay_from_floor(self, alarm: float, pre_evac: float):
+        # calculate total delay time for room that is in fire
+        floor_detection = self.state['floor']
+        if floor_detection:
+            return floor_detection + alarm + pre_evac
+        else:
+            return self.config['DETECTION_TIME']
+
+    def _get_pedestrian_delay(self, evacuee: Evacuee):
+        floor_data = self.evac_conf['FLOORS_DATA'][str(self.eenv.floor)]
+
+        room_delay = self._delay_from_room(evacuee.detection_compa, evacuee.detection_constituents['pre_evac_fire_origin'])
+        if evacuee.detection_compa == self.evac_conf['FIRE_ORIGIN']:
+            return room_delay
+        else:
+            floor_delay = self._delay_from_floor(floor_data['ALARMING'], evacuee.detection_constituents['pre_evac'])
+            return min(floor_delay, room_delay)
+
+    def _update_delays(self):
+        # iterate over evacuees and if still not moving set them proper delay
+        for evacuee in self.eenv.evacuees.pedestrians:
+            if evacuee.velocity != (0, 0):
+                continue
+            new_delay = self._get_pedestrian_delay(evacuee)
+            if evacuee.pre_evacuation_time > new_delay:
+                evacuee.pre_evacuation_time = new_delay
+
+    def update(self):
+        self.time = round(self.eenv.current_time, 2)
+        if self.time == 0:
+            self._initialize()
+        else:
+            # update state variables if needed
+            self._update_floor_state()
+            self._update_rooms_state()
+            # update evacuees pre-evac times
+            self._update_delays()
+            # return floor detection time
+        return self.state['floor']
