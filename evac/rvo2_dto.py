@@ -46,7 +46,7 @@ class EvacEnv:
 
         self.general = aamks_vars
         self.simulator = RVOSimulator(neighbor_dist=self.config['NEIGHBOR_DISTANCE'],
-                                     mnletax_neighbors=self.config['MAX_NEIGHBOR'],
+                                     max_neighbors=self.config['MAX_NEIGHBOR'],
                                      time_horizon=self.config['TIME_HORIZON'],
                                      time_horizon_obst=self.config['TIME_HORIZON_OBSTACLE'],
                                      radius=self.config['RADIUS'],

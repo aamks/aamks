@@ -6,7 +6,7 @@ from include import Psql, Json
 
 def_args = [
         '--ntasks', 1,
-        '--cpu_per_task', 1,
+        '--cpus_per_task', 1,
         ]
 python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "python")}'
 python_env_aamks_server = f'{os.path.join(os.environ["AAMKS_PATH"], "env-server", "bin", "python")}'
