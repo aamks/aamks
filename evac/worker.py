@@ -108,14 +108,14 @@ class Worker:
         except Exception as e:
             print(e)
             self.send_report(e={"status":16})
-            sys.exit(16)
+            raise SystemError(16)
         try:
             f = open('evac.json', 'r')
             self.vars['conf'] = json.load(f)
         except Exception as e:
             print('Cannot load evac.json from directory: {}'.format(str(e)))
             self.send_report(e={"status":17})
-            sys.exit(17)
+            raise SystemError(17)
 
         self.detection_time = self.config['DETECTION_TIME']
 
@@ -167,7 +167,7 @@ class Worker:
                 if attempt == 1:
                     self.wlogger.error('CFAST stuck - unable to calculate with Intel nor GNU compiled sources')
                     self.send_report(e={'status': 21})
-                    sys.exit(21)
+                    raise SystemError(21)
                 self.wlogger.warning(f'Iteration skipped due to CFAST error, attempt = {attempt + 1}')
                 return self.run_cfast_simulations("gnu", attempt + 1)
 
@@ -411,7 +411,7 @@ class Worker:
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":32})
-                sys.exit(32)
+                raise SystemError(32)
             else:
                 self.wlogger.info('Smoke query connected to floor: {}'.format(floor.floor))
 
