@@ -102,36 +102,34 @@ class Worker:
         return logger
 
     def get_config(self):
+        #this statement prevents redis_aamks/worker/worker.py from creating new loggers during every iteration
+        if not logging.getLogger(f'{self.host_name} - worker.py').handlers:
+            self.wlogger = self.get_logger(f'{self.host_name} - worker.py')
+        else:
+            self.wlogger = logging.getLogger(f'{self.host_name} - worker.py')
         try:
             f = open(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'), 'r')
             self.config = json.load(f)
         except Exception as e:
-            print(e)
+            self.wlogger.error(e)
             self.send_report(e={"status":16})
             raise SystemError(16)
         try:
             f = open('evac.json', 'r')
             self.vars['conf'] = json.load(f)
         except Exception as e:
-            print('Cannot load evac.json from directory: {}'.format(str(e)))
+            self.wlogger.error('Cannot load evac.json from directory: {}'.format(str(e)))
             self.send_report(e={"status":17})
             raise SystemError(17)
 
         self.detection_time = self.config['DETECTION_TIME']
-
         self.project_conf=self.json.read("../../conf.json")
-
         self.sim_id = self.vars['conf']['SIM_ID']
-        #this statement prevents redis_aamks/worker/worker.py from creating new loggers during every iteration
-        if not logging.getLogger(f'{self.host_name} - worker.py').handlers:
-            self.wlogger = self.get_logger(f'{self.host_name} - worker.py')
-        else:
-            self.wlogger = logging.getLogger(f'{self.host_name} - worker.py')
+
         if not logging.getLogger(f'{self.host_name} - evac.py').handlers: 
             self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py')
         else:
             self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py')
-
 
     def run_cfast_simulations(self, version='intel', attempt=0):
         self.send_report(e={"status":101})
@@ -371,6 +369,7 @@ class Worker:
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":31})
+                raise SystemError(31)
             else:
                 self.wlogger.info('rvo2_dto ready on {} floors'.format(floor))
 
