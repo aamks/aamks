@@ -812,7 +812,7 @@ class DrawAndLog:
                     door['POST_FRACTION'] = 1
                     door['DEVC_ID'] = f"t_{v['name']}"
                 else:
-                    break
+                    continue
             else:
                 # open after 1st percentile of evacuees run
                 if 'CRITERION' not in door:
