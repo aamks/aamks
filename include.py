@@ -66,7 +66,18 @@ class SimIterations:# {{{
             # If a new project
             self.r=[1, self.how_many+1]
         return self.r
-        
+
+    def insert(self, no_anim):
+        for i in range(*self.r):
+            current_date = datetime.now().strftime("%Y%m%d-%H:%M:%S.%f")
+            id = current_date + f"-{i}"
+            if no_anim > 0:
+                is_anim = 1
+                no_anim -= 1
+            else:
+                is_anim = 0
+            self.p.query("INSERT INTO simulations(iteration,project,scenario_id,job_id,is_anim) VALUES(%s,%s,%s,%s,%s)", (i, self.project, self.scenario_id, id, is_anim)) 
+
 # }}}
 class Sqlite: # {{{
 
@@ -75,6 +86,7 @@ class Sqlite: # {{{
         must_exist=0: we are creating the database
         must_exist=1: Exception if there's no such file
         must_exist=2: Creating database with read|write permissions
+        must_exist=3: Remove old and creating database with read|write permissions
         '''
         if must_exist == 1:
             assert os.path.exists(handle), "Expected to find an existing sqlite file at: {}.\nCWD: {}".format(handle, os.getcwd())
@@ -83,6 +95,14 @@ class Sqlite: # {{{
                 with open(handle, "w") as file:
                     pass
                 os.chmod(handle, 0o666)
+        if must_exist == 3:
+            try:
+                os.remove(handle)
+            except:
+                pass
+            with open(handle, "w") as file:
+                pass
+            os.chmod(handle, 0o666)
 
         self.SQLITE = sqlite3.connect(handle)
         self.SQLITE.row_factory=self._sql_assoc
@@ -262,10 +282,7 @@ class DDgeoms:# {{{
 
     def open(self):# {{{
         self.json=Json()
-        try:
-            self.zz=self.json.read('{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
-        except:
-            self.zz={}
+        self.zz={}
 # }}}
     def add(self,params):# {{{
         floor=params['floor']
@@ -281,7 +298,13 @@ class DDgeoms:# {{{
         self.zz[floor][tt].append(params)
 # }}}
     def write(self):# {{{
-        self.json.write(self.zz, '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT']))
+        file_path = '{}/dd_geoms.json'.format(os.environ['AAMKS_PROJECT'])
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except:
+                pass
+        self.json.write(self.zz, file_path)
 # }}}
 # }}}
 class Vis:# {{{
@@ -290,9 +313,12 @@ class Vis:# {{{
         Static.json is written each time, because obstacles may be available /
         non-available, so it is not constans. 
         '''
-
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        if "sql" in params:
+            self.s=Sqlite(params["sql"])
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
+        self.json.s = self.s
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.params=params
 
@@ -306,8 +332,6 @@ class Vis:# {{{
         self._js_vis_fire_origin()
         self._js_world_meta()
         self.json.write(OrderedDict([('world_meta', self._world_meta), ('floors', self._static_floors)]), '{}/workers/static.json'.format(os.environ['AAMKS_PROJECT'])) 
-        cae=CreateAnimEntry()
-        cae.save(self.params, "{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
 
 # }}}
     def _js_make_floors_and_meta(self):# {{{
@@ -344,7 +368,7 @@ class Vis:# {{{
             for floor in self._static_floors.keys():
                 xx['obstacles'][floor]=dummy_obst
         else:
-            xx=JSON.readdb("obstacles")
+            xx=self.json.readdb("obstacles")
 
         for floor,obstacles in xx['obstacles'].items():
             self._static_floors[floor]['obstacles']=[]
@@ -359,7 +383,7 @@ class Vis:# {{{
             for floor,meta in self.json.readdb("floors_meta").items(): 
                 self._static_floors[floor]['evacuees']=[]
         else:
-            for floor,evacuees in JSON.readdb("dispatched_evacuees").items():
+            for floor,evacuees in self.json.readdb("dispatched_evacuees").items():
                 self._static_floors[floor]['evacuees']=[]
                 for i in evacuees:
                     self._static_floors[floor]['evacuees'].append(json.dumps(i))
@@ -385,79 +409,7 @@ class Vis:# {{{
 # }}}
     def _js_world_meta(self):# {{{
         try:
-            self._world_meta=JSON.readdb("world_meta")['world2d']
+            self._world_meta=self.json.readdb("world_meta")['world2d']
         except:
             self._world_meta={ 'minx': 0, 'miny': 0, 'maxx': 3000, 'maxy': 2000, 'xdim': 3000, 'ydim': 2000, 'center': [1500, 100, 0] }
 # }}}
-# }}}
-class CreateAnimEntry:# {{{
-    ''' 
-    Animator renderer for static img | animation
-
-    params for self.save()
-    ======
-    highlight_geom: geom to highlight in Animator
-    anim: animation file | empty
-    title: title
-    srv: 0 | 1 (worker | server). 1 serves the purposes:
-        * previous server visuals are obsolete and need to be removed
-        * initial Apainter's evacuees will be displayed
-    skip_evacuees: optional; good for cfast_partition.py calls before evacuees are ready
-    skip_fire_origin: optional; good for cfast_partition.py calls before fire_origin is ready
-    '''
-
-    def _reorder_anims(self, z):# {{{
-        '''
-        sort_id -1, -2, -3 come from the server.
-        sort_id > 1 come from workers -- sort_id is sim_id.
-        We want to display latest from the server on top, then the workers.
-        The server starts with -1 and next animations have -1 added.
-        '''
-
-        sorted_anims=[]
-        d=[]
-        for i,j in enumerate(z):
-            d.append((j['sort_id'],i))
-        sorted_d=sorted(d)
-        for i in sorted_d:
-            sorted_anims.append(z[i[1]])
-        lowest_id=sorted_d[0][0]
-        return (sorted_anims, lowest_id - 1)
-
-# }}}
-    def save(self, params, path_anims_json):# {{{
-
-        self.json=Json()
-
-        try:
-            z=self.json.read(path_anims_json)
-            z,lowest_id=self._reorder_anims(z)
-        except:
-            z=[]
-            lowest_id=-1
-
-        anim_record=OrderedDict()
-        anim_record['sort_id']=lowest_id
-        #lowest_id-=1
-        anim_record['title']=params['title']
-        anim_record['time']=datetime.now().strftime('%H:%M')
-        anim_record['fire_origin']=params['fire_origin']
-        anim_record['highlight_geom']=params['highlight_geom']
-        anim_record['srv']=params['srv']
-        anim_record['anim']=params['anim']
-        records={}
-        records[anim_record['title']] = anim_record
-
-        # We are removing duplicates here
-        for i in z:
-            # TODO: Jul.2019: perhaps this breaks worker animations. Consider r['srv'] == 1 ?
-            if i['title'] not in records:
-                records[i['title']]=i
-
-        self.json.write(list(records.values()), path_anims_json)
-        #dd(records)
-# }}}
-# }}}
-
-dd=Dump
-JSON=Json()

@@ -35,17 +35,12 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         ''' 
 
         self.json = Json()
-        if os.environ['AAMKS_WORKER'] == 'slurm':
-            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
+        if os.path.exists(new_sql_path):
             self.s=Sqlite(new_sql_path)
         else:
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json.s = self.s
-        #try:
-        #    self.s=Sqlite("aamks.sqlite", 1) # We are the worker with aamks.sqlite copy in our working dir
-        #except:
-        #    self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 1) # We are the server
-
         self.floor=str(floor)
         self.floors_meta=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
         self.config=self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))

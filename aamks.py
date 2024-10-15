@@ -74,14 +74,12 @@ def start_aamks(path, user_id):
     logger.info('AAMKS application finished successfully')
 
 
-def start_aamks_with_slurm(path: str, user_id: int, sim_id: int):
+def start_aamks_with_worker(path: str, user_id: int, sim_id: int):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
-    json = Json()
-    conf = json.read("{}/conf.json".format(path))
+
     logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')
 
-    logger.warning(f'Preparing {sim_id} - conf.json imported')
     logger.info('calling OnInit()')
     OnInit(sim_id=sim_id)
     logger.info('finished OnInit()')
@@ -121,7 +119,7 @@ def start_aamks_with_slurm(path: str, user_id: int, sim_id: int):
     logger.info(f'{sim_id} prepared successfully. Launching...')
 
     logger.info('calling evac.Worker')
-    w = Worker(redis_worker_pwd=os.path.join(path, "workers", sim_id))
+    w = Worker(redis_worker_pwd=os.path.join(path, "workers", str(sim_id)))
     status = w.run_worker()
     logger.info('finished evac.Worker')
     
@@ -133,8 +131,8 @@ def start_aamks_with_slurm(path: str, user_id: int, sim_id: int):
 
 
 if __name__ == '__main__':
-    if os.environ["AAMKS_WORKER"] == 'slurm':
-        start_aamks_with_slurm(*sys.argv[1:])
+    if os.environ["AAMKS_WORKER"] == 'slurm' or os.environ["AAMKS_WORKER"] == 'redis':
+        start_aamks_with_worker(*sys.argv[1:])
     else:
         if len(sys.argv) > 2:
             os.environ["AAMKS_PROJECT"]=sys.argv[1]

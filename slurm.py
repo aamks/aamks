@@ -11,7 +11,7 @@ def_args = [
 python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "python")}'
 
 # launch aamks jobs
-def launch(path: str, user_id: int):
+def launch(path: str, user_id: int, irange: list):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
     conf = Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -29,13 +29,6 @@ def launch(path: str, user_id: int):
     slurm.set_error(f'workers/%a/slurm.err')
     slurm.set_time('01:00:00')
 
-    # we need to define job array
-    max_iter_query = f'SELECT max(iteration)+1 FROM simulations WHERE project={p_id} AND scenario_id={s_id}'
-    max_iter = Psql().query(max_iter_query)[0][0] 
-    irange = []
-    irange.append(max_iter if max_iter else 1)
-    irange.append(irange[0] + conf['number_of_simulations'])
-
     # instead of default loop in aamks.py we use slurm array to quickly batch many jobs
     slurm.set_array(range(*irange))
 
@@ -47,18 +40,6 @@ def launch(path: str, user_id: int):
         job_id = slurm.sbatch(command, slurm.SLURM_ARRAY_TASK_ID)
     except AssertionError:
         raise AssertionError("sbatch was unable to launch your jobs. Make sure slurm is running and set properly.")
-
-    # log slurm job_id to PSQL (that could be done in PSQL itself with generate_series - to be considered
-    for i in range(*irange):
-        if animations_number > 0:
-            is_anim = 1
-            animations_number -= 1
-        else:
-            is_anim = 0
-        Psql().query("INSERT INTO simulations(iteration,project,scenario_id,job_id,is_anim) VALUES(%s,%s,%s,%s,%s)", 
-                (i,conf['project_id'], conf['scenario_id'], f'{job_id}_{i}', is_anim))
-
-
 
 # launch postprocessing
 def postprocess(path: str, scenarios: list):
@@ -125,6 +106,7 @@ def _argparse():
     parser.add_argument('-r', '--project', help='AAMKS project ID', required=False)
     parser.add_argument('-s', '--scenario', nargs='*', help='AAMKS scenario ID or scenario names to be compared (see results.beck_new)', required=False, default=[])
     parser.add_argument('-i', '--iteration', help='Iteration no.', required=False)
+    parser.add_argument('-n', '--number', help='Range of iterations to run numbers [start, end]', required=False)
 
     return parser.parse_args()
 
@@ -134,7 +116,7 @@ if __name__ == '__main__':
 
     if args.type in ['l', 'launch']:
         if not all([args.path, args.userid]):
-            raise Exception('Specify path and userid arguments with -p and -u flags')
+            raise Exception('Specify path, userid and range of iterations numbers arguments with -p, -u and -n flags')
         launch(args.path, args.userid)
 
     elif args.type in ['p', 'pos.postprocess']:
