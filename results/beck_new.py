@@ -1463,6 +1463,7 @@ if __name__ == '__main__':
     logger.addHandler(fh)
     logger.addHandler(ch)
     logger.warning('Start AAMKS post process')
+
     try:
         if len(sys.argv) > 2:
             comparepostprocess(sys.argv[2:], sys.argv[1])
