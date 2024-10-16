@@ -99,7 +99,7 @@ class EvacMcarlo:
         xx=50
         yy=50
 
-        query = "SELECT * FROM fire_origin where sim_id ==" + str(self._sim_id)
+        query = f"SELECT * FROM fire_origin where sim_id = {self._sim_id}"
         z=self.s.query(query) 
 
         i=z[0]
