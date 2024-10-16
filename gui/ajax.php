@@ -102,15 +102,14 @@ function ajaxLaunchSimulation() { #{{{
 	$irange[] = $max_iter;
 	$irange[] = $max_iter + $nos;
 	for ($i = $irange[0]; $i < $irange[1]; $i++) {
-		$id = gen_id()."-".$i;
 		if ($animations_number > 0) {
 			$is_anim = 1;
 			$animations_number--;
 		} else {
 			$is_anim = 0;
 		}
-		$_SESSION['nn']->query("INSERT INTO simulations(iteration,project,scenario_id,job_id,is_anim) VALUES($1,$2,$3,$4,$5)", 
-                array($i,$project_id,$scenario_id, $id, $is_anim));
+		$_SESSION['nn']->query("INSERT INTO simulations(iteration,project,scenario_id,is_anim) VALUES($1,$2,$3,$4)",
+                array($i,$project_id,$scenario_id, $is_anim));
 	}
 	$exit_code = run_aamks($working_home, $user_id, $irange);
     if ($exit_code){

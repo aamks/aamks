@@ -12,10 +12,10 @@ def_args = [
 python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "python")}'
 
 # launch aamks jobs
-def launch(path: str, user_id: str, irange: str):
+def launch(path: str, user_id: str, irange: list):
     os.environ["AAMKS_PROJECT"] = path
-    os.environ["AAMKS_USER_ID"] = int(user_id)
-    irange = ast.literal_eval(irange)
+    os.environ["AAMKS_USER_ID"] = user_id
+    irange = [int(i) for i in irange]
     conf = Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
     p_id = conf['project_id']
     s_id = conf['scenario_id']
@@ -41,6 +41,12 @@ def launch(path: str, user_id: str, irange: str):
         job_id = slurm.sbatch(command, slurm.SLURM_ARRAY_TASK_ID)
     except AssertionError:
         raise AssertionError("sbatch was unable to launch your jobs. Make sure slurm is running and set properly.")
+
+    psqldb = Psql()
+    for iter_id in range(*irange):
+        psqldb.query(f"UPDATE simulations(job_id) VALUES(%s) WHERE scenario_id={s_id} AND iteration={iter_id}",
+                     (f'{job_id}_{iter_id}'))
+    del psqldb
 
 # launch postprocessing
 def postprocess(path: str, scenarios: list):
@@ -107,7 +113,7 @@ def _argparse():
     parser.add_argument('-r', '--project', help='AAMKS project ID', required=False)
     parser.add_argument('-s', '--scenario', nargs='*', help='AAMKS scenario ID or scenario names to be compared (see results.beck_new)', required=False, default=[])
     parser.add_argument('-i', '--iteration', help='Iteration no.', required=False)
-    parser.add_argument('-n', '--number', help='Range of iterations to run numbers [start, end]', required=False)
+    parser.add_argument('-n', '--number', nargs='*', help='Start and end for iteration range', required=False, default=[1, 2])
 
     return parser.parse_args()
 

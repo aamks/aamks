@@ -3,7 +3,7 @@
 
 function run_aamks($path, $user_id, $irange){
     $AAMKS_PATH=getenv('AAMKS_PATH');
-    $command = $AAMKS_PATH."/env-server/bin/python3 ".$AAMKS_PATH."/slurm.py -t l -p ".$path." -u ".$user_id." -n ".$irange." 2>&1";
+    $command = $AAMKS_PATH."/env-server/bin/python3 ".$AAMKS_PATH."/slurm.py -t l -p ".$path." -u ".$user_id." -n ".$irange[0]." ".$irange[1]." 2>&1";
     $output = shell_exec($command);
     return $output;
 }
