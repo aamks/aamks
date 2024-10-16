@@ -98,8 +98,8 @@ class CfastMcarlo():
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 
     def create_sqlite_db(self):
-        if os.environ['AAMKS_WORKER'] == 'slurm':
-            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{self._sim_id}.sqlite")
+        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", f"aamks_{self._sim_id}.sqlite")
+        if os.path.exists(new_sql_path):
             self.s=Sqlite(new_sql_path)
         else:
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -425,8 +425,8 @@ class DrawAndLog:
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
 
     def __connectDB(self):
-        if os.environ['AAMKS_WORKER'] == 'slurm':
-            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{self._sim_id}.sqlite")
+        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", f"aamks_{self._sim_id}.sqlite")
+        if os.path.exists(new_sql_path):
             self.s=Sqlite(new_sql_path)
         else:
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))

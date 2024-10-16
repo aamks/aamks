@@ -1,19 +1,17 @@
+import json
 import logging
-import random
-from json import loads, load, dump
-import sys
+from json import loads, load, dump, dumps
 import redis
 import config
 import os
 from results.beck_new import postprocess, comparepostprocess
 from results.beck_anim import Beck_Anim
-from aamks import start_aamks
 
 class RedisWorkerServer:
     
-    def redis_db(self):
+    def connect_redis_db(self):
         self.host = config.redis_host
-        db = redis.Redis(
+        self.db = redis.Redis(
             host=self.host,
             port=config.redis_port,
             db=config.redis_db_number,
@@ -21,20 +19,23 @@ class RedisWorkerServer:
             decode_responses=True,
         )
         # make sure redis is up and running
-        db.ping()
-        return db
+        self.db.ping()
 
-    def redis_queue_push(self, db, message):
+    def redis_queue_push(self, message):
         # push to tail of the queue (left of the list)
-        db.lpush('server_queue', message)
+        self.db.lpush(config.redis_server_queue_name, message)
 
-    def redis_queue_pop(self, db):
+    def redis_queue_pop(self):
         # pop from head of the queue (right of the list)
         # the `b` in `brpop` indicates this is a blocking call (waits until an item becomes available)
-        _, message = db.brpop('server_queue')
+        _, message = self.db.brpop(config.redis_server_queue_name)
         message_json = loads(message)
         logger.debug(f'pop from head of queue \n{message_json}')
         return message_json
+
+    def worker_redis_queue_push(self, message):
+        # push to tail of the queue (left of the list)
+        self.db.lpush(config.redis_worker_queue_name, dumps(message))
 
     def process_message(self, message_json: str):
         if 'anim' in message_json['data']:
@@ -51,14 +52,25 @@ class RedisWorkerServer:
             self.run_conf_dir(message_json)
     
     def run_aamks(self, message):
-        path, user_id = message['data']['aamks']
         logger.debug('running aamks...')
+        path, user_id, irange = message['data']['aamks']
+        message["AA"] = { 
+                "PROJECT": path,
+                "USER_ID": user_id,
+                "PATH": os.environ["AAMKS_PATH"],
+                "SERVER": os.environ['AAMKS_SERVER'],
+                "PG_PASS": os.environ['AAMKS_PG_PASS']
+                }
         try:
-            start_aamks(path, user_id)
-            logger.debug('finished aamks')
+            for i in range(*irange):
+                message["data"] = {
+                    "sim_id": i,
+                    "sim": "{}/workers/{}".format(path,i)
+                }
+                self.worker_redis_queue_push(message)
+                logger.debug(f'send sim {i} {path}')
         except Exception as e:
-            logger.error(f'from aamks.py: {e}')
-
+            logger.error(f'Failure to send redis worker message - {e}')
     
     def run_beck_anim(self, message):
         path, project, scenario, iter = message['data']['anim']
@@ -80,6 +92,7 @@ class RedisWorkerServer:
             logger.debug('finished results')
         except Exception as e:
             logger.error(f'from beck_new.py: {e}')
+
     def run_conf_dir(self, message):
         logger.debug('substitution conf...')
         try:
@@ -99,9 +112,10 @@ class RedisWorkerServer:
     def main(self):
         """Consumes items from the Redis queue"""
         logger.debug('started worker server')
-        db = self.redis_db()
+        self.connect_redis_db()
+        logger.debug('connected to redis database')
         while True:
-            message_json = self.redis_queue_pop(db) 
+            message_json = self.redis_queue_pop() 
             self.process_message(message_json)
 
 

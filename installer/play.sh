@@ -29,3 +29,5 @@ cp -r demo/ /home/aamks_users/demo@aamks/demo
 sudo chmod -R g+w /home/aamks_users/
 sudo chmod -R g+s /home/aamks_users/
 sudo chown -R $USER:www-data /home/aamks_users
+../env/bin/python3 ../redis_aamks/manager.py -d
+../env/bin/python3 ../redis_aamks/manager.py -sd
