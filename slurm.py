@@ -1,6 +1,7 @@
 import argparse
 from simple_slurm import Slurm
 import os
+import ast
 
 from include import Psql, Json
 
@@ -11,13 +12,13 @@ def_args = [
 python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "python")}'
 
 # launch aamks jobs
-def launch(path: str, user_id: int, irange: list):
+def launch(path: str, user_id: str, irange: str):
     os.environ["AAMKS_PROJECT"] = path
-    os.environ["AAMKS_USER_ID"] = user_id
+    os.environ["AAMKS_USER_ID"] = int(user_id)
+    irange = ast.literal_eval(irange)
     conf = Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
     p_id = conf['project_id']
     s_id = conf['scenario_id']
-    animations_number = conf['animations_number']
 
     # initiate slurm wrapper
     slurm = Slurm()
@@ -115,9 +116,9 @@ if __name__ == '__main__':
     args = _argparse()
 
     if args.type in ['l', 'launch']:
-        if not all([args.path, args.userid]):
+        if not all([args.path, args.userid, args.number]):
             raise Exception('Specify path, userid and range of iterations numbers arguments with -p, -u and -n flags')
-        launch(args.path, args.userid)
+        launch(args.path, args.userid, args.number)
 
     elif args.type in ['p', 'pos.postprocess']:
         if not all([args.path]):

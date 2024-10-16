@@ -853,26 +853,26 @@ class Worker:
 
     def cleanup(self):
         if not self.is_anim:
-            os.remove("finals.sqlite")
-            os.remove("cfast_devices.csv")
-            os.remove("cfast_vents.csv")
-            os.remove("cfast_walls.csv")
-            os.remove("cfast_masses.csv")
-            os.remove("cfast_zone.csv")
-            os.remove("cfast.log")
-            os.remove("cfast.smv")
-            os.remove("cfast.out")
-            os.remove("cfast.plt")
-            os.remove("cfast.status")
-            os.remove("cfast_evac_socket_port.txt")
-            # os.remove("doors_opening_level_frame.txt") #fortran issue
-            # os.remove("times.txt")
-            shutil.rmtree("door_opening_changes")
-            for floor in self.floors:
-                try:
+            try:
+                os.remove("finals.sqlite")
+                os.remove("cfast_devices.csv")
+                os.remove("cfast_vents.csv")
+                os.remove("cfast_walls.csv")
+                os.remove("cfast_masses.csv")
+                os.remove("cfast_zone.csv")
+                os.remove("cfast.log")
+                os.remove("cfast.smv")
+                os.remove("cfast.out")
+                os.remove("cfast.plt")
+                os.remove("cfast.status")
+                # os.remove("cfast_evac_socket_port.txt")
+                # os.remove("doors_opening_level_frame.txt") #fortran issue
+                # os.remove("times.txt")
+                # shutil.rmtree("door_opening_changes")
+                for floor in self.floors:
                     os.remove(f'pynavmesh{floor.floor}.nav')
-                except FileNotFoundError:
-                    continue
+            except FileNotFoundError:
+                pass
 
     def main(self):
         self.get_config()

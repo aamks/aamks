@@ -42,7 +42,10 @@ class RedisWorker:
         if self.host != "127.0.0.1":
             pwd = pwd.replace("home","mnt")
         logger.debug(f'starting aamks iter {sim_id} with worker {pwd}')
-        start_aamks_with_worker(project, user_id, sim_id)
+        try:
+            start_aamks_with_worker(project, user_id, sim_id)
+        except Exception as e:
+            logger.error(f'during sim {sim_id} AAMKS halting error \n ERROR: {e}')
         logger.debug(f"finished {sim_id} - {pwd}")
 
     def main(self):
