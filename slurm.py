@@ -44,8 +44,7 @@ def launch(path: str, user_id: str, irange: list):
 
     psqldb = Psql()
     for iter_id in range(*irange):
-        psqldb.query(f"UPDATE simulations(job_id) VALUES(%s) WHERE scenario_id={s_id} AND iteration={iter_id}",
-                     (f'{job_id}_{iter_id}'))
+        psqldb.query(f"UPDATE simulations SET job_id='{job_id}_{iter_id}' WHERE scenario_id={s_id} AND iteration={iter_id}")
     del psqldb
 
 # launch postprocessing

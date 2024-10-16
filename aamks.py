@@ -74,9 +74,10 @@ def start_aamks(path, user_id):
     logger.info('AAMKS application finished successfully')
 
 
-def start_aamks_with_worker(path: str, user_id: int, sim_id: int):
+def start_aamks_with_worker(path: str, user_id: str, sim_id: str):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
+    sim_id = int(sim_id)
 
     logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')
 
