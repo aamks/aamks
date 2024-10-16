@@ -25,13 +25,13 @@ class OnInit:
 # }}}
     def _setup_simulations(self):# {{{
         ''' Simulation dir maps to id from psql's simulations table'''
-
         workers_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
         os.makedirs(workers_dir, mode = 0o777, exist_ok=True)
 
         for i in range(*self.irange):
             sim_dir="{}/{}".format(workers_dir,i)
             os.makedirs(sim_dir, mode=0o777, exist_ok=True)
+            logger.info(f'setup {i} simulation')
 # }}}
 
 class OnEnd():

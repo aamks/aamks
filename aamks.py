@@ -116,7 +116,7 @@ def start_aamks_with_worker(path: str, user_id: int, sim_id: int):
     evac_mc.do_iterations()
     logger.info('finished evac_mc.do_iterations()')
 
-    logger.info(f'{sim_id} prepared successfully. Launching...')
+    logger.info(f'sim {sim_id} prepared successfully. Launching...')
 
     logger.info('calling evac.Worker')
     w = Worker(redis_worker_pwd=os.path.join(path, "workers", str(sim_id)))
@@ -127,7 +127,7 @@ def start_aamks_with_worker(path: str, user_id: int, sim_id: int):
     OnEnd(sim_id=sim_id)
     logger.info('finished OnEnd()')
 
-    logger.info(f'{sim_id} finished with status {status}')
+    logger.info(f'sim {sim_id} finished with status {status}')
 
 
 if __name__ == '__main__':

@@ -97,7 +97,7 @@ function ajaxLaunchSimulation() { #{{{
 	$scenario_id = $conf['scenario_id'];
 	$animations_number = $conf['animations_number'];
 	$r=$_SESSION['nn']->query("SELECT max(iteration)+1 as max FROM simulations WHERE project=$1 AND scenario_id=$2", array($project_id, $scenario_id));
-	$max_iter = (int) $r[0]['max'] ?? 1;
+	$max_iter = (int) $r[0]['max'] > 0 ? (int) $r[0]['max'] : 1;
 	$irange = [];
 	$irange[] = $max_iter;
 	$irange[] = $max_iter + $nos;

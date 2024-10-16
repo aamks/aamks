@@ -400,6 +400,7 @@ function get_template_defaults($q) {/*{{{*/
     "dispatch_evacuees": "manual+probabilistic",
     "number_of_simulations": 1,
     "simulation_time": 1000,
+	"animations_number": 1,
     "indoor_temperature": {
         "mean": 22,
         "sd": 2

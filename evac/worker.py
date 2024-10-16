@@ -127,10 +127,10 @@ class Worker:
         self.detection_time = self.config['DETECTION_TIME']
         self.project_conf=self.json.read("../../conf.json")
 
-        if not logging.getLogger(f'{self.host_name} - evac.py').handlers: 
-            self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py')
+        if not logging.getLogger(f'{self.host_name} - evac.py  ').handlers: 
+            self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py  ')
         else:
-            self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py')
+            self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py  ')
 
     def run_cfast_simulations(self, version='intel', attempt=0):
         self.send_report(e={"status":101})
