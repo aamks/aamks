@@ -57,4 +57,18 @@ function run_conf_subst($user_dir, $pid, $sid, $nid, $tid){
     push($mess);
 }
 
+function delete_from_redis($redis, $id){ 
+    $element_id_to_remove = $id;
+    $redis_queue_key = 'aamks_queue';
+    $elements = $redis->lrange($redis_queue_key, 0, -1);
+    foreach ($elements as $element) {
+        $decoded_element = json_decode($element, true);
+        if ($decoded_element['id'] == $element_id_to_remove) {
+            // delete element from DB
+            $redis->lrem($redis_queue_key, $element, 0);
+            break; 
+        }
+    }
+}
+
 ?>

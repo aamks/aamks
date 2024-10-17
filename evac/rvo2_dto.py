@@ -1,31 +1,31 @@
+import copy
 import warnings
-from collections import OrderedDict
-from pyrvo.rvo_simulator import RVOSimulator
-warnings.simplefilter('ignore', RuntimeWarning)
-from evac.evacuees import Evacuees
-from math import ceil
 import json
-from geom.nav import Navmesh
-from shapely.geometry import LineString
-from include import Sqlite
-from include import Json
 import os
-from scipy.stats import norm
-from math import log
-import math
-from numpy import array, prod, zeros, ndenumerate
-from scipy.spatial.distance import cdist
 import pandas as pd
+from collections import OrderedDict
+from math import ceil, log, isinf
+from shapely.geometry import LineString
+from include import Sqlite, Json
+from numpy import array, prod, zeros, ndenumerate
+from scipy.stats import norm
+from scipy.spatial.distance import cdist
+from geom.nav import Navmesh
+from evac.pyrvo.rvo_simulator import RVOSimulator
+from evac.evacuees import Evacuees
+from evac.evacuee import Evacuee
 
+warnings.simplefilter('ignore', RuntimeWarning)
 
 class EvacEnv:
 
-    def __init__(self, aamks_vars):
+    def __init__(self, aamks_vars, sim_id=None):
         self.json = Json()
+        self.sim_id = sim_id
         self.evacuees = Evacuees
         self.max_speed = 0
         self.current_time = 0
-        self.smoke_query = None
+        self.smoke_query = None # PartitionQuery()
         self.rset = 0
         self.floor = 0
         self.nav = None
@@ -39,8 +39,9 @@ class EvacEnv:
         self.floor_downstair_teleports_queue = {}
         self.step = 0
         self.terminal_exits_names = []
+        self.unavailable_rooms = []
 
-        f = open('{}/{}/config.json'.format(os.environ['AAMKS_PATH'], 'evac'), 'r')
+        f = open(os.path.join(os.environ['AAMKS_PATH'], 'evac','config.json'), 'r')
         self.config = json.load(f)
 
         self.general = aamks_vars
@@ -53,9 +54,14 @@ class EvacEnv:
         
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
 
-        self.dfed = FEDDerivative(self.floor)
-
+        self.dfed = FEDDerivative(self.floor, sim_id=sim_id)
+        self.detection = Detection(self)
 
     def _find_closest_exit(self, evacuee):
         position = evacuee.position
@@ -121,7 +127,9 @@ class EvacEnv:
             if LineString([(x,y), (evacuee.position[0], evacuee.position[1])]).length < 100 and exit['type'] == 'door':
                 x, y = exit['x_outside'], exit['y_outside']
 
-            if room_name in self.rooms_in_smoke:
+            # unavailable_rooms -> opacity > 2/3 | visibility < 10 m
+            # rooms_in_smoke    -> opacity > 0.0 | visibility < 30 m
+            if room_name in self.unavailable_rooms:
                 navmesh_path = self.nav.nav_query_first_navmesh(src=evacuee.position, dst=(x, y), maxStraightPath=999)
             else:
                 navmesh_path = self.nav.nav_query(src=evacuee.position, dst=(x, y), maxStraightPath=999)
@@ -167,12 +175,12 @@ class EvacEnv:
         paths = list()
         self.set_OD_to_agent(evacuee, od_at_agent_position)
 
-        if room_name not in self.rooms_in_smoke:
+        if room_name not in [room.split('.')[0] for room in self.unavailable_rooms]:
             paths = self.get_paths_nav_query(position,_exit_dict, False)
 
         if len(paths) == 0:
-            # agent room is in smoke or there is no passage 
-            # through smoke-free rooms, so 
+            # agent room is in smoke or there is no passage
+            # through smoke-free rooms, so
             # agent must escape through the smoke
             paths = self.get_paths_nav_query(position,_exit_dict, True)
 
@@ -195,7 +203,7 @@ class EvacEnv:
                 continue
 
             path_length = LineString(path).length
-            if math.isinf(exit['exit_weight']):
+            if isinf(exit['exit_weight']):
                 exit_dist_considering_weight = path_length*100000
             else:
                 exit_dist_considering_weight = path_length*exit['exit_weight']
@@ -414,12 +422,11 @@ class EvacEnv:
         RVOSimulator.process_obstacles(self.simulator)
         return self.simulator.get_obstacles_count(), 2
 
-    def generate_nav_mesh(self):
-        self.nav = Navmesh()
-        self.nav.build(floor=str(self.floor))
+    def generate_nav_mesh(self, working_dir):
+        self.nav = Navmesh(self.sim_id)
+        self.nav.build(floor=str(self.floor), wd=working_dir)
 
     def prepare_rooms_list(self):
-        self.s = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})
@@ -428,27 +435,27 @@ class EvacEnv:
 
     def update_room_opacity(self):
         smoke_opacity = dict()
+        self.unavailable_rooms = []    # rooms can be available again
         for room in self.room_list.keys():
-            opacity =  0.0
             hgt = self.smoke_query.compa_conditions[str(room)]['HGT']
             if hgt == None:
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room).split('.')[0]]['ULOD'])
             elif hgt <= self.config['LAYER_HEIGHT']:
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['ULOD'])
             else:
-                od = self.smoke_query.compa_conditions[str(room)]['LLOD']
                 opacity = self._OD_to_VIS(self.smoke_query.compa_conditions[str(room)]['LLOD'])
+
             if opacity > 0.0 and room not in self.rooms_in_smoke:
                 self.rooms_in_smoke.append(room)
+            if opacity > 2/3:
+                self.unavailable_rooms.append(room)
             smoke_opacity.update({room: round(opacity, 2)})
             self.elog.debug('ROOM: {}, opacity: {}'.format(room, round(opacity, 2)))
         return smoke_opacity
 
     def _OD_to_VIS(self, OD):
         self.elog.debug('TIME: {}, optical density: {}'.format(self.current_time, OD))
-        if OD <= 1:
-            return 0.0
-        else:
+        if OD:
             vis = self.general['c_const'] / (log(10) * OD)
             if vis <= 3:
                 return 1.0
@@ -456,6 +463,8 @@ class EvacEnv:
                 return 0.0
             else:
                 return (30-vis)/30
+        else:
+            return 0.
 
     def update_time(self):
         self.current_time += self.config['TIME_STEP']
@@ -517,7 +526,13 @@ class EvacEnv:
 
 # Total FED growth spatial function (per floor)
 class FEDDerivative:
-    def __init__(self, floor: int):
+    def __init__(self, floor: int, sim_id=None):
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+
         self.floor = floor
         self.dim = self._find_2dims()
 
@@ -530,9 +545,8 @@ class FEDDerivative:
 
     # find dimensions of the plane returns list: [[xmin, ymin], [xmax, ymax]]
     def _find_2dims(self):
-        aamks_sqlite = Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         dims = []
-        q = aamks_sqlite.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
+        q = self.s.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
                 (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%' or a.name LIKE 's%');")
         def minmax(pts):
             ret = []
@@ -594,3 +608,129 @@ class FEDDerivative:
                         'ymin': self._cell2dim(i[1], axis=1), 'ymax': self._cell2dim(i[1]+1, axis=1), 'total_dfed': v}
                 exp.append(row)
         return pd.DataFrame(exp).to_json()
+
+
+class Detection:
+    def __init__(self, eenv: EvacEnv):
+        self.evac_conf = eenv.general    # more data in conf from worker vars to be inherited in the future
+        self.eenv = eenv
+        self.time = eenv.current_time
+        self.config = eenv.config
+        self.state = {}
+        self.rooms = []
+        self.sensors = []
+        self.conditions = []
+        self.room_heights = {}
+
+    def _get_rooms_sensors(self, all_compas):
+        for entity in all_compas:
+            if entity.startswith(('sd', 'sp', 'hd')):
+                self.sensors.append(entity)
+            elif entity.startswith('t_'):
+                # we don't care about targets - those are for fire spread
+                continue
+            else:
+                self.rooms.append(entity)
+
+    def _initialize(self):
+        self.conditions = self.eenv.smoke_query.compa_conditions
+        self._get_rooms_sensors(self.eenv.smoke_query.all_compas)
+        self.room_heights = {room: None for room in self.rooms}
+        self.state = dict(rooms={room: None for room in self.rooms}, floor=None)
+        # initial heights
+        initial = copy.deepcopy(self.conditions)
+        for r in self.rooms:
+            self.room_heights[r] = initial[r]['HGT']
+        del initial
+
+        # set fire origin room detection to 0.001 (can't be 0 because bool(0) = False)
+        self.state['rooms'][self.evac_conf['FIRE_ORIGIN']] = .001
+
+    def _od_to_vis(self, optical_density):
+        # convert optical density to visibility
+        if optical_density:
+            return min([30, self.evac_conf['c_const'] / (optical_density * log(10))])
+        else:
+            return 30
+
+    def _is_fire_from_sensor(self, sensor):
+        # return sensor state
+        return bool(self.conditions[sensor]['SENSACT'])
+
+    def _is_fire_symptom(self, room: str):
+        actual_ulod = self.conditions[room]['ULOD']
+        actual_height = self.conditions[room]['HGT']
+        initial_height = self.room_heights[room]
+        # check for fire symptoms in room
+        if not initial_height and not actual_height:
+            # one-zone model
+            if self._od_to_vis(actual_ulod) >= self.config['LOWEST_VIS']:
+                return True
+        elif actual_height <= self.config['PRE_EVAC_TIME_ZONE_REDUCTION'] * initial_height:
+            # two-zone model
+            if self._od_to_vis(actual_ulod) >= self.config['LOWEST_VIS']:
+                return True
+        return False
+
+    def _update_floor_state(self):
+        # iterate over sensors to evaluate their state
+        if not self.state['floor']:
+            for sensor in self.sensors:
+                if self._is_fire_from_sensor(sensor):
+                    self.state['floor'] = self.time
+
+    def _update_rooms_state(self):
+        # iterate over rooms to evaluate rooms' conditions and state
+        for room in self.rooms:
+            if self.state['rooms'][room]:
+                continue
+            if self._is_fire_symptom(room):
+                self.state['rooms'][room] = self.time
+
+    def _delay_from_room(self, room: str, pre_evac: float):
+        # calculate total delay time for room that is in fire
+        room_detection = self.state['rooms'][room]
+        if room_detection:
+            return room_detection + pre_evac
+        else:
+            return self.config['DETECTION_TIME']
+
+    def _delay_from_floor(self, alarm: float, pre_evac: float):
+        # calculate total delay time for room that is in fire
+        floor_detection = self.state['floor']
+        if floor_detection:
+            return floor_detection + alarm + pre_evac
+        else:
+            return self.config['DETECTION_TIME']
+
+    def _get_pedestrian_delay(self, evacuee: Evacuee):
+        floor_data = self.evac_conf['FLOORS_DATA'][str(self.eenv.floor)]
+
+        room_delay = self._delay_from_room(evacuee.detection_compa, evacuee.detection_constituents['pre_evac_fire_origin'])
+        if evacuee.detection_compa == self.evac_conf['FIRE_ORIGIN']:
+            return room_delay
+        else:
+            floor_delay = self._delay_from_floor(floor_data['ALARMING'], evacuee.detection_constituents['pre_evac'])
+            return min(floor_delay, room_delay)
+
+    def _update_delays(self):
+        # iterate over evacuees and if still not moving set them proper delay
+        for evacuee in self.eenv.evacuees.pedestrians:
+            if evacuee.velocity != (0, 0):
+                continue
+            new_delay = self._get_pedestrian_delay(evacuee)
+            if evacuee.pre_evacuation_time > new_delay:
+                evacuee.pre_evacuation_time = new_delay
+
+    def update(self):
+        self.time = round(self.eenv.current_time, 2)
+        if self.time == 0:
+            self._initialize()
+        else:
+            # update state variables if needed
+            self._update_floor_state()
+            self._update_rooms_state()
+            # update evacuees pre-evac times
+            self._update_delays()
+            # return floor detection time
+        return self.state['floor']

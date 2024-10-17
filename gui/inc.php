@@ -1,7 +1,14 @@
 <?php
 session_name('aamks');
 require_once("lib.form.php"); 
-require_once("redis_client.php"); 
+
+$aamks_worker=getenv('AAMKS_WORKER');
+if ($aamks_worker=='redis') {
+    require_once("redis_client.php"); 
+} elseif ($aamks_worker=='slurm') {
+    require_once("slurm.php");
+};
+
 session_start();
 #phpinfo();
 ini_set('error_reporting', E_ALL);

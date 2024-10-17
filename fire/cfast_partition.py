@@ -18,7 +18,7 @@ from include import DDgeoms
 # }}}
 
 class CfastPartition():
-    def __init__(self): # {{{
+    def __init__(self, sim_id=None): # {{{
         ''' 
         Divide space into cells for smoke conditions queries asked by evacuees.
         A cell may be a square or a rectangle. First divide space into squares
@@ -41,7 +41,11 @@ class CfastPartition():
         '''
 
         self._square_side=300
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.uprefs=GetUserPrefs()
         verbose=0
         if self.uprefs.get_var('partitioning_debug')==1: verbose=1
@@ -55,6 +59,7 @@ class CfastPartition():
         self.s.query("CREATE TABLE query_vertices(json)")
 
         self.json=Json() 
+        self.json.s = self.s
         self._cell2compa=OrderedDict()
         self._save=OrderedDict()
         floors=self.json.readdb("floors_meta")

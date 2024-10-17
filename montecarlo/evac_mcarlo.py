@@ -30,8 +30,6 @@ from math import sqrt, log, exp
 from include import Sqlite
 from include import Json
 from include import Dump as dd
-from include import SimIterations
-from include import Vis
 
 from scipy.stats import lognorm
 from scipy.optimize import root
@@ -51,7 +49,7 @@ def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99):
 
     results =  root(equations, (0, 0.1))
     if not results.success:
-        raise RuntimeError(f'Numerical solution of lognormal distribution parameters failed.\n{params.message}')
+        raise RuntimeError(f'Numerical solution of lognormal distribution parameters failed.\n{results.message}')
 
     return results.x
 
@@ -61,27 +59,23 @@ def lognorm_percentiles_from_params(mu, sigma, p1=0.01, p2=0.99):
     return [dist.ppf(p) for p in [p1, p2]]
 
 
-class EvacMcarlo():
-    def __init__(self):# {{{
+class EvacMcarlo:
+    def __init__(self, sim_id):# {{{
+        self._sim_id = sim_id
         ''' Generate montecarlo evac.conf. '''
 
-        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{self._sim_id}.sqlite")
+            self.s=Sqlite(new_sql_path)
+        else:
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
+        self.json.s = self.s
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
-        si=SimIterations(self.conf['project_id'], self.conf['scenario_id'], self.conf['number_of_simulations'])
-        sim_ids=range(*si.get())
-        for self._sim_id in sim_ids:
-            seed(self._sim_id)
-            self._fire_obstacle()
-            self._static_evac_conf()
-            self._dispatch_evacuees()
-            self._make_evac_conf()
-        self._evacuees_static_animator()
-        self.s.close()
 
 # }}}
     def _static_evac_conf(self):# {{{
@@ -105,7 +99,9 @@ class EvacMcarlo():
         xx=50
         yy=50
 
-        z=self.s.query("SELECT * FROM fire_origin") 
+        query = "SELECT * FROM fire_origin where sim_id ==" + str(self._sim_id)
+        z=self.s.query(query) 
+
         i=z[0]
         points=[ [i['x']-xx, i['y']-yy, 0], [i['x']+xx, i['y']-yy, 0], [i['x']+xx, i['y']+yy, 0], [i['x']-xx, i['y']+yy, 0], [i['x']-xx, i['y']-yy, 0] ]
 
@@ -312,4 +308,14 @@ class EvacMcarlo():
             m[floor]=self.dispatched_evacuees[floor]
         self.s.query('INSERT INTO dispatched_evacuees VALUES (?)', (json.dumps(m),))
         
+    
+    def do_iterations(self):
+        #seed(self._sim_id)
+        self._fire_obstacle()
+        self._static_evac_conf()
+        self._dispatch_evacuees()
+        self._make_evac_conf()
+        self._evacuees_static_animator()
+        self.s.close()
+
 # }}}

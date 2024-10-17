@@ -7,22 +7,20 @@ import sys
 import os
 import json
 import shutil
-from include import Json
-from include import Psql
-from include import Sqlite
-from include import Dump as dd
-from include import SimIterations
-from include import Vis
-from include import GetUserPrefs
-from geom.nav import Navmesh
 import subprocess
 import logging
 import sys
 
+from include import Json, Psql, Sqlite, SimIterations, Vis, GetUserPrefs
+from include import Dump as dd
+from geom.nav import Navmesh
+
+
 logger = logging.getLogger('AAMKS.init.py')
 
-class OnInit():
-    def __init__(self):# {{{
+
+class OnInit:
+    def __init__(self, sim_id=None):# {{{
         ''' Stuff that happens at the beggining of the project '''
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -31,7 +29,13 @@ class OnInit():
         self.p=Psql()
         self._clear_srv_anims()
         self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 2)
+        if os.environ['AAMKS_WORKER'] == 'slurm':
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            shutil.copy(os.path.join(os.environ['AAMKS_PROJECT'], "aamks.sqlite"), new_sql_path)
+            self.s=Sqlite(new_sql_path)
         self._clear_sqlite()
+        self.irange = SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations']).get()
+        
         self._setup_simulations()
         self._create_sqlite_tables()
         self.s.close()
@@ -76,40 +80,17 @@ class OnInit():
         except:
             pass
 # }}}
-    def _create_iterations_sequence(self):# {{{
-        '''
-        For a given project we may run simulation 0 to 999. Then we may wish to
-        run 100 simulations more and have them numbered here: from=1000 to=1099
-        These from and to numbers are unique for the project and are used as
-        rand seeds in later aamks modules. This is similar, but distinct from
-        SimIterations() - we are creating the sequence, and the later reads the
-        sequence from/to. Remember that range(1,4) returns 1,2,3; hence SELECT
-        max(iteration)+1 
-        '''
-
-        how_many=self.conf['number_of_simulations']
-
-        r=[]
-        try:
-            # If the project already exists in simulations table (e.g. adding 100 simulations to existing 1000); try: fails on addition on int+None.
-            r.append(self.p.query('SELECT max(iteration)+1 FROM simulations WHERE project=%s AND scenario_id=%s', (self.project_id, self.scenario_id))[0][0])
-            r.append(r[0]+how_many)
-        except:
-            # If a new project
-            r=[1, how_many+1]
-        return r
-# }}}
     def _setup_simulations(self):# {{{
         ''' Simulation dir maps to id from psql's simulations table'''
 
         workers_dir="{}/workers".format(os.environ['AAMKS_PROJECT']) 
         os.makedirs(workers_dir, mode = 0o777, exist_ok=True)
 
-        irange=self._create_iterations_sequence()
-        for i in range(*irange):
+        for i in range(*self.irange):
             sim_dir="{}/{}".format(workers_dir,i)
             os.makedirs(sim_dir, mode=0o777, exist_ok=True)
-            self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
+            if os.environ['AAMKS_WORKER'] != 'slurm':
+                self.p.query("INSERT INTO simulations(iteration,project,scenario_id) VALUES(%s,%s,%s)", (i,self.project_id, self.scenario_id))
 
 # }}}
     def _create_sqlite_tables(self): # {{{
@@ -119,9 +100,16 @@ class OnInit():
 # }}}
 
 class OnEnd():
-    def __init__(self):# {{{
+    def __init__(self, sim_id=None):# {{{
         ''' Stuff that happens at the end of the project '''
         logger.info('start OnEnd()')
+        if os.environ['AAMKS_WORKER']=='slurm':
+            # works will be registered as slurm array by slurm.py
+            # nothing to do except for updating aamks.sqlite with latest sim sqlite and Vis (possible conflicts?)
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+            os.replace(new_sql_path, os.path.join(os.environ['AAMKS_PROJECT'], "aamks.sqlite"))
+            Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1})
+            return
         self.json=Json()
         self.uprefs=GetUserPrefs()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -155,6 +143,7 @@ class OnEnd():
         '''
 
         si=SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
+        animations_number = self.conf['animations_number']
         logger.info(f"run job {os.environ['AAMKS_WORKER']}")
         if os.environ['AAMKS_WORKER']=='none':
             return
@@ -162,10 +151,15 @@ class OnEnd():
         if os.environ['AAMKS_WORKER']=='local':
             os.chdir("{}/evac".format(os.environ['AAMKS_PATH']))
             for i in range(*si.get()):
+                job_id=datetime.datetime.now().strftime("%Y%m%d")+f"-iter-{i}"
+                if animations_number > 0:
+                    is_anim = 1
+                    animations_number -= 1
+                else:
+                    is_anim = 0
+                self.p.query(f"UPDATE simulations SET job_id='{job_id}', is_anim={is_anim} WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                 logger.info('start worker.py sim - %s', i)
                 exit_status = subprocess.run(["{}/env/bin/python3".format(os.environ['AAMKS_PATH']), "worker.py", "{}/workers/{}".format(os.environ['AAMKS_PROJECT'], i)])
-                job_id=datetime.datetime.now().strftime("%Y%m%d")+f"-iter-{i}"
-                self.p.query(f"UPDATE simulations SET job_id='{job_id}' WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                 if exit_status.returncode != 0:
                     logger.error('worker exit status - %s', exit_status)
                 else:
@@ -175,6 +169,12 @@ class OnEnd():
         if os.environ['AAMKS_WORKER']=='gearman':
             try:
                 for i in range(*si.get()):
+                    if animations_number > 0:
+                        is_anim = 1
+                        animations_number -= 1
+                    else:
+                        is_anim = 0
+                    self.p.query(f"UPDATE simulations SET is_anim={is_anim} WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                     worker="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                     worker = worker.replace("/home","/mnt")
                     gearman=["gearman", "-v",  "-b", "-f", "aRun", worker]
@@ -193,6 +193,12 @@ class OnEnd():
             AR = AARedis()
             try:
                 for i in range(*si.get()):
+                    if animations_number > 0:
+                        is_anim = 1
+                        animations_number -= 1
+                    else:
+                        is_anim = 0
+                    self.p.query(f"UPDATE simulations SET is_anim={is_anim} WHERE project={self.project_id} AND scenario_id={self.scenario_id} AND iteration={i}")
                     worker_pwd="{}/workers/{}".format(os.environ['AAMKS_PROJECT'],i)
                     messege_redis = AR.main(worker_pwd)
                     job_id = messege_redis['id']
