@@ -75,8 +75,6 @@ function ajaxLaunchSimulation() { #{{{
 			return;
 		}
 	}
-
-
 	$aamks=getenv("AAMKS_PATH");
 	$working_home=$_SESSION['main']['working_home'];
 	$user_id=$_SESSION['main']['user_id'];
@@ -88,13 +86,32 @@ function ajaxLaunchSimulation() { #{{{
 		echo json_encode(array("msg"=>"You need to <a class=blink href=/aamks/form.php?edit>Setup scenario</a> first", "err"=>1, "data"=>''));
 		return;
 	}
-	$nos=json_decode(file_get_contents("$working_home/conf.json"), 1)['number_of_simulations'];
+	$conf = json_decode(file_get_contents("$working_home/conf.json"), 1);
+	$nos=$conf['number_of_simulations'];
 	if(!isset($nos)) {
 		echo json_encode(array("msg"=>"Problem with the number of simulations. <a class=blink href=/aamks/form.php?edit>Setup scenario</a>", "err"=>1, "data"=>''));
 		return;
 	}
 
-	$exit_code = run_aamks($working_home, $user_id);
+	$project_id = $conf['project_id'];
+	$scenario_id = $conf['scenario_id'];
+	$animations_number = $conf['animations_number'];
+	$r=$_SESSION['nn']->query("SELECT max(iteration)+1 as max FROM simulations WHERE project=$1 AND scenario_id=$2", array($project_id, $scenario_id));
+	$max_iter = (int) $r[0]['max'] > 0 ? (int) $r[0]['max'] : 1;
+	$irange = [];
+	$irange[] = $max_iter;
+	$irange[] = $max_iter + $nos;
+	for ($i = $irange[0]; $i < $irange[1]; $i++) {
+		if ($animations_number > 0) {
+			$is_anim = 1;
+			$animations_number--;
+		} else {
+			$is_anim = 0;
+		}
+		$_SESSION['nn']->query("INSERT INTO simulations(iteration,project,scenario_id,is_anim) VALUES($1,$2,$3,$4)",
+                array($i,$project_id,$scenario_id, $is_anim));
+	}
+	$exit_code = run_aamks($working_home, $user_id, $irange);
     if ($exit_code){
 	    if (strpos($exit_code, "Submitted batch job") !== false){
 		echo json_encode(array("msg"=>"$nos ".getenv('AAMKS_WORKER')." simulations launched ($exit_code)", "err"=>0, "data"=>''));
@@ -104,7 +121,6 @@ function ajaxLaunchSimulation() { #{{{
     }else{
         echo json_encode(array("msg"=>"$nos ".getenv('AAMKS_WORKER')." simulations launched", "err"=>0, "data"=>''));
     }
-
 }
 /*}}}*/
 function ajaxMenuContent() { /*{{{*/

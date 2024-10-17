@@ -5,7 +5,7 @@ import sys
 import redis
 import config
 import os
-from evac import worker as EvacWorker
+from aamks import start_aamks_with_worker
 
 class RedisWorker:
     
@@ -24,35 +24,29 @@ class RedisWorker:
 
     def redis_queue_push(self, db, message):
         # push to tail of the queue (left of the list)
-        db.lpush(config.redis_queue_name, message)
+        db.lpush(config.redis_worker_queue_name, message)
 
     def redis_queue_pop(self, db):
         # pop from head of the queue (right of the list)
         # the `b` in `brpop` indicates this is a blocking call (waits until an item becomes available)
-        _, message = db.brpop(config.redis_queue_name)
+        _, message = db.brpop(config.redis_worker_queue_name)
         message_json = loads(message)
         logger.debug(f'pop from head of queue \n{message_json["data"]}')
         return message_json
 
     def process_message(self, message_json: str):
-        sim_value = message_json["data"]["sim"]
+        pwd = message_json["data"]["sim"]
+        sim_id = message_json["data"]["sim_id"]
+        user_id = message_json["AA"]["USER_ID"]
+        project = message_json["AA"]["PROJECT"]
         if self.host != "127.0.0.1":
-            sim_value = sim_value.replace("home","mnt")
-        logger.debug(f'starting worker.py {sim_value}')
-        # Try counter
-        retry_count = 0
-        max_retries = 3
-        while retry_count < max_retries:
-            try:
-                ew = EvacWorker.Worker(redis_worker_pwd=sim_value, AA=message_json['AA'])
-                ew.run_worker()
-                break  
-            except Exception as e:
-                retry_count += 1
-                logger.warning(f"Error during running worker.py ({retry_count}/{max_retries} {sim_value}):\n {e}")
-                if retry_count >= max_retries:
-                    logger.error(f"--- SKIPPING -  All attempts used in {sim_value}   ---")
-                    break  
+            pwd = pwd.replace("home","mnt")
+        logger.debug(f'starting aamks iter {sim_id} with worker {pwd}')
+        try:
+            start_aamks_with_worker(project, user_id, sim_id)
+        except Exception as e:
+            logger.error(f'during sim {sim_id} AAMKS halting error \n ERROR: {e}')
+        logger.debug(f"finished {sim_id} - {pwd}")
 
     def main(self):
         """Consumes items from the Redis queue"""
@@ -75,10 +69,10 @@ def prepare_logger(name):
     formatter = logging.Formatter('%(asctime)s - %(name)-14s - %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     logger.addHandler(fh)
-    # ch = logging.StreamHandler()
-    # ch.setLevel(logging.DEBUG)
-    # ch.setFormatter(formatter)
-    # logger.addHandler(ch)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
     return logger
 
 host_name = os.uname()[1]

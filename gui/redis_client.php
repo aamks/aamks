@@ -30,15 +30,10 @@ function message(){
         "data" => ''
     );
     return $message;
-    // "AA" => array( 
-    //     "PROJECT" => getenv("AAMKS_PROJECT"),
-    //     "PATH" => getenv("AAMKS_PATH"),
-    //     "SERVER" => getenv("AAMKS_SERVER"),
-    //     "PG_PASS" => getenv("AAMKS_PG_PASS")),
 }
-function run_aamks($path, $user_id){
+function run_aamks($path, $user_id, $irange){
     $mess = message();
-    $mess["data"] = array("aamks" => [$path, $user_id]);
+    $mess["data"] = array("aamks" => [$path, $user_id, $irange]);
     push($mess);
 }
 function run_beck_anim($path, $project, $scenario, $iter){
