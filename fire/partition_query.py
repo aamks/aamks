@@ -411,13 +411,12 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
             return 0.
 
         hgt = conditions['HGT']
-        if hgt == None:
-            return 0.
-
-        if hgt > self.config['LAYER_HEIGHT']:
-            layer = 'L'
-        else:
+        if hgt is None or hgt < self.config['LAYER_HEIGHT']:
+            # one-zone model or (two-zone and heads in upper zone)
             layer = 'U'
+        else:
+            # two-zone model, heads in lower zone
+            layer = 'L'
 
         # actual concentrations of compunds from CFAST [mol %]
         c = {       
