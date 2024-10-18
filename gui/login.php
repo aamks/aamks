@@ -97,7 +97,7 @@ function changes(){/*{{{*/
 	Visit our <a href='https://github.com/aamks/aamks/'>GitHub</a> or <a href='https://github.com/aamks/aamks/wiki'>wiki</a> to find out more.
     <br><br>Feel free to contact us if you would like to test full capabilities of AAMKS or need any support.
     <br>Contact person: Wojciech Kowalski <a href='mailto:aamks@apoz.edu.pl'>aamks@apoz.edu.pl</a>
-    <br><a href='https://aamks.apoz.edu.pl/aamks/deklaracja.php'>Deklaracja dostępności</a>
+    <br><a href='https://s.apoz.edu.pl/deklaracja.php?serwis=aamks'>Deklaracja dostępności</a>
     </center>
 	";
 	exit();
