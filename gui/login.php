@@ -88,14 +88,16 @@ function changes(){/*{{{*/
     <center>
 	<strong>Recent updates</strong><br>
     <table>
-    <tr><td>2024-09-30</td><td>--></td><td>Server update with important bugfixes for v2.1.0</td></tr>
+    <tr><td>2024-10-18</td><td>--></td><td>Beta <a href=https://github.com/aamks/aamks/pull/352>batch of features</a> planned for v2.1.2</td></tr>
+    <tr><td>2024-10-02</td><td>--></td><td>Server update to <a href=https://github.com/aamks/aamks/releases/tag/v2.1.1>AAMKS v2.1.1-beta</a></td></tr>
+    <tr><td>2024-09-30</td><td>--></td><td>Server update with hotfixes for v2.1.0</td></tr>
     <tr><td>2024-09-17</td><td>--></td><td>Animator <a href=https://github.com/aamks/aamks/pull/318>patch</a> applied for backward compatibility</td></tr>
     <tr><td>2024-09-13</td><td>--></td><td>Server update to <a href=https://github.com/aamks/aamks/releases/tag/v2.1.0>AAMKS v2.1.0</a></td></tr>
-    <tr><td>2024-03-05</td><td>--></td><td>Server update to <a href=https://github.com/aamks/aamks/releases/tag/v2.0.1>AAMKS v2.0.1</a></td></tr>
-    <tr><td>2024-01-25</td><td>--></td><td>Server update to <a href=https://github.com/aamks/aamks/releases/tag/v2.0.0>AAMKS v2.0.0</a></td></tr>    </table><br>
+    </table>
 	Visit our <a href='https://github.com/aamks/aamks/'>GitHub</a> or <a href='https://github.com/aamks/aamks/wiki'>wiki</a> to find out more.
-    <br><br>Feel free to contact us if you would like to test full version of AAMKS or need any support.
+    <br><br>Feel free to contact us if you would like to test full capabilities of AAMKS or need any support.
     <br>Contact person: Wojciech Kowalski <a href='mailto:aamks@apoz.edu.pl'>aamks@apoz.edu.pl</a>
+    <br><a href='https://aamks.apoz.edu.pl/aamks/deklaracja.php'>Deklaracja dostępności</a>
     </center>
 	";
 	exit();
