@@ -99,8 +99,8 @@ class EvacMcarlo:
         xx=50
         yy=50
 
-        query = f"SELECT * FROM fire_origin where sim_id = '{self._sim_id}'"
-        z=self.s.query(query) 
+        query = "SELECT * FROM fire_origin where sim_id ==" + str(self._sim_id)
+        z=self.s.query(query)
 
         i=z[0]
         points=[ [i['x']-xx, i['y']-yy, 0], [i['x']+xx, i['y']-yy, 0], [i['x']+xx, i['y']+yy, 0], [i['x']-xx, i['y']+yy, 0], [i['x']-xx, i['y']-yy, 0] ]
