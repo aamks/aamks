@@ -1,24 +1,16 @@
 # MODULES
 # {{{
+import copy
 import json
-import shutil
 import os
-import re
 import sys
-import codecs
-import itertools
-
-from pprint import pprint
 from collections import OrderedDict
-from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
-from shapely.ops import polygonize
-from numpy.random import uniform
-from math import sqrt
-from math import floor
-from include import Sqlite
+
+from shapely.geometry import box, LineString, Point
+
 from include import Json
-from include import Dump as dd
-from include import Vis
+from include import Sqlite
+
 
 # }}}
 
@@ -251,10 +243,10 @@ class CFASTimporter():
             elif v['type'] in ('WIN'):
                 type_tri='WIN'
 
-        global_type_id=v['idx'];
+        global_type_id=v['idx']
         name='{}{}'.format(self.geomsMap[v['type']], global_type_id)
         #self.s.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               , exit_type               , room_enter               , evacuees_density               , terminal_door , points                  , origin_room , orig_type , has_door,   teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
-        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] , v['attrs']['exit_type'] , v['attrs']['room_enter'] , v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights)
+        return name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] , v['attrs']['exit_type'] , v['attrs']['room_enter'] , v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights
 
 # }}}
     def _enhancements(self):# {{{
@@ -544,13 +536,15 @@ class CFASTimporter():
             all_vvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='VVENT' AND floor=? ORDER BY name", floor) ]
             vc_intersections={key:[] for key in all_vvents }
             for vent_id,vent_poly in vents_dict.items():
+                two_floors = copy.deepcopy(self.aamks_polies['COMPA'][floor])
                 try:
-                    two_floors=self.aamks_polies['COMPA'][floor]+self.aamks_polies['COMPA'][floor+1]
-                except:
-                    two_floors=self.aamks_polies['COMPA'][floor]
+                    two_floors.update(self.aamks_polies['COMPA'][str(int(floor)+1)])
+                except KeyError:
+                    pass
                 for compa_id,compa_poly in two_floors.items():
                     if vent_poly.intersection(compa_poly).length > 100:
                         vc_intersections[vent_id].append(compa_id)
+                del two_floors
 
             for vent_id,v in vc_intersections.items():
                 v=sorted(v)
