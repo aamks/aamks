@@ -26,9 +26,9 @@ class Obstacles():
     def __init__(self, sim_id=None):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        self.fire_model=self.conf['fire_model'];
-        if os.environ['AAMKS_WORKER'] == 'slurm':
-            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+        self.fire_model=self.conf['fire_model']
+        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
+        if os.path.exists(new_sql_path):
             self.s=Sqlite(new_sql_path)
         else:
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -65,6 +65,10 @@ class Obstacles():
             obsts+=self._floor2obsts(tin,floor)
             for i in obsts:
                 data[floor].append([(int(x),int(y), zz) for x,y in i.exterior.coords])
+        try:
+            self.s.query("DROP TABLE {}".format(tout))
+        except:
+            pass
         self.s.query("CREATE TABLE {} (json)".format(tout))
         self.s.query("INSERT INTO {} VALUES (?)".format(tout), (json.dumps({'obstacles': data}),))
         #self.s.dumpall()

@@ -114,6 +114,10 @@ function copy_scenario() { # {{{
 	if(in_array($_POST['copy_scenario'], $scenarios, true) && $_POST['copy_scenario'] != 'draft'){
 		$_SESSION['header_err'][]="Scenario '$_POST[copy_scenario]' already exists";
 	} else {
+		if($_SESSION['main']['scenario_name'] == 'draft'){
+			$_SESSION['header_err'][]="Can't draft launch from draft scenario!";
+			return;
+		} 
 		if($_POST['copy_scenario'] == 'draft'){
 			$_SESSION['nn']->query("DELETE FROM scenarios WHERE scenario_name='draft'");
 			$disk_delete=implode("/", array($_SESSION['main']['user_home'], $_SESSION['main']['project_name'], 'draft'));
@@ -134,9 +138,11 @@ function copy_scenario() { # {{{
 					copy($from, $to);
 			}
 			ch_scenario($sid[0]['id']);
+
 			// save conf.json again to update scenario number in the file
-			$conf_file = file_get_contents(implode("/", array($new_scenario_directory, "conf.json")));
-			$_SESSION['nn']->write_scenario($conf_file, "projects.php?projects_list");
+			$conf_file = json_decode(file_get_contents(implode("/", array($new_scenario_directory, "conf.json"))), true);
+			$conf_file['scenario_id'] = $sid[0]['id'];
+			$_SESSION['nn']->write_scenario(json_encode($conf_file), "projects.php?projects_list");
 		}
 	}
 }

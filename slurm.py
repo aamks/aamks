@@ -1,6 +1,7 @@
 import argparse
 from simple_slurm import Slurm
 import os
+import ast
 
 from include import Psql, Json
 
@@ -12,13 +13,13 @@ python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "pyth
 python_env_aamks_server = f'{os.path.join(os.environ["AAMKS_PATH"], "env-server", "bin", "python")}'
 
 # launch aamks jobs
-def launch(path: str, user_id: int):
+def launch(path: str, user_id: str, irange: list):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
+    irange = [int(i) for i in irange]
     conf = Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
     p_id = conf['project_id']
     s_id = conf['scenario_id']
-    animations_number = conf['animations_number']
 
     # initiate slurm wrapper
     slurm = Slurm()
@@ -29,13 +30,6 @@ def launch(path: str, user_id: int):
     slurm.set_output(f'workers/%a/slurm.out')
     slurm.set_error(f'workers/%a/slurm.err')
     slurm.set_time('01:00:00')
-
-    # we need to define job array
-    max_iter_query = f'SELECT max(iteration)+1 FROM simulations WHERE project={p_id} AND scenario_id={s_id}'
-    max_iter = Psql().query(max_iter_query)[0][0] 
-    irange = []
-    irange.append(max_iter if max_iter else 1)
-    irange.append(irange[0] + conf['number_of_simulations'])
 
     # instead of default loop in aamks.py we use slurm array to quickly batch many jobs
     slurm.set_array(range(*irange))
@@ -49,17 +43,10 @@ def launch(path: str, user_id: int):
     except AssertionError:
         raise AssertionError("sbatch was unable to launch your jobs. Make sure slurm is running and set properly.")
 
-    # log slurm job_id to PSQL (that could be done in PSQL itself with generate_series - to be considered
-    for i in range(*irange):
-        if animations_number > 0:
-            is_anim = 1
-            animations_number -= 1
-        else:
-            is_anim = 0
-        Psql().query("INSERT INTO simulations(iteration,project,scenario_id,job_id,is_anim) VALUES(%s,%s,%s,%s,%s)", 
-                (i,conf['project_id'], conf['scenario_id'], f'{job_id}_{i}', is_anim))
-
-
+    psqldb = Psql()
+    for iter_id in range(*irange):
+        psqldb.query(f"UPDATE simulations SET job_id='{job_id}_{iter_id}' WHERE scenario_id={s_id} AND iteration={iter_id}")
+    del psqldb
 
 # launch postprocessing
 def postprocess(path: str, scenarios: list):
@@ -126,6 +113,7 @@ def _argparse():
     parser.add_argument('-r', '--project', help='AAMKS project ID', required=False)
     parser.add_argument('-s', '--scenario', nargs='*', help='AAMKS scenario ID or scenario names to be compared (see results.beck_new)', required=False, default=[])
     parser.add_argument('-i', '--iteration', help='Iteration no.', required=False)
+    parser.add_argument('-n', '--number', nargs='*', help='Start and end for iteration range', required=False, default=[1, 2])
 
     return parser.parse_args()
 
@@ -134,9 +122,9 @@ if __name__ == '__main__':
     args = _argparse()
 
     if args.type in ['l', 'launch']:
-        if not all([args.path, args.userid]):
-            raise Exception('Specify path and userid arguments with -p and -u flags')
-        launch(args.path, args.userid)
+        if not all([args.path, args.userid, args.number]):
+            raise Exception('Specify path, userid and range of iterations numbers arguments with -p, -u and -n flags')
+        launch(args.path, args.userid, args.number)
 
     elif args.type in ['p', 'pos.postprocess']:
         if not all([args.path]):

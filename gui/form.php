@@ -681,6 +681,7 @@ function validation_advanced(){
 		const floatPattern = /^-?\d*(\.\d*)?$/;
 		let errorMessage = ''
 		const noSim = document.getElementById('number_of_simulations').value;
+		const noAnim = document.getElementById('animations_number').value;
 		const timeSim = document.getElementById('simulation_time').value;
 		const material_ceiling = document.getElementById('material_ceiling').value;
 		const material_floor = document.getElementById('material_floor').value;
@@ -786,6 +787,10 @@ function validation_advanced(){
 		const r_nozzles_3rd = document.getElementById('r_nozzles_3rd').value;
 		const r_nozzles_4th = document.getElementById('r_nozzles_4th').value;
 
+		if(parseInt(noAnim) > parseInt(noSim)){
+			errorMessage += 'Wrong number of animations due simulations! The sim number must be ≥ than number of anims!<br>';
+		}
+		debugger;
 		errorMeanSd('Initial indoor temperature', indoor_temperature_mean, indoor_temperature_sd);
 		errorMeanSd('Initial outdoor temperature', outdoor_temperature_mean, outdoor_temperature_sd);
 		errorMeanSd('Initial pressure', pressure_mean, pressure_sd);
@@ -807,7 +812,10 @@ function validation_advanced(){
 		errorProbability('Openings VVENT', vents_open_VVENT);
 		if ((!noSim.match(intPattern)) || (noSim <= 0)) {
 		  errorMessage += 'Wrong Number of simulations! Field must be an integer &gt 0!<br>'
-		} 	  
+		}
+		if ((!noAnim.match(intPattern)) || (noAnim < 0)) {
+		  errorMessage += 'Wrong Number of animations! Field must be an integer ≥ 0!<br>'
+		}
 		if ((!timeSim.match(intPattern)) || (timeSim < 0)) {
 			errorMessage += 'Wrong Simulation time! Field must be an integer > 0!<br>'
 		}			

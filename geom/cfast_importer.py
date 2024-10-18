@@ -20,15 +20,16 @@ class CFASTimporter():
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         if self.conf['fire_model']=='FDS':
             return
-        if os.environ['AAMKS_WORKER'] == 'slurm':
-            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+        if sim_id:
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
             self.s=Sqlite(new_sql_path)
         else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 3)
         self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
         self.geomsMap=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['aamksGeomsMap']
         self.doors_width=32
         self.walls_width=4
+        self._dispatched_evacuees()
         self._geometry2sqlite()
         self._enhancements()
         self._towers_slices()
@@ -55,6 +56,8 @@ class CFASTimporter():
         self._debug()
         self.s.close()
 # }}}
+    def _dispatched_evacuees(self):
+        self.s.query("CREATE TABLE dispatched_evacuees(json)")
 
     def _floors_meta(self):# {{{
         ''' 

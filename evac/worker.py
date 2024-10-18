@@ -32,21 +32,23 @@ class Worker:
         self.wlogger = None
         self.config = None
         self.project_conf = None
-        self.sim_id = None
+
         if AA:
-            AA['PROJECT'] = AA['PROJECT'].replace("home","mnt")
             os.environ['AAMKS_PROJECT'] = AA['PROJECT']
             os.environ['AAMKS_PATH'] = AA['PATH']
             os.environ['AAMKS_SERVER'] = AA['SERVER']
             os.environ['AAMKS_PG_PASS'] = AA['PG_PASS']
-        self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
 
-        if redis_worker_pwd:
-            self.working_dir = redis_worker_pwd
-        self.project_dir, sim_id = self.working_dir.split("/workers/")
+        if redis_worker_pwd: 
+            self.working_dir = redis_worker_pwd 
+        else:
+            self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
 
-        if os.environ['AAMKS_WORKER'] == 'slurm':
-            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+        self.project_dir = self.working_dir.split("/workers/")[0]
+        self.sim_id = int(self.working_dir.split("/workers/")[1])
+
+        new_sql_path = os.path.join(self.working_dir, f"aamks_{self.sim_id}.sqlite")
+        if os.path.exists(new_sql_path):
             self.s=Sqlite(new_sql_path)
         else:
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
@@ -124,12 +126,11 @@ class Worker:
 
         self.detection_time = self.config['DETECTION_TIME']
         self.project_conf=self.json.read("../../conf.json")
-        self.sim_id = self.vars['conf']['SIM_ID']
 
-        if not logging.getLogger(f'{self.host_name} - evac.py').handlers: 
-            self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py')
+        if not logging.getLogger(f'{self.host_name} - evac.py  ').handlers:
+            self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py  ')
         else:
-            self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py')
+            self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py  ')
 
     def run_cfast_simulations(self, version='intel', attempt=0):
         self.send_report(e={"status":101})
@@ -362,7 +363,7 @@ class Worker:
             obstacles = []
             try:
                 self.prepare_staircases(str(floor))
-                self.vars['conf']['project_dir'] = self.project_dir
+                self.vars['conf']['working_dir'] = self.working_dir
                 eenv = EvacEnv(self.vars['conf'], self.sim_id)
                 eenv.floor = floor
             except Exception as e:
@@ -460,10 +461,10 @@ class Worker:
                     y = position[1]
                     for cords, cords_range in floor.free_space_coordinates_of_upstair_teleport_destination.items():
                         if cords_range['min_x'] < x < cords_range['max_x'] and cords_range['min_y'] < y < cords_range['max_y']:
-                            floor_below.floor_upstair_teleports_queue[cords] = True;
+                            floor_below.floor_upstair_teleports_queue[cords] = True
                     for cords, cords_range in floor.free_space_coordinates_of_downstair_teleport_destination.items():
                         if cords_range['min_x'] < x < cords_range['max_x'] and cords_range['min_y'] < y < cords_range['max_y']:
-                            floor_above.floor_downstair_teleports_queue[cords] = True;
+                            floor_above.floor_downstair_teleports_queue[cords] = True
 
     def do_simulation(self):
         self.wlogger.info('Starting simulations')
@@ -475,6 +476,7 @@ class Worker:
 
         while 1:
             time_frame += cfast_step    # increase upper limit of time_frame
+            aset = self.vars['conf']['simulation_time']
 
             if time_frame >= (self.vars['conf']['simulation_time']):
                 self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
@@ -485,7 +487,6 @@ class Worker:
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
                 rsets = []
-                aset = self.vars['conf']['simulation_time']
                 for i in self.floors:
                     try:
                         i.read_cfast_record(time_frame)
@@ -882,7 +883,6 @@ class Worker:
             self.send_report()
             self.cleanup()
             self.wlogger.info(f'Simulation ended with status {self.exit_code}')
-
         return self.exit_code
 
     def test(self):
@@ -898,9 +898,9 @@ class Worker:
             print('Working in NO_CFAST mode')
             self.test()
         else:
-            print(self.working_dir)
-            self.main()
-            
+            exc = self.main()
+            return exc
+
 class LocalResultsCollector:
     def __init__(self, report: OrderedDict):
         self.meta = report
@@ -957,8 +957,8 @@ class LocalResultsCollector:
 
 if __name__ == "__main__":
     w = Worker()
-    try:
-        w.run_worker()
-    except Exception as error:
-        w.wlogger.error(error)
-        w.send_report(e={'status': 1})
+    # try:
+    w.run_worker()
+    # except Exception as error:
+    #     w.wlogger.error(error)
+    #     w.send_report(e={'status': 1})
