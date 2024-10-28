@@ -135,8 +135,10 @@ function copy_scenario() { # {{{
 			}
 			ch_scenario($sid[0]['id']);
 			// save conf.json again to update scenario number in the file
-			$conf_file = file_get_contents(implode("/", array($new_scenario_directory, "conf.json")));
-			$_SESSION['nn']->write_scenario($conf_file, "projects.php?projects_list");
+			$conf_file = json_decode(file_get_contents(implode("/", array($new_scenario_directory, "conf.json"))), true);
+			$conf_file['scenario_id'] = $sid[0]['id'];
+			$conf_file['editable'] = 1;
+			$_SESSION['nn']->write_scenario(json_encode($conf_file), "projects.php?projects_list");
 		}
 	}
 }
@@ -201,7 +203,10 @@ function rename_project() { # {{{
 /*}}}*/
 function reset_scenario() { #{{{
 	if(empty($_POST['reset_scenario'])) { return; }
-	$r=$_SESSION['nn']->query("DELETE FROM simulations WHERE scenario_id=$1", array($_SESSION['main']['scenario_id']));	
+	$r=$_SESSION['nn']->query("DELETE FROM simulations WHERE scenario_id=$1", array($_SESSION['main']['scenario_id']));
+	$conf_file = json_decode(file_get_contents($_SESSION['main']['working_home']."/conf.json"), true);
+	$conf_file['editable'] = 1;
+	$_SESSION['nn']->write_scenario(json_encode($conf_file));
 	$delete=$_SESSION['main']['working_home']."/*";
 	system("find $delete ! -name '*.json' -type f,d -exec rm -rf {} +");
 }

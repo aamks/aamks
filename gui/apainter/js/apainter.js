@@ -67,9 +67,17 @@ $(function()  {
 		evacueeRadius=x['evacueeRadius'];
 		sceneBuilder();
 		importCadJson();
+		if (session_editable != 0){
+		keyboardEvents();
 		registerListeners();
 		registerListenersUnderlay();
 		$('right-menu-box').fadeOut();
+		} else {
+			$('legend0').html(`<h3 style="background-color:#c60c0c; font-size:16px; display:inline-block;">
+				You launched this scenario - this is read-only mode. To make changes create new scenario, copy or reset this one.`);
+			$('legend2').html('');
+			start3dView();
+		}
 		//dd($('#building')[0]);
 	});
 });
@@ -1781,9 +1789,6 @@ function sceneBuilder() { //{{{
 	legend();
 	d3.select('view2d').append('right-menu-box');
 	zoomInit();
-	keyboardEvents();
-
-
 }
 
 //}}}
