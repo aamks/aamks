@@ -44,10 +44,8 @@ class OnEnd():
             # nothing to do except for updating aamks.sqlite with latest sim sqlite and Vis (possible conflicts?)
             Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1, "sql": new_sql_path})
             return
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.uprefs=GetUserPrefs()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))

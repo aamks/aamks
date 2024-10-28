@@ -115,7 +115,7 @@ function copy_scenario() { # {{{
 		$_SESSION['header_err'][]="Scenario '$_POST[copy_scenario]' already exists";
 	} else {
 		if($_SESSION['main']['scenario_name'] == 'draft'){
-			$_SESSION['header_err'][]="Can't draft launch from draft scenario!";
+			$_SESSION['header_ok'][] = "Launch draft scenario!";
 			return;
 		} 
 		if($_POST['copy_scenario'] == 'draft'){

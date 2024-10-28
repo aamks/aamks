@@ -475,9 +475,9 @@ class Worker:
         #first_evacuue = []
         # iterate over CFAST time frames (results saving interval)
 
+        aset = self.vars['conf']['simulation_time']
         while 1:
             time_frame += cfast_step    # increase upper limit of time_frame
-            aset = self.vars['conf']['simulation_time']
 
             if time_frame >= (self.vars['conf']['simulation_time']):
                 self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))

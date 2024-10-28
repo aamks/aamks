@@ -70,7 +70,7 @@ class SimIterations:# {{{
     def insert(self, no_anim):
         for i in range(*self.r):
             current_date = datetime.now().strftime("%Y%m%d-%H:%M:%S.%f")
-            id = current_date + f"-{i}"
+            id = current_date + f"_{i}"
             if no_anim > 0:
                 is_anim = 1
                 no_anim -= 1
