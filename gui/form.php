@@ -967,7 +967,7 @@ function validation_advanced(){
 function check_editable(){
 	$json=read_aamks_conf_json();
 	if (array_key_exists('editable', $json) && ($json['editable'] == 0)){
-		echo '<h3 style="background-color:#c60c0c; font-size:16px; display:inline-block;">You launched this scenario - this is read-only mode. To make changes create new scenario, copy or reset this one.</h3>';
+		echo '<h3 style="background-color:#c60c0c; font-size:16px; display:inline-block;">You have already launched this scenario - it is in read-only mode. To make changes create a new scenario or copy/reset this one.</h3>';
 		form_fields_advanced();
 		exit;
 	}

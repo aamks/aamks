@@ -74,7 +74,7 @@ $(function()  {
 		$('right-menu-box').fadeOut();
 		} else {
 			$('legend0').html(`<h3 style="background-color:#c60c0c; font-size:16px; display:inline-block;">
-				You launched this scenario - this is read-only mode. To make changes create new scenario, copy or reset this one.`);
+				You have already launched this scenario - it is in read-only mode. To make changes create a new scenario or copy/reset this one.`);
 			$('legend2').html('');
 			start3dView();
 		}
