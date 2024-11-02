@@ -1,6 +1,5 @@
 # MODULES
 # {{{
-import copy
 import json
 import os
 import sys
@@ -10,6 +9,7 @@ from shapely.geometry import box, LineString, Point
 
 from include import Json
 from include import Sqlite
+from copy import deepcopy
 
 
 # }}}
@@ -536,7 +536,7 @@ class CFASTimporter():
             all_vvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='VVENT' AND floor=? ORDER BY name", floor) ]
             vc_intersections={key:[] for key in all_vvents }
             for vent_id,vent_poly in vents_dict.items():
-                two_floors = copy.deepcopy(self.aamks_polies['COMPA'][floor])
+                two_floors=deepcopy(self.aamks_polies['COMPA'][floor])
                 try:
                     two_floors.update(self.aamks_polies['COMPA'][str(int(floor)+1)])
                 except KeyError:
