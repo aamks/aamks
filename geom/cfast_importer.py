@@ -554,7 +554,7 @@ class CFASTimporter():
                     name=self.s.query("SELECT name FROM aamks_geom WHERE type_pri='VVENT' AND global_type_id=?", (vent_id,))[0]['name']
                     self.fatal('{}: vvent intersects no rooms or more than 2 rooms.'.format(name))
                 update.append((v[0], v[1], vent_id))
-        self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='VVENT'", update)
+        self.s.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
 
 # }}}
     def _towers_slices(self):# {{{
