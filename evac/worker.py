@@ -852,27 +852,26 @@ class Worker:
         return collected_fed
 
     def cleanup(self):
-        if not self.is_anim:
+        def safe_remove(path):
             try:
-                os.remove("finals.sqlite")
-                os.remove("cfast_devices.csv")
-                os.remove("cfast_vents.csv")
-                os.remove("cfast_walls.csv")
-                os.remove("cfast_masses.csv")
-                os.remove("cfast_zone.csv")
-                os.remove("cfast.log")
-                os.remove("cfast.smv")
-                os.remove("cfast.out")
-                os.remove("cfast.plt")
-                os.remove("cfast.status")
-                # os.remove("cfast_evac_socket_port.txt")
-                # os.remove("doors_opening_level_frame.txt") #fortran issue
-                # os.remove("times.txt")
-                # shutil.rmtree("door_opening_changes")
-                for floor in self.floors:
-                    os.remove(f'pynavmesh{floor.floor}.nav')
-            except FileNotFoundError:
+                os.remove(path)
+            except:
                 pass
+        if not self.is_anim:
+            safe_remove("finals.sqlite")
+            safe_remove(f"aamks_{self.sim_id}.sqlite")
+            safe_remove("cfast_devices.csv")
+            safe_remove("cfast_vents.csv")
+            safe_remove("cfast_walls.csv")
+            safe_remove("cfast_masses.csv")
+            safe_remove("cfast_zone.csv")
+            safe_remove("cfast.log")
+            safe_remove("cfast.smv")
+            safe_remove("cfast.out")
+            safe_remove("cfast.plt")
+            safe_remove("cfast.status")
+            for floor in self.floors:
+                safe_remove(f'pynavmesh{floor.floor}.nav')
 
     def main(self):
         self.get_config()
@@ -959,8 +958,8 @@ class LocalResultsCollector:
 
 if __name__ == "__main__":
     w = Worker()
-    # try:
-    w.run_worker()
-    # except Exception as error:
-    #     w.wlogger.error(error)
-    #     w.send_report(e={'status': 1})
+    try:
+        w.run_worker()
+    except Exception as error:
+        w.wlogger.error(error)
+        w.send_report(e={'status': 1})

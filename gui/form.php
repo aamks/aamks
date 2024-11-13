@@ -972,7 +972,14 @@ function validation_advanced(){
 	  });
 	</script>";
 }
-
+function check_editable(){
+	$json=read_aamks_conf_json();
+	if (array_key_exists('editable', $json) && ($json['editable'] == 0)){
+		echo '<h3 style="background-color:#c60c0c; font-size:16px; display:inline-block;">You have already launched this scenario - it is in read-only mode. To make changes create a new scenario or copy/reset this one.</h3>';
+		form_fields_advanced();
+		exit;
+	}
+}
 function main() {/*{{{*/
 	if(!array_key_exists('nn', $_SESSION))
 	{
@@ -980,6 +987,7 @@ function main() {/*{{{*/
 	}
 	$_SESSION['nn']->htmlHead("Scenario properties");
 	$_SESSION['nn']->menu();
+	check_editable();
 	change_editor();
 	delete_scenario();
 	make_help();

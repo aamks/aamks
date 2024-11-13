@@ -175,7 +175,7 @@ class EvacEnv:
         paths = list()
         self.set_OD_to_agent(evacuee, od_at_agent_position)
 
-        if room_name not in self.rooms_in_smoke:
+        if room_name not in [room.split('.')[0] for room in self.unavailable_rooms]:
             paths = self.get_paths_nav_query(position,_exit_dict, False)
 
         if len(paths) == 0:

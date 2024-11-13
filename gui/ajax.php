@@ -111,7 +111,10 @@ function ajaxLaunchSimulation() { #{{{
 		$_SESSION['nn']->query("INSERT INTO simulations(iteration,project,scenario_id,is_anim) VALUES($1,$2,$3,$4)",
                 array($i,$project_id,$scenario_id, $is_anim));
 	}
+	$conf['editable'] = 0;
+	$_SESSION['nn']->write_scenario(json_encode($conf, JSON_NUMERIC_CHECK));
 	$exit_code = run_aamks($working_home, $user_id, $irange, $scenario_id);
+
     if ($exit_code){
 	    if (strpos($exit_code, "Submitted batch job") !== false){
 		echo json_encode(array("msg"=>"$nos ".getenv('AAMKS_WORKER')." simulations launched ($exit_code)", "err"=>0, "data"=>''));
