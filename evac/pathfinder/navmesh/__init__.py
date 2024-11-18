@@ -122,7 +122,6 @@ class Navmesh:
             _start = self.sample(start, True)
             start_node: Optional[NavmeshNode] = self._bvh.sample(_start)
         if finish_node is None:
-
             # unable to find the exit in the navmesh
             return []
             

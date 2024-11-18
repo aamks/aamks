@@ -34,8 +34,8 @@ def start_aamks(path, user_id):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
     # for local testing:
-    path = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6'
-    os.environ["AAMKS_PROJECT"] = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6'
+    # path = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6'
+    # os.environ["AAMKS_PROJECT"] = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6'
     json = Json()
     conf = json.read("{}/conf.json".format(path))
     logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')
@@ -80,7 +80,6 @@ def start_aamks(path, user_id):
 def start_aamks_with_slurm(path: str, user_id: int, sim_id: int):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
-
     json = Json()
     conf = json.read("{}/conf.json".format(path))
     logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')
