@@ -122,9 +122,7 @@ class Navmesh:
             _start = self.sample(start, True)
             start_node: Optional[NavmeshNode] = self._bvh.sample(_start)
         if finish_node is None:
-            _finish = self.sample(finish, True)
-            finish_node: Optional[NavmeshNode] = self._bvh.sample(_finish)
-            
+            return []
         if start_node is not None and finish_node is not None:
             # check are nodes in one group
             start_index: int = start_node.get_index()

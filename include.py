@@ -322,8 +322,11 @@ class Vis:# {{{
 
         for floor in self._static_floors.keys():
             self._static_floors[floor]['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,points,type_sec,room_enter FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
-                self._static_floors[floor]['rooms'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('room_enter', i['room_enter']), ('points', i['points'])])
+            for i in self.s.query("SELECT name,points,type_sec FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
+                if "." in i['name']:
+                    self._static_floors[floor]['rooms'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', 'V' + i['type_sec']), ('points', i['points'])])
+                else:
+                    self._static_floors[floor]['rooms'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', i['points'])])
 # }}}
     def _js_make_doors(self):# {{{
         ''' Data for doors. '''
@@ -344,14 +347,20 @@ class Vis:# {{{
             for floor in self._static_floors.keys():
                 xx['obstacles'][floor]=dummy_obst
         else:
-            xx=JSON.readdb("obstacles")
+            xx=JSON.readdb("obstacles_animator")
 
-        for floor,obstacles in xx['obstacles'].items():
+        for floor,obstacles in xx['virtualHallHolesObstacles'].items():
+            self._static_floors[floor]['virtualHallHoles']=[]
+            for obstacle in obstacles:
+                self._static_floors[floor]['virtualHallHoles'].append(json.dumps([ (o[0], o[1])  for o in obstacle ]))
+        
+        for floor,obstacles in xx['otherObstacles'].items():
             self._static_floors[floor]['obstacles']=[]
             for obstacle in obstacles:
                 self._static_floors[floor]['obstacles'].append(json.dumps([ (o[0], o[1])  for o in obstacle ]))
 
-# }}}
+
+
     def _js_make_srv_evacuees(self):# {{{
         ''' Draw srv, non-animated evacuees '''
 

@@ -75,6 +75,7 @@ class OnInit:
             self.s.query("DROP TABLE floors_meta")
             self.s.query("DROP TABLE world_meta")
             self.s.query("DROP TABLE obstacles")
+            self.s.query("DROP TABLE obstacles_animator")
             self.s.query("DROP TABLE cell2compa")
             self.s.query("DROP TABLE query_vertices")
         except:
@@ -125,16 +126,17 @@ class OnEnd():
         self._register_works()
         self.s.close()
 # }}}
-    def _test_navmesh(self):# {{{
-        navs={}
-        for floor in self.json.readdb('floors_meta').keys():
-            z=self.s.query("SELECT name FROM aamks_geom WHERE floor=? AND room_enter='no'", (floor,))
-            bypass_rooms=[]
-            for i in z:
-                bypass_rooms.append(i['name'])
-            navs[tuple(bypass_rooms)]=Navmesh()
-            navs[tuple(bypass_rooms)].build(floor,bypass_rooms)
-            navs[tuple(bypass_rooms)].test()
+    # deprecated - room_enter property was deleted
+    # def _test_navmesh(self):# {{{
+    #     navs={}
+    #     for floor in self.json.readdb('floors_meta').keys():
+    #         z=self.s.query("SELECT name FROM aamks_geom WHERE floor=? AND room_enter='no'", (floor,))
+    #         bypass_rooms=[]
+    #         for i in z:
+    #             bypass_rooms.append(i['name'])
+    #         navs[tuple(bypass_rooms)]=Navmesh()
+    #         navs[tuple(bypass_rooms)].build(floor,bypass_rooms)
+    #         navs[tuple(bypass_rooms)].test()
 # }}}
     def _register_works(self):# {{{
         ''' 

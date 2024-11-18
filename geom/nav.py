@@ -134,29 +134,6 @@ class Navmesh:
         else:
             return ['err']
 
-# }}}
-    def closest_terminal(self,p0,exit_type):# {{{
-        '''
-        The shortest polyline defines the closest exit from the floor. 
-        dist < 10 test asserts the polyline has min 2 distinct points.
-
-        exit_type: primary | secondary | any
-        '''
-
-        if exit_type in ['primary', 'secondary']:
-            r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE terminal_door=? AND floor=?", (exit_type, self.floor))
-        else:
-            r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
-        m={}
-        closest={ 'len': 999999999, 'name': None, 'x': None, 'y': None }
-        for i in r:
-            if abs(i['center_x']-p0[0]) < 10 and abs(i['center_y']-p0[1]) < 10: 
-                closest={ 'name': i['name'],  'x': i['center_x'], 'y': i['center_y'],'len': 0  }
-                return closest
-            ll=self.path_length(p0,(i['center_x'],i['center_y']))
-            if ll < closest['len']:
-                closest={ 'name': i['name'], 'x': i['center_x'], 'y': i['center_y'], 'len': int(ll) }
-        return closest
             
 # }}}
     def room_leaves(self,ee):# {{{
@@ -290,7 +267,7 @@ class Navmesh:
     def _obj_make(self,bypass_rooms):# {{{
         ''' 
         1. Create obj file from aamks geometries.
-        2. Build navmesh with golang, obj is input
+        2. Build navmesh, obj is input
         3. Query navmesh with python
         4. bypass_rooms are the rooms excluded from navigation
 
@@ -306,7 +283,7 @@ class Navmesh:
         for face in self._obj_platform():
             obj+=self._obj_elem(face,0)
         
-        path="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], self.nav_name)
+        path = f"{self.nav_name}.obj"
         with open(path, "w") as f: 
             f.write(obj)
         return path

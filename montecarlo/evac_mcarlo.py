@@ -169,7 +169,8 @@ class EvacMcarlo:
 
         rooms={}
         probabilistic_rooms={}
-        for i in self.s.query("SELECT points, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND has_door=1 ORDER BY global_type_id", (floor,)):
+        # virtual halls on upper floors are not walkable
+        for i in self.s.query("SELECT points, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND has_door=1 and name NOT LIKE 'a%.%' ORDER BY global_type_id", (floor,)):
             i['points']=json.loads(i['points'])
             probabilistic_rooms[i['name']]=i
 

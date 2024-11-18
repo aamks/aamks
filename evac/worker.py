@@ -44,7 +44,11 @@ class Worker:
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
         self.project_dir, sim_id = self.working_dir.split("/workers/")
-
+        # for local testing:
+        # self.working_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6/workers/9'
+        # self.project_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6'
+        # os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6'
+        
         if os.environ['AAMKS_WORKER'] == 'slurm':
             new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
             self.s=Sqlite(new_sql_path)
@@ -366,8 +370,7 @@ class Worker:
             try:
                 self.prepare_staircases(str(floor))
                 self.vars['conf']['project_dir'] = self.project_dir
-                eenv = EvacEnv(self.vars['conf'], self.sim_id)
-                eenv.floor = floor
+                eenv = EvacEnv(self.vars['conf'], floor, self.sim_id)
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":31})
@@ -619,7 +622,7 @@ class Worker:
             file.write(' '.join(points) + '\n')
             file.write(' '.join(figures_points_after_removal) + '\n')
             file.write(' '.join(polygons_after_removal))
-        vert, polygs = read_from_text(new_navmesh_path
+        vert, polygs = read_from_text(new_navmesh_path)
         floor.nav.navmesh = Pynavmesh(vert, polygs)
 
     def process_agents_upstairs_and_downstairs_movement(self, step, time):

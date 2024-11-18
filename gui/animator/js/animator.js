@@ -474,8 +474,8 @@ function drawPath(type,data,tx,ty) {//{{{
 	if(type=='ROOM') {
         var points=JSON.parse(data.points)
 		strokeColor = colors[type].stroke;
-		opacity = colors[type].animOpacity;
-		fillColor = data.room_enter == 'yes' ? colors[data.type_sec].c : "#333";
+		opacity = colors[data.type_sec].animOpacity;
+		fillColor = colors[data.type_sec].c ;
 		var path=new Path({fillColor:fillColor, opacity:opacity });
 	}
 	if(type=='DOOR') {
@@ -494,6 +494,14 @@ function drawPath(type,data,tx,ty) {//{{{
 		strokeWidth = wallsSize;
 		var path=new Path({strokeColor:strokeColor, strokeWidth:strokeWidth, fillColor:fillColor, opacity:opacity });
 	}
+	if(type=='VHALLHOLE') {
+        var points=JSON.parse(data)
+		strokeColor = colors['OBST'].stroke;
+		opacity = colors['OBST'].animOpacity;
+		dashArray = [10, 5];
+		var path=new Path({strokeColor:strokeColor, opacity:opacity, dashArray:dashArray });
+	}
+	
 
 	//path.closed = true;
 	_.each(points, function(point) { path.add(new Point(point[0]+tx, point[1]+ty)); });
@@ -501,6 +509,12 @@ function drawPath(type,data,tx,ty) {//{{{
 //}}}
 function drawLabel(type,data,tx,ty) {//{{{
     var points=JSON.parse(data.points)
+    points.sort((a, b) => {
+	    if (a[0] === b[0]) {
+	        return a[1] - b[1];
+	    }
+	    return a[0] - b[0];
+	});
 	fontFamily = 'Roboto';
 	content = data.name;
 	if(type=='ROOM') {
@@ -579,11 +593,12 @@ function initStaticGeoms() {//{{{
         tx=ffloor.floor_meta.tx;
         ty=ffloor.floor_meta.ty;
 
-        _.each(ffloor.rooms     , function(d) { drawPath('ROOM'  , d , tx , ty); });
-        _.each(ffloor.obstacles , function(d) { drawPath('OBST'  , d , tx , ty); });
-		_.each(ffloor.doors     , function(d) { drawPath('DOOR'  , d , tx , ty); });
-		_.each(ffloor.rooms     , function(d) { drawLabel('ROOM' , d , tx , ty); });
-		_.each(ffloor.doors     , function(d) { drawLabel('DOOR' , d , tx , ty); });
+        _.each(ffloor.rooms            , function(d) { drawPath('ROOM'     , d , tx , ty); });
+        _.each(ffloor.obstacles        , function(d) { drawPath('OBST'     , d , tx , ty); });
+		_.each(ffloor.virtualHallHoles , function(d) { drawPath('VHALLHOLE', d , tx , ty); });
+		_.each(ffloor.doors            , function(d) { drawPath('DOOR'     , d , tx , ty); });
+		_.each(ffloor.rooms            , function(d) { drawLabel('ROOM'    , d , tx , ty); });
+		_.each(ffloor.doors            , function(d) { drawLabel('DOOR'    , d , tx , ty); });
 
 		drawStaticEvacuees(ffloor.evacuees, tx, ty);
         drawDDGeoms(ffloor.dd_geoms, tx, ty);
