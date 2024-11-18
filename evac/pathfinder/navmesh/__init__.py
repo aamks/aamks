@@ -122,7 +122,10 @@ class Navmesh:
             _start = self.sample(start, True)
             start_node: Optional[NavmeshNode] = self._bvh.sample(_start)
         if finish_node is None:
+
+            # unable to find the exit in the navmesh
             return []
+            
         if start_node is not None and finish_node is not None:
             # check are nodes in one group
             start_index: int = start_node.get_index()

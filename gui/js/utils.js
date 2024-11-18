@@ -39,6 +39,8 @@ function resetScenario() {
 	myConfirm("Are you sure to delete all records from scenario?").then(response=>{
 		if (response) {
 			$.post('projects.php?projects_list', {'reset_scenario':'true'});
+			amsg({"msg": "Reseting successfully!", "err":0, "duration": 1000 });
+			setTimeout(() => {  window.location.href = 'form.php?edit';  }, 1000);
 		}}
 )};
 $(function()  {//{{{

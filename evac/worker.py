@@ -106,36 +106,34 @@ class Worker:
         return logger
 
     def get_config(self):
-        try:
-            f = open(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'), 'r')
-            self.config = json.load(f)
-        except Exception as e:
-            print(e)
-            self.send_report(e={"status":16})
-            sys.exit(16)
-        try:
-            f = open('evac.json', 'r')
-            self.vars['conf'] = json.load(f)
-        except Exception as e:
-            print('Cannot load evac.json from directory: {}'.format(str(e)))
-            self.send_report(e={"status":17})
-            sys.exit(17)
-
-        self.detection_time = self.config['DETECTION_TIME']
-
-        self.project_conf=self.json.read("../../conf.json")
-
-        self.sim_id = self.vars['conf']['SIM_ID']
         #this statement prevents redis_aamks/worker/worker.py from creating new loggers during every iteration
         if not logging.getLogger(f'{self.host_name} - worker.py').handlers:
             self.wlogger = self.get_logger(f'{self.host_name} - worker.py')
         else:
             self.wlogger = logging.getLogger(f'{self.host_name} - worker.py')
+        try:
+            f = open(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'), 'r')
+            self.config = json.load(f)
+        except Exception as e:
+            self.wlogger.error(e)
+            self.send_report(e={"status":16})
+            raise SystemError(16)
+        try:
+            f = open('evac.json', 'r')
+            self.vars['conf'] = json.load(f)
+        except Exception as e:
+            self.wlogger.error('Cannot load evac.json from directory: {}'.format(str(e)))
+            self.send_report(e={"status":17})
+            raise SystemError(17)
+
+        self.detection_time = self.config['DETECTION_TIME']
+        self.project_conf=self.json.read("../../conf.json")
+        self.sim_id = self.vars['conf']['SIM_ID']
+
         if not logging.getLogger(f'{self.host_name} - evac.py').handlers: 
             self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py')
         else:
             self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py')
-
 
     def run_cfast_simulations(self, version='intel', attempt=0):
         self.send_report(e={"status":101})
@@ -171,7 +169,7 @@ class Worker:
                 if attempt == 1:
                     self.wlogger.error('CFAST stuck - unable to calculate with Intel nor GNU compiled sources')
                     self.send_report(e={'status': 21})
-                    sys.exit(21)
+                    raise SystemError(21)
                 self.wlogger.warning(f'Iteration skipped due to CFAST error, attempt = {attempt + 1}')
                 return self.run_cfast_simulations("gnu", attempt + 1)
 
@@ -374,6 +372,7 @@ class Worker:
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":31})
+                raise SystemError(31)
             else:
                 self.wlogger.info('rvo2_dto ready on {} floors'.format(floor))
 
@@ -414,7 +413,7 @@ class Worker:
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":32})
-                sys.exit(32)
+                raise SystemError(32)
             else:
                 self.wlogger.info('Smoke query connected to floor: {}'.format(floor.floor))
 
@@ -855,27 +854,26 @@ class Worker:
         return collected_fed
 
     def cleanup(self):
+        def safe_remove(path):
+            try:
+                os.remove(path)
+            except:
+                pass
         if not self.is_anim:
-            os.remove("finals.sqlite")
-            os.remove("cfast_devices.csv")
-            os.remove("cfast_vents.csv")
-            os.remove("cfast_walls.csv")
-            os.remove("cfast_masses.csv")
-            os.remove("cfast_zone.csv")
-            os.remove("cfast.log")
-            os.remove("cfast.smv")
-            os.remove("cfast.out")
-            os.remove("cfast.plt")
-            os.remove("cfast.status")
-            os.remove("cfast_evac_socket_port.txt")
-            # os.remove("doors_opening_level_frame.txt") #fortran issue
-            # os.remove("times.txt")
-            shutil.rmtree("door_opening_changes")
+            safe_remove("finals.sqlite")
+            safe_remove(f"aamks_{self.sim_id}.sqlite")
+            safe_remove("cfast_devices.csv")
+            safe_remove("cfast_vents.csv")
+            safe_remove("cfast_walls.csv")
+            safe_remove("cfast_masses.csv")
+            safe_remove("cfast_zone.csv")
+            safe_remove("cfast.log")
+            safe_remove("cfast.smv")
+            safe_remove("cfast.out")
+            safe_remove("cfast.plt")
+            safe_remove("cfast.status")
             for floor in self.floors:
-                try:
-                    os.remove(f'pynavmesh{floor.floor}.nav')
-                except FileNotFoundError:
-                    continue
+                safe_remove(f'pynavmesh{floor.floor}.nav')
 
     def main(self):
         self.get_config()

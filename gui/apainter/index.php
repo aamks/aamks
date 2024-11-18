@@ -42,7 +42,14 @@ function main() { /*{{{*/
 	}
 	$_SESSION['nn']->htmlHead("Apainter");
 	site();
-	if(isset($_SESSION['main'])) { echo " <script>var session_scenario='".$_SESSION['main']['scenario_name']."';</script>"; }
+	if(isset($_SESSION['main'])) { 
+		$conf_file = json_decode(file_get_contents($_SESSION['main']['working_home']."/conf.json"), true);
+		if (array_key_exists('editable', $conf_file) && ($conf_file['editable'] == 0)){
+			$editable = 0;
+		} else {$editable = 1;}
+		echo " <script>var session_scenario='".$_SESSION['main']['scenario_name']."';</script>";
+		echo " <script>var session_editable='$editable';</script>"; 
+	}
 }
 /*}}}*/
 main();

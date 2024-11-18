@@ -88,12 +88,14 @@ function ajaxLaunchSimulation() { #{{{
 		echo json_encode(array("msg"=>"You need to <a class=blink href=/aamks/form.php?edit>Setup scenario</a> first", "err"=>1, "data"=>''));
 		return;
 	}
-	$nos=json_decode(file_get_contents("$working_home/conf.json"), 1)['number_of_simulations'];
+	$conf = json_decode(file_get_contents("$working_home/conf.json"), 1);
+	$nos=$conf['number_of_simulations'];
 	if(!isset($nos)) {
 		echo json_encode(array("msg"=>"Problem with the number of simulations. <a class=blink href=/aamks/form.php?edit>Setup scenario</a>", "err"=>1, "data"=>''));
 		return;
 	}
-
+	$conf['editable'] = 0;
+	$_SESSION['nn']->write_scenario(json_encode($conf, JSON_NUMERIC_CHECK));
 	$exit_code = run_aamks($working_home, $user_id);
     if ($exit_code){
 	    if (strpos($exit_code, "Submitted batch job") !== false){
