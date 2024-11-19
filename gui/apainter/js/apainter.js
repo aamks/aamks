@@ -548,10 +548,12 @@ function axes() { //{{{
 }
 
 function addFloor() {//{{{
-	let floor = floorsCount;
+	floor = floorsCount;
 	floorsCount++;
 	building.append("g").attr("id", "floor"+floor).attr("class", "floor").attr('fill-opacity',0.4);
 	setNewFloorAttr(floor);
+	floors_dimz[floor] = floors_dimz[floor-1];
+	floorsZ0[floor] = getSumDimZLower(floor);
 }
 
 function deleteFloor() {//{{{
@@ -1359,7 +1361,7 @@ function floorCopy() {	//{{{
 	amsg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
 }//}}}
 function cgSelect(elems, blink=1, showProps=1) {//{{{
-
+	let virtualObjEscapeSelect = false;
 	$(".cg-selected").removeClass('cg-selected'); 
 	if(typeof(elems)=="string") {
 		arr=[elems];
@@ -1368,9 +1370,15 @@ function cgSelect(elems, blink=1, showProps=1) {//{{{
 	}
 	_.each(arr, function(v) { 
 		cg=deepcopy(db({'name':v}).get()[0]);
+		if (cg.letter == 'va' || cg.letter == 'vs'){
+			virtualObjEscapeSelect = true;
+			return;
+		}
 		if(blink==1)     { $("#"+cg.name).addClass('cg-selected').css( { 'stroke-width': '100px'}).animate( { 'stroke-width': 0}, 400, function() { $(this).removeAttr('style'); }); }
 		if(showProps==1) { showCgPropsBox(); }
 	});
+	if (virtualObjEscapeSelect)
+		return;
 	m={'x': cg.minx, 'y': cg.miny};
 	updatePosInfo(m);
 	showBuildingLabels(1,[cg.name]);
@@ -1905,7 +1913,6 @@ function showCgPropsBox() {//{{{
 	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
 	    "<center><red>&nbsp; "+cg.name+" &nbsp; "+gg[cg.letter]['x']+"</red>"+
-		"<input type=hidden id=alter-geom-name-replaced value='"+cg.name+"'>"+
 		propsXYZ()+
 		"<table>"+
 		roomProps()+
@@ -1930,20 +1937,6 @@ function saveRightBoxGeneral() {//{{{
 	// so that it assigns the correct value to the floors_dimz[floor] variable before changing floor
 	if (floor != $("#floor").val()) { changeFloor(Number($("#floor").val())); }
 	legend();
-}
-function checkGeomReplacement() {//{{{
-	var origGeomName=$("#alter-geom-name-replaced").val();
-	if(cg.name != origGeomName) {
-		var preserveLetter=cg.letter;
-		cgSelect(origGeomName);
-		var newGeom=deepcopy(cg);
-		cgRemove(undoRegister=0);
-		cg=newGeom;
-		cg.letter=preserveLetter;
-		cg.name=cg.letter+cg.idx;
-		$("#"+cg.name).remove();
-		cgDb(undoRegister=0); cgSvg(); cgEscapeCreate();
-	}
 }
 //}}}
 function validateForm() {//{{{
@@ -1984,7 +1977,6 @@ function saveRightBoxCgProps() {//{{{
 			}
 		}
 
-		checkGeomReplacement();
 		if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
 		cgUpdateSvg();
 		cgDb(undoRegister=0);
