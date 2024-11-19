@@ -175,7 +175,7 @@ function getBbox() {//{{{
 
 function getPointsTriangleFloorTeleport(m){
 	string_points = "";
-	if (m.polypoints !== undefined)
+	if (m?.polypoints?.[0]?.[0] !== undefined)
 	{
 		string_points += m.polypoints[0][0].toString();
 		string_points +=",";
@@ -884,40 +884,40 @@ function cgDecidePoints(m) {//{{{
 			switch (floor_teleport_down_direction % 4) {
 				//arrow left downstairs
 				case 0:
-					p0=[px, py-10];
-					p1=[px, py+10];
-					p2=[px-defaults.floor_teleport_width, py];
-					p3=[px, py-10];
-					cg.teleport_from = [px, py]
-					cg.teleport_to = [px-defaults.floor_teleport_width, py]
-				break;
+					p0=[px, py];
+					p1=[px+defaults.floor_teleport_width, py-10];
+					p2=[px+defaults.floor_teleport_width, py+10];
+					p3=[px, py];
+					cg.teleport_from = [px+defaults.floor_teleport_width, py]
+					cg.teleport_to = [px, py]
+					break;
 				//arrow up downstairs
 				case 1:
-					p0=[px+10, py];
-					p1=[px-10, py];
-					p2=[px, py-defaults.floor_teleport_width];
-					p3=[px+10, py];
-					cg.teleport_from = [px, py]
-					cg.teleport_to = [px, py-defaults.floor_teleport_width]
-				break;
+					p0=[px, py];
+					p1=[px+10, py+defaults.floor_teleport_width];
+					p2=[px-10, py+defaults.floor_teleport_width];
+					p3=[px, py];
+					cg.teleport_from = [px, py+defaults.floor_teleport_width]
+					cg.teleport_to = [px, py]
+					break;
 				//arrow right downstairs
 				case 2:
-					p0=[px, py+10];
-					p1=[px, py-10];
-					p2=[px+defaults.floor_teleport_width, py];
-					p3=[px, py+10];
-					cg.teleport_from = [px, py]
-					cg.teleport_to = [px+defaults.floor_teleport_width, py]
-				break;
+					p0=[px, py];
+					p1=[px-defaults.floor_teleport_width, py+10];
+					p2=[px-defaults.floor_teleport_width, py-10];
+					p3=[px, py];
+					cg.teleport_from = [px-defaults.floor_teleport_width, py]
+					cg.teleport_to = [px, py]
+					break;
 				//arrow down downstairs
 				case 3:
-					p0=[px-10, py];
-					p1=[px+10, py];
-					p2=[px, py+defaults.floor_teleport_width];
-					p3=[px-10, py];
-					cg.teleport_from = [px, py]
-					cg.teleport_to = [px, py+defaults.floor_teleport_width]
-				break;
+					p0=[px, py];
+					p1=[px-10, py-defaults.floor_teleport_width];
+					p2=[px+10, py-defaults.floor_teleport_width];
+					p3=[px, py];
+					cg.teleport_from = [px, py-defaults.floor_teleport_width]
+					cg.teleport_to = [px, py]
+					break;
 				
 				default:
 					break;
@@ -928,39 +928,39 @@ function cgDecidePoints(m) {//{{{
 			switch (floor_teleport_up_direction % 4) {
 			//arrow left upstairs
 				case 0:
-					p0=[px, py-10];
-					p1=[px, py+10];
-					p2=[px-defaults.floor_teleport_width, py];
-					p3=[px, py-10];
-					cg.teleport_from = [px, py]
-					cg.teleport_to = [px-defaults.floor_teleport_width, py]
+					p0=[px, py];
+					p1=[px+defaults.floor_teleport_width, py-10];
+					p2=[px+defaults.floor_teleport_width, py+10];
+					p3=[px, py];
+					cg.teleport_from = [px+defaults.floor_teleport_width, py]
+					cg.teleport_to = [px, py]
 					break;
 				//arrow up upstairs
 				case 1:
-					p0=[px+10, py];
-					p1=[px-10, py];
-					p2=[px, py-defaults.floor_teleport_width];
-					p3=[px+10, py];
-					cg.teleport_from = [px, py]
-					cg.teleport_to = [px, py-defaults.floor_teleport_width]
+					p0=[px, py];
+					p1=[px+10, py+defaults.floor_teleport_width];
+					p2=[px-10, py+defaults.floor_teleport_width];
+					p3=[px, py];
+					cg.teleport_from = [px, py+defaults.floor_teleport_width]
+					cg.teleport_to = [px, py]
 					break;
 				//arrow right upstairs
 				case 2:
-					p0=[px, py+10];
-					p1=[px, py-10];
-					p2=[px+defaults.floor_teleport_width, py];
-					p3=[px, py+10];
-					cg.teleport_from = [px, py]
-					cg.teleport_to = [px+defaults.floor_teleport_width, py]
+					p0=[px, py];
+					p1=[px-defaults.floor_teleport_width, py+10];
+					p2=[px-defaults.floor_teleport_width, py-10];
+					p3=[px, py];
+					cg.teleport_from = [px-defaults.floor_teleport_width, py]
+					cg.teleport_to = [px, py]
 					break;
 				//arrow down upstairs
 				case 3:
-					p0=[px-10, py];
-					p1=[px+10, py];
-					p2=[px, py+defaults.floor_teleport_width];
-					p3=[px-10, py];
-					cg.teleport_from = [px, py]
-					cg.teleport_to = [px, py+defaults.floor_teleport_width]
+					p0=[px, py];
+					p1=[px-10, py-defaults.floor_teleport_width];
+					p2=[px+10, py-defaults.floor_teleport_width];
+					p3=[px, py];
+					cg.teleport_from = [px, py-defaults.floor_teleport_width]
+					cg.teleport_to = [px, py]
 					break;
 				default:
 					break;
