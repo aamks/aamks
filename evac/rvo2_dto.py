@@ -54,13 +54,13 @@ class EvacEnv:
         
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
-        if os.environ['AAMKS_WORKER'] == 'slurm':
-            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+        new_sql_path = os.path.join(self.general['working_dir'], f"aamks_{self.sim_id}.sqlite")
+        if os.path.exists(new_sql_path):
             self.s=Sqlite(new_sql_path)
         else:
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
 
-        self.dfed = FEDDerivative(self.floor, sim_id=sim_id)
+        self.dfed = FEDDerivative(self.floor, sqlite=self.s)
         self.detection = Detection(self)
 
     def _find_closest_exit(self, evacuee):
@@ -526,13 +526,8 @@ class EvacEnv:
 
 # Total FED growth spatial function (per floor)
 class FEDDerivative:
-    def __init__(self, floor: int, sim_id=None):
-        if os.environ['AAMKS_WORKER'] == 'slurm':
-            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-
+    def __init__(self, floor: int, sqlite):
+        self.s = sqlite
         self.floor = floor
         self.dim = self._find_2dims()
 
