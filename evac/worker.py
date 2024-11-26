@@ -709,6 +709,7 @@ class Worker:
         for floor_num in range(len(self.floors)):
             agents_who_leave_current_floor_indexes = [agent[3] for agent in agents_to_move if agent[0] == floor_num]
             if agents_who_leave_current_floor_indexes:
+                self.floors[floor_num].rset = time
                 self.floors[floor_num].delete_agents_from_floor(agents_who_leave_current_floor_indexes)
 
         for floor_num in range(len(self.floors)):
