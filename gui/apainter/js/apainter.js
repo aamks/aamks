@@ -96,6 +96,7 @@ function registerListeners() {//{{{
 	$("body").on("click"               , '#button-setup'            , function() { showGeneralBox(); });
 	$("body").on("click"               , '.legend'                  , function() { activeLetter=$(this).attr('letter'); cgStartDrawing(); });
 	$("body").on("change"              , '#alter-mvent-throughput'  , function() { saveRightBox(); });
+	$("body").on("change"              , '#alter-flow-direction'    , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-polypoints'        , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-z0'                , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-z1'                , function() { saveRightBox(); });
@@ -254,7 +255,7 @@ function cgDb(undoRegister=1) { //{{{
 	cad_json=generateObjectCadJson(cg);
 
 	b=getBbox();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput,"exit_weight":cg.exit_weight,"room_exits_weights":cg.room_exits_weights, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "flow_direction":cg.flow_direction, "air_grille_surface":cg.air_grille_surface, "exit_weight":cg.exit_weight,"room_exits_weights":cg.room_exits_weights, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
 	if(undoRegister==1) { undoBufferRegister('insert'); }
 }
 //}}}
@@ -299,7 +300,7 @@ function cgDbVirtualObj(parent) { //{{{
 
 		db.insert({"name": vcgName, "idx": vcgIDx, "cad_json": parent.cad_json, 
 			"letter": virtual_obj_name_map[parent.letter], "type": virtual_obj_map[parent.letter], "lines": lines, 
-			"polypoints": parent.polypoints, "z": parent.z, "floor": parent.floor, "mvent_throughput": parent.mvent_throughput,
+			"polypoints": parent.polypoints, "z": parent.z, "floor": parent.floor,
 			"exit_weight":parent.exit_weight,"room_exits_weights":parent.room_exits_weights, 
 			"evacuees_density": parent.evacuees_density, "minx": b.min.x, "miny": b.min.y, 
 			"maxx": b.max.x, "maxy": b.max.y, "teleport_from":parent.teleport_from, "teleport_to":parent.teleport_to});
@@ -323,6 +324,8 @@ function generateObjectCadJson(obj){
 		cad_json["room_exits_weights"]=obj.room_exits_weights; 
 	} else if(obj.type=='mvent') {
 		cad_json["mvent_throughput"]=obj.mvent_throughput;
+		cad_json["flow_direction"]=obj.flow_direction;
+		cad_json["air_grille_surface"]=obj.air_grille_surface;
 	}else if(obj.type=='floor_teleport') {
 		cad_json["teleport_from"]=obj.teleport_from;
 		cad_json["teleport_to"]=obj.teleport_to;
@@ -682,7 +685,9 @@ function cgInit() {//{{{
 	cg.floor=floor;
 	cg.letter=activeLetter;
 	cg.type=gg[activeLetter].t;
-	cg.mvent_throughput=0;
+	cg.mvent_throughput=1.5;
+	cg.flow_direction=null;
+	cg.air_grille_surface=null;
 	cg.z=[floorsZ0[floor]];
 	cg.polypoints=[];
 	cg.preferredSnap=null;
@@ -696,8 +701,7 @@ function cgInit() {//{{{
 	} else if (cg.type=='mvent') {
 		cg.z.push(cg.z[0] + 50);
 	} else if (cg.type=='vvent') {
-		cg.z=[floorsZ0[floor] + floors_dimz[floor] - 4];
-		cg.z.push(cg.z[0] + 8);
+		cg.z.push(cg.z[0] + 50);
 	} else if (cg.type=='window') {
 		cg.z=[floorsZ0[floor] + defaults.window_offsetz]; 
 		cg.z.push(cg.z[0] + defaults.window_dimz);
@@ -777,77 +781,135 @@ function holeOnExternalWall(){
 		return external;
 	}
 }
-
-function IsHoleExternal(geometry, _floor){
+function getRoomTypeApainterObjects(){
 	var room_types_objects =[];
 	var name;
 	var cad_json;
 
 	for(var letter in gg) {
 		if (gg[letter]['t'] == 'room') { 
-			_.each(db({"floor": geometry.floor, "letter": letter}).select("cad_json","name"), function(m) {
+			_.each(db({"letter": letter}).select("cad_json","name"), function(m) {
 				room_types_objects.push(m);
 			});
 		}
 	}
-	// include virtual compartments from virtual_obj_parents variable
-	for(var letter of ['s', 'a']){
-		for(var _ffloor=0; _ffloor<floorsCount; _ffloor++) { 
-			_.each(db({"floor": _ffloor, "letter": letter}).select("cad_json","name"), function(m) {
-				cad_json = m[0];
-				name = m[1];
-				for (let i = 0; i < virtual_obj_parents[name].length; i++) {
-					if (virtual_obj_parents[name][i][2] == geometry.floor){
-						room_types_objects.push([cad_json,name]);
-					}
-				}
-			});
-		}
-	}
 
-	var xValues = geometry.polypoints.map(vertex => vertex[0]);
-	var yValues = geometry.polypoints.map(vertex => vertex[1]);
-	const xmin = Math.min(...xValues);
-	const xmax = Math.max(...xValues);
-	const ymin = Math.min(...yValues);
-	const ymax = Math.max(...yValues);
-
-	hole = { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
     var rooms = [];
 
     room_types_objects.forEach( room => {
     	r_points = getMinMaxXY(room[0]);
-    	rooms.push({ xmin: r_points[0], xmax: r_points[2], ymin: r_points[1], ymax: r_points[3] });
+		const [zmin, zmax] = JSON.parse(room[0]['z']);
+    	rooms.push({  name:room[1],zmin:zmin, zmax:zmax, xmin: r_points[0], xmax: r_points[2], ymin: r_points[1], ymax: r_points[3] });
     });
 
-    return isHoleOnExternalWall(hole, rooms);
+    return rooms;
 
 }
 
-function isHoleOnExternalWall(hole, rooms) {
-    const holePoints = [
-        { x: hole.xmin, y: hole.ymin }, // lewy dolny
-        { x: hole.xmax, y: hole.ymin }, // prawy dolny
-        { x: hole.xmin, y: hole.ymax }, // lewy górny
-        { x: hole.xmax, y: hole.ymax }  // prawy górny
-    ];
+function IsHoleExternal(geometry){
 
-    for (let point of holePoints) {
-        let isInsideAnyRoom = rooms.some(room => isPointInsideRoom(point.x, point.y, room));
-        if (!isInsideAnyRoom) {
-            return true;
+	const [r1, r2] = getConnectedZones(geometry);
+
+	if(r1 == 'OUTSIDE' || r2 == 'OUTSIDE')
+		return true;
+	return false;
+}
+
+
+function getConnectedZones(geometry){
+
+    function hasVolumeIntersection(a, b) {
+        return (
+            a.xmin < b.xmax && a.xmax > b.xmin &&
+            a.ymin < b.ymax && a.ymax > b.ymin &&
+            a.zmin < b.zmax && a.zmax > b.zmin
+        );
+    }
+
+    function isLineOrPlaneIntersection(a, b) {
+        return (
+            (a.xmin === b.xmax || a.xmax === b.xmin) &&
+            (a.ymin === b.ymax || a.ymax === b.ymin) &&
+            (a.zmin === b.zmax || a.zmax === b.zmin)
+        );
+    }
+
+	function isObjectOutside(object, rooms) {
+	    const vertices = [
+	        { x: object.xmin, y: object.ymin, z: object.zmin },
+	        { x: object.xmin, y: object.ymin, z: object.zmax },
+	        { x: object.xmin, y: object.ymax, z: object.zmin },
+	        { x: object.xmin, y: object.ymax, z: object.zmax },
+	        { x: object.xmax, y: object.ymin, z: object.zmin },
+	        { x: object.xmax, y: object.ymin, z: object.zmax },
+	        { x: object.xmax, y: object.ymax, z: object.zmin },
+	        { x: object.xmax, y: object.ymax, z: object.zmax }
+	    ];
+
+	    for (let vertex of vertices) {
+	        const { x, y, z } = vertex;
+
+	        const isInsideAnyRoom = rooms.some(room =>
+	            x >= room.xmin && x <= room.xmax &&
+	            y >= room.ymin && y <= room.ymax &&
+	            z >= room.zmin && z <= room.zmax
+	        );
+
+	        if (!isInsideAnyRoom) {
+	            return true;
+	        }
+	    }
+
+	    return false;
+	}
+
+
+    // Calculate the bounding box for the geometry
+    var xValues = geometry.polypoints.map(vertex => vertex[0]);
+    var yValues = geometry.polypoints.map(vertex => vertex[1]);
+    const xmin = Math.min(...xValues);
+    const xmax = Math.max(...xValues);
+    const ymin = Math.min(...yValues);
+    const ymax = Math.max(...yValues);
+    const zmin = geometry.z[0];
+    const zmax = geometry.z[1];
+
+    let object = { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax, zmin: zmin, zmax: zmax };
+
+    // Get all rooms
+    let rooms = getRoomTypeApainterObjects();
+    let connectedZones = [];
+
+    for (let room of rooms) {
+        if (hasVolumeIntersection(object, room) && !isLineOrPlaneIntersection(object, room)) {
+            connectedZones.push(room.name);
         }
     }
-    return false;
-}
 
-function isPointInsideRoom(x, y, room) {
-    return (
-        x >= room.xmin &&
-        x <= room.xmax &&
-        y >= room.ymin &&
-        y <= room.ymax
-    );
+    if (connectedZones.length == 0){
+        amsg({ 'err': 2, 'msg': "The connection object does not intersect any zones. Please correct apainter geometry." });
+        return [null, null];
+	}
+
+
+    if (isObjectOutside(object, rooms.filter(room => connectedZones.includes(room.name)))) {
+		// the cuboid passes through the room but also sticks out
+		connectedZones.push('OUTSIDE');
+	}
+    
+
+    // Ensure proper result structure
+    if (connectedZones.length > 2) {
+        amsg({ 'err': 2, 'msg': "The connection object intersects more than 2 zones. Please correct apainter geometry." });
+        return [null, null];
+    }
+
+    if (connectedZones.length == 1) {
+		// the cuboid is inside one room
+        return [connectedZones[0]];
+    }
+
+	return connectedZones;
 }
 
 function updatePosInfo(m) {//{{{
@@ -1188,6 +1250,8 @@ function cgMake(floor,letter,record) { //{{{
 	else { cg.room_exits_weights=undefined;}
 	if('evacuees_density' in record) { cg.evacuees_density=record.evacuees_density; }
 	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
+	if('flow_direction' in record)   { cg.flow_direction=record.flow_direction; }
+	if('air_grille_surface' in record)   { cg.air_grille_surface=record.air_grille_surface; }
 	if('teleport_from' in record)	 { cg.teleport_from=record.teleport_from; }
 	if('teleport_to' in record)		 { cg.teleport_to=record.teleport_to; }
 	
@@ -1407,7 +1471,7 @@ function bulkProps() {//{{{
 //}}}
 
 function roomProps() {//{{{
-	pp="<input id=alter-evacuees-density type=hidden value='auto'>";
+	var pp="<input id=alter-evacuees-density type=hidden value='auto'>";
 	if(cg.type=='room') {
 		v=db({'name':cg.name}).get()[0];
 		pp='';
@@ -1441,16 +1505,78 @@ function roomProps() {//{{{
 }
 //}}}
 function mventProps() {//{{{
-	pp="<input id=alter-mvent-throughput type=hidden value=0>";
+	var pp="";
 	if(cg.type=='mvent') {
 		v=db({'name':cg.name}).get()[0];
-		pp="<tr><td>throughput<td>  <input id=alter-mvent-throughput type=text size=3 value="+v.mvent_throughput+">";
+		var zones = getConnectedZones(cg);
+		var mventWithDuct = false;
+		if (zones.length === 1) {
+			// mechanical vent with duct leading outside
+    		zones.push("OUTSIDE");
+			mventWithDuct = true;
+		}
+		r1 = zones[0];
+		r2 = zones[1];
+		if (r1==null && r2==null){
+			pp += "<tr><td>coorect mvent size and localization because</td><td> it intersects not properly</td></tr>";
+		}
+		else
+		{
+			pp += "<tr><td colspan='2'>mvent "+cg.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
+			pp += "<tr><td>flow direction: <td><select id=alter-flow-direction name=flow_direction >";
+			
+			const flow1 = `${r1} to ${r2}`;
+			const flow2 = `${r2} to ${r1}`;
+			
+			pp += `<option value='${flow1}' ${cg.flow_direction === flow1 ? "selected" : ""}>${flow1}</option>`;
+			pp += `<option value='${flow2}' ${cg.flow_direction === flow2 ? "selected" : ""}>${flow2}</option>`;
+			pp += "</select>";
+			if(mventWithDuct == true){
+				pp += "<tr><td>air grille surface: <td><select id=alter-air-grille-surface name=air-grille >";
+				
+				const surfaces = ["x_min", "x_max", "y_min", "y_max", "z_min", "z_max"];
+				for (const surface of surfaces) {
+					pp += `<option value='${surface}' ${cg.air_grille_surface === surface ? "selected" : ""}>${surface}</option>`;
+				}
+				pp += "</select>";
+			}
+			else{
+				pp += "<tr><td colspan='2'>The surface of the ventilation</td></tr>";
+				pp += "<tr><td colspan='2'>grille will be at the intersection</td></tr>";
+				pp += "<tr><td colspan='2'>of the MVENT and the wall/ceiling</td></tr>";
+			}
+		}
+		pp += "<tr><td>flow [m3/s]: <td>  <input id=alter-mvent-throughput type=number size=3 min=0 max=100 step=0.1 value="+v.mvent_throughput+">";
 	} 
 	return pp;
 }
+
+function vventProps() {//{{{
+	var pp="";
+	if(cg.type=='vvent') {
+		v=db({'name':cg.name}).get()[0];
+		var zones = getConnectedZones(cg);
+
+		if (zones.length === 1) {
+    		pp += "<tr><td>coorect vvent size and localization because</td><td> it intersects not properly</td></tr>";
+		}
+		r1 = zones[0];
+		r2 = zones[1];
+		if (r1==null && r2==null){
+			pp += "<tr><td>coorect vvent size and localization because</td><td> it intersects not properly</td></tr>";
+		}
+		else
+		{
+			pp += "<tr><td colspan='2'>vvent "+cg.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
+		}
+	} 
+	return pp;
+}
+
+
 //}}}
 function doorProps() {//{{{
-	pp="";
+	var pp="";
 	if(cg.type=='door') {
 		v=db({'name':cg.name}).get()[0];
 		pp='';
@@ -1473,7 +1599,7 @@ function doorProps() {//{{{
 }
 //}}}
 function teleportProps() {//{{{
-	pp="";
+	var pp="";
 	if(cg.type=='floor_teleport') {
 		v=db({'name':cg.name}).get()[0];
 		pp='';
@@ -1713,7 +1839,6 @@ function getFloorExits(){
 	var holes = [];
 	var room_types_objects =[];
 	var doors_and_holes = [];
-	var doors_and_holes_upper_floor_stairs = [];
 
 	for(var letter in gg) {
 		if (gg[letter]['t'] == 'door') { 
@@ -1785,6 +1910,9 @@ function getFloorExits(){
 function validateRightBoxInput(input) {
     let value = parseInt(input.value);
     var limitedZObj = ['r', 'c', 'd', 'z', 'w', 'q', 'e', 't'];
+    var stairAndHall = ['s', 'a'];
+    var vents = ['m', 'b'];
+
 
     if (limitedZObj.includes(cg.letter)){
     	if (input.id == 'alter-z1'){
@@ -1795,16 +1923,43 @@ function validateRightBoxInput(input) {
     			input.value =  floorsZ0[cg.floor] + floors_dimz[cg.floor];
     		}
     	}
+		else if (input.id == 'alter-z0'){
+    		if (value < floorsZ0[cg.floor]) {
+				input.value = floorsZ0[cg.floor];
+			}
+    		else if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
+				input.value = floorsZ0[cg.floor];
+			}
+		}
     }
-
-	if (input.id == 'alter-z0'){
-    	if (value < floorsZ0[cg.floor]) {
-			input.value = floorsZ0[cg.floor];
+    else if (stairAndHall.includes(cg.letter)){
+		if (input.id == 'alter-z0'){
+			if (value < floorsZ0[cg.floor]) {
+				input.value = floorsZ0[cg.floor];
+			}
+			else if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
+				input.value = floorsZ0[cg.floor];
+			}
 		}
-    	else if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
-			input.value = floorsZ0[cg.floor];
+    }
+    else if (vents.includes(cg.letter)){
+    	if (input.id == 'alter-z1'){
+	    	if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor] + 4) {
+    			input.value = floorsZ0[cg.floor] + floors_dimz[cg.floor] + 4;
+    		}
+	    	else if (value < floorsZ0[cg.floor]) {
+    			input.value =  floorsZ0[cg.floor];
+    		}
+    	}
+		else if (input.id == 'alter-z0'){
+    		if (value < floorsZ0[cg.floor] - 4) {
+				input.value = floorsZ0[cg.floor] - 4;
+			}
+    		else if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
+				input.value = floorsZ0[cg.floor] + floors_dimz[cg.floor];
+			}
 		}
-	}
+    }
 
     else if (input.id == 'default_door_dimz'){
     	if (value > floors_dimz[floor]) {
@@ -1914,11 +2069,12 @@ function showCgPropsBox() {//{{{
 	    "<input id=geom_properties type=hidden value=1>"+
 	    "<center><red>&nbsp; "+cg.name+" &nbsp; "+gg[cg.letter]['x']+"</red>"+
 		propsXYZ()+
-		"<table>"+
+		"<table style='table-layout: auto; width: auto; border-collapse: collapse;''>"+
 		roomProps()+
 		doorProps()+
 		teleportProps()+
 		mventProps()+
+		vventProps()+
 		"</table>"+
 		"<br><wheat><letter>x</letter> delete, <letter>l</letter> list</wheat>"+
 		"", 0
@@ -1963,7 +2119,9 @@ function saveRightBoxCgProps() {//{{{
 		if (cg.type == 'room'){
 			cg.room_exits_weights = getRoomExitWeight(cg.name);
 		}
-		cg.mvent_throughput=Number($("#alter-mvent-throughput").val());
+		cg.mvent_throughput=parseFloat($("#alter-mvent-throughput").val());
+		cg.flow_direction=$("#alter-flow-direction").val();
+		cg.air_grille_surface=$("#alter-air-grille-surface").val(); 
 		validateForm();
 		var z0=Number($("#alter-z0").val());
 		var z1=Number($("#alter-z1").val());
