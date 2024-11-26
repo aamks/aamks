@@ -26,7 +26,7 @@ class AARedis:
 
     def redis_queue_push(self, db, message):
         # Push to tail of the queue (left of the list)
-        db.lpush(config.redis_queue_name, message)
+        db.lpush(config.redis_worker_queue_name, message)
 
     def main(self, worker_pwd):
         # Connect to Redis
@@ -61,14 +61,14 @@ class AARedis:
 
     #pythonic way of deleting element - actually not used
     def remove_job(self, element_id):
-        queue = config.redis_queue_name
+        queue = config.redis_worker_queue_name
         r = redis.StrictRedis(
             host=config.redis_host,
             port=config.redis_port,
             db=config.redis_db_number,
             password=config.redis_password
         )
-        elements = r.lrange(config.redis_queue_name, 0, -1)
+        elements = r.lrange(config.redis_worker_queue_name, 0, -1)
         element_found = False  # Flag to track whether the element is found
         for element in elements:
             decoded_element = json.loads(element)
