@@ -46,7 +46,10 @@ class Worker:
 
         self.project_dir = self.working_dir.split("/workers/")[0]
         self.sim_id = int(self.working_dir.split("/workers/")[1])
-
+        # for local testing:
+        # self.working_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6/workers/9'
+        # self.project_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6'
+        # os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6'
         new_sql_path = os.path.join(self.working_dir, f"aamks_{self.sim_id}.sqlite")
         if os.path.exists(new_sql_path):
             self.s=Sqlite(new_sql_path)
@@ -365,8 +368,7 @@ class Worker:
             try:
                 self.prepare_staircases(str(floor))
                 self.vars['conf']['working_dir'] = self.working_dir
-                eenv = EvacEnv(self.vars['conf'], self.sim_id)
-                eenv.floor = floor
+                eenv = EvacEnv(self.vars['conf'], floor, self.sim_id)
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":31})

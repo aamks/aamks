@@ -172,6 +172,8 @@ class CfastMcarlo():
             collect.append('HALL = .TRUE.')
         if type_sec == 'STAI':
             collect.append('SHAFT = .TRUE.')
+        if type_sec == 'HALL':
+            collect.append('SHAFT = .TRUE.')
         collect.append(f'ORIGIN = {join2str(origin, ", ")}')
         collect.append(f'LEAK_AREA = {join2str(leak_area, ", ")}')
         collect.append(f'GRID = {join2str(grid, ", ")} /')
@@ -835,7 +837,7 @@ class DrawAndLog:
             self.sections.setdefault('DEVC', []).extend(targets)
     def _draw_window_and_door_targets(self):
         targets = []
-        for v in self.s.query("SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.how_much_open=0 AND (v.type_sec='WIN' OR v.type_sec='DOOR')"):
+        for v in self.s.query("SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.how_much_open=0 AND (v.type_sec='WIN' OR v.type_sec='DOOR' OR v.type_sec='DELECTR' OR v.type_sec='DCLOSER')"):
             z = round((v['height']*0.5)/100, 2)
             if v['type_sec'] == 'STAI':
                 z += v['sill']/100

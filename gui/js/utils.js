@@ -116,7 +116,7 @@ function amsg(r) {//{{{
 		$('#amsg').html(r['msg']);
 		$('#amsg').css('display', 'block');
 		$('#amsg').css('background-color', "#800");
-		$('#amsg').delay(r['duration']).fadeOut(400);
+		$('#amsg').delay(r['duration']).fadeOut(3000);
 	}
 }
 //}}}

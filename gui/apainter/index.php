@@ -9,11 +9,14 @@ function css() { #{{{
 	$css.="body { overflow: hidden; }\n";
 
 	foreach($json['aamksGeoms'] as $v) {
-		if(!empty($v['legendary']) || $v['x']=='UNDERLAY_SCALER') { $css.=".$v[x] { fill: $v[c]; stroke: $v[stroke]; stroke-width: $v[strokeWidth]; }\n"; }
-	}
-	foreach($json['aamksGeomsAttribs'] as $k=>$v) {
-		if(isset($v['fill']))   { $css.=".$k { fill: $v[fill] !important; }\n"; }
-		if(isset($v['stroke'])) { $css.=".$k { stroke: $v[stroke] !important; }\n"; }
+		if(!empty($v['legendary']) || $v['x']=='UNDERLAY_SCALER'|| $v['x']=='VSTAI'|| $v['x']=='VHALL') 
+			{ 
+				$opacity = '1';
+				if ($v['x']=='VSTAI'|| $v['x']=='VHALL')
+					$opacity = '0.3';
+				$css.=".$v[x] { fill: $v[c]; stroke: $v[stroke]; stroke-width: $v[strokeWidth]; opacity: $opacity }\n"; 
+
+			}
 	}
 
 	$css.=".cg-selected { stroke: #ff0; fill: #ff8; }\n"; 
