@@ -333,7 +333,6 @@ function generateObjectCadJson(obj){
 			cad_json["flow_direction"]=obj.flow_direction;
 		if (obj.air_grille_surface != null)
 			cad_json["air_grille_surface"]=obj.air_grille_surface;
-		// sprawdzic inicjowanie tych pól zeby na null inicjowalo
 	}else if(obj.type=='floor_teleport') {
 		cad_json["teleport_from"]=obj.teleport_from;
 		cad_json["teleport_to"]=obj.teleport_to;
