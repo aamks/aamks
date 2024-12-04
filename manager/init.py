@@ -22,49 +22,6 @@ class OnInit:
         else:
             self.irange = [sim_id, sim_id+1]
         self._setup_simulations()
-        self._create_sqlite_tables()
-        self.s.close()
-# }}}
-    def _clear_srv_anims(self):# {{{
-        ''' 
-        Need to detect and remove obsolete srv animations. Server always
-        overwrites anims.json and we need to prevent the dumplicates in
-        Animator right menu entries.
-
-        We try: because there may be no anims.json just yet.
-
-        TODO: it is possible we could just remove this file and remove all
-        server animations. But would it hurt workers animations?
-        ''' 
-
-        try:
-            anims=self.json.read("{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
-            new_anims=[]
-            for a in anims:
-                if a['srv'] != 1:
-                    new_anims.append(a)
-            self.json.write(new_anims, "{}/workers/anims.json".format(os.environ['AAMKS_PROJECT']))
-        except:
-            pass
-
-        try:
-            os.remove("{}/workers/static.json".format(os.environ['AAMKS_PROJECT']))
-            os.remove("{}/dd_geoms.json".format(os.environ['AAMKS_PROJECT']))
-        except:
-            pass
-# }}}
-    def _clear_sqlite(self):# {{{
-        try:
-            self.s.query("DROP TABLE dispatched_evacuees")
-            self.s.query("DROP TABLE aamks_geom")
-            self.s.query("DROP TABLE floors_meta")
-            self.s.query("DROP TABLE world_meta")
-            self.s.query("DROP TABLE obstacles")
-            self.s.query("DROP TABLE obstacles_animator")
-            self.s.query("DROP TABLE cell2compa")
-            self.s.query("DROP TABLE query_vertices")
-        except:
-            pass
 # }}}
     def _setup_simulations(self):# {{{
         ''' Simulation dir maps to id from psql's simulations table'''
