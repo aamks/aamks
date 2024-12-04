@@ -45,9 +45,9 @@ class Worker:
             self.working_dir = redis_worker_pwd 
         self.project_dir, sim_id = self.working_dir.split("/workers/")
         # for local testing:
-        # self.working_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6/workers/9'
-        # self.project_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6'
-        # os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1020@wp.pl/testtttt/wojtek6'
+        self.working_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/tptest/workers/11'
+        self.project_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/tptest'
+        os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1020@wp.pl/testtttt/tptest'
         
         if os.environ['AAMKS_WORKER'] == 'slurm':
             new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")

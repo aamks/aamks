@@ -97,6 +97,7 @@ function registerListeners() {//{{{
 	$("body").on("click"               , '.legend'                  , function() { activeLetter=$(this).attr('letter'); cgStartDrawing(); });
 	$("body").on("change"              , '#alter-mvent-throughput'  , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-flow-direction'    , function() { saveRightBox(); });
+	$("body").on("change"              , '#alter-air-grille-surface', function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-polypoints'        , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-z0'                , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-z1'                , function() { saveRightBox(); });
@@ -252,11 +253,13 @@ function cgDb(undoRegister=1) { //{{{
 	}
 	db({"name": cg.name}).remove();
 
+	addDefaultCgProps();
 	cad_json=generateObjectCadJson(cg);
 
 	b=getBbox();
 	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "flow_direction":cg.flow_direction, "air_grille_surface":cg.air_grille_surface, "exit_weight":cg.exit_weight,"room_exits_weights":cg.room_exits_weights, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
 	if(undoRegister==1) { undoBufferRegister('insert'); }
+
 }
 //}}}
 
@@ -318,18 +321,24 @@ function generateObjectCadJson(obj){
 	cad_json['z']=JSON.stringify(obj.z);
 
 	if(obj.type=='door') {
-		cad_json["exit_weight"]=obj.exit_weight;
+		if (obj.exit_weight != null)
+			cad_json["exit_weight"]=obj.exit_weight;
 	} else if(obj.type=='room') {
-		cad_json["evacuees_density"]=obj.evacuees_density; 
-		cad_json["room_exits_weights"]=obj.room_exits_weights; 
+		cad_json["evacuees_density"]=obj.evacuees_density;
+		if (obj.room_exits_weights != null)
+			cad_json["room_exits_weights"]=obj.room_exits_weights; 
 	} else if(obj.type=='mvent') {
 		cad_json["mvent_throughput"]=obj.mvent_throughput;
-		cad_json["flow_direction"]=obj.flow_direction;
-		cad_json["air_grille_surface"]=obj.air_grille_surface;
+		if (obj.flow_direction != null)
+			cad_json["flow_direction"]=obj.flow_direction;
+		if (obj.air_grille_surface != null)
+			cad_json["air_grille_surface"]=obj.air_grille_surface;
+		// sprawdzic inicjowanie tych pól zeby na null inicjowalo
 	}else if(obj.type=='floor_teleport') {
 		cad_json["teleport_from"]=obj.teleport_from;
 		cad_json["teleport_to"]=obj.teleport_to;
-		cad_json["exit_weight"]=obj.exit_weight;
+		if (obj.exit_weight != null)
+			cad_json["exit_weight"]=obj.exit_weight;
 	}
 
 	return cad_json;
@@ -686,8 +695,10 @@ function cgInit() {//{{{
 	cg.letter=activeLetter;
 	cg.type=gg[activeLetter].t;
 	cg.mvent_throughput=1.5;
-	cg.flow_direction=null;
-	cg.air_grille_surface=null;
+	cg.air_grille_surface = null;
+	cg.flow_direction = null;
+	cg.exit_weight = 10;
+	cg.room_exits_weights = {};
 	cg.z=[floorsZ0[floor]];
 	cg.polypoints=[];
 	cg.preferredSnap=null;
@@ -754,10 +765,45 @@ function cgCreate() {//{{{
 		snappingHide();
 		cgInit();
 		showBuildingLabels();
-
 	});
 }
 //}}}
+
+function addDefaultCgProps(){
+	if(cg.type=='mvent') {
+		var zones = getConnectedZones(cg);
+		var mventWithDuct = false;
+		if (zones.length === 1) {
+			// mechanical vent with duct leading outside
+    		zones.push("OUTSIDE");
+			mventWithDuct = true;
+		}
+		r1 = zones[0];
+		r2 = zones[1];
+		if (r1==null && r2==null){
+			amsg({'err':1, 'msg':"Coorect mvent size and localization because it intersects not properly"}); 
+		}
+		else
+		{
+			// add this property for newly created mvent so that the flow_direction and 
+			// air_grille_surface fields  (only in case of mventWithDuct==true)
+			// are not set to null or undefined (they must always be set to something)
+			// different from (null or undefined)
+			if(cg.flow_direction == null)
+			{
+				cg.flow_direction=`${r1} to ${r2}`;
+			}
+
+			if(cg.air_grille_surface == null)
+			{
+				if(mventWithDuct == true){
+					cg.air_grille_surface='x_min';
+				}
+
+			}
+		}
+	} 
+}
 function checkNegativeCords(){
 	var negative = false
 	cg.polypoints.forEach(function(array){array.forEach(function(x){
@@ -1097,6 +1143,7 @@ function svgPolyline(m) {//{{{
 	points.push(points[1]);
 	return points.join(" ");
 }
+
 //}}}
 function cgUpdateSvg() {  //{{{
 	$("#"+cg.name).attr({ 'points': svgPolyline(cg) });   
@@ -1251,7 +1298,9 @@ function cgMake(floor,letter,record) { //{{{
 	if('evacuees_density' in record) { cg.evacuees_density=record.evacuees_density; }
 	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
 	if('flow_direction' in record)   { cg.flow_direction=record.flow_direction; }
+	else { cg.flow_direction=undefined;}
 	if('air_grille_surface' in record)   { cg.air_grille_surface=record.air_grille_surface; }
+	else { cg.air_grille_surface=undefined;}
 	if('teleport_from' in record)	 { cg.teleport_from=record.teleport_from; }
 	if('teleport_to' in record)		 { cg.teleport_to=record.teleport_to; }
 	
@@ -1392,8 +1441,10 @@ function floorCopy() {	//{{{
 		activeLetter=m.letter;
 		cgIdUpdate();
 		cg=deepcopy(m);
-		cg.exit_weight=undefined;
-		cg.room_exits_weights=undefined;
+		cg.exit_weight=10;
+		cg.room_exits_weights={};
+		cg.air_grille_surface = null;
+		cg.flow_direction = null;
 		cg.floor=c2f;
 		cg.idx=cgID;
 		cg.name=cg.letter + cgID;
@@ -1541,9 +1592,13 @@ function mventProps() {//{{{
 				pp += "</select>";
 			}
 			else{
-				pp += "<tr><td colspan='2'>The surface of the ventilation</td></tr>";
-				pp += "<tr><td colspan='2'>grille will be at the intersection</td></tr>";
-				pp += "<tr><td colspan='2'>of the MVENT and the wall/ceiling</td></tr>";
+				pp += "<tr><td>air grille surface:  ";
+				pp += "<withHelp>     ?<help> The surface of the ventilation"
+				pp += "<br>grille will be at the intersection";
+				pp += "<br>of the MVENT and the wall/ceiling";
+				pp += "<br>of the room on this floor";
+				pp += "<br>through which the mvent passes";
+				pp += "</help></withHelp></td></tr>";
 			}
 		}
 		pp += "<tr><td>flow [m3/s]: <td>  <input id=alter-mvent-throughput type=number size=3 min=0 max=100 step=0.1 value="+v.mvent_throughput+">";
@@ -2079,7 +2134,6 @@ function showCgPropsBox() {//{{{
 		"<br><wheat><letter>x</letter> delete, <letter>l</letter> list</wheat>"+
 		"", 0
 	);
-
 }
 //}}}
 
@@ -2235,7 +2289,6 @@ function sceneBuilder() { //{{{
 	make_legend2("apainter");
 	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", win[0]).attr("height", win[1]);
 	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
-
 	axes();
 	building = svg.append("g").attr("id", "building");
 	buildingLabels=svg.append("g").attr("id", "buildingLabels");

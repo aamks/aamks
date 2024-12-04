@@ -166,7 +166,7 @@ class CFASTimporter():
                     record=self._prepare_geom_record(v)
                     if record != False:
                         data.append(record)
-        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, flow_direction, evacuees_density, terminal_door, points, origin_room, orig_type, has_door, teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
+        self.s.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, how_much_open, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, flow_direction, air_grille_surface, evacuees_density, terminal_door, points, origin_room, orig_type, has_door, teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
         self.s.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
     def _prepare_attrs(self,v):# {{{
@@ -252,7 +252,7 @@ class CFASTimporter():
         name='{}{}'.format(self.geomsMap[v['type']], global_type_id)
 
         #self.s.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               ,    flow_direction               ,             air_grille_surface,        evacuees_density        , terminal_door , points                  , origin_room , orig_type , has_door,   teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
-        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] ,  v['attrs']['flow_direction'] ,  v['attrs']['air_grille_surface']   v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights)
+        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] ,  v['attrs']['flow_direction'] ,  v['attrs']['air_grille_surface'] ,  v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights)
 
 # }}}
     def _enhancements(self):# {{{
@@ -615,12 +615,23 @@ class CFASTimporter():
         '''
 
         update=[]
-        all_mvents=[z['global_type_id'] for z in self.s.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='MVENT' AND floor=? ORDER BY name", floor) ]
-        for floor,vents_dict in self.aamks_polies['MVENT'].items():
-            print("dsfsf")
-            vent_id = 1
-            v = [1,1]
-            update.append((v[0], v[0], vent_id))
+        all_mvents=self.s.query("SELECT global_type_id, flow_direction FROM aamks_geom WHERE type_pri='MVENT'")
+        for mvent in all_mvents:
+            parts = mvent['flow_direction'].split(" to ")
+            vent_from_name = parts[0]
+            vent_to_name = parts[1]
+
+            if vent_from_name == 'OUTSIDE':
+                vent_from_id = self.outside_compa
+            else:
+                vent_from_id = self.s.query("SELECT global_type_id FROM aamks_geom WHERE name='"+vent_from_name+"'")[0]['global_type_id']
+            
+            if vent_to_name == 'OUTSIDE':
+                vent_to_id = self.outside_compa
+            else:
+                vent_to_id = self.s.query("SELECT global_type_id FROM aamks_geom WHERE name='"+vent_to_name+"'")[0]['global_type_id']
+
+            update.append((vent_from_id, vent_to_id, mvent['global_type_id']))
         self.s.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='MVENT'", update)
 
 # }}}
@@ -628,20 +639,46 @@ class CFASTimporter():
         ''' 
         Normally, is_vertical context is x or y. For mvent the context is z.
         '''
-        # sprawdzasz jedn oi durige pomieszczenie jesli dla ktoregos wszystkie punkty mvent sa wewnatrz to zwracasz false
 
-        # zwracasz true
-
-        #ale w przypadku kiedy jest vent z niewidzialnym szachtem to trzeba zdefiniować bok nawiewu/wywiewu
-        #wtedy horizontal jesli bok ktory ma wszystkie z równe inaczej vertical
-        #to do celów offset
         update=[]
-        z=self.s.query("SELECT global_type_id,name,width,depth,height FROM aamks_geom WHERE type_pri='MVENT'") 
-        for i in z:
-            if i['height']<i['width'] and i['height']<i['depth']:
-                update.append((0, i['global_type_id']))
+        all_mvents=self.s.query("SELECT global_type_id, air_grille_surface, vent_from, vent_to, x0, y0, width, depth FROM aamks_geom WHERE type_pri='MVENT'")
+        for mvent in all_mvents:
+            if mvent['air_grille_surface'] is not None:
+                if mvent['air_grille_surface'] in ('x_min', 'x_max', 'y_min', 'y_max'):
+                    update.append((1, mvent['global_type_id']))
+                elif mvent['air_grille_surface'] in ('z_min', 'z_max'):
+                    update.append((0, mvent['global_type_id']))
+                else:
+                    self.fatal('air_grille_surface value is wrong')
             else:
-                update.append((1, i['global_type_id']))
+                mvent_x_min = mvent['x0']
+                mvent_x_max = mvent['x0'] + mvent['width']
+                mvent_y_min = mvent['y0']
+                mvent_y_max = mvent['y0'] + mvent['depth']
+                # by default we set vertical to true
+                vertical = True
+                for i in (mvent['vent_from'], mvent['vent_to']):
+                    name = self._id2compa_name[i]
+                    # then we check if mvent is inside any room on 
+                    # the plan, it means that it is horizontal
+                    # and then we check vertical to False
+                    if name == 'OUTSIDE':
+                        continue
+                    else:
+                        room = self.s.query("SELECT x0, y0, width, depth FROM aamks_geom WHERE name='"+name+"'")[0]
+                        room_x_min = room['x0']
+                        room_x_max = room['x0'] + room['width']
+                        room_y_min = room['y0']
+                        room_y_max = room['y0'] + room['depth']
+                        if (mvent_x_min >= room_x_min and
+                            mvent_x_max <= room_x_max and
+                            mvent_y_min >= room_y_min and
+                            mvent_y_max <= room_y_max):
+                            vertical = False
+                if vertical == True:
+                    update.append((1, mvent['global_type_id']))
+                else:
+                    update.append((0, mvent['global_type_id']))
         self.s.executemany("UPDATE aamks_geom SET is_vertical=? where global_type_id=? and type_pri='MVENT'", update)
 
 # }}}  
