@@ -15,6 +15,7 @@ function css() { #{{{
 				if ($v['x']=='VSTAI'|| $v['x']=='VHALL')
 					$opacity = '0.3';
 				$css.=".$v[x] { fill: $v[c]; stroke: $v[stroke]; stroke-width: $v[strokeWidth]; opacity: $opacity }\n"; 
+
 			}
 	}
 

@@ -258,6 +258,7 @@ function cgDb(undoRegister=1) { //{{{
 
 	b=getBbox();
 	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "flow_direction":cg.flow_direction, "air_grille_surface":cg.air_grille_surface, "exit_weight":cg.exit_weight,"room_exits_weights":cg.room_exits_weights, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
+
 	if(undoRegister==1) { undoBufferRegister('insert'); }
 
 }
@@ -764,6 +765,7 @@ function cgCreate() {//{{{
 		snappingHide();
 		cgInit();
 		showBuildingLabels();
+
 	});
 }
 //}}}
@@ -1893,6 +1895,7 @@ function getFloorExits(){
 	var holes = [];
 	var room_types_objects =[];
 	var doors_and_holes = [];
+	var doors_and_holes_upper_floor_stairs = [];
 
 	for(var letter in gg) {
 		if (gg[letter]['t'] == 'door') { 
@@ -1966,7 +1969,6 @@ function validateRightBoxInput(input) {
     var limitedZObj = ['r', 'c', 'd', 'z', 'w', 'q', 'e', 't'];
     var stairAndHall = ['s', 'a'];
     var vents = ['m', 'b'];
-
 
     if (limitedZObj.includes(cg.letter)){
     	if (input.id == 'alter-z1'){

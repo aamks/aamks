@@ -42,7 +42,11 @@ function main() {
 	foreach ($data as $key=>&$sim) {
 		$results = json_decode($sim['results'], true);
 		$wcbe = json_decode($sim['wcbe'], true);
-		$link = "<a href='anim.php?iter=" . $sim['iteration'] . "'>Go to anim</a>";
+		if ($sim['is_anim'] == 1){
+			$link = "<a href='anim.php?iter=" . $sim['iteration'] . "'>Go to anim</a>";
+		} else {
+			$link = 'no anim';
+		}
 		$modified = substr($sim['modified'], 0, 19);
 		echo "<tr>
 		<td>{$sim['iteration']}</td>

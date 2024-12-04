@@ -20,15 +20,16 @@ class CFASTimporter():
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         if self.conf['fire_model']=='FDS':
             return
-        if os.environ['AAMKS_WORKER'] == 'slurm':
-            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], f"aamks_{sim_id}.sqlite")
+        if sim_id:
+            new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
             self.s=Sqlite(new_sql_path)
         else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']), 3)
         self.raw_geometry=self.json.read("{}/cad.json".format(os.environ['AAMKS_PROJECT']))
         self.geomsMap=self.json.read("{}/inc.json".format(os.environ['AAMKS_PATH']))['aamksGeomsMap']
         self.doors_width=32
         self.walls_width=4
+        self._dispatched_evacuees()
         self._geometry2sqlite()
         self._enhancements()
         self._towers_slices()
@@ -55,6 +56,8 @@ class CFASTimporter():
         self._debug()
         self.s.close()
 # }}}
+    def _dispatched_evacuees(self):
+        self.s.query("CREATE TABLE dispatched_evacuees(json)")
 
     def _floors_meta(self):# {{{
         ''' 
@@ -174,7 +177,7 @@ class CFASTimporter():
         aa['mvent_throughput']=v['mvent_throughput']    if 'mvent_throughput' in v else None
         aa['flow_direction']=v['flow_direction']    if 'flow_direction' in v else None
         aa['air_grille_surface']=v['air_grille_surface']    if 'air_grille_surface' in v else None
-        
+
         try: 
             aa['evacuees_density']=float(v['evacuees_density'])
         except: 
@@ -250,9 +253,9 @@ class CFASTimporter():
 
         global_type_id=v['idx'];
         name='{}{}'.format(self.geomsMap[v['type']], global_type_id)
-
         #self.s.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name , how_much_open , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               ,    flow_direction               ,             air_grille_surface,        evacuees_density        , terminal_door , points                  , origin_room , orig_type , has_door,   teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
         return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None          , None      , None , None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] ,  v['attrs']['flow_direction'] ,  v['attrs']['air_grille_surface'] ,  v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights)
+
 
 # }}}
     def _enhancements(self):# {{{
