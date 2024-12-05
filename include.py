@@ -371,7 +371,7 @@ class Vis:# {{{
             for floor in self._static_floors.keys():
                 xx['obstacles'][floor]=dummy_obst
         else:
-            xx=JSON.readdb("obstacles_animator")
+            xx=self.json.readdb("obstacles_animator")
 
         for floor,obstacles in xx['virtualHallHolesObstacles'].items():
             self._static_floors[floor]['virtualHallHoles']=[]
