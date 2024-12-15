@@ -447,8 +447,8 @@ function get_template_defaults($q) {/*{{{*/
         "not_broken": ""
     },
     "NSHEVS": {
-        "activation_time": "",
-        "startup_time": ""
+        "activation_time": 0,
+        "startup_time": 1
     },
     "r_is":"simple",
     "r_trans":"phone",

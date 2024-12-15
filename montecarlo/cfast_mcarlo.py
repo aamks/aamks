@@ -235,11 +235,8 @@ class CfastMcarlo():
 # }}}
     def _section_mvent(self):# {{{
         txt=['!! SECTION MECHANICAL VENT']
-        for v in self.s.query( "SELECT name, vent_from_name, vent_to_name, width, depth, height, mvent_throughput, is_vertical FROM aamks_geom WHERE type_sec = 'MVENT'"):
-            if v['mvent_throughput'] < 0:
-                comp_ids = [cfast_name(v['vent_from_name']), 'OUTSIDE']
-            else:
-                comp_ids = ['OUTSIDE', cfast_name(v['vent_from_name'])]
+        for v in self.s.query( "SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
+            comp_ids = [v['vent_from_name'], v['vent_to_name']]
             if v['is_vertical'] == 1:
                 orientation = 'VERTICAL'
             else:
@@ -248,14 +245,13 @@ class CfastMcarlo():
             collect.append("&VENT TYPE = 'MECHANICAL'")
             collect.append("ID = '{}'".format(v['name']))
             collect.append("COMP_IDS = '{}', '{}'".format(comp_ids[0], comp_ids[1]))
-            area = round((v['width']*v['depth'])/1e4, 2)
-            collect.append("AREAS = {}, {}".format(area, area))
-            collect.append("HEIGHTS = {}, {}".format(round(v['height']/100, 2), round(v['height'], 2)))
+            mvent_details = self.get_mvent_cfast_surface_details(v)
+            collect.append("AREAS = {}, {}".format(mvent_details['area'], mvent_details['area']))
+            collect.append("HEIGHTS = {}, {}".format(mvent_details['center_height'],mvent_details['center_height']))
             collect.append("FLOW = {}".format(abs(v['mvent_throughput'])))
             collect.append("CUTOFFS = 200, 300")
-            collect.append("ORIENTATIONS = '{}'".format(orientation)) # ONLY FOR VISUALISATION
-            collect.append("OFFSETS = {}, {}".format(0, 0)) # ONLY FOR VISUALISATION
-            # x, y must be relative to room, not absolute
+            collect.append("ORIENTATIONS = '{}'".format(orientation))
+            collect.append("OFFSETS = {}, {}".format(mvent_details['vent_offset'][0], mvent_details['vent_offset'][1])) 
             # TODO add detection time to running mechanical ventilation
             activation_delay = self.conf['NSHEVS']['activation_time']
             start_up = self.conf['NSHEVS']['startup_time']
@@ -263,6 +259,111 @@ class CfastMcarlo():
             txt.append(', '.join(str(i) for i in collect))
         return "\n".join(txt)+"\n" if len(txt) > 1 else ""
 
+    def get_mvent_cfast_surface_details(self, mvent):
+        mvent_details = {}
+        surface_intersection = ''
+        area = []
+        center_height = 0
+        vent_offset = (0,0)
+
+        room_name = mvent['vent_from_name']
+        if room_name == 'OUTSIDE':
+            room_name = mvent['vent_to_name']
+
+        room = self.s.query("SELECT * FROM aamks_geom WHERE name='"+room_name+"'")[0]
+
+        if mvent['air_grille_surface'] is not None:
+            if mvent['air_grille_surface'] == 'x_min':
+                center_height = mvent['z0'] + mvent['height']/2-room['z0']
+                area = mvent['depth']*mvent['height']
+                vent_offset = (mvent['x0']-room['x0'], mvent['y0']+mvent['depth']/2-room['y0'])
+            elif mvent['air_grille_surface'] == 'x_max':
+                center_height = mvent['z0'] + mvent['height']/2-room['z0']
+                area = mvent['depth']*mvent['height']
+                vent_offset = (mvent['x0']+mvent['width']-room['x0'], mvent['y0']+mvent['depth']/2-room['y0'])
+            elif mvent['air_grille_surface'] == 'y_min':
+                center_height = mvent['z0'] + mvent['height']/2-room['z0']
+                area = mvent['width']*mvent['height']
+                vent_offset = (mvent['x0']+mvent['width']/2-room['x0'], mvent['y0']-room['y0'])
+            elif mvent['air_grille_surface'] == 'y_max':
+                center_height = mvent['z0'] + mvent['height']/2-room['z0']
+                area = mvent['width']*mvent['height']
+                vent_offset = (mvent['x0']+mvent['width']/2-room['x0'], mvent['y0']+mvent['depth']-room['y0'])
+            elif mvent['air_grille_surface'] == 'z_min':
+                area = mvent['width']*mvent['depth']
+                center_height = mvent['z0']-room['z0']
+                vent_offset = (mvent['x0']+mvent['width']/2-room['x0'], mvent['y0']+mvent['depth']/2-room['y0'])
+            elif mvent['air_grille_surface'] == 'z_max':
+                area = mvent['width']*mvent['depth']
+                center_height = mvent['z0'] + mvent['height']-room['z0']
+                vent_offset = (mvent['x0']+mvent['width']/2-room['x0'], mvent['y0']+mvent['depth']/2-room['y0'])
+
+        else:
+            # Calculate the intersection boundary
+            xmin_intersection = max(mvent['x0'], room['x0'])
+            xmax_intersection = min(mvent['x0']+mvent['width'], room['x0']+room['width'])
+            ymin_intersection = max(mvent['y0'], room['y0'])
+            ymax_intersection = min(mvent['y0']+mvent['depth'], room['y0']+room['depth'])
+            zmin_intersection = max(mvent['z0'], room['z0'])
+            zmax_intersection = min(mvent['z0']+mvent['height'], room['z0']+room['height'])
+
+            if (
+                xmin_intersection >= xmax_intersection
+                or ymin_intersection >= ymax_intersection
+                or zmin_intersection >= zmax_intersection
+            ):
+                raise ValueError(f'mvent intersects the surface of ​​the room in the number of places not equal to 1 ')
+
+            # Check for intersection only if it extends beyond the boundaries of the room
+            # Area on the walls x
+            if xmin_intersection == room['x0'] and mvent['x0'] < room['x0']:
+                surface_intersection = 'x_min'
+            elif xmax_intersection == room['x1'] and mvent['x1'] > room['x1']:
+                surface_intersection = 'x_max'
+            # Area on the walls y
+            elif ymin_intersection == room['y0'] and mvent['y0'] < room['y0']:
+                surface_intersection = 'y_min'
+            elif ymax_intersection == room['y1'] and mvent['y1'] > room['y1']:
+                surface_intersection = 'y_max'
+            # Area on the walls z
+            elif zmin_intersection == room['z0'] and mvent['z0'] < room['z0']:
+                surface_intersection = 'z_min'
+            elif zmax_intersection == room['z1'] and mvent['z1'] > room['z1']:
+                surface_intersection = 'z_max'
+            else:
+                raise ValueError(f'mvent does not intersect any of the surface of ​​the room, something is wrong')
+
+            if surface_intersection == 'x_min':
+                center_height = mvent['z0'] + mvent['height']/2-room['z0']
+                area = mvent['depth']*mvent['height']
+                vent_offset = (0, mvent['y0']+mvent['depth']/2-room['y0'])
+            elif surface_intersection == 'x_max':
+                center_height = mvent['z0'] + mvent['height']/2-room['z0']
+                area = mvent['depth']*mvent['height']
+                vent_offset = (room['width'], mvent['y0']+mvent['depth']/2-room['y0'])
+            elif surface_intersection == 'y_min':
+                center_height = mvent['z0'] + mvent['height']/2-room['z0']
+                area = mvent['width']*mvent['height']
+                vent_offset = (mvent['x0']+mvent['width']/2-room['x0'], 0)
+            elif surface_intersection == 'y_max':
+                center_height = mvent['z0'] + mvent['height']/2-room['z0']
+                area = mvent['width']*mvent['height']
+                vent_offset = (mvent['x0']+mvent['width']/2-room['x0'], room['depth'])
+            elif surface_intersection == 'z_min':
+                area = mvent['width']*mvent['depth']
+                center_height = 0
+                vent_offset = (mvent['x0']+mvent['width']/2-room['x0'], mvent['y0']+mvent['depth']/2-room['y0'])
+            elif surface_intersection == 'z_max':
+                area = mvent['width']*mvent['depth']
+                center_height = room['height']
+                vent_offset = (mvent['x0']+mvent['width']/2-room['x0'], mvent['y0']+mvent['depth']/2-room['y0'])
+
+        mvent_details['area'] = round(area/1e4, 2)
+        mvent_details['center_height'] = round(center_height/100, 2) 
+        mvent_details['vent_offset'] = (round(vent_offset[0]/100, 2),round(vent_offset[1]/100, 2))
+
+        return mvent_details
+        
     def _section_fire(self):# {{{
         txt = (
             '!! SECTION FIRE',
