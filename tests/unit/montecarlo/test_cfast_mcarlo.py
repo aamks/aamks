@@ -286,17 +286,44 @@ class TestCfastMcarlo(TestCase):
         self.mock_psql_instance.query = MagicMock()
 
         def side_effect(query, args=None):
+            # ........
             if query.startswith("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'"):
                 return [OrderedDict([('tbl_name', 'fire_origin')])]
+            # ........
             if query.startswith("SELECT name, vent_from_name, vent_to_name, width, depth FROM aamks_geom WHERE type_sec='VVENT'"):
                 return [OrderedDict([('name', 'b2'), ('vent_from_name', 'r8'), ('vent_to_name', 'r10'), ('width', 365), ('depth', 285)]),
                         OrderedDict([('name', 'b1'), ('vent_from_name', 's1.1'), ('vent_to_name', 'OUTSIDE'), ('width', 240), ('depth', 250)])]
-            if query.startswith( "SELECT name, vent_from_name, vent_to_name, width, depth, height, mvent_throughput, is_vertical FROM aamks_geom WHERE type_sec = 'MVENT'"):
-                return [OrderedDict([('name', 'm1'), ('vent_from_name', 'r2'), ('vent_to_name', 'r2'), ('width', 105), ('depth', 400), ('height', 50), ('mvent_throughput', -1), ('is_vertical', 0)]),
-                        OrderedDict([('name', 'm2'), ('vent_from_name', 'c9'), ('vent_to_name', 'c9'), ('width', 125), ('depth', 120), ('height', 200), ('mvent_throughput', 0), ('is_vertical', 1)])]
+            # cfast_mcarlo.py _section_mvent function db mock
+            if query.startswith("SELECT name, vent_to_name, vent_from_name, is_vertical, mvent_throughput, air_grille_surface, z0, z1, height, x0,x1, width, y0,y1, depth FROM aamks_geom WHERE type_sec = 'MVENT'"):
+                return [OrderedDict([('name', 'm1'), ('vent_to_name', 'OUTSIDE'), ('vent_from_name', 'r8'), ('is_vertical', 1), ('mvent_throughput', 1.5), ('air_grille_surface', 'x_min'), ('z0', 0), ('z1', 50), ('height', 50), ('x0', 4230), ('x1', 4390), ('width', 160), ('y0', 1150), ('y1', 1260), ('depth', 110)]),
+                        OrderedDict([('name', 'm2'), ('vent_to_name', 'r8'), ('vent_from_name', 'OUTSIDE'), ('is_vertical', 0), ('mvent_throughput', 2), ('air_grille_surface', 'z_min'), ('z0', 0), ('z1', 50), ('height', 50), ('x0', 3975), ('x1', 4085), ('width', 110), ('y0', 1285), ('y1', 1385), ('depth', 100)]),
+                        OrderedDict([('name', 'm3'), ('vent_to_name', 's2'), ('vent_from_name', 'r8'), ('is_vertical', 1), ('mvent_throughput', 1.5), ('air_grille_surface', None), ('z0', 0), ('z1', 50), ('height', 50), ('x0', 4265), ('x1', 4425), ('width', 160), ('y0', 1760), ('y1', 1815), ('depth', 55)]),
+                        OrderedDict([('name', 'm4'), ('vent_to_name', 'r8'), ('vent_from_name', 's2'), ('is_vertical', 1), ('mvent_throughput', 1), ('air_grille_surface', None), ('z0', 0), ('z1', 50), ('height', 50), ('x0', 3882), ('x1', 4002), ('width', 120), ('y0', 1734), ('y1', 1812), ('depth', 78)]),
+                        OrderedDict([('name', 'm5'), ('vent_to_name', 's2'), ('vent_from_name', 'OUTSIDE'), ('is_vertical', 0), ('mvent_throughput', 1.5), ('air_grille_surface', None), ('z0', -3), ('z1', 50), ('height', 53), ('x0', 4177), ('x1', 4265), ('width', 88), ('y0', 1991), ('y1', 2156), ('depth', 165)]),
+                        OrderedDict([('name', 'm6'), ('vent_to_name', 'OUTSIDE'), ('vent_from_name', 'r5'), ('is_vertical', 1), ('mvent_throughput', 1.5), ('air_grille_surface', None), ('z0', 0), ('z1', 50), ('height', 50), ('x0', 2807), ('x1', 2856), ('width', 49), ('y0', 2570), ('y1', 2696), ('depth', 126)]),
+                        OrderedDict([('name', 'm7'), ('vent_to_name', 'OUTSIDE'), ('vent_from_name', 'r5'), ('is_vertical', 1), ('mvent_throughput', 0.6), ('air_grille_surface', None), ('z0', 0), ('z1', 50), ('height', 50), ('x0', 2807), ('x1', 2874), ('width', 67), ('y0', 2824), ('y1', 2924), ('depth', 100)]),
+                        OrderedDict([('name', 'm8'), ('vent_to_name', 's1'), ('vent_from_name', 'r11'), ('is_vertical', 1), ('mvent_throughput', 1.5), ('air_grille_surface', None), ('z0', 350), ('z1', 400), ('height', 50), ('x0', 2073), ('x1', 2139), ('width', 66), ('y0', 1863), ('y1', 1991), ('depth', 128)]),
+                        OrderedDict([('name', 'm9'), ('vent_to_name', 'r11'), ('vent_from_name', 's1'), ('is_vertical', 1), ('mvent_throughput', 0.5), ('air_grille_surface', None), ('z0', 350), ('z1', 400), ('height', 50), ('x0', 2088), ('x1', 2142), ('width', 54), ('y0', 2297), ('y1', 2370), ('depth', 73)]),
+                        OrderedDict([('name', 'm10'), ('vent_to_name', 's1'), ('vent_from_name', 'r18'), ('is_vertical', 1), ('mvent_throughput', 1.5), ('air_grille_surface', None), ('z0', 700), ('z1', 750), ('height', 50), ('x0', 2073), ('x1', 2139), ('width', 66), ('y0', 1863), ('y1', 1991), ('depth', 128)]),
+                        OrderedDict([('name', 'm11'), ('vent_to_name', 's1'), ('vent_from_name', 'r18'), ('is_vertical', 1), ('mvent_throughput', 0.5), ('air_grille_surface', None), ('z0', 700), ('z1', 750), ('height', 50), ('x0', 2088), ('x1', 2142), ('width', 54), ('y0', 2297), ('y1', 2370), ('depth', 73)])]
+            # cfast_mcarlo.py get_mvent_cfast_surface_details function db mock
+            if query.startswith("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='r8'"):
+                return [OrderedDict([('x0', 3790), ('x1', 4530), ('y0', 1065), ('y1', 1775), ('z0', 0), ('z1', 350), ('width', 740), ('depth', 710), ('height', 350)])]
+            if query.startswith("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='s2'"):
+                return [OrderedDict([('x0', 3790), ('x1', 4530), ('y0', 1775), ('y1', 2470), ('z0', 0), ('z1', 1050), ('width', 740), ('depth', 695), ('height', 1050)])]
+            if query.startswith("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='r5'"):
+                return [OrderedDict([('x0', 2105), ('x1', 2840), ('y0', 2470), ('y1', 3065), ('z0', 0), ('z1', 350), ('width', 735), ('depth', 595), ('height', 350)])]
+            if query.startswith("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='r11'"):
+                return [OrderedDict([('x0', 1385), ('x1', 2105), ('y0', 1775), ('y1', 2470), ('z0', 350), ('z1', 700), ('width', 720), ('depth', 695), ('height', 350)])]
+            if query.startswith("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='s1'"):
+                return [OrderedDict([('x0', 2105), ('x1', 2840), ('y0', 1775), ('y1', 2470), ('z0', 0), ('z1', 1050), ('width', 735), ('depth', 695), ('height', 1050)])]
+            if query.startswith("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='r18'"):
+                return [OrderedDict([('x0', 1385), ('x1', 2105), ('y0', 1775), ('y1', 2470), ('z0', 700), ('z1', 1050), ('width', 720), ('depth', 695), ('height', 350)])]
+            # ........
             if query.startswith("SELECT global_type_id, name, width, depth, height from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1"):
                 return [OrderedDict([('global_type_id', 2), ('name', 'r2'), ('width', 1035), ('depth', 945), ('height', 350)]),
                         OrderedDict([('global_type_id', 1), ('name', 's1'), ('width', 635), ('depth', 565), ('height', 700)])]
+
 
         self.mock_sqlite_instance.query.side_effect = side_effect
 
@@ -386,8 +413,17 @@ class TestCfastMcarlo(TestCase):
 
     def test_section_mvent(self):
         correct_row = "!! SECTION MECHANICAL VENT\n" \
-        "&VENT TYPE = 'MECHANICAL', ID = 'm1', COMP_IDS = 'r2', 'OUTSIDE', AREAS = 4.2, 4.2, HEIGHTS = 0.5, 50, FLOW = 1, CUTOFFS = 200, 300, ORIENTATIONS = 'HORIZONTAL', OFFSETS = 0, 0, CRITERION = 'TIME' T = 60,120 F = 0,1 /\n" \
-        "&VENT TYPE = 'MECHANICAL', ID = 'm2', COMP_IDS = 'OUTSIDE', 'c9', AREAS = 1.5, 1.5, HEIGHTS = 2.0, 200, FLOW = 0, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 0, 0, CRITERION = 'TIME' T = 60,120 F = 0,1 /\n"
+        "&VENT TYPE = 'MECHANICAL', ID = 'm1', COMP_IDS = 'r8', 'OUTSIDE', AREAS = 0.55, 0.55, HEIGHTS = 0.25, 0.25, FLOW = 1.5, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 4.4, 1.4, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm2', COMP_IDS = 'OUTSIDE', 'r8', AREAS = 1.1, 1.1, HEIGHTS = 0.0, 0.0, FLOW = 2, CUTOFFS = 200, 300, ORIENTATIONS = 'HORIZONTAL', OFFSETS = 2.4, 2.7, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm3', COMP_IDS = 'r8', 's2', AREAS = 0.8, 0.8, HEIGHTS = 0.25, 0.25, FLOW = 1.5, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 5.55, 7.1, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm4', COMP_IDS = 's2', 'r8', AREAS = 0.6, 0.6, HEIGHTS = 0.25, 0.25, FLOW = 1, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 1.52, 0.0, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm5', COMP_IDS = 'OUTSIDE', 's2', AREAS = 1.45, 1.45, HEIGHTS = 0.0, 0.0, FLOW = 1.5, CUTOFFS = 200, 300, ORIENTATIONS = 'HORIZONTAL', OFFSETS = 4.31, 2.98, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm6', COMP_IDS = 'r5', 'OUTSIDE', AREAS = 0.63, 0.63, HEIGHTS = 0.25, 0.25, FLOW = 1.5, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 7.35, 1.63, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm7', COMP_IDS = 'r5', 'OUTSIDE', AREAS = 0.5, 0.5, HEIGHTS = 0.25, 0.25, FLOW = 0.6, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 7.35, 4.04, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm8', COMP_IDS = 'r11', 's1', AREAS = 0.64, 0.64, HEIGHTS = 0.25, 0.25, FLOW = 1.5, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 7.2, 1.52, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm9', COMP_IDS = 's1', 'r11', AREAS = 0.36, 0.36, HEIGHTS = 3.75, 3.75, FLOW = 0.5, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 0.0, 5.58, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm10', COMP_IDS = 'r18', 's1', AREAS = 0.64, 0.64, HEIGHTS = 0.25, 0.25, FLOW = 1.5, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 7.2, 1.52, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm11', COMP_IDS = 'r18', 's1', AREAS = 0.36, 0.36, HEIGHTS = 0.25, 0.25, FLOW = 0.5, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 7.2, 5.58, CRITERION = 'TIME' T = 40,106 F = 0,1 /\n"
 
         actual_row = self.cfast_mcarlo._section_mvent()
 

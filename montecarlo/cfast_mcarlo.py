@@ -235,7 +235,7 @@ class CfastMcarlo():
 # }}}
     def _section_mvent(self):# {{{
         txt=['!! SECTION MECHANICAL VENT']
-        for v in self.s.query( "SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
+        for v in self.s.query("SELECT name, vent_to_name, vent_from_name, is_vertical, mvent_throughput, air_grille_surface, z0, z1, height, x0,x1, width, y0,y1, depth FROM aamks_geom WHERE type_sec = 'MVENT'"):
             comp_ids = [v['vent_from_name'], v['vent_to_name']]
             if v['is_vertical'] == 1:
                 orientation = 'VERTICAL'
@@ -270,7 +270,7 @@ class CfastMcarlo():
         if room_name == 'OUTSIDE':
             room_name = mvent['vent_to_name']
 
-        room = self.s.query("SELECT * FROM aamks_geom WHERE name='"+room_name+"'")[0]
+        room = self.s.query("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='"+room_name+"'")[0]
 
         if mvent['air_grille_surface'] is not None:
             if mvent['air_grille_surface'] == 'x_min':
