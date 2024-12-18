@@ -34,6 +34,9 @@ def prepare_logger(path):
 def start_aamks(path, user_id):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
+    # for local testing:
+    # path = '/home/aamks_users/majster1020@wp.pl/testtttt/tptest'
+    # os.environ["AAMKS_PROJECT"] = '/home/aamks_users/majster1020@wp.pl/testtttt/tptest'
     json = Json()
     conf = json.read("{}/conf.json".format(path))
     logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')

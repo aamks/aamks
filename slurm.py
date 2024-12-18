@@ -1,8 +1,6 @@
 import argparse
 from simple_slurm import Slurm
 import os
-import ast
-
 from include import Psql, Json
 
 def_args = [
@@ -13,13 +11,11 @@ python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "pyth
 python_env_aamks_server = f'{os.path.join(os.environ["AAMKS_PATH"], "env-server", "bin", "python")}'
 
 # launch aamks jobs
-def launch(path: str, user_id: str, irange: list):
+def launch(path: str, user_id: str, irange: list, scenario):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
     irange = [int(i) for i in irange]
-    conf = Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-    p_id = conf['project_id']
-    s_id = conf['scenario_id']
+    s_id = scenario
 
     # initiate slurm wrapper
     slurm = Slurm()
@@ -36,7 +32,7 @@ def launch(path: str, user_id: str, irange: list):
 
     # aamks.py prepares simulation files (cfast and evac) and starts worker process afterwards
     # with slurm those tasks are performed for each iteration separately
-    slurm.job_name = f'{p_id}:{s_id}'
+    slurm.job_name = f'{s_id}'
     command = f'srun {python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "aamks.py")} {path} {user_id}'
     try:
         job_id = slurm.sbatch(command, slurm.SLURM_ARRAY_TASK_ID)
@@ -122,8 +118,8 @@ if __name__ == '__main__':
     args = _argparse()
 
     if args.type in ['l', 'launch']:
-        if not all([args.path, args.userid, args.number]):
-            raise Exception('Specify path, userid and range of iterations numbers arguments with -p, -u and -n flags')
+        if not all([args.path, args.userid, args.number, args.scenario]):
+            raise Exception('Specify path, userid and range of iterations numbers arguments with -p, -u, -n and -s flags')
         launch(args.path, args.userid, args.number)
 
     elif args.type in ['p', 'pos.postprocess']:

@@ -53,13 +53,15 @@ class RedisWorkerServer:
     
     def run_aamks(self, message):
         logger.debug('running aamks...')
-        path, user_id, irange = message['data']['aamks']
+        path, user_id, irange, scenario_id = message['data']['aamks']
+        id = message["id"] + "_iter"
         message["AA"] = { 
                 "PROJECT": path,
                 "USER_ID": user_id,
                 "PATH": os.environ["AAMKS_PATH"],
                 "SERVER": os.environ['AAMKS_SERVER'],
-                "PG_PASS": os.environ['AAMKS_PG_PASS']
+                "PG_PASS": os.environ['AAMKS_PG_PASS'],
+                "scenario_id": scenario_id
                 }
         try:
             for i in range(*irange):
@@ -67,6 +69,7 @@ class RedisWorkerServer:
                     "sim_id": i,
                     "sim": "{}/workers/{}".format(path,i)
                 }
+                message["id"] = id.replace("iter", str(i))
                 self.worker_redis_queue_push(message)
                 logger.debug(f'send sim {i} {path}')
         except Exception as e:

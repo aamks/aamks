@@ -19,7 +19,7 @@ warnings.simplefilter('ignore', RuntimeWarning)
 
 class EvacEnv:
 
-    def __init__(self, aamks_vars, sim_id=None):
+    def __init__(self, aamks_vars, floor, sim_id=None):
         self.json = Json()
         self.sim_id = sim_id
         self.evacuees = Evacuees
@@ -27,7 +27,7 @@ class EvacEnv:
         self.current_time = 0
         self.smoke_query = None
         self.rset = 0
-        self.floor = 0
+        self.floor = floor
         self.nav = None
         self.room_list = OrderedDict()
         self.rooms_in_smoke = []
@@ -160,10 +160,15 @@ class EvacEnv:
         _exit_dict = {}
         if room_name == 'outside':
             # we get only this particular one exit outside near agent
-            # we dont want to find anoter exit if another exit has bigger general_floor_goals weight
             # now when agent is already outside (agent has beed guided by room room_exits_weights)
-            _exit_dict = [exit.copy() for exit in exits_dict if (exit['x'] == evacuee.exit_coordinates[0] and exit['y'] == evacuee.exit_coordinates[1] or
-                                                                 exit['x_outside'] == evacuee.exit_coordinates[0] and exit['y_outside'] == evacuee.exit_coordinates[1])]
+            # we dont want to find anoter exit if another exit has bigger general_floor_goals weight
+            _exit_dict = []
+            for exit in exits_dict:
+                if exit['type'] == 'door':
+                    if ((exit['x'] == evacuee.exit_coordinates[0] and exit['y'] == evacuee.exit_coordinates[1]) or
+                        (exit['x_outside'] == evacuee.exit_coordinates[0] and exit['y_outside'] == evacuee.exit_coordinates[1])):
+                        _exit_dict.append(exit.copy())
+            
             # and we set the x y coordinates to x_outside y_outside
             #to put the ultimate goal behind the door, not at the door
             for exit in _exit_dict:

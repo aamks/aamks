@@ -44,10 +44,8 @@ class OnEnd():
             # nothing to do except for updating aamks.sqlite with latest sim sqlite and Vis (possible conflicts?)
             Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1, "sql": new_sql_path})
             return
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+
+        self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.uprefs=GetUserPrefs()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
@@ -62,16 +60,17 @@ class OnEnd():
         self._register_works()
         self.s.close()
 # }}}
-    def _test_navmesh(self):# {{{
-        navs={}
-        for floor in self.json.readdb('floors_meta').keys():
-            z=self.s.query("SELECT name FROM aamks_geom WHERE floor=? AND room_enter='no'", (floor,))
-            bypass_rooms=[]
-            for i in z:
-                bypass_rooms.append(i['name'])
-            navs[tuple(bypass_rooms)]=Navmesh()
-            navs[tuple(bypass_rooms)].build(floor,bypass_rooms)
-            navs[tuple(bypass_rooms)].test()
+    # deprecated - room_enter property was deleted
+    # def _test_navmesh(self):# {{{
+    #     navs={}
+    #     for floor in self.json.readdb('floors_meta').keys():
+    #         z=self.s.query("SELECT name FROM aamks_geom WHERE floor=? AND room_enter='no'", (floor,))
+    #         bypass_rooms=[]
+    #         for i in z:
+    #             bypass_rooms.append(i['name'])
+    #         navs[tuple(bypass_rooms)]=Navmesh()
+    #         navs[tuple(bypass_rooms)].build(floor,bypass_rooms)
+    #         navs[tuple(bypass_rooms)].test()
 # }}}
     def _register_works(self):# {{{
         ''' 

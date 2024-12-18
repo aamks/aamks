@@ -31,9 +31,9 @@ function message(){
     );
     return $message;
 }
-function run_aamks($path, $user_id, $irange){
+function run_aamks($path, $user_id, $irange, $scenario_id){ 
     $mess = message();
-    $mess["data"] = array("aamks" => [$path, $user_id, $irange]);
+    $mess["data"] = array("aamks" => [$path, $user_id, $irange, $scenario_id]);
     push($mess);
 }
 function run_beck_anim($path, $project, $scenario, $iter){

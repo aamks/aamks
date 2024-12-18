@@ -39,6 +39,8 @@ function resetScenario() {
 	myConfirm("Are you sure to delete all records from scenario?").then(response=>{
 		if (response) {
 			$.post('projects.php?projects_list', {'reset_scenario':'true'});
+			amsg({"msg": "Reseting successfully!", "err":0, "duration": 1000 });
+			setTimeout(() => {  window.location.href = 'form.php?edit';  }, 1000);
 		}}
 )};
 $(function()  {//{{{
@@ -114,7 +116,7 @@ function amsg(r) {//{{{
 		$('#amsg').html(r['msg']);
 		$('#amsg').css('display', 'block');
 		$('#amsg').css('background-color', "#800");
-		$('#amsg').delay(r['duration']).fadeOut(400);
+		$('#amsg').delay(r['duration']).fadeOut(3000);
 	}
 }
 //}}}

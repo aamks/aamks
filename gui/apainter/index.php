@@ -9,11 +9,14 @@ function css() { #{{{
 	$css.="body { overflow: hidden; }\n";
 
 	foreach($json['aamksGeoms'] as $v) {
-		if(!empty($v['legendary']) || $v['x']=='UNDERLAY_SCALER') { $css.=".$v[x] { fill: $v[c]; stroke: $v[stroke]; stroke-width: $v[strokeWidth]; }\n"; }
-	}
-	foreach($json['aamksGeomsAttribs'] as $k=>$v) {
-		if(isset($v['fill']))   { $css.=".$k { fill: $v[fill] !important; }\n"; }
-		if(isset($v['stroke'])) { $css.=".$k { stroke: $v[stroke] !important; }\n"; }
+		if(!empty($v['legendary']) || $v['x']=='UNDERLAY_SCALER'|| $v['x']=='VSTAI'|| $v['x']=='VHALL') 
+			{ 
+				$opacity = '1';
+				if ($v['x']=='VSTAI'|| $v['x']=='VHALL')
+					$opacity = '0.3';
+				$css.=".$v[x] { fill: $v[c]; stroke: $v[stroke]; stroke-width: $v[strokeWidth]; opacity: $opacity }\n"; 
+
+			}
 	}
 
 	$css.=".cg-selected { stroke: #ff0; fill: #ff8; }\n"; 
@@ -39,7 +42,14 @@ function main() { /*{{{*/
 	}
 	$_SESSION['nn']->htmlHead("Apainter");
 	site();
-	if(isset($_SESSION['main'])) { echo " <script>var session_scenario='".$_SESSION['main']['scenario_name']."';</script>"; }
+	if(isset($_SESSION['main'])) { 
+		$conf_file = json_decode(file_get_contents($_SESSION['main']['working_home']."/conf.json"), true);
+		if (array_key_exists('editable', $conf_file) && ($conf_file['editable'] == 0)){
+			$editable = 0;
+		} else {$editable = 1;}
+		echo " <script>var session_scenario='".$_SESSION['main']['scenario_name']."';</script>";
+		echo " <script>var session_editable='$editable';</script>"; 
+	}
 }
 /*}}}*/
 main();

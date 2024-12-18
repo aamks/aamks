@@ -46,7 +46,6 @@ class Worker:
 
         self.project_dir = self.working_dir.split("/workers/")[0]
         self.sim_id = int(self.working_dir.split("/workers/")[1])
-
         new_sql_path = os.path.join(self.working_dir, f"aamks_{self.sim_id}.sqlite")
         if os.path.exists(new_sql_path):
             self.s=Sqlite(new_sql_path)
@@ -127,7 +126,7 @@ class Worker:
         self.detection_time = self.config['DETECTION_TIME']
         self.project_conf=self.json.read("../../conf.json")
 
-        if not logging.getLogger(f'{self.host_name} - evac.py  ').handlers:
+        if not logging.getLogger(f'{self.host_name} - evac.py  ').handlers: 
             self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py  ')
         else:
             self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py  ')
@@ -364,8 +363,7 @@ class Worker:
             try:
                 self.prepare_staircases(str(floor))
                 self.vars['conf']['working_dir'] = self.working_dir
-                eenv = EvacEnv(self.vars['conf'], self.sim_id)
-                eenv.floor = floor
+                eenv = EvacEnv(self.vars['conf'], floor, self.sim_id)
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":31})
@@ -474,6 +472,7 @@ class Worker:
         #first_evacuue = []
         # iterate over CFAST time frames (results saving interval)
 
+        aset = self.vars['conf']['simulation_time']
         while 1:
             time_frame += cfast_step    # increase upper limit of time_frame
             aset = self.vars['conf']['simulation_time']

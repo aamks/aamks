@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import random
 from json import loads
@@ -6,6 +7,7 @@ import redis
 import config
 import os
 from aamks import start_aamks_with_worker
+from include import Psql
 
 class RedisWorker:
     
@@ -35,13 +37,16 @@ class RedisWorker:
         return message_json
 
     def process_message(self, message_json: str):
+        job_id = message_json["id"]
         pwd = message_json["data"]["sim"]
         sim_id = message_json["data"]["sim_id"]
         user_id = message_json["AA"]["USER_ID"]
         project = message_json["AA"]["PROJECT"]
+        scenario_id = message_json["AA"]["scenario_id"]
         if self.host != "127.0.0.1":
             pwd = pwd.replace("home","mnt")
-        logger.debug(f'starting aamks iter {sim_id} with worker {pwd}')
+        logger.debug(f'starting aamks iter {sim_id} id - {job_id}')
+        Psql().query(f"UPDATE simulations SET job_id='{job_id}' WHERE scenario_id={scenario_id} AND iteration={sim_id}")
         try:
             start_aamks_with_worker(project, user_id, sim_id)
         except Exception as e:
