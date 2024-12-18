@@ -120,7 +120,7 @@ if __name__ == '__main__':
     if args.type in ['l', 'launch']:
         if not all([args.path, args.userid, args.number, args.scenario]):
             raise Exception('Specify path, userid and range of iterations numbers arguments with -p, -u, -n and -s flags')
-        launch(args.path, args.userid, args.number)
+        launch(args.path, args.userid, args.number, args.scenario[0])
 
     elif args.type in ['p', 'pos.postprocess']:
         if not all([args.path]):
