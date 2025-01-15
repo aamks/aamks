@@ -311,6 +311,63 @@ function ajaxShowImage(){
 	$base64Image = base64_encode($img);
 	echo json_encode('data:image/jpeg;base64,'.$base64Image);
 }
+function createTableRows($query){
+	$data = $_SESSION['nn']->query($query);
+	$rowsHtml = '';
+	foreach ($data as $sim) {
+		$results = json_decode($sim['results'], true);
+		$wcbe = json_decode($sim['wcbe'], true);
+		$link = $sim['is_anim'] == 1 ? "<a href='anim.php?iter={$sim['iteration']}'>Go to anim</a>" : 'no anim';
+		$modified = substr($sim['modified'], 0, 19);
+		$rowsHtml.="<tr>
+		<td>{$sim['iteration']}</td>
+		<td>" . number_format($sim['hrrpeak'], 1, ".", "") . " </td>
+		<td>" . number_format($sim['alpha'], 4, ".", "") . " </td>
+		<td>" . number_format($sim['heat_of_combustion'], 1, ".", "") . " </td>
+		<td>" . number_format($sim['max_temp'], 4, ".", "") . " </td>
+		<td>" . number_format($sim['min_hgt_compa'], 4, ".", "") . " </td>
+		<td>" . number_format($sim['min_hgt_cor'], 4, ".", "") . " </td>
+		<td>" . number_format($sim['min_vis_compa'], 4, ".", "") . " </td>
+		<td>" . number_format($sim['min_vis_cor'], 1, ".", "") . " </td>
+		<td>" . number_format($sim['tot_heat'], 1, ".", "") . " </td>
+		<td>" . number_format(max($wcbe), 0, ".", "") . " </td>
+		<td>" . number_format($sim['dcbe_time'], 0, ".", "") . " </td>
+		<td>" . sprintf("%.4e", $results['individual']) . "</td>
+		<td>" . sprintf("%.4e", $results['societal']) . "</td>
+		<td>{$modified}</td>
+		<td>{$link}</td>
+		</tr>
+		";
+	}
+	$rowsHtml = str_replace("\n", "", $rowsHtml);
+	$rowsHtml = str_replace("\t", "", $rowsHtml);
+	return json_encode($rowsHtml);
+}
+function ajaxAnimatorTable(){
+	$page = isset($_GET['page']) ? (int)$_GET['page'] : 0;
+	$limit = 30; // Number of rows per page
+	$offset = $page * $limit;
+
+	// Query the database to fetch rows for the current page
+	$query = "SELECT * ".
+	"FROM simulations WHERE project=".$_SESSION['main']['project_id']." AND scenario_id=".$_SESSION['main']['scenario_id'].
+	" AND status='0' AND status IS NOT NULL ORDER BY iteration DESC LIMIT $limit OFFSET $offset";
+
+	$rowsHtml = createTableRows($query);
+	echo $rowsHtml;
+}
+function ajaxAnimatorTableSearch(){
+
+	$column = $_GET['column'];
+	$value = $_GET['value'];
+	// Query the database to fetch rows for the current page
+	$query = "SELECT * ".
+	"FROM simulations WHERE project=".$_SESSION['main']['project_id']." AND scenario_id=".$_SESSION['main']['scenario_id'].
+	" AND status='0' AND status IS NOT NULL AND {$column}{$value} ORDER BY iteration DESC";
+
+	$rowsHtml = createTableRows($query);
+	echo $rowsHtml;
+}
 function main() { /*{{{*/
 	header('Content-type: application/json');
 	ini_set('display_errors', 1);
@@ -344,6 +401,8 @@ function main() { /*{{{*/
 		if(isset($_GET['ajaxRemoveUnderlay']))          { ini_set('display_errors', 0) ; ajaxRemoveUnderlay()       ; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxCheckProgress']))          	{ ini_set('display_errors', 0) ; ajaxCheckProgress()       	; ini_set('display_errors', 1) ; }
 		if(isset($_GET['ajaxShowImage']))	          	{ ini_set('display_errors', 0) ; ajaxShowImage()	       	; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxAnimatorTable']))	        { ini_set('display_errors', 0) ; ajaxAnimatorTable()       	; ini_set('display_errors', 1) ; }
+		if(isset($_GET['ajaxAnimatorTableSearch']))	    { ini_set('display_errors', 0) ; ajaxAnimatorTableSearch()  ; ini_set('display_errors', 1) ; }
 	}
 	if(isset($_GET['googleLogin']))    { ajaxGoogleLogin(); }
 }
