@@ -9,12 +9,14 @@ if ($aamks_worker=='redis') {
     require_once("slurm.php");
 };
 
-session_start();
 #phpinfo();
+// ini_set('session.cookie_lifetime', 10);
+// ini_set('session.gc_maxlifetime', 86400);
 ini_set('error_reporting', E_ALL);
 ini_set('display_errors',1);
 ini_set('display_startup_errors',1);
 ini_set('memory_limit','512M');
+session_start();
 setlocale(LC_TIME, "pl_PL");
 
 # debug/*{{{*/
