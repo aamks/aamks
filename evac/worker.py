@@ -47,12 +47,6 @@ class Worker:
         self.project_dir = self.working_dir.split("/workers/")[0]
         self.sim_id = int(self.working_dir.split("/workers/")[1])
 
-        # for local testing:
-        # self.working_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/tptest/workers/15'
-        # self.project_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/tptest'
-        # os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1020@wp.pl/testtttt/tptest'
-        # self.sim_id = '16'
-
         new_sql_path = os.path.join(self.working_dir, f"aamks_{self.sim_id}.sqlite")
         if os.path.exists(new_sql_path):
             self.s=Sqlite(new_sql_path)
