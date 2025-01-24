@@ -52,6 +52,15 @@ class TestDrawAndLog(TestCase):
                 return [OrderedDict([('width', 980), ('depth', 945), ('height', 350)])]
             if query.startswith("SELECT name from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1"):
                 return [OrderedDict([('name', 'r1')]), OrderedDict([('name', 'c2')])]
+            if query.startswith("SELECT type_sec, name, vent_from_name, vent_to_name, vent_from, vent_to, cfast_width, sill, height, width, face_offset, face FROM aamks_geom WHERE type_tri='DOOR'"):
+                return [OrderedDict([('type_sec', 'DOOR'), ('name', 'd1'), ('vent_from_name', 's1'), ('vent_to_name', 'OUTSIDE'), ('vent_from', 1), ('vent_to', 11), ('cfast_width', 90), ('sill', 0), ('height', 200), ('width', 32), ('face_offset', 219.0), ('face', 'LEFT')]),
+                        OrderedDict([('type_sec', 'DOOR'), ('name', 'd2'), ('vent_from_name', 's1'), ('vent_to_name', 'r2'), ('vent_from', 1), ('vent_to', 2), ('cfast_width', 90), ('sill', 0), ('height', 200), ('width', 32), ('face_offset', 249.0), ('face', 'RIGHT')]),
+                        OrderedDict([('type_sec', 'HOLE'), ('name', 'z7'), ('vent_from_name', 'r2'), ('vent_to_name', 'r4'), ('vent_from', 2), ('vent_to', 4), ('cfast_width', 945), ('sill', 0), ('height', 350), ('width', 32), ('face_offset', 4.0), ('face', 'RIGHT')])]
+            if query.startswith("SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.how_much_open=0 AND (v.type_sec='WIN' OR v.type_sec='DOOR')"):
+                return [OrderedDict([('name', 'd2'), ('vent_from_name', 's1'), ('face', 'RIGHT'), ('face_offset', 249.0), ('wwidth', 32), ('wdepth', 86), ('sill', 0), ('height', 200), ('width', 635), ('depth', 565), ('type_sec', 'STAI')]),
+                        OrderedDict([('name', 'w3'), ('vent_from_name', 'c3'), ('face', 'LEFT'), ('face_offset', 110.0), ('wwidth', 32), ('wdepth', 285), ('sill', 100), ('height', 150), ('width', 2705), ('depth', 515), ('type_sec', 'COR')]),
+                        OrderedDict([('name', 'w4'), ('vent_from_name', 'r2'), ('face', 'FRONT'), ('face_offset', 263.0), ('wwidth', 259), ('wdepth', 32), ('sill', 100), ('height', 150), ('width', 1035), ('depth', 945), ('type_sec', 'ROOM')]),
+                        OrderedDict([('name', 'd17'), ('vent_from_name', 'a6'), ('face', 'REAR'), ('face_offset', 458.0), ('wwidth', 86), ('wdepth', 32), ('sill', 0), ('height', 200), ('width', 1035), ('depth', 945), ('type_sec', 'HALL')])]
             else:
                 raise Exception("Unknown query: " + query)
         self.mock_sqlite_instance.query.side_effect = side_effect
@@ -172,9 +181,20 @@ class TestDrawAndLog(TestCase):
         self.assertEqual(self.draw.data_for_psql['123']['w'], [0])
         self.assertEqual(self.draw.sections['VENT'], [{'TYPE': 'WALL', 'ID': 'w4', 'COMP_IDS': ["'r2'", "'OUTSIDE'"], 'WIDTH': 2.59, 'TOP': 2.5, 'BOTTOM': 1.0, 'OFFSET': 2.63, 'FACE': 'FRONT', 'CRITERION': 'TEMPERATURE', 'SETPOINT': 200, 'PRE_FRACTION': 0, 'POST_FRACTION': 1, 'DEVC_ID': 't_w4'}])
 
-    def test_draw_doors_and_holes_opening(self):
-        # to do after update
-        self.assertEqual(2+2, 5)
+    @patch.object(DrawAndLog, '_fire', new_callable=PropertyMock, create=True)
+    @patch('montecarlo.cfast_mcarlo.binomial')
+    def test_draw_doors_and_holes_opening(self, mock_binomial, mock_fire):
+        mock_binomial.side_effect = [1, 0]
+        mock_fire.return_value.f_id = 'f2'
+
+        self.draw._draw_doors_and_holes_opening()
+
+        self.assertEqual(self.draw.sections['DOORS'],
+            [{'TYPE': 'WALL', 'ID': 'd1', 'COMP_IDS': ["'s1'", "'OUTSIDE'"], 'WIDTH': 0.9, 'TOP': 2.0, 'BOTTOM': 0.0, 'OFFSET': 2.19, 'FACE': 'LEFT', 'CRITERION': ["'TIME'", 'T = 0,60,61', 'F=0,0,1']},
+            {'TYPE': 'WALL', 'ID': 'd2', 'COMP_IDS': ["'s1'", "'r2'"], 'WIDTH': 0.9, 'TOP': 2.0, 'BOTTOM': 0.0, 'OFFSET': 2.49, 'FACE': 'RIGHT', 'CRITERION': 'TEMPERATURE', 'SETPOINT': 200, 'PRE_FRACTION': 0, 'POST_FRACTION': 1, 'DEVC_ID': 't_d2'},
+            {'TYPE': 'WALL', 'ID': 'z7', 'COMP_IDS': ["'r2'", "'r4'"], 'WIDTH': 9.45, 'TOP': 3.5, 'BOTTOM': 0.0, 'OFFSET': 0.04, 'FACE': 'RIGHT', 'CRITERION': ["'TIME'", 'T = 0', 'F = 1']}])
+        self.assertEqual(self.draw.data_for_psql['123']['door'], [1, 0])
+        self.assertEqual(self.draw._fire_openings, [(0.32, 3.5, 1)])
 
     @patch('montecarlo.cfast_mcarlo.binomial')
     def test_vvents_opening(self, mock_binomial):
@@ -248,8 +268,14 @@ class TestDrawAndLog(TestCase):
                                                        'NORMAL': [0.0, 0.0, 1.0],'TEMPERATURE_DEPTH': 0,'TYPE': 'PLATE'}])
 
     def test_draw_window_and_door_targets(self):
-        # to do after update
-        self.assertEqual(2+2, 5)
+
+        self.draw._draw_window_and_door_targets()
+
+        self.assertEqual(self.draw.sections['DEVC'],
+                        [{'ID': 't_d2', 'COMP_ID': 's1', 'LOCATION': [0, 2.73, 1.0], 'TYPE': 'PLATE', 'NORMAL': [1.0, 0.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'},
+                        {'ID': 't_w3', 'COMP_ID': 'c3', 'LOCATION': [27.05, 2.52, 0.75], 'TYPE': 'PLATE', 'NORMAL': [-1.0, 0.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'},
+                        {'ID': 't_w4', 'COMP_ID': 'r2', 'LOCATION': [3.92, 0, 0.75], 'TYPE': 'PLATE', 'NORMAL': [0.0, 1.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'},
+                        {'ID': 't_d17', 'COMP_ID': 'a6', 'LOCATION': [5.34, 9.45, 1.0], 'TYPE': 'PLATE', 'NORMAL': [0.0, -1.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'}])
 
     @patch('montecarlo.cfast_mcarlo.binomial')
     def test_draw_triggers(self, mock_binomial):
