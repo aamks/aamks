@@ -255,7 +255,10 @@
 					$(th).appendTo($(searchHeader));
 				} else {
 					var nInputElm=0;
+					var tbodyElement = $(elm).closest("table").find("tbody");
 					$(elm).find("td").first().parent().find("td").slice(0, -1).each(function() {
+						var thElement = $(this).closest("table").find("thead th").eq(nInputElm);
+						var column = thElement.attr("columnName")
 						elm.fancyTable.searchArr.push("");
 						var searchField = $("<input>",{
 							"aria-label": "Search column",
@@ -266,6 +269,27 @@
 							elm.fancyTable.searchArr[$(this).data("n")] = $(this).val();
 							elm.fancyTable.page = 1;
 							instance.tableUpdate(elm);
+
+							if (!$(this).next("button.send-request").length) {
+								var button = $("<button>", {
+									text: "Send Request",
+									class: "send-request",
+									style: "margin-left: 5px;"
+								}).on("click", function() {
+									const value = $(searchField).val().trim();								
+									$.get(`/aamks/ajax.php?ajaxAnimatorTableSearch`, { column, value }, function(data) {
+										tbodyElement.html(data);
+									});
+									$(this).hide();
+								});
+								$(this).after(button);
+							}
+							var button = $(this).next("button.send-request");
+							if ($(this).val().trim() !== "") {
+								button.show();
+							} else {
+								button.hide();
+							}
 						});
 						var th = $("<th>",{ style:"padding:2px;" });
 						$(searchField).appendTo($(th));
