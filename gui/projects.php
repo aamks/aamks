@@ -1,6 +1,6 @@
 <?php
 session_name('aamks');
-require_once("inc.php"); 
+require_once("inc.php");
 
 function projects_list(){/*{{{*/
 	$current_project = $_SESSION['main']['project_name'];
@@ -220,6 +220,11 @@ function main() { #{{{
 	if(!array_key_exists('nn', $_SESSION))
     {
         header("Location: login.php?session_finished_information=1");
+    }
+	if (isset($_COOKIE['is_remember'])) {
+        setcookie("aamks", session_id(), time() + (86400 * 7), "/");
+    } else {
+        setcookie("aamks", session_id(), time() + 86400, "/");
     }
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; } # TODO: index.php should handle this
 	$_SESSION['nn']->htmlHead("Manage projects");

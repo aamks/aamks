@@ -349,10 +349,11 @@ function main() {/*{{{*/
     else{
 	    check_conv_current();
     }
-
-
-
-
+	if (isset($_COOKIE['is_remember'])) {
+        setcookie("aamks", session_id(), time() + (86400 * 7), "/");
+    } else {
+        setcookie("aamks", session_id(), time() + 86400, "/");
+    }
 }
 /*}}}*/
 

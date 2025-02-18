@@ -293,10 +293,14 @@ function show_data() {/*{{{*/
 /*}}}*/
 
 function main() {/*{{{*/
-    if(!array_key_exists('nn', $_SESSION))
-        {
-            header("Location: login.php?session_finished_information=1");
-        }
+    if(!array_key_exists('nn', $_SESSION)){
+        header("Location: login.php?session_finished_information=1");
+    }
+	if (isset($_COOKIE['is_remember'])) {
+        setcookie("aamks", session_id(), time() + (86400 * 7), "/");
+    } else {
+        setcookie("aamks", session_id(), time() + 86400, "/");
+    }
     if (isset($_GET['comp'])){
         $scens = explode('<>', $_GET['comp']);
         $dir = implode('-', $scens);

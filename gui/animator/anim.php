@@ -111,6 +111,11 @@ function main() {/*{{{*/
 	{
 		header("Location: ../login.php?session_finished_information=1");
 	}
+	if (isset($_COOKIE['is_remember'])) {
+        setcookie("aamks", session_id(), time() + (86400 * 7), "/");
+    } else {
+        setcookie("aamks", session_id(), time() + 86400, "/");
+    }
 	$_SESSION['nn']->htmlHead("Animator");
 	site();
 	make_anim_pictures();
