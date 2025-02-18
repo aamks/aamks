@@ -45,7 +45,7 @@ def start_aamks(path, user_id):
     OnInit()
     logger.info('finished OnInit()')
     logger.info('calling CFASTimporter()')
-    CFASTimporter()
+    CFASTimporter().run()
     logger.info('finished CFASTimporter()')
     logger.info('calling World2d()')
     World2d()
@@ -89,7 +89,7 @@ def start_aamks_with_worker(path: str, user_id: str, sim_id: str):
     logger.info('finished OnInit()')
     
     logger.info('calling CFASTimporter()')
-    CFASTimporter(sim_id=sim_id)
+    CFASTimporter(sim_id=sim_id).run()
     logger.info('finished CFASTimporter()')
 
     logger.info('calling World2d()')

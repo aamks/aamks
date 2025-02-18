@@ -18,7 +18,7 @@ class OnInit:
         if not sim_id:
             si = SimIterations(self.project_id, self.scenario_id, self.conf['number_of_simulations'])
             self.irange = si.get()
-            si.insert(self.conf['number_of_simulations'])
+            si.insert(self.conf['animations_number'])
         else:
             self.irange = [sim_id, sim_id+1]
         self._setup_simulations()

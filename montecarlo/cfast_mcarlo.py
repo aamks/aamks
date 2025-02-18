@@ -871,7 +871,7 @@ class DrawAndLog:
         else:
             raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
 
-        for v in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from, vent_to"):
+        for v in self.s.query("SELECT type_sec, name, vent_from_name, vent_to_name, vent_from, vent_to, cfast_width, sill, height, width, face_offset, face FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from, vent_to"):
             vents = self.conf['vents_open']
             v_type = v['type_sec']
             door = { "TYPE": 'WALL',
