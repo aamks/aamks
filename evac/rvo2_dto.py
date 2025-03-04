@@ -287,13 +287,14 @@ class EvacEnv:
 
     def get_data_for_visualization(self):
         data_row={}
-        finished = [self.evacuees.get_finshed_of_pedestrian(i) for i in range(self.evacuees.get_number_of_pedestrians())]
         for n in range(self.evacuees.get_number_of_pedestrians()):
-            position = self.evacuees.get_position_of_pedestrian(n)
-            velocity = self.evacuees.get_velocity_of_pedestrian(n)
-            fed = self.evacuees.get_symbolic_fed_of_pedestrian(n)
-            unique_agent_id = self.evacuees.get_unique_agent_id_on_floor(n)
-            data_row[unique_agent_id] = [int(position[0]), int(position[1]), velocity[0], velocity[1], fed, finished[n]]
+            if self.evacuees.did_agent_moved(n):
+                position = self.evacuees.get_position_of_pedestrian(n)
+                velocity = self.evacuees.get_velocity_of_pedestrian(n)
+                fed = self.evacuees.get_symbolic_fed_of_pedestrian(n)
+                finished = self.evacuees.get_finshed_of_pedestrian(n)
+                unique_agent_id = self.evacuees.get_unique_agent_id_on_floor(n)
+                data_row[unique_agent_id] = [int(position[0]), int(position[1]), velocity[0], velocity[1], fed, finished]
         return data_row
 
     def update_agents_position(self):

@@ -212,4 +212,6 @@ class Evacuees:
     def get_leader_of_evacuee(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].leader
-    
+
+    def did_agent_moved(self, ped_no):
+        return self.pedestrians[ped_no].did_agent_moved()

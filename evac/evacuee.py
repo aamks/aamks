@@ -26,6 +26,7 @@ class Evacuee:
         self.speed = 0
         self.thermal_injury = 0
         self.position = origin
+        self.prev_position = (0, 0)
         self.finished = 1
         self.node_radius = node_radius
         self.pre_evacuation_time = pre_evacuation
@@ -133,3 +134,9 @@ class Evacuee:
         if self.beta_v == 0:
             self.beta_v = 0.00000001
         self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.beta_v/self.alpha_v * extinction_coefficient))
+
+    def did_agent_moved(self):
+        if self.prev_position != self.position:
+            self.prev_position = self.position
+            return True
+        return False
