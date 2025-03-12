@@ -32,6 +32,7 @@ var external_doors = [];
 var teleports = [];
 var rooms_and_adjecent_doors_and_holes = {};
 var virtual_obj_parents = {};
+var obstAndCompartmentMarginWidth=26;
 //}}}
 function debug() {//{{{
 	console.clear();
@@ -209,6 +210,15 @@ function cgSvg(pparent='auto') { //{{{
 	} else {
 		var elem='polyline';
 	}
+	if (cg.type =='obst')
+		d3.select(pparent)
+			.append(elem)
+			.attr('id', 'margin'+cg.name)
+			.attr('class', 'OBSTMARGIN')
+			.attr('points', obstMarginSvgPolyline(cg))
+			.attr('cx', cg.polypoints[0][0])
+			.attr('cy', cg.polypoints[0][1])
+			.attr('r', evacueeRadius)
 	d3.select(pparent)
 		.append(elem)
 		.attr('id', cg.name)
@@ -217,6 +227,17 @@ function cgSvg(pparent='auto') { //{{{
 		.attr('cx', cg.polypoints[0][0])
 		.attr('cy', cg.polypoints[0][1])
 		.attr('r', evacueeRadius)
+
+	if (cg.type =='room')
+		d3.select(pparent)
+			.append(elem)
+			.attr('id', 'margin'+cg.name)
+			.attr('class', 'COMPARTMENTMARGIN')
+			.attr('points', roomMarginSvgPolyline(cg))
+			.attr('cx', cg.polypoints[0][0])
+			.attr('cy', cg.polypoints[0][1])
+			.attr('r', evacueeRadius)
+
 }
 
 
@@ -232,6 +253,14 @@ function cgSvgVirtualObj(obj) { //{{{
 			.attr('id', virtual_obj_parents[obj.name][i][0])
 			.attr('class', gg[virtual_obj_parents[obj.name][i][1]].t + " " +gg[virtual_obj_parents[obj.name][i][1]].x)
 			.attr('points', svgPolyline(obj))
+			.attr('cx', obj.polypoints[0][0])
+			.attr('cy', obj.polypoints[0][1])
+			.attr('r', evacueeRadius)
+			d3.select(pparent)
+			.append(elem)
+			.attr('id', 'margin'+virtual_obj_parents[obj.name][i][0])
+			.attr('class', 'COMPARTMENTMARGIN')
+			.attr('points', roomMarginSvgPolyline(obj))
 			.attr('cx', obj.polypoints[0][0])
 			.attr('cy', obj.polypoints[0][1])
 			.attr('r', evacueeRadius)
@@ -292,6 +321,7 @@ function cgDbVirtualObj(parent) { //{{{
 			var vObjId = virtual_obj_parents[parent.name][i][0];
 	 		db({"name": vObjId}).remove();
 	 		document.getElementById(vObjId).remove();
+			document.getElementById('margin'+vObjId).remove();
 		}
 	}
 
@@ -482,6 +512,12 @@ function cgRemove(undoRegister=1) {//{{{
 			if (m.room_exits_weights !== undefined && cg.idx in m.room_exits_weights)
 				delete m.room_exits_weights[cg.idx];
 		});
+	}
+	if (cg.type == 'obst'){	
+		$("#margin"+cg.name).remove();
+	}
+	if (cg.type == 'room'){	
+		$("#margin"+cg.name).remove();
 	}
 }
 //}}}
@@ -1145,9 +1181,91 @@ function svgPolyline(m) {//{{{
 	return points.join(" ");
 }
 
+function obstMarginSvgPolyline(m) {//{{{
+	points=deepcopy(m.polypoints);
+	points.push(points[0]);
+	points.push(points[1]);
+	if (points !== undefined && points[0] !== undefined)
+		points = scaleRectangleOutward(points);
+	return points.join(" ");
+}
+
+function roomMarginSvgPolyline(m) {//{{{
+	points=deepcopy(m.polypoints);
+	points.push(points[0]);
+	points.push(points[1]);
+	if (points !== undefined && points[0] !== undefined)
+		points = scaleRectangleInward(points);
+	return points.join(" ");
+}
+
+function scaleRectangleOutward(points) {
+	if (points.length !== 6) {
+	  throw new Error("Input points must define a rectangle with 6 points (2 redundant).");
+	}
+  
+	// Find the min and max values for x and y to determine the rectangle bounds
+	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  
+	for (const [x, y] of points) {
+	  if (x < minX) minX = x;
+	  if (y < minY) minY = y;
+	  if (x > maxX) maxX = x;
+	  if (y > maxY) maxY = y;
+	}
+  
+	// Calculate outward offset for each corner of the rectangle
+	const adjustedPoints = [
+	  [minX - obstAndCompartmentMarginWidth, minY - obstAndCompartmentMarginWidth], // Top-left corner
+	  [maxX + obstAndCompartmentMarginWidth, minY - obstAndCompartmentMarginWidth], // Top-right corner
+	  [maxX + obstAndCompartmentMarginWidth, maxY + obstAndCompartmentMarginWidth], // Bottom-right corner
+	  [minX - obstAndCompartmentMarginWidth, maxY + obstAndCompartmentMarginWidth], // Bottom-left corner
+	];
+  
+	// Add the redundant points to close the rectangle
+	adjustedPoints.push(adjustedPoints[0]); // Redundant first point
+	adjustedPoints.push(adjustedPoints[1]); // Redundant second point
+  
+	return adjustedPoints;
+  }
+
+function scaleRectangleInward(points) {
+	if (points.length !== 6) {
+	  throw new Error("Input points must define a rectangle with 6 points (2 redundant).");
+	}
+	let halfStrokeWidth = obstAndCompartmentMarginWidth/2;
+	// Find the min and max values for x and y to determine the rectangle bounds
+	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  
+	for (const [x, y] of points) {
+	  if (x < minX) minX = x;
+	  if (y < minY) minY = y;
+	  if (x > maxX) maxX = x;
+	  if (y > maxY) maxY = y;
+	}
+  
+	// Calculate outward offset for each corner of the rectangle
+	const adjustedPoints = [
+	  [minX + halfStrokeWidth, minY + halfStrokeWidth], // Top-left corner
+	  [maxX - halfStrokeWidth, minY + halfStrokeWidth], // Top-right corner
+	  [maxX - halfStrokeWidth, maxY - halfStrokeWidth], // Bottom-right corner
+	  [minX + halfStrokeWidth, maxY - halfStrokeWidth], // Bottom-left corner
+	];
+  
+	// Add the redundant points to close the rectangle
+	adjustedPoints.push(adjustedPoints[0]); // Redundant first point
+	adjustedPoints.push(adjustedPoints[1]); // Redundant second point
+  
+	return adjustedPoints;
+  }
+
 //}}}
 function cgUpdateSvg() {  //{{{
 	$("#"+cg.name).attr({ 'points': svgPolyline(cg) });   
+	if (cg.type =='obst')
+		$("#margin"+cg.name).attr({ 'points': obstMarginSvgPolyline(cg) });   
+	if (cg.type =='room' || cg.type =='vroom')
+		$("#margin"+cg.name).attr({ 'points': roomMarginSvgPolyline(cg) });
 }
 //}}}
 
@@ -1385,7 +1503,196 @@ function anyholeOnExternalWall(){
 	return false;
 }
 
+function wrongTeleportLocation(){
+	// hole
+	var teleport_down_letter = "kd";
+	var teleport_up_letter = "ku";
+
+	var teleports_down = [];
+	var teleports_up = [];
+	var compartments = [];
+	var obsts = [];
+	var upper_floor;
+	var lower_floor;
+	var vroom;
+	var teleports_to_return = []
+
+	_.each(db({"letter": teleport_up_letter}).select("floor","teleport_from","teleport_to","name"), function(m) {
+		teleports_up.push([m[0],m[2],m[3],m[1]]);
+	});
+	_.each(db({"letter": teleport_down_letter}).select("floor","teleport_from","teleport_to","name"), function(m) {
+		teleports_down.push([m[0],m[2],m[3],m[1]]);
+	});
+	// teleports down validation
+	if (teleports_down.length > 0)
+	{
+
+		upper_floor = teleports_down[0][0];
+		lower_floor = teleports_down[0][0] - 1;
+
+		// upper floor validation
+		_.each(db({"type": "room", "floor": upper_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			compartments.push(m);
+		});	
+
+		// also consider virtual compartments
+		for (let key in virtual_obj_parents) {
+			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
+				if(virtual_obj_parents[key][i][2] == upper_floor){
+					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
+					compartments.push(vroom);
+				}
+			}
+		}
+		_.each(db({"type": "obst", "floor": upper_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			obsts.push(m);
+		});	
+
+		for (let i = 0; i < teleports_down.length; i++) {
+			if (checkIfPointIsInAnyMargin(teleports_down[i][1],compartments,obsts))
+				teleports_to_return.push(teleports_down[i][3]);
+		}
+		compartments = [];
+	    obsts = [];
+
+	    // lower floor validation
+
+		_.each(db({"type": "room", "floor": lower_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			compartments.push(m);
+		});	
+
+		// also consider virtual compartments
+		for (let key in virtual_obj_parents) {
+			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
+				if(virtual_obj_parents[key][i][2] == lower_floor){
+					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
+					compartments.push(vroom);
+				}
+			}
+		}
+		_.each(db({"type": "obst", "floor": lower_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			obsts.push(m);
+		});	
+
+		for (let i = 0; i < teleports_down.length; i++) {
+			if (checkIfPointIsInAnyMargin(teleports_down[i][2],compartments,obsts))
+				teleports_to_return.push(teleports_down[i][3]);
+		}
+	}
+	
+
+	// teleports up validation
+	if (teleports_up.length > 0)
+	{
+
+		upper_floor = teleports_up[0][0] +1;
+		lower_floor = teleports_up[0][0];
+		compartments = [];
+	    obsts = [];
+		// upper floor validation
+		_.each(db({"type": "room", "floor": upper_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			compartments.push(m);
+		});	
+
+		// also consider virtual compartments
+		for (let key in virtual_obj_parents) {
+			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
+				if(virtual_obj_parents[key][i][2] == upper_floor){
+					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
+					compartments.push(vroom[0]);
+				}
+			}
+		}
+		_.each(db({"type": "obst", "floor": upper_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			obsts.push(m);
+		});	
+
+		for (let i = 0; i < teleports_up.length; i++) {
+			if (checkIfPointIsInAnyMargin(teleports_up[i][2],compartments,obsts))
+				teleports_to_return.push(teleports_up[i][3]);
+		}
+
+	    // lower floor validation
+		compartments = [];
+	    obsts = [];
+		_.each(db({"type": "room", "floor": lower_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			compartments.push(m);
+		});	
+
+		// also consider virtual compartments
+		for (let key in virtual_obj_parents) {
+			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
+				if(virtual_obj_parents[key][i][2] == lower_floor){
+					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
+					compartments.push(vroom[0]);
+				}
+			}
+		}
+		_.each(db({"type": "obst", "floor": lower_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			obsts.push(m);
+		});	
+
+		for (let i = 0; i < teleports_up.length; i++) {
+			if (checkIfPointIsInAnyMargin(teleports_up[i][1],compartments,obsts))
+				teleports_to_return.push(teleports_up[i][3]);
+		}
+	}
+
+
+	return [...new Set(teleports_to_return)];
+}
+
+function checkIfPointIsInAnyMargin(point, compartments,obsts){
+	// check obsts
+	let xmin;
+	let xmax;
+	let ymin;
+	let ymax;
+
+	let innerXmin;
+	let innerXmax;
+	let innerYmin;
+	let innerYmax;
+
+
+	// check obsts margins
+	for (let i = 0; i < obsts.length; i++) {
+		xmin = Math.min(obsts[i][0], obsts[i][2]);
+		xmax = Math.max(obsts[i][0], obsts[i][2]);
+		ymin = Math.min(obsts[i][1], obsts[i][3]); 
+		ymax = Math.max(obsts[i][1], obsts[i][3]); 
+		if ((point[0] >= (xmin - obstAndCompartmentMarginWidth)) && (point[0] <= (xmax + obstAndCompartmentMarginWidth))
+			&& (point[1] >= (ymin - obstAndCompartmentMarginWidth)) && (point[1] <= (ymax + obstAndCompartmentMarginWidth)) )
+			return true;
+	}
+
+	// check compartments margins
+
+	for (let i = 0; i < compartments.length; i++) {
+		xmin = Math.min(compartments[i][0], compartments[i][2]);
+		xmax = Math.max(compartments[i][0], compartments[i][2]);
+		ymin = Math.min(compartments[i][1], compartments[i][3]); 
+		ymax = Math.max(compartments[i][1], compartments[i][3]); 
+		innerXmin = xmin + obstAndCompartmentMarginWidth;
+		innerXmax = xmax - obstAndCompartmentMarginWidth;
+		innerYmin = ymin + obstAndCompartmentMarginWidth;
+		innerYmax = ymax - obstAndCompartmentMarginWidth;
+		if ((point[0] >= xmin && point[0] <= xmax
+			&& point[1] >= ymin && point[1] <= ymax)
+			&& !(point[0] >= innerXmin && point[0] <= innerXmax
+			&& point[1] >= innerYmin && point[1] <= innerYmax))
+			return true;
+	}
+
+
+
+	return false;
+}
+
+
 function isGeometryCorrect(){
+	var teleports_to_return = [];
+	var msg;
 	if(anyholeOnExternalWall()){
 		amsg({'err':2, 'msg':`There is a hole in the outside wall. You can't do that. 
 			The holes are used to connect compartments. In the external wall you can 
@@ -1393,6 +1700,22 @@ function isGeometryCorrect(){
 			the geometry, you will be able to save your changes`}); 
 		return false;
 	}
+	teleports_to_return = wrongTeleportLocation();
+	if (teleports_to_return.length > 0){
+		msg = `Wrong teleport location. The beginning and end of the teleport 
+		should be outside the transparent-white internal margins of COMPARTMENT objects 
+		and the outer margins of OBST objects (the beginning and end of the teleport 
+		cannot be too close to the wall and obst). This applies to the beginning of 
+		the teleport for the floor on which the teleport is located and the end of 
+		the teleport in relation to the floor above if the teleport leads up and the 
+		floors below if the teleport leads down. The problem concerns teleporters: `;
+		for (let i = 0; i < teleports_to_return.length; i++) {
+			msg += teleports_to_return[i] + " "
+		}
+		amsg({'err':2, 'msg':msg}); 
+		return false;
+	}
+
 	return true;
 }
 
@@ -1485,7 +1808,13 @@ function cgSelect(elems, blink=1, showProps=1) {//{{{
 		arr=elems;
 	}
 	_.each(arr, function(v) { 
-		cg=deepcopy(db({'name':v}).get()[0]);
+		// right click on obst or compartment margin:
+		let elem = db({'name':v}).get();
+		if(elem.length == 0){
+			virtualObjEscapeSelect = true;
+			return;
+		}
+		cg=deepcopy(elem[0]);
 		if (cg.letter == 'va' || cg.letter == 'vs'){
 			virtualObjEscapeSelect = true;
 			return;
