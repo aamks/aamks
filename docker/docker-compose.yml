@@ -1,0 +1,63 @@
+# Define internal network for AAMKS containers
+networks:
+  aamks_network:
+
+services:
+  # Apache web-server hosting GUI
+  web:
+    build:
+      context: ./apache2
+    restart: always
+    networks:
+      - aamks_network
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    user: "33:33"                                         # www-data in the image
+    volumes:
+      - aamks_users:/home/aamks_users:rw                  # aamks users for read only
+      - ./apache2/aamks-apache2.conf:/etc/apache2/apache2.conf    # web-server configuration
+      - ${AAMKS_PATH}/gui:/var/www/html/aamks:rw          # gui code
+    # Variables from .env (host envvars will take precedence by default)
+    environment:
+      - AAMKS_USE_MAIL=${AAMKS_USE_MAIL}
+      - AAMKS_MAIL_PASSWORD=${AAMKS_MAIL_PASSWORD}
+      - AAMKS_MAIL_SENDER=${AAMKS_MAIL_SENDER} 
+
+  # PostgreSQL is a database for AAMKS
+  # all settings are imported from ./postgres/init.sql at the FIRST launch only
+  db:
+    image: postgres:14.5
+    restart: always
+    networks:
+      - aamks_network
+    ports:
+      - "5432:5432"
+    environment:
+      - AAMKS_SERVER="aamks-web"
+      - POSTGRES_USER=aamks 
+      - POSTGRES_PASSWORD=${AAMKS_PG_PASS} 
+      - POSTGRES_DATABASE=aamks 
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ${AAMKS_PATH}/installer/simulations.csv:/usr/local/aamks/installer/simulations.csv
+
+  # AAMKS service that basically executes python scripts
+  app:
+    build: .
+    depends_on:
+      - db
+    networks:
+      - aamks_network
+    volumes:
+      - ${AAMKS_PATH}:/usr/local/aamks
+    environment:
+      - HOST_AAMKS_PATH=${AAMKS_PATH}
+
+# Volumes - where data is stored, only aamks_repo and aamks_gui are binded to the host machine
+volumes:
+  pgdata:
+  aamks_users:
+
