@@ -19,7 +19,9 @@ services:
     volumes:
       - aamks_users:/home/aamks_users:rw                  # aamks users read-write
       - ./apache2/aamks-apache2.conf:/etc/apache2/apache2.conf    # web-server configuration
-      - ${HOST_AAMKS_PATH}/gui:/usr/local/aamks/gui:rw          # only gui code is required by web-server
+      - ${HOST_AAMKS_PATH}/gui:/usr/local/aamks/gui:rw          # mostly gui code is required by web-server
+      - ${HOST_AAMKS_PATH}/inc.json:/usr/local/aamks/inc.json:rw  # settings for Apainter
+      - ${HOST_AAMKS_PATH}/evac/config.json:/usr/local/aamks/evac/config.json:rw  # default project settings
     # Variables from .env (host envvars will take precedence by default)
     environment:
       - AAMKS_PATH=/usr/local/aamks    # path to AAMKS code (with gui only) in the image
@@ -31,8 +33,9 @@ services:
       - AAMKS_PG_PASS=${AAMKS_PG_PASS} 
       - AAMKS_WORKER=${AAMKS_WORKER}
       - AAMKS_SALT=${AAMKS_SALT}
+      - AAMKS_REDIS_PASS=${AAMKS_REDIS_PASS}
 
-  # PostgreSQL is a database for AAMKS
+  # PostgreSQL is main database service for AAMKS
   # all settings are imported from ./postgres/init.sql at the FIRST launch only
   db:
     image: postgres:14.5
@@ -51,7 +54,20 @@ services:
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ${HOST_AAMKS_PATH}/installer/simulations.csv:/usr/local/aamks/installer/simulations.csv
 
+  # Redis is used to queuing and task scheduling
+  # integrating with existing SLURM configurations will require more attention
+  redis:
+    image: redis:alpine
+    restart: always
+    ports:
+      - "6379:6379"   # link container port to host port
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${AAMKS_REDIS_PASS}
+    volumes:
+      - rddata:/data
+
+
   # AAMKS service that basically executes python scripts
+  # To be deployed in the swarm
   app:
     build: 
       context: ./aamks
@@ -71,4 +87,5 @@ services:
 volumes:
   pgdata:
   aamks_users:
+  rddata:
 

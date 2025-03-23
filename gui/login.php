@@ -347,10 +347,10 @@ function edit_user(){/*{{{*/
 
 function main() { /*{{{*/
 	require_once("inc.php");
+	$_SESSION['nn']->htmlHead("Aamks");
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
 	if(isset($_POST['logMeIn']))         { do_login(); }
 	if(isset($_GET['logout']))           { do_logout(); }
-	$_SESSION['nn']->htmlHead("Aamks");
 	if(isset($_GET['edit_user'])) { edit_user();}
 
 	if(isset($_POST['do_register']))     { do_register(); }

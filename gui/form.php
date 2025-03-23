@@ -991,6 +991,7 @@ function main() {/*{{{*/
         setcookie("aamks", session_id(), time() + 86400, "/");
     }
 	$_SESSION['nn']->menu();
+	$_SESSION['nn']->htmlHead("Scenario properties");
 	check_editable();
 	change_editor();
 	delete_scenario();
@@ -1006,7 +1007,6 @@ function main() {/*{{{*/
 	if(isset($_GET['bprofiles'])) { $_SESSION['nn']->menu('Building profiles'); form_bprofiles(); update_form_bprofiles(); exit(); }
 
 	editors();
-	$_SESSION['nn']->htmlHead("Scenario properties");
 }
 /*}}}*/
 
