@@ -19,6 +19,9 @@ function run_beck_new($path, $scenarios = NULL){
     $output = shell_exec($command);
     return $output;
 }
+function run_conf_subst($user_dir, $pid, $sid, $nid, $tid){
+	//dummy function to mimic redis_client.php
+}
 function stop($path, $scenario){
     $AAMKS_PATH=getenv('AAMKS_PATH');
     $command = $AAMKS_PATH.'/env-server/bin/python3 '.$AAMKS_PATH.'/slurm.py -t d -p '.$path.' -s '.$scenario." 2>&1";

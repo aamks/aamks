@@ -191,7 +191,7 @@ GRANT ALL ON SEQUENCE scenarios_id_seq TO aamks;
 
 ---}}}
 
-INSERT INTO users(active_scenario, user_photo , user_name , password, email, preferences, activation_token) values(3 , '/aamks/logo.svg' , 'AAMKS Project', '49fa09e3f6ef9defa7f8', 'demo@aamks', '$PREFS', 'already activated');
+INSERT INTO users(active_scenario, user_photo , user_name , password, email, preferences, activation_token) values(3 , '/aamks/logo.svg' , 'AAMKS Project', '49fa09e3f6ef9defa7f8', 'demo@aamks', '{"apainter_editor": "advanced", "navmesh_debug": 1, "apainter_labels": 1, "partitioning_debug": 0 }', 'already activated');
 INSERT INTO projects(user_id,project_name) values(1,'demo');
 INSERT INTO scenarios(project_id,scenario_name) values(1,'simple');
 INSERT INTO scenarios(project_id,scenario_name) values(1,'navmesh');

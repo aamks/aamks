@@ -208,7 +208,7 @@ function activate_user(){/*{{{*/
 		$user_dir="/home/aamks_users/".$ret[0]['email'];
 
 		system("
-			mkdir -p $user_dir
+			mkdir -p $user_dir &&
 			cp -r $AAMKS_PATH/installer/demo/ $user_dir
 		");
 		run_conf_subst($user_dir, $pid[0]['id'], $sid[0]['id'], $nid[0]['id'], $tid[0]['id']);
@@ -348,11 +348,11 @@ function edit_user(){/*{{{*/
 function main() { /*{{{*/
 	require_once("inc.php");
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; }
+	if(isset($_POST['logMeIn']))         { do_login(); }
+	if(isset($_GET['logout']))           { do_logout(); }
 	$_SESSION['nn']->htmlHead("Aamks");
 	if(isset($_GET['edit_user'])) { edit_user();}
 
-	if(isset($_GET['logout']))           { do_logout(); }
-	if(isset($_POST['logMeIn']))         { do_login(); }
 	if(isset($_POST['do_register']))     { do_register(); }
 	if(isset($_GET['register']))         { register_form();}
 	if(isset($_GET['reset']))            { reset_password();}

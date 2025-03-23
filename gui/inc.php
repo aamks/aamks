@@ -241,7 +241,10 @@ class Aamks {/*{{{*/
 /*}}}*/
 	public function msg($msg) {/*{{{*/
 		echo "<msg>$msg</msg>";
-		ob_flush();
+		if (ob_get_level() > 0) {
+			// flush only when there is any buffer (why sometimes there is no buffer?)
+			ob_flush();
+		}
 		flush();
 	}
 /*}}}*/
@@ -258,7 +261,7 @@ class Aamks {/*{{{*/
 		} else {
 			$caller="None";
 		}
-		$connect=pg_connect("dbname=aamks host=127.0.0.1 user=aamks password=".getenv("AAMKS_PG_PASS"));
+		$connect=pg_connect("dbname=aamks host=".getenv("AAMKS_DB")." user=aamks password=".getenv("AAMKS_PG_PASS"));
 		$arr_str=implode(",", $arr);
 		($result=pg_query_params($connect, $qq, $arr)) || $this->reportBug(implode("\n\n", array("caller: $caller()", "$qq", "params: [$arr_str]", pg_last_error($connect))));
 

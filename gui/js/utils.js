@@ -212,7 +212,7 @@ $(function() {
 	scenario_changer();
 	launch_draft();
 	launch_simulation();
-	if(navigator.userAgent.indexOf("Chrome")==-1) { alert("Aamks is designed for Google Chrome. Aamks may work, but is not supported on other browsers"); }
+	//if(navigator.userAgent.indexOf("Chrome")==-1) { alert("Aamks is designed for Google Chrome. Aamks may work, but is not supported on other browsers"); }
 });
 
 

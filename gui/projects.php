@@ -227,7 +227,6 @@ function main() { #{{{
         setcookie("aamks", session_id(), time() + 86400, "/");
     }
 	if(empty($_SESSION['nn'])) { $_SESSION['nn']=new Aamks("Aamks") ; } # TODO: index.php should handle this
-	$_SESSION['nn']->htmlHead("Manage projects");
 	new_scenario();
 	reset_scenario();
 	new_project();
@@ -236,6 +235,7 @@ function main() { #{{{
 	copy_scenario();
 	delete_project();
 	if(isset($_GET['ch_scenario'])) { ch_scenario($_GET['ch_scenario'], "form.php?edit"); }
+	$_SESSION['nn']->htmlHead("Manage projects");
 	$_SESSION['nn']->menu('Manage projects');
 	if(isset($_GET['projects_list'])) { projects_list(); }
 }
