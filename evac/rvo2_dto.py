@@ -19,7 +19,7 @@ warnings.simplefilter('ignore', RuntimeWarning)
 
 class EvacEnv:
 
-    def __init__(self, aamks_vars, floor, sim_id=None):
+    def __init__(self, aamks_vars, floor: int, sim_id=None):
         self.json = Json()
         self.sim_id = sim_id
         self.evacuees = Evacuees
@@ -73,7 +73,7 @@ class EvacEnv:
         # od_at_agent_position[0] is optical dencity value in this position
         # od_at_agent_position[1] is room name, for example r1, c2, s3
 
-        if od_at_agent_position[1] in self.general['agents_destination'][int(self.floor)]['rooms_goals']:
+        if od_at_agent_position[1] in self.general['agents_destination'][self.floor]['rooms_goals']:
         # exit doors were defined for this room so agent will reach goal from rooms_goals dict
             paths = self._get_path(evacuee, position, od_at_agent_position, True)
         else:
@@ -147,13 +147,13 @@ class EvacEnv:
     def _get_path(self, evacuee, position, od_at_agent_position, is_goal_in_rooms_goals):
         room_name = od_at_agent_position[1]
         if is_goal_in_rooms_goals:
-            exits_dict = self.general['agents_destination'][int(self.floor)]['rooms_goals'][room_name]
+            exits_dict = self.general['agents_destination'][self.floor]['rooms_goals'][room_name]
             if all(i['exit_weight'] == exits_dict[0]['exit_weight'] for i in exits_dict):
                 # all exit weights of exit door for this room are equal so 
                 # there is no logic to follow rooms_goals, so then general_floor_goals is selected
-                exits_dict = self.general['agents_destination'][int(self.floor)]['general_floor_goals']
+                exits_dict = self.general['agents_destination'][self.floor]['general_floor_goals']
         else:
-            exits_dict = self.general['agents_destination'][int(self.floor)]['general_floor_goals']
+            exits_dict = self.general['agents_destination'][self.floor]['general_floor_goals']
         
         # if the agent is outside the building, it means that he is already reaching the exit, we do not change his goal - 
         # even if in general_floor_goals another exit has a weight of 10 and the current one has a weight of 0
@@ -220,16 +220,16 @@ class EvacEnv:
         evacuee.optical_density_at_position = od_at_agent_position[0]
 
     def set_floor_teleport_destination_queue_lists(self):
-        for exit in self.general['agents_destination'][int(self.floor)]['general_floor_goals']:
+        for exit in self.general['agents_destination'][self.floor]['general_floor_goals']:
             # destination of teleport on n florr is locaten on n-1 when stairs goes downstair
             # and n+1 if stairs goes upstair. queues of agents are formed on n floor
-            if exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor) and exit['stair_direction'] == "downstairs":
+            if exit['type'] == 'teleport' and int(exit['floor']) == self.floor and exit['stair_direction'] == "downstairs":
                 self.floor_downstair_teleports_queue[(exit['direction_x'],exit['direction_y'])] = False
-            elif exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor) and exit['stair_direction'] == "upstairs":
+            elif exit['type'] == 'teleport' and int(exit['floor']) == self.floor and exit['stair_direction'] == "upstairs":
                 self.floor_upstair_teleports_queue[(exit['direction_x'],exit['direction_y'])] = False
-            elif exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor)+1 and exit['stair_direction'] == "downstairs":
+            elif exit['type'] == 'teleport' and int(exit['floor']) == self.floor+1 and exit['stair_direction'] == "downstairs":
                 self.free_space_coordinates_of_downstair_teleport_destination[(exit['direction_x'],exit['direction_y'])]={'min_x':exit['direction_x']-25, 'max_x':exit['direction_x']+25, 'min_y': exit['direction_y']-25, 'max_y': exit['direction_y']+25}
-            elif exit['type'] == 'teleport' and int(exit['floor']) == int(self.floor)-1 and exit['stair_direction'] == "upstairs":
+            elif exit['type'] == 'teleport' and int(exit['floor']) == self.floor-1 and exit['stair_direction'] == "upstairs":
                 self.free_space_coordinates_of_upstair_teleport_destination[(exit['direction_x'],exit['direction_y'])]={'min_x':exit['direction_x']-25, 'max_x':exit['direction_x']+25, 'min_y': exit['direction_y']-25, 'max_y': exit['direction_y']+25}    
             
     def read_cfast_record(self, time):
@@ -271,14 +271,21 @@ class EvacEnv:
         [RVOSimulator.set_agent_max_speed(self.simulator, i, evacuees.get_speed_max_of_pedestrian(i))
          for i in range(evacuees.get_number_of_pedestrians())]
 
-    def delete_agents_from_floor(self,agents_indexes_to_delete):
+    def delete_agents_from_floor(self):
+        ped_to_remove = []
+        for i in range(self.evacuees.get_number_of_pedestrians()):
+            if self.evacuees.get_current_floor_of_pedestrian(i) != self.floor:
+                ped_to_remove.append(i)
+        for index in sorted(ped_to_remove, reverse=True):
+            self.evacuees.set_prev_floor_to_pedestrian(index)
+            self.evacuees.remove_pedestrian(index)
+
+    def partly_delete_agents_from_floor(self, agents_indexes_to_delete):
         unique_agents_ids_on_floor = []
         for index in sorted(agents_indexes_to_delete, reverse=True):
             evacuee = self.evacuees.get_pedestrian(index)
             unique_agents_ids_on_floor.append(evacuee.unique_agent_id_on_different_floors)
-            self.evacuees.remove_pedestrian(index)
-
-        rvo_agent_indexes_to_remove = RVOSimulator.get_agent_indexes_by_unique_agent_id_on_floor(self.simulator,unique_agents_ids_on_floor)
+        rvo_agent_indexes_to_remove = RVOSimulator.get_agent_indexes_by_unique_agent_id_on_floor(self.simulator, unique_agents_ids_on_floor)
         RVOSimulator.delete_agents(self.simulator, sorted(rvo_agent_indexes_to_remove, reverse=False))
 
     @staticmethod
@@ -288,40 +295,47 @@ class EvacEnv:
     def get_data_for_visualization(self):
         data_row={}
         for n in range(self.evacuees.get_number_of_pedestrians()):
-            if self.evacuees.did_agent_moved(n):
-                position = self.evacuees.get_position_of_pedestrian(n)
-                velocity = self.evacuees.get_velocity_of_pedestrian(n)
-                fed = self.evacuees.get_symbolic_fed_of_pedestrian(n)
-                finished = self.evacuees.get_finshed_of_pedestrian(n)
-                unique_agent_id = self.evacuees.get_unique_agent_id_on_floor(n)
-                data_row[unique_agent_id] = [int(position[0]), int(position[1]), velocity[0], velocity[1], fed, finished]
+            ped = self.evacuees.get_pedestrian(n)
+            if ped.did_agent_moved():
+                position = ped.position
+                velocity = ped.velocity
+                fed = ped.symbolic_fed
+                finished = ped.finished
+                unique_agent_id = ped.unique_agent_id_on_different_floors
+                floor = ped.current_floor
+                data_row[unique_agent_id] = [int(position[0]), int(position[1]), velocity[0], velocity[1], fed, finished, floor]
         return data_row
 
     def update_agents_position(self):
-        for i in range(self.evacuees.get_number_of_pedestrians()):
+        for index in range(self.evacuees.get_number_of_pedestrians()):
+            i = 0
             evacuee = self.evacuees.get_pedestrian(i)
-            if self.evacuees.get_finshed_of_pedestrian(i) == 0 and evacuee.target_teleport_coordinates is None:
+            if evacuee.current_floor != self.floor:
+                continue
+            if evacuee.finished == 0 and evacuee.target_teleport_coordinates is None:
                 self.evacuees.set_position_to_pedestrian(i, (1000000 + i * 200, 10000))
                 RVOSimulator.set_agent_position(self.simulator, i, (1000000 + i * 200, 10000))
-                # Tu agent opuszcza pietro
-                continue
             else:
                 x = int(RVOSimulator.get_agent_position(self.simulator, i)[0])
                 y = int(RVOSimulator.get_agent_position(self.simulator, i)[1])
                 self.evacuees.set_position_to_pedestrian(i, (x,y))
+            i += 1
 
     def update_agents_velocity(self):
-        for i in range(self.evacuees.get_number_of_pedestrians()):
+        for index in range(self.evacuees.get_number_of_pedestrians()):
+            i = 0
+            evacuee = self.evacuees.get_pedestrian(i)
+            if evacuee.finished == 0 or evacuee.current_floor != self.floor:
+                continue
             self.evacuees.set_num_of_obstacle_neighbours(i, RVOSimulator.get_agent_num_obstacle_neighbors(self.simulator, i))
             self.evacuees.calculate_pedestrian_velocity(i, self.current_time)
-        for i in range(self.evacuees.get_number_of_pedestrians()):
             RVOSimulator.set_agent_pref_velocity(self.simulator, i, self.evacuees.get_velocity_of_pedestrian(i))
-
+            i += 1
 
     def set_goal(self):
         sorted_evacuees = sorted(self.evacuees.pedestrians, key=lambda evacuee: evacuee.type == 'follower')
         for evacuee in sorted_evacuees:
-            if evacuee.finished == 0:
+            if evacuee.finished == 0 or evacuee.current_floor != self.floor:
                 continue
             else:                  
                 # TODO: mimooh temporary fix
@@ -363,16 +377,18 @@ class EvacEnv:
             'distance_from_teleport': cdist([evacuee.position], [evacuee.exit_coordinates], 'euclidean')})
 
     def update_speed(self):
-        for i in range(self.evacuees.get_number_of_pedestrians()):
+        for index in range(self.evacuees.get_number_of_pedestrians()):
+            i = 0
+            evacuee = self.evacuees.get_pedestrian(i)
+            if evacuee.finished == 0 or evacuee.current_floor != self.floor:
+                continue
             self.elog.debug('Number of neigbouring agents: {}'.format(RVOSimulator.get_agent_num_agent_neighbors(self.simulator, i)))
             self.elog.debug('Neigbouring distance: {}'.format(RVOSimulator.get_agent_neighbor_dist(self.simulator, i)))
-            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
-                continue
-            else:
-                self.evacuees.update_speed_of_pedestrian(i)
-                agent_speed = self.evacuees.get_speed_of_pedestrian(i)
-                agent_speed = self.reduce_agent_on_stairs_speed(agent_speed, i) 
-                RVOSimulator.set_agent_max_speed(self.simulator, i, agent_speed)
+            self.evacuees.update_speed_of_pedestrian(i)
+            agent_speed = self.evacuees.get_speed_of_pedestrian(i)
+            agent_speed = self.reduce_agent_on_stairs_speed(agent_speed, i) 
+            RVOSimulator.set_agent_max_speed(self.simulator, i, agent_speed)
+            i += 1
 
     def reduce_agent_on_stairs_speed(self, agent_speed, i):
         for stair in self.general['staircases']:
@@ -392,7 +408,8 @@ class EvacEnv:
     def update_fed(self):
         fed_over_1 = False
         for i in range(self.evacuees.get_number_of_pedestrians()):
-            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
+            evacuee = self.evacuees.get_pedestrian(i)
+            if evacuee.finished == 0 or evacuee.current_floor != self.floor:
                 continue
             else:
                 #try:
@@ -436,7 +453,7 @@ class EvacEnv:
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})
-        for exit in self.general['agents_destination'][int(self.floor)]['general_floor_goals']:
+        for exit in self.general['agents_destination'][self.floor]['general_floor_goals']:
             self.terminal_exits_names.append(exit['name'])
 
     def update_room_opacity(self):
@@ -520,15 +537,14 @@ class EvacEnv:
             self.floor_upstair_teleports_queue[key] = False
 
     def check_if_agents_reached_goal(self):
-        for e in range(self.evacuees.get_number_of_pedestrians()):
-            if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
+        for i in range(self.evacuees.get_number_of_pedestrians()):
+            evacuee = self.evacuees.get_pedestrian(i)
+            if evacuee.finished == 0 or evacuee.current_floor != self.floor:
                 continue
-            else:
-                if not self.evacuees.check_if_agent_reached_outside_door(ped_no=e):
-                    self.evacuees.has_agent_reached_teleport(self.floor, ped_no=e)
-                    evacuee = self.evacuees.get_pedestrian(e)
-                    if evacuee.target_teleport_coordinates is not None and evacuee.finished == 0:
-                        self.append_agents_to_move_downstairs_or_upstairs(evacuee, e)
+            if not self.evacuees.check_if_agent_reached_outside_door(ped_no=i):
+                self.evacuees.has_agent_reached_teleport(ped_no=i)
+                if evacuee.target_teleport_coordinates is not None and evacuee.finished == 0:
+                    self.append_agents_to_move_downstairs_or_upstairs(evacuee, i)
 
 # Total FED growth spatial function (per floor)
 class FEDDerivative:

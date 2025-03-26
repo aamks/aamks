@@ -316,24 +316,24 @@ class Worker:
 
         raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target "+ str(goal_from_door_distance) +"cm behind door")
 
-    def _create_evacuees(self, floor: int):
+    def _create_evacuees(self, floor: str):
         evacuees_list = []
         self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
-        floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
+        floor_data = self.vars['conf']['FLOORS_DATA'][floor]
 
         leaders_id_list = []
-        for i in floor['EVACUEES'].keys():
-            evacuees_list.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
-                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=self.config['DETECTION_TIME'],
-                                    detection_constituents= floor['EVACUEES'][i]['PRE_EVACUATION'],
-                                    detection_compa= floor['EVACUEES'][i]['COMPA'],
-                                    alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
+        for i in floor_data['EVACUEES'].keys():
+            evacuees_list.append(Evacuee(origin=tuple(floor_data['EVACUEES'][i]['ORIGIN']), v_speed=floor_data['EVACUEES'][i]['V_SPEED'],
+                                    h_speed=floor_data['EVACUEES'][i]['H_SPEED'], pre_evacuation=self.config['DETECTION_TIME'],
+                                    detection_constituents= floor_data['EVACUEES'][i]['PRE_EVACUATION'],
+                                    detection_compa= floor_data['EVACUEES'][i]['COMPA'],
+                                    alpha_v=floor_data['EVACUEES'][i]['ALPHA_V'], beta_v=floor_data['EVACUEES'][i]['BETA_V'],
                                     node_radius=self.config['NODE_RADIUS'], 
-                                    type = floor['EVACUEES'][i]['type'], 
-                                    current_floor = floor
+                                    type = floor_data['EVACUEES'][i]['type'],
+                                    current_floor = int(floor)
                                   ))
-            leaders_id_list.append(floor['EVACUEES'][i]['leader_id'])
+            leaders_id_list.append(floor_data['EVACUEES'][i]['leader_id'])
             self.wlogger.debug('{} evacuee added'.format(i))
 
         evacuees = Evacuees()
@@ -345,7 +345,7 @@ class Worker:
         return evacuees
 
     def prepare_staircases(self, floor):
-        rows = self.s.query("SELECT x0, y0, width, depth from aamks_geom WHERE type_sec='STAI' AND floor = floor")
+        rows = self.s.query(f"SELECT x0, y0, width, depth from aamks_geom WHERE type_sec='STAI' AND floor = {floor}")
         stair_cases = []
         for row in rows:
             x_min = row['x0']
@@ -355,7 +355,6 @@ class Worker:
             staircase = {'x_min':x_min, 'x_max':x_max, 'y_min':y_min, 'y_max':y_max}
             stair_cases.append(staircase)
         self.vars['conf']['staircases'] = stair_cases
-        return stair_cases
 
     def prepare_simulations(self):
         floor_numers = sorted(self.obstacles['obstacles'].keys())
@@ -363,9 +362,9 @@ class Worker:
             eenv = None
             obstacles = []
             try:
-                self.prepare_staircases(str(floor))
+                self.prepare_staircases(floor)
                 self.vars['conf']['working_dir'] = self.working_dir
-                eenv = EvacEnv(self.vars['conf'], floor, self.sim_id)
+                eenv = EvacEnv(self.vars['conf'], int(floor), self.sim_id)
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":31})
@@ -374,14 +373,14 @@ class Worker:
                 self.wlogger.info('rvo2_dto ready on {} floors'.format(floor))
 
             # CO-ORDINATES OF OBST MUST BE IN COUNTER-CLOCKWISE DIRECTION FOR THE RVO2 ALGORITHM TO WORK PROPERLY
-            for obst in self.obstacles['obstacles'][str(floor)]:
+            for obst in self.obstacles['obstacles'][floor]:
                 x_min = min(i[0] for i in obst)
                 x_max = max(i[0] for i in obst)
                 y_min = min(i[1] for i in obst)
                 y_max = max(i[1] for i in obst)
                 obstacles.append([(x_min,y_min),(x_max,y_min),(x_max,y_max),(x_min,y_max),(x_min,y_min),(x_max,y_min)])
-            if str(floor) in self.obstacles['fire']:
-                fire_obst = self.obstacles['fire'][str(floor)]
+            if floor in self.obstacles['fire']:
+                fire_obst = self.obstacles['fire'][floor]
                 x_min = min(i[0] for i in fire_obst)
                 x_max = max(i[0] for i in fire_obst)
                 y_min = min(i[1] for i in fire_obst)
@@ -468,8 +467,8 @@ class Worker:
 
     def do_simulation(self):
         self.wlogger.info('Starting simulations')
-        cfast_step = self.floors[0].config['SMOKE_QUERY_RESOLUTION']
-        aevac_step = self.floors[0].config['TIME_STEP']
+        cfast_step = self.config['SMOKE_QUERY_RESOLUTION']
+        aevac_step = self.config['TIME_STEP']
         time_frame = 0
         #first_evacuue = []
         # iterate over CFAST time frames (results saving interval)
@@ -507,25 +506,25 @@ class Worker:
                     for i in self.floors:
                         if i.do_simulation(step_no) and aset > i.current_time:
                             aset = i.current_time
-
                     # move agents downstairs and upstairs
                     self.process_agents_queuing_when_moving_downstairs_and_upstairs() 
                     self.process_agents_upstairs_and_downstairs_movement(step_no, time_frame)
-
                     # prepare visualization on all floors
-                    for i in self.floors:       
-                        if (step_no % i.config['VISUALIZATION_RESOLUTION']) == 0:
-                            time_row.update({str(i.floor): i.get_data_for_visualization()})
+                    if (step_no % self.config['VISUALIZATION_RESOLUTION']) == 0:
+                        for i in self.floors:
+                            data = i.get_data_for_visualization()
+                            if data:       
+                                time_row.update({str(i.floor): data})
                             smoke_row.update({str(i.floor): i.update_room_opacity()})
-                    if len(time_row) > 0:
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
                         self.change_pynavmesh_due_to_smoke()
 
+
                 # determine RSET and smoke on all floors
                 for i in self.floors:
                     rsets.append(i.rset)
-                    self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
+                    self.rooms_in_smoke.update({str(i.floor): i.rooms_in_smoke})
                 progress = round((time_frame)/self.vars["conf"]["simulation_time"] * 100, 1)
                 self.wlogger.info(f'Progress: {progress}%')
                 progres_status = int(1000+progress)
@@ -701,13 +700,16 @@ class Worker:
         if len(agents_to_move) == 0:
             for floor_num in range(len(self.floors)):
                 self.floors[floor_num].agents_to_move_downstairs_or_upstairs = []
+                if (step % self.config['VISUALIZATION_RESOLUTION']) == 1:
+                    self.floors[floor_num].delete_agents_from_floor()
             return
             
         for floor_num in range(len(self.floors)):
             agents_who_leave_current_floor_indexes = [agent[3] for agent in agents_to_move if agent[0] == floor_num]
             if agents_who_leave_current_floor_indexes:
                 self.floors[floor_num].rset = time
-                self.floors[floor_num].delete_agents_from_floor(agents_who_leave_current_floor_indexes)
+                self.floors[floor_num].partly_delete_agents_from_floor(agents_who_leave_current_floor_indexes)
+
 
         for floor_num in range(len(self.floors)):
             agents_who_come_to_current_floor = [agent[2] for agent in agents_to_move if agent[1] == floor_num]

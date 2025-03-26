@@ -49,7 +49,8 @@ class Evacuee:
         
         self.type = type
         self.leader = None
-        self.current_floor = None
+        self.current_floor = current_floor
+        self.prev_floor = current_floor
 
 
     def __getattr__(self, name):
@@ -136,7 +137,7 @@ class Evacuee:
         self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.beta_v/self.alpha_v * extinction_coefficient))
 
     def did_agent_moved(self):
-        if self.prev_position != self.position:
+        if self.prev_position != self.position or self.prev_floor != self.current_floor:
             self.prev_position = self.position
             return True
         return False
