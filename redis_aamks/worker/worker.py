@@ -6,12 +6,15 @@ import sys
 import redis
 import config
 import os
+sys.path.append("/usr/local/aamks")
 from aamks import start_aamks_with_worker
 from include import Psql
 
 class RedisWorker:
     
     def redis_db(self):
+        redis.StrictRedis(host='redis', port=6379)
+
         self.host = config.redis_host
         db = redis.Redis(
             host=self.host,
@@ -43,10 +46,11 @@ class RedisWorker:
         user_id = message_json["AA"]["USER_ID"]
         project = message_json["AA"]["PROJECT"]
         scenario_id = message_json["AA"]["scenario_id"]
-        if self.host != "127.0.0.1":
-            pwd = pwd.replace("home","mnt")
+        # in docker we mount aamks_users at home
+        #if self.host != "127.0.0.1":
+            #pwd = pwd.replace("home","mnt")
         logger.debug(f'starting aamks iter {sim_id} id - {job_id}')
-        Psql().query(f"UPDATE simulations SET job_id='{job_id}' WHERE scenario_id={scenario_id} AND iteration={sim_id}")
+        #Psql().query(f"UPDATE simulations SET job_id='{job_id}' WHERE scenario_id={scenario_id} AND iteration={sim_id}")
         try:
             start_aamks_with_worker(project, user_id, sim_id)
         except Exception as e:
@@ -63,7 +67,8 @@ class RedisWorker:
 
 def prepare_logger(name):
     if config.redis_host != "127.0.0.1":
-        path = config.main_path.replace("home","mnt")
+        #path = config.main_path.replace("home","mnt")
+        path = config.main_path
     else:
         path = config.main_path
     log_file = path + '/aamks.log'

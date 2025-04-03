@@ -54,7 +54,8 @@ class Worker:
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.json=Json()
         self.json.s = self.s
-        self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
+        #self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
+        self.AAMKS_SERVER=os.environ['AAMKS_SERVER']
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
         self.vars = OrderedDict()

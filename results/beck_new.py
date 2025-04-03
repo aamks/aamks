@@ -23,6 +23,7 @@ from pylatex.table import Tabular, LongTable
 from pylatex.basic import NewPage, LineBreak
 from pylatex.headfoot import PageStyle, Head, simple_page_number
 
+sys.path.append("/usr/local/aamks")
 from include import Sqlite, Psql
 
 
@@ -43,7 +44,7 @@ class GetData:
         self.raw = {}
         self.configs = self._get_json(f'{scenario_dir}/conf.json')
         self.p = Psql()
-        self.s = Sqlite(f'{self.dir}/aamks.sqlite', 2)
+        self.s = Sqlite(f'{self.dir}/workers/1/aamks_1.sqlite', 2)
         self.check_results()
 
     def _get_json(self, path):
@@ -1362,13 +1363,6 @@ class Comparison:
     def save(self):
         [self._zip_ext(i) for i in [('txt', '.txt'), ('picts', '.png', '.jpg', '.jpeg'), ('csv', '.csv')]]
         self._zip_full()
-        try:
-            Report(self.data, self.dir.rstrip("/picts")).make_multiple()
-            tm('report saved OK')
-            return True
-        except:
-            tm('report not saved ERROR')
-            return False
 
     # run summarize across all scenarios and copy data
     def _summarize_all(self):
@@ -1412,6 +1406,14 @@ class Comparison:
         self.save()
         tm('save')
 
+        try:
+            Report(self.data, self.dir.rstrip("/picts")).make_multiple()
+            tm('report saved OK')
+            return True
+        except:
+            tm('report not saved ERROR')
+            return False
+
 def prepare_logger(path):
     log_file = path + '/aamks.log' if path else os.getenv('AAMKS_PROJECT') + '/aamks.log'
     logger = logging.getLogger('AAMKS.beck.py')
@@ -1434,6 +1436,7 @@ def postprocess(path):
     pp = PostProcess(path)
     pp.t = time.time()
     pp.produce()
+    sys.path.append("/usr/local/aamks/results")
     from sa import SensitivityAnalysis as SA
     s = SA(pp.dir)
     s.main(spearman=True)

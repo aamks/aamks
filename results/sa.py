@@ -25,7 +25,7 @@ class SensitivityAnalysis:
         self.j = Json()
         self.dir = workdir if workdir else sys.argv[1]
         self.configs = self.j.read('{}/conf.json'.format(self.dir))
-        self.s = Sqlite("{}/aamks.sqlite".format(self.dir))
+        self.s = Sqlite("{}/workers/1/aamks_1.sqlite".format(self.dir))
         self.variables = sys.argv[2:] if len(sys.argv) > 2 else self.VARS
         self.y = y
 
@@ -123,7 +123,7 @@ class SA_old:
         self.j = Json()
         self.dir = workdir if workdir else sys.argv[1]
         self.configs = self.j.read('{}/conf.json'.format(self.dir))
-        self.s = Sqlite("{}/aamks.sqlite".format(self.dir))
+        self.s = Sqlite("{}/workers/1/aamks_1.sqlite".format(self.dir))
 
     def calculate_indvidual_risk(self):     
         rooms, sprinklered_rooms = list(), list()

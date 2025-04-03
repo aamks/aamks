@@ -192,10 +192,10 @@ class Psql: # {{{
             pass
 
         try:
-            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host='{}' password='{}'".format(os.environ['AAMKS_SERVER'], os.environ['AAMKS_PG_PASS']))
+            self.PSQL=psycopg2.connect("dbname='aamks' user='aamks' host='{}' password='{}'".format(os.environ['AAMKS_DB'], os.environ['AAMKS_PG_PASS']))
             self.psqldb=self.PSQL.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        except:
-            raise SystemExit("Fatal: Cannot connect to postresql.")
+        except Exception as e:
+            raise SystemExit(f"Fatal: Cannot connect to postresql. {e}")
 
     def query(self,query,data=tuple()):
         ''' Query. Return results as dict. '''

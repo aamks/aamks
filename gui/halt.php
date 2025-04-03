@@ -176,7 +176,7 @@ function stop_redis($r) {
 
     foreach ($r as $element) {
         $redis = new Redis();
-        $redis->connect(getenv('AAMKS_SERVER'), 6379); 
+        $redis->connect(getenv('AAMKS_REDIS'), 6379); 
         $redis->auth(getenv('AAMKS_REDIS_PASS')); 
         echo "<tr><td>" . $element['iteration'] . "</td>";
         if ($element['status'] == '') {

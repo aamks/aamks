@@ -4,8 +4,11 @@ from json import loads, load, dump, dumps
 import redis
 import config
 import os
+import sys
+sys.path.append("/usr/local/aamks")
 from results.beck_new import postprocess, comparepostprocess
 from results.beck_anim import Beck_Anim
+from include import Psql
 
 class RedisWorkerServer:
     
@@ -72,6 +75,11 @@ class RedisWorkerServer:
                 message["id"] = id.replace("iter", str(i))
                 self.worker_redis_queue_push(message)
                 logger.debug(f'send sim {i} {path}')
+
+                job_id = message["id"]
+                sim_id = message["data"]["sim_id"]
+                scenario_id = message["AA"]["scenario_id"]
+                Psql().query(f"UPDATE simulations SET job_id='{job_id}' WHERE scenario_id={scenario_id} AND iteration={sim_id}")
         except Exception as e:
             logger.error(f'Failure to send redis worker message - {e}')
     
