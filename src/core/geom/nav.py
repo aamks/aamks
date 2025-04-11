@@ -2,23 +2,16 @@
 # {{{
 import json
 import os
-import sys
 import copy
-from pprint import pprint
 from collections import OrderedDict
-from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
-from shapely.ops import polygonize
-from numpy.random import uniform
-from math import sqrt
+from shapely.geometry import LineString
 
-from evac.polymesh import Polymesh
-from fire.partition_query import PartitionQuery
-from evac.pathfinder.navmesh_baker import NavmeshBaker
-from evac.pathfinder.navmesh import Navmesh as Pynavmesh
-import evac.pathfinder
-
-from include import Sqlite, Json, DDgeoms, Vis
-from include import Dump as dd
+from core.evac.polymesh import Polymesh
+from core.fire.partition_query import PartitionQuery
+from core.evac.pathfinder.navmesh_baker import NavmeshBaker
+from core.evac.pathfinder.navmesh import Navmesh as Pynavmesh
+from core.evac.pathfinder import read_from_text
+from utils import Sqlite, Json, DDgeoms, Vis
 
 # }}}
 
@@ -74,7 +67,7 @@ class Navmesh:
         self.baker.bake()
         first_navmesh_path = '/'.join([wd, 'pynavmesh'+self.nav_name+'_first'])
         self.baker.save_to_text(first_navmesh_path)
-        vert, polygs = evac.pathfinder.read_from_text(first_navmesh_path)
+        vert, polygs = read_from_text(first_navmesh_path)
         self.first_navmesh = Pynavmesh(vert, polygs)
         self.navmesh = Pynavmesh(vert, polygs)
         # self.test_navmesh()

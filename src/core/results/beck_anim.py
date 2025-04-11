@@ -1,13 +1,12 @@
 import csv
 import json
 import os
-from collections import defaultdict
 import re
 import sys
-import numpy as np
+from collections import defaultdict
 from matplotlib import pyplot as plt
 
-from include import Psql
+from utils import Psql
 
 relevant_params = ('Time', 'Outside', 'HRR', 'HRR_E1', 'HGT','LLOD', 'ULOD', 'ULCO', 'LLCO','ULCO2','LLCO2','ULHCN','LLHCN','ULHCL', 'LLHCL')
 

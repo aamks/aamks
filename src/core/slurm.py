@@ -1,7 +1,8 @@
 import argparse
 from simple_slurm import Slurm
 import os
-from include import Psql, Json
+
+from utils import Psql, Json
 
 def_args = [
         '--ntasks', 1,

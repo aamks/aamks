@@ -1,39 +1,18 @@
 # MODULES {{{
-import sys
-import re
 import os
-import shutil
 import math
-import numpy as np
-from collections import OrderedDict
 import json
-import getopt
-from pprint import pprint
-import codecs
-from subprocess import Popen,call
-from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
+from collections import OrderedDict
+from math import sqrt, log
+from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
-import zipfile
-import random 
-
-from numpy.random import choice
-from numpy.random import uniform
-from numpy.random import normal
-from numpy.random import lognormal
-from numpy.random import binomial
-from numpy.random import gamma
-from numpy.random import triangular
-from numpy.random import seed
-from numpy import array as npa
-from math import sqrt, log, exp
-
-from include import Sqlite
-from include import Json
-from include import Dump as dd
-
+from numpy.random import uniform, normal, lognormal
 from scipy.stats import lognorm
 from scipy.optimize import root
 from scipy.special import erfc
+
+from utils import Sqlite, Json
+
 
 
 
@@ -72,7 +51,7 @@ class EvacMcarlo:
         self.json=Json()
         self.json.s = self.s
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
+        self.evacuee_radius=self.json.read('{}/core/utils/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 

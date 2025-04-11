@@ -1,6 +1,7 @@
-from evac.evacuee import Evacuee
+#import logging
 from pprint import pprint
-import logging
+
+from core.evac.evacuee import Evacuee
 
 #logging.basicConfig(filename='aamks.log', level=logging.DEBUG,
                         #format='%(asctime)s %(levelname)s: %(message)s')

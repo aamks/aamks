@@ -1,6 +1,6 @@
+#import logging
 from operator import sub
 from math import sqrt
-import logging
 from scipy.spatial.distance import cdist
 
 

@@ -1,24 +1,24 @@
 #!/usr/bin/python3
 import os
 import sys
-from numpy import array, prod
 import time
 import logging
 import json
-from collections import OrderedDict
-from subprocess import run, TimeoutExpired
 import zipfile
 import pandas as pd
 from io import StringIO
-import shutil
-from evac.pathfinder import read_from_text
-from include import Psql, Json, Sqlite
-from evac.pathfinder.navmesh import Navmesh as Pynavmesh
-from results.beck_new import RiskIteration as RI
-from evac.evacuee import Evacuee
-from evac.evacuees import Evacuees
-from evac.rvo2_dto import EvacEnv
-from fire.partition_query import PartitionQuery
+from numpy import array, prod
+from collections import OrderedDict
+from subprocess import run, TimeoutExpired
+
+from utils import Psql, Json, Sqlite
+from core.evac.pathfinder import read_from_text
+from core.evac.pathfinder.navmesh import Navmesh as Pynavmesh
+from core.evac.evacuee import Evacuee
+from core.evac.evacuees import Evacuees
+from core.evac.rvo2_dto import EvacEnv
+from core.fire.partition_query import PartitionQuery
+from core.results.beck_new import RiskIteration as RI
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:

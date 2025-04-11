@@ -5,11 +5,10 @@ import re
 import os
 import json
 import bisect
-from include import Sqlite
-from include import Json
-from math import exp
-from include import Dump as dd
 import numpy as np
+from math import exp
+
+from utils import Sqlite, Json
 # }}}
 
 class PartitionQuery:

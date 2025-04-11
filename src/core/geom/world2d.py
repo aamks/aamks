@@ -1,24 +1,10 @@
 # MODULES
 # {{{
 import json
-import shutil
 import os
-import re
-import sys
-import codecs
-import itertools
-
-from pprint import pprint
 from collections import OrderedDict
-from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
-from shapely.ops import polygonize
-from numpy.random import uniform
-from math import sqrt
-from math import floor
-from include import Sqlite
-from include import Json
-from include import Dump as dd
-from geom.obstacles import Obstacles
+
+from utils import Sqlite, Json
 
 # }}}
 

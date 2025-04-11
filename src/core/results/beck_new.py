@@ -1,29 +1,29 @@
+import json
+import sys
+import os
+import time
+import shutil
+import warnings
+import logging
+import seaborn as sns
+import numpy as np
+import pandas as pd
+import scipy.stats as stat
 import matplotlib.ticker as tic
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle as rect
-import json
 from collections import OrderedDict
 from itertools import combinations
-import seaborn as sns
-import numpy as np
-import sys
-import os
-import time
-import shutil
-import scipy.stats as stat
-import warnings
-import pandas as pd
 from zipfile import ZipFile
-import logging
-from pylatex import Document, Section, Subsection, Itemize, Command, Figure, MultiColumn, Package
-from pylatex.utils import italic, bold, NoEscape
+from pylatex import Document, Section, Subsection, Command, Figure, MultiColumn, Package
+from pylatex.utils import bold, NoEscape
 from pylatex.table import Tabular, LongTable
-from pylatex.basic import NewPage, LineBreak
+from pylatex.basic import NewPage
 from pylatex.headfoot import PageStyle, Head, simple_page_number
 
-from include import Sqlite, Psql
+from utils import Sqlite, Psql
 
 
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
@@ -783,9 +783,9 @@ class PostProcess:
 
         def stats(x_smp: list):
             if x_smp.size != 0:
-                return np.mean(x_smp), np.std(x_smp) 
+                return np.mean(x_smp), np.std(x_smp)
             else:
-                return 0, 0 
+                return 0, 0
 
         self.data['summary'] = {
                 'date': time.time,
@@ -1360,6 +1360,9 @@ class Comparison:
     
     # save data
     def save(self):
+        def tm(x):
+            logger.debug(f'{x}: {time.time() - self.t}')
+            self.t = time.time()
         [self._zip_ext(i) for i in [('txt', '.txt'), ('picts', '.png', '.jpg', '.jpeg'), ('csv', '.csv')]]
         self._zip_full()
         try:

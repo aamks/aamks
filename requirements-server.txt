@@ -1,0 +1,10 @@
+-r requirements-common.txt
+matplotlib==3.8.2
+numpy==1.26.4
+pandas==2.1.4
+SALib==1.4.7
+scipy==1.15.2
+seaborn==0.13.1
+PyLaTeX==1.4.2
+pdflatex==0.1.3
+simple_slurm==0.2.7

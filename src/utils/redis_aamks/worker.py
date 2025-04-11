@@ -1,23 +1,21 @@
-from datetime import datetime
-import logging
-import random
-from json import loads
-import sys
-import redis
-import config
 import os
-from aamks import start_aamks_with_worker
-from include import Psql
+import logging
+import redis
+from json import loads
+
+import utils.redis_aamks as ra
+from core.aamks import start_aamks_with_worker
+from utils import Psql
 
 class RedisWorker:
     
     def redis_db(self):
-        self.host = config.redis_host
+        self.host = ra.redis_host
         db = redis.Redis(
             host=self.host,
-            port=config.redis_port,
-            db=config.redis_db_number,
-            password=config.redis_password,
+            port=ra.redis_port,
+            db=ra.redis_db_number,
+            password=ra.redis_password,
             decode_responses=True,
         )
         # make sure redis is up and running
@@ -26,12 +24,12 @@ class RedisWorker:
 
     def redis_queue_push(self, db, message):
         # push to tail of the queue (left of the list)
-        db.lpush(config.redis_worker_queue_name, message)
+        db.lpush(ra.redis_worker_queue_name, message)
 
     def redis_queue_pop(self, db):
         # pop from head of the queue (right of the list)
         # the `b` in `brpop` indicates this is a blocking call (waits until an item becomes available)
-        _, message = db.brpop(config.redis_worker_queue_name)
+        _, message = db.brpop(ra.redis_worker_queue_name)
         message_json = loads(message)
         logger.debug(f'pop from head of queue \n{message_json["data"]}')
         return message_json
@@ -62,10 +60,10 @@ class RedisWorker:
             self.process_message(message_json)
 
 def prepare_logger(name):
-    if config.redis_host != "127.0.0.1":
-        path = config.main_path.replace("home","mnt")
+    if ra.redis_host != "127.0.0.1":
+        path = ra.main_path.replace("home","mnt")
     else:
-        path = config.main_path
+        path = ra.main_path
     log_file = path + '/aamks.log'
     logger = logging.getLogger(f'{name} - AAMKS_WORKER')
     logger.setLevel(logging.DEBUG)

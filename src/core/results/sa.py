@@ -1,18 +1,14 @@
 import sys
-import numpy as np
 import os
-import re
-from include import Sqlite, Psql, Json
 import json
-from statistics import mean 
-from scipy.stats import spearmanr
+import pandas as pd
 import matplotlib.pyplot as plt
+from numpy import arange, floor
+from scipy.stats import spearmanr
 from SALib.analyze import sobol, hdmr
 from SALib.plotting import bar
-from numpy import array, arange, floor
-from numpy.random import randn
-import pandas as pd
-import collections
+
+from utils import Sqlite, Psql, Json
 
 
 class SensitivityAnalysis:
@@ -63,7 +59,7 @@ class SensitivityAnalysis:
     
     def _do_sobol(self, second_order):
         m = 2 if second_order else 1
-        n = int(len(self.results[self.y]) - floor(len(self.results[self.y]) % (m*problem['num_vars']+2)))
+        n = int(len(self.results[self.y]) - floor(len(self.results[self.y]) % (m*self.problem['num_vars']+2)))
         si = sobol.analyze(self.problem, self.results[self.y].iloc[:n].to_numpy(), 
                 print_to_console=True, calc_second_order=second_order)
         return si

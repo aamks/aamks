@@ -1,27 +1,15 @@
 import os
-from collections import OrderedDict
-from numpy.random import choice
-from numpy.random import uniform
-from numpy.random import normal
-from numpy.random import lognormal
-from numpy.random import binomial
-from numpy.random import gamma
-from numpy.random import triangular
-from numpy.random import seed
-from numpy.random import randint
-from numpy import array as npa
-from include import Json
-from collections import OrderedDict
-from math import floor
+import statistics
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import statistics
 from scipy import stats
 
+from utils import Json
+from core.rescue import Rescue
 
 
-class RescueResults():
+class RescueResults:
 
     def __init__(self, conf, rescue, nozzles, estinguish,):
         self.conf = conf

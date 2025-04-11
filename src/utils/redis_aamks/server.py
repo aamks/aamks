@@ -1,21 +1,21 @@
-import json
-import logging
-from json import loads, load, dump, dumps
-import redis
-import config
 import os
-from results.beck_new import postprocess, comparepostprocess
-from results.beck_anim import Beck_Anim
+import logging
+import redis
+from json import loads, load, dump, dumps
+
+import utils.redis_aamks as ra
+from core.results.beck_new import postprocess, comparepostprocess
+from core.results.beck_anim import Beck_Anim
 
 class RedisWorkerServer:
     
     def connect_redis_db(self):
-        self.host = config.redis_host
+        self.host = ra.redis_host
         self.db = redis.Redis(
             host=self.host,
-            port=config.redis_port,
-            db=config.redis_db_number,
-            password=config.redis_password,
+            port=ra.redis_port,
+            db=ra.redis_db_number,
+            password=ra.redis_password,
             decode_responses=True,
         )
         # make sure redis is up and running
@@ -23,19 +23,19 @@ class RedisWorkerServer:
 
     def redis_queue_push(self, message):
         # push to tail of the queue (left of the list)
-        self.db.lpush(config.redis_server_queue_name, message)
+        self.db.lpush(ra.redis_server_queue_name, message)
 
     def redis_queue_pop(self):
         # pop from head of the queue (right of the list)
         # the `b` in `brpop` indicates this is a blocking call (waits until an item becomes available)
-        _, message = self.db.brpop(config.redis_server_queue_name)
+        _, message = self.db.brpop(ra.redis_server_queue_name)
         message_json = loads(message)
         logger.debug(f'pop from head of queue \n{message_json}')
         return message_json
 
     def worker_redis_queue_push(self, message):
         # push to tail of the queue (left of the list)
-        self.db.lpush(config.redis_worker_queue_name, dumps(message))
+        self.db.lpush(ra.redis_worker_queue_name, dumps(message))
 
     def process_message(self, message_json: str):
         if 'anim' in message_json['data']:
@@ -123,7 +123,7 @@ class RedisWorkerServer:
 
 
 def prepare_logger(name):
-    log_file = config.main_path + '/aamks.log'
+    log_file = ra.main_path + '/aamks.log'
     logger = logging.getLogger(f'{name} - AAMKS_SERVER')
     logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler(log_file)

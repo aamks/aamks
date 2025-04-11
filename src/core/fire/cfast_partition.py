@@ -1,19 +1,10 @@
 # IMPORT# {{{
-from collections import OrderedDict
-import itertools
-import numpy as np
 import os
-import sys
-import inspect
 import json
-from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
-from numpy.random import randint
-from include import Sqlite
-from include import Json
-from include import GetUserPrefs
-from include import Dump as dd
-from include import Vis
-from include import DDgeoms
+from collections import OrderedDict
+from shapely.geometry import box, LineString, Point
+
+from utils import Sqlite, Json, GetUserPrefs, Vis, DDgeoms
 
 # }}}
 

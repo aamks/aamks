@@ -1,16 +1,18 @@
 import os
-import numpy as np
-from collections import OrderedDict
 import json
 import zipfile
-from include import Json
-from include import Vis
-from random import randint, randrange
+import numpy as np
+from random import randrange
+from collections import OrderedDict
 from sklearn.cluster import MeanShift
 
-class EvacClusters():
+from utils import Json, Vis
+
+class EvacClusters:
 
     def __init__(self,dispatched_evacuees):
+        self.evacues_grouped_by_rooms = None
+        self.simulation_id = None
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.dispatched_evacuees = dispatched_evacuees
@@ -92,8 +94,8 @@ class EvacClusters():
             if label not in clustered_dict:
                 clustered_dict[int(label)] = {
                     "agents": [],
-                    "center": "",
-                    "leader": ""
+                    "center": tuple(),
+                    "leader": tuple()
                 }
 
         for position, label in zip(positions_in_room, labels):
@@ -168,7 +170,7 @@ class EvacClusters():
 
         anim['animations']=OrderedDict([("evacuees", anim_evacuees), ("rooms_opacity", anim_rooms_opacity)])
         self._write_anim_zip(anim) 
-        Vis({'highlight_geom': None, 'anim': None, 'title': 'Clustering', 'srv': 1, 'anim': "{self.simulation_id}/clustering.zip"})
+        Vis({'highlight_geom': None, 'title': 'Clustering', 'srv': 1, 'anim': "{self.simulation_id}/clustering.zip"})
 
 
     def flatten_agents(self):

@@ -6,14 +6,14 @@ import pandas as pd
 from collections import OrderedDict
 from math import ceil, log, isinf
 from shapely.geometry import LineString
-from include import Sqlite, Json
-from numpy import array, prod, zeros, ndenumerate
-from scipy.stats import norm
+from numpy import  zeros, ndenumerate
 from scipy.spatial.distance import cdist
-from geom.nav import Navmesh
-from evac.pyrvo.rvo_simulator import RVOSimulator
-from evac.evacuees import Evacuees
-from evac.evacuee import Evacuee
+
+from utils import Sqlite, Json
+from core.geom.nav import Navmesh
+from core.evac.pyrvo.rvo_simulator import RVOSimulator
+from core.evac.evacuees import Evacuees
+from core.evac.evacuee import Evacuee
 
 warnings.simplefilter('ignore', RuntimeWarning)
 

@@ -1,17 +1,11 @@
-import os
-from collections import OrderedDict
-from numpy.random import choice
-from numpy.random import uniform
-from numpy.random import lognormal
-from numpy.random import gamma
-from numpy import array as npa
-from include import Json
-from collections import OrderedDict
-from include import Psql
 import json
+from collections import OrderedDict
+from numpy.random import choice, uniform, lognormal, gamma
+from numpy import array as npa
 
+from utils import Json, Psql
 
-class Rescue():
+class Rescue:
     def __init__(self, conf):
         self.conf = conf
         self.electronic = True if self.conf["r_trans"]=='auto' else False  # electronic/phone_call 1/0

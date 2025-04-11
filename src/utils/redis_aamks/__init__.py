@@ -1,22 +1,30 @@
 import os
 import datetime
-from json import dumps
 import random
 import string
-from uuid import uuid4
 import redis
-from . import config
-import json 
+import json
+from json import dumps
+
+
+'''Redis configuration'''
+redis_host = os.environ['AAMKS_REDIS']
+redis_password = os.environ['AAMKS_REDIS_PASS']
+main_path = "/".join(os.environ['AAMKS_PROJECT'].split('/')[:-3])
+redis_port = 6379
+redis_db_number = 0
+redis_worker_queue_name = "aamks_queue"
+redis_server_queue_name = "server_queue"
 
 
 class AARedis:
     def redis_db(self):
         try:
             db = redis.Redis(
-                host=config.redis_host,
-                port=config.redis_port,
-                db=config.redis_db_number,
-                password=config.redis_password,
+                host=redis_host,
+                port=redis_port,
+                db=redis_db_number,
+                password=redis_password,
                 decode_responses=True,
             )
             db.ping()
@@ -26,7 +34,7 @@ class AARedis:
 
     def redis_queue_push(self, db, message):
         # Push to tail of the queue (left of the list)
-        db.lpush(config.redis_worker_queue_name, message)
+        db.lpush(redis_worker_queue_name, message)
 
     def main(self, worker_pwd):
         # Connect to Redis
@@ -61,14 +69,14 @@ class AARedis:
 
     #pythonic way of deleting element - actually not used
     def remove_job(self, element_id):
-        queue = config.redis_worker_queue_name
+        queue = redis_worker_queue_name
         r = redis.StrictRedis(
-            host=config.redis_host,
-            port=config.redis_port,
-            db=config.redis_db_number,
-            password=config.redis_password
+            host=redis_host,
+            port=redis_port,
+            db=redis_db_number,
+            password=redis_password
         )
-        elements = r.lrange(config.redis_worker_queue_name, 0, -1)
+        elements = r.lrange(redis_worker_queue_name, 0, -1)
         element_found = False  # Flag to track whether the element is found
         for element in elements:
             decoded_element = json.loads(element)

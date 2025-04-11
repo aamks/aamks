@@ -1,27 +1,18 @@
 # MODULES {{{
 import os
 import math
+import numpy as np
 from collections import OrderedDict
-from numpy.random import choice
-from numpy.random import uniform
-from numpy.random import normal
-from numpy.random import lognormal
-from numpy.random import binomial
-from numpy.random import gamma
-from numpy.random import triangular
-from numpy.random import seed
+from scipy.stats import pareto
+from numpy import mean
+from numpy.random import choice, uniform, normal, lognormal, binomial, gamma, triangular
 from numpy import array as npa
 from numpy import insert as npins
 from numpy import round as npround
-from numpy import mean
-from scipy.stats import pareto
-from include import Sqlite
-from include import Psql
-from include import Json
-from rescue_module.rescue import *
-import numpy as np
 
-from montecarlo.evac_mcarlo import lognorm_params_from_percentiles, lognorm_percentiles_from_params
+from utils import Sqlite, Psql, Json
+from core.montecarlo.evac_mcarlo import lognorm_params_from_percentiles, lognorm_percentiles_from_params
+from core.rescue.rescue import *
 
 # }}}
 def join2str(l, sep, quotes=False, force=False):

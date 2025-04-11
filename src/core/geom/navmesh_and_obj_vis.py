@@ -1,12 +1,9 @@
-
-
-import matplotlib
-from matplotlib.collections import PatchCollection
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 import random
-from matplotlib.patches import Polygon
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+
+
 fig, ax = plt.subplots()
 
 
