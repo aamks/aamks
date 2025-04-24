@@ -13,7 +13,7 @@ class Compartment:
     compartmentExits: List[CompartmentExit]
     roomGoalExits: List[RoomGoalExit]
     
-    # roomsGoalsCompartmentExits may have more exits than compartmentExits
+    # roomsGoalExits may have more exits than compartmentExits
     # when 2 rooms are connectesd with hole 
     # then both rooms have exits from both rooms
 
@@ -31,6 +31,5 @@ class Compartment:
         self.y_max = y_max
         self.compartmentExits = compartmentExits
         self.roomGoalExits = roomGoalExits
-        # self.unavailable = False
 
     
