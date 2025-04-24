@@ -47,7 +47,6 @@ class Compartments:
         return all_floor_doors_unique
 
     def get_room_name_for_point(self, point):
-        # self.vars['conf']['all_rooms_exits'][self.floor].keys()
         for comp in self.compartments:
             if comp.x_min <= point[0] <= comp.x_max and comp.y_min <= point[1] <= comp.y_max:
                 return comp.name
