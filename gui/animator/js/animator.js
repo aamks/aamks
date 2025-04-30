@@ -293,7 +293,6 @@ function showStaticImage() {//{{{
 }
 //}}}
 function showEvacueesLabels() {//{{{
-	// evacueesInFrame(); // requrired to sync evacuees with labels positions
 	_.each(evacueesGroup, function(group, ffloor) {
 		_.each(group.children, function(e,i) {
 			x=e.position.x;
@@ -310,7 +309,8 @@ function addEvacueeLabel(ffloor,i, x, y) {
 }
 //}}}
 function initSpeed() {//{{{
-	lastFrame=eData.length-1;
+	var frame_numbers = Object.keys(eData).map(Number);
+	lastFrame= Math.max(...frame_numbers);
 	var speed=Math.round(lastFrame/5)
 	sliderPos=0;
 	$("animator-time").html(animFormatTime());
@@ -621,24 +621,23 @@ function initAnimAgents() { //{{{
 		evacueesLabelsGroup[ffloor]=new Group();
 		_.each(frame0_data, function(data, i) {
 			let circle = new Path.Circle({center: new Point(-10000, -10000), radius: evacueeRadius});
-			circle.evac_id = i;
-			circle.floor = data[6];
-			evacueesGroup[ffloor].children[i] = circle;
+			circle.evac_id = data[6];
+			circle.floor = data[5];
+			evacueesGroup[ffloor].addChild(circle);
 			let line = new Path.Line({from: new Point(-10000, -10000), to: new Point(-10000,-10000), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize });
-			line.evac_id = i;
-			line.floor = data[6];
-			velocitiesGroup[ffloor].children[i] = line;	
+			line.evac_id = data[6];
+			line.floor = data[5];
+			velocitiesGroup[ffloor].addChild(line);
 		});
 	});
 }
 function updateAgentNumbersOnFloors(){
 	if(frame_to_skip == frame) return;
-	updateEvacueesFromFrame()
     _.each(evacueesGroup, function(data, ffloor) {
 		let toRemove = []
 		_.each(data.children, function(e, i) {
-			if ((e !== undefined) && (e.floor != ffloor)) {
-				toRemove.push(e.evac_id)
+			if (e.floor != ffloor) {
+				toRemove.push(i)
 			}
 		})
         for (let i = toRemove.length - 1; i >= 0; i--) {
@@ -648,44 +647,8 @@ function updateAgentNumbersOnFloors(){
     });
 }
 function removeEvacuee(i, ffloor){
-	// evacueesGroup[ffloor].children = Object.fromEntries(
-	// 	Object.entries(evacueesGroup[ffloor].children).filter(([key]) => key != i)
-	// );
-	// velocitiesGroup[ffloor].children = Object.fromEntries(
-	// 	Object.entries(velocitiesGroup[ffloor].children).filter(([key]) => key != i)
-	// );
-	// evacueesGroup[ffloor].children.splice(i, 1);
-	// // velocitiesGroup[ffloor].children.splice(i, 1);
-	// evacueesGroup[ffloor].children = _.omit(evacueesGroup[ffloor].children, i);
-	// velocitiesGroup[ffloor].children = _.omit(velocitiesGroup[ffloor].children, i);
-	// evacueesGroup[ffloor].children = evacueesGroup[ffloor].children.filter((child, index) => index !== i);
-	// velocitiesGroup[ffloor].children = velocitiesGroup[ffloor].children.filter((child, index) => index !== i);
-
 	evacueesGroup[ffloor].children[i].remove();
-	// evacueesGroup[ffloor].children = evacueesGroup[ffloor].children.filter(child => child);
 	velocitiesGroup[ffloor].children[i].remove();
-	// velocitiesGroup[ffloor].children = velocitiesGroup[ffloor].children.filter(child => child);
-
-	// delete evacueesGroup[ffloor].children[i];
-    // delete velocitiesGroup[ffloor].children[i];
-}
-function updateEvacueesFromFrame(){
-	_.each(eData[frame], function(frame0_data,ffloor) {
-		_.each(frame0_data, function(data, i) {
-			if (!evacueesGroup[ffloor].children[i]) {
-				let circle = new Path.Circle({center: new Point(-10000, -10000), radius: evacueeRadius});
-				circle.evac_id = i;
-				circle.floor = data[6];
-				evacueesGroup[ffloor].children[i] = circle;
-			}
-			if (!velocitiesGroup[ffloor].children[i]) {
-				let line = new Path.Line({from: new Point(-10000, -10000), to: new Point(-10000,-10000), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize });
-				line.evac_id = i;
-				line.floor = data[6];
-				velocitiesGroup[ffloor].children[i] = line;			
-			}
-		});
-	});
 }
 
 function evacueesInFrame() {//{{{
@@ -697,48 +660,42 @@ function evacueesInFrame() {//{{{
 	// check whether current frame is related to the change in the number of agents
 	// on any floor (going downstairs by agents) if so, update the evacueesGroup data
 	// to make proper numer of agents on each floor
-	_.each(evacueesGroup, function(data,ffloor) {
-		if (Object.keys(eData[frame]).length === 0 && paused === 0 ) return
+	_.each(evacueesGroup, function(group,ffloor) {
+		if (!eData.hasOwnProperty(frame)) { return}
+		if (Object.keys(eData[frame]).length === 0 ) return
 		if(ffloor in eData[frame]) {
-			// agentsOnFloorKeys = Object.keys(eData[frame][ffloor])
-			_.each(data.children, function(e,i) {
-				// let currentData = eData[frame]?.[ffloor]?.[agentsOnFloorKeys[i]];
-				let currentData = eData[frame]?.[ffloor]?.[e.evac_id];
-				if (currentData){
-					e.fillColor=colors['color_'+currentData[4]]['c'];
-					e.floor = currentData[6];
-					// let nextData = eData[frame + 1]?.[ffloor]?.[agentsOnFloorKeys[i]];
-					let nextData = eData[frame + 1]?.[ffloor]?.[e.evac_id] || null;
-					// if(agentsOnFloorKeys[i] in eData[frame+1][ffloor]){
+			const floorData = eData[frame][ffloor];
+			_.each(floorData, function(data, i) {
+				const evacuee = group.children.find(e => e.evac_id === data[6]);
+				if (evacuee) {
+					evacuee.fillColor = colors['color_'+data[4]]['c'];
+					evacuee.floor = data[5];
+					const evac_line = velocitiesGroup[ffloor].children.find(e => e.evac_id === data[6]);
+					let nextData = eData[frame + 1]?.[ffloor]?.[i] || null;
 					if(nextData){
-						e.position.x = currentData[0] + (nextData[0] - currentData[0]) * (lerpFrame%lerps)/lerps;
-						e.position.y = currentData[1] + dstatic.floors[ffloor].floor_meta.ty + (nextData[1] - currentData[1] ) * (lerpFrame%lerps)/lerps;
+						evacuee.position.x = data[0] + (nextData[0] - data[0]) * (lerpFrame%lerps)/lerps;
+						evacuee.position.y = data[1] + dstatic.floors[ffloor].floor_meta.ty + (nextData[1] - data[1] ) * (lerpFrame%lerps)/lerps;
+						evac_line.segments[0].point.x = evacuee.position.x;
+						evac_line.segments[0].point.y = evacuee.position.y;
+						evac_line.segments[1].point.x = evacuee.position.x + data[2];
+						evac_line.segments[1].point.y = evacuee.position.y + data[3];
 					}
 					else{
-						e.position.x = currentData[0];
-						e.position.y = currentData[1] + dstatic.floors[ffloor].floor_meta.ty
+						evacuee.position.x = data[0];
+						evacuee.position.y = data[1] + dstatic.floors[ffloor].floor_meta.ty
 					}
-				} 
-			})
-		}
-	})
-
-	_.each(velocitiesGroup, function(data,ffloor) {
-		if (Object.keys(eData[frame]).length === 0 && paused === 0) return
-		if(ffloor in eData[frame]) {
-			// agentsOnFloorKeys = Object.keys(eData[frame][ffloor])
-			_.each(data.children, function(e,i) {
-				let evacuee = evacueesGroup[ffloor]?.children[e.evac_id];
-				// let evacuee = evacueesGroup[ffloor]?.children[i];
-				let velocityData = eData[frame]?.[ffloor]?.[e.evac_id];
-				// let velocityData = eData[frame]?.[ffloor]?.[agentsOnFloorKeys[i]];
-		
-				if (!evacuee || !velocityData) return;
-
-				e.segments[0].point.x = evacuee.position.x;
-				e.segments[0].point.y = evacuee.position.y;
-				e.segments[1].point.x = evacuee.position.x + velocityData[2];
-				e.segments[1].point.y = evacuee.position.y + velocityData[3];
+				} else {
+					if (data[5] == ffloor) {
+						let circle = new Path.Circle({center: new Point(data[0], data[1]+dstatic.floors[ffloor].floor_meta.ty), radius: evacueeRadius});
+						circle.evac_id = data[6];
+						circle.floor = data[5];
+						evacueesGroup[ffloor].addChild(circle);
+						let line = new Path.Line({from: new Point(circle.position.x, circle.position.y), to: new Point(circle.position.x+data[2], circle.position.y+data[3]), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize });
+						line.evac_id = data[6];
+						line.floor = data[5];
+						velocitiesGroup[ffloor].addChild(line);
+					}
+				}
 			})
 		}
 	})
@@ -789,7 +746,7 @@ tool.onMouseDown=function(event) {//{{{
 //}}}
 function animFormatTime() {//{{{
 	var date=new Date(null);
-	if (eData.length>0) {
+	if (Object.keys(eData).length > 0) {
 		var t=currentAnimData.time_shift + (currentAnimData.simulation_time - currentAnimData.time_shift) * sliderPos / 100
 	}
 	if(isNaN(t))   { t=0; }

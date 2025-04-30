@@ -303,12 +303,12 @@ class EvacEnv:
                 finished = ped.finished
                 unique_agent_id = ped.unique_agent_id_on_different_floors
                 floor = ped.current_floor
-                data_row[unique_agent_id] = [int(position[0]), int(position[1]), velocity[0], velocity[1], fed, finished, floor]
+                id = ped.id
+                data_row[unique_agent_id] = [int(position[0]), int(position[1]), velocity[0], velocity[1], fed, floor, id]
         return data_row
 
     def update_agents_position(self):
-        for index in range(self.evacuees.get_number_of_pedestrians()):
-            i = 0
+        for i in range(self.evacuees.get_number_of_pedestrians()):
             evacuee = self.evacuees.get_pedestrian(i)
             if evacuee.current_floor != self.floor:
                 continue
@@ -319,56 +319,51 @@ class EvacEnv:
                 x = int(RVOSimulator.get_agent_position(self.simulator, i)[0])
                 y = int(RVOSimulator.get_agent_position(self.simulator, i)[1])
                 self.evacuees.set_position_to_pedestrian(i, (x,y))
-            i += 1
 
     def update_agents_velocity(self):
-        for index in range(self.evacuees.get_number_of_pedestrians()):
-            i = 0
+        for i in range(self.evacuees.get_number_of_pedestrians()):
             evacuee = self.evacuees.get_pedestrian(i)
-            if evacuee.finished == 0 or evacuee.current_floor != self.floor:
-                continue
-            self.evacuees.set_num_of_obstacle_neighbours(i, RVOSimulator.get_agent_num_obstacle_neighbors(self.simulator, i))
-            self.evacuees.calculate_pedestrian_velocity(i, self.current_time)
-            RVOSimulator.set_agent_pref_velocity(self.simulator, i, self.evacuees.get_velocity_of_pedestrian(i))
-            i += 1
+            if evacuee.finished == 1 and evacuee.current_floor == self.floor:
+                self.evacuees.set_num_of_obstacle_neighbours(i, RVOSimulator.get_agent_num_obstacle_neighbors(self.simulator, i))
+                self.evacuees.calculate_pedestrian_velocity(i, self.current_time)
+                RVOSimulator.set_agent_pref_velocity(self.simulator, i, self.evacuees.get_velocity_of_pedestrian(i))
 
     def set_goal(self):
         sorted_evacuees = sorted(self.evacuees.pedestrians, key=lambda evacuee: evacuee.type == 'follower')
         for evacuee in sorted_evacuees:
             if evacuee.finished == 0 or evacuee.current_floor != self.floor:
                 continue
-            else:                  
-                # TODO: mimooh temporary fix
-                position = evacuee.position
-                if evacuee.agent_has_no_escape == True:
-                    # agent is trapped, has no escape
-                    continue
-                elif evacuee.type == 'follower':
-                    result = self._find_exit_based_on_leader(evacuee)
-                    if result is not None:
-                        exit_coordinates, path, exit = result
-                        evacuee.exit_coordinates = exit_coordinates
-                        evacuee.path = path
-                        evacuee.exit = exit
-                else:
-                    result = self._find_closest_exit(evacuee)
-                    if result is not None:
-                        exit_coordinates, path, exit = result
-                        evacuee.exit_coordinates = exit_coordinates
-                        evacuee.path = path
-                        evacuee.exit = exit
+            # TODO: mimooh temporary fix
+            position = evacuee.position
+            if evacuee.agent_has_no_escape == True:
+                # agent is trapped, has no escape
+                continue
+            elif evacuee.type == 'follower':
+                result = self._find_exit_based_on_leader(evacuee)
+                if result is not None:
+                    exit_coordinates, path, exit = result
+                    evacuee.exit_coordinates = exit_coordinates
+                    evacuee.path = path
+                    evacuee.exit = exit
+            else:
+                result = self._find_closest_exit(evacuee)
+                if result is not None:
+                    exit_coordinates, path, exit = result
+                    evacuee.exit_coordinates = exit_coordinates
+                    evacuee.path = path
+                    evacuee.exit = exit
 
-                if evacuee.agent_has_no_escape == True:
-                    # this happens only during 1st set_goal function call
-                    continue
-                try:
-                    vis = RVOSimulator.query_visibility(self.simulator, position, evacuee.path[2], 15)
-                    if vis:
-                        evacuee.set_goal(navmesh_path=evacuee.path[1:])
-                    else:
-                        evacuee.set_goal(navmesh_path=evacuee.path)
-                except:
+            if evacuee.agent_has_no_escape == True:
+                # this happens only during 1st set_goal function call
+                continue
+            try:
+                vis = RVOSimulator.query_visibility(self.simulator, position, evacuee.path[2], 15)
+                if vis:
+                    evacuee.set_goal(navmesh_path=evacuee.path[1:])
+                else:
                     evacuee.set_goal(navmesh_path=evacuee.path)
+            except:
+                evacuee.set_goal(navmesh_path=evacuee.path)
 
     def append_agents_to_move_downstairs_or_upstairs(self, evacuee, pedestrian_number):
         self.agents_to_move_downstairs_or_upstairs.append({
@@ -377,8 +372,7 @@ class EvacEnv:
             'distance_from_teleport': cdist([evacuee.position], [evacuee.exit_coordinates], 'euclidean')})
 
     def update_speed(self):
-        for index in range(self.evacuees.get_number_of_pedestrians()):
-            i = 0
+        for i in range(self.evacuees.get_number_of_pedestrians()):
             evacuee = self.evacuees.get_pedestrian(i)
             if evacuee.finished == 0 or evacuee.current_floor != self.floor:
                 continue
@@ -388,7 +382,6 @@ class EvacEnv:
             agent_speed = self.evacuees.get_speed_of_pedestrian(i)
             agent_speed = self.reduce_agent_on_stairs_speed(agent_speed, i) 
             RVOSimulator.set_agent_max_speed(self.simulator, i, agent_speed)
-            i += 1
 
     def reduce_agent_on_stairs_speed(self, agent_speed, i):
         for stair in self.general['staircases']:
@@ -411,24 +404,23 @@ class EvacEnv:
             evacuee = self.evacuees.get_pedestrian(i)
             if evacuee.finished == 0 or evacuee.current_floor != self.floor:
                 continue
-            else:
-                #try:
-                # find activity level
-                activity = 1
-                position = self.evacuees.get_position_of_pedestrian(i)
-                if self.evacuees.get_velocity_of_pedestrian(i) == (0, 0):
-                    activity = 0
-                elif 's' in self.smoke_query.xy2room(position):
-                    activity = 2
+            #try:
+            # find activity level
+            activity = 1
+            position = self.evacuees.get_position_of_pedestrian(i)
+            if self.evacuees.get_velocity_of_pedestrian(i) == (0, 0):
+                activity = 0
+            elif 's' in self.smoke_query.xy2room(position):
+                activity = 2
 
-                dfed = self.smoke_query.get_fed_sfpe(position, activity_level=activity)
-                if i == 0:
-                    self.elog.debug('FED calculated: {}'.format(dfed))
-                #except:
-                #    self.elog.warning('Simulation without FED')
-                #    fed = 0.0
-                fed_over_1 = False if self.evacuees.update_fed_of_pedestrian(i, dfed) < 1 else True
-                self.evacuees.update_symbolic_fed_of_pedestrian(i)
+            dfed = self.smoke_query.get_fed_sfpe(position, activity_level=activity)
+            if i == 0:
+                self.elog.debug('FED calculated: {}'.format(dfed))
+            #except:
+            #    self.elog.warning('Simulation without FED')
+            #    fed = 0.0
+            fed_over_1 = False if self.evacuees.update_fed_of_pedestrian(i, dfed) < 1 else True
+            self.evacuees.update_symbolic_fed_of_pedestrian(i)
 
         # return True if at least one agent has FED=1 (ASET criterion)
         return  fed_over_1

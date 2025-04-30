@@ -7,7 +7,7 @@ from scipy.spatial.distance import cdist
 class Evacuee:
 
     def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, detection_constituents, detection_compa,
-                 alpha_v, beta_v, node_radius, type, current_floor) -> None:
+                 alpha_v, beta_v, node_radius, type, current_floor, id) -> None:
         """
 
         :type origin: tuple
@@ -51,6 +51,7 @@ class Evacuee:
         self.leader = None
         self.current_floor = current_floor
         self.prev_floor = current_floor
+        self.id = id
 
 
     def __getattr__(self, name):
@@ -137,7 +138,9 @@ class Evacuee:
         self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.beta_v/self.alpha_v * extinction_coefficient))
 
     def did_agent_moved(self):
-        if self.prev_position != self.position or self.prev_floor != self.current_floor:
+        if self.prev_position != self.position:
             self.prev_position = self.position
+            return True
+        if self.prev_floor != self.current_floor:
             return True
         return False

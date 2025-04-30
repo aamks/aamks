@@ -331,8 +331,10 @@ class Worker:
                                     alpha_v=floor_data['EVACUEES'][i]['ALPHA_V'], beta_v=floor_data['EVACUEES'][i]['BETA_V'],
                                     node_radius=self.config['NODE_RADIUS'], 
                                     type = floor_data['EVACUEES'][i]['type'],
-                                    current_floor = int(floor)
+                                    current_floor = int(floor),
+                                    id = self.evac_id
                                   ))
+            self.evac_id += 1
             leaders_id_list.append(floor_data['EVACUEES'][i]['leader_id'])
             self.wlogger.debug('{} evacuee added'.format(i))
 
@@ -358,6 +360,7 @@ class Worker:
 
     def prepare_simulations(self):
         floor_numers = sorted(self.obstacles['obstacles'].keys())
+        self.evac_id = 1
         for floor in floor_numers:
             eenv = None
             obstacles = []
@@ -796,13 +799,14 @@ class Worker:
                 floors.update({key: room_on_floor})
             smoke_data.append(floors)
         self.wlogger.info('Smoke data created')
+        mapped_anim = {idx: v for idx, v in enumerate(self.animation_data) if v}
 
         json_content = {
                         'simulation_id': self.sim_id,
                         'simulation_time': self.simulation_time,
                         'time_shift': self.time_shift,
                         'animations': {
-                            'evacuees': self.animation_data,
+                            'evacuees': mapped_anim,
                             'rooms_opacity': smoke_data,
                             'doors': None
                         }
