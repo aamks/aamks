@@ -27,9 +27,10 @@ function set_help($show=false) {
     '33' => 'Error reading smoke query record (fires.partition_query.PartitionQuery.cfast_has_time())',
     '90' => 'Iteration halted remotely (cancelled at the queuing stage)',
     '91' => 'Iteration halted manually (also this code has to be set by hand)',
-    '100' => 'Started worker',
-    '101' => 'Started running CFAST simulation',
-    '102' => 'CFAST simulation calculated with success',
+    '100' => 'Job processed by server worker',
+    '101' => 'Started worker',
+    '102' => 'Started running CFAST simulation',
+    '103' => 'CFAST simulation calculated with success',
     '' => 'Job submitted. No data has been received from worker yet',
     'halted' => 'deprecated code 90',
 ];
@@ -74,7 +75,7 @@ function query_cur() {
     {
         header("Location: login.php?session_finished_information=1");
     }
-	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
+	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 ORDER BY modified DESC", array($_SESSION['main']['scenario_id'], $_SESSION['main']['project_id'] ));
 	echo $_SESSION['main']['project_id']."/".$_SESSION['main']['scenario_id'];
 	return $r;
 }
@@ -85,7 +86,7 @@ function query_any() {
     {
         header("Location: login.php?session_finished_information=1");
     }
-	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 AND job_id IS NOT NULL AND job_id != '' ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
+	$r = $_SESSION['nn']->query("SELECT iteration, status, job_id FROM simulations WHERE scenario_id=$1 AND project=$2 ORDER BY modified DESC", array($_POST['scenario'], $_POST['project'] ));
 	echo $_POST['project']."/".$_POST['scenario'];
 	return $r;
 }

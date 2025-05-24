@@ -6,6 +6,7 @@ import config
 import os
 from results.beck_new import postprocess, comparepostprocess
 from results.beck_anim import Beck_Anim
+from include import Psql
 
 class RedisWorkerServer:
     
@@ -71,6 +72,7 @@ class RedisWorkerServer:
                 }
                 message["id"] = id.replace("iter", str(i))
                 self.worker_redis_queue_push(message)
+                Psql().query(f"UPDATE simulations SET status=100 WHERE scenario_id={scenario_id} AND iteration={i}")
                 logger.debug(f'send sim {i} {path}')
         except Exception as e:
             logger.error(f'Failure to send redis worker message - {e}')

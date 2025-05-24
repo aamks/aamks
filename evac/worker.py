@@ -133,7 +133,7 @@ class Worker:
             self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py  ')
 
     def run_cfast_simulations(self, version='intel', attempt=0):
-        self.send_report(e={"status":101})
+        self.send_report(e={"status":102})
         compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
         if version == 'intel':
             cfast_file = 'cfast_775-750-i' if compa_no > 100 else 'cfast_775-100-i'
@@ -160,7 +160,7 @@ class Worker:
 
             if not err:
                 self.wlogger.info('CFAST simulation calculated with success')
-                self.send_report(e={"status": 102})
+                self.send_report(e={"status": 103})
                 return True
             else:
                 if attempt == 1:
@@ -874,7 +874,7 @@ class Worker:
 
     def main(self):
         self.get_config()
-        self.send_report(e={"status":100})
+        self.send_report(e={"status":101})
         self.create_geom_database()
         if self.run_cfast_simulations():
             self.prepare_simulations()
