@@ -10,9 +10,8 @@ from subprocess import run, TimeoutExpired
 import zipfile
 import pandas as pd
 from io import StringIO
-import shutil
 from evac.pathfinder import read_from_text
-from include import Psql, Json, Sqlite
+from include import Psql, Sqlite
 from evac.pathfinder.navmesh import Navmesh as Pynavmesh
 from results.beck_new import RiskIteration as RI
 from evac.evacuee import Evacuee
@@ -52,9 +51,6 @@ class Worker:
             self.s=Sqlite(new_sql_path)
         else:
             self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.json=Json()
-        self.json.s = self.s
-        self.AAMKS_SERVER=self.json.read("/etc/aamksconf.json")['AAMKS_SERVER']
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
         self.vars = OrderedDict()
@@ -117,6 +113,14 @@ class Worker:
             self.send_report(e={"status":16})
             raise SystemError(16)
         try:
+            f = open(f"{self.project_dir}/conf.json", 'r')
+            self.project_conf = json.load(f)
+            f.close()
+        except Exception as e:
+            self.wlogger.error('Cannot load conf.json from project directory: {}'.format(str(e)))
+            self.send_report(e={"status":16})
+            raise SystemError(16)
+        try:
             f = open('evac.json', 'r')
             self.vars['conf'] = json.load(f)
         except Exception as e:
@@ -125,7 +129,6 @@ class Worker:
             raise SystemError(17)
 
         self.detection_time = self.config['DETECTION_TIME']
-        self.project_conf=self.json.read("../../conf.json")
 
         if not logging.getLogger(f'{self.host_name} - evac.py  ').handlers: 
             self.vars['conf']['logger'] = self.get_logger(f'{self.host_name} - evac.py  ')
