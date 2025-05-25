@@ -43,7 +43,6 @@ class GetData:
         self.raw = {}
         self.configs = self._get_json(f'{scenario_dir}/conf.json')
         self.p = Psql()
-        self.s = Sqlite(f'{self.dir}/aamks.sqlite', 2)
         self.check_results()
 
     def _get_json(self, path):
@@ -54,9 +53,19 @@ class GetData:
         return dump
 
     def check_results(self):
-        sql = self.s.query('SELECT * FROM sqlite_master WHERE type="table"')
-        if not sql:
-            raise Exception(f'No sqlite database for {self.dir}')
+        scenario = self.dir.split('/')[-1]
+        primary_sql = os.path.join(self.dir, 'aamks.sqlite')
+        if scenario in ('simple', 'three', 'navmesh'):
+            new_sql_path = os.path.join(self.dir, 'workers', '11', 'aamks_11.sqlite')
+        else:
+            new_sql_path = os.path.join(self.dir, 'workers', '1', 'aamks_1.sqlite')
+        if os.path.exists(primary_sql):
+            db_path = primary_sql
+        elif os.path.exists(new_sql_path):
+            db_path = new_sql_path
+        else:
+            raise FileNotFoundError(f"No database found at {primary_sql} or {new_sql_path}")
+        self.s = Sqlite(db_path, 1)
         q = f"SELECT status FROM simulations WHERE project = {self.configs['project_id']} AND scenario_id = {self.configs['scenario_id']}"
         psql = np.array(self.p.query(q))
         if  (psql == None).all():
