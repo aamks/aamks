@@ -19,6 +19,11 @@ from evac.evacuee import Evacuee
 from evac.evacuees import Evacuees
 from evac.rvo2_dto import EvacEnv
 from fire.partition_query import PartitionQuery
+from evac.exit import CompartmentExit, Teleport, TermianlDoorExit, RoomGoalExit
+from evac.compartments import Compartments
+from evac.compartment import Compartment
+from collections import defaultdict, deque
+
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
@@ -39,10 +44,17 @@ class Worker:
             os.environ['AAMKS_SERVER'] = AA['SERVER']
             os.environ['AAMKS_PG_PASS'] = AA['PG_PASS']
 
+
+        # for local testing:
+        # os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1020@wp.pl/testtttt/mech3'
+
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
         else:
             self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
+
+        # for local testing:
+        # self.working_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/v444v2/workers/1'
 
         self.project_dir = self.working_dir.split("/workers/")[0]
         self.sim_id = int(self.working_dir.split("/workers/")[1])
@@ -82,6 +94,7 @@ class Worker:
         self.rooms = {}
         self.is_anim = 0
         self.previous_critical_rooms = {}
+        self.rsets = []
 
 
     def get_logger(self, logger_name):
@@ -171,104 +184,66 @@ class Worker:
                 return self.run_cfast_simulations("gnu", attempt + 1)
 
 
-    def create_geom_database(self):
-        self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
-        outside_building_doors = self.s.query('SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL')
-        floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%'")
-        rooms_with_exits_weights_set = self.s.query('SELECT floor, name, center_x, center_y, room_exits_weights from aamks_geom WHERE room_exits_weights IS NOT NULL')
-        all_rooms = self.s.query("SELECT name, floor, points from aamks_geom WHERE type_pri = 'COMPA'")
-        for room in all_rooms:
-            points = room['points'].replace('[', '').replace(']', '').split(', ')
-            int_points = [int(x) for x in points]
-            x_min = min(int_points[0],int_points[2],int_points[4],int_points[6])
-            x_max = max(int_points[0],int_points[2],int_points[4],int_points[6])
-            y_min = min(int_points[1],int_points[3],int_points[5],int_points[7])
-            y_max = max(int_points[1],int_points[3],int_points[5],int_points[7])
-            self.rooms[room['name']]={'floor': room['floor'], 'x_min':x_min, 'x_max':x_max, 'y_min':y_min,'y_max':y_max}
 
-        self.vars['conf']['agents_destination'] = []
-        for floor in sorted(self.obstacles['obstacles'].keys()):
-            self.vars['conf']['agents_destination'].append([])
-            self.vars['conf']['agents_destination'][int(floor)]= {}
-            self.vars['conf']['agents_destination'][int(floor)]['general_floor_goals'] = []
-            self.vars['conf']['agents_destination'][int(floor)]['rooms_goals'] = {}
+    def _create_evacuees(self, floor: int, floor_numers):
+        evacuees_list = []
+        self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
-        for door in outside_building_doors:
-            room_before_exit_center = self.s.query('SELECT points from aamks_geom WHERE name=? or name=?', (door['vent_to_name'],door['vent_from_name']))
-            center_x, center_y = self.get_center_from_points(room_before_exit_center[0]['points'])
-            destination_x, destination_y = self._get_outside_door_destination(center_x, center_y, door)
-            if door['exit_weight'] is not None:
-                if door['exit_weight'] == '0':
-                    weight = float("inf")
-                else:
-                    weight = self.max_exit_weight/int(door['exit_weight'])
+        floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
+        leaders_id_list = []
+        evacuees_id_list = []
+        for i in floor['EVACUEES'].keys():
+            evacuees_list.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
+                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=self.config['DETECTION_TIME'],
+                                    detection_constituents= floor['EVACUEES'][i]['PRE_EVACUATION'],
+                                    detection_compa= floor['EVACUEES'][i]['COMPA'],
+                                    alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
+                                    node_radius=self.config['NODE_RADIUS'], 
+                                    type = floor['EVACUEES'][i]['type'], 
+                                    current_floor = floor,
+                                    reset_behavior_due_to_panic = {i: False for i in floor_numers},
+                                    id = self.evac_id
+                                  ))
+            self.evac_id += 1
+            leaders_id_list.append(floor['EVACUEES'][i]['leader_id'])
+            evacuees_id_list.append(i)
+            self.wlogger.debug('{} evacuee added'.format(i))
+
+        evacuees = Evacuees()
+        for e in evacuees_list:
+            if self.vars['conf']['leader_following'] == 1:
+                e.leader = evacuees_list[leaders_id_list.pop(0)]
+                evacuees_id_list.pop(0)
             else:
-                weight = 1
-            self.vars['conf']['agents_destination'][int(door['floor'])]['general_floor_goals'].append({'name':door['name'], 'floor':door['floor'],'x_outside':destination_x,'y_outside':destination_y, 'x':door['center_x'], 'y':door['center_y'], 'type':'door', 'exit_weight':weight})
+                e.leader = e
+                e.detection_constituents = evacuees_list[leaders_id_list.pop(0)].detection_constituents
+                e.type = 'leader'
 
-        for teleport in floor_teleports:
-            teleport_from_coordinates = teleport['teleport_from'].replace('[', '').replace(']','').replace(' ', '').split(',')
-            int_teleport_from_coordinates = [int(t) for t in teleport_from_coordinates]
-            x = int_teleport_from_coordinates[0]
-            y = int_teleport_from_coordinates[1]
+            evacuees.add_pedestrian(e)
 
-            teleport_to_coordinates = teleport['teleport_to'].replace('[', '').replace(']','').replace(' ', '').split(',')
-            int_teleport_to_coordinates = [int(t) for t in teleport_to_coordinates]
-            direction_x = int_teleport_to_coordinates[0]
-            direction_y = int_teleport_to_coordinates[1]
+        self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees_list)))
+        return evacuees
 
-            if teleport['exit_weight'] is not None:
-                if teleport['exit_weight'] == '0':
-                    weight = float("inf")
-                else:
-                    weight = self.max_exit_weight/int(teleport['exit_weight'])
-            else:
-                weight = 1
-
-            self.vars['conf']['agents_destination'][int(teleport['floor'])]['general_floor_goals'].append({'name':teleport['name'], 'floor':teleport['floor'], 'x':x, 'y':y, 'type':'teleport', 'direction_x':direction_x, 'direction_y':direction_y,'exit_weight':weight,'stair_direction':teleport['stair_direction']})
-        
-        for room in rooms_with_exits_weights_set:
-            self.vars['conf']['agents_destination'][int(room['floor'])]['rooms_goals'][room['name']] = []
-
-            exits_weights_dict = dict(eval(room['room_exits_weights']))
-            for exit_id in exits_weights_dict.keys():
-                if exits_weights_dict[exit_id] == '0':
-                    weight = float("inf")
-                else:
-                    weight = self.max_exit_weight/int(exits_weights_dict[exit_id])
-                query = "SELECT floor, name, center_x, center_y, width, depth from aamks_geom WHERE (global_type_id="+exit_id+" and type_tri='DOOR')"
-                exit = self.s.query(query)
-                destination_x, destination_y = self._get_door_destination(room['center_x'], room['center_y'], exit[0], outside_building_doors)
-                self.vars['conf']['agents_destination'][int(exit[0]['floor'])]['rooms_goals'][room['name']].append({'name':exit[0]['name'], 'floor':exit[0]['floor'], 'x_outside':destination_x,'y_outside':destination_y, 'x':exit[0]['center_x'], 'y':exit[0]['center_y'], 'type':'door', 'exit_weight':weight})
-
-        self.wlogger.info('SQLite load successfully')
-
+    def prepare_staircases(self, floor):
+        rows = self.s.query("SELECT x0, y0, width, depth from aamks_geom WHERE type_sec='STAI' AND floor = floor")
+        stair_cases = []
+        for row in rows:
+            x_min = row['x0']
+            x_max = row['x0'] + row['width']
+            y_min = row['y0']
+            y_max = row['y0'] + row['depth']
+            staircase = {'x_min':x_min, 'x_max':x_max, 'y_min':y_min, 'y_max':y_max}
+            stair_cases.append(staircase)
+        self.vars['conf']['staircases'] = stair_cases
+        return stair_cases
 
     def get_center_from_points(self, points):
         points = points.replace('[', '').replace(']', '').split(', ')
         int_points = [int(x) for x in points]
         return((int_points[0]+int_points[2]+int_points[4]+int_points[6])/4, (int_points[1]+int_points[3]+int_points[5]+int_points[7])/4)
-
-    def get_longer_projection_with_average(self, points):
-        points = points.replace('[', '').replace(']', '').split(', ')
-        int_points = [int(x) for x in points]
-        x_coords = int_points[0::2]
-        y_coords = int_points[1::2]
-        min_x, max_x = min(x_coords), max(x_coords)
-        min_y, max_y = min(y_coords), max(y_coords)
-        x_length = max_x - min_x
-        y_length = max_y - min_y
-        avg_x = sum(x_coords) / len(x_coords)
-        avg_y = sum(y_coords) / len(y_coords)
-        
-        if x_length >= y_length:
-            return ((min_x, avg_y), (max_x, avg_y))
-        else:
-            return ((avg_x, min_y), (avg_x, max_y))
-    
     
     def _get_outside_door_destination(self, last_room_center_x, last_room_center_y, door):
-        goal_from_door_distance = 100
+        goal_from_door_distance=self.config['GOAL_FROM_OUTSIDE_DOOR_DISTANCE']
         if door['width'] < door['depth']:
             # exit door is vertical
             if last_room_center_x > door['center_x']:
@@ -288,14 +263,8 @@ class Worker:
             
         raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target from building "+ str(goal_from_door_distance) +"cm behind exit door")
 
-    def _get_door_destination(self, last_room_center_x, last_room_center_y, door, outside_building_doors):
-        goal_from_door_distance=25
-        for outside_door in outside_building_doors:
-            if outside_door['name'] == door['name']:
-                # doors are terminal - leads outside
-                goal_from_door_distance=100
-                break
-
+    def _get_door_destination(self, last_room_center_x, last_room_center_y, door):
+        goal_from_door_distance=self.config['GOAL_FROM_INTERIOR_DOOR_DISTANCE']
         if door['width'] < door['depth']:
             # exit door is vertical
             if last_room_center_x > door['center_x']:
@@ -316,49 +285,167 @@ class Worker:
 
         raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target "+ str(goal_from_door_distance) +"cm behind door")
 
-    def _create_evacuees(self, floor: str):
-        evacuees_list = []
-        self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
+    def get_floor_compartments(self, floor):
+        compartments = []
+        all_rooms = self.s.query("SELECT name, floor, points, room_exits_weights from aamks_geom WHERE type_pri = 'COMPA' and floor='"+floor+"'")
+        holes = self.s.query("SELECT name, floor, vent_from_name, vent_to_name from aamks_geom WHERE type_sec = 'HOLE' and floor='"+floor+"'")
+        rooms_holes_connection_dict = self.build_connection_dict(holes,all_rooms)
+        for room in all_rooms:
+            room_interior_doors_and_holes = self.s.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name from aamks_geom WHERE (terminal_door IS NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
+            room_outside_doors = self.s.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name from aamks_geom WHERE (terminal_door IS NOT NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
+            points = room['points'].replace('[', '').replace(']', '').split(', ')
+            int_points = [int(x) for x in points]
+            x_min = min(int_points[0],int_points[2],int_points[4],int_points[6])
+            x_max = max(int_points[0],int_points[2],int_points[4],int_points[6])
+            y_min = min(int_points[1],int_points[3],int_points[5],int_points[7])
+            y_max = max(int_points[1],int_points[3],int_points[5],int_points[7])
+            self.rooms[room['name']]={'floor': room['floor'], 'x_min':x_min, 'x_max':x_max, 'y_min':y_min,'y_max':y_max}
+            center_x, center_y = self.get_center_from_points(room['points'])
+            compartmentExits = []
 
-        floor_data = self.vars['conf']['FLOORS_DATA'][floor]
+            for door in room_interior_doors_and_holes:
+                x_direction, y_direction = self._get_door_destination(center_x, center_y, door)
+                points = door['points'].replace('[', '').replace(']', '').split(', ')
+                door_points = [int(x) for x in points]
+                door_x_min = min(door_points[0],door_points[2],door_points[4],door_points[6])
+                door_x_max = max(door_points[0],door_points[2],door_points[4],door_points[6])
+                door_y_min = min(door_points[1],door_points[3],door_points[5],door_points[7])
+                door_y_max = max(door_points[1],door_points[3],door_points[5],door_points[7])
+                room_from = room['name']
+                room_to = door['vent_from_name'] if room['name'] == door['vent_to_name'] else door['vent_to_name']
+                compartmentExits.append(CompartmentExit(door['name'],door['center_x'],door['center_y'], x_direction, y_direction, False, door_x_min,door_x_max,door_y_min,door_y_max,room_from,room_to))
+            
+            for door in room_outside_doors:
+                x_direction, y_direction = self._get_outside_door_destination(center_x, center_y, door)
+                points = door['points'].replace('[', '').replace(']', '').split(', ')
+                door_points = [int(x) for x in points]
+                door_x_min = min(door_points[0],door_points[2],door_points[4],door_points[6])
+                door_x_max = max(door_points[0],door_points[2],door_points[4],door_points[6])
+                door_y_min = min(door_points[1],door_points[3],door_points[5],door_points[7])
+                door_y_max = max(door_points[1],door_points[3],door_points[5],door_points[7])
+                room_from = room['name']
+                room_to = door['vent_from_name'] if room['name'] == door['vent_to_name'] else door['vent_to_name']
+                compartmentExits.append(CompartmentExit(door['name'],door['center_x'],door['center_y'], x_direction, y_direction, True,  door_x_min,door_x_max,door_y_min,door_y_max,room_from,room_to))
 
-        leaders_id_list = []
-        for i in floor_data['EVACUEES'].keys():
-            evacuees_list.append(Evacuee(origin=tuple(floor_data['EVACUEES'][i]['ORIGIN']), v_speed=floor_data['EVACUEES'][i]['V_SPEED'],
-                                    h_speed=floor_data['EVACUEES'][i]['H_SPEED'], pre_evacuation=self.config['DETECTION_TIME'],
-                                    detection_constituents= floor_data['EVACUEES'][i]['PRE_EVACUATION'],
-                                    detection_compa= floor_data['EVACUEES'][i]['COMPA'],
-                                    alpha_v=floor_data['EVACUEES'][i]['ALPHA_V'], beta_v=floor_data['EVACUEES'][i]['BETA_V'],
-                                    node_radius=self.config['NODE_RADIUS'], 
-                                    type = floor_data['EVACUEES'][i]['type'],
-                                    current_floor = int(floor),
-                                    id = self.evac_id
-                                  ))
-            self.evac_id += 1
-            leaders_id_list.append(floor_data['EVACUEES'][i]['leader_id'])
-            self.wlogger.debug('{} evacuee added'.format(i))
+            compartments.append(Compartment(room['name'], room['floor'], x_min, x_max, y_min, y_max, compartmentExits))
 
-        evacuees = Evacuees()
-        for e in evacuees_list:
-            e.leader = evacuees_list[leaders_id_list.pop(0)]
-            evacuees.add_pedestrian(e)
+        _compartments = Compartments(compartments)
 
-        self.wlogger.info('Num of evacuees placed: {}'.format(len(evacuees_list)))
-        return evacuees
+        for room in all_rooms:
+            if room['room_exits_weights'] is not None:
+                exits_weights_dict = dict(eval(room['room_exits_weights']))
+                exits_weights_dict_with_names = {}
+                for exit_id in exits_weights_dict.keys():
+                    query = "SELECT floor, name, center_x, center_y, width, depth from aamks_geom WHERE (global_type_id="+exit_id+" and type_tri='DOOR')"
+                    exit = self.s.query(query)
+                    exits_weights_dict_with_names[exit[0]['name']] = exits_weights_dict[exit_id]
+                compartment = _compartments.get_compartment(room['name'])
+                compartment.roomGoalExits = self.get_room_goal_exits(_compartments,room['name'],rooms_holes_connection_dict[room['name']],exits_weights_dict_with_names)
 
-    def prepare_staircases(self, floor):
-        rows = self.s.query(f"SELECT x0, y0, width, depth from aamks_geom WHERE type_sec='STAI' AND floor = {floor}")
-        stair_cases = []
-        for row in rows:
-            x_min = row['x0']
-            x_max = row['x0'] + row['width']
-            y_min = row['y0']
-            y_max = row['y0'] + row['depth']
-            staircase = {'x_min':x_min, 'x_max':x_max, 'y_min':y_min, 'y_max':y_max}
-            stair_cases.append(staircase)
-        self.vars['conf']['staircases'] = stair_cases
+        return _compartments
+        
+    def get_room_goal_exits(self, compartments,room_name,rooms_holes_connection_dict,exits_weights_dict):
+        exits_weights_dict_keys = list(exits_weights_dict.keys())
+        roomGoalExits = []
+        for comp_name in rooms_holes_connection_dict:
+            comp = compartments.get_compartment(comp_name)
+            for comp_exit in comp.compartmentExits:
+                if comp_exit.name in exits_weights_dict_keys:
+                    room_exit_weight = int(exits_weights_dict[comp_exit.name])
+                    if room_exit_weight == 0:
+                        weight = float("inf")
+                    else:
+                        weight = self.max_exit_weight/room_exit_weight
+                    roomGoalExits.append(RoomGoalExit(comp_exit.name, comp_exit.x, comp_exit.y, comp_exit.x_direction, comp_exit.y_direction, weight, comp_exit.leads_outside, comp_exit.x_min, comp_exit.x_max, comp_exit.y_min, comp_exit.y_max))
+                    exits_weights_dict_keys.remove(comp_exit.name)
+                    if len(exits_weights_dict_keys) == 0:
+                        return roomGoalExits
+
+    def build_connection_dict(self, holes, all_rooms):
+        # A collection of room names
+        room_names = set(room['name'] for room in all_rooms)
+
+        # We build a connection graph
+        graph = defaultdict(list)
+        for hole in holes:
+            from_room = hole['vent_from_name']
+            to_room = hole['vent_to_name']
+            if from_room in room_names and to_room in room_names:
+                graph[from_room].append(to_room)
+                graph[to_room].append(from_room)
+
+        # For each room we do BFS and build a list of connected rooms in BFS order
+        connections_dict = {}
+
+        for start_room in room_names:
+            visited = set()
+            queue = deque([start_room])
+            ordered_rooms = []
+
+            while queue:
+                current = queue.popleft()
+                if current not in visited:
+                    visited.add(current)
+                    ordered_rooms.append(current)
+                    queue.extend(graph[current])
+
+            connections_dict[start_room] = ordered_rooms
+
+        return connections_dict
+
+
+    def get_terminal_door_exits(self, floor):
+        terminal_door_exits = []
+        outside_building_doors = self.s.query("SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL and floor='"+floor+"'")
+
+        for door in outside_building_doors:
+            room_before_exit_center = self.s.query('SELECT points from aamks_geom WHERE name=? or name=?', (door['vent_to_name'],door['vent_from_name']))
+            source_compartment = door['vent_to_name'] if door['vent_to_name']!='OUTSIDE' else door['vent_from_name']
+            center_x, center_y = self.get_center_from_points(room_before_exit_center[0]['points'])
+            x_direction, y_direction = self._get_outside_door_destination(center_x, center_y, door)
+
+            if door['exit_weight'] is not None:
+                if door['exit_weight'] == '0':
+                    general_exit_weight = float("inf")
+                else:
+                    general_exit_weight = self.max_exit_weight/int(door['exit_weight'])
+            else:
+                general_exit_weight = 1
+            terminal_door_exits.append(TermianlDoorExit(door['name'],floor, door['center_x'],door['center_y'], x_direction,y_direction, general_exit_weight))
+           
+        return terminal_door_exits
+
+    def get_teleports(self, floor):
+        teleports = []
+        floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%' and floor='"+floor+"'")
+
+        for teleport in floor_teleports:
+            
+            teleport_from_coordinates = teleport['teleport_from'].replace('[', '').replace(']','').replace(' ', '').split(',')
+            int_teleport_from_coordinates = [int(t) for t in teleport_from_coordinates]
+            x = int_teleport_from_coordinates[0]
+            y = int_teleport_from_coordinates[1]
+            teleport_room_name = self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' and "+str(x)+" > x0 and "+str(x)+" < x1 and "+str(y)+" > y0 and "+str(y)+" < y1 and floor='"+floor+"'")
+            source_compartment = teleport_room_name[0]['name']
+
+            teleport_to_coordinates = teleport['teleport_to'].replace('[', '').replace(']','').replace(' ', '').split(',')
+            int_teleport_to_coordinates = [int(t) for t in teleport_to_coordinates]
+            x_direction = int_teleport_to_coordinates[0]
+            y_direction = int_teleport_to_coordinates[1]
+
+            if teleport['exit_weight'] is not None:
+                if teleport['exit_weight'] == '0':
+                    general_exit_weight = float("inf")
+                else:
+                    general_exit_weight = self.max_exit_weight/int(teleport['exit_weight'])
+            else:
+                general_exit_weight = 1
+            teleports.append(Teleport(teleport['name'],floor, x, y, x_direction,y_direction,teleport['stair_direction'],general_exit_weight))
+        
+        return teleports
 
     def prepare_simulations(self):
+        self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
         floor_numers = sorted(self.obstacles['obstacles'].keys())
         self.evac_id = 1
         for floor in floor_numers:
@@ -367,7 +454,11 @@ class Worker:
             try:
                 self.prepare_staircases(floor)
                 self.vars['conf']['working_dir'] = self.working_dir
-                eenv = EvacEnv(self.vars['conf'], int(floor), self.sim_id)
+                compartments = self.get_floor_compartments(floor)
+                terminal_door_exits = self.get_terminal_door_exits(floor)
+                teleports = self.get_teleports(floor)
+                eenv = EvacEnv(self.vars['conf'], floor, compartments,terminal_door_exits,teleports, self.sim_id)
+
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":31})
@@ -382,8 +473,8 @@ class Worker:
                 y_min = min(i[1] for i in obst)
                 y_max = max(i[1] for i in obst)
                 obstacles.append([(x_min,y_min),(x_max,y_min),(x_max,y_max),(x_min,y_max),(x_min,y_min),(x_max,y_min)])
-            if floor in self.obstacles['fire']:
-                fire_obst = self.obstacles['fire'][floor]
+            if 'fire' in self.obstacles and str(floor) in self.obstacles['fire']:
+                fire_obst = self.obstacles['fire'][str(floor)]
                 x_min = min(i[0] for i in fire_obst)
                 x_max = max(i[0] for i in fire_obst)
                 y_min = min(i[1] for i in fire_obst)
@@ -395,7 +486,7 @@ class Worker:
             eenv.generate_nav_mesh(self.working_dir)
             self.wlogger.debug('Added obstacles on floor: {}, number of vercites: {}'.format(1, num_of_vertices))
 
-            e = self._create_evacuees(floor)
+            e = self._create_evacuees(floor,floor_numers)
             self.wlogger.info('Evacuees placed on floor: {}'.format(floor))
             eenv.place_evacuees(e)
             eenv.prepare_rooms_list()
@@ -473,6 +564,7 @@ class Worker:
         cfast_step = self.config['SMOKE_QUERY_RESOLUTION']
         aevac_step = self.config['TIME_STEP']
         time_frame = 0
+
         #first_evacuue = []
         # iterate over CFAST time frames (results saving interval)
 
@@ -488,7 +580,7 @@ class Worker:
 
             if self.floors[0].smoke_query.cfast_has_time(time_frame) == 1:
                 self.wlogger.info('Simulation time: {}'.format(time_frame))
-                rsets = []
+                self.rsets =  [0] * len(self.floors)
                 for i in self.floors:
                     try:
                         i.read_cfast_record(time_frame)
@@ -522,20 +614,18 @@ class Worker:
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
                         self.change_pynavmesh_due_to_smoke()
-
-
-                # determine RSET and smoke on all floors
+                # determine smoke on all floors
                 for i in self.floors:
-                    rsets.append(i.rset)
-                    self.rooms_in_smoke.update({str(i.floor): i.rooms_in_smoke})
+                    self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
                 progress = round((time_frame)/self.vars["conf"]["simulation_time"] * 100, 1)
                 self.wlogger.info(f'Progress: {progress}%')
                 progres_status = int(1000+progress)
                 self.send_report(e={"status":progres_status})
                 # check if all agents egressed and determine RSET for the building
-                if prod(array(rsets)) > 0:
-                    self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(rsets))
-                    self.simulation_time = max(rsets)
+                if self.has_everyone_left_the_building():
+                    self.get_rsets()
+                    self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(self.rsets))
+                    self.simulation_time = max(self.rsets)
                     self.time_shift = 0
                     break
             else:
@@ -548,6 +638,20 @@ class Worker:
         self.cross_building_results['dcbe'] = aset
         self.wlogger.info('Final results gathered')
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
+
+    def has_everyone_left_the_building(self):
+        for i in self.floors:
+            for j in range(i.evacuees.get_number_of_pedestrians()):
+                evacuee = i.evacuees.get_pedestrian(j)
+                if evacuee.finished == 1:
+                    if evacuee.agent_has_no_escape == 0:
+                        return False
+        return True
+
+    def get_rsets(self):
+        self.rsets = []
+        for i in self.floors:
+            self.rsets.append(i.time_last_agent_left_the_floor)
 
     def change_pynavmesh_due_to_smoke(self):
         # use floor parameter instead of reading opacity from smoke_opacity
@@ -710,10 +814,7 @@ class Worker:
         for floor_num in range(len(self.floors)):
             agents_who_leave_current_floor_indexes = [agent[3] for agent in agents_to_move if agent[0] == floor_num]
             if agents_who_leave_current_floor_indexes:
-                self.floors[floor_num].rset = time
                 self.floors[floor_num].partly_delete_agents_from_floor(agents_who_leave_current_floor_indexes)
-
-
         for floor_num in range(len(self.floors)):
             agents_who_come_to_current_floor = [agent[2] for agent in agents_to_move if agent[1] == floor_num]
             self.floors[floor_num].agents_to_move_downstairs_or_upstairs = []
@@ -722,8 +823,10 @@ class Worker:
         for agent_to_move in agents_to_move:
             agent = agent_to_move[2]
             agent.finished = 1
-            agent.target_teleport_coordinates = None
+            agent.exit = None
             agent.current_floor = agent_to_move[1]
+            agent.exits_path = None
+            agent.path=None
 
 
     def send_report(self, e=False): # {{{
@@ -766,13 +869,14 @@ class Worker:
             for i in self.floors:
                 report['psql']['fed'] = self._collect_evac_data('fed')
                 report['psql']['fed_symbolic'] = self._collect_evac_data('symbolic_fed')
-                report['psql']['rset'][i.floor] = int(i.rset)
+                report['psql']['rset'][i.floor] = self.rsets[int(i.floor)]
                 report['psql']['dfed'][i.floor] = self.floors[int(i.floor)].dfed.export()
             for num_floor in range(len(self.floors)):
                 report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
                 report['floor'] = num_floor
+            # for testing evac:
+            # report['psql']['i_risk'] = '{"individual": 0.0006992812876860072, "pdf_fn": [0.9219088937093267, 0.07592190889370916, 0.001807664497469268, 0.0003615328994938538, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "fn_curve": [0.999999999999999, 0.07809110629067229, 0.002169197396963122, 0.0003615328994938538, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "societal": 0.08237549379229014, "awr": 0.08321447323463486, "sri": 4.992868394078092}'
             report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
-
             report['psql']['detection'] = int(self.detection_time)
             report['psql']['status'] = 0
             
@@ -881,7 +985,6 @@ class Worker:
     def main(self):
         self.get_config()
         self.send_report(e={"status":100})
-        self.create_geom_database()
         if self.run_cfast_simulations():
             self.prepare_simulations()
             self.connect_rvo2_with_smoke_query()
@@ -893,7 +996,6 @@ class Worker:
 
     def test(self):
         self.get_config()
-        self.create_geom_database()
         self.prepare_simulations()
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()

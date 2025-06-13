@@ -15,10 +15,10 @@ function css() { #{{{
 				if ($v['x']=='VSTAI'|| $v['x']=='VHALL')
 					$opacity = '0.3';
 				$css.=".$v[x] { fill: $v[c]; stroke: $v[stroke]; stroke-width: $v[strokeWidth]; opacity: $opacity }\n"; 
-
 			}
 	}
-
+	$css.=".OBSTMARGIN { fill: #ffffff; opacity: 0.3}\n"; 
+	$css.=".COMPARTMENTMARGIN {stroke-opacity: 0.09; fill-opacity: 0; fill: none;  stroke:#ffffff; stroke-width:26}\n"; 
 	$css.=".cg-selected { stroke: #ff0; fill: #ff8; }\n"; 
 	$css.="</style>";
 	return $css;
@@ -41,7 +41,7 @@ function main() { /*{{{*/
 		header("Location: ../login.php?session_finished_information=1");
 	}
 	if (isset($_COOKIE['is_remember'])) {
-        setcookie("aamks", session_id(), time() + (86400 * 7), "/");
+	 setcookie("aamks", session_id(), time() + (86400 * 7), "/");
     } else {
         setcookie("aamks", session_id(), time() + 86400, "/");
     }
