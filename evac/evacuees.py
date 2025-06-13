@@ -103,8 +103,15 @@ class Evacuees:
 
     def get_position_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
-
         return self.pedestrians[ped_no].position
+
+    def get_current_floor_of_pedestrian(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].current_floor
+    
+    def set_prev_floor_to_pedestrian(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].prev_floor = self.pedestrians[ped_no].current_floor
 
     def get_goal(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
@@ -120,6 +127,10 @@ class Evacuees:
             return True
         else:
             return False
+
+    def has_agent_reached_teleport(self, ped_no: int) -> object:
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        self.pedestrians[ped_no].has_agent_reached_teleport()
 
     def mark_exit_as_blocked(self, ped_no, blocked_exit_door):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
@@ -198,4 +209,6 @@ class Evacuees:
     def get_leader_of_evacuee(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].leader
-    
+
+    def did_agent_moved(self, ped_no):
+        return self.pedestrians[ped_no].did_agent_moved()

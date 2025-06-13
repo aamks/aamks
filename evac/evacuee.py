@@ -28,6 +28,7 @@ class Evacuee:
         self.speed = 0
         self.thermal_injury = 0
         self.position = origin
+        self.prev_position = (0, 0)
         self.finished = 1
         self.node_radius = node_radius
         self.pre_evacuation_time = pre_evacuation
@@ -47,13 +48,14 @@ class Evacuee:
         
         self.type = type
         self.leader = None
-        self.current_floor = None
+        self.current_floor = current_floor
+        self.prev_floor = current_floor
+        self.id = id
         self.current_compartment: Compartment = None
         # it resets moving behaviour due to smoke in next room or 
         # people running towards us (due to the fire that is further away)
         self.reset_behavior_due_to_panic = reset_behavior_due_to_panic
         self.exits_path = None
-
     def __getattr__(self, name):
         return self.__dict__[name]
 
@@ -154,3 +156,11 @@ class Evacuee:
         if self.beta_v == 0:
             self.beta_v = 0.00000001
         self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.beta_v/self.alpha_v * extinction_coefficient))
+
+    def did_agent_moved(self):
+        if self.prev_position != self.position:
+            self.prev_position = self.position
+            return True
+        if self.prev_floor != self.current_floor:
+            return True
+        return False
