@@ -43,7 +43,7 @@ CREATE TABLE simulations ( ---{{{
     fireorigname text,
     heat_detectors text,
     smoke_detectors text,
-    hrrpeak smallint,
+    hrrpeak int,
     soot_yield decimal,
     co_yield decimal,
     hcl_yield decimal,
