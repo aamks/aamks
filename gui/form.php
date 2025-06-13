@@ -32,10 +32,16 @@ function droplist_fire_model($in) {/*{{{*/
 	return $select;
 }
 
-function checkbox($in) {/*{{{*/
+function checkbox($type, $in) {/*{{{*/
 	if ($in){ $stat=' checked';}else{$stat='';}
-	$select="<input type='hidden' name=post[r_cpr] value=0>";
-	$select.="<input type='checkbox' name=post[r_cpr] value=1$stat>";
+	if ($type == 'cpr'){
+		$select="<input type='hidden' name=post[r_cpr] value=0>";
+		$select.="<input type='checkbox' name=post[r_cpr] value=1$stat>";
+	}
+	else if ($type == 'leader_following'){
+		$select="<input type='hidden' name=post[leader_following] value=0>";
+		$select.="<input type='checkbox' name=post[leader_following] value=1$stat>";
+	}
 	return $select;
 }
 /*}}}*/
@@ -425,18 +431,20 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('evacuees_alpha_v')."<td>".form_assoc('evacuees_alpha_v',$evacuees_alpha_v); 
 	echo "<tr><td>".get_help('evacuees_beta_v')."<td>".form_assoc('evacuees_beta_v',$evacuees_beta_v); 
 	echo "<tr><td>".get_help('evacuees_density')."<td>".form_assoc('evacuees_density',$evacuees_density); 
+	echo "<tr><td>".get_help('leader_following')."<td>".checkbox('leader_following',$leader_following); 
 
     echo "<tr><td>&nbsp;</td></tr><tr><th><strong>RESCUE SUB-MODEL</strong></th>";
 	echo "<tr><td>".get_help('r_is')."<td>".droplist_rescue($r_is); 
 	echo "<tr><td>".get_help('fire_area')."<td>".form_assoc('fire_area',$fire_area); 
 	echo "<tr><td>".get_help('r_trans')."<td>".droplist_rescue_electronic($r_trans); 
 	echo "<tr><td><a class='rlink switch' id='r_times'>Times</a>".get_help('r_times')."<td>".form_plain_arr_switchable3('r_times',$r_times); 
-	echo "<tr><td>".get_help('cpr')."<td>".checkbox($r_cpr); 
+	echo "<tr><td>".get_help('cpr')."<td>".checkbox('cpr',$r_cpr); 
 	echo "<tr><td><a class='rlink switch' id='r_distances'>Fire Unit</a>".get_help('r_distances')."<td>".form_plain_arr_switchable3('r_distances',$r_distances); 
 	echo "<tr><td><a class='rlink switch' id='r_to_fire'>Firehoses</a>".get_help('r_to_fire')."<td>".form_plain_arr_switchable3('r_to_fire',$r_to_fire); 
 	echo "<tr><td><a class='rlink switch' id='r_nozzles'>Nozzles</a>".get_help('r_nozzles')."<td>".form_plain_arr_switchable3('r_nozzles',$r_nozzles); 
 	echo "</table>";
 	echo "</form>";
+	
 }
 /*}}}*/
 function form_fields_easy() { #{{{

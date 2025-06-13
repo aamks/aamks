@@ -2292,7 +2292,50 @@ function getFloorExits(){
 	getRoomsAndAdjecentDoorsAndHoles(doors_and_holes, room_types_objects, holes);
 
 }
-
+function validateRightBoxXY(input){
+	let value = parseInt(input.value);
+	if (input.id == 'alter-x-min'){
+    	let alter_x_max = parseInt(document.getElementById("alter-x-max").value);
+		if (value < 0) {
+			input.value = 0;
+		}
+		else if (value >= alter_x_max) {
+			input.value = alter_x_max-1;
+		}
+		document.getElementById("alter-width").innerHTML = alter_x_max-input.value;
+	}
+	else if (input.id == 'alter-x-max'){
+    	let alter_x_min = parseInt(document.getElementById("alter-x-min").value);
+		if (value < 0) {
+			input.value = 0;
+		}
+		else if (value <= alter_x_min) {
+			input.value = alter_x_min+1;
+		}
+		document.getElementById("alter-width").innerHTML = input.value-alter_x_min;
+	}
+	else if (input.id == 'alter-y-min'){
+    	let alter_y_max = parseInt(document.getElementById("alter-y-max").value);
+		if (value < 0) {
+			input.value = 0;
+		}
+		else if (value >= alter_y_max) {
+			input.value = alter_y_max-1;
+		}
+		document.getElementById("alter-length").innerHTML = alter_y_max-input.value;
+	}
+	else if (input.id == 'alter-y-max'){
+    	let alter_y_min = parseInt(document.getElementById("alter-y-min").value);
+		if (value < 0) {
+			input.value = 0;
+		}
+		else if (value <= alter_y_min) {
+			input.value = alter_y_min+1;
+		}
+		document.getElementById("alter-length").innerHTML = input.value-alter_y_min;
+	}
+	saveRightBoxCgProps();
+}
 function validateRightBoxInput(input) {
     let value = parseInt(input.value);
     var limitedZObj = ['r', 'c', 'd', 'z', 'w', 'q', 'e', 't'];
@@ -2301,19 +2344,23 @@ function validateRightBoxInput(input) {
 
     if (limitedZObj.includes(cg.letter)){
     	if (input.id == 'alter-z1'){
+	    	let alter_z0 = parseInt(document.getElementById("alter-z0").value);
 	    	if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
     			input.value = floorsZ0[cg.floor] + floors_dimz[cg.floor];
+				document.getElementById("warning").innerHTML = "Cant' exceed the floor height!";
     		}
-	    	else if (value < floorsZ0[cg.floor]) {
-    			input.value =  floorsZ0[cg.floor] + floors_dimz[cg.floor];
+	    	else if (value <= alter_z0) {
+    			input.value =  alter_z0+1;
     		}
     	}
 		else if (input.id == 'alter-z0'){
+	    	let alter_z1 = parseInt(document.getElementById("alter-z1").value);
     		if (value < floorsZ0[cg.floor]) {
 				input.value = floorsZ0[cg.floor];
+				document.getElementById("warning").innerHTML = "Height below floor height!";
 			}
-    		else if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
-				input.value = floorsZ0[cg.floor];
+    		else if (value >= alter_z1) {
+				input.value = alter_z1-1;
 			}
 		}
     }
@@ -2364,6 +2411,15 @@ function validateRightBoxInput(input) {
     		input.value = floors_dimz[floor] - window_dimz;
     	}
     }
+	if (input.id == 'alter-z0'){
+    	let alter_z1 = parseInt(document.getElementById("alter-z1").value);
+		document.getElementById("alter-height").innerHTML = alter_z1-input.value;
+	}
+	if (input.id == 'alter-z1'){
+    	let alter_z0 = parseInt(document.getElementById("alter-z0").value);
+		document.getElementById("alter-height").innerHTML = input.value-alter_z0;
+	}
+	saveRightBoxCgProps();
 }
 
 function showGeneralBox() { //{{{
@@ -2431,12 +2487,24 @@ function propsXYZ() {//{{{
 		return "X <input id=alter-px value="+cg.polypoints[0][0]+ sty+"><br>"+
 		"Y <input id=alter-py value="+cg.polypoints[0][1]+ sty+"><br>";
 	} else{
-		var html = "points:<br><textarea id=alter-polypoints>"+cg.polypoints.join("\n")+"</textarea><br>"
+		const x_min = cg.polypoints[0][0];
+		const x_max = cg.polypoints[1][0];
+		const y_min = cg.polypoints[0][1];
+		const y_max = cg.polypoints[2][1];
+		var html = "<div>points:<div>"+
+		"<label>x-min<input id=alter-x-min type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+x_min+"'></label>"+
+		"<label>x-max<input id=alter-x-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+x_max+"'></label></div>"+
+		"<div>Width: <span id=alter-width>"+(x_max-x_min)+"</span></div>"+
+		"<div><label>y-min<input id=alter-y-min type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+y_min+"'></label>"+
+		"<label>y-max<input id=alter-y-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+y_max+"'></label></div>"+
+		"<div>Length: <span id=alter-length>"+(y_max-y_min)+"</span></div>"+
+		"</div>";
 		if (cg.letter == 'ku' || cg.letter == "kd")
 			return html;
 		else{
-			html += "<br>z0:<input id=alter-z0 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+cg.z[0]+
-			"'><br>z1:<input id=alter-z1 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+cg.z[1]+"'>";
+			html += "<div><label>z-min:<input id=alter-z0 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+cg.z[0]+"'></label>"+
+			"<label>z-max:<input id=alter-z1 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+cg.z[1]+"'></label></div>"+
+			"<div>Height: <span id=alter-height>"+(cg.z[1]-cg.z[0])+"</span></div>";
 		}
 		return html;
 	}
@@ -2454,6 +2522,7 @@ function showCgPropsBox() {//{{{
 	    "<input id=geom_properties type=hidden value=1>"+
 	    "<center><red>&nbsp; "+cg.name+" &nbsp; "+gg[cg.letter]['x']+"</red>"+
 		propsXYZ()+
+		"<div id='warning' style='width:200px; background: #600; color: #fff;'></div>"+
 		"<table style='table-layout: auto; width: auto; border-collapse: collapse;''>"+
 		roomProps()+
 		doorProps()+
@@ -2494,10 +2563,14 @@ function saveRightBoxCgProps() {//{{{
 	} else {
 		let z_has_changed = false;
 		cg.polypoints=[];
-		_.each($("#alter-polypoints").val().split("\n"), function(m) { 
-			arr=m.split(",");
-			if(arr.length==2 && $.isNumeric(arr[0]) && $.isNumeric(arr[1])) { cg.polypoints.push([Number(arr[0]), Number(arr[1])]); }
-		});
+		const x_min = Number($("#alter-x-min").val());
+		const x_max = Number($("#alter-x-max").val());
+		const y_min = Number($("#alter-y-min").val());
+		const y_max = Number($("#alter-y-max").val());
+		cg.polypoints.push([x_min, y_min]);
+		cg.polypoints.push([x_max, y_min]);
+		cg.polypoints.push([x_max, y_max]);
+		cg.polypoints.push([x_min, y_max]);
 		cg.evacuees_density=$("#alter-evacuees-density").val();
 		cg.exit_weight=$("#floor_exits_weights_"+cg.name).val();
 		if (cg.type == 'room'){

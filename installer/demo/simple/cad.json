@@ -5,7 +5,8 @@
                 "points": "[[495,415],[1000,415],[1000,2000],[495,2000]]",
                 "idx": 1,
                 "z": "[0,350]",
-                "evacuees_density": "auto"
+                "evacuees_density": "auto",
+                "room_exits_weights": {}
             }
         ],
         "COR": [
@@ -13,19 +14,22 @@
                 "points": "[[1000,415],[2235,415],[2235,1000],[1000,1000]]",
                 "idx": 2,
                 "z": "[0,350]",
-                "evacuees_density": "auto"
+                "evacuees_density": "auto",
+                "room_exits_weights": {}
             }
         ],
         "DOOR": [
             {
                 "points": "[[984,715],[1016,715],[1016,805],[984,805]]",
                 "idx": 1,
-                "z": "[0,200]"
+                "z": "[0,200]",
+                "exit_weight": 10
             },
             {
                 "points": "[[2219,675],[2251,675],[2251,765],[2219,765]]",
                 "idx": 2,
-                "z": "[0,200]"
+                "z": "[0,200]",
+                "exit_weight": 10
             }
         ],
         "HOLE": [],
