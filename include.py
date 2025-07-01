@@ -313,16 +313,14 @@ class Vis:# {{{
         Static.json is written each time, because obstacles may be available /
         non-available, so it is not constans. 
         '''
-        if "sql" in params:
-            self.s=Sqlite(params["sql"])
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        self.s=Sqlite(params["sim_sql"])
+        self.s_geom=Sqlite(params["scen_sql"])
         self.json=Json()
-        self.json.s = self.s
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.params=params
 
         self._static_floors=OrderedDict()
+        self._read_db()
         self._js_make_floors_and_meta()
         self._js_make_rooms()
         self._js_make_doors()
@@ -332,12 +330,16 @@ class Vis:# {{{
         self._js_vis_fire_origin()
         self._js_world_meta()
         self.json.write(OrderedDict([('world_meta', self._world_meta), ('floors', self._static_floors)]), '{}/workers/static.json'.format(os.environ['AAMKS_PROJECT'])) 
-
 # }}}
+    def _read_db(self):# {{{
+        self.floors_meta = json.loads(self.s_geom.query("SELECT * FROM floors_meta")[0]['json'], object_pairs_hook=OrderedDict).items()
+        self.dispatched_evacuees = json.loads(self.s.query("SELECT * FROM dispatched_evacuees")[0]['json'], object_pairs_hook=OrderedDict).items()
+        self.obstacles_animator = json.loads(self.s.query('SELECT * FROM obstacles_animator')[0]['json'], object_pairs_hook=OrderedDict)
+
     def _js_make_floors_and_meta(self):# {{{
         ''' Animation meta tells how to scale and translate canvas view '''
         
-        for floor,meta in self.json.readdb("floors_meta").items(): 
+        for floor,meta in self.floors_meta: 
             self._static_floors[floor]=OrderedDict()
             self._static_floors[floor]['floor_meta']=meta
 # }}}
@@ -346,7 +348,7 @@ class Vis:# {{{
 
         for floor in self._static_floors.keys():
             self._static_floors[floor]['rooms']=OrderedDict()
-            for i in self.s.query("SELECT name,points,type_sec FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
+            for i in self.s_geom.query("SELECT name,points,type_sec FROM aamks_geom WHERE floor=? AND type_pri='COMPA'", (floor,)):
                 if "." in i['name']:
                     self._static_floors[floor]['rooms'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', 'V' + i['type_sec']), ('points', i['points'])])
                 else:
@@ -357,7 +359,7 @@ class Vis:# {{{
 
         for floor in self._static_floors.keys():
             self._static_floors[floor]['doors']=OrderedDict()
-            for i in self.s.query("SELECT name,points,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
+            for i in self.s_geom.query("SELECT name,points,type_sec FROM aamks_geom WHERE floor=? AND type_tri='DOOR' AND type_sec != 'HOLE'", (floor,)):
                 self._static_floors[floor]['doors'][i['name']]=OrderedDict([ ('name', i['name']), ('type_sec', i['type_sec']), ('points', i['points'])])
 # }}}
     def _js_make_obstacles(self):# {{{
@@ -371,7 +373,8 @@ class Vis:# {{{
             for floor in self._static_floors.keys():
                 xx['obstacles'][floor]=dummy_obst
         else:
-            xx=self.json.readdb("obstacles_animator")
+            xx=self.obstacles_animator
+
 
         for floor,obstacles in xx['virtualHallHolesObstacles'].items():
             self._static_floors[floor]['virtualHallHoles']=[]
@@ -389,10 +392,10 @@ class Vis:# {{{
         ''' Draw srv, non-animated evacuees '''
 
         if "skip_evacuees" in self.params:
-            for floor,meta in self.json.readdb("floors_meta").items(): 
+            for floor,meta in self.floors_meta: 
                 self._static_floors[floor]['evacuees']=[]
         else:
-            for floor,evacuees in self.json.readdb("dispatched_evacuees").items():
+            for floor,evacuees in self.dispatched_evacuees:
                 self._static_floors[floor]['evacuees']=[]
                 for i in evacuees:
                     self._static_floors[floor]['evacuees'].append(json.dumps(i))
@@ -418,7 +421,7 @@ class Vis:# {{{
 # }}}
     def _js_world_meta(self):# {{{
         try:
-            self._world_meta=self.json.readdb("world_meta")['world2d']
+            self._world_meta=json.loads(self.s.query('SELECT * FROM world_meta')[0]['json']['world2d'], object_pairs_hook=OrderedDict)
         except:
             self._world_meta={ 'minx': 0, 'miny': 0, 'maxx': 3000, 'maxy': 2000, 'xdim': 3000, 'ydim': 2000, 'center': [1500, 100, 0] }
 # }}}

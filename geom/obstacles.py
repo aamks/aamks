@@ -27,25 +27,25 @@ class Obstacles():
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.fire_model=self.conf['fire_model']
-        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.json.s = self.s
+        sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        self.s=Sqlite(sim_sql_path)
+        self.s_geom=Sqlite(scenario_sql_path)
+        self.json.s = self.s_geom
         self.world_meta=self.json.readdb("world_meta")
         self.floors_meta=self.json.readdb("floors_meta")
         self.floors=self.floors_meta.keys()
         self.walls_width=self.world_meta['walls_width']
-        self._create_obstacles('aamks_geom', 'obstacles')
+        self._create_obstacles()
         self.s.close()
+        self.s_geom.close()
         # TODO: in future we will probably process vertical staircases outside of aamks_geoms db table
         #if self.world_meta['multifloor_building']==1:
         #    self._create_obstacles('world2d', 'world2d_obstacles')
         #exit()
 
 # }}}
-    def _create_obstacles(self, tin, tout):# {{{
+    def _create_obstacles(self):# {{{
         ''' 
         Geometry may contain obstacles for modeling machines, FDS walls, bookcases,
         etc. Obstacles are not visible in CFAST.
@@ -54,13 +54,10 @@ class Obstacles():
         rvo2ObstalesData = OrderedDict()
         animatorVirtualHallHolesObstaclesData = OrderedDict()
         animatorOtherObstaclesData = OrderedDict()
-        floors = self.s.query("SELECT DISTINCT(floor) FROM {}".format(tin))
+        floors = self.s_geom.query("SELECT DISTINCT(floor) FROM aamks_geom")
         for r in floors:
             floor=r['floor']
-            zz=0
-            if tin=='aamks_geom':
-                zz=self.floors_meta[floor]['minz_abs']
-            rvo2Obstales=[]
+            zz=self.floors_meta[floor]['minz_abs']
             rvo2ObstalesData[floor] = []
             animatorVirtualHallHolesObstacles=[]
             animatorVirtualHallHolesObstaclesData[floor] = []
@@ -68,11 +65,11 @@ class Obstacles():
             animatorOtherObstaclesData[floor] = []
 
             rvo2Obsts=[]
-            for o in self.s.query("SELECT points FROM {} WHERE type_pri='OBST' AND floor=?".format(tin), (floor,)):
+            for o in self.s_geom.query("SELECT points FROM aamks_geom WHERE type_pri='OBST' AND floor=?", (floor,)):
                 rvo2Obsts.append(Polygon(json.loads(o['points'])))
                 animatorOtherObstacles.append(Polygon(json.loads(o['points'])))
 
-            obstacles = self._floor2obsts(tin,floor)
+            obstacles = self._floor2obsts(floor)
             animatorVirtualHallHolesObstacles = obstacles[1]
             animatorOtherObstacles += obstacles[2]
             rvo2Obsts+=obstacles[0]
@@ -84,13 +81,13 @@ class Obstacles():
             for i in animatorOtherObstacles:
                 animatorOtherObstaclesData[floor].append([(int(x),int(y), zz) for x,y in i.exterior.coords])
         
-        self.s.query("CREATE TABLE {} (json)".format(tout))
-        self.s.query("INSERT INTO {} VALUES (?)".format(tout), (json.dumps({'obstacles': rvo2ObstalesData}),))
+        self.s.query("CREATE TABLE obstacles (json)")
+        self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps({'obstacles': rvo2ObstalesData}),))
         
         self.s.query("CREATE TABLE obstacles_animator (json)")
         self.s.query("INSERT INTO obstacles_animator VALUES (?)", (json.dumps({'virtualHallHolesObstacles': animatorVirtualHallHolesObstaclesData, 'otherObstacles': animatorOtherObstaclesData}),))
 #}}}
-    def _floor2obsts(self,tin,floor):# {{{
+    def _floor2obsts(self, floor):# {{{
         ''' 
         For a roomX we create a roomX_ghost, we move it by self.walls_width,
         which must match the width of hvents. Then we create walls via logical
@@ -101,7 +98,7 @@ class Obstacles():
             return []
 
         walls=[]
-        for i in self.s.query("SELECT * FROM {} WHERE floor=? AND type_pri='COMPA' ORDER BY name".format(tin), (floor,)):
+        for i in self.s_geom.query("SELECT * FROM aamks_geom WHERE floor=? AND type_pri='COMPA' ORDER BY name", (floor,)):
 
             walls.append((i['x0']+self.walls_width , i['y0']            , i['x0']+i['width']                  , i['y0']+self.walls_width)                )
             walls.append((i['x0']+i['width']       , i['y0']            , i['x0']+i['width']+self.walls_width , i['y0']+i['depth']+self.walls_width)     )
@@ -116,7 +113,7 @@ class Obstacles():
         # it is as if there was a balcony - the fire may spread, but people will not pass between virtual hall and compartment.
         # for visualisation purposes (animator) we will make obstacles_animator table and we will 
         # draw holes between in virtual hall wall with a dashed line
-        for i in self.s.query("SELECT * FROM {} WHERE floor=? AND type_tri='DOOR' and vent_from_name NOT LIKE 'a%.%' and vent_to_name NOT LIKE 'a%.%' ORDER BY name".format(tin), (floor,)):
+        for i in self.s_geom.query("SELECT * FROM aamks_geom WHERE floor=? AND type_tri='DOOR' and vent_from_name NOT LIKE 'a%.%' and vent_to_name NOT LIKE 'a%.%' ORDER BY name", (floor,)):
             doors_polygons.append(box(i['x0'], i['y0'], i['x0']+i['width'], i['y0']+i['depth']))
             
         rvo2Obsts=[]
@@ -133,7 +130,7 @@ class Obstacles():
         animatorObstacles = []
         animatorVirtualHallHoles=[]
         animatorVirtualHallHolesObstaclesToReturn = []
-        for i in self.s.query("SELECT * FROM {} WHERE floor=? AND type_tri='DOOR' and (vent_from_name LIKE 'a%.%' or vent_to_name LIKE 'a%.%') ORDER BY name".format(tin), (floor,)):
+        for i in self.s_geom.query("SELECT * FROM aamks_geom WHERE floor=? AND type_tri='DOOR' and (vent_from_name LIKE 'a%.%' or vent_to_name LIKE 'a%.%') ORDER BY name", (floor,)):
             animatorVirtualHallHoles.append(box(i['x0'], i['y0'], i['x0']+i['width'], i['y0']+i['depth']))
         
         for wall in rvo2Obsts:

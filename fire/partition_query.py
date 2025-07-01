@@ -34,15 +34,11 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         correct rectangle. Finally fetch the conditions via cell-compa map.
         ''' 
 
-        self.json = Json()
-        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.json.s = self.s
         self.floor=str(floor)
-        self.floors_meta=json.loads(self.s.query("SELECT * FROM floors_meta")[0]['json'])
+        self.json = Json()
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        self.s_geom=Sqlite(scenario_sql_path)
+        self.floors_meta=json.loads(self.s_geom.query("SELECT * FROM floors_meta")[0]['json'])
         self.config=self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
         self.project_conf=self.json.read('{}/conf.json'.format(os.environ['AAMKS_PROJECT']))
 
@@ -66,7 +62,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         tuple.
         '''
 
-        son=json.loads(self.s.query("SELECT * FROM query_vertices")[0]['json'])
+        son=json.loads(self.s_geom.query("SELECT * FROM query_vertices")[0]['json'])
         d=son[self.floor]
         self._square_side=d['square_side']
         self._query_vertices=OrderedDict()
@@ -75,7 +71,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
             self._query_vertices[z]=v
 # }}}
     def _sqlite_cell2compa(self):# {{{
-        son=json.loads(self.s.query("SELECT * FROM cell2compa")[0]['json'])
+        son=json.loads(self.s_geom.query("SELECT * FROM cell2compa")[0]['json'])
         d=son[self.floor]
         self._cell2compa=OrderedDict()
         for k,v in d.items():
@@ -120,7 +116,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         for i in self.relevant_params:
             self._default_conditions[i]=0
         self._default_conditions['ULO2']=20
-        self.all_compas=[i['name'] for i in self.s.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
+        self.all_compas=[i['name'] for i in self.s_geom.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
         self.extend_compas_by_devices() 
         self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
