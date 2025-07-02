@@ -74,9 +74,9 @@ class EvacEnv:
 
 
     def _find_closest_exit(self, evacuee):
-        if evacuee.current_compartment.name == "outside" and isinstance(evacuee.exit, RoomGoalExit):
+        if evacuee.current_compartment.name == "outside" and evacuee.leader.finished == 0:
         # room_exit_goal terminal exit outside handle
-            return evacuee.path, evacuee.exit
+            path, exit = self._get_shortest_navmesh_path(evacuee,{evacuee.leader.exit})
 
 
         if self.is_room_goal_weight_logic_defined(evacuee.current_compartment):
@@ -174,7 +174,7 @@ class EvacEnv:
             return self.get_rooms_goals_best_path(evacuee)
         else:
             return self.get_general_goals_best_path(evacuee)
-
+            
     def _get_shortest_navmesh_path_general_goals(self,evacuee):
         exits_dict = self.teleports + self.terminal_door_exits
         return self._get_shortest_navmesh_path(evacuee,exits_dict)
@@ -233,12 +233,15 @@ class EvacEnv:
             
             if isinstance(exit, TermianlDoorExit) or isinstance(exit, Teleport):
                 exit_weight = exit.general_exit_weight
-
             elif isinstance(exit, RoomGoalExit):
                 exit_weight = exit.room_exit_weight
+            else:
+                exit_weight = 1
 
-
-            path_length = LineString(path).length
+            if len(path) == 1:
+                path_length = 1
+            else:
+                path_length = LineString(path).length
             if isinf(exit_weight):
                 exit_dist_considering_weight = path_length*100000
             else:
@@ -257,8 +260,8 @@ class EvacEnv:
             p1 = shortest_navmesh_path[i]
             p2 = shortest_navmesh_path[i + 1]
             segment_line = LineString([p1, p2])
-            p1_comp_name = self.compartments.get_room_name_for_point(p1)
-            p2_comp_name = self.compartments.get_room_name_for_point(p2)
+            p1_comp = self.compartments.get_room_for_point(p1)
+            p2_comp = self.compartments.get_room_for_point(p2)
             segment_done = False
 
             while not segment_done:
@@ -270,23 +273,32 @@ class EvacEnv:
 
                     door_box = box(door.x_min, door.y_min, door.x_max, door.y_max)
 
+                    p1_comp_name = p1_comp.name if hasattr(p1_comp, 'name') else str(p1_comp)
+                    p2_comp_name = p2_comp.name if hasattr(p2_comp, 'name') else str(p2_comp)
+
                     if segment_line.intersects(door_box) and p1_comp_name != p2_comp_name:
                         # p1_comp_name != p2_comp_name because sometiomes 
                         # p1 is located on the exit to the adjacent room,
                         # to which there is no path - the path leads in the opposite direction
-                        exits_list[current_comp_name] = door
-                        visited_doors.add(door.name)
 
                         # we go to the next room
                         next_comp_name = door.get_next_comp(current_comp_name)
+
                         if not next_comp_name:
-                            print(f"⚠️ Cannot find next compartment for door: {door}")
+                            # Cannot find next compartment for door
                             segment_done = True
                             break
+                        next_comp = self.compartments.get_compartment(next_comp_name)
+                        if next_comp is None or segment_line.intersects(box(next_comp.x_min, next_comp.y_min, next_comp.x_max, next_comp.y_max)):
+                            #we check above condition becouse sometimes the agent stands at the exit to the room 
+                            #on the opposite side and then 2 exits meet the intersect condition
+                            #but we only want the exit that leads to the correct room
+                            exits_list[current_comp_name] = door
+                            visited_doors.add(door.name)
 
-                        current_comp_name = next_comp_name
-                        found_door = True
-                        break  # check the door again in the new room
+                            current_comp_name = next_comp_name
+                            found_door = True
+                            break  # check the door again in the new room
 
                 if not found_door:
                     # line no longer crosses doors in current_comp
@@ -321,7 +333,7 @@ class EvacEnv:
                 self.free_space_coordinates_of_downstair_teleport_destination[(teleport.x_direction,teleport.y_direction)]={'min_x':teleport.x_direction-25, 'max_x':teleport.x_direction+25, 'min_y': teleport.y_direction-25, 'max_y': teleport.y_direction+25}
             elif int(teleport.floor) == int(self.floor)-1 and teleport.stair_direction == "upstairs":
                 self.free_space_coordinates_of_upstair_teleport_destination[(teleport.x_direction,teleport.y_direction)]={'min_x':teleport.x_direction-25, 'max_x':teleport.x_direction+25, 'min_y': teleport.y_direction-25, 'max_y': teleport.y_direction+25}    
-                
+            
     def read_cfast_record(self, time):
         self.smoke_query.read_cfast_record(time)
 
@@ -361,21 +373,13 @@ class EvacEnv:
         [RVOSimulator.set_agent_max_speed(self.simulator, i, evacuees.get_speed_max_of_pedestrian(i))
          for i in range(evacuees.get_number_of_pedestrians())]
 
-    def delete_agents_from_floor(self):
-        ped_to_remove = []
-        for i in range(self.evacuees.get_number_of_pedestrians()):
-            if self.evacuees.get_current_floor_of_pedestrian(i) != self.floor:
-                ped_to_remove.append(i)
-        for index in sorted(ped_to_remove, reverse=True):
-            self.evacuees.set_prev_floor_to_pedestrian(index)
-            self.evacuees.remove_pedestrian(index)
-
-    def partly_delete_agents_from_floor(self, agents_indexes_to_delete):
+    def delete_agents_from_floor(self,agents_indexes_to_delete):
         unique_agents_ids_on_floor = []
         for index in sorted(agents_indexes_to_delete, reverse=True):
             evacuee = self.evacuees.get_pedestrian(index)
             unique_agents_ids_on_floor.append(evacuee.unique_agent_id_on_different_floors)
-        rvo_agent_indexes_to_remove = RVOSimulator.get_agent_indexes_by_unique_agent_id_on_floor(self.simulator, unique_agents_ids_on_floor)
+            self.evacuees.remove_pedestrian(index)
+        rvo_agent_indexes_to_remove = RVOSimulator.get_agent_indexes_by_unique_agent_id_on_floor(self.simulator,unique_agents_ids_on_floor)
         RVOSimulator.delete_agents(self.simulator, sorted(rvo_agent_indexes_to_remove, reverse=False))
 
     @staticmethod
@@ -386,7 +390,8 @@ class EvacEnv:
         data_row={}
         for n in range(self.evacuees.get_number_of_pedestrians()):
             ped = self.evacuees.get_pedestrian(n)
-            if ped.did_agent_moved():
+            prev_floor = ped.has_agent_changed_floor()
+            if ped.has_agent_moved() or prev_floor is not None:
                 position = ped.position
                 velocity = ped.velocity
                 fed = ped.symbolic_fed
@@ -394,14 +399,12 @@ class EvacEnv:
                 unique_agent_id = ped.unique_agent_id_on_different_floors
                 floor = ped.current_floor
                 id = ped.id
-                data_row[unique_agent_id] = [int(position[0]), int(position[1]), velocity[0], velocity[1], fed, floor, id]
+                data_row[unique_agent_id] = [int(position[0]), int(position[1]), velocity[0], velocity[1], fed, floor, id, prev_floor]
         return data_row
 
     def update_agents_position(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
             evacuee = self.evacuees.get_pedestrian(i)
-            if evacuee.current_floor != self.floor:
-                continue
             if self.evacuees.get_finshed_of_pedestrian(i) == 0 and not isinstance(evacuee.exit, Teleport):
 
                 self.evacuees.set_position_to_pedestrian(i, (1000000 + i * 200, 10000))
@@ -413,18 +416,14 @@ class EvacEnv:
 
     def update_agents_velocity(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
-            evacuee = self.evacuees.get_pedestrian(i)
-            if evacuee.finished == 1 and evacuee.current_floor == self.floor:
-                self.evacuees.set_num_of_obstacle_neighbours(i, RVOSimulator.get_agent_num_obstacle_neighbors(self.simulator, i))
-                self.evacuees.calculate_pedestrian_velocity(i, self.current_time)
-                RVOSimulator.set_agent_pref_velocity(self.simulator, i, self.evacuees.get_velocity_of_pedestrian(i))
+            self.evacuees.set_num_of_obstacle_neighbours(i, RVOSimulator.get_agent_num_obstacle_neighbors(self.simulator, i))
+            self.evacuees.calculate_pedestrian_velocity(i, self.current_time)
+        for i in range(self.evacuees.get_number_of_pedestrians()):
+            RVOSimulator.set_agent_pref_velocity(self.simulator, i, self.evacuees.get_velocity_of_pedestrian(i))
 
     def set_goal(self):
         sorted_evacuees = sorted(self.evacuees.pedestrians, key=lambda evacuee: evacuee.type == 'follower')
         for evacuee in sorted_evacuees:
-            if evacuee.finished == 0 or evacuee.current_floor != self.floor:
-                continue
-            # TODO: mimooh temporary fix
             position = evacuee.position
             if evacuee.agent_has_no_escape == True:
                 # agent is trapped, has no escape
@@ -432,7 +431,7 @@ class EvacEnv:
             else:                  
                 position = evacuee.position
 
-                elif evacuee.type == 'follower':
+                if evacuee.type == 'follower':
                     result = self.find_path_to_leader(evacuee)
                     if result is not None:
                         path, exit = result
@@ -455,8 +454,7 @@ class EvacEnv:
                         evacuee.set_goal(navmesh_path=evacuee.path)
                 except:
                     evacuee.set_goal(navmesh_path=evacuee.path)
-            except:
-                evacuee.set_goal(navmesh_path=evacuee.path)
+
 
     def append_agents_to_move_downstairs_or_upstairs(self, evacuee, pedestrian_number):
         self.agents_to_move_downstairs_or_upstairs.append({
@@ -466,15 +464,15 @@ class EvacEnv:
 
     def update_speed(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):
-            evacuee = self.evacuees.get_pedestrian(i)
-            if evacuee.finished == 0 or evacuee.current_floor != self.floor:
-                continue
             self.elog.debug('Number of neigbouring agents: {}'.format(RVOSimulator.get_agent_num_agent_neighbors(self.simulator, i)))
             self.elog.debug('Neigbouring distance: {}'.format(RVOSimulator.get_agent_neighbor_dist(self.simulator, i)))
-            self.evacuees.update_speed_of_pedestrian(i)
-            agent_speed = self.evacuees.get_speed_of_pedestrian(i)
-            agent_speed = self.reduce_agent_on_stairs_speed(agent_speed, i) 
-            RVOSimulator.set_agent_max_speed(self.simulator, i, agent_speed)
+            if (self.evacuees.get_finshed_of_pedestrian(i)) == 0:
+                continue
+            else:
+                self.evacuees.update_speed_of_pedestrian(i)
+                agent_speed = self.evacuees.get_speed_of_pedestrian(i)
+                agent_speed = self.reduce_agent_on_stairs_speed(agent_speed, i) 
+                RVOSimulator.set_agent_max_speed(self.simulator, i, agent_speed)
 
     def reduce_agent_on_stairs_speed(self, agent_speed, i):
         for stair in self.general['staircases']:
@@ -495,18 +493,19 @@ class EvacEnv:
         fed_over_1 = False
         for i in range(self.evacuees.get_number_of_pedestrians()):
             evacuee = self.evacuees.get_pedestrian(i)
-            if evacuee.finished == 0 or evacuee.current_floor != self.floor:
+            if evacuee.finished == 0:
                 continue
             #try:
             # find activity level
             activity = 1
-            position = self.evacuees.get_position_of_pedestrian(i)
+            
+            evacuee = self.evacuees.get_pedestrian(i)
             if self.evacuees.get_velocity_of_pedestrian(i) == (0, 0):
                 activity = 0
-            elif 's' in self.smoke_query.xy2room(position):
+            elif 's' in evacuee.current_compartment.name:
                 activity = 2
 
-            dfed = self.smoke_query.get_fed_sfpe(position, activity_level=activity)
+            dfed = self.smoke_query.get_fed_sfpe(evacuee.current_compartment.name, activity_level=activity)
             if i == 0:
                 self.elog.debug('FED calculated: {}'.format(dfed))
             #except:
@@ -530,9 +529,9 @@ class EvacEnv:
         RVOSimulator.process_obstacles(self.simulator)
         return self.simulator.get_obstacles_count(), 2
 
-    def generate_nav_mesh(self, working_dir):
+    def generate_nav_mesh(self, working_dir,fire):
         self.nav = Navmesh(self.sim_id)
-        self.nav.build(floor=str(self.floor), wd=working_dir)
+        self.nav.build(fire, floor=str(self.floor), wd=working_dir)
 
     def prepare_rooms_list(self):
         rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
@@ -560,6 +559,8 @@ class EvacEnv:
         return smoke_opacity
 
     def _OD_to_OPACITY(self, OD):
+        if OD is None:
+            OD = 0.0
         self.elog.debug('TIME: {}, optical density: {}'.format(self.current_time, OD))
         if OD:
             vis = self.general['c_const'] / (log(10) * OD)
@@ -605,10 +606,8 @@ class EvacEnv:
     def update_evacuees_properties(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):  
             evacuee = self.evacuees.get_pedestrian(i)
-            try:
-                visibility_data = self.smoke_query.get_visibility(evacuee.position)
-            except:
-                visibility_data = 0, 'outside'
+
+            visibility_data = self.smoke_query.get_visibility(evacuee.position)
 
             OD = visibility_data[0]
             evacuee.current_compartment = Compartment('outside')
@@ -619,7 +618,6 @@ class EvacEnv:
                     evacuee.current_compartment = comp
                 # starts with because stairs on upper floors are for example s21.2
                 
-            visibility_data = self.smoke_query.get_visibility(evacuee.position)
 
             evacuee.optical_density_at_position = OD
             if evacuee.current_compartment.name in self.unavailable_rooms:
@@ -687,9 +685,8 @@ class EvacEnv:
             self.floor_upstair_teleports_queue[key] = False
 
     def check_if_agents_reached_goal(self):
-        for i in range(self.evacuees.get_number_of_pedestrians()):
-            evacuee = self.evacuees.get_pedestrian(i)
-            if evacuee.finished == 0 or evacuee.current_floor != self.floor:
+        for e in range(self.evacuees.get_number_of_pedestrians()):
+            if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
                 continue
             else:
                 evacuee = self.evacuees.get_pedestrian(e)
@@ -698,7 +695,7 @@ class EvacEnv:
                 elif evacuee.has_agent_reached_teleport():
                     self.append_agents_to_move_downstairs_or_upstairs(evacuee, e)
                     self.time_last_agent_left_the_floor = self.current_time
-
+                
 # Total FED growth spatial function (per floor)
 class FEDDerivative:
     def __init__(self, floor: int, sqlite):

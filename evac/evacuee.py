@@ -9,7 +9,7 @@ from evac.exit import CompartmentExit, RoomGoalExit, Teleport, TermianlDoorExit
 class Evacuee:
 
     def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, detection_constituents, detection_compa,
-                 alpha_v, beta_v, node_radius, type, current_floor, reset_behavior_due_to_panic) -> None:
+                 alpha_v, beta_v, node_radius, type, current_floor, reset_behavior_due_to_panic,id) -> None:
         """
 
         :type origin: tuple
@@ -107,6 +107,10 @@ class Evacuee:
         if dist < 50 and is_terminal:
             self.finished = 0
             return True
+        if self.current_compartment.name == 'outside':
+            self.finished = 0
+            return True
+
         return False
 
     def set_goal(self, navmesh_path):
@@ -157,10 +161,15 @@ class Evacuee:
             self.beta_v = 0.00000001
         self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.beta_v/self.alpha_v * extinction_coefficient))
 
-    def did_agent_moved(self):
+    def has_agent_moved(self):
         if self.prev_position != self.position:
             self.prev_position = self.position
             return True
-        if self.prev_floor != self.current_floor:
-            return True
         return False
+
+    def has_agent_changed_floor(self):
+        if self.prev_floor != self.current_floor:
+            _prev_floor = self.prev_floor
+            self.prev_floor = self.current_floor
+            return _prev_floor
+        return None

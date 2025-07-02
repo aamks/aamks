@@ -89,6 +89,7 @@ function loadImage(file){
 function initLayers() {//{{{
 	new Layer({'name': 'rooms'});
 	new Layer({'name': 'roomSmoke'});
+	new Layer({'name': 'doorsOpening'});
 	new Layer({'name': 'roomFire'});
 	new Layer({'name': 'highlight'});
 	new Layer({'name': 'animated'});
@@ -293,33 +294,33 @@ function showStaticImage() {//{{{
 }
 //}}}
 function showEvacueesLabels() {//{{{
-	_.each(evacueesGroup, function(group, ffloor) {
-		_.each(group.children, function(e,i) {
-			x=e.position.x;
-			y=e.position.y;
-			id=e.evac_id
-			addEvacueeLabel(ffloor, id, x, y)
+	if(eData.length<1) { return; }
+	evacueesInFrame(); // requrired to sync evacuees with labels positions
+	_.each(eData[0], function(frame0_data,ffloor) {
+		_.each(frame0_data, function(e,i) {
+			x=evacueesGroup[ffloor].children[i].position.x;
+			y=evacueesGroup[ffloor].children[i].position.y;
+			addEvacueeLabel(ffloor, i, x, y)
+
 		})
 	})
 }
 
 function addEvacueeLabel(ffloor,i, x, y) {
-	evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(15+x-evacueeRadius/1,y-evacueeRadius/7), fillColor:"#000", content: i, fontFamily: 'Roboto', fontSize: evacueeRadius*0.5 }));
+	evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(15+x-evacueeRadius/1,y-evacueeRadius/7), fillColor:"#000", content: i+1, fontFamily: 'Roboto', fontSize: evacueeRadius*0.5 }));
 	evacueesLabelsGroup[ffloor].addChild(new PointText(  { point: new Point(10+x-evacueeRadius/1,y+evacueeRadius/3), fillColor:"#000", content: [Math.round(x/100),Math.round(y/100)], fontFamily: 'Roboto', fontSize: evacueeRadius*0.5}));
 }
 //}}}
 function initSpeed() {//{{{
-	var frame_numbers = Object.keys(eData).map(Number);
-	lastFrame= Math.max(...frame_numbers);
+	lastFrame=eData.length-1;
 	var speed=Math.round(lastFrame/5)
-	sliderPos=0;
 	$("animator-time").html(animFormatTime());
 	$("animation-speed").html("<input type=text size=2 name=speed id=speed value="+speed+">");
 	changeSpeed(speed);
 }
 //}}}
 function clearEvacueesLabels() {//{{{
-	_.each(evacueesLabelsGroup, function(group, ffloor) {
+	_.each(eData[0], function(frame0_data,ffloor) {
 		evacueesLabelsGroup[ffloor].removeChildren();
 	})
 }
@@ -337,12 +338,72 @@ function showAnimation() {//{{{
 		amsg(response);
 		paused=0;
 		currentAnimData=JSON.parse(response['data']);
-		eData=currentAnimData.animations.evacuees;
+		// eData=currentAnimData.animations.evacuees;
+		eData=expandAnimationData(currentAnimData.animations.evacuees);
 		roomsOpacity=currentAnimData.animations.rooms_opacity;
+		doorsOpening=currentAnimData.animations.doors;
 		initRoomSmoke();
+		initDoorsOpening();
 		initAnimAgents();
 		initSpeed();
 	});
+}
+//}}}
+function expandAnimationData(animDataDiff) {
+    const diffKeys = Object.keys(animDataDiff).map(k => parseInt(k)).sort((a, b) => a - b);
+    const maxTime = diffKeys[diffKeys.length - 1];
+
+    const animDataFull = new Array(maxTime + 1);
+    let previousFrame = {};
+
+    const agentsToMove = {};
+
+    for (let t = 0; t <= maxTime; t++) {
+        // Deep copy poprzedniej ramki (zachowujemy niezależność między krokami)
+        let currentFrame = JSON.parse(JSON.stringify(previousFrame));
+
+        if (animDataDiff[t]) {
+            for (const currentFloor in animDataDiff[t]) {
+                if (!currentFrame[currentFloor]) currentFrame[currentFloor] = {};
+                if (!agentsToMove[currentFloor]) agentsToMove[currentFloor] = [];
+
+                for (const personId in animDataDiff[t][currentFloor]) {
+                    const data = animDataDiff[t][currentFloor][personId];
+                    const evacId = data[6];
+                    const previousFloor = data[7];
+
+                    // Rejestracja do przeniesienia
+                    if (previousFloor != null) {
+                        if (!agentsToMove[previousFloor]) agentsToMove[previousFloor] = [];
+                        agentsToMove[previousFloor].push(evacId);
+                    }
+
+                    currentFrame[currentFloor][personId] = data;
+                }
+            }
+        }
+
+        // Usuwanie przeniesionych agentów z poprzednich pięter
+        for (const floor in agentsToMove) {
+            if (!currentFrame[floor]) continue;
+
+            for (const evacId of agentsToMove[floor]) {
+                for (const pid in currentFrame[floor]) {
+                    if (currentFrame[floor][pid][6] === evacId) {
+                        delete currentFrame[floor][pid];
+                        break;
+                    }
+                }
+            }
+
+            agentsToMove[floor] = [];
+        }
+
+        animDataFull[t] = currentFrame;
+        previousFrame = currentFrame;
+    }
+
+    return animDataFull;
 }
 //}}}
 function scaleAnims() {//{{{
@@ -608,98 +669,392 @@ function initStaticGeoms() {//{{{
 
 
 }
-//}}}
 function initAnimAgents() { //{{{
+
 	// velocitiesGroup are the ---------> vectors attached to each ball
+
 	// evacueesLabelsGroup are (e1 x,y) displayed on top of each ball
+
+
 
 	project.layers.animated.activate();
 
+
+
 	_.each(eData[0], function(frame0_data,ffloor) {
+
 		velocitiesGroup[ffloor]=new Group();
+
 		evacueesGroup[ffloor]=new Group();
+
 		evacueesLabelsGroup[ffloor]=new Group();
-		_.each(frame0_data, function(data, i) {
-			let circle = new Path.Circle({center: new Point(-10000, -10000), radius: evacueeRadius});
-			circle.evac_id = data[6];
-			circle.floor = data[5];
-			evacueesGroup[ffloor].addChild(circle);
-			let line = new Path.Line({from: new Point(-10000, -10000), to: new Point(-10000,-10000), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize });
-			line.evac_id = data[6];
-			line.floor = data[5];
-			velocitiesGroup[ffloor].addChild(line);
+
+		_.each(frame0_data, function(data) {
+
+			velocitiesGroup[ffloor].addChild(new Path.Line({from: new Point(-10000, -10000), to: new Point(-10000,-10000), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+
+			evacueesGroup[ffloor].addChild(new Path.Circle({center: new Point(-10000, -10000), radius: evacueeRadius}));
+
+
+
 		});
+
 	});
+
+
+
 }
+
+//}}}
+
+
+
+
+
+// function addEvacueesAndVelocities(count,ffloor){
+
+// 	for(let i=0; i<count; i++){
+
+// 		evacueesGroup[ffloor].addChild(new Path.Circle({center: new Point(-10000, -10000), radius: evacueeRadius}));
+
+// 		velocitiesGroup[ffloor].addChild(new Path.Line({from: new Point(-10000, -10000), to: new Point(-10000,-10000), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+
+// 	}
+
+
+
+// }
+
 function updateAgentNumbersOnFloors(){
-	if(frame_to_skip == frame) return;
-    _.each(evacueesGroup, function(data, ffloor) {
-		let toRemove = []
-		_.each(data.children, function(e, i) {
-			if (e.floor != ffloor) {
-				toRemove.push(i)
+
+	if(frame_to_skip == frame){
+
+	// 		sdfsdfsdsdf()
+
+		return;
+
+	}
+
+
+
+	_.each(evacueesGroup, function(data,ffloor) {
+
+		if(ffloor in dstatic.floors) {
+
+			if(Object.keys(eData[frame][ffloor]).length != data.children.length){
+
+				updateEvacueesOnEachFloor();
+
+				frame_to_skip = frame;
+
+				return;
+
 			}
-		})
-        for (let i = toRemove.length - 1; i >= 0; i--) {
-            removeEvacuee(toRemove[i], ffloor);
-			frame_to_skip = frame
-        }
-    });
+
+		}
+
+	})
+
 }
-function removeEvacuee(i, ffloor){
-	evacueesGroup[ffloor].children[i].remove();
-	velocitiesGroup[ffloor].children[i].remove();
+
+
+
+
+
+
+
+function updateEvacueesOnEachFloor(){
+
+	// _.each(evacueesGroup, function(data,ffloor) {
+
+	// 	if(ffloor in dstatic.floors) {
+
+	// 		if(eData[frame][ffloor].length > data.children.length){
+
+	// 			for (var i=0; i < eData[frame][ffloor].length-data.children.length; i++) {
+
+	// 				addAgentToFloor(ffloor,)
+
+	// 				removaAgentFromFloor(ffloor+1,)
+
+	// 				data.AddChild(new Path.Circle({center:
+
+	// 					new Point(
+
+	// 						eData[frame][ffloor][eData[frame][ffloor].length-i-1][0],
+
+	// 						eData[frame][ffloor][eData[frame][ffloor].length-i-1][1]),
+
+	// 						radius: evacueeRadius}));
+
+	// 				}
+
+	// 		}
+
+	// 	}
+
+	// })
+
+	_.each(eData[frame], function(frame0_data,ffloor) {
+
+		evacueesLabelsGroup[ffloor].removeChildren();
+
+		velocitiesGroup[ffloor].removeChildren();
+
+		evacueesGroup[ffloor].removeChildren();
+
+		// velocitiesGroup[ffloor]=new Group();
+
+		// evacueesGroup[ffloor]=new Group();
+
+		// evacueesLabelsGroup[ffloor]=new Group();
+
+		_.each(frame0_data, function(data, i) {
+
+			// x = data[0]
+
+			// y = data[1]
+
+			// x_to = x + data[2]
+
+			// y_to = y + data[3]
+
+			evacueesGroup[ffloor].addChild(new Path.Circle({center: new Point(-10000, -10000), radius: evacueeRadius}));
+
+			velocitiesGroup[ffloor].addChild(new Path.Line({from: new Point(-10000, -10000), to: new Point(-10000,-10000), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+
+			//velocitiesGroup[ffloor].addChild(new Path.Line({from: new Point(x, y), to: new Point(x_to,y_to), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
+
+			//evacueesGroup[ffloor].addChild(new Path.Circle({center: new Point(x, y), radius: evacueeRadius}));
+
+		});
+
+
+
+	// _.each(evacueesGroup, function(data,ffloor) {
+
+	// 	if(ffloor in dstatic.floors) {
+
+	// 		_.each(data.children, function(e,i) {
+
+	// 			e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c'];
+
+	// 			e.position.x = eData[frame][ffloor][i][0];
+
+	// 			e.position.y = eData[frame][ffloor][i][1];
+
+	// 		})
+
+	// 	}
+
+	// })
+
+
+
+	// _.each(velocitiesGroup, function(data,ffloor) {
+
+	// 	if(ffloor in dstatic.floors) {
+
+	// 		_.each(data.children, function(e,i) {
+
+	// 			e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
+
+	// 			e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
+
+	// 			e.segments[1].point.x = evacueesGroup[ffloor].children[i].position.x + eData[frame][ffloor][i][2];
+
+	// 			e.segments[1].point.y = evacueesGroup[ffloor].children[i].position.y + eData[frame][ffloor][i][3];
+
+	// 		})
+
+	// 	}
+
+	// })
+
+
+
+
+
+		// _.each(evacueesGroup, function(data,ffloor) {
+
+		// 	if(ffloor in dstatic.floors) {
+
+		// 		_.each(data.children, function(e,i) {
+
+		// 			e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c'];
+
+		// 			e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps;
+
+		// 			e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps;
+
+		// 		})
+
+		// 	}
+
+		// })
+
+	});
+
+
+
 }
+
+
+
+// function sdfsdfsdsdf(){
+
+
+
+// 	_.each(evacueesGroup, function(data,ffloor) {
+
+// 		if(ffloor in dstatic.floors) {
+
+// 			_.each(data.children, function(e,i) {
+
+// 				e.fillColor=colors['color_'+eData[frame][ffloor][i][4]]['c'];
+
+// 				e.position.x = eData[frame][ffloor][i][0] + (eData[frame+1][ffloor][i][0] - eData[frame][ffloor][i][0]) * (lerpFrame%lerps)/lerps;
+
+// 				e.position.y = eData[frame][ffloor][i][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][i][1] - eData[frame][ffloor][i][1] ) * (lerpFrame%lerps)/lerps;
+
+// 			})
+
+// 		}
+
+// 	})
+
+
+
+// 	_.each(velocitiesGroup, function(data,ffloor) {
+
+// 		if(ffloor in dstatic.floors) {
+
+// 			_.each(data.children, function(e,i) {
+
+// 				e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
+
+// 				e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
+
+// 				e.segments[1].point.x = evacueesGroup[ffloor].children[i].position.x + eData[frame][ffloor][i][2];
+
+// 				e.segments[1].point.y = evacueesGroup[ffloor].children[i].position.y + eData[frame][ffloor][i][3];
+
+// 			})
+
+// 		}
+
+// 	})
+
+
+
+// }
 
 function evacueesInFrame() {//{{{
+
 	// Lerps are Linear Interpolations.
+
 	// There is eData for each frame. Within each frame there are evacueesGroup positions. We take first frame and loop thru each evacuee. But we are not done with this frame yet:
+
 	// We can have say 1 or 1000 of lerps (invented positions) between each two frames. This is for both smoothening animations and for slow/fast playbacks.
+
 	// We remove an evacuee by making it transparent. When we rewind, then we initialize all opacities with 1 again.
 
+
+
+
+
+
+
 	// check whether current frame is related to the change in the number of agents
+
 	// on any floor (going downstairs by agents) if so, update the evacueesGroup data
+
 	// to make proper numer of agents on each floor
-	_.each(evacueesGroup, function(group,ffloor) {
-		if (!eData.hasOwnProperty(frame)) { return}
-		if (Object.keys(eData[frame]).length === 0 ) return
-		if(ffloor in eData[frame]) {
-			const floorData = eData[frame][ffloor];
-			_.each(floorData, function(data, i) {
-				const evacuee = group.children.find(e => e.evac_id === data[6]);
-				if (evacuee) {
-					evacuee.fillColor = colors['color_'+data[4]]['c'];
-					evacuee.floor = data[5];
-					const evac_line = velocitiesGroup[ffloor].children.find(e => e.evac_id === data[6]);
-					let nextData = eData[frame + 1]?.[ffloor]?.[i] || null;
-					if(nextData){
-						evacuee.position.x = data[0] + (nextData[0] - data[0]) * (lerpFrame%lerps)/lerps;
-						evacuee.position.y = data[1] + dstatic.floors[ffloor].floor_meta.ty + (nextData[1] - data[1] ) * (lerpFrame%lerps)/lerps;
-						evac_line.segments[0].point.x = evacuee.position.x;
-						evac_line.segments[0].point.y = evacuee.position.y;
-						evac_line.segments[1].point.x = evacuee.position.x + data[2];
-						evac_line.segments[1].point.y = evacuee.position.y + data[3];
-					}
-					else{
-						evacuee.position.x = data[0];
-						evacuee.position.y = data[1] + dstatic.floors[ffloor].floor_meta.ty
-					}
-				} else {
-					if (data[5] == ffloor) {
-						let circle = new Path.Circle({center: new Point(data[0], data[1]+dstatic.floors[ffloor].floor_meta.ty), radius: evacueeRadius});
-						circle.evac_id = data[6];
-						circle.floor = data[5];
-						evacueesGroup[ffloor].addChild(circle);
-						let line = new Path.Line({from: new Point(circle.position.x, circle.position.y), to: new Point(circle.position.x+data[2], circle.position.y+data[3]), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize });
-						line.evac_id = data[6];
-						line.floor = data[5];
-						velocitiesGroup[ffloor].addChild(line);
-					}
+
+
+
+
+
+
+
+
+
+	// _.each(evacueesGroup, function(data,ffloor) {
+
+	// 	if(ffloor in dstatic.floors) {
+
+	// 		if(data.children.length < Object.keys(eData[frame][ffloor]).length)
+
+	// 			addEvacueesAndVelocities(data.children.length, ffloor)
+
+	// 		}
+
+	// })
+
+
+
+	_.each(evacueesGroup, function(data,ffloor) {
+
+		if(ffloor in dstatic.floors) {
+
+			agentsOnFloorKeys = Object.keys(eData[frame][ffloor])
+
+			_.each(data.children, function(e,i) {
+
+				if(agentsOnFloorKeys[i] in eData[frame+1][ffloor]){
+
+					e.fillColor=colors['color_'+eData[frame][ffloor][agentsOnFloorKeys[i]][4]]['c'];
+
+					e.position.x = eData[frame][ffloor][agentsOnFloorKeys[i]][0] + (eData[frame+1][ffloor][agentsOnFloorKeys[i]][0] - eData[frame][ffloor][agentsOnFloorKeys[i]][0]) * (lerpFrame%lerps)/lerps;
+
+					e.position.y = eData[frame][ffloor][agentsOnFloorKeys[i]][1] + dstatic.floors[ffloor].floor_meta.ty + (eData[frame+1][ffloor][agentsOnFloorKeys[i]][1] - eData[frame][ffloor][agentsOnFloorKeys[i]][1] ) * (lerpFrame%lerps)/lerps;
+
 				}
+
+				else{
+
+					e.fillColor=colors['color_'+eData[frame][ffloor][agentsOnFloorKeys[i]][4]]['c'];
+
+					e.position.x = eData[frame][ffloor][agentsOnFloorKeys[i]][0];
+
+					e.position.y = eData[frame][ffloor][agentsOnFloorKeys[i]][1] + dstatic.floors[ffloor].floor_meta.ty
+
+				}
+
+
+
 			})
+
 		}
+
 	})
+
+
+
+	_.each(velocitiesGroup, function(data,ffloor) {
+
+		if(ffloor in dstatic.floors) {
+
+			agentsOnFloorKeys = Object.keys(eData[frame][ffloor])
+
+			_.each(data.children, function(e,i) {
+
+				e.segments[0].point.x = evacueesGroup[ffloor].children[i].position.x;
+
+				e.segments[0].point.y = evacueesGroup[ffloor].children[i].position.y;
+
+				e.segments[1].point.x = evacueesGroup[ffloor].children[i].position.x + eData[frame][ffloor][agentsOnFloorKeys[i]][2];
+
+				e.segments[1].point.y = evacueesGroup[ffloor].children[i].position.y + eData[frame][ffloor][agentsOnFloorKeys[i]][3];
+
+			})
+
+		}
+
+	})
+
 }
+
 //}}}
 function afterLerpFrame() {//{{{
 	// The slider moves after each frame. The slider is a collection of 100 svg rectangles. We need to clear the previous rectangle and mark the current rectangle
@@ -746,7 +1101,7 @@ tool.onMouseDown=function(event) {//{{{
 //}}}
 function animFormatTime() {//{{{
 	var date=new Date(null);
-	if (Object.keys(eData).length > 0) {
+	if (eData.length>0) {
 		var t=currentAnimData.time_shift + (currentAnimData.simulation_time - currentAnimData.time_shift) * sliderPos / 100
 	}
 	if(isNaN(t))   { t=0; }
@@ -822,8 +1177,11 @@ function roomsSmokeInFrame() {//{{{
 function initDoorsOpening() {//{{{
 	project.layers.doorsOpening.activate();
 	var rw, rh;
-
-	if (!doorsOpening===undefined){
+	var first_char;
+	var fillColor;
+	var strokeColor;
+	var strokeWidth;
+	if (!doorsOpening===false){
 		for (var ffloor in doorsOpening[0]) {
 			if(dstatic.floors[ffloor]===undefined) { continue; }
 	        var ty=dstatic.floors[ffloor].floor_meta.ty;
@@ -835,11 +1193,30 @@ function initDoorsOpening() {//{{{
 	
 				rw=points[1][0] - points[0][0];
 				rh=points[2][1] - points[1][1];
+
+				first_char = door[0]
 	
+				if (first_char === 'd'){
+					fillColor = "#73d216";
+					strokeColor= "#5ea911";
+					strokeWidth = 5;
+				}
+				else if (first_char === 'e'){
+					fillColor = "#ff4400";
+					strokeColor="#ffffff";
+					strokeWidth=5;
+				}
+				else if (first_char === 'q'){
+					fillColor = "#cc0000";
+					strokeColor="#990000";
+					strokeWidth=5;
+				}
+
+
 				group=new Group();
 				group.name=door;
 				group.floor=ffloor;
-				group.addChild(new Path.Rectangle({point: new Point(points[0][0], points[0][1]), fillColor:"#010", size: new Size(rw,rh)}));
+				group.addChild(new Path.Rectangle({point: new Point(points[0][0], points[0][1]), fillColor:fillColor,strokeColor:strokeColor,strokeWidth:strokeWidth, size: new Size(rw,rh)}));
 			}
 		}
 	}
@@ -849,7 +1226,7 @@ function doorsOpeningInFrame() {//{{{
 	if (eData.length<1) { return; }
 	_.each(project.layers.doorsOpening.getItems(), function(i,key) {
 		if(doorsOpening[frame][i.floor][i.name]==1) { project.layers.doorsOpening.children[key].opacity=0; }
-		else if(doorsOpening[frame][i.floor][i.name]==0) { project.layers.doorsOpening.children[key].opacity=0.5; }
+		else if(doorsOpening[frame][i.floor][i.name]==0) { project.layers.doorsOpening.children[key].opacity=0.4; }
 	});
 }
 //}}}
@@ -863,12 +1240,30 @@ function resizeAndRedrawCanvas() {//{{{
 }
 
 //}}}
+
+
 view.onFrame=function(event) {//{{{
-	if(paused==1) { return;	}
-	updateAgentNumbersOnFloors();
-	evacueesInFrame();
-	roomsSmokeInFrame();
-	afterLerpFrame();
+
+	if(paused==1) { return; }
+
+	if (eData.length<3) {
+
+		showEvacueesLabels();
+
+		paused=1;
+
+	} else {
+
+		updateAgentNumbersOnFloors();
+
+		evacueesInFrame();
+
+		roomsSmokeInFrame();
+
+		doorsOpeningInFrame();
+		afterLerpFrame();
+
+	}
 }
 //}}}
 

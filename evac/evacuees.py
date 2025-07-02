@@ -100,18 +100,14 @@ class Evacuees:
         assert isinstance(ped_no, int), "%ped_no is not an integer"
         assert isinstance(position, tuple), "%position is not a tuple"
         self.pedestrians[ped_no].position = position
-
     def get_position_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
-        return self.pedestrians[ped_no].position
 
+        return self.pedestrians[ped_no].position
+        
     def get_current_floor_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].current_floor
-    
-    def set_prev_floor_to_pedestrian(self, ped_no):
-        assert isinstance(ped_no, int), '%ped_no is not an integer'
-        self.pedestrians[ped_no].prev_floor = self.pedestrians[ped_no].current_floor
 
     def get_goal(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
@@ -120,6 +116,10 @@ class Evacuees:
     def set_goal(self, ped_no: int, navmesh_path: list) -> object:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].set_goal(navmesh_path)
+
+    def check_if_agent_reached_outside_door(self, ped_no: int) -> object:
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].check_if_agent_reached_outside_door()
 
     def check_if_agent_exists(self, evacuee):
         assert isinstance(evacuee, Evacuee), "%evacuee is not Evacuee class object"
@@ -209,6 +209,6 @@ class Evacuees:
     def get_leader_of_evacuee(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].leader
-
-    def did_agent_moved(self, ped_no):
+    
+    def has_agent_moved(self, ped_no):
         return self.pedestrians[ped_no].did_agent_moved()

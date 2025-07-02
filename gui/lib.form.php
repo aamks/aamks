@@ -46,7 +46,7 @@ function make_help() { /*{{{*/
 	$help["yields"]    	             = [""                                 , "<b>User-defined</b> parameters of species yields normal distribution [g/g]"]                                                              ;
 	$help["radfrac"]    	         = ["Radiative fraction"               , "Parameters of gamma distribution of radiative fraction of HRR [-]"]                                                              ;
 	$help["fire_load"]    	         = [""                                 , "Parameters (mean, sd) OR 1st and 99th percentiles of log-normal distribution of fire load in ROOM and other comprtments types [MJ/m<sup>2</sup>]"]                                                              ;
-
+	$help["cfast_rooms"]    	 	 = ["Cfast rooms number"			   , "Number of rooms for cfast fire simulation. The more, the longer the calculations and the greater the accuracy, up to a maximum of 100. For simulations in which there are small rooms, there will be no doors with a door closer, you should choose a higher value"];
     //EVACUTAION MODEL
 	//$help["evac_clusters"]		     = ["evac_clusters"					   , "follow the leader, etc (TODO)."];                                                              ;
 	$help["dispatch_evacuees"]		 = ["Evacuees dispatch mode"           , "<orange>manual+probabilistic</orange> probabilistic evacuees only in the rooms free of manual evacuees<hr> <orange>probabilistic+manual</orange> probabilistic evacuees first and then extra manual evacuees<hr> <orange>manual</orange> probabilistic evacuees are never added "]                                                              ;
@@ -620,7 +620,8 @@ function get_template_defaults($q) {/*{{{*/
 	"new_fire":{
 		"criterion": "TEMPERATURE",
 		"setpoint": 200
-	}
+	},
+	"cfast_rooms": 30
 }';
 
 	return json_decode($db[$q],1);

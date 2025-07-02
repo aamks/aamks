@@ -203,6 +203,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
             return
         # 'letter' can be changed to name - missleading
         needed_record = None
+        cfast_important = set()
         for letter in ['compartments','devices','vents','walls']:
             f = 'cfast_{}.csv'.format(letter)
             with open(f, 'r') as csvfile:
@@ -222,35 +223,19 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
             for m in range(len(needed_record)):
                 if self._headers[letter]['params'][m] in self.relevant_params and self._headers[letter]['geoms'][m] in self.all_compas:
                     self.compa_conditions[self._headers[letter]['geoms'][m]][self._headers[letter]['params'][m]] = needed_record[m]
-                
+                    cfast_important.add(self._headers[letter]['geoms'][m])
+        # add default compa conditions for rooms that where not taken to cfast simulation
+        for obj in self.all_compas+['outside']:
+            if obj not in cfast_important:
+                for param in self.relevant_params:
+                    if param == 'COMPA':
+                        self.compa_conditions[obj][param] = obj
+                    else:
+                        self.compa_conditions[obj][param] = self._default_conditions[param]
 
 
 
-
-# }}}
-    def xy2room(self,q):# {{{
-        ''' 
-        First we find to which square our q belongs. If this square has 0 rectangles
-        then we return conditions from the square. If the square has rectangles
-        we need to loop through those rectangles. 
-        '''
-
-        x=self.floors_meta[self.floor]['minx'] + self._square_side * int((q[0]-self.floors_meta[self.floor]['minx'])/self._square_side) 
-        y=self.floors_meta[self.floor]['miny'] + self._square_side * int((q[1]-self.floors_meta[self.floor]['miny'])/self._square_side)
-        if q[0]< self.floors_meta[self.floor]['minx'] or q[0] > self.floors_meta[self.floor]['maxx'] or q[1] < self.floors_meta[self.floor]['miny'] or q[1] > self.floors_meta[self.floor]['maxy']:
-            return "outside"
-
-        if len(self._query_vertices[x,y]['x'])==1:
-            return self._cell2compa[(x,y)] if (x,y) in self._cell2compa else "outside"
-        else:
-            for i in range(bisect.bisect(self._query_vertices[(x,y)]['x'], q[0]),0,-1):
-                if self._query_vertices[(x,y)]['y'][i-1] < q[1]:
-                    rx=self._query_vertices[(x,y)]['x'][i-1]
-                    ry=self._query_vertices[(x,y)]['y'][i-1]
-                    return self._cell2compa[(rx,ry)] if (rx,ry) in self._cell2compa else "outside"
-        return "outside"
-# }}}
-    def get_conditions(self,q):# {{{
+    def get_conditions_from_point(self,q):
         ''' 
         Same as xy2room, except it returns conditions, not just the room.
         '''
@@ -290,15 +275,26 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
                     #return self.compa_conditions[self._cell2compa[(rx,ry)]] if (rx,ry) in self._cell2compa else {'COMPA': 'outside'} \
         return {'COMPA': 'outside'} 
 # }}}
-    def get_visibility(self, position):# {{{
-        conditions = self.get_conditions(position)
+
+
+    def get_conditions(self,comp_name):# {{{
+        ''' 
+        Same as xy2room, except it returns conditions, not just the room.
+        '''
+
+        if self.project_conf['fire_model'] == 'None':
+            return self._default_conditions
+
+        return self.compa_conditions[comp_name]
+
+
+# }}}
+    def get_visibility(self, q):# {{{
+        conditions = self.get_conditions_from_point(q)
         #print('FLOOR: {}, ROOM: {}, HGT: {}, TIME: {}'.format(floor, room, conditions['HGT'], time))
 
         if conditions == 'outside':
             print('outside')
-
-        if re.search(r'(s\d+)', conditions['COMPA']):
-            return conditions['ULOD'], conditions['COMPA']
         
         if 'HGT' in conditions.keys():
             hgt = conditions['HGT']
@@ -313,8 +309,8 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
             return conditions['ULOD'], conditions['COMPA']
 # }}}
     # deprecated
-    def get_fed_deprecated(self, position):# {{{
-        conditions = self.get_conditions(position)
+    def get_fed_deprecated(self, comp_name):# {{{
+        conditions = self.get_conditions(comp_name)
 
         hgt = conditions['HGT']
         if hgt == None:
@@ -336,9 +332,9 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
 # }}}
 
     # source: Purser, D. Application of human and animal exposure studies [in:] Stec, A. and Hull, T. Fire Toxicity, 2010
-    def get_fed_purser(self, position):# {{{
+    def get_fed_purser(self, comp_name):# {{{
         def ppm(x): return x*1e4    # %mol to ppm conversion
-        conditions = self.get_conditions(position)
+        conditions = self.get_conditions(comp_name)
 
         # when position of evacuee is outside the building we assume no FED absorbed
         if conditions['COMPA'] == 'outside':
@@ -365,12 +361,12 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
 
         # actual concentrations of compunds from CFAST
         c = {       
-                'co2': conditions[layer+'LCO2'], 
-                'o2': conditions[layer+'LO2'], 
-                'co': conditions[layer+'LCO'],
-                'hcn': conditions[layer+'LHCN'],
-                'hcl': conditions[layer+'LHCL']
-                }
+            'co2': conditions.get(layer + 'LCO2') or 0, 
+            'o2': conditions.get(layer + 'LO2') or 0, 
+            'co': conditions.get(layer + 'LCO') or 0,
+            'hcn': conditions.get(layer + 'LHCN') or 0,
+            'hcl': conditions.get(layer + 'LHCL') or 0
+        }
 
         # hiperventilation coefficient
         v_co2 = 1 + (exp(0.14 * c['co2']) - 1) / 2      
@@ -396,10 +392,10 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
 
     # source: Purser, D. and McAllister J. Assesment of Hazards to Occupants from Smoke, Toxic Gases and Heat [in:] Hurley, M. et al. SFPE Handbook of Fire Protection Engineering, vol. 3, 5th ed., 2016
     # activity_levels: 0 -> rest/sleep; 1 -> light work/walking; 2 -> heavy work/slow run/climbing the stairs
-    def get_fed_sfpe(self, position, activity_level=1):# {{{
+    def get_fed_sfpe(self, comp_name, activity_level=1):# {{{
         def ppm(x): return x*1e4    # %mol to ppm conversion
 
-        conditions = self.get_conditions(position)
+        conditions = self.get_conditions(comp_name)
 
         # when position of evacuee is outside the building we assume no FED absorbed
         if conditions['COMPA'] == 'outside':
@@ -415,12 +411,12 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
 
         # actual concentrations of compunds from CFAST [mol %]
         c = {       
-                'co2': conditions[layer+'LCO2'], 
-                'o2': conditions[layer+'LO2'], 
-                'co': conditions[layer+'LCO'],
-                'hcn': conditions[layer+'LHCN'],
-                'hcl': conditions[layer+'LHCL']
-                }
+            'co2': conditions.get(layer + 'LCO2') or 0, 
+            'o2': conditions.get(layer + 'LO2') or 0, 
+            'co': conditions.get(layer + 'LCO') or 0,
+            'hcn': conditions.get(layer + 'LHCN') or 0,
+            'hcl': conditions.get(layer + 'LHCL') or 0
+        }
 
         # hiperventilation coefficient
         v_co2 = exp(0.1903 * c['co2'] + 2.0004) / 7.1
