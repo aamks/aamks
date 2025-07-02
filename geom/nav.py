@@ -47,11 +47,10 @@ class Navmesh:
 
         '''
         self.json=Json()
-        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        self.s=Sqlite(sim_sql_path)
+        self.s_geom=Sqlite(scenario_sql_path)
         self.json.s = self.s
         self._test_colors=[ "#f80", "#f00", "#8f0", "#08f" ]
         self.polymesh = Polymesh()
@@ -165,7 +164,7 @@ class Navmesh:
     def test(self):# {{{
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         agents_pairs=4
-        ee=self.s.query("SELECT name,x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
+        ee=self.s_geom.query("SELECT name,x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
         if len(ee) == 0: return
         evacuees=list(self._chunks(ee,2))
         self._test_evacuees_pairs(evacuees)
@@ -183,12 +182,12 @@ class Navmesh:
         bricked_wall=[]
 
         if len(bypass_rooms) > 0 :
-            floors_meta=json.loads(self.s.query("SELECT json FROM floors_meta")[0]['json'])
+            floors_meta=json.loads(self.s_geom.query("SELECT json FROM floors_meta")[0]['json'])
             elevation=floors_meta[self.floor]['minz_abs']
             where=" WHERE "
             where+=" vent_from_name="+" OR vent_from_name=".join([ "'{}'".format(i) for i in bypass_rooms])
             where+=" OR vent_to_name="+" OR vent_to_name=".join([ "'{}'".format(i) for i in bypass_rooms])
-            bypass_doors=self.s.query("SELECT name,x0,y0,x1,y1 FROM aamks_geom {}".format(where))
+            bypass_doors=self.s_geom.query("SELECT name,x0,y0,x1,y1 FROM aamks_geom {}".format(where))
 
             for i in bypass_doors:
                 bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
@@ -204,8 +203,8 @@ class Navmesh:
 
 # }}}
     def _obj_platform(self):# {{{
-        z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (self.floor,))
-        exit_doors = self.s.query("SELECT vent_to_name,vent_from_name,width,depth,center_x, center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
+        z=self.s_geom.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (self.floor,))
+        exit_doors = self.s_geom.query("SELECT vent_to_name,vent_from_name,width,depth,center_x, center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
         platforms=[]
         for i in z:
             platforms.append([ (i['x1'], i['y1']), (i['x1'], i['y0']), (i['x0'], i['y0']), (i['x0'], i['y1']) ])
@@ -214,7 +213,7 @@ class Navmesh:
             # only on the inner surface at a distance greater than approximately cell_size 
             # plus agent_radius (read bake function in navmesh baker). If destination coordinates are in navmesh, 
             # then search_path doesnt need to call TrianglesBVH sample function - calculation is faster
-            room_before_exit_center = self.s.query('SELECT points from aamks_geom WHERE name=? or name=?', (i['vent_to_name'],i['vent_from_name']))
+            room_before_exit_center = self.s_geom.query('SELECT points from aamks_geom WHERE name=? or name=?', (i['vent_to_name'],i['vent_from_name']))
             center_x, center_y = self.get_center_from_points(room_before_exit_center[0]['points'])
             #the outer vestibule is a virtual room - necessary to add a navigation mesh outside 
             #the exit door because agents disappear when they reach a target that is 1 m behind the exit door
@@ -314,7 +313,7 @@ class Navmesh:
             self._hole_count=len(self._hole_rooms)
             tt=copy.deepcopy(self._hole_rooms)
             for room in self._hole_rooms.keys():
-                for i in self.s.query("SELECT vent_from_name,vent_to_name FROM aamks_geom WHERE type_sec='HOLE' AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
+                for i in self.s_geom.query("SELECT vent_from_name,vent_to_name FROM aamks_geom WHERE type_sec='HOLE' AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
                     tt[i['vent_from_name']]=1
                     tt[i['vent_to_name']]=1
             self._hole_rooms=copy.deepcopy(tt)
@@ -336,7 +335,7 @@ class Navmesh:
         self._hole_connected_rooms()
         doors={}
         for rr in self._hole_rooms.keys():
-            z=self.s.query("SELECT name, type_sec, x0, y0, x1, y1, center_x, center_y, is_vertical FROM aamks_geom WHERE type_sec='DOOR' AND (vent_from_name=? OR vent_to_name=?)", (rr, rr))
+            z=self.s_geom.query("SELECT name, type_sec, x0, y0, x1, y1, center_x, center_y, is_vertical FROM aamks_geom WHERE type_sec='DOOR' AND (vent_from_name=? OR vent_to_name=?)", (rr, rr))
             for d in z:
                 doors[d['name']]=d
         return list(doors.values())

@@ -225,5 +225,6 @@
     "doors_break": {
         "criterion": "TEMPERATURE",
         "setpoint": 200
-    }
+    },
+    "leader_following": 1
 }

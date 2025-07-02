@@ -57,12 +57,10 @@ class Worker:
 
         self.project_dir = self.working_dir.split("/workers/")[0]
         self.sim_id = int(self.working_dir.split("/workers/")[1])
-
-        new_sql_path = os.path.join(self.working_dir, f"aamks_{self.sim_id}.sqlite")
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        sim_sql_path = os.path.join(self.working_dir, f"aamks_{self.sim_id}.sqlite")
+        scenario_sql_path = os.path.join(self.project_dir, "aamks_geom.sqlite")
+        self.s=Sqlite(sim_sql_path)
+        self.s_geom=Sqlite(scenario_sql_path)
         os.environ["AAMKS_PROJECT"] = self.project_dir
         os.chdir(self.working_dir)
         self.vars = OrderedDict()
@@ -150,7 +148,7 @@ class Worker:
 
     def run_cfast_simulations(self, version='intel', attempt=0):
         self.send_report(e={"status":102})
-        compa_no = self.s.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
+        compa_no = self.s_geom.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
         if version == 'intel':
             cfast_file = 'cfast_775-750-i' if compa_no > 100 else 'cfast_775-100-i'
         else:
@@ -228,7 +226,7 @@ class Worker:
         return evacuees
 
     def prepare_staircases(self, floor):
-        rows = self.s.query("SELECT x0, y0, width, depth from aamks_geom WHERE type_sec='STAI' AND floor = floor")
+        rows = self.s_geom.query("SELECT x0, y0, width, depth from aamks_geom WHERE type_sec='STAI' AND floor = floor")
         stair_cases = []
         for row in rows:
             x_min = row['x0']
@@ -290,12 +288,12 @@ class Worker:
 
     def get_floor_compartments(self, floor):
         compartments = []
-        all_rooms = self.s.query("SELECT name, floor, points, room_exits_weights from aamks_geom WHERE type_pri = 'COMPA' and floor='"+floor+"'")
-        holes = self.s.query("SELECT name, floor, vent_from_name, vent_to_name from aamks_geom WHERE type_sec = 'HOLE' and floor='"+floor+"'")
+        all_rooms = self.s_geom.query("SELECT name, floor, points, room_exits_weights from aamks_geom WHERE type_pri = 'COMPA' and floor='"+floor+"'")
+        holes = self.s_geom.query("SELECT name, floor, vent_from_name, vent_to_name from aamks_geom WHERE type_sec = 'HOLE' and floor='"+floor+"'")
         rooms_holes_connection_dict = self.build_connection_dict(holes,all_rooms)
         for room in all_rooms:
-            room_interior_doors_and_holes = self.s.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name from aamks_geom WHERE (terminal_door IS NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
-            room_outside_doors = self.s.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name from aamks_geom WHERE (terminal_door IS NOT NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
+            room_interior_doors_and_holes = self.s_geom.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name from aamks_geom WHERE (terminal_door IS NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
+            room_outside_doors = self.s_geom.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name from aamks_geom WHERE (terminal_door IS NOT NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
             points = room['points'].replace('[', '').replace(']', '').split(', ')
             int_points = [int(x) for x in points]
             x_min = min(int_points[0],int_points[2],int_points[4],int_points[6])
@@ -340,7 +338,7 @@ class Worker:
                 exits_weights_dict_with_names = {}
                 for exit_id in exits_weights_dict.keys():
                     query = "SELECT floor, name, center_x, center_y, width, depth from aamks_geom WHERE (global_type_id="+exit_id+" and type_tri='DOOR')"
-                    exit = self.s.query(query)
+                    exit = self.s_geom.query(query)
                     exits_weights_dict_with_names[exit[0]['name']] = exits_weights_dict[exit_id]
                 compartment = _compartments.get_compartment(room['name'])
                 compartment.roomGoalExits = self.get_room_goal_exits(_compartments,room['name'],rooms_holes_connection_dict[room['name']],exits_weights_dict_with_names)
@@ -399,10 +397,10 @@ class Worker:
 
     def get_terminal_door_exits(self, floor):
         terminal_door_exits = []
-        outside_building_doors = self.s.query("SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL and floor='"+floor+"'")
+        outside_building_doors = self.s_geom.query("SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL and floor='"+floor+"'")
 
         for door in outside_building_doors:
-            room_before_exit_center = self.s.query('SELECT points from aamks_geom WHERE name=? or name=?', (door['vent_to_name'],door['vent_from_name']))
+            room_before_exit_center = self.s_geom.query('SELECT points from aamks_geom WHERE name=? or name=?', (door['vent_to_name'],door['vent_from_name']))
             source_compartment = door['vent_to_name'] if door['vent_to_name']!='OUTSIDE' else door['vent_from_name']
             center_x, center_y = self.get_center_from_points(room_before_exit_center[0]['points'])
             x_direction, y_direction = self._get_outside_door_destination(center_x, center_y, door)
@@ -420,7 +418,7 @@ class Worker:
 
     def get_teleports(self, floor):
         teleports = []
-        floor_teleports = self.s.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%' and floor='"+floor+"'")
+        floor_teleports = self.s_geom.query("SELECT floor, name, exit_weight, teleport_from, teleport_to, stair_direction from aamks_geom WHERE name LIKE 'k%' and floor='"+floor+"'")
 
         for teleport in floor_teleports:
             
@@ -428,7 +426,7 @@ class Worker:
             int_teleport_from_coordinates = [int(t) for t in teleport_from_coordinates]
             x = int_teleport_from_coordinates[0]
             y = int_teleport_from_coordinates[1]
-            teleport_room_name = self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' and "+str(x)+" > x0 and "+str(x)+" < x1 and "+str(y)+" > y0 and "+str(y)+" < y1 and floor='"+floor+"'")
+            teleport_room_name = self.s_geom.query("SELECT name from aamks_geom WHERE type_pri='COMPA' and "+str(x)+" > x0 and "+str(x)+" < x1 and "+str(y)+" > y0 and "+str(y)+" < y1 and floor='"+floor+"'")
             source_compartment = teleport_room_name[0]['name']
 
             teleport_to_coordinates = teleport['teleport_to'].replace('[', '').replace(']','').replace(' ', '').split(',')

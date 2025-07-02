@@ -39,31 +39,21 @@ class CfastPartition():
         evacuee at x,y.
 
         '''
-
+        sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        self.s_geom=Sqlite(scenario_sql_path)
+        if self.s_geom.query("SELECT name FROM sqlite_master WHERE type='table' AND name='cell2compa'"):
+            return
         self._square_side=300
-        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
         self.uprefs=GetUserPrefs()
         verbose=0
         if self.uprefs.get_var('partitioning_debug')==1: verbose=1
-
-        try:
-            self.s.query("DROP TABLE cell2compa")
-            self.s.query("DROP TABLE query_vertices")
-        except:
-            pass
-        self.s.query("CREATE TABLE cell2compa(json)")
-        self.s.query("CREATE TABLE query_vertices(json)")
-
         self.json=Json() 
-        self.json.s = self.s
+        self.json.s = self.s_geom
         self._cell2compa=OrderedDict()
         self._save=OrderedDict()
-        floors=self.json.readdb("floors_meta")
-        for floor in floors.keys():
+        self.floors=self.json.readdb("floors_meta")
+        for floor in self.floors.keys():
             self._init_space(floor) 
             self._intersect_space() 
             self._optimize(floor)
@@ -71,22 +61,20 @@ class CfastPartition():
             if(verbose==1):
                 self._plot_space(floor)  # debug
         if(verbose==1):
-            Vis({'highlight_geom': None, 'anim': None, 'title': 'partitioning', 'srv': 1, 'skip_fire_origin': 1, 'skip_evacuees': 1}) # debug
+            Vis({'highlight_geom': None, 'anim': None, 'title': 'partitioning', 'srv': 1, 'skip_fire_origin': 1, 'skip_evacuees': 1, "sim_sql": sim_sql_path, "scen_sql": scenario_sql_path}) # debug
 
         self._dbsave()
-        self.s.close()
 # }}}
     def _init_space(self,floor):# {{{
         ''' Divide floor into squares. Prepare empty rectangles placeholders. '''
 
-        floors=self.json.readdb("floors_meta")
-        fdims=floors[floor]
+        fdims=self.floors[floor]
 
         self.squares=OrderedDict()
         self.rectangles=OrderedDict()
         self.lines=[]
 
-        for i in self.s.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY x0,y0", (floor,)):
+        for i in self.s_geom.query("SELECT * FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY x0,y0", (floor,)):
             self.lines.append(LineString([ Point(i['x0'],i['y0']), Point(i['x0'], i['y1'])] ))
             self.lines.append(LineString([ Point(i['x0'],i['y0']), Point(i['x1'], i['y0'])] ))
             self.lines.append(LineString([ Point(i['x1'],i['y1']), Point(i['x0'], i['y1'])] ))
@@ -193,7 +181,7 @@ class CfastPartition():
     def _make_cell2compa_record(self,cell,floor):# {{{
         cell_str="{}x{}".format(cell[0], cell[1])
         try:
-            self._cell2compa[floor][cell_str]=self.s.query("SELECT name from aamks_geom WHERE floor=? AND type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (floor, cell[0], cell[1], cell[0], cell[1]))[0]['name']
+            self._cell2compa[floor][cell_str]=self.s_geom.query("SELECT name from aamks_geom WHERE floor=? AND type_pri='COMPA' AND ?>=x0 AND ?>=y0 AND ?<x1 AND ?<y1", (floor, cell[0], cell[1], cell[0], cell[1]))[0]['name']
         except:
             pass
 # }}}
@@ -206,6 +194,9 @@ class CfastPartition():
 #}}}
 
     def _dbsave(self):# {{{
-        self.s.query('INSERT INTO cell2compa VALUES (?)'     , (json.dumps(self._cell2compa),))
-        self.s.query('INSERT INTO query_vertices VALUES (?)' , (json.dumps(self._save),))
+        self.s_geom.query("CREATE TABLE cell2compa(json)")
+        self.s_geom.query("CREATE TABLE query_vertices(json)")
+        self.s_geom.query('INSERT INTO cell2compa VALUES (?)'     , (json.dumps(self._cell2compa),))
+        self.s_geom.query('INSERT INTO query_vertices VALUES (?)' , (json.dumps(self._save),))
+        self.s_geom.close()
 # }}}

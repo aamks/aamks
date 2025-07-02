@@ -25,7 +25,7 @@ class SensitivityAnalysis:
         self.j = Json()
         self.dir = workdir if workdir else sys.argv[1]
         self.configs = self.j.read('{}/conf.json'.format(self.dir))
-        self.s = Sqlite("{}/aamks.sqlite".format(self.dir))
+        self.s_geom = Sqlite("{}/aamks_geom.sqlite".format(self.dir))
         self.variables = sys.argv[2:] if len(sys.argv) > 2 else self.VARS
         self.y = y
 
@@ -63,7 +63,7 @@ class SensitivityAnalysis:
     
     def _do_sobol(self, second_order):
         m = 2 if second_order else 1
-        n = int(len(self.results[self.y]) - floor(len(self.results[self.y]) % (m*problem['num_vars']+2)))
+        n = int(len(self.results[self.y]) - floor(len(self.results[self.y]) % (m*self.problem['num_vars']+2)))
         si = sobol.analyze(self.problem, self.results[self.y].iloc[:n].to_numpy(), 
                 print_to_console=True, calc_second_order=second_order)
         return si
@@ -123,15 +123,15 @@ class SA_old:
         self.j = Json()
         self.dir = workdir if workdir else sys.argv[1]
         self.configs = self.j.read('{}/conf.json'.format(self.dir))
-        self.s = Sqlite("{}/aamks.sqlite".format(self.dir))
+        self.s_geom = Sqlite("{}/aamks_geom.sqlite".format(self.dir))
 
     def calculate_indvidual_risk(self):     
         rooms, sprinklered_rooms = list(), list()
         c_id = list()
         # distinguish rooms with sprinklers
-        for v in self.s.query("SELECT name from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1"):
+        for v in self.s_geom.query("SELECT name from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1"):
             sprinklered_rooms.append(v['name'])
-        for v in self.s.query("SELECT name, global_type_id from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1"):
+        for v in self.s_geom.query("SELECT name, global_type_id from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1"):
             rooms.append(v['name'])
             c_id.append(v['global_type_id'])
 
