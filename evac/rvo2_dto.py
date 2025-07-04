@@ -448,7 +448,8 @@ class EvacEnv:
                         evacuee.set_goal(navmesh_path=evacuee.path[1:])
                     else:
                         evacuee.set_goal(navmesh_path=evacuee.path)
-
+                except:
+                    evacuee.set_goal(navmesh_path=evacuee.path)
 
     def append_agents_to_move_downstairs_or_upstairs(self, evacuee, pedestrian_number):
         self.agents_to_move_downstairs_or_upstairs.append({
@@ -680,6 +681,7 @@ class EvacEnv:
 
     def check_if_agents_reached_goal(self):
         for e in range(self.evacuees.get_number_of_pedestrians()):
+            evacuee = self.evacuees.get_pedestrian(e)
             if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
                 continue
             else:
