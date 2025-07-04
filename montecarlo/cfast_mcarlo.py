@@ -58,7 +58,8 @@ class CfastMcarlo():
         self.json=Json()
         self.conf = self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
-        self.create_sqlite_db()
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        self.s_geom=Sqlite(scenario_sql_path)
         self._draw()
         self.cfast_rooms_choice = CFASTRoomsChoice(self.conf['cfast_rooms'],sim_id)
         self.cfast_choice_compartments_ids = []
@@ -128,22 +129,10 @@ class CfastMcarlo():
                     table += record + '/\n'
             return table
 
-
-    def create_sqlite_db(self):
-        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", f"aamks_{self._sim_id}.sqlite")
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        try:
-            self.s.query("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'")[0]
-        except Exception as e:
-            self.s.query("CREATE TABLE fire_origin(name,is_room,x,y,z,loc_x, loc_y,floor,f_id,height,devc,major,sim_id)")
-
     def do_iterations(self):
         self._make_cfast()
         self._write()
-        self.s.close()
+        self.s_geom.close()
 
 # CFAST SECTIONS
     def _make_cfast(self):# {{{
@@ -229,7 +218,7 @@ class CfastMcarlo():
             f"AND fire_model_ignore!=1 AND global_type_id in ({','.join(['?' for _ in self.cfast_choice_compartments_ids])}) "
             "ORDER BY global_type_id"
         )
-        for v in self.s.query(query, self.cfast_choice_compartments_ids):
+        for v in self.s_geom.query(query, self.cfast_choice_compartments_ids):
             name = v['name']
             self.cfast_choice_compartments_names.append(name)
             width = round(v['width'] / 100.0, 2)
@@ -266,7 +255,7 @@ class CfastMcarlo():
     def _section_vvent(self):# {{{
         # VVENT AREA, SHAPE, INITIAL_FRACTION
         txt=['!! SECTION NATURAL VENT']
-        for i, v in enumerate(self.s.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to")):
+        for i, v in enumerate(self.s_geom.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to")):
             if v['vent_from_name'] not in self.cfast_choice_compartments_names and v['vent_to_name'] not in self.cfast_choice_compartments_names:
                 continue
             how_much_open = self.samples['vvents'][i][0]           # end state with probability of working
@@ -285,7 +274,7 @@ class CfastMcarlo():
 # }}}
     def _section_mvent(self):# {{{
         txt=['!! SECTION MECHANICAL VENT']
-        for v in self.s.query("SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
+        for v in self.s_geom.query("SELECT * FROM aamks_geom WHERE type_sec = 'MVENT'"):
             comp_ids = [v['vent_from_name'], v['vent_to_name']]
 
             if v['vent_from_name'] not in self.cfast_choice_compartments_names and v['vent_to_name'] not in self.cfast_choice_compartments_names:
@@ -324,7 +313,7 @@ class CfastMcarlo():
         if room_name == 'OUTSIDE':
             room_name = mvent['vent_to_name']
 
-        room = self.s.query("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='"+room_name+"'")[0]
+        room = self.s_geom.query("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='"+room_name+"'")[0]
 
         if mvent['air_grille_surface'] is not None:
             if mvent['air_grille_surface'] == 'x_min':
@@ -447,7 +436,7 @@ class CfastMcarlo():
 
     def _section_heat_detectors(self):# {{{
         txt=['!! HEAT DETECTORS']
-        for i, v in enumerate(self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND heat_detectors=1")):
+        for i, v in enumerate(self.s_geom.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND heat_detectors=1")):
             if v['name'] not in self.cfast_choice_compartments_names:
                 continue
 
@@ -466,10 +455,9 @@ class CfastMcarlo():
 # }}}
     def _section_smoke_detectors(self):# {{{
         txt=['!! SMOKE DETECTORS']
-        for i, v in enumerate(self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND smoke_detectors=1")):
+        for i, v in enumerate(self.s_geom.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND smoke_detectors=1")):
             if v['name'] not in self.cfast_choice_compartments_names:
                 continue
-            
             smoke_obscuration = self.samples['smoke_detectors'][i]
             if smoke_obscuration == 0:
                 continue
@@ -484,7 +472,7 @@ class CfastMcarlo():
 # }}}
     def _section_sprinklers(self):# {{{
         txt=['!! SECTION SPRINKLERS']
-        for i, v in enumerate(self.s.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1")):
+        for i, v in enumerate(self.s_geom.query("SELECT * from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND sprinklers=1")):
             if v['name'] not in self.cfast_choice_compartments_names:
                 continue
             try:
@@ -573,16 +561,16 @@ class DrawAndLog:
         self._fire = None
         self._fires = []
         self._fire_openings = []
+        self._trigger_objects = []
         self.sections = {}
         self.data_for_psql=OrderedDict()
         self.json = Json()
         self.conf = self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
-        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", f"aamks_{self._sim_id}.sqlite")
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", f"aamks_{self._sim_id}.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        self.s=Sqlite(sim_sql_path)
+        self.s_geom=Sqlite(scenario_sql_path)
         self._new_psql_log()
 
     def _new_psql_log(self):#{{{
@@ -609,6 +597,7 @@ class DrawAndLog:
     def _save_fire_origin(self, fire_origin):# {{{
         self._fires.append(Fire(*fire_origin))
         fire_origin.append(self._sim_id)
+        self.s.query("CREATE TABLE IF NOT EXISTS fire_origin(name,is_room,x,y,z,loc_x, loc_y,floor,f_id,height,devc,major,sim_id)")
         self.s.query('INSERT INTO fire_origin VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', fire_origin)
 # }}}
     def _draw_compartment(self):
@@ -621,8 +610,8 @@ class DrawAndLog:
             return omega, probabilities
         # find fire compartment
         is_origin_in_room = binomial(True, self.conf['fire_starts_in_a_room'])
-        all_corridors_and_halls = [[z['name'], z['width']*z['depth']] for z in self.s.query("SELECT name, width, depth FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND type_sec in('COR','HALL') ORDER BY global_type_id") ]
-        all_rooms = [[z['name'], z['width']*z['depth']] for z in self.s.query("SELECT name, width, depth FROM aamks_geom WHERE type_sec='ROOM' ORDER BY global_type_id") ]
+        all_corridors_and_halls = [[z['name'], z['width']*z['depth']] for z in self.s_geom.query("SELECT name, width, depth FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND type_sec in('COR','HALL') ORDER BY global_type_id") ]
+        all_rooms = [[z['name'], z['width']*z['depth']] for z in self.s_geom.query("SELECT name, width, depth FROM aamks_geom WHERE type_sec='ROOM' ORDER BY global_type_id") ]
 
         comp = {}
         if is_origin_in_room or not all_corridors_and_halls:
@@ -638,7 +627,7 @@ class DrawAndLog:
     def _locate_in_the_middle(self, fire_room):
         loc = {}
         # locate fire in compartment
-        room = self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_room, ))[0]
+        room = self.s_geom.query("SELECT * FROM aamks_geom WHERE name=?", (fire_room, ))[0]
 
         x=int(room['x0']+room['width']/2.0)
         y=int(room['y0']+room['depth']/2.0)
@@ -659,7 +648,7 @@ class DrawAndLog:
     def _locate_randomly(self, fire_room):
         loc = {}
         # locate fire in compartment
-        room = self.s.query("SELECT * FROM aamks_geom WHERE name=?", (fire_room, ))[0]
+        room = self.s_geom.query("SELECT * FROM aamks_geom WHERE name=?", (fire_room, ))[0]
 
         # draw location (uniform across the compartment)
         dx = uniform(0, room['width'])
@@ -683,8 +672,8 @@ class DrawAndLog:
 
     def _deterministic_fire(self):
         comp, loc = {}, {}
-        fire = self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")[0]
-        room = self.s.query("SELECT floor,name,type_sec,global_type_id,x0,y0,z0 FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?",
+        fire = self.s_geom.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")[0]
+        room = self.s_geom.query("SELECT floor,name,type_sec,global_type_id,x0,y0,z0 FROM aamks_geom WHERE floor=? AND type_pri='COMPA' AND fire_model_ignore!=1 AND x0<=? AND y0<=? AND x1>=? AND y1>=?",
                 (fire['floor'], fire['x0'], fire['y0'], fire['x1'], fire['y1']))[0]
 
         loc['x'], loc['y'], loc['z'] =  [fire['center_x'], fire['center_y'], fire['z0']]
@@ -701,7 +690,7 @@ class DrawAndLog:
         return comp, loc
 
     def _draw_fires(self):# {{{
-        if len(self.s.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")) > 0:
+        if len(self.s_geom.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")) > 0:
             comp, loc = self._deterministic_fire()
             loc['major'] = 1
             self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
@@ -711,7 +700,7 @@ class DrawAndLog:
             loc['major'] = 1
             self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
 
-            comps = self.s.query(f"SELECT adjacents FROM aamks_geom WHERE name='{comp['name']}'")[0]['adjacents']
+            comps = self.s_geom.query(f"SELECT adjacents FROM aamks_geom WHERE name='{comp['name']}'")[0]['adjacents']
             for comp in comps.split(","):
                 comp_name = comp.split(";")[0]
                 loc, comp_type = self._locate_randomly(comp_name)
@@ -781,7 +770,7 @@ class DrawAndLog:
         Fire area is draw from pareto distrubution regarding the BS PD-7974-7.
         There is lack of vent condition - underventilated fires
         '''
-        orig_area = self.s.query(f"SELECT width*depth/10000 AS area FROM aamks_geom WHERE name='{fire_room_name}'")[0]['area']    # [m2]
+        orig_area = self.s_geom.query(f"SELECT width*depth/10000 AS area FROM aamks_geom WHERE name='{fire_room_name}'")[0]['area']    # [m2]
         if self.conf['r_is']!='simple':
             fire_area = orig_area
         else:
@@ -792,7 +781,7 @@ class DrawAndLog:
         return fire_area    #[m2]
 
     def _flashover_q(self, fire_room_name, model='max'):
-        fire_room = self.s.query(f"SELECT width, depth, height FROM aamks_geom WHERE name='{fire_room_name}'")[0]
+        fire_room = self.s_geom.query(f"SELECT width, depth, height FROM aamks_geom WHERE name='{fire_room_name}'")[0]
         a_o = sum([math.prod(o) for o in self._fire_openings])    # because openings dimensions in m
         a_t = (2 * (fire_room['width'] + fire_room['depth']) * fire_room['height']) / 1e4 - a_o    # because dimensions in cm
         h_o = sum([o[1] for o in self._fire_openings])     # because openings dimensions in m
@@ -888,7 +877,7 @@ class DrawAndLog:
         '''
         windows = []
         outdoor_temp = self.sections['INIT']['EXTERIOR_TEMPERATURE']
-        for v in self.s.query("SELECT * FROM aamks_geom WHERE type_tri='WIN' ORDER BY vent_from,vent_to"):
+        for v in self.s_geom.query("SELECT * FROM aamks_geom WHERE type_tri='WIN' ORDER BY vent_from,vent_to"):
             draw_value = uniform(0, 1)
             win = { "TYPE": 'WALL',
                     "ID": v['name'],
@@ -913,8 +902,8 @@ class DrawAndLog:
                         win['PRE_FRACTION'] = 0
                         win['POST_FRACTION'] = 1
                         win['DEVC_ID'] = f"t_{v['name']}"
+                        self._trigger_objects.append(v['name'])
             windows.append(win)
-            self.s.query(f"UPDATE aamks_geom SET how_much_open={how_much_open} WHERE name='{v['name']}'")
 
             if how_much_open and (v['vent_from'] == int(self._fire.f_id[1:]) or v['vent_to'] == int(self._fire.f_id[1:])):
                 self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
@@ -939,7 +928,7 @@ class DrawAndLog:
         else:
             raise ValueError(f'Invalid pre-evacuation time input data - check the form.')
 
-        for v in self.s.query("SELECT type_sec, name, vent_from_name, vent_to_name, vent_from, vent_to, cfast_width, sill, height, width, face_offset, face FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from, vent_to"):
+        for v in self.s_geom.query("SELECT type_sec, name, vent_from_name, vent_to_name, vent_from, vent_to, cfast_width, sill, height, width, face_offset, face FROM aamks_geom WHERE type_tri='DOOR' ORDER BY vent_from, vent_to"):
             vents = self.conf['vents_open']
             v_type = v['type_sec']
             door = { "TYPE": 'WALL',
@@ -969,8 +958,6 @@ class DrawAndLog:
 
             doors.append(door)
 
-            self.s.query(f"UPDATE aamks_geom SET how_much_open={how_much_open} WHERE name='{v['name']}'")
-
             if how_much_open and (v['vent_from'] == int(self._fire.f_id[1:]) or v['vent_to'] == int(self._fire.f_id[1:])):
                 self._fire_openings.append((v['width']/100, v['height']/100, how_much_open))
 
@@ -979,7 +966,7 @@ class DrawAndLog:
     def _draw_vvents_opening(self):# {{{
         self.sections['vvents'] = []
         vents = self.conf['vents_open']['VVENT']
-        for v in self.s.query("SELECT name FROM aamks_geom WHERE type_sec='VVENT' ORDER BY vent_from, vent_to"):
+        for v in self.s_geom.query("SELECT name FROM aamks_geom WHERE type_sec='VVENT' ORDER BY vent_from, vent_to"):
             how_much_open=binomial(1,vents)
             self._psql_log_variable('vvent', how_much_open)
             self.sections['vvents'].append((how_much_open, v['name']))
@@ -1000,7 +987,8 @@ class DrawAndLog:
             self.sections.setdefault('DEVC', []).extend(targets)
     def _draw_window_and_door_targets(self):
         targets = []
-        for v in self.s.query("SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.how_much_open=0 AND (v.type_sec='WIN' OR v.type_sec='DOOR' OR v.type_sec='DELECTR' OR v.type_sec='DCLOSER')"):
+        formatted_triggers = ', '.join([f"'{trigger}'" for trigger in self._trigger_objects])   
+        for v in self.s_geom.query(f"SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.name IN ({formatted_triggers})"):
             z = round((v['height']*0.5)/100, 2)
             if v['type_sec'] == 'STAI':
                 z += v['sill']/100
@@ -1033,7 +1021,7 @@ class DrawAndLog:
 
     def _draw_triggers(self, devc: str):# {{{
         self.sections[devc] = []
-        for v in self.s.query(f"SELECT name from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND {devc}=1"):
+        for v in self.s_geom.query(f"SELECT name from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND {devc}=1"):
             if binomial(1,self.conf[devc]['not_broken']):
                 chosen = max(round(normal(self.conf[devc]['mean'], self.conf[devc]['sd']),2), 0)
                 try:
@@ -1048,7 +1036,7 @@ class DrawAndLog:
 
     def _draw_connections(self):
         conn = []
-        comps = self.s.query(f"SELECT adjacents FROM aamks_geom WHERE name='{self._fire.room}'")[0]['adjacents']
+        comps = self.s_geom.query(f"SELECT adjacents FROM aamks_geom WHERE name='{self._fire.room}'")[0]['adjacents']
         for comp in comps.split(","):
             comp_name, fraction_to, fraction_from = comp.split(";")
             conn.append({'TYPE': 'WALL', #CEILING, FLOOR or WALL

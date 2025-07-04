@@ -63,13 +63,9 @@ class EvacEnv:
         
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
-        new_sql_path = os.path.join(self.general['working_dir'], f"aamks_{self.sim_id}.sqlite")
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-
-        self.dfed = FEDDerivative(self.floor, sqlite=self.s)
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        self.s_geom=Sqlite(scenario_sql_path)
+        self.dfed = FEDDerivative(self.floor, sqlite=self.s_geom)
         self.detection = Detection(self)
 
 
@@ -452,8 +448,6 @@ class EvacEnv:
                         evacuee.set_goal(navmesh_path=evacuee.path[1:])
                     else:
                         evacuee.set_goal(navmesh_path=evacuee.path)
-                except:
-                    evacuee.set_goal(navmesh_path=evacuee.path)
 
 
     def append_agents_to_move_downstairs_or_upstairs(self, evacuee, pedestrian_number):
@@ -534,7 +528,7 @@ class EvacEnv:
         self.nav.build(fire, floor=str(self.floor), wd=working_dir)
 
     def prepare_rooms_list(self):
-        rooms_f = self.s.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
+        rooms_f = self.s_geom.query('SELECT name from aamks_geom where type_pri="COMPA" and floor = "{}"'.format(self.floor))
         for item in rooms_f:
             self.room_list.update({item['name']: 0.0})
 
@@ -689,17 +683,16 @@ class EvacEnv:
             if (self.evacuees.get_finshed_of_pedestrian(e)) == 0:
                 continue
             else:
-                evacuee = self.evacuees.get_pedestrian(e)
                 if evacuee.check_if_agent_reached_outside_door():
                     self.time_last_agent_left_the_floor = self.current_time
                 elif evacuee.has_agent_reached_teleport():
-                    self.append_agents_to_move_downstairs_or_upstairs(evacuee, e)
+                    self.append_agents_to_move_downstairs_or_upstairs(evacuee, i)
                     self.time_last_agent_left_the_floor = self.current_time
                 
 # Total FED growth spatial function (per floor)
 class FEDDerivative:
     def __init__(self, floor: int, sqlite):
-        self.s = sqlite
+        self.s_geom = sqlite
         self.floor = floor
         self.dim = self._find_2dims()
 
@@ -713,7 +706,7 @@ class FEDDerivative:
     # find dimensions of the plane returns list: [[xmin, ymin], [xmax, ymax]]
     def _find_2dims(self):
         dims = []
-        q = self.s.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
+        q = self.s_geom.query(f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{self.floor}' and \
                 (a.name LIKE 'r%' or a.name LIKE 'c%' or a.name LIKE 'a%' or a.name LIKE 's%');")
         def minmax(pts):
             ret = []

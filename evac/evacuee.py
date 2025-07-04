@@ -9,7 +9,7 @@ from evac.exit import CompartmentExit, RoomGoalExit, Teleport, TermianlDoorExit
 class Evacuee:
 
     def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, detection_constituents, detection_compa,
-                 alpha_v, beta_v, node_radius, type, current_floor, reset_behavior_due_to_panic,id) -> None:
+                 alpha_v, beta_v, node_radius, type, current_floor, reset_behavior_due_to_panic, id) -> None:
         """
 
         :type origin: tuple
