@@ -6,16 +6,23 @@ import sys
 import copy
 from pprint import pprint
 from collections import OrderedDict
-from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
+from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon, LinearRing
 from shapely.ops import polygonize
+from shapely.ops import unary_union
+from shapely.ops import triangulate
+
+
 from numpy.random import uniform
 from math import sqrt
+import math
+from pathlib import Path
 
 from evac.polymesh import Polymesh
 from fire.partition_query import PartitionQuery
 from evac.pathfinder.navmesh_baker import NavmeshBaker
 from evac.pathfinder.navmesh import Navmesh as Pynavmesh
 import evac.pathfinder
+import matplotlib.pyplot as plt
 
 from include import Sqlite, Json, DDgeoms, Vis
 from include import Dump as dd
@@ -59,49 +66,280 @@ class Navmesh:
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.vertex_positions = []
         self.polygons_of_the_geometry = []
+        self.sim_id = sim_id
+        self.obj = ""
+        self.wd = None
 # }}}
 
-    def build(self,floor,wd,bypass_rooms=[]):# {{{
+    def build(self,fire,floor,wd,bypass_rooms=[]):# {{{
+
         self.floor=floor
         self.bypass_rooms=bypass_rooms
         self._get_name(bypass_rooms)
         file_obj=self._obj_make(bypass_rooms)
-        self.baker = NavmeshBaker()
-        mesh = self.polymesh.import_obj(file_obj)
-        polygons = self.get_polygons_for_pynavmesh(mesh)
-        self.baker.add_geometry(mesh.vertices, polygons)
-        self.baker.bake()
-        first_navmesh_path = '/'.join([wd, 'pynavmesh'+self.nav_name+'_first'])
-        self.baker.save_to_text(first_navmesh_path)
-        vert, polygs = evac.pathfinder.read_from_text(first_navmesh_path)
-        self.first_navmesh = Pynavmesh(vert, polygs)
-        self.navmesh = Pynavmesh(vert, polygs)
-        # self.test_navmesh()
- 
-    # def test_navmesh(self):
-    #     src = (3243,1643)
-    #     dst = (3243.000062244715, 1643.745674220584)
-
-
-       
-        
-        
-    #     path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
-
-    #     # dst = (3003, 3516)
-    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
-
-    #     # dst = (3172, 1661)
-    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
-
-    #     # dst = (3172, 1713)
-    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
-
-    #     print("sdfsdfsdfsdf")
+        self.wd = wd
+        input_path = Path(wd)
+        scenario_dir = input_path.parents[1]
+        no_fire_navmesh = f"pynavmesh_no_fire{floor}.nav"
+        file_path = scenario_dir / no_fire_navmesh
+        if file_path.exists():
+            self.first_navmesh, self.navmesh = self.modify_navmesh_add_fire_obst(file_path,fire,floor)
+            
+        else:
+            base_dir = input_path.parents[1]
+            self.baker = NavmeshBaker()
+            mesh = self.polymesh.import_obj(self.obj)
+            polygons = self.get_polygons_for_pynavmesh(mesh)
+            self.baker.add_geometry(mesh.vertices, polygons)
+            self.baker.bake()
+            first_navmesh_path = '/'.join([str(scenario_dir), 'pynavmesh_no_fire'+self.nav_name])
+            self.baker.save_to_text(first_navmesh_path)
+            self.first_navmesh, self.navmesh = self.modify_navmesh_add_fire_obst(first_navmesh_path,fire,floor)
 
  
 
 # }}}
+
+    def modify_navmesh_add_fire_obst(self,first_navmesh_path,fire,floor):
+        save_navmesh_path = '/'.join([self.wd, 'pynavmesh'+self.nav_name+'_first'])
+        ############################# comment down for testing
+        if fire['floor'] == floor:
+            fire_center_x = fire['x']/100
+            fire_center_y = fire['y']/100
+            # fire_center_x = 31.7
+            # fire_center_y = 5.9
+            side_length = 2.5 
+            half_side = side_length / 2
+
+            # Tworzenie geometrii kwadratu
+            exclusion_zone = box(fire_center_x - half_side, fire_center_y - half_side, fire_center_x + half_side, fire_center_y + half_side)
+            
+
+            fire_navmesh_filename = self.generate_navmesh_near_fire(fire_center_x,fire_center_y,half_side)
+
+            fire_vertices, fire_indices, fire_elements = self.load_navmesh(fire_navmesh_filename)
+            fire_navmesh_polygons = self.create_polygons(fire_vertices, fire_indices, fire_elements)
+
+            vertices, indices, elements = self.load_navmesh(first_navmesh_path)
+
+            # Tworzenie listy geometrii z siatki
+            polygons = self.create_polygons(vertices, indices, elements)
+
+            # Aktualizacja siatki nawigacyjnej
+            updated_polygons = self.update_navmesh(polygons, exclusion_zone,fire_navmesh_polygons)
+
+            # Konwersja z powrotem na format siatki
+            updated_vertices, updated_indices, updated_elements = self.polygons_to_navmesh(updated_polygons)
+
+            # Zapisanie zmodyfikowanej siatki do pliku
+
+            self.save_navmesh(save_navmesh_path, updated_vertices, updated_indices, updated_elements)
+        else:
+            link_name = os.path.join(self.wd, 'pynavmesh' + self.nav_name + '_first')
+            target_path = first_navmesh_path
+
+            # Tworzenie dowiązania symbolicznego
+            try:
+                os.symlink(target_path, link_name)
+            except FileExistsError:
+                print(f"Dowiązanie {link_name} już istnieje.")
+
+        ############################# comment up for testing
+        vert, polygs = evac.pathfinder.read_from_text(save_navmesh_path)
+
+
+        # save_navmesh_path = '/'.join([self.wd, 'pynavmesh'+self.nav_name+'_first'])
+        # vert, polygs = evac.pathfinder.read_from_text(save_navmesh_path)
+
+
+        self.first_navmesh = Pynavmesh(vert, polygs)
+        self.navmesh = Pynavmesh(vert, polygs)
+
+        return self.first_navmesh, self.navmesh
+
+    def generate_navmesh_near_fire(self, fire_center_x,fire_center_y,half_side):
+        mesh = self.polymesh.import_close_to_fire(self.obj, fire_center_x, fire_center_y,half_side)
+
+        baker = NavmeshBaker()
+
+        polygons = self.get_polygons_for_pynavmesh(mesh)
+        baker.add_geometry(mesh.vertices, polygons)
+        baker.bake()
+        fire_navmesh_filename = '/'.join([self.wd, 'pynavmesh_fire'+self.nav_name])
+        baker.save_to_text(fire_navmesh_filename)
+        return fire_navmesh_filename
+
+    def load_navmesh(self,file_path):
+        with open(file_path, "r") as file:
+            lines = file.readlines()
+        vertices = list(map(float, lines[0].strip().split()))
+        indices = list(map(int, lines[1].strip().split()))
+        elements = list(map(int, lines[2].strip().split()))
+        return vertices, indices, elements
+
+
+    def save_navmesh(self,file_path, vertices, indices, elements):
+        with open(file_path, "w") as file:
+            file.write(" ".join(map(str, vertices)) + "\n")
+            file.write(" ".join(map(str, indices)) + "\n")
+            file.write(" ".join(map(str, elements)))
+
+    # Funkcja do stworzenia listy geometrii z siatki
+    def create_polygons(self,vertices, indices, elements):
+        polygons = []
+        index = 0
+        for num_vertices in elements:
+            polygon_indices = indices[index:index + num_vertices]
+            polygon_vertices = [(vertices[i * 3], vertices[i * 3 + 2]) for i in polygon_indices]
+            polygons.append(Polygon(polygon_vertices))
+            index += num_vertices
+        return polygons
+
+
+    def decompose_to_trapezoids(self,polygon, exclusion_zone):
+        """
+        Dekomponuje polygon na trójkąty, ignorując obszar exclusion_zone.
+        """
+        triangles = []
+
+        if polygon.is_empty:
+            return triangles
+
+        # Obliczamy różnicę: usuwamy exclusion_zone z polygonu
+        difference = polygon.difference(exclusion_zone)
+
+        # Sprawdzamy, czy wynik to wielokąt lub zbiór wielokątów
+        if difference.geom_type == "Polygon":
+            geometries = [difference]
+        elif difference.geom_type == "MultiPolygon":
+            geometries = list(difference.geoms)
+        else:
+            return triangles  # Zwracamy pustą listę, jeśli geometria jest nieobsługiwana
+
+        # Triangulujemy wszystkie części (z wyjątkiem exclusion_zone)
+        for geom in geometries:
+            raw_triangles = triangulate(Polygon(geom, [exclusion_zone]))
+
+            # Dodajemy tylko trójkąty, które są poprawne
+            for tri in raw_triangles:
+                # if tri.is_valid and not tri.is_empty and not tri.intersects(exclusion_zone):
+                if tri.is_valid and not tri.is_empty:
+                    if tri.intersects(exclusion_zone) and not tri.touches(exclusion_zone) and not tri.overlaps(exclusion_zone): 
+                        continue
+                    else:
+                        triangles.append(tri)
+        return triangles
+
+    def update_navmesh(self,polygons, exclusion_zone,fire_navmesh_polygons):
+        updated_polygons = []
+        updated_polygons_zone = []
+        for polygon in polygons:
+            if polygon.intersects(exclusion_zone):
+                difference = polygon.difference(exclusion_zone)
+                # printtt(difference)
+                if not difference.is_empty:
+                    if difference.geom_type == "Polygon":
+                        trapezoids = self.decompose_to_trapezoids(difference,exclusion_zone)
+                        updated_polygons_zone.extend(trapezoids)
+                    elif difference.geom_type == "MultiPolygon":
+                        for sub_polygon in difference.geoms:
+                            trapezoids = self.decompose_to_trapezoids(sub_polygon,exclusion_zone)
+                            updated_polygons_zone.extend(trapezoids)
+            else:
+                updated_polygons.append(polygon)
+
+
+
+
+        for polygon in fire_navmesh_polygons:
+            if polygon.intersects(exclusion_zone):
+                intersection = polygon.intersection(exclusion_zone)
+                if not intersection.is_empty:
+                    if intersection.geom_type == "Polygon":
+                        updated_polygons_zone.append(intersection)
+                    elif intersection.geom_type == "MultiPolygon":
+                        for sub_polygon in intersection.geoms:
+                            updated_polygons_zone.append(sub_polygon)
+        
+
+
+        
+        groups = self.group_adjacent(updated_polygons_zone)
+        merged_regions = []
+        for comp in groups:
+            group_polys = [updated_polygons_zone[i] for i in comp]
+            merged = unary_union(group_polys)
+            merged_regions.append(merged)
+
+
+        for reg in merged_regions:
+            raw_triangles = triangulate(reg)
+            inside_tris = [t for t in raw_triangles if reg.contains(t.centroid)]
+            for tri in inside_tris:
+                updated_polygons.append(tri)
+
+
+
+        return updated_polygons
+
+
+    def group_adjacent(self, polygons):
+        """
+        Wejście: lista obiektów shapely.geometry.Polygon.
+        Wyjście: lista list – każda podlista to indeksy polygonów, które są ze sobą połączone.
+        """
+        n = len(polygons)
+        visited = [False] * n
+        groups = []
+
+        # Funkcja BFS/DFS po „grafie” przyległości
+        def dfs(start_idx):
+            stack = [start_idx]
+            comp = []
+            visited[start_idx] = True
+            while stack:
+                i = stack.pop()
+                comp.append(i)
+                for j in range(n):
+                    if not visited[j] and polygons[i].intersects(polygons[j]):
+                        visited[j] = True
+                        stack.append(j)
+            return comp
+
+        for i in range(n):
+            if not visited[i]:
+                groups.append(dfs(i))
+        return groups
+
+    def polygons_to_navmesh(self, polygons):
+        vertices = []
+        indices = []
+        elements = []
+        vertex_map = {}
+        current_index = 0
+
+        for polygon in polygons:
+            # Pobierz punkty granicy z pominięciem ostatniego duplikatu
+            polygon_vertices = list(polygon.exterior.coords)[:-1]
+
+            # Sprawdź, czy są w kolejności CCW
+            if LinearRing(polygon_vertices).is_ccw:
+                polygon_vertices.reverse()  # Odwróć do CW
+
+            element_indices = []
+
+            for vertex in polygon_vertices:
+                if vertex not in vertex_map:
+                    vertex_map[vertex] = current_index
+                    vertices.extend([vertex[0], 0.0, vertex[1]])  # Format: X, Y=0.0, Z
+                    current_index += 1
+                element_indices.append(vertex_map[vertex])
+
+            indices.extend(element_indices)
+            elements.append(len(element_indices))
+
+        return vertices, indices, elements
+
     def get_polygons_for_pynavmesh(self, mesh):
         index = 0
         polygons = []
@@ -193,11 +431,6 @@ class Navmesh:
                 bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
 
         bricked_wall+=self.json.readdb("obstacles")['obstacles'][self.floor]
-        
-        try:
-            bricked_wall.append(self.json.readdb("obstacles")['fire'][self.floor])
-        except:
-            pass
 
         return bricked_wall
 
@@ -285,6 +518,7 @@ class Navmesh:
         path = f"{self.nav_name}.obj"
         with open(path, "w") as f: 
             f.write(obj)
+        self.obj = obj
         return path
 
 # }}}

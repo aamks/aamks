@@ -6,12 +6,12 @@ import time
 import logging
 import json
 from collections import OrderedDict
-from subprocess import run, TimeoutExpired
 import zipfile
 import pandas as pd
 from io import StringIO
+import shutil
 from evac.pathfinder import read_from_text
-from include import Psql, Sqlite
+from include import Psql, Json, Sqlite
 from evac.pathfinder.navmesh import Navmesh as Pynavmesh
 from results.beck_new import RiskIteration as RI
 from evac.evacuee import Evacuee
@@ -22,6 +22,9 @@ from evac.exit import CompartmentExit, Teleport, TermianlDoorExit, RoomGoalExit
 from evac.compartments import Compartments
 from evac.compartment import Compartment
 from collections import defaultdict, deque
+import socket
+import threading
+import subprocess
 
 
 SIMULATION_TYPE = 1
@@ -45,7 +48,7 @@ class Worker:
 
 
         # for local testing:
-        # os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1020@wp.pl/testtttt/mech3'
+        # os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1020@wp.pl/smalla/smallav2'
 
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
@@ -53,7 +56,7 @@ class Worker:
             self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
 
         # for local testing:
-        # self.working_dir = '/home/aamks_users/majster1020@wp.pl/testtttt/v444v2/workers/1'
+        # self.working_dir = '/home/aamks_users/majster1020@wp.pl/smalla/smallav2/workers/2'
 
         self.project_dir = self.working_dir.split("/workers/")[0]
         self.sim_id = int(self.working_dir.split("/workers/")[1])
@@ -77,6 +80,7 @@ class Worker:
         self.time_shift = None
         self.animation_data = []
         self.smoke_opacity = []
+        self.doors_opening = []
         self.rooms_in_smoke = dict()
         self.position_fed_tables_information = []
         self.rows_to_insert = []
@@ -89,6 +93,14 @@ class Worker:
         self.is_anim = 0
         self.previous_critical_rooms = {}
         self.rsets = []
+        self.connection = None
+        self.server_socket = None
+        self.connection_thread = None
+        self.cfast_door_opening_level = {}
+        self.floor_doors = {}
+        self.working_door_closer_doors = {}
+        self.cfast_chosen_doors_and_holes_names =[]
+
 
 
     def get_logger(self, logger_name):
@@ -146,67 +158,179 @@ class Worker:
         else:
             self.vars['conf']['logger'] = logging.getLogger(f'{self.host_name} - evac.py  ')
 
-    def run_cfast_simulations(self, version='intel', attempt=0):
-        self.send_report(e={"status":102})
-        compa_no = self.s_geom.query("SELECT COUNT(*) from aamks_geom WHERE type_pri='COMPA'")[0]['COUNT(*)']
-        if version == 'intel':
-            cfast_file = 'cfast_775-750-i' if compa_no > 100 else 'cfast_775-100-i'
-        else:
-            cfast_file = 'cfast_775-750' if compa_no > 100 else 'cfast_775-100'
+    def run_cfast_simulations(self):
+        self.send_report(e={"status":101})
         if self.project_conf['fire_model'] == 'CFAST':
-            err = False
+            if os.getcwd() != self.working_dir:
+                os.chdir(self.working_dir)
+            os.system('ln -s /usr/local/aamks/fire/cfast7_linux_64 .')
+            os.system('ln -s /usr/local/aamks/fire/c_socket_handler.so .')
+            command = ["./cfast7_linux_64", "cfast.in", "arg1", "arg2"]
+            subprocess.Popen(command)
+            self.connection_thread.join()
+            #below message is is the first message received from cfastafter cfast_compartemnts.csv already has row t=0s.
+            #it is needed for proper functioning of the self.prepare_simulations() function.
             try:
-                p = run([f"{os.environ['AAMKS_PATH']}/fire/{cfast_file}", "cfast.in"], timeout=600, capture_output=True,
-                        text=True)
-            except TimeoutExpired as e:
-                self.wlogger.error(e)
-                self.send_report(e={"status": 21})
-                err = True
-            else:
-                for line in p.stdout.split('\n'):
-                    if line.startswith("***Error") or err:
-                        err = True
-                        self.wlogger.error(Exception(f'CFAST:{line}'))
-                        if 'essure' in p.stdout:
-                            self.send_report(e={"status": 22})
+                self.connection.recv(1024).decode()  # max 5 min
+            except socket.timeout:
+                raise TimeoutError("Przekroczono limit czasu oczekiwania na dane CFAST socket.")
+            
+    def handle_connection(self, server_socket):
+        # Accept incoming connection
+        self.connection, address = server_socket.accept()
+        self.connection.settimeout(300)
+        print(f"Connection established with {address}")
+
+    def start_socket_server(self):
+        free_port = self.find_free_port()
+        self.save_port(free_port)
+
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+        self.server_socket.bind(('localhost', free_port))
+        self.server_socket.listen(1)
+
+        print("Server is waiting for a connection...")
+
+        self.connection_thread = threading.Thread(target=self.handle_connection, args=(self.server_socket,))
+        self.connection_thread.start()
+
+
+    def find_free_port(self):
+        # creating temporary port
+        temp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        temp_socket.bind(('localhost', 0)) 
+        _, port = temp_socket.getsockname() 
+        temp_socket.close()
+        return port
+
+    def save_port(self, free_port):
+        f = open(self.working_dir +"/cfast_evac_socket_port.txt", "w+")
+        f.write(str(free_port))
+        f.close()
+
+    def is_moving_towards_door(self, evacuee, door):
+        (x1, y1), (x2, y2) = door['door_side_coordinates']
+        ex, ey = evacuee.position
+        vec_to_v1_x = x1 - ex
+        vec_to_v1_y = y1 - ey
+        vec_to_v2_x = x2 - ex
+        vec_to_v2_y = y2 - ey  
+        velocity_vec_x, velocity_vec_y = evacuee.velocity
+        cross1 = vec_to_v1_x * velocity_vec_y - vec_to_v1_y * velocity_vec_x
+        cross2 = vec_to_v2_x * velocity_vec_y - vec_to_v2_y * velocity_vec_x
+        if cross1 * cross2 < 0:
+            return True
+        else:
+            return False
+
+    def is_close_to_door(self, evacuee, door):
+        distance = 120
+
+        difference_in_the_x_axis = door['center_x'] - evacuee.position[0]
+        difference_in_the_y_axis = door['center_y'] - evacuee.position[1]
+
+        squared_distance = difference_in_the_x_axis ** 2 + difference_in_the_y_axis ** 2
+        if squared_distance >= distance ** 2:
+            return False
+        else:
+            return True
+
+    def initialize_doors_opening_level(self):
+        
+        for floor in self.floors:
+            # for door_id, door_postion in self.vars['conf']['internal_doors'][].items():   
+            self.floor_doors[int(floor.floor)] = []
+            self.working_door_closer_doors[int(floor.floor)] = []
+            for door in self.floors[int(floor.floor)].compartments.get_all_floor_doors_initial_open(): 
+                door['agents_id_moving_towards_door'] = []
+                longer_projection = self.get_longer_projection_with_average(door)
+                door['door_side_coordinates'] = longer_projection
+
+                self.floor_doors[int(floor.floor)].append(door)
+                self.cfast_door_opening_level[door['name']] = str(door['how_much_open'])
+
+                if door['how_much_open'] == 0 and not door['name'].startswith('d'):
+                    self.working_door_closer_doors[int(floor.floor)].append(door['name'])
+
+    def get_longer_projection_with_average(self, door):
+
+        min_x, max_x = door['x_min'], door['x_max']
+        min_y, max_y = door['y_min'], door['y_max']
+        x_length = max_x - min_x
+        y_length = max_y - min_y
+        avg_x = (min_x + max_x) /2
+        avg_y = (min_y + max_y) /2
+
+        if x_length >= y_length:
+            return ((min_x, avg_y), (max_x, avg_y))
+        else:
+            return ((avg_x, min_y), (avg_x, max_y))
+
+
+    def get_doors_opening_level_for_cfast_socket(self):
+        doors_opening_level = ""
+        for floor in self.floors:
+            for door in self.floor_doors[int(floor.floor)]:  
+                is_moving_out_of_the_door = False
+                is_moving_towards_door = False
+                for evacuee in floor.evacuees.pedestrians:
+                    if self.is_close_to_door(evacuee, door):
+                        if evacuee.velocity[0] == 0 and evacuee.velocity[1] == 0:
+                            continue
                         else:
-                            self.send_report(e={"status": 20})
+                            if self.is_moving_towards_door(evacuee, door):
+                                is_moving_towards_door = True
+                                door['agents_id_moving_towards_door'].append(evacuee.unique_agent_id_on_different_floors)
+                if not is_moving_towards_door:
+                    if len(door['agents_id_moving_towards_door']) > 0:
+                        door['agents_id_moving_towards_door'] = []
+                        is_moving_out_of_the_door = True
+                if (is_moving_towards_door):
+                    door['how_much_open'] = 1
+                elif(is_moving_out_of_the_door):
+                    # We assume that there is a 100 percent chance
+                    # that someone will left open door behind them
+                    # except doors that have working door closer -
+                    # q and e doors with how_much_open = 0 at the beggining
+                    if door['name'] in self.working_door_closer_doors[int(floor.floor)]:
+                        door['how_much_open'] = 0
+                self.cfast_door_opening_level[door['name']] = str(door['how_much_open'])
 
-            if not err:
-                self.wlogger.info('CFAST simulation calculated with success')
-                self.send_report(e={"status": 103})
-                return True
-            else:
-                if attempt == 1:
-                    self.wlogger.error('CFAST stuck - unable to calculate with Intel nor GNU compiled sources')
-                    self.send_report(e={'status': 21})
-                    raise SystemError(21)
-                self.wlogger.warning(f'Iteration skipped due to CFAST error, attempt = {attempt + 1}')
-                return self.run_cfast_simulations("gnu", attempt + 1)
 
+        for door_id, opening_level in self.cfast_door_opening_level.items():
+            if door_id in self.cfast_chosen_doors_and_holes_names:
+                doors_opening_level += door_id
+                doors_opening_level += '='
+                doors_opening_level += opening_level
+                doors_opening_level += ','
+
+        doors_opening_level = doors_opening_level[:-1]
+
+        return doors_opening_level
 
 
     def _create_evacuees(self, floor: int, floor_numers):
         evacuees_list = []
         self.wlogger.debug('Adding evacuues on floor: {}'.format(floor))
 
-        floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
+        _floor = self.vars['conf']['FLOORS_DATA'][str(floor)]
         leaders_id_list = []
         evacuees_id_list = []
-        for i in floor['EVACUEES'].keys():
-            evacuees_list.append(Evacuee(origin=tuple(floor['EVACUEES'][i]['ORIGIN']), v_speed=floor['EVACUEES'][i]['V_SPEED'],
-                                    h_speed=floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=self.config['DETECTION_TIME'],
-                                    detection_constituents= floor['EVACUEES'][i]['PRE_EVACUATION'],
-                                    detection_compa= floor['EVACUEES'][i]['COMPA'],
-                                    alpha_v=floor['EVACUEES'][i]['ALPHA_V'], beta_v=floor['EVACUEES'][i]['BETA_V'],
+        for i in _floor['EVACUEES'].keys():
+            evacuees_list.append(Evacuee(origin=tuple(_floor['EVACUEES'][i]['ORIGIN']), v_speed=_floor['EVACUEES'][i]['V_SPEED'],
+                                    h_speed=_floor['EVACUEES'][i]['H_SPEED'], pre_evacuation=self.config['DETECTION_TIME'],
+                                    detection_constituents= _floor['EVACUEES'][i]['PRE_EVACUATION'],
+                                    detection_compa= _floor['EVACUEES'][i]['COMPA'],
+                                    alpha_v=_floor['EVACUEES'][i]['ALPHA_V'], beta_v=_floor['EVACUEES'][i]['BETA_V'],
                                     node_radius=self.config['NODE_RADIUS'], 
-                                    type = floor['EVACUEES'][i]['type'], 
+                                    type = _floor['EVACUEES'][i]['type'], 
                                     current_floor = floor,
                                     reset_behavior_due_to_panic = {i: False for i in floor_numers},
                                     id = self.evac_id
                                   ))
             self.evac_id += 1
-            leaders_id_list.append(floor['EVACUEES'][i]['leader_id'])
+            leaders_id_list.append(_floor['EVACUEES'][i]['leader_id'])
             evacuees_id_list.append(i)
             self.wlogger.debug('{} evacuee added'.format(i))
 
@@ -286,14 +410,16 @@ class Worker:
 
         raise Exception("something is wrong with aamks.sqlite geometry, unable to set exit target "+ str(goal_from_door_distance) +"cm behind door")
 
+
+
     def get_floor_compartments(self, floor):
         compartments = []
         all_rooms = self.s_geom.query("SELECT name, floor, points, room_exits_weights from aamks_geom WHERE type_pri = 'COMPA' and floor='"+floor+"'")
         holes = self.s_geom.query("SELECT name, floor, vent_from_name, vent_to_name from aamks_geom WHERE type_sec = 'HOLE' and floor='"+floor+"'")
-        rooms_holes_connection_dict = self.build_connection_dict(holes,all_rooms)
+        self.rooms_holes_connection_dict = self.build_connection_dict(holes,all_rooms)
         for room in all_rooms:
-            room_interior_doors_and_holes = self.s_geom.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name from aamks_geom WHERE (terminal_door IS NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
-            room_outside_doors = self.s_geom.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name from aamks_geom WHERE (terminal_door IS NOT NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
+            room_interior_doors_and_holes = self.s_geom.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, how_much_open from aamks_geom WHERE (terminal_door IS NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
+            room_outside_doors = self.s_geom.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, how_much_open from aamks_geom WHERE (terminal_door IS NOT NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
             points = room['points'].replace('[', '').replace(']', '').split(', ')
             int_points = [int(x) for x in points]
             x_min = min(int_points[0],int_points[2],int_points[4],int_points[6])
@@ -314,7 +440,7 @@ class Worker:
                 door_y_max = max(door_points[1],door_points[3],door_points[5],door_points[7])
                 room_from = room['name']
                 room_to = door['vent_from_name'] if room['name'] == door['vent_to_name'] else door['vent_to_name']
-                compartmentExits.append(CompartmentExit(door['name'],door['center_x'],door['center_y'], x_direction, y_direction, False, door_x_min,door_x_max,door_y_min,door_y_max,room_from,room_to))
+                compartmentExits.append(CompartmentExit(door['name'],door['center_x'],door['center_y'], x_direction, y_direction, False, door_x_min,door_x_max,door_y_min,door_y_max,room_from,room_to,door['how_much_open']))
             
             for door in room_outside_doors:
                 x_direction, y_direction = self._get_outside_door_destination(center_x, center_y, door)
@@ -326,7 +452,7 @@ class Worker:
                 door_y_max = max(door_points[1],door_points[3],door_points[5],door_points[7])
                 room_from = room['name']
                 room_to = door['vent_from_name'] if room['name'] == door['vent_to_name'] else door['vent_to_name']
-                compartmentExits.append(CompartmentExit(door['name'],door['center_x'],door['center_y'], x_direction, y_direction, True,  door_x_min,door_x_max,door_y_min,door_y_max,room_from,room_to))
+                compartmentExits.append(CompartmentExit(door['name'],door['center_x'],door['center_y'], x_direction, y_direction, True,  door_x_min,door_x_max,door_y_min,door_y_max,room_from,room_to,door['how_much_open']))
 
             compartments.append(Compartment(room['name'], room['floor'], x_min, x_max, y_min, y_max, compartmentExits))
 
@@ -341,14 +467,18 @@ class Worker:
                     exit = self.s_geom.query(query)
                     exits_weights_dict_with_names[exit[0]['name']] = exits_weights_dict[exit_id]
                 compartment = _compartments.get_compartment(room['name'])
-                compartment.roomGoalExits = self.get_room_goal_exits(_compartments,room['name'],rooms_holes_connection_dict[room['name']],exits_weights_dict_with_names)
+                compartment.roomGoalExits = self.get_room_goal_exits(_compartments,room['name'],self.rooms_holes_connection_dict[room['name']],exits_weights_dict_with_names)
+
+        with open(self.working_dir + "/" + 'cfast_chosen_compartments_doors_and_holes.txt', 'r') as file:
+            content = file.read()
+            self.cfast_chosen_doors_and_holes_names = [item.strip() for item in content.split(',') if item.strip()]
 
         return _compartments
         
-    def get_room_goal_exits(self, compartments,room_name,rooms_holes_connection_dict,exits_weights_dict):
+    def get_room_goal_exits(self, compartments,room_name,rooms_holes_connection,exits_weights_dict):
         exits_weights_dict_keys = list(exits_weights_dict.keys())
         roomGoalExits = []
-        for comp_name in rooms_holes_connection_dict:
+        for comp_name in rooms_holes_connection:
             comp = compartments.get_compartment(comp_name)
             for comp_exit in comp.compartmentExits:
                 if comp_exit.name in exits_weights_dict_keys:
@@ -397,14 +527,17 @@ class Worker:
 
     def get_terminal_door_exits(self, floor):
         terminal_door_exits = []
-        outside_building_doors = self.s_geom.query("SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight from aamks_geom WHERE terminal_door IS NOT NULL and floor='"+floor+"'")
+        outside_building_doors = self.s_geom.query("SELECT floor, name, center_x, center_y, width, depth, vent_from_name, vent_to_name, terminal_door, exit_weight,x0,x1,y0,y1 from aamks_geom WHERE terminal_door IS NOT NULL and floor='"+floor+"'")
 
         for door in outside_building_doors:
             room_before_exit_center = self.s_geom.query('SELECT points from aamks_geom WHERE name=? or name=?', (door['vent_to_name'],door['vent_from_name']))
             source_compartment = door['vent_to_name'] if door['vent_to_name']!='OUTSIDE' else door['vent_from_name']
             center_x, center_y = self.get_center_from_points(room_before_exit_center[0]['points'])
             x_direction, y_direction = self._get_outside_door_destination(center_x, center_y, door)
-
+            x_min = min(door['x0'], door['x1'])
+            x_max = max(door['x0'], door['x1'])
+            y_min = min(door['y0'], door['y1'])
+            y_max = max(door['y0'], door['y1'])
             if door['exit_weight'] is not None:
                 if door['exit_weight'] == '0':
                     general_exit_weight = float("inf")
@@ -412,7 +545,7 @@ class Worker:
                     general_exit_weight = self.max_exit_weight/int(door['exit_weight'])
             else:
                 general_exit_weight = 1
-            terminal_door_exits.append(TermianlDoorExit(door['name'],floor, door['center_x'],door['center_y'], x_direction,y_direction, general_exit_weight))
+            terminal_door_exits.append(TermianlDoorExit(door['name'],floor, door['center_x'],door['center_y'], x_direction,y_direction, general_exit_weight,x_min, x_max, y_min, y_max))
            
         return terminal_door_exits
 
@@ -444,6 +577,7 @@ class Worker:
             teleports.append(Teleport(teleport['name'],floor, x, y, x_direction,y_direction,teleport['stair_direction'],general_exit_weight))
         
         return teleports
+        
 
     def prepare_simulations(self):
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
@@ -453,13 +587,12 @@ class Worker:
             eenv = None
             obstacles = []
             try:
-                self.prepare_staircases(floor)
+                self.prepare_staircases(str(floor))
                 self.vars['conf']['working_dir'] = self.working_dir
                 compartments = self.get_floor_compartments(floor)
                 terminal_door_exits = self.get_terminal_door_exits(floor)
                 teleports = self.get_teleports(floor)
                 eenv = EvacEnv(self.vars['conf'], floor, compartments,terminal_door_exits,teleports, self.sim_id)
-
             except Exception as e:
                 self.wlogger.error(e)
                 self.send_report(e={"status":31})
@@ -468,7 +601,7 @@ class Worker:
                 self.wlogger.info('rvo2_dto ready on {} floors'.format(floor))
 
             # CO-ORDINATES OF OBST MUST BE IN COUNTER-CLOCKWISE DIRECTION FOR THE RVO2 ALGORITHM TO WORK PROPERLY
-            for obst in self.obstacles['obstacles'][floor]:
+            for obst in self.obstacles['obstacles'][str(floor)]:
                 x_min = min(i[0] for i in obst)
                 x_max = max(i[0] for i in obst)
                 y_min = min(i[1] for i in obst)
@@ -484,7 +617,9 @@ class Worker:
 
             eenv.obstacle = obstacles
             num_of_vertices = eenv.process_obstacle(obstacles)
-            eenv.generate_nav_mesh(self.working_dir)
+            query = self.s.query("SELECT * from fire_origin WHERE sim_id ==" + str(self.sim_id))
+            fire=query[0]
+            eenv.generate_nav_mesh(self.working_dir,fire)
             self.wlogger.debug('Added obstacles on floor: {}, number of vercites: {}'.format(1, num_of_vertices))
 
             e = self._create_evacuees(floor,floor_numers)
@@ -564,16 +699,17 @@ class Worker:
         self.wlogger.info('Starting simulations')
         cfast_step = self.config['SMOKE_QUERY_RESOLUTION']
         aevac_step = self.config['TIME_STEP']
-        time_frame = 0
-
-        #first_evacuue = []
-        # iterate over CFAST time frames (results saving interval)
-
+        time_frame = 0 - cfast_step
+        cfast_socket_step = 0
+        # os.makedirs(self.working_dir + "/door_opening_changes", exist_ok=True)
+        self.initialize_doors_opening_level()
+        floor_det = None
+        break_outer = False
         aset = self.vars['conf']['simulation_time']
         while 1:
             time_frame += cfast_step    # increase upper limit of time_frame
 
-            if time_frame >= (self.vars['conf']['simulation_time']):
+            if time_frame == (self.vars['conf']['simulation_time']):
                 self.wlogger.info('Simulation ends due to user time limit: {}'.format(self.vars['conf']['simulation_time']))
                 self.simulation_time = time_frame
                 self.time_shift = 0
@@ -585,26 +721,41 @@ class Worker:
                 for i in self.floors:
                     try:
                         i.read_cfast_record(time_frame)
-                        floor_det = i.detection.update()    # floor_det is checked for ALL compartments (all floors)
+                        floor_det = i.detection.update()  # floor_det is checked for ALL compartments (all floors)
+                        # with open(self.working_dir + "/debug_control.txt", "a+") as f:
+                        #     f.seek(0)  # wróć na początek, żeby móc przeczytać zawartość
+                        #     if f.read().strip() == "stop":
+                        #         print("Debug: kończę program.")
+                        #         break_outer = True
+                        #         break
                     except IndexError:
                         self.wlogger.error(f'Unable to read CFAST results at {time_frame} s')
                         self.send_report(e={"status":23})
                         raise IndexError(f'Unable to read CFAST results at {time_frame} s')
-                    #first_evacuue.append(i.evacuees.get_first_evacuees_time())
                 if floor_det:
                     self.detection_time = min(self.detection_time, floor_det)
 
+                if break_outer:
+                    break
                 # iterate with AEvac time step over CFAST time_frame
-                for step_no in range(0, int(cfast_step / aevac_step)):
+                steps = int(cfast_step / aevac_step)
+                for step_no in range(0, steps):
                     time_row = dict()
                     smoke_row = dict()
                     # do single AEvac step on all floors
                     for i in self.floors:
                         if i.do_simulation(step_no) and aset > i.current_time:
                             aset = i.current_time
+
                     # move agents downstairs and upstairs
                     self.process_agents_queuing_when_moving_downstairs_and_upstairs() 
                     self.process_agents_upstairs_and_downstairs_movement(step_no, time_frame)
+
+                    #socket handle
+                    if (step_no % (steps/cfast_step)) == 0:
+                        cfast_socket_step +=1
+                        self.cfast_socket_communication_handle(cfast_socket_step)
+
                     # prepare visualization on all floors
                     if (step_no % self.config['VISUALIZATION_RESOLUTION']) == 0:
                         for i in self.floors:
@@ -614,7 +765,9 @@ class Worker:
                             smoke_row.update({str(i.floor): i.update_room_opacity()})
                         self.animation_data.append(time_row)
                         self.smoke_opacity.append(smoke_row)
+                        self.doors_opening.append(self.get_door_opening_level_for_vis())
                         self.change_pynavmesh_due_to_smoke()
+
                 # determine smoke on all floors
                 for i in self.floors:
                     self.rooms_in_smoke.update({i.floor: i.rooms_in_smoke})
@@ -633,12 +786,53 @@ class Worker:
                 self.wlogger.error(f'There was no data found at {time_frame} s in CFAST results.')
                 self.send_report(e={"status":33})
                 raise IndexError(f'There was no data found at {time_frame} s in CFAST results.')
+            
 
+        self.server_socket.close()  
         # gather results of the whole simulation (multisimulation iteration)
         self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
         self.cross_building_results['dcbe'] = aset
         self.wlogger.info('Final results gathered')
         self.wlogger.debug('Final results gathered: {}'.format(self.cross_building_results))
+
+
+    def cfast_socket_communication_handle(self, cfast_socket_step):
+        # socket with cfast handler
+        doors_opening_level = self.get_doors_opening_level_for_cfast_socket()
+        # for i in self.floors:
+        #     # for door_id, door_postion in self.vars['conf']['internal_doors'][int(i.floor)].items():
+        #     for door in self.floor_doors[int(i.floor)]:
+        #         with open(self.working_dir + "/door_opening_changes/" + door['name'] +".txt", 'a') as plik:
+        #             # add door opening changes to door txt files
+        #             if cfast_socket_step == 1:
+        #                 plik.write("X,")
+        #                 plik.write(self.cfast_door_opening_level[door['name']] +",")
+        #             elif cfast_socket_step == (self.vars['conf']['simulation_time']):
+        #                 return
+        #             elif cfast_socket_step == (self.vars['conf']['simulation_time']-1):
+        #                 plik.write(self.cfast_door_opening_level[door['name']])
+        #             else:
+        #                 plik.write(self.cfast_door_opening_level[door['name']] +",")
+
+        f2 = open(self.working_dir +"/doors_opening_level_frame.txt", "w+")
+        f2.write(doors_opening_level)
+        f2.close()
+        message = "ok"
+        self.connection.send(message.encode())
+        try:
+            self.connection.recv(1024).decode()  # max 5 min
+        except socket.timeout:
+            raise TimeoutError("Przekroczono limit czasu oczekiwania na dane CFAST socket.")
+
+    def get_door_opening_level_for_vis(self):
+        door_opening_level_result_dict = {}
+        for floor in self.floors:
+            door_opening_level_result_dict[int(floor.floor)]={}
+            # for door_id, door_postion in self.vars['conf']['internal_doors'][int(floor.floor)].items():   
+            for door in self.floor_doors[int(floor.floor)]:
+                door_opening_level_result_dict[int(floor.floor)][door['name']]=self.cfast_door_opening_level[door['name']]
+        return door_opening_level_result_dict
+
 
     def has_everyone_left_the_building(self):
         for i in self.floors:
@@ -808,14 +1002,13 @@ class Worker:
         if len(agents_to_move) == 0:
             for floor_num in range(len(self.floors)):
                 self.floors[floor_num].agents_to_move_downstairs_or_upstairs = []
-                if (step % self.config['VISUALIZATION_RESOLUTION']) == 1:
-                    self.floors[floor_num].delete_agents_from_floor()
             return
             
         for floor_num in range(len(self.floors)):
             agents_who_leave_current_floor_indexes = [agent[3] for agent in agents_to_move if agent[0] == floor_num]
             if agents_who_leave_current_floor_indexes:
-                self.floors[floor_num].partly_delete_agents_from_floor(agents_who_leave_current_floor_indexes)
+                self.floors[floor_num].delete_agents_from_floor(agents_who_leave_current_floor_indexes)
+
         for floor_num in range(len(self.floors)):
             agents_who_come_to_current_floor = [agent[2] for agent in agents_to_move if agent[1] == floor_num]
             self.floors[floor_num].agents_to_move_downstairs_or_upstairs = []
@@ -825,7 +1018,7 @@ class Worker:
             agent = agent_to_move[2]
             agent.finished = 1
             agent.exit = None
-            agent.current_floor = agent_to_move[1]
+            agent.current_floor = str(agent_to_move[1])
             agent.exits_path = None
             agent.path=None
 
@@ -876,7 +1069,7 @@ class Worker:
                 report['animation'] = "{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id)
                 report['floor'] = num_floor
             # for testing evac:
-            # report['psql']['i_risk'] = '{"individual": 0.0006992812876860072, "pdf_fn": [0.9219088937093267, 0.07592190889370916, 0.001807664497469268, 0.0003615328994938538, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "fn_curve": [0.999999999999999, 0.07809110629067229, 0.002169197396963122, 0.0003615328994938538, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "societal": 0.08237549379229014, "awr": 0.08321447323463486, "sri": 4.992868394078092}'
+            #report['psql']['i_risk'] = '{"individual": 0.0006992812876860072, "pdf_fn": [0.9219088937093267, 0.07592190889370916, 0.001807664497469268, 0.0003615328994938538, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "fn_curve": [0.999999999999999, 0.07809110629067229, 0.002169197396963122, 0.0003615328994938538, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "societal": 0.08237549379229014, "awr": 0.08321447323463486, "sri": 4.992868394078092}'
             report['psql']['i_risk'] = RI(report['psql']['fed'], calculate=True).export()
             report['psql']['detection'] = int(self.detection_time)
             report['psql']['status'] = 0
@@ -913,7 +1106,7 @@ class Worker:
                         'animations': {
                             'evacuees': mapped_anim,
                             'rooms_opacity': smoke_data,
-                            'doors': None
+                            'doors': self.doors_opening
                         }
                         }
         zf = zipfile.ZipFile("{}_{}_{}_anim.zip".format(self.vars['conf']['project_id'], self.vars['conf']['scenario_id'], self.sim_id), mode='w', compression=zipfile.ZIP_DEFLATED)
@@ -985,18 +1178,20 @@ class Worker:
 
     def main(self):
         self.get_config()
-        self.send_report(e={"status":101})
-        if self.run_cfast_simulations():
-            self.prepare_simulations()
-            self.connect_rvo2_with_smoke_query()
-            self.do_simulation()
-            self.send_report()
-            self.cleanup()
-            self.wlogger.info(f'Simulation ended with status {self.exit_code}')
+        self.send_report(e={"status":100})
+        self.start_socket_server()
+        self.prepare_simulations()
+        self.run_cfast_simulations()
+        self.connect_rvo2_with_smoke_query()
+        self.do_simulation()
+        self.send_report()
+        self.cleanup()
+        self.wlogger.info(f'Simulation ended with status {self.exit_code}')
         return self.exit_code
 
     def test(self):
         self.get_config()
+        self.start_socket_server()
         self.prepare_simulations()
         self.connect_rvo2_with_smoke_query()
         self.do_simulation()

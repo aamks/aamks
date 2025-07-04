@@ -13,8 +13,9 @@ class CompartmentExit:
     x_max: int 
     y_min: int
     y_max: int
+    how_much_open_beginning: int
 
-    def __init__(self, name: str, x: int, y: int, x_direction: int, y_direction: int, leads_outside: bool, x_min: int, x_max:int, y_min:int, y_max:int, comp_from: str, comp_to: str):
+    def __init__(self, name: str, x: int, y: int, x_direction: int, y_direction: int, leads_outside: bool, x_min: int, x_max:int, y_min:int, y_max:int, comp_from: str, comp_to: str, how_much_open_beginning: int):
         self.name = name
         self.x = x
         self.y = y
@@ -31,6 +32,7 @@ class CompartmentExit:
         self.y_max = y_max
         self.comp_from = comp_from
         self.comp_to = comp_to
+        self.how_much_open_beginning = how_much_open_beginning
 
     def is_terminal(self):
         if self.leads_outside == True:
@@ -112,6 +114,10 @@ class TermianlDoorExit:
     floor: int
     x: int
     y: int
+    x_min: int
+    x_max: int 
+    y_min: int
+    y_max: int
     x_direction: int
     y_direction: int
     general_exit_weight: int
@@ -119,7 +125,7 @@ class TermianlDoorExit:
 
 
     def __init__(self, name: str, floor: int, x: int, y: int, x_direction: int, y_direction: int,
-                 general_exit_weight: int):
+                 general_exit_weight: int, x_min: int, x_max:int, y_min:int, y_max:int):
         self.name = name
         self.floor = floor
         self.x = x
@@ -128,7 +134,11 @@ class TermianlDoorExit:
         self.x_direction = x_direction
         self.y_direction = y_direction
         self.general_exit_weight = general_exit_weight
-
+        # door rectangle coordinates:
+        self.x_min = x_min
+        self.x_max = x_max
+        self.y_min = y_min
+        self.y_max = y_max
 
     def is_terminal(self):
         return True

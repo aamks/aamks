@@ -33,7 +33,10 @@ class Obstacle:
     def set_unit_dir(self, point_01: Tuple[float, float], point_02: Tuple[float, float]):
         v = (point_01[0] - point_02[0], point_01[1] - point_02[1])
         l = math.sqrt(v[0]**2 + v[1]**2)
-        self._unit_dir = (v[0] / l, v[1] / l)
+        if l == 0:
+            self._unit_dir = (v[0], v[1]) 
+        else:
+            self._unit_dir = (v[0] / l, v[1] / l)
 
     def set_unit_dir_value(self, unit_dir: Tuple[float, float]):
         self._unit_dir = unit_dir

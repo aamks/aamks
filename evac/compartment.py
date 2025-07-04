@@ -31,5 +31,9 @@ class Compartment:
         self.y_max = y_max
         self.compartmentExits = compartmentExits
         self.roomGoalExits = roomGoalExits
-
     
+    def check_if_exit_is_adjacent_to_the_room(self, exit_name):
+        for exit in self.compartmentExits:
+            if exit.name == exit_name:
+                return True
+        return False

@@ -857,7 +857,7 @@ function checkNegativeCords(){
 
 function holeOnExternalWall(){
 	if (cg.letter == 'z'){
-		var external = IsHoleExternal(cg);
+		var external = IsExternal(cg);
 		if (external){
 			amsg({'err':2, 'msg':"You drew a hole in the outside wall. You can't do that. The holes are used to connect compartments. In the external wall you can draw normal door, windows, mechanical or normal vents."}); 
 		}
@@ -889,7 +889,7 @@ function getRoomTypeApainterObjects(){
 
 }
 
-function IsHoleExternal(geometry){
+function IsExternal(geometry){
 
 	const [r1, r2] = getConnectedZones(geometry);
 
@@ -1426,6 +1426,9 @@ function cgMake(floor,letter,record) { //{{{
 }
 //}}}
 function ajaxSaveCadJson(json_data) { //{{{
+	if(!isGeometryCorrect()){
+		return;
+	}
 	$.post('/aamks/ajax.php?ajaxApainterExport', { 'data': json_data }, function (json) { 
 		amsg(json); 
 		importCadJson();
@@ -1485,6 +1488,24 @@ function legend() { //{{{
 
 }
 //}}}
+function anyWindowOnInteriorWall(){
+	// hole
+	var letter = 'w';
+	var floor_windows;
+	for(var floor=0; floor<floorsCount; floor++) { 
+		floor_windows = [];
+		_.each(db({"floor": floor, "letter": letter}).get(), function(m) {
+			floor_windows.push(m);
+		});
+
+		for (let i = 0; i < floor_windows.length; i++) {
+    		if (!IsExternal(floor_windows[i]))
+    			return true;
+		}
+	}
+	return false;
+}
+
 function anyholeOnExternalWall(){
 	// hole
 	var letter = 'z';
@@ -1496,7 +1517,7 @@ function anyholeOnExternalWall(){
 		});
 
 		for (let i = 0; i < floor_holes.length; i++) {
-    		if (IsHoleExternal(floor_holes[i]))
+    		if (IsExternal(floor_holes[i]))
     			return true;
 		}
 	}
@@ -1504,18 +1525,41 @@ function anyholeOnExternalWall(){
 }
 
 function wrongTeleportLocation(){
-	// hole
+
 	var teleport_down_letter = "kd";
 	var teleport_up_letter = "ku";
 
 	var teleports_down = [];
 	var teleports_up = [];
-	var compartments = [];
-	var obsts = [];
-	var upper_floor;
-	var lower_floor;
+	var compartments = {};
+	var obsts = {};
 	var vroom;
 	var teleports_to_return = []
+	var teleport_floor;
+
+	for(var floor=0; floor<floorsCount; floor++) { 
+		compartments[floor] = [];
+		obsts[floor] = [];
+
+		_.each(db({"type": "room", "floor": floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			compartments[floor].push(m);
+		});	
+
+		// also consider virtual compartments
+		for (let key in virtual_obj_parents) {
+			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
+				if(virtual_obj_parents[key][i][2] == floor){
+					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
+					compartments[floor].push(vroom[0]);
+					
+				}
+			}
+		}
+		_.each(db({"type": "obst", "floor": floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			obsts[floor].push(m);
+		});	
+
+	}
 
 	_.each(db({"letter": teleport_up_letter}).select("floor","teleport_from","teleport_to","name"), function(m) {
 		teleports_up.push([m[0],m[2],m[3],m[1]]);
@@ -1527,55 +1571,22 @@ function wrongTeleportLocation(){
 	if (teleports_down.length > 0)
 	{
 
-		upper_floor = teleports_down[0][0];
-		lower_floor = teleports_down[0][0] - 1;
-
-		// upper floor validation
-		_.each(db({"type": "room", "floor": upper_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
-			compartments.push(m);
-		});	
-
-		// also consider virtual compartments
-		for (let key in virtual_obj_parents) {
-			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
-				if(virtual_obj_parents[key][i][2] == upper_floor){
-					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
-					compartments.push(vroom);
-				}
-			}
-		}
-		_.each(db({"type": "obst", "floor": upper_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
-			obsts.push(m);
-		});	
-
+		
 		for (let i = 0; i < teleports_down.length; i++) {
-			if (checkIfPointIsInAnyMargin(teleports_down[i][1],compartments,obsts))
+			teleport_floor = teleports_down[i][0];
+			if (checkIfPointIsInAnyMargin(teleports_down[i][1],compartments[teleport_floor],obsts[teleport_floor]))
 				teleports_to_return.push(teleports_down[i][3]);
 		}
-		compartments = [];
-	    obsts = [];
 
-	    // lower floor validation
 
-		_.each(db({"type": "room", "floor": lower_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
-			compartments.push(m);
-		});	
-
-		// also consider virtual compartments
-		for (let key in virtual_obj_parents) {
-			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
-				if(virtual_obj_parents[key][i][2] == lower_floor){
-					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
-					compartments.push(vroom);
-				}
-			}
-		}
-		_.each(db({"type": "obst", "floor": lower_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
-			obsts.push(m);
-		});	
 
 		for (let i = 0; i < teleports_down.length; i++) {
-			if (checkIfPointIsInAnyMargin(teleports_down[i][2],compartments,obsts))
+			teleport_floor = teleports_down[i][0];
+			if (typeof compartments[teleport_floor-1] === "undefined" && typeof obsts[teleport_floor-1] === "undefined") {
+				//there is no floor below
+				teleports_to_return.push(teleports_down[i][3]);
+			}
+			else if (checkIfPointIsInAnyMargin(teleports_down[i][2],compartments[teleport_floor-1],obsts[teleport_floor-1]))
 				teleports_to_return.push(teleports_down[i][3]);
 		}
 	}
@@ -1585,55 +1596,20 @@ function wrongTeleportLocation(){
 	if (teleports_up.length > 0)
 	{
 
-		upper_floor = teleports_up[0][0] +1;
-		lower_floor = teleports_up[0][0];
-		compartments = [];
-	    obsts = [];
-		// upper floor validation
-		_.each(db({"type": "room", "floor": upper_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
-			compartments.push(m);
-		});	
-
-		// also consider virtual compartments
-		for (let key in virtual_obj_parents) {
-			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
-				if(virtual_obj_parents[key][i][2] == upper_floor){
-					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
-					compartments.push(vroom[0]);
-				}
-			}
-		}
-		_.each(db({"type": "obst", "floor": upper_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
-			obsts.push(m);
-		});	
 
 		for (let i = 0; i < teleports_up.length; i++) {
-			if (checkIfPointIsInAnyMargin(teleports_up[i][2],compartments,obsts))
+			teleport_floor = teleports_up[i][0];
+			if (checkIfPointIsInAnyMargin(teleports_up[i][1],compartments[teleport_floor],obsts[teleport_floor]))
 				teleports_to_return.push(teleports_up[i][3]);
 		}
 
-	    // lower floor validation
-		compartments = [];
-	    obsts = [];
-		_.each(db({"type": "room", "floor": lower_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
-			compartments.push(m);
-		});	
-
-		// also consider virtual compartments
-		for (let key in virtual_obj_parents) {
-			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
-				if(virtual_obj_parents[key][i][2] == lower_floor){
-					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
-					compartments.push(vroom[0]);
-				}
-			}
-		}
-		_.each(db({"type": "obst", "floor": lower_floor}).select("minx","miny", "maxx", "maxy"), function(m) {
-			obsts.push(m);
-		});	
-
 		for (let i = 0; i < teleports_up.length; i++) {
-			if (checkIfPointIsInAnyMargin(teleports_up[i][1],compartments,obsts))
+			teleport_floor = teleports_up[i][0];
+			if (typeof compartments[teleport_floor+1] === "undefined" && typeof obsts[teleport_floor+1] === "undefined") {
+				//there is no up floor
+				teleports_to_return.push(teleports_up[i][3]);
+			}
+			else if (checkIfPointIsInAnyMargin(teleports_up[i][2],compartments[teleport_floor+1],obsts[teleport_floor+1]))
 				teleports_to_return.push(teleports_up[i][3]);
 		}
 	}
@@ -1656,15 +1632,18 @@ function checkIfPointIsInAnyMargin(point, compartments,obsts){
 
 
 	// check obsts margins
-	for (let i = 0; i < obsts.length; i++) {
-		xmin = Math.min(obsts[i][0], obsts[i][2]);
-		xmax = Math.max(obsts[i][0], obsts[i][2]);
-		ymin = Math.min(obsts[i][1], obsts[i][3]); 
-		ymax = Math.max(obsts[i][1], obsts[i][3]); 
-		if ((point[0] >= (xmin - obstAndCompartmentMarginWidth)) && (point[0] <= (xmax + obstAndCompartmentMarginWidth))
-			&& (point[1] >= (ymin - obstAndCompartmentMarginWidth)) && (point[1] <= (ymax + obstAndCompartmentMarginWidth)) )
-			return true;
+	if (typeof obsts !== "undefined"){
+		for (let i = 0; i < obsts.length; i++) {
+			xmin = Math.min(obsts[i][0], obsts[i][2]);
+			xmax = Math.max(obsts[i][0], obsts[i][2]);
+			ymin = Math.min(obsts[i][1], obsts[i][3]); 
+			ymax = Math.max(obsts[i][1], obsts[i][3]); 
+			if ((point[0] >= (xmin - obstAndCompartmentMarginWidth)) && (point[0] <= (xmax + obstAndCompartmentMarginWidth))
+				&& (point[1] >= (ymin - obstAndCompartmentMarginWidth)) && (point[1] <= (ymax + obstAndCompartmentMarginWidth)) )
+				return true;
+		}
 	}
+	
 
 	// check compartments margins
 
@@ -1715,6 +1694,12 @@ function isGeometryCorrect(){
 		amsg({'err':2, 'msg':msg}); 
 		return false;
 	}
+	if(anyWindowOnInteriorWall()){
+		amsg({'err':2, 'msg':`There is a window in the interior wall. You can't do that. 
+			Windows can only be located on the external wall`}); 
+		return false;
+	}
+
 
 	return true;
 }
@@ -1723,9 +1708,7 @@ function db2cadjson() {//{{{
 	cgEscapeCreate();
 	verifyIntersections();
 	dbUpdateCadJsonStr();
-	if(!isGeometryCorrect()){
-		return;
-	}
+
 	cadjson={};
 
 	for(var floor=0; floor<floorsCount; floor++) { 
@@ -2292,10 +2275,12 @@ function getFloorExits(){
 	getRoomsAndAdjecentDoorsAndHoles(doors_and_holes, room_types_objects, holes);
 
 }
+
+
 function validateRightBoxXY(input){
 	let value = parseInt(input.value);
 	if (input.id == 'alter-x-min'){
-    	let alter_x_max = parseInt(document.getElementById("alter-x-max").value);
+		let alter_x_max = parseInt(document.getElementById("alter-x-max").value);
 		if (value < 0) {
 			input.value = 0;
 		}
@@ -2305,7 +2290,7 @@ function validateRightBoxXY(input){
 		document.getElementById("alter-width").innerHTML = alter_x_max-input.value;
 	}
 	else if (input.id == 'alter-x-max'){
-    	let alter_x_min = parseInt(document.getElementById("alter-x-min").value);
+		let alter_x_min = parseInt(document.getElementById("alter-x-min").value);
 		if (value < 0) {
 			input.value = 0;
 		}
@@ -2315,7 +2300,7 @@ function validateRightBoxXY(input){
 		document.getElementById("alter-width").innerHTML = input.value-alter_x_min;
 	}
 	else if (input.id == 'alter-y-min'){
-    	let alter_y_max = parseInt(document.getElementById("alter-y-max").value);
+		let alter_y_max = parseInt(document.getElementById("alter-y-max").value);
 		if (value < 0) {
 			input.value = 0;
 		}
@@ -2325,7 +2310,7 @@ function validateRightBoxXY(input){
 		document.getElementById("alter-length").innerHTML = alter_y_max-input.value;
 	}
 	else if (input.id == 'alter-y-max'){
-    	let alter_y_min = parseInt(document.getElementById("alter-y-min").value);
+		let alter_y_min = parseInt(document.getElementById("alter-y-min").value);
 		if (value < 0) {
 			input.value = 0;
 		}
@@ -2336,6 +2321,7 @@ function validateRightBoxXY(input){
 	}
 	saveRightBoxCgProps();
 }
+
 function validateRightBoxInput(input) {
     let value = parseInt(input.value);
     var limitedZObj = ['r', 'c', 'd', 'z', 'w', 'q', 'e', 't'];

@@ -420,6 +420,8 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('new_fire')."<td><select id='new_fire' name=post[new_fire][criterion]><option value='$new_fire[criterion]'>$new_fire[criterion]</option>
 	<option value='TEMPERATURE'>TEMPERATURE</option><option value='FLUX'>FLUX</option></select>
 	<input autocomplete=off type=text automplete=off size=8 name=post[new_fire][setpoint] value='$new_fire[setpoint]'>"; 
+	echo "<tr><td>".get_help('cfast_rooms')."<td><input autocomplete=off type=text automplete=off size=10 id='cfast_rooms' name=post[cfast_rooms] value='$cfast_rooms'>"; 
+
 
     echo "<tr><td>&nbsp;</td></tr><tr><th><strong>EVACUATION SUB-MODEL</strong></th>";
 	echo "<tr><td>".get_help('dispatch_evacuees')."<td>".droplist_dipatch_evacuees($dispatch_evacuees); 
