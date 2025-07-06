@@ -60,6 +60,8 @@ class CfastMcarlo():
         self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
         scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
         self.s_geom=Sqlite(scenario_sql_path)
+        sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", f"aamks_{self._sim_id}.sqlite")
+        self.s=Sqlite(sim_sql_path)
         self._draw()
         self.cfast_rooms_choice = CFASTRoomsChoice(self.conf['cfast_rooms'],sim_id)
         self.cfast_choice_compartments_ids = []
@@ -138,8 +140,10 @@ class CfastMcarlo():
     def _make_cfast(self):# {{{
         ''' Compose cfast.in sections '''
         room_in_fire_name = self.s.query("SELECT name FROM fire_origin WHERE sim_id="+str(self._sim_id))[0]['name']
-        room_in_fire_id = self.s.query("SELECT global_type_id FROM aamks_geom WHERE name = '"+room_in_fire_name+"'")[0]['global_type_id']
+        room_in_fire_id = self.s_geom.query("SELECT global_type_id FROM aamks_geom WHERE name = '"+room_in_fire_name+"'")[0]['global_type_id']
         self.cfast_choice_compartments_ids = [item[0] for item in self.cfast_rooms_choice.get_closest_rooms(room_in_fire_id)]
+        self.s.query("CREATE TABLE IF NOT EXISTS cfast_close_compartments(compartments)")
+        self.s.query('INSERT INTO cfast_close_compartments VALUES (?)', [",".join(map(str, self.cfast_choice_compartments_ids))])
         txt=(
             self._section_preamble(),
             self._section_matl(),
