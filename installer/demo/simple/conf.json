@@ -226,5 +226,6 @@
         "criterion": "TEMPERATURE",
         "setpoint": 200
     },
-    "leader_following": 1
+    "leader_following": 1,
+    "cfast_rooms": 30
 }

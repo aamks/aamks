@@ -60,10 +60,11 @@ class CFASTRoomsChoice:
         # room_in_fire = self.s.query(f"SELECT x0 as x, y0 as y, z0 as z, width as length, depth as width, height FROM aamks_geom WHERE name='{room_in_fire_name}'")[0]
 
         # Lista wszystkich pomieszczeń
-        for room in self.s.query("SELECT global_type_id,floor, x0, y0, z0, width, depth, height FROM aamks_geom WHERE type_pri='COMPA' and fire_model_ignore=0"):
+        for room in self.s.query("SELECT global_type_id, name, floor, x0, y0, z0, width, depth, height FROM aamks_geom WHERE type_pri='COMPA' and fire_model_ignore=0"):
             self.rooms.append({
                 'floor':room['floor'],
                 'id': room['global_type_id'],
+                'name': room['name'],
                 'x': room['x0'],
                 'y': room['y0'],
                 'z': room['z0'],
@@ -155,7 +156,7 @@ class CFASTRoomsChoice:
 
         # self.print_rooms()
 
-        return sorted([(room['id'], room['distance']) for room in self.rooms], key=lambda x: x[1])[:self.rooms_number]
+        return sorted([(room['id'], room['distance'], room['name']) for room in self.rooms], key=lambda x: x[1])[:self.rooms_number]
 
 
     def print_rooms(self):
