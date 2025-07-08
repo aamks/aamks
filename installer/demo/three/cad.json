@@ -230,7 +230,16 @@
         "z": "[696,704]"
       }
     ],
-    "MVENT": [],
+    "MVENT": [
+      {
+        "points": "[[1050,1035],[1150,1035],[1150,1415],[1050,1415]]",
+        "idx": 1,
+        "z": "[350,400]",
+        "mvent_throughput": 1.5,
+        "flow_direction": "OUTSIDE to a6",
+        "air_grille_surface": "y_max"
+      }
+    ],
     "EVACUEE": [],
     "FLOOR_TELEPORT_UP": [],
     "FLOOR_TELEPORT_DOWN": [
