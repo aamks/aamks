@@ -63,8 +63,6 @@ class CfastMcarlo():
         sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", f"aamks_{self._sim_id}.sqlite")
         self.s=Sqlite(sim_sql_path)
         self._draw()
-        self.cfast_choice_compartments_ids = []
-        self.cfast_choice_compartments_names = []
         self.cfast_choice_compartments_doors_and_holes = set()
 
     def _draw(self):
@@ -115,13 +113,12 @@ class CfastMcarlo():
                     if key == 'DOORS':
                         room1 = cfast_name(i['COMP_IDS'][0][1:-1])
                         room2 = cfast_name(i['COMP_IDS'][1][1:-1])
-                        if room1 not in self.cfast_choice_compartments_names or room2 not in self.cfast_choice_compartments_names:
-                            if room1 != 'OUTSIDE':
-                                continue_flag = 1
-                                continue
-                            if room2 != 'OUTSIDE':
-                                continue_flag = 1
-                                continue
+                        if room1 == 'OUTSIDE' and room2 not in self.cfast_choice_compartments_names:
+                            continue_flag = 1
+                            continue
+                        if room2 == 'OUTSIDE' and room1 not in self.cfast_choice_compartments_names:
+                            continue_flag = 1
+                            continue
                         else:
                             self.cfast_choice_compartments_doors_and_holes.add(i["ID"])
                     if k == 'LABELS':
@@ -682,23 +679,23 @@ class DrawAndLog:
 
         comp['name'] = room['name']
         comp['type'] = 'room' if room['type_sec'] == 'ROOM' else 'non_room'
+        comp['global_type_id'] = self.s_geom.query("SELECT global_type_id FROM aamks_geom WHERE name=?", (comp['name'], ))[0]['global_type_id']
 
         return comp, loc
 
     def _draw_fires(self):# {{{
+        
         if len(self.s_geom.query("SELECT * FROM aamks_geom WHERE type_pri='FIRE'")) > 0:
             comp, loc = self._deterministic_fire()
             loc['major'] = 1
             self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
+            self._save_cfast_close_compartments(comp['global_type_id'])
         else:
             comp = self._draw_compartment()
             loc, _ = self._locate_randomly(comp['name'])
             loc['major'] = 1
             self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
-            cfast_closest_compartments = self.cfast_rooms_choice.get_closest_rooms(comp['global_type_id'])
-            self.cfast_choice_compartments_ids = [item[0] for item in cfast_closest_compartments]
-            self.cfast_choice_compartments_names = [item[2] for item in cfast_closest_compartments]
-            self._save_cfast_close_compartments(self.cfast_choice_compartments_ids, self.cfast_choice_compartments_names)
+            self._save_cfast_close_compartments(comp['global_type_id'])
             comps = self.s_geom.query(f"SELECT adjacents FROM aamks_geom WHERE name='{comp['name']}'")[0]['adjacents']
             for comp in comps.split(","):
                 comp_name = comp.split(";")[0]
@@ -932,6 +929,7 @@ class DrawAndLog:
             if v_type=='HOLE':
                 how_much_open=1
                 door['CRITERION'] = ["'TIME'", f'T = 0', f'F = {how_much_open}']
+                self._opened_objects[v['name']] = how_much_open
             else:
                 how_much_open=binomial(1,vents[v_type])
                 door['CRITERION'] = ["'TIME'", f'T = 0,1', f'F = {int(how_much_open>0)},{int(how_much_open>0)}']
@@ -1040,9 +1038,12 @@ class DrawAndLog:
         for name, how_much_open in self._opened_objects.items():
             self.s.query('INSERT INTO opened_objects VALUES (?,?)', (name, how_much_open))
 
-    def _save_cfast_close_compartments(self, comps_ids, comps_names):
+    def _save_cfast_close_compartments(self, global_type_id):
+        cfast_closest_compartments = self.cfast_rooms_choice.get_closest_rooms(global_type_id)
+        self.cfast_choice_compartments_ids = [item[0] for item in cfast_closest_compartments]
+        self.cfast_choice_compartments_names = [item[2] for item in cfast_closest_compartments]
         self.s.query("CREATE TABLE IF NOT EXISTS cfast_close_compartments(compartments_ids, compartments_names)")
-        self.s.query('INSERT INTO cfast_close_compartments VALUES (?,?)', [",".join(map(str, comps_ids)), ",".join(map(str, comps_names))])
+        self.s.query('INSERT INTO cfast_close_compartments VALUES (?,?)', [",".join(map(str, self.cfast_choice_compartments_ids)), ",".join(map(str, self.cfast_choice_compartments_names))])
 
     def all(self):
         #&INIT

@@ -415,6 +415,8 @@ class Worker:
         compartments = []
         all_rooms = self.s_geom.query("SELECT name, floor, points, room_exits_weights from aamks_geom WHERE type_pri = 'COMPA' and floor='"+floor+"'")
         holes = self.s_geom.query("SELECT name, floor, vent_from_name, vent_to_name from aamks_geom WHERE type_sec = 'HOLE' and floor='"+floor+"'")
+        _how_much_open = self.s.query(f"SELECT name,how_much_open from opened_objects")
+        how_much_open = {row['name']: row['how_much_open'] for row in _how_much_open}
         self.rooms_holes_connection_dict = self.build_connection_dict(holes,all_rooms)
         for room in all_rooms:
             room_interior_doors_and_holes = self.s_geom.query("SELECT floor, points, name, center_x, center_y, width, depth, vent_from_name, vent_to_name from aamks_geom WHERE (terminal_door IS NULL and type_tri='DOOR' and (vent_from_name='"+room['name']+"' or vent_to_name='"+room['name']+"'))")
@@ -439,8 +441,8 @@ class Worker:
                 door_y_max = max(door_points[1],door_points[3],door_points[5],door_points[7])
                 room_from = room['name']
                 room_to = door['vent_from_name'] if room['name'] == door['vent_to_name'] else door['vent_to_name']
-                how_much_open = self.s.query(f"SELECT how_much_open from opened_objects WHERE name = '{door['name']}'")
-                compartmentExits.append(CompartmentExit(door['name'],door['center_x'],door['center_y'], x_direction, y_direction, False, door_x_min,door_x_max,door_y_min,door_y_max,room_from,room_to,how_much_open))
+                
+                compartmentExits.append(CompartmentExit(door['name'],door['center_x'],door['center_y'], x_direction, y_direction, False, door_x_min,door_x_max,door_y_min,door_y_max,room_from,room_to,how_much_open[door['name']]))
             
             for door in room_outside_doors:
                 x_direction, y_direction = self._get_outside_door_destination(center_x, center_y, door)
@@ -452,8 +454,8 @@ class Worker:
                 door_y_max = max(door_points[1],door_points[3],door_points[5],door_points[7])
                 room_from = room['name']
                 room_to = door['vent_from_name'] if room['name'] == door['vent_to_name'] else door['vent_to_name']
-                how_much_open = self.s.query(f"SELECT how_much_open from opened_objects WHERE name = '{door['name']}'")
-                compartmentExits.append(CompartmentExit(door['name'],door['center_x'],door['center_y'], x_direction, y_direction, True,  door_x_min,door_x_max,door_y_min,door_y_max,room_from,room_to,how_much_open))
+                # how_much_open = self.s.query(f"SELECT how_much_open from opened_objects WHERE name = '{door['name']}'")
+                compartmentExits.append(CompartmentExit(door['name'],door['center_x'],door['center_y'], x_direction, y_direction, True,  door_x_min,door_x_max,door_y_min,door_y_max,room_from,room_to,how_much_open[door['name']]))
 
             compartments.append(Compartment(room['name'], room['floor'], x_min, x_max, y_min, y_max, compartmentExits))
 
