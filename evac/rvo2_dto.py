@@ -688,7 +688,7 @@ class EvacEnv:
                 if evacuee.check_if_agent_reached_outside_door():
                     self.time_last_agent_left_the_floor = self.current_time
                 elif evacuee.has_agent_reached_teleport():
-                    self.append_agents_to_move_downstairs_or_upstairs(evacuee, i)
+                    self.append_agents_to_move_downstairs_or_upstairs(evacuee, e)
                     self.time_last_agent_left_the_floor = self.current_time
                 
 # Total FED growth spatial function (per floor)
