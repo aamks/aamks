@@ -1,7 +1,9 @@
 import os
 redis_host = os.environ['AAMKS_SERVER']
 redis_password = os.environ['AAMKS_REDIS_PASS']
-main_path = "/".join(os.environ['AAMKS_PROJECT'].split('/')[:-3])
+main_path = '/home/aamks_users'
+if 'AAMKS_PROJECT' in os.environ:
+    main_path = "/".join(os.environ['AAMKS_PROJECT'].split('/')[:-3])
 redis_port = 6379
 redis_db_number = 0
 redis_worker_queue_name = "aamks_queue"

@@ -55,6 +55,7 @@ class RedisWorkerServer:
     def run_aamks(self, message):
         logger.debug('running aamks...')
         path, user_id, irange, scenario_id = message['data']['aamks']
+        path = path.replace("home","mnt")
         id = message["id"] + "_iter"
         message["AA"] = { 
                 "PROJECT": path,

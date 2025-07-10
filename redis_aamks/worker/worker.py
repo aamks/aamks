@@ -6,6 +6,7 @@ import sys
 import redis
 import config
 import os
+sys.path.append('/usr/local/aamks')
 from aamks import start_aamks_with_worker
 from include import Psql
 
