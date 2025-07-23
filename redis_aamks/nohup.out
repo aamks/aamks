@@ -1,7 +1,0 @@
-2025-07-09 10:04:36,628 - cr84 - AAMKS_WORKER - DEBUG - started worker
-2025-07-09 11:57:02,053 - cr84 - AAMKS_WORKER - DEBUG - pop from head of queue 
-{'sim_id': 4, 'sim': '/home/aamks_users/majster1020@wp.pl/test8/2p_ex/workers/4'}
-2025-07-09 11:57:02,053 - cr84 - AAMKS_WORKER - DEBUG - starting aamks iter 4 id - 20250709-11:25:53.670300_4
-2025-07-09 11:57:02,696 - cr84 - AAMKS_WORKER - ERROR - during sim 4 AAMKS halting error 
- ERROR: [Errno 2] No such file or directory: '/home/aamks_users/majster1020@wp.pl/test8/2p_ex/aamks.log'
-2025-07-09 11:57:02,697 - cr84 - AAMKS_WORKER - DEBUG - finished 4 - /mnt/aamks_users/majster1020@wp.pl/test8/2p_ex/workers/4
