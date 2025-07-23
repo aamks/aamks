@@ -36,7 +36,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
 
         self.floor=str(floor)
         self.json = Json()
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", "aamks_geom.sqlite")
         self.s_geom=Sqlite(scenario_sql_path)
         self.floors_meta=json.loads(self.s_geom.query("SELECT * FROM floors_meta")[0]['json'])
         self.config=self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
@@ -230,6 +230,8 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
                         self.compa_conditions[obj][param] = self._default_conditions[param]
 
 
+    def xy2room(self,q):
+        return self.get_conditions_from_point(q)['COMPA']
 
     def get_conditions_from_point(self,q):
         ''' 
@@ -251,7 +253,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         if len(self._query_vertices[x,y]['x'])==1:
             if (x,y) in self._cell2compa:
                 attempt_room = self._cell2compa[(x,y)]
-                room = re.search(r'(s\d+)(\.\d+)?', attempt_room).group(1) if attempt_room.startswith("s") else attempt_room
+                room = attempt_room
             else:
                 room = None
             conditions = self.compa_conditions[room] if room != None else {'COMPA': 'outside'}
@@ -263,7 +265,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
                     ry=self._query_vertices[(x,y)]['y'][i-1]
                     if (rx,ry) in self._cell2compa:
                         attempt_room = self._cell2compa[(rx,ry)]
-                        room = re.search(r'(s\d+)(\.\d+)?', attempt_room).group(1) if attempt_room.startswith("s") else attempt_room
+                        room = attempt_room
                     else:
                         room = None
                     conditions = self.compa_conditions[room] if room != None else {'COMPA': 'outside'}

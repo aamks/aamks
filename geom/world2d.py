@@ -27,7 +27,7 @@ class World2d:
     def __init__(self, sim_id=None):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", "aamks_geom.sqlite")
         self.s_geom=Sqlite(scenario_sql_path)
         self.json.s = self.s_geom 
         self.world_meta=self.json.readdb("world_meta")

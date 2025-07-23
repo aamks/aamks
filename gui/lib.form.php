@@ -75,7 +75,7 @@ or active systems. " ]                                                     ;
 	$help["evacuees_max_v_speed"]    = ["Vertical speed"                   , "Parameters of normal distribution of nominal vertical speed [cm/s] !!!currently not used!!!"]                                                              ;
 	$help["evacuees_alpha_v"]        = ["Alpha speed"                      , "Parameters of normal distribution of alpha (used for speed reduction in somke) [-]"]                                                              ;
 	$help["evacuees_beta_v"]         = ["Beta speed"                       , "Parameters of normal distribution of beta (used for speed rduction in smoke) [-]"]                                                              ;
-	$help["leader_following"]         = ["Leader following"                       , "Select if agents are to follow the leader. Unless each agent chooses their own target."]                                                              ;
+	// $help["leader_following"]         = ["Leader following"                       , "Select if agents are to follow the leader. Unless each agent chooses their own target."]                                                              ;
 
 
     //RESCUE MODEL 
@@ -535,7 +535,7 @@ function get_template_defaults($q) {/*{{{*/
         "mean": -0.057,
         "sd": 0.015
     },
-    "leader_following": 1,
+    "leader_following": 0,
     "fire_starts_in_a_room": 0.9,
     "hrrpua": {
         "min": 300,

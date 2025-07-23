@@ -15,7 +15,7 @@ class CFASTRoomsChoice:
 
         self.project = os.environ['AAMKS_PROJECT']
         self.sim_id = sim_id
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self.sim_id}", "aamks_geom.sqlite")
         self.s=Sqlite(scenario_sql_path)
         self.doors = []
         self.rooms = []

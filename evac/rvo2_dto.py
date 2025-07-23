@@ -63,7 +63,7 @@ class EvacEnv:
         
         self.elog = self.general['logger']
         self.elog.info('ORCA on {} floor initiated'.format(self.floor))
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self.sim_id}", "aamks_geom.sqlite")
         self.s_geom=Sqlite(scenario_sql_path)
         self.dfed = FEDDerivative(self.floor, sqlite=self.s_geom)
         self.detection = Detection(self)
@@ -135,32 +135,6 @@ class EvacEnv:
         else:
             return self._find_closest_exit(evacuee)
 
-    def get_general_goals_best_path(self,evacuee):
-        if evacuee.exits_path is None or evacuee.current_compartment.name not in evacuee.exits_path:
-            shortest_navmesh_path,terminal_exit = self._get_shortest_navmesh_path_general_goals(evacuee)
-            if shortest_navmesh_path is None:
-                return None, None
-            self.find_exits_path_to_the_floor_exit(evacuee, shortest_navmesh_path,terminal_exit)  
-        exit = self.get_exit_from_exits_path(evacuee) 
-
-        if isinstance(exit, CompartmentExit) or isinstance(exit, TermianlDoorExit):
-            x,y = exit.x_direction,exit.y_direction
-        elif isinstance(exit, Teleport):
-            x,y = exit.x,exit.y
-
-        return self.nav.nav_query_first_navmesh(src=evacuee.position, dst=(x, y), maxStraightPath=999), exit
-
-    def get_exit_from_exits_path(self,evacuee):
-        current_comp = evacuee.current_compartment.name
-        while True:
-            exit = evacuee.exits_path[current_comp]
-            # we skip hole and get further exit
-            # so that agents don't go through the middle of the hole
-            if exit.name.startswith("z"):
-                current_comp = self.compartments.get_adjecent_room(exit.name, current_comp)
-            else:
-                return exit
-
     def get_rooms_goals_best_path(self,evacuee):
         exits_dict = evacuee.current_compartment.roomGoalExits
         return self._get_shortest_navmesh_path(evacuee,exits_dict)
@@ -169,7 +143,7 @@ class EvacEnv:
         if is_goal_in_rooms_goals and evacuee.reset_behavior_due_to_panic[self.floor]==False:
             return self.get_rooms_goals_best_path(evacuee)
         else:
-            return self.get_general_goals_best_path(evacuee)
+            return self._get_shortest_navmesh_path_general_goals(evacuee)
             
     def _get_shortest_navmesh_path_general_goals(self,evacuee):
         exits_dict = self.teleports + self.terminal_door_exits
@@ -245,77 +219,6 @@ class EvacEnv:
             paths.append([x, y, exit_dist_considering_weight, exit, path])
 
         return paths
-
-    def find_doors_on_path(self, evacuee, shortest_navmesh_path):
-
-        exits_list = {}
-        visited_doors = set()
-
-        current_comp_name = self.compartments.get_room_name_for_point(shortest_navmesh_path[0])
-        for i in range(len(shortest_navmesh_path) - 1):
-            p1 = shortest_navmesh_path[i]
-            p2 = shortest_navmesh_path[i + 1]
-            segment_line = LineString([p1, p2])
-            p1_comp = self.compartments.get_room_for_point(p1)
-            p2_comp = self.compartments.get_room_for_point(p2)
-            segment_done = False
-
-            while not segment_done:
-                found_door = False
-
-                for door in self.compartments.get_comp_exits(current_comp_name):
-                    if door.name in visited_doors:
-                        continue
-
-                    door_box = box(door.x_min, door.y_min, door.x_max, door.y_max)
-
-                    p1_comp_name = p1_comp.name if hasattr(p1_comp, 'name') else str(p1_comp)
-                    p2_comp_name = p2_comp.name if hasattr(p2_comp, 'name') else str(p2_comp)
-
-                    if segment_line.intersects(door_box) and p1_comp_name != p2_comp_name:
-                        # p1_comp_name != p2_comp_name because sometiomes 
-                        # p1 is located on the exit to the adjacent room,
-                        # to which there is no path - the path leads in the opposite direction
-
-                        # we go to the next room
-                        next_comp_name = door.get_next_comp(current_comp_name)
-
-                        if not next_comp_name:
-                            # Cannot find next compartment for door
-                            segment_done = True
-                            break
-                        next_comp = self.compartments.get_compartment(next_comp_name)
-                        if next_comp is None or segment_line.intersects(box(next_comp.x_min, next_comp.y_min, next_comp.x_max, next_comp.y_max)):
-                            #we check above condition becouse sometimes the agent stands at the exit to the room 
-                            #on the opposite side and then 2 exits meet the intersect condition
-                            #but we only want the exit that leads to the correct room
-                            exits_list[current_comp_name] = door
-                            visited_doors.add(door.name)
-
-                            current_comp_name = next_comp_name
-                            found_door = True
-                            break  # check the door again in the new room
-
-                if not found_door:
-                    # line no longer crosses doors in current_comp
-                    segment_done = True
-
-        return exits_list
-
-
-    def find_exits_path_to_the_floor_exit(self,evacuee, shortest_navmesh_path,terminal_exit):
-
-        if not shortest_navmesh_path:
-            raise Exception("you cannot pass empty shortest_navmesh_path to this function")
-        exits_list = self.find_doors_on_path(evacuee, shortest_navmesh_path)
-        if isinstance(terminal_exit, Teleport):
-            teleport_room_name = self.compartments.get_room_name_for_point((terminal_exit.x,terminal_exit.y))
-            exits_list[teleport_room_name] = terminal_exit
-        elif isinstance(terminal_exit, TermianlDoorExit):
-            exits_list['outside'] = terminal_exit
-
-        evacuee.exits_path = exits_list
-
 
     def set_floor_teleport_destination_queue_lists(self):
         for teleport in self.teleports:
@@ -423,6 +326,10 @@ class EvacEnv:
             position = evacuee.position
             if evacuee.agent_has_no_escape == True:
                 # agent is trapped, has no escape
+                continue
+            if self.current_time < evacuee.leader.pre_evacuation_time:
+                continue
+            if evacuee.finished == 0:
                 continue
             else:                  
                 position = evacuee.position
@@ -601,7 +508,6 @@ class EvacEnv:
     def update_evacuees_properties(self):
         for i in range(self.evacuees.get_number_of_pedestrians()):  
             evacuee = self.evacuees.get_pedestrian(i)
-
             visibility_data = self.smoke_query.get_visibility(evacuee.position)
 
             OD = visibility_data[0]
@@ -647,7 +553,6 @@ class EvacEnv:
         # - the agent can panic and be in panic only once on floor
         if evacuee.reset_behavior_due_to_panic[self.floor] == False:
             evacuee.reset_behavior_due_to_panic[self.floor]=True
-            evacuee.exits_path = None
 
     def do_simulation(self, step):
         self.step = step

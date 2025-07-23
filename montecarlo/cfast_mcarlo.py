@@ -58,7 +58,7 @@ class CfastMcarlo():
         self.json=Json()
         self.conf = self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", "aamks_geom.sqlite")
         self.s_geom=Sqlite(scenario_sql_path)
         sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", f"aamks_{self._sim_id}.sqlite")
         self.s=Sqlite(sim_sql_path)
@@ -113,12 +113,18 @@ class CfastMcarlo():
                     if key == 'DOORS':
                         room1 = cfast_name(i['COMP_IDS'][0][1:-1])
                         room2 = cfast_name(i['COMP_IDS'][1][1:-1])
-                        if room1 == 'OUTSIDE' and room2 not in self.cfast_choice_compartments_names:
+
+                        room1_in = room1 in self.cfast_choice_compartments_names
+                        room2_in = room2 in self.cfast_choice_compartments_names
+                        
+                        if not (
+                            (room1_in and room2_in) or
+                            (room1 == 'OUTSIDE' and room2_in) or
+                            (room2 == 'OUTSIDE' and room1_in)
+                        ):
                             continue_flag = 1
                             continue
-                        if room2 == 'OUTSIDE' and room1 not in self.cfast_choice_compartments_names:
-                            continue_flag = 1
-                            continue
+
                         else:
                             self.cfast_choice_compartments_doors_and_holes.add(i["ID"])
                     if k == 'LABELS':
@@ -559,7 +565,7 @@ class DrawAndLog:
         self.conf = self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.config = self.json.read(os.path.join(os.environ['AAMKS_PATH'], 'evac', 'config.json'))
         sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", f"aamks_{self._sim_id}.sqlite")
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{self._sim_id}", "aamks_geom.sqlite")
         self.s=Sqlite(sim_sql_path)
         self.s_geom=Sqlite(scenario_sql_path)
         self.cfast_rooms_choice = CFASTRoomsChoice(self.conf['cfast_rooms'],sim_id)

@@ -19,7 +19,7 @@ class CFASTimporter():
         self.conf=Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         if self.conf['fire_model']=='FDS':
             return
-        path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", "aamks_geom.sqlite")
         if os.path.exists(path):
             return
         self.s_geom=Sqlite(path)
