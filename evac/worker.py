@@ -40,22 +40,13 @@ class Worker:
         self.config = None
         self.project_conf = None
 
-        if AA:
-            os.environ['AAMKS_PROJECT'] = AA['PROJECT']
-            os.environ['AAMKS_PATH'] = AA['PATH']
-            os.environ['AAMKS_SERVER'] = AA['SERVER']
-            os.environ['AAMKS_PG_PASS'] = AA['PG_PASS']
-
-
-        # for local testing:
-        # os.environ['AAMKS_PROJECT'] = '/mnt/aamks_users/majster1020@wp.pl/test8/big2'
-
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
         else:
             self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
 
         # for local testing:
+        # os.environ['AAMKS_PROJECT'] = '/mnt/aamks_users/majster1020@wp.pl/test8/big2'
         # self.working_dir = '/mnt/aamks_users/majster1020@wp.pl/test8/big2/workers/9'
 
         self.project_dir = self.working_dir.split("/workers/")[0]

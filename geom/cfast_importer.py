@@ -580,7 +580,7 @@ class CFASTimporter():
         towers={}
 
         for w in self.s_geom.query("SELECT name,z0 as tower_z0,height+z0 as tower_z1,floor,height,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
-            floor_max_z=self.s_geom.query("SELECT max(z1) FROM aamks_geom WHERE type_sec NOT IN('STAI','HALL') AND floor=?", (w['floor'],))[0]['max(z1)']
+            floor_max_z=self.s_geom.query("SELECT max(z1) FROM aamks_geom WHERE type_sec NOT IN('STAI','HALL','MVENT') AND floor=?", (w['floor'],))[0]['max(z1)']
             if w['tower_z1'] >= floor_max_z + 200:
 
                 towers[w['name']]=[]

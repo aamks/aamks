@@ -25,7 +25,14 @@ class SensitivityAnalysis:
         self.j = Json()
         self.dir = workdir if workdir else sys.argv[1]
         self.configs = self.j.read('{}/conf.json'.format(self.dir))
-        self.s_geom = Sqlite("{}/workers/1/aamks_geom.sqlite".format(self.dir))
+        # self.s_geom = Sqlite("{}/workers/13/aamks_geom.sqlite".format(self.dir))
+        for i in range(1, 10000):  # np. przeszukaj katalogi 1..999 czasami niektore foldery  puste
+            # kiedy symulacja sie nie policzyla
+            path = os.path.join(self.dir, "workers", str(i), "aamks_geom.sqlite")
+            if os.path.isfile(path):
+                self.s_geom = Sqlite(path)
+                break
+
         self.variables = sys.argv[2:] if len(sys.argv) > 2 else self.VARS
         self.y = y
 
@@ -123,7 +130,14 @@ class SA_old:
         self.j = Json()
         self.dir = workdir if workdir else sys.argv[1]
         self.configs = self.j.read('{}/conf.json'.format(self.dir))
-        self.s_geom = Sqlite("{}/workers/1/aamks_geom.sqlite".format(self.dir))
+        # self.s_geom = Sqlite("{}/workers/13/aamks_geom.sqlite".format(self.dir))
+        for i in range(1, 10000):  # np. przeszukaj katalogi 1..999 czasami niektore foldery  puste
+            # kiedy symulacja sie nie policzyla
+            path = os.path.join(self.dir, "workers", str(i), "aamks_geom.sqlite")
+            if os.path.isfile(path):
+                self.s_geom = Sqlite(path)
+                break
+
 
     def calculate_indvidual_risk(self):     
         rooms, sprinklered_rooms = list(), list()

@@ -39,19 +39,22 @@ class RedisWorkerServer:
         self.db.lpush(config.redis_worker_queue_name, dumps(message))
 
     def process_message(self, message_json: str):
+        if 'data' not in message_json:
+            logger.debug(message_json)
+            return
         if 'anim' in message_json['data']:
             logger.debug('starting anim function')
             self.run_beck_anim(message_json)
         elif 'aamks' in message_json['data']:
             logger.debug('starting aamks function')
             self.run_aamks(message_json)
-        elif 'results' in message_json['data']:
+        if 'results' in message_json['data']:
             logger.debug('starting results function')
             self.run_beck_new(message_json)
         elif 'conf_dir' in message_json['data']:
             logger.debug('starting conf_subst function')
             self.run_conf_dir(message_json)
-    
+
     def run_aamks(self, message):
         logger.debug('running aamks...')
         path, user_id, irange, scenario_id = message['data']['aamks']
