@@ -225,5 +225,7 @@
     "doors_break": {
         "criterion": "TEMPERATURE",
         "setpoint": 200
-    }
+    },
+    "leader_following": 0,
+    "cfast_rooms": 30
 }

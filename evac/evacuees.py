@@ -100,11 +100,14 @@ class Evacuees:
         assert isinstance(ped_no, int), "%ped_no is not an integer"
         assert isinstance(position, tuple), "%position is not a tuple"
         self.pedestrians[ped_no].position = position
-
     def get_position_of_pedestrian(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
 
         return self.pedestrians[ped_no].position
+        
+    def get_current_floor_of_pedestrian(self, ped_no):
+        assert isinstance(ped_no, int), '%ped_no is not an integer'
+        return self.pedestrians[ped_no].current_floor
 
     def get_goal(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
@@ -125,11 +128,9 @@ class Evacuees:
         else:
             return False
 
-    def has_agent_reached_teleport(self, floor, ped_no: int) -> object:
+    def has_agent_reached_teleport(self, ped_no: int) -> object:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].has_agent_reached_teleport()
-
-
 
     def mark_exit_as_blocked(self, ped_no, blocked_exit_door):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
@@ -205,11 +206,9 @@ class Evacuees:
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         self.pedestrians[ped_no].num_of_orca_lines = num_of_lines
 
-    def get_type_of_evacuee(self, ped_no):
-        assert isinstance(ped_no, int), '%ped_no is not an integer'
-        return self.pedestrians[ped_no].type
-
     def get_leader_of_evacuee(self, ped_no):
         assert isinstance(ped_no, int), '%ped_no is not an integer'
         return self.pedestrians[ped_no].leader
     
+    def has_agent_moved(self, ped_no):
+        return self.pedestrians[ped_no].did_agent_moved()

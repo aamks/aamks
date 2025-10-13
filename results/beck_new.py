@@ -24,7 +24,7 @@ from pylatex.basic import NewPage, LineBreak
 from pylatex.headfoot import PageStyle, Head, simple_page_number
 
 from include import Sqlite, Psql
-
+sys.path.append('/usr/local/aamks/results')
 
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
 
@@ -56,9 +56,14 @@ class GetData:
         return dump
 
     def check_results(self):
-        sql = self.s.query('SELECT * FROM sqlite_master WHERE type="table"')
-        if not sql:
-            raise Exception(f'No sqlite database for {self.dir}')
+        scenario_sql_path = None
+        for i in range(1, 10000):  # przeszukaj foldery 1..999
+            path = os.path.join(self.dir, "workers", str(i), "aamks_geom.sqlite")
+            if os.path.isfile(path):
+                scenario_sql_path = path
+                break
+        if scenario_sql_path:
+            self.s_geom = Sqlite(scenario_sql_path)
         q = f"SELECT status FROM simulations WHERE project = {self.configs['project_id']} AND scenario_id = {self.configs['scenario_id']}"
         psql = np.array(self.p.query(q))
         if  (psql == None).all():
@@ -177,14 +182,14 @@ class GetData:
         geom_data = {}
 
         geom_data['floors'] = int(max(self._quering('DISTINCT floor', tab='fed_growth_cells_data', raw=True)))
-        geom_data['area'] = self.s.query('SELECT sum(room_area) as total FROM aamks_geom')[0]['total'] / 10000
+        geom_data['area'] = self.s_geom.query('SELECT sum(room_area) as total FROM aamks_geom')[0]['total'] / 10000
         
         for label, prefixes in {'rooms':['r', 'c', 'a', 's'], 'doors':['d'], 'obsts':['t']}.items():
             geom_data[label] = []
             for f in range(geom_data['floors']+1):
                 g = []
                 for p in prefixes:
-                    g.extend(self.s.query(
+                    g.extend(self.s_geom.query(
                     f"SELECT points, type_sec FROM aamks_geom as a WHERE a.floor = '{f}' and a.name LIKE '{p}%';"))
                 geom_data[label].append(g)
 
@@ -1337,7 +1342,10 @@ class Comparison:
                     {'name':'fn_curve', 'lab':['Number of fatalities [-]', 'Frequency [-]']}
                     ]
                 }
-        
+    def tm(self, x): 
+        logger.debug(f'{x}: {time.time() - self.t}')
+        self.t = time.time()
+
     def _scen_init(self, args):
         scens = {}
 
@@ -1369,10 +1377,10 @@ class Comparison:
         self._zip_full()
         try:
             Report(self.data, self.dir.rstrip("/picts")).make_multiple()
-            tm('report saved OK')
+            self.tm('report saved OK')
             return True
         except:
-            tm('report not saved ERROR')
+            self.tm('report not saved ERROR')
             return False
 
     # run summarize across all scenarios and copy data
@@ -1398,24 +1406,21 @@ class Comparison:
                     zf.write(f.path, arcname=f.name)
             
     def produce(self):
-        def tm(x): 
-            logger.debug(f'{x}: {time.time() - self.t}')
-            self.t = time.time()
         p = Plot(go_back(self.dir))
-        tm('Plot')
+        self.tm('Plot')
         [p.cdf(self.data[d['name']], path=f"{d['name']}_cdf", label=d['lab']) for d in self.plot_type['cdf']]
-        tm('plot cdf')
+        self.tm('plot cdf')
         [p.pdf(self.data[d['name']], path=f"{d['name']}_pdf", label=d['lab']) for d in self.plot_type['pdf']]
-        tm('plot pdf')
+        self.tm('plot pdf')
         [p.pdf_n(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['pdf_n']]
-        tm('plot pdf_n')
+        self.tm('plot pdf_n')
         [p.fn_curve(self.data[d['name']], path=d['name'], label=d['lab']) for d in self.plot_type['fn_curve']]
-        tm('plot fn_curve')
+        self.tm('plot fn_curve')
         p.pie(self.data['pdf_fn'], legend=self.scen_names)
-        tm('plot pie')
+        self.tm('plot pie')
         
         self.save()
-        tm('save')
+        self.tm('save')
 
 def prepare_logger(path):
     log_file = path + '/aamks.log' if path else os.getenv('AAMKS_PROJECT') + '/aamks.log'

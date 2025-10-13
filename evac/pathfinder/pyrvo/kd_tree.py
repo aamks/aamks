@@ -265,7 +265,10 @@ class KDTree:
 
             p1 = obstacle_01.get_point()
             p2 = obstacle_02.get_point()
-            dist_sq_line: float = (agent_left_of_line**2) / abs_sq((p2[0] - p1[0], p2[1] - p1[1]))
+            if p1 != p2:
+                dist_sq_line: float = (agent_left_of_line**2) / abs_sq((p2[0] - p1[0], p2[1] - p1[1]))
+            else:
+                dist_sq_line: float = (agent_left_of_line**2)
             if dist_sq_line < range_square:
                 if agent_left_of_line < 0.0:
                     agent.insert_obstacle_neighbor(node.get_obstacle(), range_square)

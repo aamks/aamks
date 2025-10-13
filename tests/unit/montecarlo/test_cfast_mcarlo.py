@@ -39,7 +39,9 @@ class TestDrawAndLog(TestCase):
                 self.test_save_fire_origin(args)
                 return
             if query.startswith("SELECT * FROM aamks_geom WHERE type_tri='WIN'"):
-                return [OrderedDict([('name', 'w4'), ('floor', '0'), ('global_type_id', 4), ('hvent_room_seq', 2), ('vvent_room_seq', None), ('type_pri', 'HVENT'), ('type_sec', 'WIN'), ('type_tri', 'WIN'), ('x0', 1313), ('y0', 454), ('z0', 100), ('width', 259), ('depth', 32), ('height', 150), ('cfast_width', 259), ('sill', 100), ('face', 'FRONT'), ('face_offset', 263.0), ('vent_from', 2), ('vent_to', 11), ('material_ceiling', 'concrete'), ('material_floor', 'concrete'), ('material_wall', 'concrete'), ('heat_detectors', 0), ('smoke_detectors', 0), ('sprinklers', 0), ('is_vertical', 0), ('vent_from_name', 'r2'), ('vent_to_name', 'OUTSIDE'), ('how_much_open', None), ('room_area', None), ('x1', 1572), ('y1', 486), ('z1', 250), ('center_x', 1442), ('center_y', 470), ('center_z', 175), ('fire_model_ignore', 0), ('mvent_throughput', None), ('exit_type', None), ('room_enter', None), ('evacuees_density', None), ('terminal_door', None), ('points', '[[1313, 486], [1572, 486], [1572, 454], [1313, 454]]'), ('origin_room', None), ('orig_type', 'WIN'), ('has_door', None), ('teleport_from', None), ('teleport_to', None), ('adjacents', None), ('stair_direction', None), ('exit_weight', None), ('room_exits_weights', None)])]
+                return [OrderedDict([('name', 'w4'), ('floor', '0'), ('global_type_id', 4), ('hvent_room_seq', 2), ('vvent_room_seq', None), ('type_pri', 'HVENT'), ('type_sec', 'WIN'), ('type_tri', 'WIN'), ('x0', 1313), ('y0', 454), ('z0', 100), ('width', 259), ('depth', 32), ('height', 150), ('cfast_width', 259), ('sill', 100), ('face', 'FRONT'), ('face_offset', 263.0), ('vent_from', 2), ('vent_to', 11), ('material_ceiling', 'concrete'), ('material_floor', 'concrete'), ('material_wall', 'concrete'), ('heat_detectors', 0), ('smoke_detectors', 0), ('sprinklers', 0), ('is_vertical', 0), ('vent_from_name', 'r2'), ('vent_to_name', 'OUTSIDE'), ('how_much_open', None), ('room_area', None), ('x1', 1572), ('y1', 486), ('z1', 250), ('center_x', 1442), ('center_y', 470), ('center_z', 175), ('fire_model_ignore', 0), ('mvent_throughput', None), ('exit_type', None), ('room_enter', None), ('evacuees_density', None), ('terminal_door', None), ('points', '[[1313, 486], [1572, 486], [1572, 454], [1313, 454]]'), ('origin_room', None), ('orig_type', 'WIN'), ('has_door', None), ('teleport_from', None), ('teleport_to', None), ('adjacents', None), ('stair_direction', None), ('exit_weight', None), ('room_exits_weights', None)]),
+                        OrderedDict([('name', 'w15'), ('floor', '1'), ('global_type_id', 15), ('hvent_room_seq', 2), ('vvent_room_seq', None), ('type_pri', 'HVENT'), ('type_sec', 'WIN'), ('type_tri', 'WIN'), ('x0', 1315), ('y0', 454), ('z0', 450), ('width', 258), ('depth', 32), ('height', 450), ('cfast_width', 258), ('sill', 100), ('face', 'FRONT'), ('face_offset', 265.0), ('vent_from', 6), ('vent_to', 11), ('material_ceiling', 'concrete'), ('material_floor', 'concrete'), ('material_wall', 'concrete'), ('heat_detectors', 0), ('smoke_detectors', 0), ('sprinklers', 0), ('is_vertical', 0), ('vent_from_name', 'a6'), ('vent_to_name', 'OUTSIDE'), ('room_area', None), ('x1', 1573), ('y1', 486), ('z1', 900), ('center_x', 1444), ('center_y', 470), ('center_z', 675), ('fire_model_ignore', 0), ('mvent_throughput', None), ('flow_direction', None), ('air_grille_surface', None), ('evacuees_density', None), ('terminal_door', None), ('points', '[[1315, 486], [1573, 486], [1573, 454], [1315, 454]]'), ('origin_room', None), ('orig_type', 'WIN'), ('has_door', None), ('teleport_from', None), ('teleport_to', None), ('adjacents', None), ('stair_direction', None), ('exit_weight', None), ('room_exits_weights', None)]),
+                        OrderedDict([('name', 'w26'), ('floor', '2'), ('global_type_id', 26), ('hvent_room_seq', 2), ('vvent_room_seq', None), ('type_pri', 'HVENT'), ('type_sec', 'WIN'), ('type_tri', 'WIN'), ('x0', 2724), ('y0', 454), ('z0', 800), ('width', 210), ('depth', 32), ('height', 150), ('cfast_width', 210), ('sill', 100), ('face', 'FRONT'), ('face_offset', 639.0), ('vent_from', 10), ('vent_to', 11), ('material_ceiling', 'concrete'), ('material_floor', 'concrete'), ('material_wall', 'concrete'), ('heat_detectors', 0), ('smoke_detectors', 0), ('sprinklers', 0), ('is_vertical', 0), ('vent_from_name', 'r10'), ('vent_to_name', 'OUTSIDE'), ('room_area', None), ('x1', 2934), ('y1', 486), ('z1', 950), ('center_x', 2829), ('center_y', 470), ('center_z', 875), ('fire_model_ignore', 0), ('mvent_throughput', None), ('flow_direction', None), ('air_grille_surface', None), ('evacuees_density', None), ('terminal_door', None), ('points', '[[2724, 486], [2934, 486], [2934, 454], [2724, 454]]'), ('origin_room', None), ('orig_type', 'WIN'), ('has_door', None), ('teleport_from', None), ('teleport_to', None), ('adjacents', None), ('stair_direction', None), ('exit_weight', None), ('room_exits_weights', None)])]
             if query.startswith("SELECT adjacents FROM aamks_geom"):
                 return [{'adjacents':'r8;0.255;0.152'}]
             if query.startswith("UPDATE"):
@@ -52,19 +54,31 @@ class TestDrawAndLog(TestCase):
                 return [OrderedDict([('width', 980), ('depth', 945), ('height', 350)])]
             if query.startswith("SELECT name from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1"):
                 return [OrderedDict([('name', 'r1')]), OrderedDict([('name', 'c2')])]
+            if query.startswith("SELECT type_sec, name, vent_from_name, vent_to_name, vent_from, vent_to, cfast_width, sill, height, width, face_offset, face FROM aamks_geom WHERE type_tri='DOOR'"):
+                return [OrderedDict([('type_sec', 'DOOR'), ('name', 'd1'), ('vent_from_name', 's1'), ('vent_to_name', 'OUTSIDE'), ('vent_from', 1), ('vent_to', 11), ('cfast_width', 90), ('sill', 0), ('height', 200), ('width', 32), ('face_offset', 219.0), ('face', 'LEFT')]),
+                        OrderedDict([('type_sec', 'DOOR'), ('name', 'd2'), ('vent_from_name', 's1'), ('vent_to_name', 'r2'), ('vent_from', 1), ('vent_to', 2), ('cfast_width', 90), ('sill', 0), ('height', 200), ('width', 32), ('face_offset', 249.0), ('face', 'RIGHT')]),
+                        OrderedDict([('type_sec', 'HOLE'), ('name', 'z7'), ('vent_from_name', 'r2'), ('vent_to_name', 'r4'), ('vent_from', 2), ('vent_to', 4), ('cfast_width', 945), ('sill', 0), ('height', 350), ('width', 32), ('face_offset', 4.0), ('face', 'RIGHT')])]
+            if query.startswith("SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.name IN"):
+                return [OrderedDict([('name', 'd2'), ('vent_from_name', 's1'), ('face', 'RIGHT'), ('face_offset', 249.0), ('wwidth', 32), ('wdepth', 86), ('sill', 0), ('height', 200), ('width', 635), ('depth', 565), ('type_sec', 'STAI')]),
+                        OrderedDict([('name', 'w3'), ('vent_from_name', 'c3'), ('face', 'LEFT'), ('face_offset', 110.0), ('wwidth', 32), ('wdepth', 285), ('sill', 100), ('height', 150), ('width', 2705), ('depth', 515), ('type_sec', 'COR')]),
+                        OrderedDict([('name', 'w4'), ('vent_from_name', 'r2'), ('face', 'FRONT'), ('face_offset', 263.0), ('wwidth', 259), ('wdepth', 32), ('sill', 100), ('height', 150), ('width', 1035), ('depth', 945), ('type_sec', 'ROOM')]),
+                        OrderedDict([('name', 'd17'), ('vent_from_name', 'a6'), ('face', 'REAR'), ('face_offset', 458.0), ('wwidth', 86), ('wdepth', 32), ('sill', 0), ('height', 200), ('width', 1035), ('depth', 945), ('type_sec', 'HALL')])]
+            if query.startswith("CREATE TABLE IF NOT EXISTS fire_origin(name,is_room,x,y,z,loc_x, loc_y,floor,f_id,height,devc,major,sim_id)"):
+                return None
             else:
                 raise Exception("Unknown query: " + query)
         self.mock_sqlite_instance.query.side_effect = side_effect
 
         self.draw = DrawAndLog(sim_id='123')
         self.draw.conf = Json().read('/usr/local/aamks/installer/demo/three/conf.json')
+        self.maxDiff = None 
 
     def test_draw_init(self):
         self.assertEqual(self.draw._sim_id, '123')
         self.assertIsInstance(self.draw.data_for_psql, OrderedDict)
         self.MockJson.assert_called_once()
         self.mock_json_instance.read.assert_has_calls([call(f'{os.environ["AAMKS_PROJECT"]}/conf.json'), call(f'{os.environ["AAMKS_PATH"]}/evac/config.json')])
-        self.MockSqlite.assert_called_once_with(f'{os.environ["AAMKS_PROJECT"]}/aamks.sqlite')
+        self.MockSqlite.assert_has_calls([call(f'{os.environ["AAMKS_PROJECT"]}/workers/123/aamks_123.sqlite'), call(f'{os.environ["AAMKS_PROJECT"]}/aamks_geom.sqlite')])
 
     def tearDown(self):
         patch.stopall() # Stop patching after the test
@@ -133,48 +147,36 @@ class TestDrawAndLog(TestCase):
     @patch('montecarlo.cfast_mcarlo.uniform')
     @patch.object(DrawAndLog, 'sections', new_callable=PropertyMock, create=True)
     @patch.object(DrawAndLog, '_fire', new_callable=PropertyMock, create=True)
-    def test_draw_windows_opening_full_open(self, mock_fire, mock_sections, mock_uniform):
-        mock_uniform.return_value = 0.01
+    def test_draw_windows_opening(self, mock_fire, mock_sections, mock_uniform):
+        mock_uniform.side_effect = [0.04, 0.14, 1]
         mock_fire.return_value.f_id = 'f2'
         mock_sections.return_value = {'INIT': {'EXTERIOR_TEMPERATURE': 10}}
 
         self.draw._draw_windows_opening()
 
         self.assertEqual(self.draw._fire_openings, [(2.59, 1.5, 1)])
-        self.assertEqual(self.draw.data_for_psql['123']['w'], [1])
-        self.assertEqual(self.draw.sections['VENT'], [{'TYPE': 'WALL', 'ID': 'w4', 'COMP_IDS': ["'r2'", "'OUTSIDE'"], 'WIDTH': 2.59, 'TOP': 2.5, 'BOTTOM': 1.0, 'OFFSET': 2.63, 'FACE': 'FRONT', 'CRITERION': ["'TIME'", 'T = 0,1', 'F = 0,1']}])
+        self.assertEqual(self.draw.data_for_psql['123']['w'], [1, 0.25, 0])
+        self.assertEqual(self.draw._opened_objects, {'w4': 1, 'w15': 0.25, 'w26': 0})
+        self.assertEqual(self.draw.sections['VENT'], 
+            [{'TYPE': 'WALL', 'ID': 'w4', 'COMP_IDS': ["'r2'", "'OUTSIDE'"], 'WIDTH': 2.59, 'TOP': 2.5, 'BOTTOM': 1.0, 'OFFSET': 2.63, 'FACE': 'FRONT', 'CRITERION': ["'TIME'", 'T = 0,1', 'F = 0,1']},
+             {'TYPE': 'WALL', 'ID': 'w15', 'COMP_IDS': ["'a6'", "'OUTSIDE'"], 'WIDTH': 2.58, 'TOP': 5.5, 'BOTTOM': 1.0, 'OFFSET': 2.65, 'FACE': 'FRONT', 'CRITERION': ["'TIME'", 'T = 0,1', 'F = 0,0.25']},
+             {'TYPE': 'WALL', 'ID': 'w26', 'COMP_IDS': ["'r10'", "'OUTSIDE'"], 'WIDTH': 2.1, 'TOP': 2.5, 'BOTTOM': 1.0, 'OFFSET': 6.39, 'FACE': 'FRONT', 'CRITERION': 'TEMPERATURE', 'SETPOINT': 200, 'PRE_FRACTION': 0, 'POST_FRACTION': 1, 'DEVC_ID': 't_w26'}])
 
-    @patch('montecarlo.cfast_mcarlo.uniform')
-    @patch.object(DrawAndLog, 'sections', new_callable=PropertyMock, create=True)
     @patch.object(DrawAndLog, '_fire', new_callable=PropertyMock, create=True)
-    def test_draw_windows_opening_quarter_open(self, mock_fire, mock_sections, mock_uniform):
-        mock_uniform.return_value = 0.14
+    @patch('montecarlo.cfast_mcarlo.binomial')
+    def test_draw_doors_and_holes_opening(self, mock_binomial, mock_fire):
+        mock_binomial.side_effect = [1, 0]
         mock_fire.return_value.f_id = 'f2'
-        mock_sections.return_value = {'INIT': {'EXTERIOR_TEMPERATURE': 10}}
 
-        self.draw._draw_windows_opening()
+        self.draw._draw_doors_and_holes_opening()
 
-        self.assertEqual(self.draw._fire_openings, [(2.59, 1.5, 0.25)])
-        self.assertEqual(self.draw.data_for_psql['123']['w'], [0.25])
-        self.assertEqual(self.draw.sections['VENT'], [{'TYPE': 'WALL', 'ID': 'w4', 'COMP_IDS': ["'r2'", "'OUTSIDE'"], 'WIDTH': 2.59, 'TOP': 2.5, 'BOTTOM': 1.0, 'OFFSET': 2.63, 'FACE': 'FRONT', 'CRITERION': ["'TIME'", 'T = 0,1', 'F = 0,0.25']}])
-
-    @patch('montecarlo.cfast_mcarlo.uniform')
-    @patch.object(DrawAndLog, 'sections', new_callable=PropertyMock, create=True)
-    @patch.object(DrawAndLog, '_fire', new_callable=PropertyMock, create=True)
-    def test_draw_windows_opening_not_open(self, mock_fire, mock_sections, mock_uniform):
-        mock_uniform.return_value = 1
-        mock_fire.return_value.f_id = 'f2'
-        mock_sections.return_value = {'INIT': {'EXTERIOR_TEMPERATURE': 10}}
-
-        self.draw._draw_windows_opening()
-
-        self.assertEqual(self.draw._fire_openings, [])
-        self.assertEqual(self.draw.data_for_psql['123']['w'], [0])
-        self.assertEqual(self.draw.sections['VENT'], [{'TYPE': 'WALL', 'ID': 'w4', 'COMP_IDS': ["'r2'", "'OUTSIDE'"], 'WIDTH': 2.59, 'TOP': 2.5, 'BOTTOM': 1.0, 'OFFSET': 2.63, 'FACE': 'FRONT', 'CRITERION': 'TEMPERATURE', 'SETPOINT': 200, 'PRE_FRACTION': 0, 'POST_FRACTION': 1, 'DEVC_ID': 't_w4'}])
-
-    def test_draw_doors_and_holes_opening(self):
-        # to do after update
-        self.assertEqual(2+2, 5)
+        self.assertEqual(self.draw.sections['DOORS'],
+            [{'TYPE': 'WALL', 'ID': 'd1', 'COMP_IDS': ["'s1'", "'OUTSIDE'"], 'WIDTH': 0.9, 'TOP': 2.0, 'BOTTOM': 0.0, 'OFFSET': 2.19, 'FACE': 'LEFT', 'CRITERION': ["'TIME'", 'T = 0,1', 'F = 1,1']},
+            {'TYPE': 'WALL', 'ID': 'd2', 'COMP_IDS': ["'s1'", "'r2'"], 'WIDTH': 0.9, 'TOP': 2.0, 'BOTTOM': 0.0, 'OFFSET': 2.49, 'FACE': 'RIGHT', 'CRITERION': ["'TIME'", 'T = 0,1', 'F = 0,0']},
+            {'TYPE': 'WALL', 'ID': 'z7', 'COMP_IDS': ["'r2'", "'r4'"], 'WIDTH': 9.45, 'TOP': 3.5, 'BOTTOM': 0.0, 'OFFSET': 0.04, 'FACE': 'RIGHT', 'CRITERION': ["'TIME'", 'T = 0', 'F = 1']}])
+        self.assertEqual(self.draw.data_for_psql['123']['door'], [1, 0])
+        self.assertEqual(self.draw._fire_openings, [(0.32, 3.5, 1)])
+        self.assertEqual(self.draw._opened_objects, {'d1': 1, 'd2': 0})
 
     @patch('montecarlo.cfast_mcarlo.binomial')
     def test_vvents_opening(self, mock_binomial):
@@ -184,6 +186,7 @@ class TestDrawAndLog(TestCase):
 
         self.assertEqual(self.draw.data_for_psql['123']['vvent'], [1, 1])
         self.assertEqual(self.draw.sections['vvents'], [(1, 'b1'), (1, 'b2')])
+        self.assertEqual(self.draw._opened_objects, {'b1': 1, 'b2': 1})
 
     @patch.object(DrawAndLog, '_fire', new_callable=PropertyMock, create=True)
     @patch.object(DrawAndLog, '_fires', new_callable=PropertyMock, create=True)
@@ -247,9 +250,17 @@ class TestDrawAndLog(TestCase):
         self.assertEqual(self.draw.sections['DEVC'], [{'COMP_ID': 'r4','DEPTH_UNITS': 'M','ID': 't_f2','LOCATION': [0.48, 6.67, 0],
                                                        'NORMAL': [0.0, 0.0, 1.0],'TEMPERATURE_DEPTH': 0,'TYPE': 'PLATE'}])
 
-    def test_draw_window_and_door_targets(self):
-        # to do after update
-        self.assertEqual(2+2, 5)
+    @patch.object(DrawAndLog, '_opened_objects', new_callable=PropertyMock, create=True)
+    def test_draw_window_and_door_targets(self, mock_opened_objects):
+        mock_opened_objects.return_value = {'d2': 0, 'w3': 0, 'w4': 0, 'd17': 0, 'd18': 1, 'w6': 1}
+
+        self.draw._draw_window_and_door_targets()
+
+        self.assertEqual(self.draw.sections['DEVC'],
+                        [{'ID': 't_d2', 'COMP_ID': 's1', 'LOCATION': [0, 2.73, 1.0], 'TYPE': 'PLATE', 'NORMAL': [1.0, 0.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'},
+                        {'ID': 't_w3', 'COMP_ID': 'c3', 'LOCATION': [27.05, 2.52, 0.75], 'TYPE': 'PLATE', 'NORMAL': [-1.0, 0.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'},
+                        {'ID': 't_w4', 'COMP_ID': 'r2', 'LOCATION': [3.92, 0, 0.75], 'TYPE': 'PLATE', 'NORMAL': [0.0, 1.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'},
+                        {'ID': 't_d17', 'COMP_ID': 'a6', 'LOCATION': [5.34, 9.45, 1.0], 'TYPE': 'PLATE', 'NORMAL': [0.0, -1.0, 0.0], 'TEMPERATURE_DEPTH': 0, 'DEPTH_UNITS': 'M'}])
 
     @patch('montecarlo.cfast_mcarlo.binomial')
     def test_draw_triggers(self, mock_binomial):
@@ -286,19 +297,30 @@ class TestCfastMcarlo(TestCase):
         self.mock_psql_instance.query = MagicMock()
 
         def side_effect(query, args=None):
-            if query.startswith("SELECT tbl_name FROM sqlite_master WHERE type = 'table' AND name = 'fire_origin'"):
-                return [OrderedDict([('tbl_name', 'fire_origin')])]
             if query.startswith("SELECT name, vent_from_name, vent_to_name, width, depth FROM aamks_geom WHERE type_sec='VVENT'"):
                 return [OrderedDict([('name', 'b2'), ('vent_from_name', 'r8'), ('vent_to_name', 'r10'), ('width', 365), ('depth', 285)]),
                         OrderedDict([('name', 'b1'), ('vent_from_name', 's1.1'), ('vent_to_name', 'OUTSIDE'), ('width', 240), ('depth', 250)])]
-            if query.startswith( "SELECT name, vent_from_name, vent_to_name, width, depth, height, mvent_throughput, is_vertical FROM aamks_geom WHERE type_sec = 'MVENT'"):
-                return [OrderedDict([('name', 'm1'), ('vent_from_name', 'r2'), ('vent_to_name', 'r2'), ('width', 105), ('depth', 400), ('height', 50), ('mvent_throughput', -1), ('is_vertical', 0)]),
-                        OrderedDict([('name', 'm2'), ('vent_from_name', 'c9'), ('vent_to_name', 'c9'), ('width', 125), ('depth', 120), ('height', 200), ('mvent_throughput', 0), ('is_vertical', 1)])]
+            if query.startswith("SELECT name, vent_to_name, vent_from_name, is_vertical, mvent_throughput, air_grille_surface, z0, z1, height, x0,x1, width, y0,y1, depth FROM aamks_geom WHERE type_sec = 'MVENT'"):
+                return [OrderedDict([('name', 'm1'), ('vent_to_name', 'a6'), ('vent_from_name', 'OUTSIDE'), ('is_vertical', 1), ('mvent_throughput', 1.5), ('air_grille_surface', 'y_max'), ('z0', 350), ('z1', 400), ('height', 50), ('x0', 1050), ('x1', 1150), ('width', 100), ('y0', 1035), ('y1', 1415), ('depth', 380)]),
+                        OrderedDict([('name', 'm2'), ('vent_to_name', 'a6'), ('vent_from_name', 'OUTSIDE'), ('is_vertical', 0), ('mvent_throughput', 1.5), ('air_grille_surface', 'y_max'), ('z0', 350), ('z1', 400), ('height', 50), ('x0', 1050), ('x1', 1150), ('width', 100), ('y0', 1035), ('y1', 1415), ('depth', 380)])]
+            if query.startswith("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='a6'"):
+                return [OrderedDict([('x0', 1050), ('x1', 2085), ('y0', 470), ('y1', 1415), ('z0', 350), ('z1', 1050), ('width', 1035), ('depth', 945), ('height', 700)])]
             if query.startswith("SELECT global_type_id, name, width, depth, height from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1"):
                 return [OrderedDict([('global_type_id', 2), ('name', 'r2'), ('width', 1035), ('depth', 945), ('height', 350)]),
                         OrderedDict([('global_type_id', 1), ('name', 's1'), ('width', 635), ('depth', 565), ('height', 700)])]
+            if query.startswith("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to"):
+                return [OrderedDict([('name', 'b1'), ('room_area', None), ('type_sec', 'VVENT'), ('vent_from_name', 'OUTSIDE'), ('vent_to_name', 's1.1'), ('vvent_room_seq', 1), ('width', 240), ('depth', 250), ('x0', 340.0), ('y0', 285.0)]),
+                        OrderedDict([('name', 'b2'), ('room_area', None), ('type_sec', 'VVENT'), ('vent_from_name', 's5.2'), ('vent_to_name', 'OUTSIDE'), ('vvent_room_seq', 2), ('width', 245), ('depth', 250), ('x0', 362.5), ('y0', 505.0)])]
+            if query.startswith("SELECT name, global_type_id, width, depth, height from aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1"):
+                return [OrderedDict([('name', 'r2'), ('global_type_id', 2), ('width', 1035), ('depth', 945), ('height', 350)]),
+                        OrderedDict([('name', 'c3'), ('global_type_id', 3), ('width', 2705), ('depth', 515), ('height', 350)]),
+                        OrderedDict([('name', 's1'), ('global_type_id', 1), ('width', 635), ('depth', 565), ('height', 700)])]
+            else:
+                raise Exception("Unknown query: " + query)
+
 
         self.mock_sqlite_instance.query.side_effect = side_effect
+        self.maxDiff = None 
 
         self.cfast_mcarlo = CfastMcarlo('123')
         self.cfast_mcarlo.conf = Json().read('/usr/local/aamks/installer/demo/three/conf.json')
@@ -310,7 +332,7 @@ class TestCfastMcarlo(TestCase):
 
     def test_init(self):
         self.assertEqual(self.cfast_mcarlo._sim_id, '123')
-        self.MockSqlite.assert_called_once_with(f'{os.environ["AAMKS_PROJECT"]}/aamks.sqlite')
+        self.MockSqlite.assert_has_calls([call(f'{os.environ["AAMKS_PROJECT"]}/aamks_geom.sqlite'), call(f'{os.environ["AAMKS_PROJECT"]}/workers/123/aamks_123.sqlite')])
         self.MockJson.assert_called_once()
         self.MockPsql.assert_called_once()
         self.mock_json_instance.read.assert_has_calls([call(f'{os.environ["AAMKS_PROJECT"]}/conf.json'), call(f'{os.environ["AAMKS_PATH"]}/evac/config.json')])
@@ -373,56 +395,68 @@ class TestCfastMcarlo(TestCase):
                                                                          origin[0], origin[1], origin[2], leak_area[0], leak_area[1], grid[0], grid[1], grid[2])
         self.assertEqual(actual_row, correct_compa)
 
+    @patch.object(CfastMcarlo, 'cfast_choice_compartments_names', new_callable=PropertyMock, create=True)
     @patch.object(CfastMcarlo, 'samples', new_callable=PropertyMock, create=True)
-    def test_section_vvent(self, mock_samples):
+    def test_section_vvent(self, mock_samples, mock_choice_compartments_names):
         mock_samples.return_value = {'vvents': [(1, 'b2'), (1, 'b1')]}
+        mock_choice_compartments_names.return_value = ['s1', 's5']
         correct_row = "!! SECTION NATURAL VENT\n" \
-        "&VENT TYPE = 'CEILING', ID = 'b2', COMP_IDS = 'r8', 'r10', AREA = 10.4, SHAPE = 'SQUARE', OFFSETS = 0, 0, CRITERION = 'TIME' T = 0,90 F = 0,1 /\n" \
-        "&VENT TYPE = 'CEILING', ID = 'b1', COMP_IDS = 's1', 'OUTSIDE', AREA = 6.0, SHAPE = 'SQUARE', OFFSETS = 0, 0, CRITERION = 'TIME' T = 0,90 F = 0,1 /\n"
+        "&VENT TYPE = 'CEILING', ID = 'b1', COMP_IDS = 'OUTSIDE', 's1', AREA = 6.0, SHAPE = 'SQUARE', OFFSETS = 3.4, 2.85, CRITERION = 'TIME' T = 0,90 F = 0,1 /\n" \
+        "&VENT TYPE = 'CEILING', ID = 'b2', COMP_IDS = 's5', 'OUTSIDE', AREA = 6.12, SHAPE = 'SQUARE', OFFSETS = 3.62, 5.05, CRITERION = 'TIME' T = 0,90 F = 0,1 /\n"
 
         actual_row = self.cfast_mcarlo._section_vvent()
 
         self.assertEqual(actual_row, correct_row)
 
-    def test_section_mvent(self):
+    @patch.object(CfastMcarlo, 'cfast_choice_compartments_names', new_callable=PropertyMock, create=True)
+    def test_section_mvent(self, mock_choice_compartments_names):
+        mock_choice_compartments_names.return_value = ['a6']
         correct_row = "!! SECTION MECHANICAL VENT\n" \
-        "&VENT TYPE = 'MECHANICAL', ID = 'm1', COMP_IDS = 'r2', 'OUTSIDE', AREAS = 4.2, 4.2, HEIGHTS = 0.5, 50, FLOW = 1, CUTOFFS = 200, 300, ORIENTATIONS = 'HORIZONTAL', OFFSETS = 0, 0, CRITERION = 'TIME' T = 60,120 F = 0,1 /\n" \
-        "&VENT TYPE = 'MECHANICAL', ID = 'm2', COMP_IDS = 'OUTSIDE', 'c9', AREAS = 1.5, 1.5, HEIGHTS = 2.0, 200, FLOW = 0, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 0, 0, CRITERION = 'TIME' T = 60,120 F = 0,1 /\n"
+        "&VENT TYPE = 'MECHANICAL', ID = 'm1', COMP_IDS = 'OUTSIDE', 'a6', AREAS = 0.5, 0.5, HEIGHTS = 0.25, 0.25, FLOW = 1.5, CUTOFFS = 200, 300, ORIENTATIONS = 'VERTICAL', OFFSETS = 0.5, 9.45, CRITERION = 'TIME' T = 60,120 F = 0,1 /\n" \
+        "&VENT TYPE = 'MECHANICAL', ID = 'm2', COMP_IDS = 'OUTSIDE', 'a6', AREAS = 0.5, 0.5, HEIGHTS = 0.25, 0.25, FLOW = 1.5, CUTOFFS = 200, 300, ORIENTATIONS = 'HORIZONTAL', OFFSETS = 0.5, 9.45, CRITERION = 'TIME' T = 60,120 F = 0,1 /\n"
 
         actual_row = self.cfast_mcarlo._section_mvent()
 
         self.assertEqual(actual_row, correct_row)
 
+    @patch.object(CfastMcarlo, 'cfast_choice_compartments_names', new_callable=PropertyMock, create=True)
     @patch.object(CfastMcarlo, 'samples', new_callable=PropertyMock, create=True)
-    def test_cfast_record(self, mock_samples):
+    def test_cfast_record(self, mock_samples, mock_choice_compartments_names):
         mock_samples.return_value = {'VENT': [{'TYPE': 'WALL', 'ID': 'w4', 'COMP_IDS': ["'r2'", "'OUTSIDE'"], 'WIDTH': 2.59, 'TOP': 2.5, 'BOTTOM': 1.0, 'OFFSET': 2.63, 'FACE': 'FRONT', 'CRITERION': 'TEMPERATURE', 'SETPOINT': 200, 'PRE_FRACTION': 0, 'POST_FRACTION': 1, 'DEVC_ID': 't_w4'}]}
+        mock_choice_compartments_names.return_value = ['r2']
         correct_row = "&VENT TYPE = 'WALL' ID = 'w4' COMP_IDS = 'r2', 'OUTSIDE' WIDTH = 2.59 TOP = 2.5 BOTTOM = 1.0 OFFSET = 2.63 FACE = 'FRONT' CRITERION = 'TEMPERATURE' SETPOINT = 200 PRE_FRACTION = 0 POST_FRACTION = 1 DEVC_ID = 't_w4'/\n"
 
         actual_row = self.cfast_mcarlo._cfast_record('VENT')
 
         self.assertEqual(actual_row, correct_row)
 
+    @patch.object(CfastMcarlo, 'cfast_choice_compartments_names', new_callable=PropertyMock, create=True)
     @patch.object(CfastMcarlo, 'samples', new_callable=PropertyMock, create=True)
-    def test_section_heat_detectors(self, mock_samples):
-        mock_samples.return_value = {'heat_detectors': [64.34, 0]}
+    def test_section_heat_detectors(self, mock_samples, mock_choice_compartments_names):
+        mock_choice_compartments_names.return_value = ['r2', 's1']
+        mock_samples.return_value = {'heat_detectors': [64.34, 60.06, 0]}
         correct_row = "!! HEAT DETECTORS\n&DEVC ID = 'hd2' TYPE = 'HEAT_DETECTOR', COMP_ID = 'r2', LOCATION = 5.17, 4.72, 3.5, SETPOINT = 64.34, RTI = 5 /\n"
 
         actual_row = self.cfast_mcarlo._section_heat_detectors()
 
         self.assertEqual(actual_row, correct_row)
 
+    @patch.object(CfastMcarlo, 'cfast_choice_compartments_names', new_callable=PropertyMock, create=True)
     @patch.object(CfastMcarlo, 'samples', new_callable=PropertyMock, create=True)
-    def test_section_smoke_detectors(self, mock_samples):
-        mock_samples.return_value = {'smoke_detectors': [26.41, 0]}
+    def test_section_smoke_detectors(self, mock_samples, mock_choice_compartments_names):
+        mock_choice_compartments_names.return_value = ['r2', 's1']
+        mock_samples.return_value = {'smoke_detectors': [26.41, 23.64, 0]}
         correct_row = "!! SMOKE DETECTORS\n&DEVC ID = 'sd2' TYPE = 'SMOKE_DETECTOR', COMP_ID = 'r2', LOCATION = 5.17, 4.72, 3.5, SETPOINT = 26.41 /\n"
 
         actual_row = self.cfast_mcarlo._section_smoke_detectors()
 
         self.assertEqual(actual_row, correct_row)
 
+    @patch.object(CfastMcarlo, 'cfast_choice_compartments_names', new_callable=PropertyMock, create=True)
     @patch.object(CfastMcarlo, 'samples', new_callable=PropertyMock, create=True)
-    def test_section_sprinklers(self, mock_samples):
-        mock_samples.return_value = {'sprinklers': [[62.67, 9.84776e-05], [0]]}
+    def test_section_sprinklers(self, mock_samples, mock_choice_compartments_names):
+        mock_choice_compartments_names.return_value = ['r2', 's1']
+        mock_samples.return_value = {'sprinklers': [[62.67, 9.84776e-05], [62.67, 9.84776e-05], [0]]}
         correct_row = "!! SECTION SPRINKLERS\n&DEVC ID = 'sp2' TYPE = 'SPRINKLER', COMP_ID = 'r2', LOCATION = 5.17, 4.72, 3.5, SETPOINT = 62.67, RTI = 100, SPRAY_DENSITY = 9.84776e-05 /\n"
 
         actual_row = self.cfast_mcarlo._section_sprinklers()

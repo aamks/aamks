@@ -2,12 +2,14 @@ from operator import sub
 from math import sqrt
 import logging
 from scipy.spatial.distance import cdist
-
+from evac.compartment import Compartment
+from typing import List, Optional
+from evac.exit import CompartmentExit, RoomGoalExit, Teleport, TermianlDoorExit
 
 class Evacuee:
 
     def __init__(self, origin: tuple, v_speed, h_speed, pre_evacuation, detection_constituents, detection_compa,
-                 alpha_v, beta_v, node_radius, type, current_floor) -> None:
+                 alpha_v, beta_v, node_radius, type, current_floor, reset_behavior_due_to_panic, id) -> None:
         """
 
         :type origin: tuple
@@ -26,6 +28,7 @@ class Evacuee:
         self.speed = 0
         self.thermal_injury = 0
         self.position = origin
+        self.prev_position = (0, 0)
         self.finished = 1
         self.node_radius = node_radius
         self.pre_evacuation_time = pre_evacuation
@@ -33,24 +36,25 @@ class Evacuee:
         self.detection_compa = detection_compa
         self.optical_density_at_position = 0.0
         self.unique_agent_id_on_different_floors = None
-        self.target_teleport_coordinates = None
 
         self.alpha_v = alpha_v
         self.beta_v = beta_v
         self.max_speed = h_speed
         self.num_of_obstacle_neighbours = 0
         self.num_of_orca_lines = 0
-        self.agent_has_no_escape = 0
-        self.exit_coordinates = None
+        self.agent_has_no_escape = False
         self.exit = None
-        self.agent_leaves_floor = False
         self.path = None
         
         self.type = type
         self.leader = None
-        self.current_floor = None
-
-
+        self.current_floor = current_floor
+        self.prev_floor = current_floor
+        self.id = id
+        self.current_compartment: Compartment = None
+        # it resets moving behaviour due to smoke in next room or 
+        # people running towards us (due to the fire that is further away)
+        self.reset_behavior_due_to_panic = reset_behavior_due_to_panic
     def __getattr__(self, name):
         return self.__dict__[name]
 
@@ -83,28 +87,50 @@ class Evacuee:
 
 
     def has_agent_reached_teleport(self):
-        if self.exit_coordinates is None:
+        if not isinstance(self.exit, Teleport):
             return
-        dist = cdist([self.position], [self.exit_coordinates], 'euclidean')
-        if dist < 50 and self.target_teleport_coordinates is not None and self.agent_leaves_floor is True:
-            self.finished = 0
-
-    def check_if_agent_reached_outside_door(self):
-        if self.exit_coordinates is None:
-            return 
-        dist = cdist([self.position], [self.exit_coordinates], 'euclidean')
-        if dist < 50 and self.target_teleport_coordinates is None and self.agent_leaves_floor is True:
+        dist = cdist([self.position], [(self.exit.x,self.exit.y)], 'euclidean')
+        if dist < 50:
             self.finished = 0
             return True
         return False
 
+    def check_if_agent_reached_outside_door(self):
+
+        if not (isinstance(self.exit, TermianlDoorExit) or isinstance(self.exit, CompartmentExit)or isinstance(self.exit, RoomGoalExit)):
+            return
+
+        is_terminal = self.exit.is_terminal()
+        dist = cdist([self.position], [(self.exit.x_direction,self.exit.y_direction)], 'euclidean')
+
+        if dist < 50 and is_terminal:
+            self.finished = 0
+            return True
+        if self.current_compartment.name == 'outside':
+            self.finished = 0
+            return True
+
+        return False
+
     def set_goal(self, navmesh_path):
-        assert isinstance(navmesh_path, list), '%goal is not a list'
+        if navmesh_path is None:
+            self.goal = None
+            return
         if self.agent_has_no_escape == 1:
             return
+
+        if isinstance(self.exit, Teleport):
+            exit_coordinates = (self.exit.x,self.exit.y)
+        elif isinstance(self.exit, TermianlDoorExit) or isinstance(self.exit, CompartmentExit) or isinstance(self.exit, RoomGoalExit):
+            exit_coordinates = (self.exit.x_direction,self.exit.y_direction)
+        elif self.exit == 'follow_leader':
+            exit_coordinates = self.leader.position
+        else:
+            raise Exception('self.exit has inappropriate class')
+
         dist_last_navmesh_point = cdist([self.position], [navmesh_path[-1]], 'euclidean')
         dist_first_navmesh_point = cdist([self.position], [navmesh_path[0]], 'euclidean')
-        dist_coordinates = cdist([self.position], [self.exit_coordinates], 'euclidean')
+        dist_coordinates = cdist([self.position], [exit_coordinates], 'euclidean')
         if ((dist_coordinates < 50 or dist_last_navmesh_point < 50) and dist_first_navmesh_point > 0.001):
             self.goal = [int(navmesh_path[0][0]), int(navmesh_path[0][1])]
         else:
@@ -133,3 +159,16 @@ class Evacuee:
         if self.beta_v == 0:
             self.beta_v = 0.00000001
         self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.beta_v/self.alpha_v * extinction_coefficient))
+
+    def has_agent_moved(self):
+        if self.prev_position != self.position:
+            self.prev_position = self.position
+            return True
+        return False
+
+    def has_agent_changed_floor(self):
+        if self.prev_floor != self.current_floor:
+            _prev_floor = self.prev_floor
+            self.prev_floor = self.current_floor
+            return _prev_floor
+        return None

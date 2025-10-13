@@ -7,32 +7,48 @@ function main() {
 	{
 		header("Location: ../login.php?session_finished_information=1");
 	}
+	if (isset($_COOKIE['is_remember'])) {
+        setcookie("aamks", session_id(), time() + (86400 * 7), "/");
+    } else {
+        setcookie("aamks", session_id(), time() + 86400, "/");
+    }
 	$_SESSION['nn']->htmlHead("Animator");
 	$_SESSION['nn']->menu();
 
-	$data = $_SESSION['nn']->query("SELECT * from simulations where project = ".$_SESSION['main']['project_id']." and scenario_id = ".$_SESSION['main']['scenario_id']." and status = '0' and status is not null order by iteration desc;");
+	$data = $_SESSION['nn']->query("SELECT iteration, hrrpeak, alpha, heat_of_combustion, max_temp, min_hgt_compa, 
+           min_hgt_cor, min_vis_compa, min_vis_cor, tot_heat, modified, is_anim, results, wcbe, dcbe_time 
+    FROM simulations 
+    WHERE project = {$_SESSION['main']['project_id']} 
+      AND scenario_id = {$_SESSION['main']['scenario_id']} 
+      AND status = '0' 
+      AND status IS NOT NULL 
+    ORDER BY iteration DESC 
+    LIMIT 30;
+	");
 	echo '
 	<section class="container">
   <h2 class="title">Search Table Record for '.$_SESSION['main']['project_name'].' / '.$_SESSION['main']['scenario_name'].'</h2>
-	<p>You can sort data by columns head and filter column using one of the comparators "<, <=, >, >=" or by intervall e.g. "10..20"</p>
+	<p>You can sort loaded data by columns head and filter column using one of the comparators "<, <=, =, >, >=" or by intervall e.g. "10..20"</p>
+	<p>After using the filter field, you can send a query using the button and return all records with the values ​​of the selected column. (use the correct comparator)</p>
+	<p>Filters and sorting works on loaded data. The page loads dynamically while scrolling.</p>
   <table id="animTable">
     <thead>';
 	echo '<tr>
-	  <th data-sortas="numeric" style="width:45px">iteration</th>
-	  <th data-sortas="numeric">hrrpeak</th>
-	  <th data-sortas="numeric">alpha</th>
-	  <th data-sortas="numeric">heat of combustion</th>
-	  <th data-sortas="numeric">max temp</th>
-	  <th data-sortas="numeric">min hgt compa</th>
-	  <th data-sortas="numeric">min hgt cor</th>
-	  <th data-sortas="numeric">min vis compa</th>
-	  <th data-sortas="numeric">min vis cor</th>
-	  <th data-sortas="numeric">total heat</th>
-	  <th data-sortas="numeric">RSET</th>
-	  <th data-sortas="numeric">ASET</th>
-	  <th data-sortas="numeric">individual</th>
-	  <th data-sortas="numeric">societal</th>
-	  <th data-sortas="datetime">modified</th>
+	  <th data-sortas="numeric" columnName="iteration" style="width:45px">iteration</th>
+	  <th data-sortas="numeric" columnName="hrrpeak">hrrpeak</th>
+	  <th data-sortas="numeric" columnName="alpha">alpha</th>
+	  <th data-sortas="numeric" columnName="heat_of_combustion">heat of combustion</th>
+	  <th data-sortas="numeric" columnName="max_temp">max temp</th>
+	  <th data-sortas="numeric" columnName="min_hgt_compa">min hgt compa</th>
+	  <th data-sortas="numeric" columnName="min_hgt_cor">min hgt cor</th>
+	  <th data-sortas="numeric" columnName="min_vis_compa">min vis compa</th>
+	  <th data-sortas="numeric" columnName="min_vis_cor">min vis cor</th>
+	  <th data-sortas="numeric" columnName="tot_heat">total heat</th>
+	  <th data-sortas="numeric" columnName="wcbe">RSET</th>
+	  <th data-sortas="numeric" columnName="dcbe_time">ASET</th>
+	  <th data-sortas="numeric" columnName="results">individual</th>
+	  <th data-sortas="numeric" columnName="results">societal</th>
+	  <th data-sortas="datetime" columnName="modified">modified</th>
 	  <th>animation</th>
 	</tr>
     </thead>
@@ -71,10 +87,32 @@ function main() {
 	echo ' </tbody>	</table></section>';
 	echo '<script src="/aamks/js/fancyTable.js"></script>';
 	echo '<script>
+			let currentPage = 1;
+			let keepFetch = true;
+			const loadRows = () => {
+			if (keepFetch){
+				$.get(`/aamks/ajax.php?ajaxAnimatorTable&page=${currentPage}`, function(data) {
+					if (data.trim() !== "") {
+						$("#animTable tbody").append(data);
+						currentPage++;
+					} else {
+					 	keepFetch = false
+						console.log("No more data!")
+					}
+				}).fail(function(){
+				console.error("Error when fetching rows!")
+				});
+			}};
 			$(document).ready(function(){
+				loadRows();
 				$("#animTable").fancyTable({
 					exactMatch: "auto",
 				});
+			})
+			$(window).on("scroll", function() {
+				if ($(window).scrollTop() + $(window).height() >= $(document).height() - 400) {
+					loadRows();
+				}
 			});
 			</script>';
 

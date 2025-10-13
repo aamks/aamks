@@ -1,11 +1,12 @@
 from datetime import datetime
 import logging
 import random
-from json import loads
+from json import loads, dumps
 import sys
 import redis
 import config
 import os
+sys.path.append('/usr/local/aamks')
 from aamks import start_aamks_with_worker
 from include import Psql
 
@@ -24,9 +25,9 @@ class RedisWorker:
         db.ping()
         return db
 
-    def redis_queue_push(self, db, message):
+    def redis_queue_push(self, message):
         # push to tail of the queue (left of the list)
-        db.lpush(config.redis_worker_queue_name, message)
+        self.db.lpush(config.redis_server_queue_name, dumps(message))
 
     def redis_queue_pop(self, db):
         # pop from head of the queue (right of the list)
@@ -34,6 +35,7 @@ class RedisWorker:
         _, message = db.brpop(config.redis_worker_queue_name)
         message_json = loads(message)
         logger.debug(f'pop from head of queue \n{message_json["data"]}')
+        self.redis_queue_push(f"WORKER {host_name} - pop from head of queue \n{message_json['data']}")
         return message_json
 
     def process_message(self, message_json: str):
@@ -46,19 +48,23 @@ class RedisWorker:
         if self.host != "127.0.0.1":
             pwd = pwd.replace("home","mnt")
         logger.debug(f'starting aamks iter {sim_id} id - {job_id}')
+        self.redis_queue_push(f"WORKER {host_name} - starting aamks iter {sim_id} id - {job_id}")
         Psql().query(f"UPDATE simulations SET job_id='{job_id}' WHERE scenario_id={scenario_id} AND iteration={sim_id}")
         try:
             start_aamks_with_worker(project, user_id, sim_id)
         except Exception as e:
+            self.redis_queue_push(f"WORKER {host_name} - during sim {sim_id} AAMKS halting error \n ERROR: {e}")
             logger.error(f'during sim {sim_id} AAMKS halting error \n ERROR: {e}')
         logger.debug(f"finished {sim_id} - {pwd}")
+        self.redis_queue_push(f"WORKER {host_name} - finished {sim_id} - {pwd}")
 
     def main(self):
         """Consumes items from the Redis queue"""
         logger.debug('started worker')
-        db = self.redis_db()
+        self.db = self.redis_db()
+        self.redis_queue_push(f"WORKER {host_name} - started worker process")
         while True:
-            message_json = self.redis_queue_pop(db) 
+            message_json = self.redis_queue_pop(self.db) 
             self.process_message(message_json)
 
 def prepare_logger(name):

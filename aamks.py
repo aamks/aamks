@@ -20,6 +20,8 @@ def prepare_logger(path):
     log_file = path + '/aamks.log' if path else os.getenv('AAMKS_PROJECT') + '/aamks.log'
     logger = logging.getLogger('AAMKS')
     logger.setLevel(logging.DEBUG)
+    log_dir = os.path.dirname(log_file)
+    os.makedirs(log_dir, exist_ok=True)
     fh = logging.FileHandler(log_file)
     fh.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
@@ -37,47 +39,15 @@ def start_aamks(path, user_id):
     # for local testing:
     # path = '/home/aamks_users/majster1020@wp.pl/testtttt/tptest'
     # os.environ["AAMKS_PROJECT"] = '/home/aamks_users/majster1020@wp.pl/testtttt/tptest'
-    json = Json()
-    conf = json.read("{}/conf.json".format(path))
+
     logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')
 
-    logger.warning('Start AAMKS application. Read conf.json')
     logger.info('calling OnInit()')
-    OnInit()
+    sim_range = OnInit().get_irange()
     logger.info('finished OnInit()')
-    logger.info('calling CFASTimporter()')
-    CFASTimporter()
-    logger.info('finished CFASTimporter()')
-    logger.info('calling World2d()')
-    World2d()
-    logger.info('finished World2d()')
-    logger.info('calling Obstacles()')
-    Obstacles()
-    logger.info('finished Obstacles()')
-    logger.info('calling CfastPartition()')
-    CfastPartition()
-    logger.info('finished CfastPartition()')
-
-    si = SimIterations(conf['project_id'], conf['scenario_id'], conf['number_of_simulations'])
-    for sim_id in range(*si.get()):
-        logger.info('calling CfastMcarlo() - sim %s', sim_id)
-        cfast_mc = CfastMcarlo(sim_id)
-        logger.info('finished CfastMcarlo() - sim %s', sim_id)
-        logger.info('calling cfast_mc.do_iterations()')
-        cfast_mc.do_iterations()
-        logger.info('finished cfast_mc.do_iterations()')
-        logger.info('calling EvacMcarlo()')
-        evac_mc = EvacMcarlo(sim_id)
-        logger.info('finished EvacMcarlo()')
-        logger.info('calling evac_mc.do_iterations()')
-        evac_mc.do_iterations()
-        logger.info('finished evac_mc.do_iterations()')
-    logger.info('calling OnEnd()')
-    OnEnd()
-    logger.info('finished OnEnd()')
-    logger.info('AAMKS application finished successfully')
-
-
+    for sim_id in range(*sim_range):
+        start_aamks_with_worker(path, user_id, sim_id)
+   
 def start_aamks_with_worker(path: str, user_id: str, sim_id: str):
     os.environ["AAMKS_PROJECT"] = path
     os.environ["AAMKS_USER_ID"] = user_id
@@ -86,23 +56,23 @@ def start_aamks_with_worker(path: str, user_id: str, sim_id: str):
     logger = prepare_logger(path) if not logging.getLogger('AAMKS').hasHandlers() else logging.getLogger('AAMKS')
 
     logger.info('calling OnInit()')
-    OnInit(sim_id=sim_id)
+    OnInit(sim_id)
     logger.info('finished OnInit()')
     
     logger.info('calling CFASTimporter()')
-    CFASTimporter(sim_id=sim_id)
+    CFASTimporter(sim_id)
     logger.info('finished CFASTimporter()')
 
     logger.info('calling World2d()')
-    World2d(sim_id=sim_id)
+    World2d(sim_id)
     logger.info('finished World2d()')
 
     logger.info('calling Obstacles()')
-    Obstacles(sim_id=sim_id)
+    Obstacles(sim_id)
     logger.info('finished Obstacles()')
 
     logger.info('calling CfastPartition()')
-    CfastPartition(sim_id=sim_id)
+    CfastPartition(sim_id)
     logger.info('finished CfastPartition()')
 
     logger.info('calling CfastMcarlo()')
@@ -129,7 +99,7 @@ def start_aamks_with_worker(path: str, user_id: str, sim_id: str):
     logger.info('finished evac.Worker')
     
     logger.info('calling OnEnd()')
-    OnEnd(sim_id=sim_id)
+    OnEnd(sim_id)
     logger.info('finished OnEnd()')
 
     logger.info(f'sim {sim_id} finished with status {status}')

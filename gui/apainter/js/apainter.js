@@ -32,6 +32,7 @@ var external_doors = [];
 var teleports = [];
 var rooms_and_adjecent_doors_and_holes = {};
 var virtual_obj_parents = {};
+var obstAndCompartmentMarginWidth=26;
 //}}}
 function debug() {//{{{
 	console.clear();
@@ -209,6 +210,15 @@ function cgSvg(pparent='auto') { //{{{
 	} else {
 		var elem='polyline';
 	}
+	if (cg.type =='obst')
+		d3.select(pparent)
+			.append(elem)
+			.attr('id', 'margin'+cg.name)
+			.attr('class', 'OBSTMARGIN')
+			.attr('points', obstMarginSvgPolyline(cg))
+			.attr('cx', cg.polypoints[0][0])
+			.attr('cy', cg.polypoints[0][1])
+			.attr('r', evacueeRadius)
 	d3.select(pparent)
 		.append(elem)
 		.attr('id', cg.name)
@@ -217,6 +227,17 @@ function cgSvg(pparent='auto') { //{{{
 		.attr('cx', cg.polypoints[0][0])
 		.attr('cy', cg.polypoints[0][1])
 		.attr('r', evacueeRadius)
+
+	if (cg.type =='room')
+		d3.select(pparent)
+			.append(elem)
+			.attr('id', 'margin'+cg.name)
+			.attr('class', 'COMPARTMENTMARGIN')
+			.attr('points', roomMarginSvgPolyline(cg))
+			.attr('cx', cg.polypoints[0][0])
+			.attr('cy', cg.polypoints[0][1])
+			.attr('r', evacueeRadius)
+
 }
 
 
@@ -232,6 +253,14 @@ function cgSvgVirtualObj(obj) { //{{{
 			.attr('id', virtual_obj_parents[obj.name][i][0])
 			.attr('class', gg[virtual_obj_parents[obj.name][i][1]].t + " " +gg[virtual_obj_parents[obj.name][i][1]].x)
 			.attr('points', svgPolyline(obj))
+			.attr('cx', obj.polypoints[0][0])
+			.attr('cy', obj.polypoints[0][1])
+			.attr('r', evacueeRadius)
+			d3.select(pparent)
+			.append(elem)
+			.attr('id', 'margin'+virtual_obj_parents[obj.name][i][0])
+			.attr('class', 'COMPARTMENTMARGIN')
+			.attr('points', roomMarginSvgPolyline(obj))
 			.attr('cx', obj.polypoints[0][0])
 			.attr('cy', obj.polypoints[0][1])
 			.attr('r', evacueeRadius)
@@ -292,6 +321,7 @@ function cgDbVirtualObj(parent) { //{{{
 			var vObjId = virtual_obj_parents[parent.name][i][0];
 	 		db({"name": vObjId}).remove();
 	 		document.getElementById(vObjId).remove();
+			document.getElementById('margin'+vObjId).remove();
 		}
 	}
 
@@ -482,6 +512,12 @@ function cgRemove(undoRegister=1) {//{{{
 			if (m.room_exits_weights !== undefined && cg.idx in m.room_exits_weights)
 				delete m.room_exits_weights[cg.idx];
 		});
+	}
+	if (cg.type == 'obst'){	
+		$("#margin"+cg.name).remove();
+	}
+	if (cg.type == 'room'){	
+		$("#margin"+cg.name).remove();
 	}
 }
 //}}}
@@ -821,7 +857,7 @@ function checkNegativeCords(){
 
 function holeOnExternalWall(){
 	if (cg.letter == 'z'){
-		var external = IsHoleExternal(cg);
+		var external = IsExternal(cg);
 		if (external){
 			amsg({'err':2, 'msg':"You drew a hole in the outside wall. You can't do that. The holes are used to connect compartments. In the external wall you can draw normal door, windows, mechanical or normal vents."}); 
 		}
@@ -853,7 +889,7 @@ function getRoomTypeApainterObjects(){
 
 }
 
-function IsHoleExternal(geometry){
+function IsExternal(geometry){
 
 	const [r1, r2] = getConnectedZones(geometry);
 
@@ -1145,9 +1181,91 @@ function svgPolyline(m) {//{{{
 	return points.join(" ");
 }
 
+function obstMarginSvgPolyline(m) {//{{{
+	points=deepcopy(m.polypoints);
+	points.push(points[0]);
+	points.push(points[1]);
+	if (points !== undefined && points[0] !== undefined)
+		points = scaleRectangleOutward(points);
+	return points.join(" ");
+}
+
+function roomMarginSvgPolyline(m) {//{{{
+	points=deepcopy(m.polypoints);
+	points.push(points[0]);
+	points.push(points[1]);
+	if (points !== undefined && points[0] !== undefined)
+		points = scaleRectangleInward(points);
+	return points.join(" ");
+}
+
+function scaleRectangleOutward(points) {
+	if (points.length !== 6) {
+	  throw new Error("Input points must define a rectangle with 6 points (2 redundant).");
+	}
+  
+	// Find the min and max values for x and y to determine the rectangle bounds
+	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  
+	for (const [x, y] of points) {
+	  if (x < minX) minX = x;
+	  if (y < minY) minY = y;
+	  if (x > maxX) maxX = x;
+	  if (y > maxY) maxY = y;
+	}
+  
+	// Calculate outward offset for each corner of the rectangle
+	const adjustedPoints = [
+	  [minX - obstAndCompartmentMarginWidth, minY - obstAndCompartmentMarginWidth], // Top-left corner
+	  [maxX + obstAndCompartmentMarginWidth, minY - obstAndCompartmentMarginWidth], // Top-right corner
+	  [maxX + obstAndCompartmentMarginWidth, maxY + obstAndCompartmentMarginWidth], // Bottom-right corner
+	  [minX - obstAndCompartmentMarginWidth, maxY + obstAndCompartmentMarginWidth], // Bottom-left corner
+	];
+  
+	// Add the redundant points to close the rectangle
+	adjustedPoints.push(adjustedPoints[0]); // Redundant first point
+	adjustedPoints.push(adjustedPoints[1]); // Redundant second point
+  
+	return adjustedPoints;
+  }
+
+function scaleRectangleInward(points) {
+	if (points.length !== 6) {
+	  throw new Error("Input points must define a rectangle with 6 points (2 redundant).");
+	}
+	let halfStrokeWidth = obstAndCompartmentMarginWidth/2;
+	// Find the min and max values for x and y to determine the rectangle bounds
+	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  
+	for (const [x, y] of points) {
+	  if (x < minX) minX = x;
+	  if (y < minY) minY = y;
+	  if (x > maxX) maxX = x;
+	  if (y > maxY) maxY = y;
+	}
+  
+	// Calculate outward offset for each corner of the rectangle
+	const adjustedPoints = [
+	  [minX + halfStrokeWidth, minY + halfStrokeWidth], // Top-left corner
+	  [maxX - halfStrokeWidth, minY + halfStrokeWidth], // Top-right corner
+	  [maxX - halfStrokeWidth, maxY - halfStrokeWidth], // Bottom-right corner
+	  [minX + halfStrokeWidth, maxY - halfStrokeWidth], // Bottom-left corner
+	];
+  
+	// Add the redundant points to close the rectangle
+	adjustedPoints.push(adjustedPoints[0]); // Redundant first point
+	adjustedPoints.push(adjustedPoints[1]); // Redundant second point
+  
+	return adjustedPoints;
+  }
+
 //}}}
 function cgUpdateSvg() {  //{{{
 	$("#"+cg.name).attr({ 'points': svgPolyline(cg) });   
+	if (cg.type =='obst')
+		$("#margin"+cg.name).attr({ 'points': obstMarginSvgPolyline(cg) });   
+	if (cg.type =='room' || cg.type =='vroom')
+		$("#margin"+cg.name).attr({ 'points': roomMarginSvgPolyline(cg) });
 }
 //}}}
 
@@ -1308,6 +1426,9 @@ function cgMake(floor,letter,record) { //{{{
 }
 //}}}
 function ajaxSaveCadJson(json_data) { //{{{
+	if(!isGeometryCorrect()){
+		return;
+	}
 	$.post('/aamks/ajax.php?ajaxApainterExport', { 'data': json_data }, function (json) { 
 		amsg(json); 
 		importCadJson();
@@ -1367,6 +1488,24 @@ function legend() { //{{{
 
 }
 //}}}
+function anyWindowOnInteriorWall(){
+	// hole
+	var letter = 'w';
+	var floor_windows;
+	for(var floor=0; floor<floorsCount; floor++) { 
+		floor_windows = [];
+		_.each(db({"floor": floor, "letter": letter}).get(), function(m) {
+			floor_windows.push(m);
+		});
+
+		for (let i = 0; i < floor_windows.length; i++) {
+    		if (!IsExternal(floor_windows[i]))
+    			return true;
+		}
+	}
+	return false;
+}
+
 function anyholeOnExternalWall(){
 	// hole
 	var letter = 'z';
@@ -1378,14 +1517,161 @@ function anyholeOnExternalWall(){
 		});
 
 		for (let i = 0; i < floor_holes.length; i++) {
-    		if (IsHoleExternal(floor_holes[i]))
+    		if (IsExternal(floor_holes[i]))
     			return true;
 		}
 	}
 	return false;
 }
 
+function wrongTeleportLocation(){
+
+	var teleport_down_letter = "kd";
+	var teleport_up_letter = "ku";
+
+	var teleports_down = [];
+	var teleports_up = [];
+	var compartments = {};
+	var obsts = {};
+	var vroom;
+	var teleports_to_return = []
+	var teleport_floor;
+
+	for(var floor=0; floor<floorsCount; floor++) { 
+		compartments[floor] = [];
+		obsts[floor] = [];
+
+		_.each(db({"type": "room", "floor": floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			compartments[floor].push(m);
+		});	
+
+		// also consider virtual compartments
+		for (let key in virtual_obj_parents) {
+			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
+				if(virtual_obj_parents[key][i][2] == floor){
+					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
+					compartments[floor].push(vroom[0]);
+					
+				}
+			}
+		}
+		_.each(db({"type": "obst", "floor": floor}).select("minx","miny", "maxx", "maxy"), function(m) {
+			obsts[floor].push(m);
+		});	
+
+	}
+
+	_.each(db({"letter": teleport_up_letter}).select("floor","teleport_from","teleport_to","name"), function(m) {
+		teleports_up.push([m[0],m[2],m[3],m[1]]);
+	});
+	_.each(db({"letter": teleport_down_letter}).select("floor","teleport_from","teleport_to","name"), function(m) {
+		teleports_down.push([m[0],m[2],m[3],m[1]]);
+	});
+	// teleports down validation
+	if (teleports_down.length > 0)
+	{
+
+		
+		for (let i = 0; i < teleports_down.length; i++) {
+			teleport_floor = teleports_down[i][0];
+			if (checkIfPointIsInAnyMargin(teleports_down[i][1],compartments[teleport_floor],obsts[teleport_floor]))
+				teleports_to_return.push(teleports_down[i][3]);
+		}
+
+
+
+		for (let i = 0; i < teleports_down.length; i++) {
+			teleport_floor = teleports_down[i][0];
+			if (typeof compartments[teleport_floor-1] === "undefined" && typeof obsts[teleport_floor-1] === "undefined") {
+				//there is no floor below
+				teleports_to_return.push(teleports_down[i][3]);
+			}
+			else if (checkIfPointIsInAnyMargin(teleports_down[i][2],compartments[teleport_floor-1],obsts[teleport_floor-1]))
+				teleports_to_return.push(teleports_down[i][3]);
+		}
+	}
+	
+
+	// teleports up validation
+	if (teleports_up.length > 0)
+	{
+
+
+		for (let i = 0; i < teleports_up.length; i++) {
+			teleport_floor = teleports_up[i][0];
+			if (checkIfPointIsInAnyMargin(teleports_up[i][1],compartments[teleport_floor],obsts[teleport_floor]))
+				teleports_to_return.push(teleports_up[i][3]);
+		}
+
+		for (let i = 0; i < teleports_up.length; i++) {
+			teleport_floor = teleports_up[i][0];
+			if (typeof compartments[teleport_floor+1] === "undefined" && typeof obsts[teleport_floor+1] === "undefined") {
+				//there is no up floor
+				teleports_to_return.push(teleports_up[i][3]);
+			}
+			else if (checkIfPointIsInAnyMargin(teleports_up[i][2],compartments[teleport_floor+1],obsts[teleport_floor+1]))
+				teleports_to_return.push(teleports_up[i][3]);
+		}
+	}
+
+
+	return [...new Set(teleports_to_return)];
+}
+
+function checkIfPointIsInAnyMargin(point, compartments,obsts){
+	// check obsts
+	let xmin;
+	let xmax;
+	let ymin;
+	let ymax;
+
+	let innerXmin;
+	let innerXmax;
+	let innerYmin;
+	let innerYmax;
+
+
+	// check obsts margins
+	if (typeof obsts !== "undefined"){
+		for (let i = 0; i < obsts.length; i++) {
+			xmin = Math.min(obsts[i][0], obsts[i][2]);
+			xmax = Math.max(obsts[i][0], obsts[i][2]);
+			ymin = Math.min(obsts[i][1], obsts[i][3]); 
+			ymax = Math.max(obsts[i][1], obsts[i][3]); 
+			if ((point[0] >= (xmin - obstAndCompartmentMarginWidth)) && (point[0] <= (xmax + obstAndCompartmentMarginWidth))
+				&& (point[1] >= (ymin - obstAndCompartmentMarginWidth)) && (point[1] <= (ymax + obstAndCompartmentMarginWidth)) )
+				return true;
+		}
+	}
+	
+
+	// check compartments margins
+
+	for (let i = 0; i < compartments.length; i++) {
+		xmin = Math.min(compartments[i][0], compartments[i][2]);
+		xmax = Math.max(compartments[i][0], compartments[i][2]);
+		ymin = Math.min(compartments[i][1], compartments[i][3]); 
+		ymax = Math.max(compartments[i][1], compartments[i][3]); 
+		innerXmin = xmin + obstAndCompartmentMarginWidth;
+		innerXmax = xmax - obstAndCompartmentMarginWidth;
+		innerYmin = ymin + obstAndCompartmentMarginWidth;
+		innerYmax = ymax - obstAndCompartmentMarginWidth;
+		if ((point[0] >= xmin && point[0] <= xmax
+			&& point[1] >= ymin && point[1] <= ymax)
+			&& !(point[0] >= innerXmin && point[0] <= innerXmax
+			&& point[1] >= innerYmin && point[1] <= innerYmax))
+			return true;
+	}
+
+
+
+	return false;
+}
+
+
 function isGeometryCorrect(){
+	var teleports_to_return = [];
+	var msg;
 	if(anyholeOnExternalWall()){
 		amsg({'err':2, 'msg':`There is a hole in the outside wall. You can't do that. 
 			The holes are used to connect compartments. In the external wall you can 
@@ -1393,6 +1679,28 @@ function isGeometryCorrect(){
 			the geometry, you will be able to save your changes`}); 
 		return false;
 	}
+	teleports_to_return = wrongTeleportLocation();
+	if (teleports_to_return.length > 0){
+		msg = `Wrong teleport location. The beginning and end of the teleport 
+		should be outside the transparent-white internal margins of COMPARTMENT objects 
+		and the outer margins of OBST objects (the beginning and end of the teleport 
+		cannot be too close to the wall and obst). This applies to the beginning of 
+		the teleport for the floor on which the teleport is located and the end of 
+		the teleport in relation to the floor above if the teleport leads up and the 
+		floors below if the teleport leads down. The problem concerns teleporters: `;
+		for (let i = 0; i < teleports_to_return.length; i++) {
+			msg += teleports_to_return[i] + " "
+		}
+		amsg({'err':2, 'msg':msg}); 
+		return false;
+	}
+	if(anyWindowOnInteriorWall()){
+		amsg({'err':2, 'msg':`There is a window in the interior wall. You can't do that. 
+			Windows can only be located on the external wall`}); 
+		return false;
+	}
+
+
 	return true;
 }
 
@@ -1400,9 +1708,7 @@ function db2cadjson() {//{{{
 	cgEscapeCreate();
 	verifyIntersections();
 	dbUpdateCadJsonStr();
-	if(!isGeometryCorrect()){
-		return;
-	}
+
 	cadjson={};
 
 	for(var floor=0; floor<floorsCount; floor++) { 
@@ -1485,7 +1791,13 @@ function cgSelect(elems, blink=1, showProps=1) {//{{{
 		arr=elems;
 	}
 	_.each(arr, function(v) { 
-		cg=deepcopy(db({'name':v}).get()[0]);
+		// right click on obst or compartment margin:
+		let elem = db({'name':v}).get();
+		if(elem.length == 0){
+			virtualObjEscapeSelect = true;
+			return;
+		}
+		cg=deepcopy(elem[0]);
 		if (cg.letter == 'va' || cg.letter == 'vs'){
 			virtualObjEscapeSelect = true;
 			return;
@@ -1964,6 +2276,52 @@ function getFloorExits(){
 
 }
 
+
+function validateRightBoxXY(input){
+	let value = parseInt(input.value);
+	if (input.id == 'alter-x-min'){
+		let alter_x_max = parseInt(document.getElementById("alter-x-max").value);
+		if (value < 0) {
+			input.value = 0;
+		}
+		else if (value >= alter_x_max) {
+			input.value = alter_x_max-1;
+		}
+		document.getElementById("alter-width").innerHTML = alter_x_max-input.value;
+	}
+	else if (input.id == 'alter-x-max'){
+		let alter_x_min = parseInt(document.getElementById("alter-x-min").value);
+		if (value < 0) {
+			input.value = 0;
+		}
+		else if (value <= alter_x_min) {
+			input.value = alter_x_min+1;
+		}
+		document.getElementById("alter-width").innerHTML = input.value-alter_x_min;
+	}
+	else if (input.id == 'alter-y-min'){
+		let alter_y_max = parseInt(document.getElementById("alter-y-max").value);
+		if (value < 0) {
+			input.value = 0;
+		}
+		else if (value >= alter_y_max) {
+			input.value = alter_y_max-1;
+		}
+		document.getElementById("alter-length").innerHTML = alter_y_max-input.value;
+	}
+	else if (input.id == 'alter-y-max'){
+		let alter_y_min = parseInt(document.getElementById("alter-y-min").value);
+		if (value < 0) {
+			input.value = 0;
+		}
+		else if (value <= alter_y_min) {
+			input.value = alter_y_min+1;
+		}
+		document.getElementById("alter-length").innerHTML = input.value-alter_y_min;
+	}
+	saveRightBoxCgProps();
+}
+
 function validateRightBoxInput(input) {
     let value = parseInt(input.value);
     var limitedZObj = ['r', 'c', 'd', 'z', 'w', 'q', 'e', 't'];
@@ -1972,19 +2330,23 @@ function validateRightBoxInput(input) {
 
     if (limitedZObj.includes(cg.letter)){
     	if (input.id == 'alter-z1'){
+	    	let alter_z0 = parseInt(document.getElementById("alter-z0").value);
 	    	if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
     			input.value = floorsZ0[cg.floor] + floors_dimz[cg.floor];
+				document.getElementById("warning").innerHTML = "Cant' exceed the floor height!";
     		}
-	    	else if (value < floorsZ0[cg.floor]) {
-    			input.value =  floorsZ0[cg.floor] + floors_dimz[cg.floor];
+	    	else if (value <= alter_z0) {
+    			input.value =  alter_z0+1;
     		}
     	}
 		else if (input.id == 'alter-z0'){
+	    	let alter_z1 = parseInt(document.getElementById("alter-z1").value);
     		if (value < floorsZ0[cg.floor]) {
 				input.value = floorsZ0[cg.floor];
+				document.getElementById("warning").innerHTML = "Height below floor height!";
 			}
-    		else if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
-				input.value = floorsZ0[cg.floor];
+    		else if (value >= alter_z1) {
+				input.value = alter_z1-1;
 			}
 		}
     }
@@ -2035,6 +2397,15 @@ function validateRightBoxInput(input) {
     		input.value = floors_dimz[floor] - window_dimz;
     	}
     }
+	if (input.id == 'alter-z0'){
+    	let alter_z1 = parseInt(document.getElementById("alter-z1").value);
+		document.getElementById("alter-height").innerHTML = alter_z1-input.value;
+	}
+	if (input.id == 'alter-z1'){
+    	let alter_z0 = parseInt(document.getElementById("alter-z0").value);
+		document.getElementById("alter-height").innerHTML = input.value-alter_z0;
+	}
+	saveRightBoxCgProps();
 }
 
 function showGeneralBox() { //{{{
@@ -2102,12 +2473,24 @@ function propsXYZ() {//{{{
 		return "X <input id=alter-px value="+cg.polypoints[0][0]+ sty+"><br>"+
 		"Y <input id=alter-py value="+cg.polypoints[0][1]+ sty+"><br>";
 	} else{
-		var html = "points:<br><textarea id=alter-polypoints>"+cg.polypoints.join("\n")+"</textarea><br>"
+		const x_min = cg.polypoints[0][0];
+		const x_max = cg.polypoints[1][0];
+		const y_min = cg.polypoints[0][1];
+		const y_max = cg.polypoints[2][1];
+		var html = "<div>points:<div>"+
+		"<label>x-min<input id=alter-x-min type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+x_min+"'></label>"+
+		"<label>x-max<input id=alter-x-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+x_max+"'></label></div>"+
+		"<div>Width: <span id=alter-width>"+(x_max-x_min)+"</span></div>"+
+		"<div><label>y-min<input id=alter-y-min type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+y_min+"'></label>"+
+		"<label>y-max<input id=alter-y-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+y_max+"'></label></div>"+
+		"<div>Length: <span id=alter-length>"+(y_max-y_min)+"</span></div>"+
+		"</div>";
 		if (cg.letter == 'ku' || cg.letter == "kd")
 			return html;
 		else{
-			html += "<br>z0:<input id=alter-z0 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+cg.z[0]+
-			"'><br>z1:<input id=alter-z1 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+cg.z[1]+"'>";
+			html += "<div><label>z-min:<input id=alter-z0 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+cg.z[0]+"'></label>"+
+			"<label>z-max:<input id=alter-z1 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+cg.z[1]+"'></label></div>"+
+			"<div>Height: <span id=alter-height>"+(cg.z[1]-cg.z[0])+"</span></div>";
 		}
 		return html;
 	}
@@ -2125,6 +2508,7 @@ function showCgPropsBox() {//{{{
 	    "<input id=geom_properties type=hidden value=1>"+
 	    "<center><red>&nbsp; "+cg.name+" &nbsp; "+gg[cg.letter]['x']+"</red>"+
 		propsXYZ()+
+		"<div id='warning' style='width:200px; background: #600; color: #fff;'></div>"+
 		"<table style='table-layout: auto; width: auto; border-collapse: collapse;''>"+
 		roomProps()+
 		doorProps()+
@@ -2165,10 +2549,14 @@ function saveRightBoxCgProps() {//{{{
 	} else {
 		let z_has_changed = false;
 		cg.polypoints=[];
-		_.each($("#alter-polypoints").val().split("\n"), function(m) { 
-			arr=m.split(",");
-			if(arr.length==2 && $.isNumeric(arr[0]) && $.isNumeric(arr[1])) { cg.polypoints.push([Number(arr[0]), Number(arr[1])]); }
-		});
+		const x_min = Number($("#alter-x-min").val());
+		const x_max = Number($("#alter-x-max").val());
+		const y_min = Number($("#alter-y-min").val());
+		const y_max = Number($("#alter-y-max").val());
+		cg.polypoints.push([x_min, y_min]);
+		cg.polypoints.push([x_max, y_min]);
+		cg.polypoints.push([x_max, y_max]);
+		cg.polypoints.push([x_min, y_max]);
 		cg.evacuees_density=$("#alter-evacuees-density").val();
 		cg.exit_weight=$("#floor_exits_weights_"+cg.name).val();
 		if (cg.type == 'room'){

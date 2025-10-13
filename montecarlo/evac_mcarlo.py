@@ -63,17 +63,15 @@ class EvacMcarlo:
     def __init__(self, sim_id):# {{{
         self._sim_id = sim_id
         ''' Generate montecarlo evac.conf. '''
-
-        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{self._sim_id}.sqlite")
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
+        sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", "aamks_geom.sqlite")
+        self.s=Sqlite(sim_sql_path)
+        self.s_geom=Sqlite(scenario_sql_path)
         self.json=Json()
         self.json.s = self.s
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
-        self.floors=[z['floor'] for z in self.s.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
+        self.floors=[z['floor'] for z in self.s_geom.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
 
 
@@ -148,7 +146,7 @@ class EvacMcarlo:
         Density comes as m^2, but aamks uses 100 * 100 cm^2 
         '''
 
-        r=self.s.query("SELECT evacuees_density FROM aamks_geom WHERE name=?", (name,))[0]
+        r=self.s_geom.query("SELECT evacuees_density FROM aamks_geom WHERE name=?", (name,))[0]
         if r['evacuees_density']  is not None:
             return 1/r['evacuees_density'] * 100 * 100
 
@@ -170,14 +168,14 @@ class EvacMcarlo:
         rooms={}
         probabilistic_rooms={}
         # virtual halls on upper floors are not walkable
-        for i in self.s.query("SELECT points, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND has_door=1 and name NOT LIKE 'a%.%' ORDER BY global_type_id", (floor,)):
+        for i in self.s_geom.query("SELECT points, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND has_door=1 and name NOT LIKE 'a%.%' ORDER BY global_type_id", (floor,)):
             i['points']=json.loads(i['points'])
             probabilistic_rooms[i['name']]=i
 
         manual_rooms={}
-        for i in self.s.query("SELECT name, x0, y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=?", (floor,)):
+        for i in self.s_geom.query("SELECT name, x0, y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=?", (floor,)):
             q=(floor,i['x0'], i['y0'], i['x0'], i['y0'])
-            x=self.s.query("SELECT points, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND x0<=? AND y0<=? AND x1>=? AND y1>=?", q)[0]
+            x=self.s_geom.query("SELECT points, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND x0<=? AND y0<=? AND x1>=? AND y1>=?", q)[0]
             if not x['name'] in manual_rooms:
                 x['points']=json.loads(x['points'])
                 manual_rooms[x['name']]=x
@@ -303,7 +301,7 @@ class EvacMcarlo:
         provided animations (moving evacuees for specific sim_id). 
 
         '''
-
+        self.s.query("CREATE TABLE dispatched_evacuees(json)")
         m={}
         for floor in self.floors:
             m[floor]=self.dispatched_evacuees[floor]
@@ -318,5 +316,4 @@ class EvacMcarlo:
         self._make_evac_conf()
         self._evacuees_static_animator()
         self.s.close()
-
 # }}}

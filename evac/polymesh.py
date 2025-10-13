@@ -4,17 +4,14 @@ class Polymesh:
         self.faces_vertex_count = []
         self.faces_definition = []
 
-    def import_obj(self, filename):
+    def import_obj(self, obj):
         # Creating an empty polymesh data structure
         polymesh = Polymesh()
         # Creating a vertex variable
         vertex = [0.0, 0.0, 0.0]
         # Open the file
-        f = open(filename, 'r')
-        lines = f.readlines()
-        current_line_index = 0
-        for line in lines:
-            if line[0] == '#': pass
+        for line in obj.splitlines():
+            if len(line) == 0 or line[0] == '#': pass
             elif line[0:2] == 'v ':
                 # Found a vertex
                 values = line[2:].split()
@@ -32,8 +29,5 @@ class Polymesh:
                 for vindex in values:
                     # OBJ vertex indices starts at 1 instead of 0
                     polymesh.faces_definition.append(int(vindex.split('/')[0]) - 1)
-            current_line_index += 1
-     
-        f.close()
          
         return polymesh

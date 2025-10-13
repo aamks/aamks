@@ -1,6 +1,6 @@
 <?php
 use PHPMailer\PHPMailer\PHPMailer;
-
+session_name('aamks');
 require_once("inc.php");
 function sendMail($to, $subject, $message) { #{{{
 	if(getenv("AAMKS_USE_MAIL")==0) {
@@ -64,6 +64,7 @@ function login_form(){/*{{{*/
     <table>
     <tr><td>email<td><input name=email placeholder='email' size=32 required autocomplete='off' >
     <tr><td>password<td><input type=password name='password' size=32 placeholder='password' >
+	<tr><td><input type='checkbox' name='is_remember' value='1'><td>remember me
     </table><br>
     <input type=submit name=logMeIn value='Sign in'>
 	</div>
@@ -112,7 +113,13 @@ function do_login() { #{{{
 	if(!empty($ret)){//password and email match
 		if($salted==$ret[0]['password'] && $ret[0]['activation_token'] == 'already activated'){
 			$_SESSION['nn']->ch_main_vars($ret[0]);
-		 	header("Location: projects.php?projects_list");
+			if($_POST['is_remember']){ 
+				setcookie("aamks", session_id(), time() + (86400*7), "/"); // (-) destroy
+				setcookie("is_remember", true, time() + (86400 * 7), "/");
+			} else {
+				setcookie("aamks", session_id(), time() + (86400), "/");
+			}
+			header("Location: projects.php?projects_list");
 		} else {
 			echo "<center><br><br><a href=https://$_SERVER[SERVER_NAME]/aamks/login.php><p class='button'>Login page</p></a>";
 			$_SESSION['nn']->fatal("Email address not activated!");
@@ -147,6 +154,7 @@ function do_logout() { #{{{
 	#TODO FINLAND
 	$_SESSION=[];
 	session_destroy();
+	setcookie("aamks", "", time() - 1, "/");
 	header("Location: login.php");
 	//ob_flush();
 	//flush();
@@ -362,6 +370,11 @@ function main() { /*{{{*/
 
 	login_form();
 	$_SESSION['nn']->logoutButton();
+	if (isset($_COOKIE['is_remember'])) {
+        setcookie("aamks", session_id(), time() + (86400 * 7), "/");
+    } else {
+        setcookie("aamks", session_id(), time() + 86400, "/");
+    }
 }
 /*}}}*/
 

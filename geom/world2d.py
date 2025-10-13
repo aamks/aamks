@@ -27,12 +27,9 @@ class World2d:
     def __init__(self, sim_id=None):# {{{
         self.json=Json()
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
-        new_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
-        if os.path.exists(new_sql_path):
-            self.s=Sqlite(new_sql_path)
-        else:
-            self.s=Sqlite("{}/aamks.sqlite".format(os.environ['AAMKS_PROJECT']))
-        self.json.s = self.s 
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", "aamks_geom.sqlite")
+        self.s_geom=Sqlite(scenario_sql_path)
+        self.json.s = self.s_geom 
         self.world_meta=self.json.readdb("world_meta")
         self._read_floors_meta()
         self.floors=self.floors_meta.keys()
@@ -42,7 +39,7 @@ class World2d:
         self._top_proj_lines()
         self._meta_translate_y()
         self._world2d_boundaries()
-        self.s.close()
+        self.s_geom.close()
 # }}}
     def _read_floors_meta(self):# {{{
         unordered=self.json.readdb("floors_meta")
@@ -59,8 +56,8 @@ class World2d:
 
         self.projections['top']['padding_rectangle']=300
         self.projections['top']['padding_vertical']=200
-        self.projections['top']['x0']=self.s.query("SELECT min(x0) AS m FROM aamks_geom")[0]['m'] - self.projections['top']['padding_rectangle']
-        self.projections['top']['x1']=self.s.query("SELECT max(x1) AS m FROM aamks_geom")[0]['m']
+        self.projections['top']['x0']=self.s_geom.query("SELECT min(x0) AS m FROM aamks_geom")[0]['m'] - self.projections['top']['padding_rectangle']
+        self.projections['top']['x1']=self.s_geom.query("SELECT max(x1) AS m FROM aamks_geom")[0]['m']
 # }}}
     def _top_proj_lines(self):# {{{
         '''
@@ -88,7 +85,7 @@ class World2d:
         for floor,line in self.projections['top']['lines'].items():
             self.floors_meta[floor]['ty']=line - self.projections['top']['padding_vertical'] - self.floors_meta[floor]['maxy']  
             self.floors_meta[floor]['tx']=0
-        self.s.query("UPDATE floors_meta SET json=?", (json.dumps(self.floors_meta),))
+        self.s_geom.query("UPDATE floors_meta SET json=?", (json.dumps(self.floors_meta),))
 
 # }}}
     def _world2d_boundaries(self):# {{{
@@ -108,7 +105,7 @@ class World2d:
         m['center']=[round(m['minx'] + m['xdim']/2), round(m['miny'] + m['ydim']/2), 0]
 
         self.world_meta['world2d']=m
-        self.s.query("UPDATE world_meta SET json=?", (json.dumps(self.world_meta),))
+        self.s_geom.query("UPDATE world_meta SET json=?", (json.dumps(self.world_meta),))
 
 # }}}
 
