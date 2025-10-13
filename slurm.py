@@ -21,6 +21,7 @@ def launch(path: str, user_id: str, irange: list, scenario):
     slurm = Slurm()
     slurm.add_arguments(*def_args)
     slurm.set_partition('aamks-worker-4,aamks-worker-6')
+    #slurm.set_partition('aamks-worker-6')
     slurm.set_account(f'aamks-{user_id}')
     slurm.set_chdir(path)
     slurm.set_output(f'workers/%a/slurm.out')

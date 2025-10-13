@@ -43,7 +43,9 @@ class GetData:
         self.raw = {}
         self.configs = self._get_json(f'{scenario_dir}/conf.json')
         self.p = Psql()
-        self.s = Sqlite(f'{self.dir}/aamks.sqlite', 2)
+        #self.s = Sqlite(f'{self.dir}/aamks.sqlite', 2)
+        # scenario's sqlite empty!
+        self.s = Sqlite(f'{self.dir}/workers/1/aamks_1.sqlite', 2)
         self.check_results()
 
     def _get_json(self, path):
