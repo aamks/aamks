@@ -28,7 +28,7 @@ class Obstacles():
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         self.fire_model=self.conf['fire_model']
         sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", "aamks_geom.sqlite")
         self.s=Sqlite(sim_sql_path)
         self.s_geom=Sqlite(scenario_sql_path)
         self.json.s = self.s_geom

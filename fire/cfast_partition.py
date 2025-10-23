@@ -40,7 +40,7 @@ class CfastPartition():
 
         '''
         sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", "aamks_geom.sqlite")
         self.s_geom=Sqlite(scenario_sql_path)
         if self.s_geom.query("SELECT name FROM sqlite_master WHERE type='table' AND name='cell2compa'"):
             return

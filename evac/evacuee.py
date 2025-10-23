@@ -55,7 +55,6 @@ class Evacuee:
         # it resets moving behaviour due to smoke in next room or 
         # people running towards us (due to the fire that is further away)
         self.reset_behavior_due_to_panic = reset_behavior_due_to_panic
-        self.exits_path = None
     def __getattr__(self, name):
         return self.__dict__[name]
 

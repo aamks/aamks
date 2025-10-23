@@ -24,7 +24,7 @@ from pylatex.basic import NewPage, LineBreak
 from pylatex.headfoot import PageStyle, Head, simple_page_number
 
 from include import Sqlite, Psql
-
+sys.path.append('/usr/local/aamks/results')
 
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
 
@@ -53,8 +53,14 @@ class GetData:
         return dump
 
     def check_results(self):
-        scenario_sql_path = os.path.join(self.dir, "aamks_geom.sqlite")
-        self.s_geom=Sqlite(scenario_sql_path)
+        scenario_sql_path = None
+        for i in range(1, 10000):  # przeszukaj foldery 1..999
+            path = os.path.join(self.dir, "workers", str(i), "aamks_geom.sqlite")
+            if os.path.isfile(path):
+                scenario_sql_path = path
+                break
+        if scenario_sql_path:
+            self.s_geom = Sqlite(scenario_sql_path)
         q = f"SELECT status FROM simulations WHERE project = {self.configs['project_id']} AND scenario_id = {self.configs['scenario_id']}"
         psql = np.array(self.p.query(q))
         if  (psql == None).all():

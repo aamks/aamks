@@ -64,7 +64,7 @@ class EvacMcarlo:
         self._sim_id = sim_id
         ''' Generate montecarlo evac.conf. '''
         sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", "aamks_geom.sqlite")
         self.s=Sqlite(sim_sql_path)
         self.s_geom=Sqlite(scenario_sql_path)
         self.json=Json()

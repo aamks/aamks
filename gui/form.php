@@ -433,7 +433,7 @@ function form_fields_advanced() { #{{{
 	echo "<tr><td>".get_help('evacuees_alpha_v')."<td>".form_assoc('evacuees_alpha_v',$evacuees_alpha_v); 
 	echo "<tr><td>".get_help('evacuees_beta_v')."<td>".form_assoc('evacuees_beta_v',$evacuees_beta_v); 
 	echo "<tr><td>".get_help('evacuees_density')."<td>".form_assoc('evacuees_density',$evacuees_density); 
-	echo "<tr><td>".get_help('leader_following')."<td>".checkbox('leader_following',$leader_following); 
+	// echo "<tr><td>".get_help('leader_following')."<td>".checkbox('leader_following',$leader_following); 
 
     echo "<tr><td>&nbsp;</td></tr><tr><th><strong>RESCUE SUB-MODEL</strong></th>";
 	echo "<tr><td>".get_help('r_is')."<td>".droplist_rescue($r_is); 

@@ -40,28 +40,19 @@ class Worker:
         self.config = None
         self.project_conf = None
 
-        if AA:
-            os.environ['AAMKS_PROJECT'] = AA['PROJECT']
-            os.environ['AAMKS_PATH'] = AA['PATH']
-            os.environ['AAMKS_SERVER'] = AA['SERVER']
-            os.environ['AAMKS_PG_PASS'] = AA['PG_PASS']
-
-
-        # for local testing:
-        # os.environ['AAMKS_PROJECT'] = '/home/aamks_users/majster1020@wp.pl/smalla/smallav2'
-
         if redis_worker_pwd: 
             self.working_dir = redis_worker_pwd 
         else:
             self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
 
         # for local testing:
-        # self.working_dir = '/home/aamks_users/majster1020@wp.pl/smalla/smallav2/workers/2'
+        # os.environ['AAMKS_PROJECT'] = '/mnt/aamks_users/majster1020@wp.pl/test8/big2'
+        # self.working_dir = '/mnt/aamks_users/majster1020@wp.pl/test8/big2/workers/9'
 
         self.project_dir = self.working_dir.split("/workers/")[0]
         self.sim_id = int(self.working_dir.split("/workers/")[1])
         sim_sql_path = os.path.join(self.working_dir, f"aamks_{self.sim_id}.sqlite")
-        scenario_sql_path = os.path.join(self.project_dir, "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(self.working_dir, "aamks_geom.sqlite")
         self.s=Sqlite(sim_sql_path)
         self.s_geom=Sqlite(scenario_sql_path)
         os.environ["AAMKS_PROJECT"] = self.project_dir
@@ -166,19 +157,19 @@ class Worker:
             os.system('ln -s /usr/local/aamks/fire/cfast7_linux_64 .')
             os.system('ln -s /usr/local/aamks/fire/c_socket_handler.so .')
             command = ["./cfast7_linux_64", "cfast.in", "arg1", "arg2"]
-            subprocess.Popen(command)
+            self.cfast_process = subprocess.Popen(command)
             self.connection_thread.join()
             #below message is is the first message received from cfastafter cfast_compartemnts.csv already has row t=0s.
             #it is needed for proper functioning of the self.prepare_simulations() function.
             try:
-                self.connection.recv(1024).decode()  # max 5 min
+                self.connection.recv(1024).decode()  # max 10 min
             except socket.timeout:
                 raise TimeoutError("Przekroczono limit czasu oczekiwania na dane CFAST socket.")
             
     def handle_connection(self, server_socket):
         # Accept incoming connection
         self.connection, address = server_socket.accept()
-        self.connection.settimeout(300)
+        self.connection.settimeout(600)
         print(f"Connection established with {address}")
 
     def start_socket_server(self):
@@ -335,7 +326,7 @@ class Worker:
 
         evacuees = Evacuees()
         for e in evacuees_list:
-            if self.vars['conf']['leader_following'] == 1:
+            if 'leader_following' in self.vars['conf'] and self.vars['conf']['leader_following'] == 1:
                 e.leader = evacuees_list[leaders_id_list.pop(0)]
                 evacuees_id_list.pop(0)
             else:
@@ -793,6 +784,17 @@ class Worker:
 
         self.server_socket.close()  
         # gather results of the whole simulation (multisimulation iteration)
+
+        if self.cfast_process.poll() is None:  
+            self.cfast_process.terminate()     
+            try:
+                self.cfast_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.cfast_process.kill()
+                self.cfast_process.wait()
+        else:
+            self.cfast_process.wait()
+        
         self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
         self.cross_building_results['dcbe'] = aset
         self.wlogger.info('Final results gathered')
@@ -1022,7 +1024,6 @@ class Worker:
             agent.finished = 1
             agent.exit = None
             agent.current_floor = str(agent_to_move[1])
-            agent.exits_path = None
             agent.path=None
 
 

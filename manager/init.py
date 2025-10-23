@@ -42,10 +42,10 @@ class OnEnd():
         logger.info('start OnEnd()')
         self.sim_id = sim_id
         sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'],"workers", f"{sim_id}", "aamks_geom.sqlite")
         Vis({'highlight_geom': None, 'anim': None, 'title': "OnEnd()", 'srv': 1, "sim_sql": sim_sql_path, "scen_sql": scenario_sql_path})
 
-        if os.environ['AAMKS_WORKER']=='slurm':
+        if os.environ['AAMKS_WORKER']=='slurm' or os.environ['AAMKS_WORKER']=='redis':
             # works will be registered as slurm array by slurm.py
             # nothing to do except for updating aamks.sqlite with latest sim sqlite and Vis (possible conflicts?)
             return

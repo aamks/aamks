@@ -3,31 +3,29 @@
 import json
 import os
 import sys
+from evac.polymesh import Polymesh
+sys.path.insert(1, '/usr/local/aamks')
 import copy
 from pprint import pprint
 from collections import OrderedDict
 from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
-from shapely.ops import polygonize
-
-
-from numpy.random import uniform
-from math import sqrt
-from pathlib import Path
-
-
-from evac.polymesh import Polymesh
 from fire.partition_query import PartitionQuery
 from evac.pathfinder.navmesh_baker import NavmeshBaker
 from evac.pathfinder.navmesh import Navmesh as Pynavmesh
 import evac.pathfinder
-
-from include import Sqlite, Json, DDgeoms, Vis
+from shapely.ops import polygonize
+from numpy.random import uniform
+from math import sqrt
+from include import Sqlite
+from include import Json
 from include import Dump as dd
+from include import DDgeoms 
+from include import Vis
 
 # }}}
 
 class Navmesh: 
-    def __init__(self, sim_id=None):# {{{
+    def __init__(self):# {{{
         ''' 
 
         ============================================
@@ -51,11 +49,7 @@ class Navmesh:
 
         '''
         self.json=Json()
-        sim_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", f"aamks_{sim_id}.sqlite")
-        scenario_sql_path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", "aamks_geom.sqlite")
-        self.s=Sqlite(sim_sql_path)
-        self.s_geom=Sqlite(scenario_sql_path)
-        self.json.s = self.s
+        self.s=Sqlite(f"{os.environ['AAMKS_PROJECT']}/aamks.sqlite")
         self._test_colors=[ "#f80", "#f00", "#8f0", "#08f" ]
         self.polymesh = Polymesh()
         self.navmesh=OrderedDict()
@@ -63,76 +57,48 @@ class Navmesh:
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.vertex_positions = []
         self.polygons_of_the_geometry = []
-        self.sim_id = sim_id
-        self.obj = ""
-        self.wd = None
 # }}}
 
-    def build(self,fire,floor,wd,bypass_rooms=[]):# {{{
-
+    def build(self,floor,bypass_rooms=[]):# {{{
         self.floor=floor
         self.bypass_rooms=bypass_rooms
         self._get_name(bypass_rooms)
-        self._obj_make(bypass_rooms)
-        self.wd = wd
-        input_path = Path(wd)
-        scenario_dir = input_path.parents[1]
-        no_fire_navmesh = f"pynavmesh_no_fire{floor}.nav"
-        file_path = scenario_dir / no_fire_navmesh
+        file_obj=self._obj_make(bypass_rooms)
+        self.baker = NavmeshBaker()
+        mesh = self.polymesh.import_obj(file_obj)
+        polygons = self.get_polygons_for_pynavmesh(mesh)
+        self.baker.add_geometry(mesh.vertices, polygons)
+        self.baker.bake()
+        self.baker.save_to_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name+'_first'))
+        vert, polygs = evac.pathfinder.read_from_text("{}/{}".format(os.environ['AAMKS_PROJECT'], 'pynavmesh'+self.nav_name+'_first'))
+        self.first_navmesh = Pynavmesh(vert, polygs)
+        self.navmesh = Pynavmesh(vert, polygs)
+        # self.test_navmesh()
+ 
+    # def test_navmesh(self):
+    #     src = (3243,1643)
+    #     dst = (3243.000062244715, 1643.745674220584)
+
+
+       
         
-        if fire['floor'] == floor:
-            # self.first_navmesh, self.navmesh = self.modify_navmesh_add_fire_obst(file_path,fire,floor)
-            self.baker = NavmeshBaker()
-            mesh = self.polymesh.import_obj(self.obj)
-            polygons = self.get_polygons_for_pynavmesh(mesh)
-            self.baker.add_geometry(mesh.vertices, polygons)
-            self.baker.bake()
-            navmesh_path = '/'.join([self.wd, 'pynavmesh'+self.nav_name+'_first'])
-            self.baker.save_to_text(navmesh_path)
-            self.first_navmesh, self.navmesh = self.get_navmesh_with_fire_from_file(navmesh_path) 
-        elif file_path.exists():
-            first_navmesh_path = '/'.join([str(scenario_dir), 'pynavmesh_no_fire'+self.nav_name])
-            self.first_navmesh, self.navmesh = self.get_navmesh_from_file(first_navmesh_path)
-        else:
-            self.baker = NavmeshBaker()
-            mesh = self.polymesh.import_obj(self.obj)
-            polygons = self.get_polygons_for_pynavmesh(mesh)
-            self.baker.add_geometry(mesh.vertices, polygons)
-            self.baker.bake()
-            first_navmesh_path = '/'.join([str(scenario_dir), 'pynavmesh_no_fire'+self.nav_name])
-            self.baker.save_to_text(first_navmesh_path)
-            self.first_navmesh, self.navmesh = self.get_navmesh_from_file(first_navmesh_path)
+        
+    #     path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     # dst = (3003, 3516)
+    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     # dst = (3172, 1661)
+    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     # dst = (3172, 1713)
+    #     # path = self.navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
+
+    #     print("sdfsdfsdfsdf")
+
  
 
 # }}}
-    def get_navmesh_with_fire_from_file(self,navmesh_path):
-
-        vert, polygs = evac.pathfinder.read_from_text(navmesh_path)
-
-        self.first_navmesh = Pynavmesh(vert, polygs)
-        self.navmesh = Pynavmesh(vert, polygs)
-
-        return self.first_navmesh, self.navmesh
-    
-
-    def get_navmesh_from_file(self,first_navmesh_path):
-        save_navmesh_path = '/'.join([self.wd, 'pynavmesh'+self.nav_name+'_first'])
-        link_name = os.path.join(self.wd, 'pynavmesh' + self.nav_name + '_first')
-        target_path = first_navmesh_path
-
-        # Tworzenie dowiązania symbolicznego
-        try:
-            os.symlink(target_path, link_name)
-        except FileExistsError:
-            print(f"Dowiązanie {link_name} już istnieje.")
-
-        vert, polygs = evac.pathfinder.read_from_text(save_navmesh_path)
-
-        self.first_navmesh = Pynavmesh(vert, polygs)
-        self.navmesh = Pynavmesh(vert, polygs)
-
-        return self.first_navmesh, self.navmesh
-
     def get_polygons_for_pynavmesh(self, mesh):
         index = 0
         polygons = []
@@ -154,16 +120,29 @@ class Navmesh:
         else:
             return ['err']
 
-    def nav_query_first_navmesh(self,src,dst,maxStraightPath=16):# {{{
-        path = self.first_navmesh.search_path((src[0]/100, 0.0, src[1]/100), (dst[0]/100, 0.0, dst[1]/100))
-        path_to_return = []
-        if len(path) > 0:
-            for i in path:
-                path_to_return.append((i[0]*100, i[2]*100))
-            return path_to_return
-        else:
-            return ['err']
+# }}}
+    def closest_terminal(self,p0,exit_type):# {{{
+        '''
+        The shortest polyline defines the closest exit from the floor. 
+        dist < 10 test asserts the polyline has min 2 distinct points.
 
+        exit_type: primary | secondary | any
+        '''
+
+        if exit_type in ['primary', 'secondary']:
+            r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE terminal_door=? AND floor=?", (exit_type, self.floor))
+        else:
+            r=self.s.query("SELECT name,center_x,center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
+        m={}
+        closest={ 'len': 999999999, 'name': None, 'x': None, 'y': None }
+        for i in r:
+            if abs(i['center_x']-p0[0]) < 10 and abs(i['center_y']-p0[1]) < 10: 
+                closest={ 'name': i['name'],  'x': i['center_x'], 'y': i['center_y'],'len': 0  }
+                return closest
+            ll=self.path_length(p0,(i['center_x'],i['center_y']))
+            if ll < closest['len']:
+                closest={ 'name': i['name'], 'x': i['center_x'], 'y': i['center_y'], 'len': int(ll) }
+        return closest
             
 # }}}
     def room_leaves(self,ee):# {{{
@@ -195,7 +174,7 @@ class Navmesh:
     def test(self):# {{{
         self.conf=self.json.read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         agents_pairs=4
-        ee=self.s_geom.query("SELECT name,x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
+        ee=self.s.query("SELECT name,x0,y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=? ORDER BY global_type_id LIMIT ?", (self.floor, agents_pairs*2))
         if len(ee) == 0: return
         evacuees=list(self._chunks(ee,2))
         self._test_evacuees_pairs(evacuees)
@@ -213,18 +192,18 @@ class Navmesh:
         bricked_wall=[]
 
         if len(bypass_rooms) > 0 :
-            floors_meta=json.loads(self.s_geom.query("SELECT json FROM floors_meta")[0]['json'])
+            floors_meta=json.loads(self.s.query("SELECT json FROM floors_meta")[0]['json'])
             elevation=floors_meta[self.floor]['minz_abs']
             where=" WHERE "
             where+=" vent_from_name="+" OR vent_from_name=".join([ "'{}'".format(i) for i in bypass_rooms])
             where+=" OR vent_to_name="+" OR vent_to_name=".join([ "'{}'".format(i) for i in bypass_rooms])
-            bypass_doors=self.s_geom.query("SELECT name,x0,y0,x1,y1 FROM aamks_geom {}".format(where))
+            bypass_doors=self.s.query("SELECT name,x0,y0,x1,y1 FROM aamks_geom {}".format(where))
 
             for i in bypass_doors:
                 bricked_wall.append([[i['x0'],i['y0'],elevation], [i['x1'],i['y0'],elevation], [i['x1'],i['y1'],elevation], [i['x0'],i['y1'],elevation], [i['x0'],i['y0'],elevation]])
 
         bricked_wall+=self.json.readdb("obstacles")['obstacles'][self.floor]
-
+        
         try:
             bricked_wall.append(self.json.readdb("obstacles")['fire'][self.floor])
         except:
@@ -234,8 +213,8 @@ class Navmesh:
 
 # }}}
     def _obj_platform(self):# {{{
-        z=self.s_geom.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (self.floor,))
-        exit_doors = self.s_geom.query("SELECT vent_to_name,vent_from_name,width,depth,center_x, center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
+        z=self.s.query("SELECT x0,y0,x1,y1 FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (self.floor,))
+        exit_doors = self.s.query("SELECT vent_to_name,vent_from_name,width,depth,center_x, center_y FROM aamks_geom WHERE terminal_door IS NOT NULL AND floor=?", (self.floor,))
         platforms=[]
         for i in z:
             platforms.append([ (i['x1'], i['y1']), (i['x1'], i['y0']), (i['x0'], i['y0']), (i['x0'], i['y1']) ])
@@ -244,7 +223,7 @@ class Navmesh:
             # only on the inner surface at a distance greater than approximately cell_size 
             # plus agent_radius (read bake function in navmesh baker). If destination coordinates are in navmesh, 
             # then search_path doesnt need to call TrianglesBVH sample function - calculation is faster
-            room_before_exit_center = self.s_geom.query('SELECT points from aamks_geom WHERE name=? or name=?', (i['vent_to_name'],i['vent_from_name']))
+            room_before_exit_center = self.s.query('SELECT points from aamks_geom WHERE name=? or name=?', (i['vent_to_name'],i['vent_from_name']))
             center_x, center_y = self.get_center_from_points(room_before_exit_center[0]['points'])
             #the outer vestibule is a virtual room - necessary to add a navigation mesh outside 
             #the exit door because agents disappear when they reach a target that is 1 m behind the exit door
@@ -297,7 +276,7 @@ class Navmesh:
     def _obj_make(self,bypass_rooms):# {{{
         ''' 
         1. Create obj file from aamks geometries.
-        2. Build navmesh, obj is input
+        2. Build navmesh with golang, obj is input
         3. Query navmesh with python
         4. bypass_rooms are the rooms excluded from navigation
 
@@ -313,10 +292,9 @@ class Navmesh:
         for face in self._obj_platform():
             obj+=self._obj_elem(face,0)
         
-        path = f"{self.nav_name}.obj"
+        path="{}/{}.obj".format(os.environ['AAMKS_PROJECT'], self.nav_name)
         with open(path, "w") as f: 
             f.write(obj)
-        self.obj = obj
         return path
 
 # }}}
@@ -345,7 +323,7 @@ class Navmesh:
             self._hole_count=len(self._hole_rooms)
             tt=copy.deepcopy(self._hole_rooms)
             for room in self._hole_rooms.keys():
-                for i in self.s_geom.query("SELECT vent_from_name,vent_to_name FROM aamks_geom WHERE type_sec='HOLE' AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
+                for i in self.s.query("SELECT vent_from_name,vent_to_name FROM aamks_geom WHERE type_sec='HOLE' AND (vent_from_name=? OR vent_to_name=?)", (room, room)):
                     tt[i['vent_from_name']]=1
                     tt[i['vent_to_name']]=1
             self._hole_rooms=copy.deepcopy(tt)
@@ -367,7 +345,7 @@ class Navmesh:
         self._hole_connected_rooms()
         doors={}
         for rr in self._hole_rooms.keys():
-            z=self.s_geom.query("SELECT name, type_sec, x0, y0, x1, y1, center_x, center_y, is_vertical FROM aamks_geom WHERE type_sec='DOOR' AND (vent_from_name=? OR vent_to_name=?)", (rr, rr))
+            z=self.s.query("SELECT name, type_sec, x0, y0, x1, y1, center_x, center_y, is_vertical FROM aamks_geom WHERE type_sec='DOOR' AND (vent_from_name=? OR vent_to_name=?)", (rr, rr))
             for d in z:
                 doors[d['name']]=d
         return list(doors.values())

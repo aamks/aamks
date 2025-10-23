@@ -57,20 +57,9 @@ class Compartments:
                     all_floor_doors_unique.append({'name':comp_exit.name, 'how_much_open':comp_exit.how_much_open_beginning, 'center_x':comp_exit.x, 'center_y':comp_exit.y, 'x_min':comp_exit.x_min, 'x_max':comp_exit.x_max, 'y_min':comp_exit.y_min, 'y_max':comp_exit.y_max})
         return all_floor_doors_unique
 
-    def get_room_name_for_point(self, point):
-        for comp in self.compartments:
-            if comp.x_min <= point[0] <= comp.x_max and comp.y_min <= point[1] <= comp.y_max:
-                return comp.name
-        return 'outside'
-
-    def get_room_for_point(self, point):
-        for comp in self.compartments:
-            if comp.x_min <= point[0] <= comp.x_max and comp.y_min <= point[1] <= comp.y_max:
-                return comp
-        return 'outside'
-
     def get_comp_exits(self, comp_name):
         for comp in self.compartments:
             if comp.name == comp_name:
                 return comp.compartmentExits
         return []
+    

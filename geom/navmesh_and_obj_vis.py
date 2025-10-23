@@ -101,7 +101,7 @@ polygons_navmesh = []
 figure_points = []
 #file2 = open('/home/aamks_users/majster1281@wp.pl/444/13/pynavmesh1.nav', 'r')
 # file2 = open('/home/alek/Downloads/pynavmesh0 (1).nav', 'r')
-file2 = open('/home/aamks_users/majster1020@wp.pl/smalla/smallav2/workers/1/pynavmesh5.nav_first', 'r')
+file2 = open('/home/aamks_users/majster1020@wp.pl/Andrzej/Andrzejv2/pynavmesh_no_fire0.nav', 'r')
 
 
 # file2 = open('/home/aamks_users/majster1281@wp.pl/444/21/pynavmesh0.nav','r')

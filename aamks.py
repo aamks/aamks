@@ -19,6 +19,8 @@ def prepare_logger(path):
     log_file = path + '/aamks.log' if path else os.getenv('AAMKS_PROJECT') + '/aamks.log'
     logger = logging.getLogger('AAMKS')
     logger.setLevel(logging.DEBUG)
+    log_dir = os.path.dirname(log_file)
+    os.makedirs(log_dir, exist_ok=True)
     fh = logging.FileHandler(log_file)
     fh.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()

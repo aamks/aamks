@@ -38,7 +38,7 @@ CREATE TABLE simulations ( ---{{{
     iteration smallint,
     host text,
     job_id text,
-    run_time smallint,
+    run_time int,
     fireorig text,
     fireorigname text,
     heat_detectors text,

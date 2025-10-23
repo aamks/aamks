@@ -19,7 +19,7 @@ class CFASTimporter():
         self.conf=Json().read("{}/conf.json".format(os.environ['AAMKS_PROJECT']))
         if self.conf['fire_model']=='FDS':
             return
-        path = os.path.join(os.environ['AAMKS_PROJECT'], "aamks_geom.sqlite")
+        path = os.path.join(os.environ['AAMKS_PROJECT'], "workers", f"{sim_id}", "aamks_geom.sqlite")
         if os.path.exists(path):
             return
         self.s_geom=Sqlite(path)
@@ -580,7 +580,7 @@ class CFASTimporter():
         towers={}
 
         for w in self.s_geom.query("SELECT name,z0 as tower_z0,height+z0 as tower_z1,floor,height,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
-            floor_max_z=self.s_geom.query("SELECT max(z1) FROM aamks_geom WHERE type_sec NOT IN('STAI','HALL') AND floor=?", (w['floor'],))[0]['max(z1)']
+            floor_max_z=self.s_geom.query("SELECT max(z1) FROM aamks_geom WHERE type_sec NOT IN('STAI','HALL','MVENT') AND floor=?", (w['floor'],))[0]['max(z1)']
             if w['tower_z1'] >= floor_max_z + 200:
 
                 towers[w['name']]=[]
