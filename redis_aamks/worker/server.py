@@ -42,6 +42,7 @@ class RedisWorkerServer:
         if 'data' not in message_json:
             logger.debug(message_json)
             return
+            # sdsdfsdf
         if 'anim' in message_json['data']:
             logger.debug('starting anim function')
             self.run_beck_anim(message_json)
