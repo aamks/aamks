@@ -290,7 +290,8 @@ class EvacEnv:
         for n in range(self.evacuees.get_number_of_pedestrians()):
             ped = self.evacuees.get_pedestrian(n)
             prev_floor = ped.has_agent_changed_floor()
-            if ped.has_agent_moved() or prev_floor is not None:
+            prev_symbolic_fed = ped.has_agent_changed_symbolic_fed()
+            if ped.has_agent_moved() or prev_floor is not None or prev_symbolic_fed is not None:
                 position = ped.position
                 velocity = ped.velocity
                 fed = ped.symbolic_fed
@@ -444,13 +445,14 @@ class EvacEnv:
         smoke_opacity = dict()
         self.unavailable_rooms = []    # rooms can be available again
         for room in self.room_list.keys():
-            hgt = self.smoke_query.compa_conditions[str(room)]['HGT']
+            conditions = self.smoke_query.get_conditions(str(room))
+            hgt = conditions['HGT']
             if hgt == None:
-                opacity = self._OD_to_OPACITY(self.smoke_query.compa_conditions[str(room).split('.')[0]]['ULOD'])
+                opacity = self._OD_to_OPACITY(conditions['ULOD'])
             elif hgt <= self.config['LAYER_HEIGHT']:
-                opacity = self._OD_to_OPACITY(self.smoke_query.compa_conditions[str(room)]['ULOD'])
+                opacity = self._OD_to_OPACITY(conditions['ULOD'])
             else:
-                opacity = self._OD_to_OPACITY(self.smoke_query.compa_conditions[str(room)]['LLOD'])
+                opacity = self._OD_to_OPACITY(conditions['LLOD'])
 
             if opacity > 0.0 and room not in self.rooms_in_smoke:
                 self.rooms_in_smoke.append(room)
