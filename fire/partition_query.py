@@ -115,7 +115,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         self._default_conditions={}
         for i in self.relevant_params:
             self._default_conditions[i]=0
-        self._default_conditions['ULO2']=20
+        self._default_conditions['ULO2']=20.9
         self.all_compas=[i['name'] for i in self.s_geom.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
         self.extend_compas_by_devices() 
         self.compa_conditions = OrderedDict()
@@ -195,7 +195,7 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         if self.project_conf['fire_model'] == 'None':
             for room,data in self.compa_conditions.items():
                 self.compa_conditions[room]['TIME']=time
-                self.compa_conditions[room]['ULO2']=20
+                self.compa_conditions[room]['ULO2']=20.9
             return
         # 'letter' can be changed to name - missleading
         needed_record = None
@@ -283,7 +283,12 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         if self.project_conf['fire_model'] == 'None':
             return self._default_conditions
 
-        return self.compa_conditions[comp_name]
+        if '.' in comp_name:
+            base_name = comp_name.split('.')[0]
+        else:
+            base_name = comp_name
+    
+        return self.compa_conditions[base_name]
 
 
 # }}}
@@ -392,7 +397,6 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
     # activity_levels: 0 -> rest/sleep; 1 -> light work/walking; 2 -> heavy work/slow run/climbing the stairs
     def get_fed_sfpe(self, comp_name, activity_level=1):# {{{
         def ppm(x): return x*1e4    # %mol to ppm conversion
-
         conditions = self.get_conditions(comp_name)
 
         # when position of evacuee is outside the building we assume no FED absorbed
