@@ -42,11 +42,6 @@ class RedisWorkerServer:
         if not (isinstance(message_json, dict) and 'data' in message_json):
             logger.debug(message_json)
             return
-            # sdsdfsdf
-                
-        # if 'aamks' in message_json['data']:
-        #     logger.debug('starting aamks function')
-        #     self.run_aamks(message_json)
 
         if 'anim' in message_json['data']:
             logger.debug('starting anim function')
