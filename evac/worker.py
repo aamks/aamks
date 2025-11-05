@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os
+import signal
 import sys
 from numpy import array, prod
 import time
@@ -25,7 +26,8 @@ from collections import defaultdict, deque
 import socket
 import threading
 import subprocess
-
+import datetime
+import traceback
 
 SIMULATION_TYPE = 1
 if 'AAMKS_SKIP_CFAST' in os.environ:
@@ -782,20 +784,7 @@ class Worker:
                 self.send_report(e={"status":33})
                 raise IndexError(f'There was no data found at {time_frame} s in CFAST results.')
             
-
         self.server_socket.close()  
-        # gather results of the whole simulation (multisimulation iteration)
-
-        if self.cfast_process.poll() is None:  
-            self.cfast_process.terminate()     
-            try:
-                self.cfast_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                self.cfast_process.kill()
-                self.cfast_process.wait()
-        else:
-            self.cfast_process.wait()
-        
         self.cross_building_results = self.floors[0].smoke_query.get_final_vars()
         self.cross_building_results['dcbe'] = aset
         self.wlogger.info('Final results gathered')
@@ -1165,33 +1154,52 @@ class Worker:
                 os.remove(path)
             except:
                 pass
-        if not self.is_anim:
-            safe_remove("finals.sqlite")
-            safe_remove(f"aamks_{self.sim_id}.sqlite")
-            safe_remove("cfast_devices.csv")
-            safe_remove("cfast_vents.csv")
-            safe_remove("cfast_walls.csv")
-            safe_remove("cfast_masses.csv")
-            safe_remove("cfast_zone.csv")
-            safe_remove("cfast.log")
-            safe_remove("cfast.smv")
-            safe_remove("cfast.out")
-            safe_remove("cfast.plt")
-            safe_remove("cfast.status")
-            for floor in self.floors:
-                safe_remove(f'pynavmesh{floor.floor}.nav')
+        safe_remove("finals.sqlite")
+        safe_remove("cfast_devices.csv")
+        safe_remove("cfast_vents.csv")
+        safe_remove("cfast_walls.csv")
+        safe_remove("cfast_masses.csv")
+        safe_remove("cfast_zone.csv")
+        safe_remove("cfast.log")
+        safe_remove("cfast.smv")
+        safe_remove("cfast.out")
+        safe_remove("cfast.plt")
+        safe_remove("cfast.status")
+        for floor in self.floors:
+            safe_remove(f'pynavmesh{floor.floor}.nav')
+            safe_remove(f'pynavmesh{floor.floor}.nav_first')
 
     def main(self):
-        self.get_config()
-        self.send_report(e={"status":100})
-        self.start_socket_server()
-        self.prepare_simulations()
-        self.run_cfast_simulations()
-        self.connect_rvo2_with_smoke_query()
-        self.do_simulation()
-        self.send_report()
-        self.cleanup()
-        self.wlogger.info(f'Simulation ended with status {self.exit_code}')
+        try:
+            self.get_config()
+            self.send_report(e={"status":100})
+            self.start_socket_server()
+            self.prepare_simulations()
+            self.run_cfast_simulations()
+            self.connect_rvo2_with_smoke_query()
+            self.do_simulation()
+            self.send_report()
+            self.cleanup()
+            self.wlogger.info(f'Simulation ended with status {self.exit_code}')
+        finally:
+            try:
+                if self.cfast_process and self.cfast_process.poll() is None:
+                    print("[cleanup] Killing CFAST process...")
+
+                    os.kill(self.cfast_process.pid, signal.SIGTERM)
+
+                    try:
+                        self.cfast_process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        print("[cleanup] Force killing CFAST...")
+                        os.kill(self.cfast_process.pid, signal.SIGKILL)
+                        self.cfast_process.wait()
+
+            except ProcessLookupError:
+                pass
+            except Exception as e:
+                print(f"[cleanup] Błąd przy zamykaniu CFAST: {e}")
+
         return self.exit_code
 
     def test(self):
@@ -1264,10 +1272,12 @@ class LocalResultsCollector:
                 WHERE project={self.meta['project_id']} AND scenario_id={self.meta['scenario_id']} AND iteration={self.meta['sim_id']}""")
 
 
+
 if __name__ == "__main__":
     w = Worker()
-    # try:
-    w.run_worker()
-    # except Exception as error:
-    #     w.wlogger.error(error)
-    #     w.send_report(e={'status': 1})
+    try:
+        w.run_worker()
+    except Exception as error:
+        w.wlogger.error(error)
+        w.send_report(e={'status': 1})
+    

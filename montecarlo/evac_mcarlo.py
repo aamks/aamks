@@ -1,30 +1,12 @@
 # MODULES {{{
-import sys
-import re
 import os
-import shutil
-import math
-import numpy as np
 from collections import OrderedDict
 import json
-import getopt
-from pprint import pprint
-import codecs
-from subprocess import Popen,call
-from shapely.geometry import box, Polygon, LineString, Point, MultiPolygon
+from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
-import zipfile
-import random 
-
-from numpy.random import choice
 from numpy.random import uniform
 from numpy.random import normal
 from numpy.random import lognormal
-from numpy.random import binomial
-from numpy.random import gamma
-from numpy.random import triangular
-from numpy.random import seed
-from numpy import array as npa
 from math import sqrt, log, exp
 
 from include import Sqlite
@@ -34,8 +16,6 @@ from include import Dump as dd
 from scipy.stats import lognorm
 from scipy.optimize import root
 from scipy.special import erfc
-
-
 
 from .evac_clusters import EvacClusters
 
@@ -55,7 +35,7 @@ def lognorm_params_from_percentiles(x1, x2, p1=0.01, p2=0.99):
 
 
 def lognorm_percentiles_from_params(mu, sigma, p1=0.01, p2=0.99):
-    dist = lognorm(scale=math.exp(mu), s=sigma)
+    dist = lognorm(scale=exp(mu), s=sigma)
     return [dist.ppf(p) for p in [p1, p2]]
 
 
@@ -73,8 +53,7 @@ class EvacMcarlo:
         self.evacuee_radius=self.json.read('{}/inc.json'.format(os.environ['AAMKS_PATH']))['evacueeRadius']
         self.floors=[z['floor'] for z in self.s_geom.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
         self._project_name=os.path.basename(os.environ['AAMKS_PROJECT'])
-
-
+        self.fire_points={}
 # }}}
     def _static_evac_conf(self):# {{{
         ''' 
@@ -98,9 +77,15 @@ class EvacMcarlo:
         yy=50
 
         query = "SELECT * FROM fire_origin where sim_id ==" + str(self._sim_id)
-        z=self.s.query(query)
+        i=self.s.query(query)[0] 
 
-        i=z[0]
+        self.fire_points['floor'] = i['floor']
+        self.fire_points['x'] = i['x']
+        self.fire_points['y'] = i['y']
+        self.fire_points['name'] = i['name']
+        self.fire_points['buffer'] = max(xx, yy)
+
+
         points=[ [i['x']-xx, i['y']-yy, 0], [i['x']+xx, i['y']-yy, 0], [i['x']+xx, i['y']+yy, 0], [i['x']-xx, i['y']+yy, 0], [i['x']-xx, i['y']-yy, 0] ]
 
         obstacles=self.json.readdb("obstacles")
@@ -176,6 +161,10 @@ class EvacMcarlo:
         for i in self.s_geom.query("SELECT name, x0, y0 FROM aamks_geom WHERE type_pri='EVACUEE' AND floor=?", (floor,)):
             q=(floor,i['x0'], i['y0'], i['x0'], i['y0'])
             x=self.s_geom.query("SELECT points, name, type_sec FROM aamks_geom WHERE type_pri='COMPA' AND floor=? AND x0<=? AND y0<=? AND x1>=? AND y1>=?", q)[0]
+            if floor == self.fire_points['floor'] and x['name'] == self.fire_points['name']:
+                if Point(i['x0'], i['y0']).within(Point(self.fire_points['x'], self.fire_points['y']).buffer(self.fire_points['buffer'])):
+                    print("WARNING: Evacuee {} on floor {} is inside fire obstacle. - OMITTED".format(i['name'], floor))
+                    continue
             if not x['name'] in manual_rooms:
                 x['points']=json.loads(x['points'])
                 manual_rooms[x['name']]=x

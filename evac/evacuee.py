@@ -22,6 +22,7 @@ class Evacuee:
         self.fed = 0
         self.dfed = 0
         self.symbolic_fed = 'N'
+        self.prev_symbolic_fed = 'N'
         self.previous_step_fed = 0
         self.distance = 1
         self.velocity = (0, 0)
@@ -172,3 +173,11 @@ class Evacuee:
             self.prev_floor = self.current_floor
             return _prev_floor
         return None
+    
+    def has_agent_changed_symbolic_fed(self):
+        if self.symbolic_fed != self.prev_symbolic_fed:
+            _prev_symbolic_fed = self.prev_symbolic_fed
+            self.prev_symbolic_fed = self.symbolic_fed
+            return _prev_symbolic_fed
+        return None
+    

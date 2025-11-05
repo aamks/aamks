@@ -39,9 +39,10 @@ class RedisWorkerServer:
         self.db.lpush(config.redis_worker_queue_name, dumps(message))
 
     def process_message(self, message_json: str):
-        if 'data' not in message_json:
+        if not (isinstance(message_json, dict) and 'data' in message_json):
             logger.debug(message_json)
             return
+
         if 'anim' in message_json['data']:
             logger.debug('starting anim function')
             self.run_beck_anim(message_json)
