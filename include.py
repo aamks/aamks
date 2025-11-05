@@ -17,6 +17,38 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def find_lock(Sqlite_obj, print_psaux=True):
+    import subprocess
+
+    db_path = Sqlite_obj.db_path if not isinstance(Sqlite_obj, str) else Sqlite_obj
+
+    if not db_path:
+        print("No database file path found for this connection (might be in-memory).")
+        return
+
+    try:
+        result = subprocess.run(['fuser', '-v', db_path], capture_output=True, text=True, check=True)
+
+        if result.stdout:
+            print(f"Processes locking or using the database file {db_path}:")
+            print(result.stdout)
+        else:
+            print(f"No processes found locking or using the database file {db_path}.")
+    except subprocess.CalledProcessError as e:
+        if e.returncode == 1:
+            print(f"No processes found locking or using the database file {db_path}.")
+        else:
+            print(f"Error running fuser: {e}")
+    except FileNotFoundError:
+        print("fuser command not found. Please install 'psmisc' package to get fuser on your system.")
+
+    if print_psaux:
+        psaux = subprocess.run(['ps', 'aux'], capture_output=True, text=True, check=True)
+        print(psaux.stdout)
+
+
+
+
 class Dump:# {{{
     def __init__(self,*args):
         '''debugging function, much like print but handles various types better'''
@@ -108,6 +140,8 @@ class Sqlite: # {{{
         self.SQLITE.row_factory=self._sql_assoc
         self.sqlitedb=self.SQLITE.cursor()
 
+        self.db_path=handle
+
     def _sql_assoc(self,cursor,row):
         ''' Query results returned as dicts. '''
         d = OrderedDict()
@@ -176,7 +210,8 @@ class Sqlite: # {{{
                 Dump(z)
             except:
                 pass
-    def close(self):
+    def close(self, commit=True):
+        self.SQLITE.commit() if commit else self.SQLITE.rollback()
         self.SQLITE.close()
 
 # }}}

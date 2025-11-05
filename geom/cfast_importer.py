@@ -30,7 +30,7 @@ class CFASTimporter():
         self.run()
 # }}}
     def run(self):
-        self.s_geom.query('PRAGMA locking_mode = EXCLUSIVE')
+        #self.s_geom.query('PRAGMA locking_mode = EXCLUSIVE')
         self._geometry2sqlite()
         self._enhancements()
         self._towers_slices()

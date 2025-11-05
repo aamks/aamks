@@ -156,8 +156,8 @@ class Worker:
         if self.project_conf['fire_model'] == 'CFAST':
             if os.getcwd() != self.working_dir:
                 os.chdir(self.working_dir)
-            os.system('ln -s /usr/local/aamks/fire/cfast7_linux_64 .')
-            os.system('ln -s /usr/local/aamks/fire/c_socket_handler.so .')
+            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/fire/cfast7_linux_64 .')
+            os.system(f'ln -s {os.environ["AAMKS_PATH"]}/fire/c_socket_handler.so .')
             command = ["./cfast7_linux_64", "cfast.in", "arg1", "arg2"]
             self.cfast_process = subprocess.Popen(command)
             self.connection_thread.join()
