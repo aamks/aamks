@@ -5,6 +5,7 @@ import logging
 from dotenv import load_dotenv
 #locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
+sys.path.append(os.getenv('AAMKS_PATH'))
 from manager.init import OnInit, OnEnd
 from geom.cfast_importer import CFASTimporter
 from geom.world2d import World2d

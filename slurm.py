@@ -8,6 +8,7 @@ def_args = [
         '--cpus_per_task', 1,
         ]
 python_env_aamks = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "bin", "python")}'
+lib_dir = f'{os.path.join(os.environ["AAMKS_PATH"], "env", "lib")}'
 python_env_aamks_server = f'{os.path.join(os.environ["AAMKS_PATH"], "env-server", "bin", "python")}'
 
 # launch aamks jobs
@@ -27,6 +28,7 @@ def launch(path: str, user_id: str, irange: list, scenario):
     slurm.set_output(f'workers/%a/slurm.out')
     slurm.set_error(f'workers/%a/slurm.err')
     slurm.set_time('01:00:00')
+    slurm.add_arguments(f'--export=ALL,LD_LIBRARY_PATH={lib_dir}:$LD_LIBRARY_PATH')
 
     # instead of default loop in aamks.py we use slurm array to quickly batch many jobs
     slurm.set_array(range(*irange))
@@ -37,8 +39,8 @@ def launch(path: str, user_id: str, irange: list, scenario):
     command = f'srun {python_env_aamks} {os.path.join(os.environ["AAMKS_PATH"], "aamks.py")} {path} {user_id}'
     try:
         job_id = slurm.sbatch(command, slurm.SLURM_ARRAY_TASK_ID)
-    except AssertionError:
-        raise AssertionError("sbatch was unable to launch your jobs. Make sure slurm is running and set properly.")
+    except AssertionError as e:
+        raise AssertionError(f"sbatch was unable to launch your jobs. Make sure slurm is running and set properly. Original error message \"{e}\"")
 
     psqldb = Psql()
     for iter_id in range(*irange):
