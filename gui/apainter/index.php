@@ -26,7 +26,7 @@ function css() { #{{{
 /*}}}*/
 function site() {/*{{{*/
 	echo "
-	<script src='js/d3.v4.min.js'></script>
+	<script src='js/d3.v7.9.0.min.js'></script>
 	<script src='js/polygon_tools.js'></script>
 	<script src='js/apainter.js'></script>
 	<script src='js/aunderlay.js'></script>

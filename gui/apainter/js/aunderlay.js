@@ -10,10 +10,10 @@ function registerListenersUnderlay() {//{{{
 	$("body").on("click"  , "#submit_scale" , function() { uimgScale(floor, Number($(this).attr('data-underlay-width'))); });
 
 	$("body").on("click", "#btn-underlay-form", function()       { underlayForm(); });
-	$("right-menu-box").on("click", "#close-img-svg", function() { underlayPointerEvents(stopDragging=1); });
+	$("right-menu-box").on("click", "#close-img-svg", function() { underlayPointerEvents(floor, stopDragging=1); });
 }
 //}}}
-function underlayPointerEvents(stopDragging=0) {//{{{
+function underlayPointerEvents(floor, stopDragging=0) {//{{{
 	// Normaly we auto-detect whether underlay dragging should be taking place, but user may request it.
 	if($("#uimg_remove").length) { 
 		$("#apainter-svg").css("pointer-events", "none"); $('#uimg'+floor).css("pointer-events", "auto"); 
@@ -110,7 +110,7 @@ function underlay_zoomer(floor) {//{{{
 		)
 }
 //}}}
-function underlayForm(width=0) {//{{{
+function underlayForm(width=0, floor) {//{{{
 	escapeAll();
 	
 	if(width>0) { var blinkSubmit=1; submit="<input id=submit_scale data-underlay-width='"+width+"' class=blink type=button value=set>"; } else { submit='<letter>p</letter>+drag'; }

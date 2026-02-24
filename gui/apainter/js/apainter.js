@@ -1,101 +1,251 @@
-// globals//{{{
-// cd $AAMKS_PATH/gui/apainter/js/; git log -p apainter.js | v
-//
-var win=[ $(window).width()-30, $(window).height()-50];
-var db=TAFFY(); // http://taffydb.com/working_with_data.html
-var zt={'x':0, 'y':0, 'k':1}; // zoom transform
-var cg={}; // current geom, the one that is currently selected, created, removed, etc.
-var cgID;
-var gg;
-var ggx;
-var zoom;
-var currentView='2d';
-var activeLetter='r';
-var svg;
-var floor=0;
-var floorsCount=1;
-var floorsZ0={0:0};
-var floors_dimz={0:350};
-var building;
-var buildingLabels;
-var ax={};
-var snapLinesSvg;
-var snapLinesArr={};
-var defaults={'door_dimz': 200, 'floor_teleport_width':70,'door_width': 90, 'window_dimz': 150, 'window_offsetz': 100 };
-var activeSnap={};
-var undoBuffer=[];
-var evacueeRadius;
-var threejsPlay=1;
-var floor_teleport_up_direction=0;
-var floor_teleport_down_direction=0;
-var external_doors = [];
-var teleports = [];
-var rooms_and_adjecent_doors_and_holes = {};
-var virtual_obj_parents = {};
-var obstAndCompartmentMarginWidth=26;
-//}}}
-function debug() {//{{{
-	console.clear();
+const LETTERS = {
+	TELEPORT_DOWN: 'kd',
+	TELEPORT_UP: 'ku'
+}
+/**
+ * @typedef {Object} ApainterState
+ * @property {{ width:number, height:number }} win
+ * @property {{ x:number, y:number, k:number }} zoomTransform
+ * @property {'2d'|'3d'|'txt'} currentView
+ * @property {string} activeLetter
+ * @property {number} currentFloor
+ * @property {number} floorsCount
+ * @property {Object<number,number>} floorsZ0
+ * @property {Object<number,number>} floorsDimZ
+ * @property {{doorDimZ:number,floorTeleportWidth:number,doorWidth:number,
+ * 		windowDimZ:number,windowOffsetZ:number,evacueeRadius:number, 
+ * 		obstAndCompartmentMarginWidth:number, snapForceHole:number, snapForceOther:number,
+ * 		zAdjFire:number, zAdjEvac:number, zAdjObst:number, zAdjVent:number,
+ * 		mventThroughput:number, exitWeight:number}} defaults
+ * @property {{x?:number,y?:number}} activeSnap
+ * @property {any[]} undoBuffer
+ * @property {number} threejsPlay
+ * @property {number} floorTeleportUpDir
+ * @property {number} floorTeleportDownDir
+ * @property {any[]} externalDoors
+ * @property {any[]} dragStartPos;
+ * @property {any[]} dragEndPos
+ * @property {d3.svg|null} selectionRect
+ * @property {Object<string,any>} roomsAndAdjDoorsAndHoles
+ * @property {Object<string,any>} virtualObjParents
+ * @property {SVGSVGElement|null} svg
+ * @property {d3.Selection|null} building
+ * @property {d3.Selection|null} buildingLabels
+ * @property {d3.Selection|null} snapLinesSvg
+ * @property {{horiz:number[],vert:number[]}} snapLinesArr
+ * @property {{x:any,y:any,gX:any,gY:any}} ax
+ * @property {any} gg
+ * @property {any} ggx
+ * @property {any|null} zoom
+ * @property {any[]} scene
+ */
+/** @type {ApainterState} */
+var state = {
+  win: {width: $(window).width() - 30, 
+		height: $(window).height() - 50 },
+  zoomTransform: { x: 0, y: 0, k: 1 },
+  currentView: '2d',
+  activeLetter: 'r',
+  currentFloor: 0,
+  floorsCount: 1,
+  floorsZ0: { 0: 0 },
+  floorsDimZ: { 0: 350 },
+  defaults: {
+    doorDimZ: 200,
+    floorTeleportWidth: 70,
+    doorWidth: 90,
+    windowDimZ: 150,
+    windowOffsetZ: 100,
+	evacueeRadius: 25,
+	obstAndCompartmentMarginWidth: 26,
+	snapForceHole: 100,
+	snapForceOther: 50,
+	zAdjFire: 250,
+	zAdjEvac: 150,
+	zAdjObst: 100,
+	zAdjVent: 50,
+	mventThroughput: 1.5,
+	exitWeight: 10
+  },
+  activeSnap: {},
+  undoBuffer: [],
+  threejsPlay: 1,
+  floorTeleportUpDir: 0,
+  floorTeleportDownDir: 0,
+  externalDoors: [],
+  dragStartPos: null,
+  dragEndPos: null,
+  selectionRect: null,
+  roomsAndAdjDoorsAndHoles: {},
+  virtualObjParents: {},
+  svg: null,
+  building: null,
+  buildingLabels: null,
+  snapLinesSvg: null,
+  snapLinesArr: { horiz: [], vert: [] },
+  ax: { x: null, y: null, gX: null, gY: null },
+  gg: null,
+  ggx: null,
+  zoom: null,
+  scene: {
+    objects: []  // all rooms, doors, windows, etc.
+  }
+};
+/**
+ * @typedef {{z0:number,z1:number}} ZRange
+ * @typedef {'room'|'door'|'window'|'hole'|'obst'|'mvent'|'vvent'|'floor_teleport'|'evacuee'|'fire'|'underlay_scaler'|'virtualobj'} ObjectType
+ * @typedef {Object} SceneObject
+ * @property {string} name
+ * @property {number} idx
+ * @property {number} infant
+ * @property {string} letter
+ * @property {any[]} polypoints
+ * @property {any[]} lines
+ * @property {ObjectType} type
+ * @property {number} floor
+ * @property {ZRange} z
+ * @property {number} minx
+ * @property {number} miny
+ * @property {number} maxx
+ * @property {number} maxy
+ * @property {?number} [exitWeight]
+ * @property {('auto'|number)} [evacueesDensity]
+ * @property {Object<string,number>} [roomExitsWeights]
+ * @property {?number} [mventThroughput]
+ * @property {?string} [flowDirection]
+ * @property {?number} [airGrilleSurface]
+ * @property {{x:number,y:number}|null} [teleportFrom]
+ * @property {{x:number,y:number}|null} [teleportTo]
+ * @property {string} preferredSnap
+ * @property {number} snapForce
+ * 
+ */
+/** @type {SceneObject|null} */
+var currentGeom = null;
 
-	dd(undoBuffer);
+function dbAll() {
+  return state.scene.objects;
+}
+function dbWhere(filter) {
+  return state.scene.objects.filter(function(o) {
+    return Object.keys(filter).every(function(k) {
+		const cond = filter[k];
+    	if (typeof cond === 'function') {
+        	return cond(o[k]);
+      	}
+		return o[k] === filter[k]; });
+  });
+}
+function dbGet(filter) {
+  return dbWhere(filter)[0] || null;
+}
+function dbInsert(obj) {
+  state.scene.objects.push(JSON.parse(JSON.stringify(obj))); // deep copy
+}
+function dbRemove(filter) {
+  state.scene.objects = state.scene.objects.filter(function(o) {
+    return !Object.keys(filter).every(function(k) { return o[k] === filter[k]; });
+  });
+}
+function dbRemoveByName(name) {
+  state.scene.objects = state.scene.objects.filter(function(o) { return o.name !== name; });
+}
+function dbUpdate(filter, updates) {
+  const matches = dbWhere(filter);
+  matches.forEach(function(o) {
+    Object.assign(o, updates);
+  });
+}
+function dbUpdateCurrentGeom() {
+  if (!currentGeom) return;
+  const { name, ...updates } = currentGeom;
+  dbUpdate({ name }, updates);
+}
+function dbMax(filter, field) {
+  var arr = dbWhere(filter);
+  if (!arr.length) return 0;
+  return Math.max.apply(null, arr.map(function(o) { return o[field] || 0; }));
+}
+function dbMaxMinXY() {
+  var arr = dbAll();
+  minx = Math.min.apply(null, arr.map(function(o) { return o.minx || 0; }));
+  maxx = Math.max.apply(null, arr.map(function(o) { return o.maxx || 0; }));
+  maxy = Math.max.apply(null, arr.map(function(o) { return o.maxy || 0; }));
+  miny = Math.min.apply(null, arr.map(function(o) { return o.miny || 0; }));
+  return {minx, maxx, miny, maxy};
+}
+function dbBetweenNames(rect) {
+  return dbWhere({
+	minx: function(v) { return v <= rect.maxx; },
+	maxx: function(v) { return v >= rect.minx; },
+	miny: function(v) { return v <= rect.maxy; },
+	maxy: function(v) { return v >= rect.miny; },
+	floor: state.currentFloor}).map(function(o) {
+		return o.name;
+	});
+}
+function dbSelect(filter, fields) {
+  return dbWhere(filter).map(function(o) {
+	if (!Array.isArray(fields)) {
+      return o[fields];
+    }
+    return fields.map(function(f) { return o[f]; });
+  });
+}
+function dbClear() {
+  state.scene.objects = [];
+}
+function getTypeApainterObjects(type, floor=null) {
+  return state.scene.objects.filter(function(o) {
+	if (floor !== null && o.floor !== floor) {
+		return false;
+	}
+    return state.gg[o.letter].t === type;
+  });
+}
+function debug() {
+	console.clear();
+	dd(state.scene.objects);
+	dd(currentGeom);
 	//dd($("#ufloor"+floor)[0]);
 	//dd($('#apainter-svg')[0]); 
-	//dd($('#uimg0')[0]); 
-	//ddd();
-	//return;
-	//dd($('#building')[0]);
-	//dd($('#floor0')[0]);
-	//dd(db2cadjson());
-	//dd($('#floor0')[0]);
-	//dd("f2", $('#ufloor2')[0]);
-	//_.each(db({'letter':'s'}).get(), function(v) {
-	//});
+	//_.each(dbWhere({'letter':'s'}), function(v) {
 }
-//}}}
-function tempChrome() {//{{{
-	// At some point chrome will enable separate css transformations and this call will be removed
-	d3.select('body').append('temp_checker').attr("id", "temp_checker").style("scale", 1);
-	if(d3.select('#temp_checker').style("scale")=='') {
-		$("body").html("<br><br><br><center>Aamks requires the experimental web features of Google Chrome.<br>You can paste the orange text to the address bar and enable them<br><span style='color: orange'>chrome://flags/#enable-experimental-web-platform-features</span>"); 
-		throw new Error("");
-	}
-} //}}}
-// on start{{{
+
 $(function()  { 
 	window.oncontextmenu = function () { return false; }    // cancel default menu  
-	tempChrome();
 	$.getJSON("inc.json", function(x) {
-		gg=x['aamksGeoms'];
-		ggx=x['aamksGeomsMap'];
-		evacueeRadius=x['evacueeRadius'];
+		state.gg=x['aamksGeoms'];
+		state.ggx=x['aamksGeomsMap'];
 		sceneBuilder();
 		importCadJson();
 		if (session_editable != 0){
-		keyboardEvents();
-		registerListeners();
-		registerListenersUnderlay();
-		$('right-menu-box').fadeOut();
+			keyboardEvents();
+			registerListeners();
+			registerListenersUnderlay();
+			$('right-menu-box').fadeOut();
 		} else {
 			$('legend0').html(`<h3 style="background-color:#c60c0c; font-size:16px; display:inline-block;">
 				You have already launched this scenario - it is in read-only mode. To make changes create a new scenario or copy/reset this one.`);
 			$('legend2').html('');
 			start3dView();
 		}
-		//dd($('#building')[0]);
 	});
 });
 //}}}
 function registerListeners() {//{{{
+	setupSelectionBox();
 	$("right-menu-box").on("click"     , "#btn_copy_to_floor"       , function() { floorCopy() });
 	$("right-menu-box").on("click"     , "#btn_add_floor"           , function() { addFloor() });
 	$("right-menu-box").on("click"     , "#btn_delete_floor"        , function() { deleteFloor() });
-	$("right-menu-box").on("mouseover" , ".bulkProps"               , function() { cgSelect($(this).attr('id')                                                                    , 1 , 0); });
+	$("right-menu-box").on("click"     , "#btn_shift"        		, function() { shiftObjects() });
+	$("right-menu-box").on("mouseover" , ".bulkProps"               , function() { cgSelect($(this).attr('id'),1,0);});
 	$("right-menu-box").on("click"     , '.bulkProps'               , function() { cgSelect($(this).attr('id'));  });
 	$("body").on("click"               , '#apainter-save'           , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
 	$("body").on("click"               , '#apainter-next-view'      , function() { nextView(); });
 	$("body").on("click"               , '#button-help'             , function() { showHelpBox(); });
 	$("body").on("click"               , '#button-setup'            , function() { showGeneralBox(); });
-	$("body").on("click"               , '.legend'                  , function() { activeLetter=$(this).attr('letter'); cgStartDrawing(); });
+	$("body").on("click"               , '.legend'                  , function() { state.activeLetter=$(this).attr('letter'); cgStartDrawing(); });
 	$("body").on("change"              , '#alter-mvent-throughput'  , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-flow-direction'    , function() { saveRightBox(); });
 	$("body").on("change"              , '#alter-air-grille-surface', function() { saveRightBox(); });
@@ -106,22 +256,101 @@ function registerListeners() {//{{{
 	$("body").on("keyup"               , '#alter-py'                , function() { saveRightBox(); });
 	$("body").on("mouseleave"          , 'right-menu-box'           , function() { saveRightBox(); showCgPropsBox(); });
 	$("body").on("change"              , '#floor'                   , function() { saveRightBox(); showCgPropsBox(); showGeneralBox();});
-
-	$("body").on("mousedown", "#apainter-svg", function(e){
-		if(e.which==3) {
-			cgEscapeCreate();
-			if (['circle', 'polyline'].includes(event.target.tagName)) { 
-				cgSelect(event.target.id);
-			} else { 
-				cg={};
-			}
-		}
-	});
-
 }
-//}}}
+function setupSelectionBox() {
+  let selectedIds = new Set();
+  const svg = d3.select('#apainter-svg');
+
+  state.selectionRect = svg.append('rect')
+    .attr('id', 'selection-rect')
+    .attr('fill', 'rgba(0, 150, 255, 0.2)')
+    .attr('stroke', '#0096ff')
+    .attr('stroke-width', 1)
+    .attr('display', 'none');
+
+  svg
+    .on('mousedown.select', function(event) {
+	  if (event.button !== 2) return;
+	  cgEscapeCreate();
+         // Check if clicked on selectable element
+      if (['circle', 'polygon'].includes(event.target.tagName)) {
+        const id = event.target.id;
+        if (event.ctrlKey) {
+          // Ctrl+right-click: toggle
+          selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id);
+        } else {
+          // Single select
+          selectedIds.clear();
+		  selectedIds.add(id)
+          cgSelect(id, 1, 1);
+          return;  // Don't drag rectangle
+        }
+        if (selectedIds.size > 0) {
+			selectedMoveBox(selectedIds);
+        	highlightSelected(selectedIds);
+			return;
+		}
+      }
+      // Empty space → start selection box
+	  startSVGPos = d3.pointer(event, this);
+      state.dragStartPos = scaleMouse(startSVGPos);
+      state.dragEndPos = state.dragStartPos;
+      updateSelectionRect(startSVGPos, startSVGPos);
+      state.selectionRect.attr('display', 'block');
+    })
+    .on('mousemove.select', function(event) {
+      if (!state.dragStartPos) return;
+	  endSVGPos = d3.pointer(event, this);
+      state.dragEndPos = scaleMouse(endSVGPos);
+      updateSelectionRect(startSVGPos, endSVGPos);
+    })
+    .on('mouseup.select', function(event) {
+      if (event.button !== 2 || !state.dragStartPos) {
+        resetSelectionRect();
+        return;
+      }
+      const rect = {
+        minx: Math.min(state.dragStartPos.x, state.dragEndPos.x),
+        maxx: Math.max(state.dragStartPos.x, state.dragEndPos.x),
+        miny: Math.min(state.dragStartPos.y, state.dragEndPos.y),
+        maxy: Math.max(state.dragStartPos.y, state.dragEndPos.y)
+      };
+      selectedIds.clear();
+	  selectedIds = new Set(dbBetweenNames(rect));
+
+	if (selectedIds.size > 0) {
+		selectedMoveBox(selectedIds);
+		highlightSelected(selectedIds);
+	}
+      resetSelectionRect();
+    });
+  svg.on('contextmenu', e => e.preventDefault());
+}
+function updateSelectionRect(startPos, endPos) {
+  if (!state.dragStartPos || !state.dragEndPos) return;
+
+  const x = Math.min(startPos[0], endPos[0]);
+  const y = Math.min(startPos[1], endPos[1]);
+  const w = Math.abs(endPos[0] - startPos[0]);
+  const h = Math.abs(endPos[1] - startPos[1]);
+
+  state.selectionRect
+    .attr('x', x)
+    .attr('y', y)
+    .attr('width', w)
+    .attr('height', h);
+}
+function resetSelectionRect() {
+  state.dragStartPos = null;
+  state.dragEndPos = null;
+  if (state.selectionRect) {
+    state.selectionRect.attr('display', 'none')
+      .attr('width', 0)
+      .attr('height', 0);
+  }
+}
 function keyboardEvents()  { // {{{
-	$(this).keyup((e) =>   { if (e.target.nodeName != 'INPUT' && e.key in gg && ! e.ctrlKey )   { cgEscapeCreate(); activeLetter=e.key; cgStartDrawing(); } });
+	$(this).keyup((e) =>   { if (e.target.nodeName != 'INPUT' && e.key in state.gg && ! e.ctrlKey )   { cgEscapeCreate(); state.activeLetter=e.key; cgStartDrawing(); } });
 	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'v')                  { cgEscapeCreate(); nextView(); } });
 	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'p')                  { $("#p1").remove() ; } });
 	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'n')                  { cgEscapeCreate(); changeFloor(calcNextFloor()); start2dView(); } });
@@ -130,29 +359,11 @@ function keyboardEvents()  { // {{{
 	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'r' && e.ctrlKey)     { alert('Refreshing will clear unsaved Aamks data. Continue?') ; } }) ;
 	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 's' && e.ctrlKey)     { cgEscapeCreate(); e.preventDefault(); db2cadjson(); importCadJson(); } }) ;
 	$(this).keyup((e) =>   { if (e.target.nodeName != 'INPUT' && e.key == 'z' && e.ctrlKey)     { undoApply(); } }) ;
-	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'x' && ! isEmpty(cg)) { cgEscapeCreate(); cgRemove(); }});
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'x' && ! isEmpty(currentGeom)) { cgEscapeCreate(); cgRemove(); }});
 	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'l')                  { cgEscapeCreate(); bulkProps(); } });
 	$(this).keydown((e) => { if (e.key == 'Escape')												{ escapeAll(); } });
 	// debug
 	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == ']') { debug(); }});
-}
-//}}}
-function dddx() {//{{{
-	dd(cg.name, JSON.stringify(cg.polypoints));
-}
-//}}}
-function ddd(current=0) {//{{{
-	if(current!=0) { 
-		dd(db({'name': cg.name}).get()[0]);
-	} else {
-		dd(db().get());
-	}
-}
-//}}}
-function dddX() {//{{{
-	_.each(db().get(), function(v) {
-		dd(v.name, JSON.stringify(v.polypoints));
-	});
 }
 //}}}
 function escapeAll(rmbClose=1) {//{{{
@@ -161,284 +372,177 @@ function escapeAll(rmbClose=1) {//{{{
 	$("#buildingLabels").html(""); 
 	$("#apainter-texts-pos").html(''); 
 	if(rmbClose==1) { $("right-menu-box").css("display", "none"); }
-	underlayPointerEvents(stopDragging=1);
+	underlayPointerEvents(state.currentFloor, stopDragging=1);
 }
 //}}}
-function getBbox() {//{{{
-	p0=[1000000,null], p1=[null,-1000000];
-	_.each(cg.polypoints, function(point) { 
-		if(point[0] < p0[0]) { p0=point; }
-		if(point[0] == p0[0] && point[1] < p0[1] ) { p0=point; }
-		if(point[1] > p1[1]) { p1=point; }
-		if(point[1] == p1[1] && point[0] > p1[0] ) { p1=point; }
-	});
-	return {'min': { 'x': p0[0], 'y': p0[1] }, 'max': {'x': p1[0], 'y': p1[1] } };
+function cgIdUpdate(letter) {//{{{
+	let similarTypes = ['door', 'hole', 'window'];
+	if (similarTypes.includes(state.gg[letter].t)){
+		let maxIdDoor = dbMax({"type": similarTypes[0]}, "idx")
+		let maxIdHole = dbMax({"type": similarTypes[1]}, "idx")
+		let maxIdWin = dbMax({"type": similarTypes[2]}, "idx");
+		cgID = Math.max(maxIdDoor, maxIdHole, maxIdWin)+1;
+	}
+	else
+		cgID=dbMax({"type": state.gg[letter].t}, "idx")+1;
+	return cgID;
 }
 //}}}
-
-function getPointsTriangleFloorTeleport(m){
-	string_points = "";
-	if (m?.polypoints?.[0]?.[0] !== undefined)
-	{
-		string_points += m.polypoints[0][0].toString();
-		string_points +=",";
-		string_points += (m.polypoints[0][1]).toString();
-		string_points += " ";
-
-		string_points += m.polypoints[1][0].toString();
-		string_points +=",";
-		string_points += (m.polypoints[1][1]).toString();
-		string_points += " ";
-
-		string_points += m.polypoints[2][0].toString();
-		string_points +=",";
-		string_points += (m.polypoints[2][1]).toString();
-		string_points += " ";
-
-		string_points += m.polypoints[3][0].toString();
-		string_points +=",";
-		string_points += (m.polypoints[3][1]).toString();
-	}
-	return string_points;
+function updateBbox(obj) {
+  var minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+  for (const [x, y] of obj.polypoints) {
+	if (x < minx) minx = x;
+	if (y < miny) miny = y;
+	if (x > maxx) maxx = x;
+	if (y > maxy) maxy = y;
+  }
+  if (!isFinite(minx)) {
+    minx = miny = maxx = maxy = 0;
+  }
+  obj.minx = minx;
+  obj.miny = miny;
+  obj.maxx = maxx;
+  obj.maxy = maxy;
 }
 
-
-function cgSvg(pparent='auto') { //{{{
-	if(pparent=='auto')  { pparent="#floor"+cg.floor; }
-	if (cg.type == 'evacuee') { 
-		var elem='circle';
-	} else {
-		var elem='polyline';
-	}
-	if (cg.type =='obst')
-		d3.select(pparent)
-			.append(elem)
-			.attr('id', 'margin'+cg.name)
-			.attr('class', 'OBSTMARGIN')
-			.attr('points', obstMarginSvgPolyline(cg))
-			.attr('cx', cg.polypoints[0][0])
-			.attr('cy', cg.polypoints[0][1])
-			.attr('r', evacueeRadius)
-	d3.select(pparent)
-		.append(elem)
-		.attr('id', cg.name)
-		.attr('class', gg[cg.letter].t + " " +gg[cg.letter].x)
-		.attr('points', svgPolyline(cg))
-		.attr('cx', cg.polypoints[0][0])
-		.attr('cy', cg.polypoints[0][1])
-		.attr('r', evacueeRadius)
-
-	if (cg.type =='room')
-		d3.select(pparent)
-			.append(elem)
-			.attr('id', 'margin'+cg.name)
-			.attr('class', 'COMPARTMENTMARGIN')
-			.attr('points', roomMarginSvgPolyline(cg))
-			.attr('cx', cg.polypoints[0][0])
-			.attr('cy', cg.polypoints[0][1])
-			.attr('r', evacueeRadius)
-
+function drawGeom(geom) {
+  let parentId = '#floor' + geom.floor;
+  let parent = d3.select(parentId);
+  let elemName = (geom.type === 'evacuee') ? 'circle' : 'polygon';
+    // Obst margin
+  if (geom.type === 'obst') {
+    parent.append(elemName)
+      .attr('id', 'margin' + geom.name)
+      .attr('class', 'OBSTMARGIN')
+      .attr('points', scaleRectangleOutward(geom))
+  }
+  // Room margin
+  if (geom.type === 'room') {
+    parent.append(elemName)
+      .attr('id', 'margin' + geom.name)
+      .attr('class', 'COMPARTMENTMARGIN')
+      .attr('points', scaleRectangleInward(geom))
+  }
+  let elem = parent.append(elemName)
+    .attr('id', geom.name)
+    .attr('class', geom.type + ' ' + state.gg[geom.letter].x);
+  if (elemName === 'polygon') {
+    elem.attr('points', flatPoints(geom));
+  } else {
+    let p0 = geom.polypoints[0] || [0, 0];
+    elem.attr('cx', p0[0]).attr('cy', p0[1]).attr('r', state.defaults.evacueeRadius);
+  }
 }
-
-
-function cgSvgVirtualObj(obj) { //{{{
-
-	if (obj.name in virtual_obj_parents){
-
-		for (let i = 0; i < virtual_obj_parents[obj.name].length; i++) {
-	 		pparent="#floor"+virtual_obj_parents[obj.name][i][2];
-			var elem='polyline';
-			d3.select(pparent)
-			.append(elem)
-			.attr('id', virtual_obj_parents[obj.name][i][0])
-			.attr('class', gg[virtual_obj_parents[obj.name][i][1]].t + " " +gg[virtual_obj_parents[obj.name][i][1]].x)
-			.attr('points', svgPolyline(obj))
-			.attr('cx', obj.polypoints[0][0])
-			.attr('cy', obj.polypoints[0][1])
-			.attr('r', evacueeRadius)
-			d3.select(pparent)
-			.append(elem)
-			.attr('id', 'margin'+virtual_obj_parents[obj.name][i][0])
-			.attr('class', 'COMPARTMENTMARGIN')
-			.attr('points', roomMarginSvgPolyline(obj))
-			.attr('cx', obj.polypoints[0][0])
-			.attr('cy', obj.polypoints[0][1])
-			.attr('r', evacueeRadius)
-
-		}
-	}
+function cgUpdate(){
+	if(currentGeom.type=='underlay_scaler') { return; }
+	updateBbox(currentGeom);
+	currentGeom.lines = computeLines(currentGeom);
+	dbUpdateCurrentGeom()
 }
-//}}}
 function cgDb(undoRegister=1) { //{{{
-	if(cg.type=='underlay_scaler') { return; }
-	var lines=[];
-
-	if(cg.type=='room') {
-		_.each(cg.polypoints, function(point) { 
-			lines.push(point);
-		});
-	} else {
-		lines.push([-100000, -100000], [-100000, -100000], [-100000, -100000], [-100000, -100000]);
-	}
-	db({"name": cg.name}).remove();
-
+	if(currentGeom.type=='underlay_scaler') { return; }
+    currentGeom.lines = computeLines(currentGeom);
+	dbRemoveByName(currentGeom.name);
 	addDefaultCgProps();
-	cad_json=generateObjectCadJson(cg);
+	updateBbox(currentGeom);
 
-	b=getBbox();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "flow_direction":cg.flow_direction, "air_grille_surface":cg.air_grille_surface, "exit_weight":cg.exit_weight,"room_exits_weights":cg.room_exits_weights, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
+	dbInsert({"name": currentGeom.name, "idx": currentGeom.idx,
+		"letter": currentGeom.letter, "type": currentGeom.type, "lines": currentGeom.lines,
+		"polypoints": currentGeom.polypoints, "z": currentGeom.z, "floor": currentGeom.floor,
+		"mventThroughput": currentGeom.mventThroughput, "flowDirection":currentGeom.flowDirection,
+		"airGrilleSurface":currentGeom.airGrilleSurface, "exitWeight":currentGeom.exitWeight,
+		"roomExitsWeights":currentGeom.roomExitsWeights, "evacueesDensity": currentGeom.evacueesDensity, 
+		"minx": currentGeom.minx, "miny": currentGeom.miny, "maxx": currentGeom.maxx, "maxy": currentGeom.maxy, 
+		"teleportFrom":currentGeom.teleportFrom, "teleportTo":currentGeom.teleportTo});
 
 	if(undoRegister==1) { undoBufferRegister('insert'); }
-
 }
-//}}}
-
-function cgDbVirtualObj(parent) { //{{{
-	var lines=[];
-	if(parent.type=='room') {
-		_.each(parent.polypoints, function(point) { 
-			lines.push(point);
-		});
-	} else {
-		lines.push([-100000, -100000], [-100000, -100000], [-100000, -100000], [-100000, -100000]);
-	}
-
-	virtual_obj_name_map = {'s':'vs', 'a':'va'}
-	virtual_obj_map = {'s':gg[virtual_obj_name_map['s']]['t'], 'a':gg[virtual_obj_name_map['a']]['t']}
-
-
-	let z_min = parent.z[0];
-	let z_max = parent.z[1];
-	let floors = [];
-
-	for(let floor = 0; floor < floorsCount; floor++){
-		if (floorsZ0[floor] > z_min && floorsZ0[floor] < z_max)
-			if (floor != parent.floor)
-				floors.push(floor);
-	}
-	if (parent.name in virtual_obj_parents){
-		for (let i = 0; i < virtual_obj_parents[parent.name].length; i++) {
-			var vObjId = virtual_obj_parents[parent.name][i][0];
-	 		db({"name": vObjId}).remove();
-	 		document.getElementById(vObjId).remove();
-			document.getElementById('margin'+vObjId).remove();
-		}
-	}
-
-	virtual_obj_parents[parent.name] = [];
-
-	b=getBbox();
-	_.each(floors, function(floor){
-		vcgIDx=db({"type": virtual_obj_map[parent.letter]}).max("idx")+1;
-		vcgName = virtual_obj_name_map[parent.letter]+vcgIDx;
-
-		db.insert({"name": vcgName, "idx": vcgIDx, "cad_json": parent.cad_json, 
-			"letter": virtual_obj_name_map[parent.letter], "type": virtual_obj_map[parent.letter], "lines": lines, 
-			"polypoints": parent.polypoints, "z": parent.z, "floor": parent.floor,
-			"exit_weight":parent.exit_weight,"room_exits_weights":parent.room_exits_weights, 
-			"evacuees_density": parent.evacuees_density, "minx": b.min.x, "miny": b.min.y, 
-			"maxx": b.max.x, "maxy": b.max.y, "teleport_from":parent.teleport_from, "teleport_to":parent.teleport_to});
-
-		virtual_obj_parents[parent.name].push([vcgName,virtual_obj_name_map[parent.letter],floor]);
-
-	})
-}
-//}}}
 
 function generateObjectCadJson(obj){
 	cad_json = {};
 	cad_json['points']=JSON.stringify(obj.polypoints);
 	cad_json['idx']=obj.idx;
-	cad_json['z']=JSON.stringify(obj.z);
+	cad_json['z']=JSON.stringify([obj.z.z0, obj.z.z1]);
 
 	if(obj.type=='door') {
-		if (obj.exit_weight != null)
-			cad_json["exit_weight"]=obj.exit_weight;
+		if (obj.exitWeight != null)
+			cad_json["exitWeight"]=obj.exitWeight;
 	} else if(obj.type=='room') {
-		cad_json["evacuees_density"]=obj.evacuees_density;
-		if (obj.room_exits_weights != null)
-			cad_json["room_exits_weights"]=obj.room_exits_weights; 
+		cad_json["evacueesDensity"]=obj.evacueesDensity;
+		if (obj.roomExitsWeights != null)
+			cad_json["roomExitsWeights"]=obj.roomExitsWeights; 
 	} else if(obj.type=='mvent') {
-		cad_json["mvent_throughput"]=obj.mvent_throughput;
-		if (obj.flow_direction != null)
-			cad_json["flow_direction"]=obj.flow_direction;
-		if (obj.air_grille_surface != null)
-			cad_json["air_grille_surface"]=obj.air_grille_surface;
+		cad_json["mventThroughput"]=obj.mventThroughput;
+		if (obj.flowDirection != null)
+			cad_json["flowDirection"]=obj.flowDirection;
+		if (obj.airGrilleSurface != null)
+			cad_json["airGrilleSurface"]=obj.airGrilleSurface;
 	}else if(obj.type=='floor_teleport') {
-		cad_json["teleport_from"]=obj.teleport_from;
-		cad_json["teleport_to"]=obj.teleport_to;
-		if (obj.exit_weight != null)
-			cad_json["exit_weight"]=obj.exit_weight;
+		cad_json["teleportFrom"]=obj.teleportFrom;
+		cad_json["teleportTo"]=obj.teleportTo;
+		if (obj.exitWeight != null)
+			cad_json["exitWeight"]=obj.exitWeight;
 	}
-
 	return cad_json;
 }
 
 function undoApply() {//{{{
 	escapeAll();
-	if (undoBuffer.length==0) { return; }
-	cg=undoBuffer.pop();
-	if(cg.op=='insert') { 
+	if (state.undoBuffer.length==0) { return; }
+	currentGeom=state.undoBuffer.pop();
+	if(currentGeom.op=='insert') { 
 		cgRemove(undoRegister=0);
 	} else {
-		$("#"+cg.name).remove(); cgDb(undoRegister=0); cgSvg(); updateSnapLines();
+		$("#"+currentGeom.name).remove(); cgDb(undoRegister=0); drawGeom(currentGeom); updateSnapLines();
 	}
 }
 //}}}
 function undoBufferRegister(op) {//{{{
-	var data=deepcopy(db({"name": cg.name}).get()[0]);
-	data.op=op;
-	undoBuffer.push(data);
-}
-//}}}
-function cgIdUpdate() {//{{{
-	var similarTypes = ['door', 'hole', 'window'];
-	if (similarTypes.includes(gg[activeLetter].t)){
-		var maxIdDoor = db({"type": similarTypes[0]}).max("idx");
-		var maxIdHole = db({"type": similarTypes[1]}).max("idx");
-		var maxIdWin = db({"type": similarTypes[2]}).max("idx");
-		cgID = Math.max(maxIdDoor, maxIdHole, maxIdWin)+1;
+	var data=deepcopy(dbGet({"name": currentGeom.name}));
+	if(data){
+		data.op=op;
+		state.undoBuffer.push(data);
 	}
-	else
-		cgID=db({"type": gg[activeLetter].t}).max("idx")+1;
 }
 //}}}
 function resetView(){//{{{
-	zoom.transform(svg, d3.zoomIdentity.translate(100,100).scale(0.2));
+	state.zoom.transform(state.svg, d3.zoomIdentity.translate(100,100).scale(0.2));
 }
 //}}}
-function zoomInit() { //{{{
-	// d3 is mysterious. They talk about event.button which is always 0 in chrome/linux
-	// event which works for me: 0: wheelScroll, 1: mouseLeft, 2: wheelPress
+function zoomInit() {
+  state.zoom = d3.zoom()
+    .scaleExtent([1/30, 4])
+    .translateExtent([[-1200, -1200], [1e6, 1e6]])
+    .filter(zoomFilter)
+    .on('zoom', zoomedwin);
 
-	zoom = d3.zoom().on("zoom", zoomedwin);
-	resetView();
-
-	d3.select("#apainter-svg")
-		.call(d3.zoom()
-			.scaleExtent([1 / 30, 4])
-			.translateExtent([[-1200, -1200], [1000000 , 1000000]])
-			.on("zoom", zoomedwin)
-			.filter(function(){ return (event.which === 0 || event.which === 2 ); })
-		)
-		.on("dblclick.zoom", null);
+  state.svg
+    .call(state.zoom)
+    .on('dblclick.zoom', null);  // disable dblclick zoom
+  
+  resetView();
 }
 //}}}
-function zoomedwin() {//{{{
-	zt=d3.event.transform;
-	building.attr("transform", zt);
-	buildingLabels.attr("transform", zt);
-	snapLinesSvg.attr("transform", zt);
-	$("#snapper").attr("transform", zt);
-	ax.gX.call(ax.xAxis.scale(d3.event.transform.rescaleX(ax.x)))
-	ax.gY.call(ax.yAxis.scale(d3.event.transform.rescaleY(ax.y)));
+function zoomFilter(event) {
+  // wheel scroll (0) or wheel press (1), ignore left/right click (0)/(2)
+  return event.type === 'wheel' || event.button === 1;
+}
+function zoomedwin(event) {
+  const t = event.transform;
+  state.zoomTransform = t;
+  state.building.attr('transform', t);
+  state.buildingLabels.attr('transform', t);
+  state.snapLinesSvg.attr('transform', t);
+  $('#snapper').attr('transform', t);
+  state.ax.gX.call(state.ax.xAxis.scale(t.rescaleX(state.ax.x)));
+  state.ax.gY.call(state.ax.yAxis.scale(t.rescaleY(state.ax.y)));
 }
 //}}}
 function calcNextFloor() {//{{{
-	if (floor >= floorsCount - 1) {
+	if (state.currentFloor >= state.floorsCount - 1) {
 		return 0;
 	} else {
-		return floor+1;
+		return state.currentFloor+1;
 	}
 }
 //}}}
@@ -450,7 +554,7 @@ function close2dView() {//{{{
 //}}}
 function close3dView() {//{{{
 	$("view3d").css("display", "none");
-	threejsPlay=0;
+	state.threejsPlay=0;
 }
 //}}}
 function closeTxtView() {//{{{
@@ -458,15 +562,15 @@ function closeTxtView() {//{{{
 }
 //}}}
 function start2dView() {//{{{
-	currentView='2d'; 
+	state.currentView='2d'; 
 	close3dView();
 	$("view2d").css("display", "block");
 	$("#apainter-svg").css("display", "block");
 }
 //}}}
 function start3dView() {//{{{
-	threejsPlay=1;
-	currentView='3d'; 
+	state.threejsPlay=1;
+	state.currentView='3d'; 
 	close2dView();
 	view3d();
 	$("view3d").css("display", "block");
@@ -476,7 +580,7 @@ function startTxtView(pretty_json="") {//{{{
 	close2dView();
 	close3dView();
 	closeTxtView();
-	currentView='txt'; 
+	state.currentView='txt'; 
 	if(pretty_json=="") { var pretty_json=db2cadjson(); }
 	$("body").append(
 		"<div id=div-cad-json-textarea><br><br>"+
@@ -490,15 +594,15 @@ function nextView() {//{{{
 	$("right-menu-box").css("display", "none");
 	closeTxtView();
 
-	if(currentView=='2d')       { start3dView(); }
-	else if(currentView=='3d')  { start2dView(); }
-	else if(currentView=='txt') { start2dView(); }
+	if(state.currentView=='2d')       { start3dView(); }
+	else if(state.currentView=='3d')  { start2dView(); }
+	else if(state.currentView=='txt') { start2dView(); }
 }
 //}}}
 function cgRemove(undoRegister=1) {//{{{
 	if(undoRegister==1) { undoBufferRegister('remove'); }
-	$("#"+cg.name).remove();
-	db({"name":cg.name}).remove();
+	$("#"+currentGeom.name).remove();
+	dbRemoveByName(currentGeom.name)
 	updateSnapLines();
 	if($("#gg_listing").length==0) { 
 		$("right-menu-box").css("display", "none"); 
@@ -507,131 +611,118 @@ function cgRemove(undoRegister=1) {//{{{
 	}
 	showBuildingLabels();
 	$(".building-vertex").remove() 
-	if (cg.type == 'door' || cg.type == 'hole'){	
-		_.each(db({'floor': cg.floor, 'type': 'room'}).get(), function(m){
-			if (m.room_exits_weights !== undefined && cg.idx in m.room_exits_weights)
-				delete m.room_exits_weights[cg.idx];
+	if (currentGeom.type == 'door' || currentGeom.type == 'hole'){	
+		_.each(dbWhere({'floor': currentGeom.floor, 'type': 'room'}), function(m){
+			if (m.roomExitsWeights !== undefined && currentGeom.idx in m.roomExitsWeights)
+				delete m.roomExitsWeights[currentGeom.idx];
 		});
 	}
-	if (cg.type == 'obst'){	
-		$("#margin"+cg.name).remove();
+	if (currentGeom.type == 'obst'){	
+		$("#margin"+currentGeom.name).remove();
 	}
-	if (cg.type == 'room'){	
-		$("#margin"+cg.name).remove();
+	if (currentGeom.type == 'room'){	
+		$("#margin"+currentGeom.name).remove();
 	}
 }
 //}}}
 
 function updateSnapLines() { //{{{
-	var lines=db({'floor': floor}).select("lines");
+	const lines=dbSelect({'floor': state.currentFloor}, 'lines');
 	d3.select("#snapLinesSvg").selectAll("line").remove();
-	snapLinesArr['horiz']=[];
-	snapLinesArr['vert']=[];
-	var below, above, right, left;
+	state.snapLinesArr['horiz']=[];
+	state.snapLinesArr['vert']=[];
 
 	appendSnapLinesSvg(lines);
 
-	// add snap lines for virtual compartments
-	for (let key in virtual_obj_parents) {
-		for (let i = 0; i < virtual_obj_parents[key].length; i++) {
-			if(virtual_obj_parents[key][i][2] == floor){
-				var lines=db({'name': key}).select("lines");
-				appendSnapLinesSvg(lines);
-				break;
-			}
-		}
-	}
-
-	snapLinesArr['horiz']=Array.from(new Set(snapLinesArr['horiz']));
-	snapLinesArr['vert']=Array.from(new Set(snapLinesArr['vert']));
+	state.snapLinesArr['horiz']=Array.from(new Set(state.snapLinesArr['horiz']));
+	state.snapLinesArr['vert']=Array.from(new Set(state.snapLinesArr['vert']));
 }
 
 function appendSnapLinesSvg(lines){
 	for(var points in lines) { 
-		below = lines[points][0][1];
-		above = lines[points][2][1];
-		right = lines[points][0][0];
-		left  = lines[points][1][0];
+		var below = lines[points][0][1];
+		var above = lines[points][2][1];
+		var right = lines[points][0][0];
+		var left  = lines[points][1][0];
 
-		snapLinesArr['horiz'].push(below);
-		snapLinesArr['horiz'].push(above);
-		snapLinesArr['vert'].push(right);
-		snapLinesArr['vert'].push(left);
+		state.snapLinesArr['horiz'].push(below);
+		state.snapLinesArr['horiz'].push(above);
+		state.snapLinesArr['vert'].push(right);
+		state.snapLinesArr['vert'].push(left);
 
-		snapLinesSvg.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , -100000).attr('x2' , 100000).attr("visibility", "hidden");
-		snapLinesSvg.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , -100000).attr('x2' , 100000).attr("visibility", "hidden");
-		snapLinesSvg.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , -100000).attr('y2' , 100000).attr("visibility", "hidden");
-		snapLinesSvg.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , -100000).attr('y2' , 100000).attr("visibility", "hidden");
-
+		state.snapLinesSvg.append('line').attr('id' , 'sh_'+below).attr('class' , 'snap_v').attr('y1' , below).attr('y2' , below).attr('x1' , -100000).attr('x2' , 100000).attr("visibility", "hidden");
+		state.snapLinesSvg.append('line').attr('id' , 'sh_'+above).attr('class' , 'snap_v').attr('y1' , above).attr('y2' , above).attr('x1' , -100000).attr('x2' , 100000).attr("visibility", "hidden");
+		state.snapLinesSvg.append('line').attr('id' , 'sv_'+right).attr('class' , 'snap_h').attr('x1' , right).attr('x2' , right).attr('y1' , -100000).attr('y2' , 100000).attr("visibility", "hidden");
+		state.snapLinesSvg.append('line').attr('id' , 'sv_'+left).attr('class'  , 'snap_h').attr('x1' , left).attr('x2'  , left).attr('y1'  , -100000).attr('y2' , 100000).attr("visibility", "hidden");
 	}
 }
 //}}}
 function axes() { //{{{
-	ax.x = d3.scaleLinear()
-		.domain([-1, win[0]+ 1])
-		.range([-1, win[0]+ 1 ]);
+	state.ax.x = d3.scaleLinear()
+		.domain([-1, state.win.width+ 1])
+		.range([-1, state.win.width+ 1 ]);
 
-	ax.y = d3.scaleLinear()
-		.domain([-1, win[1] + 1])
-		.range([-1, win[1] + 1]);
+	state.ax.y = d3.scaleLinear()
+		.domain([-1, state.win.height + 1])
+		.range([-1, state.win.height + 1]);
 
-	ax.xAxis = d3.axisBottom(ax.x)
+	state.ax.xAxis = d3.axisBottom(state.ax.x)
 		.ticks(screen.width/800)
-		.tickSize(win[1])
-		.tickPadding(2 - win[1]);
+		.tickSize(state.win.height)
+		.tickPadding(2 - state.win.height);
 
-	ax.yAxis = d3.axisRight(ax.y)
+	state.ax.yAxis = d3.axisRight(state.ax.y)
 		.ticks(screen.height/800)
-		.tickSize(win[0])
-		.tickPadding(2 - win[0]);
-	svg.append("g").attr("id", "axes");
+		.tickSize(state.win.width)
+		.tickPadding(2 - state.win.width);
+	state.svg.append("g").attr("id", "axes");
 
-	ax.gX = d3.select("#axes").append("g")
+	state.ax.gX = d3.select("#axes").append("g")
 		.attr("class", "axis axis--x")
-		.call(ax.xAxis);
+		.call(state.ax.xAxis);
 
-	ax.gY = d3.select("#axes").append("g")
+	state.ax.gY = d3.select("#axes").append("g")
 		.attr("class", "axis axis--y")
-		.call(ax.yAxis);
+		.call(state.ax.yAxis);
 }
 
 function addFloor() {//{{{
-	floor = floorsCount;
-	floorsCount++;
-	building.append("g").attr("id", "floor"+floor).attr("class", "floor").attr('fill-opacity',0.4);
-	setNewFloorAttr(floor);
-	floors_dimz[floor] = floors_dimz[floor-1];
-	floorsZ0[floor] = getSumDimZLower(floor);
+	state.currentFloor = state.floorsCount;
+	state.floorsCount++;
+	state.building.append("g").attr("id", "floor"+state.currentFloor).attr("class", "floor").attr('fill-opacity',0.4);
+	setNewFloorAttr(state.currentFloor);
+	state.floorsDimZ[state.currentFloor] = state.floorsDimZ[state.currentFloor-1];
+	state.floorsZ0[state.currentFloor] = getSumDimZLower(state.currentFloor);
 }
 
 function deleteFloor() {//{{{
 	let _floor = Number($("#floor").val());
 	deletefloorZData();
-	floorsCount--;
+	state.floorsCount--;
 	d3.select('floor'+_floor).remove();
-	setLowerFloorAttr(_floor-1);
-	floor = _floor-1;
+	setNewFloorAttr(_floor-1);
+	state.currentFloor = _floor-1;
 	showGeneralBox();
 }
 
 function deletefloorZData(){
-	var keys = Object.keys(floors_dimz);
+	var keys = Object.keys(state.floorsDimZ);
 	var lastKey = keys[keys.length - 1];
-	delete floors_dimz[lastKey];
-	keys = Object.keys(floorsZ0);
+	delete state.floorsDimZ[lastKey];
+	keys = Object.keys(state.floorsZ0);
 	lastKey = keys[keys.length - 1];
-	delete floorsZ0[lastKey];
+	delete state.floorsZ0[lastKey];
 }
 
 function changeFloor(requested_floor) {//{{{
-	if(floor > floorsCount-1) { 
+	if(state.currentFloor > state.floorsCount-1) { 
 		return;
 	}
-	undoBuffer=[];
+	state.undoBuffer=[];
 	escapeAll();
 	$("#p1").remove();
-	floor=requested_floor;
-	setNewFloorAttr(floor);
+	state.currentFloor=requested_floor;
+	setNewFloorAttr(state.currentFloor);
 }
 
 function setNewFloorAttr(floor) {//{{{
@@ -639,37 +730,36 @@ function setNewFloorAttr(floor) {//{{{
 	$("#floor"+floor).attr("visibility","visible");
 
 	updateSnapLines();
-	$("#apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
-	$("#apainter-texts-floor").clearQueue().finish();
-	$("#apainter-texts-floor").css("opacity",1).animate({"opacity": 0.1}, 1000);
-}
-
-function setLowerFloorAttr(floor) {//{{{
-	$(".floor").attr("visibility","hidden");
-	$("#floor"+floor).attr("visibility","visible");
-
-	updateSnapLines();
-	$("#apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
+	$("#apainter-texts-floor").html("floor "+(state.currentFloor + 1)+"/"+state.floorsCount);
 	$("#apainter-texts-floor").clearQueue().finish();
 	$("#apainter-texts-floor").css("opacity",1).animate({"opacity": 0.1}, 1000);
 }
 
 //}}}
+function getEffectiveSnapForce() {
+    const k = state.zoomTransform ? state.zoomTransform.k : 1;
+    const baseSnap = currentGeom.snapForce;   // snap at k = 1 (in pixels)
+    const minSnap = 5;
+    const maxSnap = 100;
+    return Math.max(minSnap, Math.min(maxSnap, baseSnap / k));
+}
 function activeSnapX(m) {//{{{
-	for(var point in snapLinesArr['vert']) {
-		p=snapLinesArr['vert'][point];
-		if (m.x > p - cg.snapForce && m.x < p + cg.snapForce) { 
-			activeSnap.x=p;
+	const snapForce = getEffectiveSnapForce();
+	for(var point in state.snapLinesArr['vert']) {
+		p=state.snapLinesArr['vert'][point];
+		if (m.x > p - snapForce && m.x < p + snapForce) { 
+			state.activeSnap.x=p;
 			break;
 		}
 	}
 }
 //}}}
 function activeSnapY(m) {//{{{
-	for(var point in snapLinesArr['horiz']) {
-		p=snapLinesArr['horiz'][point];
-		if (m.y > p - cg.snapForce && m.y < p + cg.snapForce) { 
-			activeSnap.y=p;
+	const snapForce = getEffectiveSnapForce();
+	for(var point in state.snapLinesArr['horiz']) {
+		p=state.snapLinesArr['horiz'][point];
+		if (m.y > p - snapForce && m.y < p + snapForce) { 
+			state.activeSnap.y=p;
 			break;
 		}
 	}
@@ -682,25 +772,25 @@ function snappingHide(hideDot=1) {//{{{
 }
 //}}}
 function snap(m) {//{{{
-	activeSnap={};
-	if(!['room', 'hole', 'window', 'door'].includes(cg.type)) { return; }
+	state.activeSnap={};
+	if(!['room', 'hole', 'window', 'door'].includes(currentGeom.type)) { return; }
 	snappingHide(0);
 	if (event.ctrlKey) { $('#snapper').attr('fill-opacity', 0); return; } 
 
 	activeSnapX(m); 
 	activeSnapY(m); 
 
-    if (['window', 'door'].includes(cg.type)) { snapKeepDirection(m); }
-	if(isEmpty(activeSnap)) { snappingHide();  } else { snappingShow(m); }
+    if (['window', 'door'].includes(currentGeom.type)) { snapKeepDirection(m); }
+	if(isEmpty(state.activeSnap)) { snappingHide();  } else { snappingShow(m); }
 }
 
 //}}}
 function snapKeepDirection(m) {//{{{
 	// Prevent ortho-changing snapping 
-	if (!('y' in activeSnap) && 'x' in activeSnap) { cg.preferredSnap='x'; }
-	if (!('x' in activeSnap) && 'y' in activeSnap) { cg.preferredSnap='y'; }
-	activeSnap={};
-	if(cg.preferredSnap=='x') { 
+	if (!('y' in state.activeSnap) && 'x' in state.activeSnap) { currentGeom.preferredSnap='x'; }
+	if (!('x' in state.activeSnap) && 'y' in state.activeSnap) { currentGeom.preferredSnap='y'; }
+	state.activeSnap={};
+	if(currentGeom.preferredSnap=='x') { 
 		activeSnapX(m); 
 	} else {
 		activeSnapY(m); 
@@ -709,88 +799,99 @@ function snapKeepDirection(m) {//{{{
 //}}}
 function snappingShow(m) {//{{{
 	$('#snapper').attr('fill-opacity', 1).attr({ r: 10, cx: m.x, cy: m.y}); 
-	if("x" in activeSnap) { 
-		$("#sv_"+activeSnap.x).attr("visibility", "visible"); 
-		$('#snapper').attr({ cx: activeSnap.x}); 
+	if("x" in state.activeSnap) { 
+		$("#sv_"+state.activeSnap.x).attr("visibility", "visible"); 
+		$('#snapper').attr({ cx: state.activeSnap.x}); 
 	}
-	if("y" in activeSnap) { 
-		$("#sh_"+activeSnap.y).attr("visibility", "visible"); 
-		$('#snapper').attr({ cy: activeSnap.y});
+	if("y" in state.activeSnap) { 
+		$("#sh_"+state.activeSnap.y).attr("visibility", "visible"); 
+		$('#snapper').attr({ cy: state.activeSnap.y});
 	}
 
-	if("x" in activeSnap && "y" in activeSnap) { $('#snapper').attr({ r: 30}); }
+	if("x" in state.activeSnap && "y" in state.activeSnap) { $('#snapper').attr({ r: 30}); }
 }
 //}}}
-function cgInit() {//{{{
-	//delete cg.growing;
-	cgIdUpdate();
-	cg.name=activeLetter+cgID;
-	cg.idx=cgID;
-	cg.infant=1;
-	cg.floor=floor;
-	cg.letter=activeLetter;
-	cg.type=gg[activeLetter].t;
-	cg.mvent_throughput=1.5;
-	cg.air_grille_surface = null;
-	cg.flow_direction = null;
-	cg.exit_weight = 10;
-	cg.room_exits_weights = {};
-	cg.z=[floorsZ0[floor]];
-	cg.polypoints=[];
-	cg.preferredSnap=null;
-	if(cg.type=='hole') { cg.snapForce=100; } else { cg.snapForce=50; }
-	if (cg.type=='fire') {
-		cg.z.push(cg.z[0] + 250);
-	} else if (cg.type=='evacuee') {
-		cg.z.push(cg.z[0] + 150);
-	} else if (cg.type=='obst') {
-		cg.z.push(cg.z[0] + 100);
-	} else if (cg.type=='mvent') {
-		cg.z.push(cg.z[0] + 50);
-	} else if (cg.type=='vvent') {
-		cg.z.push(cg.z[0] + 50);
-	} else if (cg.type=='window') {
-		cg.z=[floorsZ0[floor] + defaults.window_offsetz]; 
-		cg.z.push(cg.z[0] + defaults.window_dimz);
-	} else if (cg.type=='door') {
-		cg.z.push(cg.z[0] + defaults.door_dimz); 
-	} else if (cg.type=='room') {
-		cg.z.push(cg.z[0] + floors_dimz[floor]);
-		cg.evacuees_density='auto';
-	} else {
-		cg.z.push(cg.z[0] + floors_dimz[floor]);
-	}
+function cgInit() {
+  currentGeom = null;
+
+  const idx = cgIdUpdate(state.activeLetter);
+  const name = state.activeLetter + idx;
+
+  /** @type {SceneObject} */
+  let obj = {
+    name: name,
+    idx: idx,
+	infant: 1,
+    letter: state.activeLetter,
+	polypoints: [],
+    type: state.gg[state.activeLetter].t,
+    floor: state.currentFloor,
+    points: [],
+	lines: [],
+    z: { z0: state.floorsZ0[state.currentFloor], z1: state.floorsDimZ[state.currentFloor] },
+    minx: 0,
+    miny: 0,
+    maxx: 0,
+    maxy: 0,
+    exitWeight: state.defaults.exitWeight,
+    evacueesDensity: null,
+    roomExitsWeights: undefined,
+    mventThroughput: state.defaults.mventThroughput,
+    flowDirection: null,
+    airGrilleSurface: null,
+    teleportFrom: null,
+    teleportTo: null,
+	preferredSnap: null,
+	snapForce: (state.gg[state.activeLetter].t == 'hole') ? state.defaults.snapForceHole : state.defaults.snapForceOther,
+  };
+  if (obj.type === 'fire') {
+    obj.z.z1 = obj.z.z0 + state.defaults.zAdjFire;
+  } else if (obj.type === 'evacuee') {
+    obj.z.z1 = obj.z.z0 + state.defaults.zAdjEvac;
+  } else if (obj.type === 'obst') {
+    obj.z.z1 = obj.z.z0 + state.defaults.zAdjObst;
+  } else if (obj.type === 'mvent' || obj.type === 'vvent') {
+    obj.z.z1 = obj.z.z0 + state.defaults.zAdjVent;
+  } else if (obj.type === 'window') {
+    obj.z.z0 = state.floorsZ0[state.currentFloor] + state.defaults.windowOffsetZ;
+    obj.z.z1 = obj.z.z0 + state.defaults.windowDimZ;
+  } else if (obj.type === 'door') {
+    obj.z.z1 = obj.z.z0 + state.defaults.doorDimZ;
+  } else if (obj.type === 'room') {
+    obj.z.z1 = obj.z.z0 + state.floorsDimZ[state.currentFloor];
+	obj.evacueesDensity = 'auto';
+  }
+  currentGeom = obj;
 }
-//}}}
+
 function scaleMouse(pos) {//{{{
-	return {'x': Math.round((pos[0]-zt.x)/zt.k), 'y': Math.round((pos[1]-zt.y)/zt.k) };
+	return {'x': Math.round((pos[0]-state.zoomTransform.x)/state.zoomTransform.k), 'y': Math.round((pos[1]-state.zoomTransform.y)/state.zoomTransform.k) };
 } //}}}
 function cgCreate() {//{{{
 	cgInit();
-	svg.on('mousedown', function() {
-
-		if(d3.event.which==1) {
-			m=scaleMouse(d3.mouse(this));
-			cg.growing=1;
+	state.svg.on('mousedown', function(event) {
+		if(event.button === 0) { // left click
+			m=scaleMouse(d3.pointer(event, this));
+			currentGeom.growing=1;
 			cgDecidePoints(m);
-			cgSvg();
-			cg.bbox=getBbox();
-			delete cg.infant;
-		} else if(d3.event.which==3) {
+			drawGeom(currentGeom);
+			updateBbox(currentGeom)
+			delete currentGeom.infant;
+		} else if(event.button === 2) { // right click
 			cgEscapeCreate();
 		}
 	});
-	svg.on('mousemove', function() {
-		m=scaleMouse(d3.mouse(this));
+	state.svg.on('mousemove', function(event) {
+		m=scaleMouse(d3.pointer(event, this)); // right click
 		snap(m);
 		cgDecidePoints(m);
-		cgUpdateSvg(); 
+		cgUpdateSvg(m); 
 		updatePosInfo(m);
 	});  
-	svg.on('mouseup', function() {
+	state.svg.on('mouseup', function(event) {
 		checkNegativeCords();
 		if(assertCgReady()) {
-			delete cg.growing;
+			delete currentGeom.growing;
 			cgUpdateSvg();
 			cgDb();
 			updateSnapLines();
@@ -801,311 +902,250 @@ function cgCreate() {//{{{
 		snappingHide();
 		cgInit();
 		showBuildingLabels();
-
 	});
 }
 //}}}
 
 function addDefaultCgProps(){
-	if(cg.type=='mvent') {
-		var zones = getConnectedZones(cg);
-		var mventWithDuct = false;
-		if (zones.length === 1) {
-			// mechanical vent with duct leading outside
-    		zones.push("OUTSIDE");
-			mventWithDuct = true;
-		}
-		r1 = zones[0];
-		r2 = zones[1];
-		if (r1==null && r2==null){
+	if(currentGeom.type=='mvent') {
+		const [r1, r2] = getConnectedZones(currentGeom);
+		if (r1==null || r2==null){
 			amsg({'err':1, 'msg':"Coorect mvent size and localization because it intersects not properly"}); 
+		}
+		let mventWithDuct = false;
+		if (r1 == 'OUTSIDE' || r2 == 'OUTSIDE') {
+			// mechanical vent with duct leading outside
+			mventWithDuct = true;
 		}
 		else
 		{
-			// add this property for newly created mvent so that the flow_direction and 
-			// air_grille_surface fields  (only in case of mventWithDuct==true)
+			// add this property for newly created mvent so that the flowDirection and 
+			// airGrilleSurface fields  (only in case of mventWithDuct==true)
 			// are not set to null or undefined (they must always be set to something)
 			// different from (null or undefined)
-			if(cg.flow_direction == null)
+			if(currentGeom.flowDirection == null)
 			{
-				cg.flow_direction=`${r1} to ${r2}`;
+				currentGeom.flowDirection=`${r1} to ${r2}`;
 			}
-
-			if(cg.air_grille_surface == null)
+			if(currentGeom.airGrilleSurface == null)
 			{
 				if(mventWithDuct == true){
-					cg.air_grille_surface='x_min';
+					currentGeom.airGrilleSurface='x_min';
 				}
-
 			}
 		}
 	} 
 }
 function checkNegativeCords(){
 	var negative = false
-	cg.polypoints.forEach(function(array){array.forEach(function(x){
+	currentGeom.polypoints.forEach(function(array){array.forEach(function(x){
 		if(x < 0){
 			negative = true
 		}
 	})})
 	if(negative){
-		delete cg.growing;
+		delete currentGeom.growing;
 		cgInit();
 		amsg({'err':1, 'msg':"Object in negative coordinates! You can not draw here!"}); 
 	}
 }
 
 function holeOnExternalWall(){
-	if (cg.letter == 'z'){
-		var external = IsExternal(cg);
+	if (currentGeom.letter == 'z'){
+		var external = IsExternal(currentGeom);
 		if (external){
 			amsg({'err':2, 'msg':"You drew a hole in the outside wall. You can't do that. The holes are used to connect compartments. In the external wall you can draw normal door, windows, mechanical or normal vents."}); 
 		}
 		return external;
 	}
 }
-function getRoomTypeApainterObjects(){
-	var room_types_objects =[];
-	var name;
-	var cad_json;
-
-	for(var letter in gg) {
-		if (gg[letter]['t'] == 'room') { 
-			_.each(db({"letter": letter}).select("cad_json","name"), function(m) {
-				room_types_objects.push(m);
-			});
-		}
-	}
-
-    var rooms = [];
-
-    room_types_objects.forEach( room => {
-    	r_points = getMinMaxXY(room[0]);
-		const [zmin, zmax] = JSON.parse(room[0]['z']);
-    	rooms.push({  name:room[1],zmin:zmin, zmax:zmax, xmin: r_points[0], xmax: r_points[2], ymin: r_points[1], ymax: r_points[3] });
-    });
-
-    return rooms;
-
-}
-
 function IsExternal(geometry){
-
 	const [r1, r2] = getConnectedZones(geometry);
-
 	if(r1 == 'OUTSIDE' || r2 == 'OUTSIDE')
 		return true;
 	return false;
 }
 
-
 function getConnectedZones(geometry){
-
     function hasVolumeIntersection(a, b) {
         return (
-            a.xmin < b.xmax && a.xmax > b.xmin &&
-            a.ymin < b.ymax && a.ymax > b.ymin &&
-            a.zmin < b.zmax && a.zmax > b.zmin
+            a.minx < b.maxx && a.maxx > b.minx &&
+            a.miny < b.maxy && a.maxy > b.miny &&
+            a.z.z0 < b.z.z1 && a.z.z1 > b.z.z0
         );
     }
-
     function isLineOrPlaneIntersection(a, b) {
         return (
-            (a.xmin === b.xmax || a.xmax === b.xmin) &&
-            (a.ymin === b.ymax || a.ymax === b.ymin) &&
-            (a.zmin === b.zmax || a.zmax === b.zmin)
+            (a.minx === b.maxx || a.maxx === b.minx) &&
+            (a.miny === b.maxy || a.maxy === b.miny) &&
+            (a.z.z0 === b.z.z1 || a.z.z1 === b.z.z0)
         );
     }
-
 	function isObjectOutside(object, rooms) {
 	    const vertices = [
-	        { x: object.xmin, y: object.ymin, z: object.zmin },
-	        { x: object.xmin, y: object.ymin, z: object.zmax },
-	        { x: object.xmin, y: object.ymax, z: object.zmin },
-	        { x: object.xmin, y: object.ymax, z: object.zmax },
-	        { x: object.xmax, y: object.ymin, z: object.zmin },
-	        { x: object.xmax, y: object.ymin, z: object.zmax },
-	        { x: object.xmax, y: object.ymax, z: object.zmin },
-	        { x: object.xmax, y: object.ymax, z: object.zmax }
+	        { x: object.minx, y: object.miny, z: object.z.z0 },
+	        { x: object.minx, y: object.miny, z: object.z.z1 },
+	        { x: object.minx, y: object.maxy, z: object.z.z0 },
+	        { x: object.minx, y: object.maxy, z: object.z.z1 },
+	        { x: object.maxx, y: object.miny, z: object.z.z0 },
+	        { x: object.maxx, y: object.miny, z: object.z.z1 },
+	        { x: object.maxx, y: object.maxy, z: object.z.z0 },
+	        { x: object.maxx, y: object.maxy, z: object.z.z1 }
 	    ];
-
 	    for (let vertex of vertices) {
 	        const { x, y, z } = vertex;
-
 	        const isInsideAnyRoom = rooms.some(room =>
-	            x >= room.xmin && x <= room.xmax &&
-	            y >= room.ymin && y <= room.ymax &&
-	            z >= room.zmin && z <= room.zmax
+	            x >= room.minx && x <= room.maxx &&
+	            y >= room.miny && y <= room.maxy &&
+	            z >= room.z.z0 && z <= room.z.z1
 	        );
-
 	        if (!isInsideAnyRoom) {
 	            return true;
 	        }
 	    }
-
 	    return false;
 	}
-
-
-    // Calculate the bounding box for the geometry
-    var xValues = geometry.polypoints.map(vertex => vertex[0]);
-    var yValues = geometry.polypoints.map(vertex => vertex[1]);
-    const xmin = Math.min(...xValues);
-    const xmax = Math.max(...xValues);
-    const ymin = Math.min(...yValues);
-    const ymax = Math.max(...yValues);
-    const zmin = geometry.z[0];
-    const zmax = geometry.z[1];
-
-    let object = { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax, zmin: zmin, zmax: zmax };
-
     // Get all rooms
-    let rooms = getRoomTypeApainterObjects();
+    let rooms = getTypeApainterObjects('room');
     let connectedZones = [];
 
     for (let room of rooms) {
-        if (hasVolumeIntersection(object, room) && !isLineOrPlaneIntersection(object, room)) {
+        if (hasVolumeIntersection(geometry, room) && !isLineOrPlaneIntersection(geometry, room)) {
             connectedZones.push(room.name);
         }
     }
-
     if (connectedZones.length == 0){
         amsg({ 'err': 2, 'msg': "The connection object does not intersect any zones. Please correct apainter geometry." });
         return [null, null];
 	}
-
-
-    if (isObjectOutside(object, rooms.filter(room => connectedZones.includes(room.name)))) {
+    if (isObjectOutside(geometry, rooms.filter(room => connectedZones.includes(room.name)))) {
 		// the cuboid passes through the room but also sticks out
 		connectedZones.push('OUTSIDE');
 	}
-    
-
     // Ensure proper result structure
     if (connectedZones.length > 2) {
         amsg({ 'err': 2, 'msg': "The connection object intersects more than 2 zones. Please correct apainter geometry." });
         return [null, null];
     }
-
     if (connectedZones.length == 1) {
 		// the cuboid is inside one room
-        return [connectedZones[0]];
+		connectedZones.push('OUTSIDE');
     }
-
 	return connectedZones;
 }
 
 function updatePosInfo(m) {//{{{
-	if(cg.infant==1) {
-		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]);
+	if(currentGeom.infant==1) {
+		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+currentGeom.z.z0);
 	} else {
-		b=getBbox();
-		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+cg.z[0]+" &nbsp; &nbsp;  size: "+(b.max.x-b.min.x)+" "+ (b.max.y-b.min.y) +" "+(cg.z[1]-cg.z[0]));
+		updateBbox(currentGeom);
+		$("#apainter-texts-pos").html(m.x+" "+m.y+" "+currentGeom.z.z0+" &nbsp; &nbsp;  size: "
+			+(currentGeom.maxx-currentGeom.minx)+" "+ (currentGeom.maxy-currentGeom.miny) +" "+(currentGeom.z.z1-currentGeom.z.z0));
 	}
 }
 //}}}
 function ctrlDrawing(m) {//{{{
-	if("infant" in cg && "growing" in cg) { cg.polypoints.push([m.x,m.y]); } 
-	if(cg.polypoints.length==0) { return; }
-	p0=[cg.polypoints[0][0], cg.polypoints[0][1]];
-	p1=[m.x, cg.polypoints[0][1]];
+	if("infant" in currentGeom && "growing" in currentGeom) { currentGeom.polypoints.push([m.x,m.y]); } 
+	if(currentGeom.polypoints.length==0) { return; }
+	p0=[currentGeom.polypoints[0][0], currentGeom.polypoints[0][1]];
+	p1=[m.x, currentGeom.polypoints[0][1]];
 	p2=[m.x, m.y];
-	p3=[cg.polypoints[0][0], m.y];
-	cg.polypoints=[p0,p1,p2,p3];
+	p3=[currentGeom.polypoints[0][0], m.y];
+	currentGeom.polypoints=[p0,p1,p2,p3];
 }
 //}}}
 function cgDecidePoints(m) {//{{{
 	if (event.ctrlKey) { ctrlDrawing(m); return; }
 
-	if("x" in activeSnap) { px=activeSnap.x; } else { px=m.x; }
-	if("y" in activeSnap) { py=activeSnap.y; } else { py=m.y; }
-	if("growing" in cg) { cg.polypoints.push([px,py]); }
-	if(cg.polypoints.length==0) { return; }
+	if("x" in state.activeSnap) { px=state.activeSnap.x; } else { px=m.x; }
+	if("y" in state.activeSnap) { py=state.activeSnap.y; } else { py=m.y; }
+	if("growing" in currentGeom) { currentGeom.polypoints.push([px,py]); }
+	if(currentGeom.polypoints.length==0) { return; }
 
-	switch (cg.type) {
+	switch (currentGeom.type) {
 		case 'floor_teleport':
-		if (activeLetter == 'kd')
+		if (state.activeLetter == LETTERS.TELEPORT_DOWN)
 		{
-			switch (floor_teleport_down_direction % 4) {
+			switch (state.floorTeleportDownDir % 4) {
 				//arrow left downstairs
 				case 0:
 					p0=[px, py];
-					p1=[px+defaults.floor_teleport_width, py-10];
-					p2=[px+defaults.floor_teleport_width, py+10];
+					p1=[px+state.defaults.floorTeleportWidth, py-10];
+					p2=[px+state.defaults.floorTeleportWidth, py+10];
 					p3=[px, py];
-					cg.teleport_from = [px+defaults.floor_teleport_width, py]
-					cg.teleport_to = [px, py]
+					currentGeom.teleportFrom = [px+state.defaults.floorTeleportWidth, py]
+					currentGeom.teleportTo = [px, py]
 					break;
 				//arrow up downstairs
 				case 1:
 					p0=[px, py];
-					p1=[px+10, py+defaults.floor_teleport_width];
-					p2=[px-10, py+defaults.floor_teleport_width];
+					p1=[px+10, py+state.defaults.floorTeleportWidth];
+					p2=[px-10, py+state.defaults.floorTeleportWidth];
 					p3=[px, py];
-					cg.teleport_from = [px, py+defaults.floor_teleport_width]
-					cg.teleport_to = [px, py]
+					currentGeom.teleportFrom = [px, py+state.defaults.floorTeleportWidth]
+					currentGeom.teleportTo = [px, py]
 					break;
 				//arrow right downstairs
 				case 2:
 					p0=[px, py];
-					p1=[px-defaults.floor_teleport_width, py+10];
-					p2=[px-defaults.floor_teleport_width, py-10];
+					p1=[px-state.defaults.floorTeleportWidth, py+10];
+					p2=[px-state.defaults.floorTeleportWidth, py-10];
 					p3=[px, py];
-					cg.teleport_from = [px-defaults.floor_teleport_width, py]
-					cg.teleport_to = [px, py]
+					currentGeom.teleportFrom = [px-state.defaults.floorTeleportWidth, py]
+					currentGeom.teleportTo = [px, py]
 					break;
 				//arrow down downstairs
 				case 3:
 					p0=[px, py];
-					p1=[px-10, py-defaults.floor_teleport_width];
-					p2=[px+10, py-defaults.floor_teleport_width];
+					p1=[px-10, py-state.defaults.floorTeleportWidth];
+					p2=[px+10, py-state.defaults.floorTeleportWidth];
 					p3=[px, py];
-					cg.teleport_from = [px, py-defaults.floor_teleport_width]
-					cg.teleport_to = [px, py]
+					currentGeom.teleportFrom = [px, py-state.defaults.floorTeleportWidth]
+					currentGeom.teleportTo = [px, py]
 					break;
 				
 				default:
 					break;
 			}
 		}
-		else if (activeLetter == 'ku')
+		else if (state.activeLetter == LETTERS.TELEPORT_UP)
 		{
-			switch (floor_teleport_up_direction % 4) {
+			switch (state.floorTeleportUpDir % 4) {
 			//arrow left upstairs
 				case 0:
 					p0=[px, py];
-					p1=[px+defaults.floor_teleport_width, py-10];
-					p2=[px+defaults.floor_teleport_width, py+10];
+					p1=[px+state.defaults.floorTeleportWidth, py-10];
+					p2=[px+state.defaults.floorTeleportWidth, py+10];
 					p3=[px, py];
-					cg.teleport_from = [px+defaults.floor_teleport_width, py]
-					cg.teleport_to = [px, py]
+					currentGeom.teleportFrom = [px+state.defaults.floorTeleportWidth, py]
+					currentGeom.teleportTo = [px, py]
 					break;
 				//arrow up upstairs
 				case 1:
 					p0=[px, py];
-					p1=[px+10, py+defaults.floor_teleport_width];
-					p2=[px-10, py+defaults.floor_teleport_width];
+					p1=[px+10, py+state.defaults.floorTeleportWidth];
+					p2=[px-10, py+state.defaults.floorTeleportWidth];
 					p3=[px, py];
-					cg.teleport_from = [px, py+defaults.floor_teleport_width]
-					cg.teleport_to = [px, py]
+					currentGeom.teleportFrom = [px, py+state.defaults.floorTeleportWidth]
+					currentGeom.teleportTo = [px, py]
 					break;
 				//arrow right upstairs
 				case 2:
 					p0=[px, py];
-					p1=[px-defaults.floor_teleport_width, py+10];
-					p2=[px-defaults.floor_teleport_width, py-10];
+					p1=[px-state.defaults.floorTeleportWidth, py+10];
+					p2=[px-state.defaults.floorTeleportWidth, py-10];
 					p3=[px, py];
-					cg.teleport_from = [px-defaults.floor_teleport_width, py]
-					cg.teleport_to = [px, py]
+					currentGeom.teleportFrom = [px-state.defaults.floorTeleportWidth, py]
+					currentGeom.teleportTo = [px, py]
 					break;
 				//arrow down upstairs
 				case 3:
 					p0=[px, py];
-					p1=[px-10, py-defaults.floor_teleport_width];
-					p2=[px+10, py-defaults.floor_teleport_width];
+					p1=[px-10, py-state.defaults.floorTeleportWidth];
+					p2=[px+10, py-state.defaults.floorTeleportWidth];
 					p3=[px, py];
-					cg.teleport_from = [px, py-defaults.floor_teleport_width]
-					cg.teleport_to = [px, py]
+					currentGeom.teleportFrom = [px, py-state.defaults.floorTeleportWidth]
+					currentGeom.teleportTo = [px, py]
 					break;
 				default:
 					break;
@@ -1113,171 +1153,109 @@ function cgDecidePoints(m) {//{{{
 		}
 		break;
 		case 'door':
-			if("x" in activeSnap) { 
-				p0=[px-16, py-defaults.door_width];
-				p1=[px+16, py-defaults.door_width];
+			if("x" in state.activeSnap) { 
+				p0=[px-16, py-state.defaults.doorWidth];
+				p1=[px+16, py-state.defaults.doorWidth];
 				p2=[px+16, py];
 				p3=[px-16, py];
 			} else {
 				p0=[px,py-16];
-				p1=[px+defaults.door_width,py-16];
-				p2=[px+defaults.door_width,py+16];
+				p1=[px+state.defaults.doorWidth,py-16];
+				p2=[px+state.defaults.doorWidth,py+16];
 				p3=[px,py+16];
 			}
 			break;
 		case 'window': case 'hole':
-			if(isEmpty(activeSnap)) { cg.polypoints=cg.polypoints.slice(0,3); return; }
-			if(cg.preferredSnap==null) { 
-				b=getBbox(); 
-				if(b.max.x-b.min.x > 32)       { cg.preferredSnap='y'; }
-				else if(b.max.y-b.min.y > 32 ) { cg.preferredSnap='x'; }
+			if(isEmpty(state.activeSnap)) { currentGeom.polypoints=currentGeom.polypoints.slice(0,3); return; }
+			if(currentGeom.preferredSnap==null) { 
+				updateBbox(currentGeom); 
+				if(currentGeom.maxx-currentGeom.minx > 32)       { currentGeom.preferredSnap='y'; }
+				else if(currentGeom.maxy-currentGeom.miny > 32 ) { currentGeom.preferredSnap='x'; }
 			}
-			if(cg.preferredSnap==null) { return; }
+			if(currentGeom.preferredSnap==null) { return; }
 
-			if(cg.preferredSnap=='y') { 
-				p0=[cg.polypoints[0][0], py+16];
+			if(currentGeom.preferredSnap=='y') { 
+				p0=[currentGeom.polypoints[0][0], py+16];
 				p1=[px, py+16];
 				p2=[px, py-16];
-				p3=[cg.polypoints[0][0], py-16];
+				p3=[currentGeom.polypoints[0][0], py-16];
 			} else {
-				p0=[px-16, cg.polypoints[0][1]];
-				p1=[px+16, cg.polypoints[0][1]];
+				p0=[px-16, currentGeom.polypoints[0][1]];
+				p1=[px+16, currentGeom.polypoints[0][1]];
 				p2=[px+16, py];
 				p3=[px-16, py]; 
 			} 
 			break;
 		default:
-			p0=[cg.polypoints[0][0], cg.polypoints[0][1]];
-			p1=[px, cg.polypoints[0][1]];
+			p0=[currentGeom.polypoints[0][0], currentGeom.polypoints[0][1]];
+			p1=[px, currentGeom.polypoints[0][1]];
 			p2=[px, py];
-			p3=[cg.polypoints[0][0], py];
+			p3=[currentGeom.polypoints[0][0], py];
 			break;
 	}
-	cg.polypoints=[p0,p1,p2,p3];
-
+	currentGeom.polypoints=[p0,p1,p2,p3];
 }
 //}}}
 function assertCgReady() {//{{{
-	if(cg.type=='floor_teleport') { return true; }
-	if(cg.type=='evacuee') { cg.polypoints=[cg.polypoints[0]]; return true; }
-	if(cg.polypoints.length<2) { $("#"+cg.name).remove(); return false; }
-	if(cg.polypoints[0][0]==cg.polypoints[1][0] && cg.polypoints[0][1]==cg.polypoints[1][1]) { $("#"+cg.name).remove(); return false; }
+	if(currentGeom.type=='floor_teleport') { return true; }
+	if(currentGeom.type=='evacuee') { currentGeom.polypoints=[currentGeom.polypoints[0]]; return true; }
+	if(currentGeom.polypoints.length<2) { $("#"+currentGeom.name).remove(); return false; }
+	if(currentGeom.polypoints[0][0]==currentGeom.polypoints[1][0] && currentGeom.polypoints[0][1]==currentGeom.polypoints[1][1]) { $("#"+currentGeom.name).remove(); return false; }
 
-	if(cg.type=='underlay_scaler') { 
-		b=getBbox();
-		underlayForm(b.max.x-b.min.x);
+	if(currentGeom.type=='underlay_scaler') { 
+		updateBbox(currentGeom)
+		underlayForm(currentGeom.maxx-currentGeom.minx, state.currentFloor);
 		return true;
 	}
-
 	return true;
 }
 //}}}
-function svgPolyline(m) {//{{{
-	if (m.type == 'floor_teleport') 
-		return getPointsTriangleFloorTeleport(m);
-	points=deepcopy(m.polypoints);
-	points.push(points[0]);
-	points.push(points[1]);
-	return points.join(" ");
+function flatPoints(obj) {//{{{
+	return obj.polypoints.join(" ");
 }
-
-function obstMarginSvgPolyline(m) {//{{{
-	points=deepcopy(m.polypoints);
-	points.push(points[0]);
-	points.push(points[1]);
-	if (points !== undefined && points[0] !== undefined)
-		points = scaleRectangleOutward(points);
-	return points.join(" ");
+function scaleRectangleOutward(obj) {
+ 	const adjustedPoints = [
+	  [obj.minx - state.defaults.obstAndCompartmentMarginWidth, obj.miny - state.defaults.obstAndCompartmentMarginWidth], // Top-left corner
+	  [obj.maxx + state.defaults.obstAndCompartmentMarginWidth, obj.miny - state.defaults.obstAndCompartmentMarginWidth], // Top-right corner
+	  [obj.maxx + state.defaults.obstAndCompartmentMarginWidth, obj.maxy + state.defaults.obstAndCompartmentMarginWidth], // Bottom-right corner
+	  [obj.minx - state.defaults.obstAndCompartmentMarginWidth, obj.maxy + state.defaults.obstAndCompartmentMarginWidth], // Bottom-left corner
+	];
+	return adjustedPoints.join(" ");
 }
-
-function roomMarginSvgPolyline(m) {//{{{
-	points=deepcopy(m.polypoints);
-	points.push(points[0]);
-	points.push(points[1]);
-	if (points !== undefined && points[0] !== undefined)
-		points = scaleRectangleInward(points);
-	return points.join(" ");
-}
-
-function scaleRectangleOutward(points) {
-	if (points.length !== 6) {
-	  throw new Error("Input points must define a rectangle with 6 points (2 redundant).");
-	}
-  
-	// Find the min and max values for x and y to determine the rectangle bounds
-	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  
-	for (const [x, y] of points) {
-	  if (x < minX) minX = x;
-	  if (y < minY) minY = y;
-	  if (x > maxX) maxX = x;
-	  if (y > maxY) maxY = y;
-	}
-  
+function scaleRectangleInward(obj) {
+	let halfStrokeWidth = state.defaults.obstAndCompartmentMarginWidth/2;
 	// Calculate outward offset for each corner of the rectangle
 	const adjustedPoints = [
-	  [minX - obstAndCompartmentMarginWidth, minY - obstAndCompartmentMarginWidth], // Top-left corner
-	  [maxX + obstAndCompartmentMarginWidth, minY - obstAndCompartmentMarginWidth], // Top-right corner
-	  [maxX + obstAndCompartmentMarginWidth, maxY + obstAndCompartmentMarginWidth], // Bottom-right corner
-	  [minX - obstAndCompartmentMarginWidth, maxY + obstAndCompartmentMarginWidth], // Bottom-left corner
+	  [obj.minx + halfStrokeWidth, obj.miny + halfStrokeWidth], // Top-left corner
+	  [obj.maxx - halfStrokeWidth, obj.miny + halfStrokeWidth], // Top-right corner
+	  [obj.maxx - halfStrokeWidth, obj.maxy - halfStrokeWidth], // Bottom-right corner
+	  [obj.minx + halfStrokeWidth, obj.maxy - halfStrokeWidth], // Bottom-left corner
 	];
-  
-	// Add the redundant points to close the rectangle
-	adjustedPoints.push(adjustedPoints[0]); // Redundant first point
-	adjustedPoints.push(adjustedPoints[1]); // Redundant second point
-  
-	return adjustedPoints;
-  }
-
-function scaleRectangleInward(points) {
-	if (points.length !== 6) {
-	  throw new Error("Input points must define a rectangle with 6 points (2 redundant).");
-	}
-	let halfStrokeWidth = obstAndCompartmentMarginWidth/2;
-	// Find the min and max values for x and y to determine the rectangle bounds
-	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  
-	for (const [x, y] of points) {
-	  if (x < minX) minX = x;
-	  if (y < minY) minY = y;
-	  if (x > maxX) maxX = x;
-	  if (y > maxY) maxY = y;
-	}
-  
-	// Calculate outward offset for each corner of the rectangle
-	const adjustedPoints = [
-	  [minX + halfStrokeWidth, minY + halfStrokeWidth], // Top-left corner
-	  [maxX - halfStrokeWidth, minY + halfStrokeWidth], // Top-right corner
-	  [maxX - halfStrokeWidth, maxY - halfStrokeWidth], // Bottom-right corner
-	  [minX + halfStrokeWidth, maxY - halfStrokeWidth], // Bottom-left corner
-	];
-  
-	// Add the redundant points to close the rectangle
-	adjustedPoints.push(adjustedPoints[0]); // Redundant first point
-	adjustedPoints.push(adjustedPoints[1]); // Redundant second point
-  
-	return adjustedPoints;
-  }
-
+	return adjustedPoints.join(" ");
+}
 //}}}
-function cgUpdateSvg() {  //{{{
-	$("#"+cg.name).attr({ 'points': svgPolyline(cg) });   
-	if (cg.type =='obst')
-		$("#margin"+cg.name).attr({ 'points': obstMarginSvgPolyline(cg) });   
-	if (cg.type =='room' || cg.type =='vroom')
-		$("#margin"+cg.name).attr({ 'points': roomMarginSvgPolyline(cg) });
+function cgUpdateSvg(m=null) {  //{{{
+	if(currentGeom.type=='evacuee') {
+		if(m) currentGeom.polypoints[0] = [m.x, m.y]
+		$("#"+currentGeom.name).attr('cx', currentGeom.polypoints[0][0]).attr('cy', currentGeom.polypoints[0][1]);
+	}
+	$("#"+currentGeom.name).attr({ 'points': flatPoints(currentGeom) });   
+	if (currentGeom.type =='obst')
+		$("#margin"+currentGeom.name).attr({ 'points': scaleRectangleOutward(currentGeom) });   
+	if (currentGeom.type =='room' || currentGeom.type =='vroom')
+		$("#margin"+currentGeom.name).attr({ 'points': scaleRectangleInward(currentGeom) });
 }
 //}}}
 
 function manageTeleportArrows() {//{{{
-	if (activeLetter == 'ku' || activeLetter == 'kd')
+	if (state.activeLetter == LETTERS.TELEPORT_UP || state.activeLetter == LETTERS.TELEPORT_DOWN)
 	{
 		content = "";
 		arrows = ["&#8592;", "&#8593;", "&#8594;","&#8595;"];
-		if (activeLetter == 'ku' )
+		if (state.activeLetter == LETTERS.TELEPORT_UP )
 		{
-			floor_teleport_up_direction+=1;
-			switch (floor_teleport_up_direction % 4) {
+			state.floorTeleportUpDir+=1;
+			switch (state.floorTeleportUpDir % 4) {
 				case 0:
 					content = arrows[0] + " floor_teleport up";
 					break;
@@ -1294,10 +1272,10 @@ function manageTeleportArrows() {//{{{
 					break;
 				}
 		}
-		else if (activeLetter == 'kd' )
+		else if (state.activeLetter == LETTERS.TELEPORT_DOWN )
 		{
-			floor_teleport_down_direction+=1;
-			switch (floor_teleport_down_direction % 4) {
+			state.floorTeleportDownDir+=1;
+			switch (state.floorTeleportDownDir % 4) {
 				case 0:
 					content = arrows[0] + " floor_teleport down";
 					break;
@@ -1314,42 +1292,31 @@ function manageTeleportArrows() {//{{{
 					break;
 				}
 		}
-		document.getElementById("legend_"+activeLetter).innerHTML = content;
+		document.getElementById("legend_"+state.activeLetter).innerHTML = content;
 	}
 }
 
 function cgStartDrawing() {//{{{
 	$('right-menu-box').fadeOut(0); 
 	legend();
-	$('#legend_'+activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
+	$('#legend_'+state.activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
 	manageTeleportArrows()
 	cgCreate();
-	underlayPointerEvents(stopDragging=1);
+	underlayPointerEvents(state.currentFloor, stopDragging=1);
 }
 //}}}
 function cgEscapeCreate() {//{{{
-	if(!isEmpty(cg) && "growing" in cg) { cgRemove(undoRegister=0); } 
+	if(!isEmpty(currentGeom) && "growing" in currentGeom) { cgRemove(undoRegister=0); } 
 	$(".temp-poly").remove();
 	$("#apainter-texts-pos").html('');
 	$(".building-vertex").remove() 
 	$(".cg-selected").removeClass('cg-selected'); 
-	svg.on('mousedown', null); svg.on('mousemove', null); svg.on('mouseup', null); 
+	state.svg.on('mousedown', null); state.svg.on('mousemove', null); state.svg.on('mouseup', null); 
 	snappingHide();
 	legend();
 	if($("#gg_listing").length>0) { return; }
 	if($("input#ufloor").length>0) { return; }
 	$("right-menu-box").css("display", "none"); 
-}
-//}}}
-function dbUpdateCadJsonStr() { //{{{
-	// Create cad_json attribute for the DB
-	var cad_json;
-	var r=db().get();
-	for (var rr in r) {	
-		i=r[rr];
-		cad_json=generateObjectCadJson(i);
-		db({'name': i.name}).update({'cad_json': cad_json});
-	}
 }
 //}}}
 function saveTxtCadJson() {//{{{
@@ -1362,69 +1329,142 @@ function svgGroupsInit(json) { //{{{
 	$(".snap_v").remove();
 	$(".snap_h").remove();
 
-	floorsCount=0;
+	state.floorsCount=0;
 	for (var _floor in json) { 
 		d3.select("#building").append("g").attr("id", "floor"+_floor).attr("class", "floor").attr("fill-opacity", 0.4).attr('visibility',"hidden");
-		floorsCount++;
+		state.floorsCount++;
 	}
-	$("#floor"+floor).attr('visibility',"visible").css("opacity", 1);
-	$("#apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
+	$("#floor"+state.currentFloor).attr('visibility',"visible").css("opacity", 1);
+	$("#apainter-texts-floor").html("floor "+(state.currentFloor + 1)+"/"+state.floorsCount);
 }
-
-
 //}}}
 function json2db(json) { //{{{
+	dbClear();
 	// Geoms must come in order, otherwise we could see DOOR under ROOM if geoms were created in that order.
-	db().remove();
 	var letter;
-	var arr;
-	var geom;
+	var lastGeom;
 	var elems=["ROOM","COR","STAI","HALL","OBST","VVENT","MVENT","HOLE","WIN","DOOR","FLOOR_TELEPORT_UP","FLOOR_TELEPORT_DOWN", "DCLOSER","DELECTR","EVACUEE","FIRE","UNDERLAY_SCALER"];
-	virtual_obj_parents = {};
-
 	_.each(json, function(floor_data,floor) { 
 		_.each(elems, function(elem) { 
 			_.each(floor_data[elem], function(record) { 
-				letter=ggx[elem];
-				cgMake(Number(floor),letter,record);
-				cgDb();
-				cgSvg();
+				letter=state.ggx[elem];
+				var geom = createGeomFromRecord(floor, letter, record);
+				dbInsert(geom);
+				drawGeom(geom); 
 				if(letter == 's' || letter=='a'){
-					cgDbVirtualObj(cg);
-					cgSvgVirtualObj(cg);
+					createAndDrawVirtualObjs(geom)
 				}
-
+				lastGeom=geom;
 			})
 		})
 	});
+	currentGeom = lastGeom;
 	updateSnapLines(); // This is a heavy call, which shouldn't be called for each cgDb()
-	undoBuffer=[];
+	state.undoBuffer=[];
 }
-//}}}
-function cgMake(floor,letter,record) { //{{{
-	cg.polypoints=JSON.parse(record.points);
-	cg.z=JSON.parse(record.z);
-	cg.idx=record.idx;
-	cg.name=letter+cg.idx;
-	cg.letter=letter;
-	cg.type=gg[letter].t;
-	cg.floor=floor;
+function createAndDrawVirtualObjs(parentGeom) {
+  removeVirtualObjs(parentGeom.name);
+  const floors = findIntersectingFloors(parentGeom);
+  const virtualObjNameMap = { 's': 'vs', 'a': 'va' };
+  const virtualObjMap = { 
+    's': state.gg['vs'].t, // vroom
+    'a': state.gg['va'].t  // vroom
+  };
+  floors.forEach(function(floor) {
+    const vObj = createVirtualObj(parentGeom, floor, virtualObjNameMap, virtualObjMap);
+    state.scene.objects.push(vObj);
+    drawGeom(vObj);
+    state.virtualObjParents[parentGeom.name].push(vObj)
+  });
+}
 
-	if('exit_weight' in record)        { cg.exit_weight=record.exit_weight; }
-	else { cg.exit_weight=undefined; }
-	if('room_exits_weights' in record) { cg.room_exits_weights=record.room_exits_weights; }
-	else { cg.room_exits_weights=undefined;}
-	if('evacuees_density' in record) { cg.evacuees_density=record.evacuees_density; }
-	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
-	if('flow_direction' in record)   { cg.flow_direction=record.flow_direction; }
-	else { cg.flow_direction=undefined;}
-	if('air_grille_surface' in record)   { cg.air_grille_surface=record.air_grille_surface; }
-	else { cg.air_grille_surface=undefined;}
-	if('teleport_from' in record)	 { cg.teleport_from=record.teleport_from; }
-	if('teleport_to' in record)		 { cg.teleport_to=record.teleport_to; }
-	
+function removeVirtualObjs(parentName) {
+  if (!(parentName in state.virtualObjParents)){
+    state.virtualObjParents[parentName] = [];
+	return;
+  }
+  state.virtualObjParents[parentName].forEach(function(vObj) {
+    dbRemoveByName(vObj.name);
+    d3.select('#' + vObj.name)?.remove();
+    d3.select('#margin' + vObj.name)?.remove();
+  });
+}
+
+function createVirtualObj(parentGeom, floor, virtualObjNameMap, virtualObjMap) {
+  var vcgIDx = dbMax({ type: virtualObjMap[parentGeom.letter] }, 'idx') + 1;
+  var vcgName = virtualObjNameMap[parentGeom.letter] + vcgIDx;
+  
+  return {
+    name: vcgName,
+    idx: vcgIDx,
+    floor: floor,
+    letter: virtualObjNameMap[parentGeom.letter],
+    type: virtualObjMap[parentGeom.letter],
+    lines: parentGeom.lines,
+    polypoints: parentGeom.polypoints,
+    z: parentGeom.z,
+    exitWeight: parentGeom.exitWeight,
+    roomExitsWeights: parentGeom.roomExitsWeights,
+    evacueesDensity: parentGeom.evacueesDensity,
+    minx: parentGeom.minx,
+    miny: parentGeom.miny,
+    maxx: parentGeom.maxx,
+    maxy: parentGeom.maxy,
+    teleportFrom: parentGeom.teleportFrom,
+    teleportTo: parentGeom.teleportTo
+  };
+}
+function findIntersectingFloors(parentGeom) {
+  var z_min = parentGeom.z.z0;
+  var z_max = parentGeom.z.z1;
+  var floors = [];
+  
+  for (var floor = 0; floor < state.floorsCount; floor++) {
+    if (state.floorsZ0[floor] > z_min && state.floorsZ0[floor] < z_max) {
+      if (floor !== parentGeom.floor) {
+        floors.push(floor);
+      }
+    }
+  }
+  return floors;
 }
 //}}}
+function createGeomFromRecord(floor, letter, record) {
+  let zArr = JSON.parse(record.z)
+  var geom = {
+    name: letter + record.idx,
+    idx: record.idx,
+    letter: letter,
+    type: state.gg[letter].t,
+    floor: Number(floor),
+    polypoints: JSON.parse(record.points),
+    z: {z0: zArr[0], z1: zArr[1]},
+    minx: 0, miny: 0, maxx: 0, maxy: 0
+  };
+  ['exitWeight', 'roomExitsWeights', 'evacueesDensity', 
+   'mventThroughput', 'flowDirection', 'airGrilleSurface',
+   'teleportFrom', 'teleportTo'].forEach(function(field) {
+    if (field in record) {
+      geom[field] = record[field];
+    }
+  });
+  
+  updateBbox(geom);
+  geom.lines = computeLines(geom);
+  
+  return geom;
+}
+function computeLines(geom) {
+  let lines = [];
+  if (geom.type === 'room') {
+    geom.polypoints.forEach(function(point) { 
+      lines.push(point); 
+    });
+  } else {
+    lines = [-100000,-100000,-100000,-100000,-100000,-100000,-100000,-100000];
+  }
+  return lines;
+}
 function ajaxSaveCadJson(json_data) { //{{{
 	if(!isGeometryCorrect()){
 		return;
@@ -1437,9 +1477,9 @@ function ajaxSaveCadJson(json_data) { //{{{
 //}}}
 function getSumDimZLower(f) { //{{{
 	let z_sum = 0;
-	_.each(floors_dimz, function(floor_dimz,floor) { 
+	_.each(state.floorsDimZ, function(floor_dimz,floor) { 
 		if (floor < f)
-			z_sum += floors_dimz[floor];
+			z_sum += state.floorsDimZ[floor];
 	});
 	return z_sum;
 }
@@ -1447,12 +1487,11 @@ function getSumDimZLower(f) { //{{{
 function setFloorsZ(json) { //{{{
 	_.each(json, function(floor_data,floor) { 
 		if (floor_data['FLOOR_DIM_Z'] != undefined)
-			floors_dimz[floor] = floor_data['FLOOR_DIM_Z'];
+			state.floorsDimZ[floor] = floor_data['FLOOR_DIM_Z'];
 		if (floor == 0)
-			floorsZ0[floor] = 0;
+			state.floorsZ0[floor] = 0;
 		else
-			floorsZ0[floor] = getSumDimZLower(floor);
-
+			state.floorsZ0[floor] = getSumDimZLower(floor);
 	});
 }
 //}}}
@@ -1460,8 +1499,8 @@ function importCadJson() { //{{{
 	$("#buildingLabels").html(""); 
 	cgEscapeCreate(); 
 	$.post('/aamks/ajax.php?ajaxApainterImport', { }, function (json) { 
-		// We loop thru cgDb() here which updates the cg
-		// At the end the last elem in the loop would be the cg
+		// We loop thru cgDb() here which updates the currentGeom
+		// At the end the last elem in the loop would be the currentGeom
 		// which may run into this-elem-doesnt-belong-to-this-floor problem.
 		amsg(json); 
 		svgGroupsInit(json.data);
@@ -1471,33 +1510,29 @@ function importCadJson() { //{{{
 			importImgUnderlay(data['UNDERLAY_IMG'],floor); 
 			importFloorUnderlay(data['UNDERLAY_FLOOR'],floor); 
 		});
-		cg={};
-		d3.select('#floor_text').text("floor "+floor+"/"+floorsCount);
+		d3.select('#floor_text').text("floor "+state.currentFloor+"/"+state.floorsCount);
 	});
 }
 //}}}
 function legend() { //{{{
 	$('legend1').html('');
-
-	for(var letter in gg) {
-		if(gg[letter].legendary==1) { 
-			var x=db({"letter": letter}).select("name");
-			$('legend1').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+gg[letter].font+"; background-color: "+gg[letter].c+"' title='"+gg[letter].description+"'>"+letter+" "+gg[letter].fourLetter+"</div>");
+	for(var letter in state.gg) {
+		if(state.gg[letter].legendary==1) { 
+			var x=dbSelect({"letter": letter}, "name");
+			$('legend1').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+state.gg[letter].font+"; background-color: "+state.gg[letter].c+"' title='"+state.gg[letter].description+"'>"+letter+" "+state.gg[letter].fourLetter+"</div>");
 		}
 	}
-
 }
 //}}}
 function anyWindowOnInteriorWall(){
-	// hole
+	// window
 	var letter = 'w';
 	var floor_windows;
-	for(var floor=0; floor<floorsCount; floor++) { 
+	for(var floor=0; floor<state.floorsCount; floor++) { 
 		floor_windows = [];
-		_.each(db({"floor": floor, "letter": letter}).get(), function(m) {
+		_.each(dbWhere({"floor": floor, "letter": letter}), function(m) {
 			floor_windows.push(m);
 		});
-
 		for (let i = 0; i < floor_windows.length; i++) {
     		if (!IsExternal(floor_windows[i]))
     			return true;
@@ -1510,12 +1545,11 @@ function anyholeOnExternalWall(){
 	// hole
 	var letter = 'z';
 	var floor_holes;
-	for(var floor=0; floor<floorsCount; floor++) { 
+	for(var floor=0; floor<state.floorsCount; floor++) { 
 		floor_holes = [];
-		_.each(db({"floor": floor, "letter": letter}).get(), function(m) {
+		_.each(dbWhere({"floor": floor, "letter": letter}), function(m) {
 			floor_holes.push(m);
 		});
-
 		for (let i = 0; i < floor_holes.length; i++) {
     		if (IsExternal(floor_holes[i]))
     			return true;
@@ -1525,97 +1559,42 @@ function anyholeOnExternalWall(){
 }
 
 function wrongTeleportLocation(){
+	const teleportsDown = dbWhere({"letter": LETTERS.TELEPORT_DOWN});
+	const teleportsUp = dbWhere({"letter": LETTERS.TELEPORT_UP})
+	const compartments = {};
+	const obsts = {};
 
-	var teleport_down_letter = "kd";
-	var teleport_up_letter = "ku";
+	for(let f=0; f<state.floorsCount; f++) { 
+		const rooms  = getTypeApainterObjects('room', f);
+		const vrooms = getTypeApainterObjects('vroom', f);
+		const floorObsts = getTypeApainterObjects('obst', f);
 
-	var teleports_down = [];
-	var teleports_up = [];
-	var compartments = {};
-	var obsts = {};
-	var vroom;
-	var teleports_to_return = []
-	var teleport_floor;
-
-	for(var floor=0; floor<floorsCount; floor++) { 
-		compartments[floor] = [];
-		obsts[floor] = [];
-
-		_.each(db({"type": "room", "floor": floor}).select("minx","miny", "maxx", "maxy"), function(m) {
-			compartments[floor].push(m);
-		});	
-
-		// also consider virtual compartments
-		for (let key in virtual_obj_parents) {
-			for (let i = 0; i < virtual_obj_parents[key].length; i++) {
-				if(virtual_obj_parents[key][i][2] == floor){
-					vroom=db({'name': key}).select("minx","miny", "maxx", "maxy");
-					compartments[floor].push(vroom[0]);
-					
-				}
-			}
-		}
-		_.each(db({"type": "obst", "floor": floor}).select("minx","miny", "maxx", "maxy"), function(m) {
-			obsts[floor].push(m);
-		});	
-
+		compartments[f] = [...rooms, ...vrooms];
+		obsts[f] = floorObsts;
 	}
-
-	_.each(db({"letter": teleport_up_letter}).select("floor","teleport_from","teleport_to","name"), function(m) {
-		teleports_up.push([m[0],m[2],m[3],m[1]]);
-	});
-	_.each(db({"letter": teleport_down_letter}).select("floor","teleport_from","teleport_to","name"), function(m) {
-		teleports_down.push([m[0],m[2],m[3],m[1]]);
-	});
-	// teleports down validation
-	if (teleports_down.length > 0)
-	{
-
-		
-		for (let i = 0; i < teleports_down.length; i++) {
-			teleport_floor = teleports_down[i][0];
-			if (checkIfPointIsInAnyMargin(teleports_down[i][1],compartments[teleport_floor],obsts[teleport_floor]))
-				teleports_to_return.push(teleports_down[i][3]);
-		}
-
-
-
-		for (let i = 0; i < teleports_down.length; i++) {
-			teleport_floor = teleports_down[i][0];
-			if (typeof compartments[teleport_floor-1] === "undefined" && typeof obsts[teleport_floor-1] === "undefined") {
-				//there is no floor below
-				teleports_to_return.push(teleports_down[i][3]);
-			}
-			else if (checkIfPointIsInAnyMargin(teleports_down[i][2],compartments[teleport_floor-1],obsts[teleport_floor-1]))
-				teleports_to_return.push(teleports_down[i][3]);
-		}
-	}
-	
-
-	// teleports up validation
-	if (teleports_up.length > 0)
-	{
-
-
-		for (let i = 0; i < teleports_up.length; i++) {
-			teleport_floor = teleports_up[i][0];
-			if (checkIfPointIsInAnyMargin(teleports_up[i][1],compartments[teleport_floor],obsts[teleport_floor]))
-				teleports_to_return.push(teleports_up[i][3]);
-		}
-
-		for (let i = 0; i < teleports_up.length; i++) {
-			teleport_floor = teleports_up[i][0];
-			if (typeof compartments[teleport_floor+1] === "undefined" && typeof obsts[teleport_floor+1] === "undefined") {
-				//there is no up floor
-				teleports_to_return.push(teleports_up[i][3]);
-			}
-			else if (checkIfPointIsInAnyMargin(teleports_up[i][2],compartments[teleport_floor+1],obsts[teleport_floor+1]))
-				teleports_to_return.push(teleports_up[i][3]);
-		}
-	}
-
-
-	return [...new Set(teleports_to_return)];
+    const badNames = [];
+    // Helper to check a single teleport end
+    function checkEnd(teleport, floorIdx, point) {
+      if (floorIdx < 0 || floorIdx >= state.floorsCount) {
+        // No such floor
+        badNames.push(teleport.name);
+        return;
+      }
+      const comps = compartments[floorIdx] || [];
+      const obs   = obsts[floorIdx] || [];
+      if (checkIfPointIsInAnyMargin(point, comps, obs)) {
+        badNames.push(teleport.name);
+      }
+    }
+    teleportsDown.forEach(tp => {
+      checkEnd(tp, tp.floor, tp.teleportFrom);
+      checkEnd(tp, tp.floor - 1, tp.teleportTo);
+    });
+    teleportsUp.forEach(tp => {
+      checkEnd(tp, tp.floor, tp.teleportFrom);
+      checkEnd(tp, tp.floor + 1, tp.teleportTo);
+    });
+    return Array.from(new Set(badNames));
 }
 
 function checkIfPointIsInAnyMargin(point, compartments,obsts){
@@ -1624,51 +1603,39 @@ function checkIfPointIsInAnyMargin(point, compartments,obsts){
 	let xmax;
 	let ymin;
 	let ymax;
-
 	let innerXmin;
 	let innerXmax;
 	let innerYmin;
 	let innerYmax;
-
-
-	// check obsts margins
+	// check margins
 	if (typeof obsts !== "undefined"){
 		for (let i = 0; i < obsts.length; i++) {
-			xmin = Math.min(obsts[i][0], obsts[i][2]);
-			xmax = Math.max(obsts[i][0], obsts[i][2]);
-			ymin = Math.min(obsts[i][1], obsts[i][3]); 
-			ymax = Math.max(obsts[i][1], obsts[i][3]); 
-			if ((point[0] >= (xmin - obstAndCompartmentMarginWidth)) && (point[0] <= (xmax + obstAndCompartmentMarginWidth))
-				&& (point[1] >= (ymin - obstAndCompartmentMarginWidth)) && (point[1] <= (ymax + obstAndCompartmentMarginWidth)) )
+			xmin = obsts[i].minx
+			xmax = obsts[i].maxx
+			ymin = obsts[i].miny
+			ymax = obsts[i].maxy
+			if ((point[0] >= (xmin - state.defaults.obstAndCompartmentMarginWidth)) && (point[0] <= (xmax + state.defaults.obstAndCompartmentMarginWidth))
+				&& (point[1] >= (ymin - state.defaults.obstAndCompartmentMarginWidth)) && (point[1] <= (ymax + state.defaults.obstAndCompartmentMarginWidth)) )
 				return true;
 		}
 	}
-	
-
-	// check compartments margins
-
 	for (let i = 0; i < compartments.length; i++) {
-		xmin = Math.min(compartments[i][0], compartments[i][2]);
-		xmax = Math.max(compartments[i][0], compartments[i][2]);
-		ymin = Math.min(compartments[i][1], compartments[i][3]); 
-		ymax = Math.max(compartments[i][1], compartments[i][3]); 
-		innerXmin = xmin + obstAndCompartmentMarginWidth;
-		innerXmax = xmax - obstAndCompartmentMarginWidth;
-		innerYmin = ymin + obstAndCompartmentMarginWidth;
-		innerYmax = ymax - obstAndCompartmentMarginWidth;
+		xmin = compartments[i].minx
+		xmax = compartments[i].maxx
+		ymin = compartments[i].miny
+		ymax = compartments[i].maxy
+		innerXmin = xmin + state.defaults.obstAndCompartmentMarginWidth;
+		innerXmax = xmax - state.defaults.obstAndCompartmentMarginWidth;
+		innerYmin = ymin + state.defaults.obstAndCompartmentMarginWidth;
+		innerYmax = ymax - state.defaults.obstAndCompartmentMarginWidth;
 		if ((point[0] >= xmin && point[0] <= xmax
 			&& point[1] >= ymin && point[1] <= ymax)
 			&& !(point[0] >= innerXmin && point[0] <= innerXmax
 			&& point[1] >= innerYmin && point[1] <= innerYmax))
 			return true;
 	}
-
-
-
 	return false;
 }
-
-
 function isGeometryCorrect(){
 	var teleports_to_return = [];
 	var msg;
@@ -1676,7 +1643,7 @@ function isGeometryCorrect(){
 		amsg({'err':2, 'msg':`There is a hole in the outside wall. You can't do that. 
 			The holes are used to connect compartments. In the external wall you can 
 			draw normal door, windows, mechanical or normal vents. After correcting 
-			the geometry, you will be able to save your changes`}); 
+			the geometry, you will be able to save your changes`, 'duration': 20000}); 
 		return false;
 	}
 	teleports_to_return = wrongTeleportLocation();
@@ -1691,43 +1658,37 @@ function isGeometryCorrect(){
 		for (let i = 0; i < teleports_to_return.length; i++) {
 			msg += teleports_to_return[i] + " "
 		}
-		amsg({'err':2, 'msg':msg}); 
+		amsg({'err':2, 'msg':msg, 'duration': 20000}); 
 		return false;
 	}
 	if(anyWindowOnInteriorWall()){
 		amsg({'err':2, 'msg':`There is a window in the interior wall. You can't do that. 
-			Windows can only be located on the external wall`}); 
+			Windows can only be located on the external wall`, 'duration': 15000}); 
 		return false;
 	}
-
-
 	return true;
 }
-
 function db2cadjson() {//{{{
 	cgEscapeCreate();
 	verifyIntersections();
-	dbUpdateCadJsonStr();
-
 	cadjson={};
 
-	for(var floor=0; floor<floorsCount; floor++) { 
-		var geoms=[];
+	for(var floor=0; floor<state.floorsCount; floor++) { 
 		cadjson[floor]={};
-		for(var letter in gg) {
-			if (gg[letter]['legendary'] == 0) { 
+		for(var letter in state.gg) {
+			if (state.gg[letter]['legendary'] == 0) { 
 				continue; 
 			}
-			tt=gg[letter]['x'];
+			tt=state.gg[letter]['x'];
 			cadjson[floor][tt]=[];
-			_.each(db({"floor": floor, "letter": letter}).select("cad_json"), function(m) {
-				cadjson[floor][tt].push(m);
+			_.each(dbWhere({"floor": floor, "letter": letter}), function(obj) {
+				cad = generateObjectCadJson(obj);
+				cadjson[floor][tt].push(cad);
 			});
 		}
-
 		cadjson[floor]['UNDERLAY_IMG']=underlayImgSaveCad(floor);
 		cadjson[floor]['UNDERLAY_FLOOR']=underlayFloorSaveCad(floor);
-		cadjson[floor]['FLOOR_DIM_Z']=floors_dimz[floor];
+		cadjson[floor]['FLOOR_DIM_Z']=state.floorsDimZ[floor];
 	}
 	pretty=JSON.stringify(cadjson,null,2);
 	ajaxSaveCadJson(pretty);
@@ -1736,52 +1697,48 @@ function db2cadjson() {//{{{
 //}}}
 function floorCopy() {	//{{{
 	c2f=Number($("#copy_to_floor").val());
-	floors_dimz[c2f] = floors_dimz[floor];
-	floorsZ0[c2f] = getSumDimZLower(c2f);
-	floorsCount++;
-	building.append("g").attr("id", "floor"+c2f).attr({"class": "floor", "opacity": 0, "visibility": "hidden"});
-	_.each(db({'floor': floor}).get(), function(m) {
+	state.floorsDimZ[c2f] = state.floorsDimZ[state.currentFloor];
+	state.floorsZ0[c2f] = getSumDimZLower(c2f);
+	state.floorsCount++;
+	state.building.append("g").attr("id", "floor"+c2f).attr({"class": "floor", "opacity": 0, "visibility": "hidden"});
+	_.each(dbWhere({'floor': state.currentFloor}), function(m) {
 		if (m.letter == 'va' || m.letter == 'vs'||
 			m.letter == 's' || m.letter=='a'){
 			return;
 		}
-		activeLetter=m.letter;
+		state.activeLetter=m.letter;
 		cgIdUpdate();
-		cg=deepcopy(m);
-		cg.exit_weight=10;
-		cg.room_exits_weights={};
-		cg.air_grille_surface = null;
-		cg.flow_direction = null;
-		cg.floor=c2f;
-		cg.idx=cgID;
-		cg.name=cg.letter + cgID;
-		cg.z[0]=floorsZ0[c2f];
-		cg.z[1]=floorsZ0[c2f] + m.z[1]- m.z[0];
+		currentGeom=deepcopy(m);
+		currentGeom.exitWeight=state.defaults.exitWeight;
+		currentGeom.roomExitsWeights={};
+		currentGeom.airGrilleSurface = null;
+		currentGeom.flowDirection = null;
+		currentGeom.floor=c2f;
+		currentGeom.idx=cgID;
+		currentGeom.name=currentGeom.letter + cgID;
+		currentGeom.z.z0=state.floorsZ0[c2f];
+		currentGeom.z.z1=state.floorsZ0[c2f] + m.z.z1- m.z.z0;
 		cgDb(undoRegister=0);
-		cgSvg();
+		drawGeom(currentGeom);
 
 	});
-
-
-
 	$("#floor"+c2f).attr({"class": "floor", "fill-opacity": 0.4, "visibility": "hidden"});
-
-	cg={};
+	currentGeom={};
 	updateSnapLines();
-
-	_.each(db({"letter": 's'}).get(), function(m){
-		cgDbVirtualObj(m);
-		cgSvgVirtualObj(m);
+	_.each(dbWhere({"letter": 's'}), function(m){
+		createAndDrawVirtualObjs(m);
 	});
-	_.each(db({"letter": 'a'}).get(), function(m){
-		cgDbVirtualObj(m);
-		cgSvgVirtualObj(m);
+	_.each(dbWhere({"letter": 'a'}), function(m){
+		createAndDrawVirtualObjs(m);
 	});
-
-
 	showGeneralBox();
-	amsg({'err':0, 'msg': "floor"+floor+" copied onto floor"+c2f});
+	amsg({'err':0, 'msg': "floor"+state.currentFloor+" copied onto floor"+c2f});
 }//}}}
+function highlightSelected(selectedIds) {
+  _.each(Array.from(selectedIds), function(id) {
+    d3.select('#' + id).classed('cg-selected', true);
+  });
+}
 function cgSelect(elems, blink=1, showProps=1) {//{{{
 	let virtualObjEscapeSelect = false;
 	$(".cg-selected").removeClass('cg-selected'); 
@@ -1792,31 +1749,34 @@ function cgSelect(elems, blink=1, showProps=1) {//{{{
 	}
 	_.each(arr, function(v) { 
 		// right click on obst or compartment margin:
-		let elem = db({'name':v}).get();
+		let elem = dbWhere({'name':v});
 		if(elem.length == 0){
 			virtualObjEscapeSelect = true;
 			return;
 		}
-		cg=deepcopy(elem[0]);
-		if (cg.letter == 'va' || cg.letter == 'vs'){
+		currentGeom=deepcopy(elem[0]);
+		if (currentGeom.letter == 'va' || currentGeom.letter == 'vs'){
 			virtualObjEscapeSelect = true;
 			return;
 		}
-		if(blink==1)     { $("#"+cg.name).addClass('cg-selected').css( { 'stroke-width': '100px'}).animate( { 'stroke-width': 0}, 400, function() { $(this).removeAttr('style'); }); }
+		if(blink==1)     { $("#"+currentGeom.name).addClass('cg-selected').css( { 'stroke-width': '100px'}).animate( { 'stroke-width': 0}, 400, function() { $(this).removeAttr('style'); }); }
 		if(showProps==1) { showCgPropsBox(); }
 	});
 	if (virtualObjEscapeSelect)
 		return;
-	m={'x': cg.minx, 'y': cg.miny};
+	m={'x': currentGeom.minx, 'y': currentGeom.miny};
 	updatePosInfo(m);
-	showBuildingLabels(1,[cg.name]);
+	showBuildingLabels(1,[currentGeom.name]);
 }
 //}}}
 function bulkPlainProps() {//{{{
 	var tbody='';
 	tbody+="<tr><td>name<td>z<td>density";
-	_.each(db({'letter': activeLetter, 'floor': floor}).get(), function (m) {
-		tbody+="<tr><td class=bulkProps id="+ m.name + ">"+ m.name +"</td><td>"+m.z+"</td><td>"+m.evacuees_density;
+	_.each(dbWhere({'type': (type) =>
+		['d', 'q', 'e', 'w', 'z'].includes(state.activeLetter) ? ['door', 'window', 'hole'].includes(type) : type === state.gg[state.activeLetter].t,
+		'floor': state.currentFloor}), function (m) {
+		tbody+="<tr><td class=bulkProps id="+ m.name + ">"+ m.name +"</td><td>"+m.z.z0+" - "+m.z.z1+"</td>"
+	if(m.type == 'room') tbody+="<td>"+m.evacueesDensity;
 	});
 	return tbody;
 }
@@ -1824,7 +1784,7 @@ function bulkPlainProps() {//{{{
 function bulkProps() {//{{{
 	showBuildingLabels(1);
 	var html='';
-	html+='<div style="overflow-y: scroll; height: '+(win[1]-100)+'px">';
+	html+='<div style="overflow-y: scroll; height: '+(state.win.height-100)+'px">';
 	html+='<wheat>Hover name,<br>then <letter>x</letter> to delete</wheat>';
 	html+='<table id=gg_listing>';
 	html+=bulkPlainProps();
@@ -1833,74 +1793,68 @@ function bulkProps() {//{{{
 	rightBoxShow(html, 0);
 }
 //}}}
-
 function roomProps() {//{{{
 	var pp="<input id=alter-evacuees-density type=hidden value='auto'>";
-	if(cg.type=='room') {
-		v=db({'name':cg.name}).get()[0];
+	if(currentGeom.type=='room') {
+		getFloorExits();
 		pp='';
-		adjecentDoorsAndHoles = rooms_and_adjecent_doors_and_holes[cg.name];
+		adjecentDoorsAndHoles = state.roomsAndAdjDoorsAndHoles[currentGeom.name];
 		if (adjecentDoorsAndHoles !== undefined) {
 			if (adjecentDoorsAndHoles.length > 0){
 				pp+= "<tr><td colspan=2 style='text-align: center'>set the weight of the exit doors from this room";
 				pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
 				pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
 				adjecentDoorsAndHoles.forEach(function(obj){
-					var obj_name = obj[1];
-					var points = obj[0].points;
-
-					if (obj_name.charAt(0)=="z")
-						pp+= "<tr><td>exit hole " +obj_name+" weight:";
+					if (obj.name.charAt(0)=="z")
+						pp+= "<tr><td>exit hole " +obj.name+" weight:";
 					else
-						pp+= "<tr><td>exit door " +obj_name+" weight:";
+						pp+= "<tr><td>exit door " +obj.name+" weight:";
 
-					if ('room_exits_weights' in v && v.room_exits_weights !== undefined && v.room_exits_weights[obj[0].idx] !== undefined)
-						pp+= "<td><input type=number id=room_exits_weights_"+cg.name+ "_"+obj_name+" name=room_exits_weights_"+cg.name+ "_"+obj_name+" min=0 max=10 value="+v.room_exits_weights[obj[0].idx]+">";
+					if ('roomExitsWeights' in currentGeom && currentGeom.roomExitsWeights !== undefined && currentGeom.roomExitsWeights[obj.idx] !== undefined)
+						pp+= "<td><input type=number id=roomExitsWeights_"+currentGeom.name+ "_"+obj.name+" name=roomExitsWeights_"+
+					currentGeom.name+ "_"+obj.name+" min=0 max=10 value="+currentGeom.roomExitsWeights[obj.idx]+">";
 					else
-						pp+= "<td><input type=number id=room_exits_weights_"+cg.name+ "_"+obj_name+" name=room_exits_weights_"+cg.name+ "_"+obj_name+" min=0 max=10 value=10>";
+						pp+= "<td><input type=number id=roomExitsWeights_"+currentGeom.name+ "_"+obj.name+" name=roomExitsWeights_"+
+					currentGeom.name+ "_"+obj.name+" min=0 max=10 value=10>";
 
 				});
 			}
 		}
-		pp+="<tr><td>density <withHelp>?<help> Draws the given number of  evacuees per square metre. <br><orange>auto</orange> draws the evacuees according to the building profile.<br><br>You can alter global densities in Project > Editor: text<br>evacuees_density:<br>{ ROOM: 0.33, COR: 0.05, STAI: 0.05, HALL: 0.05 }</help></withHelp>";
-		pp+="<td><input type=text style='width: 40px' id=alter-evacuees-density value='"+v.evacuees_density+"'>";
+		pp+="<tr><td>density <withHelp>?<help> Draws the given number of  evacuees per square metre. <br><orange>auto</orange> draws"+
+		"the evacuees according to the building profile.<br><br>You can alter global densities in Project > Editor: text<br>"+
+		"evacueesDensity:<br>{ ROOM: 0.33, COR: 0.05, STAI: 0.05, HALL: 0.05 }</help></withHelp>";
+		pp+="<td><input type=text style='width: 40px' id=alter-evacuees-density value='"+currentGeom.evacueesDensity+"'>";
 	}
 	return pp;
 }
 //}}}
 function mventProps() {//{{{
 	var pp="";
-	if(cg.type=='mvent') {
-		v=db({'name':cg.name}).get()[0];
-		var zones = getConnectedZones(cg);
-		var mventWithDuct = false;
-		if (zones.length === 1) {
+	if(currentGeom.type=='mvent') {
+		const [r1, r2] = getConnectedZones(currentGeom);
+		let mventWithDuct = false;
+		if (r1 == 'OUTSIDE' || r2 == 'OUTSIDE') {
 			// mechanical vent with duct leading outside
-    		zones.push("OUTSIDE");
 			mventWithDuct = true;
 		}
-		r1 = zones[0];
-		r2 = zones[1];
-		if (r1==null && r2==null){
+		if (r1==null || r2==null){
 			pp += "<tr><td>coorect mvent size and localization because</td><td> it intersects not properly</td></tr>";
-		}
-		else
-		{
-			pp += "<tr><td colspan='2'>mvent "+cg.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
-			pp += "<tr><td>flow direction: <td><select id=alter-flow-direction name=flow_direction >";
+		} else {
+			pp += "<tr><td colspan='2'>mvent "+currentGeom.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
+			pp += "<tr><td>flow direction: <td><select id=alter-flow-direction name=flowDirection >";
 			
 			const flow1 = `${r1} to ${r2}`;
 			const flow2 = `${r2} to ${r1}`;
 			
-			pp += `<option value='${flow1}' ${cg.flow_direction === flow1 ? "selected" : ""}>${flow1}</option>`;
-			pp += `<option value='${flow2}' ${cg.flow_direction === flow2 ? "selected" : ""}>${flow2}</option>`;
+			pp += `<option value='${flow1}' ${currentGeom.flowDirection === flow1 ? "selected" : ""}>${flow1}</option>`;
+			pp += `<option value='${flow2}' ${currentGeom.flowDirection === flow2 ? "selected" : ""}>${flow2}</option>`;
 			pp += "</select>";
 			if(mventWithDuct == true){
 				pp += "<tr><td>air grille surface: <td><select id=alter-air-grille-surface name=air-grille >";
 				
 				const surfaces = ["x_min", "x_max", "y_min", "y_max", "z_min", "z_max"];
 				for (const surface of surfaces) {
-					pp += `<option value='${surface}' ${cg.air_grille_surface === surface ? "selected" : ""}>${surface}</option>`;
+					pp += `<option value='${surface}' ${currentGeom.airGrilleSurface === surface ? "selected" : ""}>${surface}</option>`;
 				}
 				pp += "</select>";
 			}
@@ -1914,227 +1868,144 @@ function mventProps() {//{{{
 				pp += "</help></withHelp></td></tr>";
 			}
 		}
-		pp += "<tr><td>flow [m3/s]: <td>  <input id=alter-mvent-throughput type=number size=3 min=0 max=100 step=0.1 value="+v.mvent_throughput+">";
+		pp += "<tr><td>flow [m3/s]: <td>  <input id=alter-mvent-throughput type=number size=3 min=0 max=100 step=0.1 value="+currentGeom.mventThroughput+">";
 	} 
 	return pp;
 }
 
 function vventProps() {//{{{
 	var pp="";
-	if(cg.type=='vvent') {
-		v=db({'name':cg.name}).get()[0];
-		var zones = getConnectedZones(cg);
-
-		if (zones.length === 1) {
-    		pp += "<tr><td>coorect vvent size and localization because</td><td> it intersects not properly</td></tr>";
-		}
-		r1 = zones[0];
-		r2 = zones[1];
-		if (r1==null && r2==null){
+	if(currentGeom.type=='vvent') {
+		const [r1, r2] = getConnectedZones(currentGeom);
+		if (r1==null || r2==null){
 			pp += "<tr><td>coorect vvent size and localization because</td><td> it intersects not properly</td></tr>";
 		}
 		else
 		{
-			pp += "<tr><td colspan='2'>vvent "+cg.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
+			pp += "<tr><td colspan='2'>vvent "+currentGeom.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
 		}
 	} 
 	return pp;
 }
-
-
 //}}}
 function doorProps() {//{{{
 	var pp="";
-	if(cg.type=='door') {
-		v=db({'name':cg.name}).get()[0];
+	if(currentGeom.type=='door') {
 		pp='';
-		external_doors.forEach((door, index) => {
-			var door_name = door[1];
-			if (door_name == v.name){
-				pp+= "<tr><td colspan=2 style='text-align: center'>set the general weight of the exit";
-				pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
-				pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
-				pp+= "<tr><td>exit door " +door_name+" weight:";
-				if ('exit_weight' in v && v.exit_weight !== undefined)
-					pp+= "<td><input type=number id=floor_exits_weights_"+door_name+ " name="+door_name+" min=0 max=10 value="+v.exit_weight+">";
-				else
-					pp+= "<td><input type=number id=floor_exits_weights_"+door_name+ " name="+door_name+" min=0 max=10 value=10>";
-			}
-		});
-
+		pp+= "<tr><td colspan=2 style='text-align: center'>set the general weight of the exit";
+		pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
+		pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
+		pp+= "<tr><td>exit door " +currentGeom.name+" weight:";
+		if ('exitWeight' in currentGeom && currentGeom.exitWeight !== undefined)
+			pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name="+currentGeom.name+" min=0 max=10 value="+currentGeom.exitWeight+">";
+		else
+			pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name="+currentGeom.name+" min=0 max=10 value=10>";
 	}
 	return pp;
 }
 //}}}
 function teleportProps() {//{{{
 	var pp="";
-	if(cg.type=='floor_teleport') {
-		v=db({'name':cg.name}).get()[0];
+	if(currentGeom.type=='floor_teleport') {
 		pp='';
-		teleports.forEach((teleport, index) => {
-			teleport_name = teleport[1];
-			if (teleport_name == v.name){
-				pp+= "<tr><td colspan=2 style='text-align: center'>set the general weight of the exit";
-				pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
-				pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
-				pp+= "<tr><td>teleport " +teleport_name+" weight:";
-				if ('exit_weight' in v && v.exit_weight !== undefined)
-					pp+= "<td><input type=number id=floor_exits_weights_"+teleport_name+ " name=floor_exits_weights_"+teleport_name+" min=0 max=10 value="+v.exit_weight+">";
-				else
-					pp+= "<td><input type=number id=floor_exits_weights_"+teleport_name+ " name=floor_exits_weights_"+teleport_name+" min=0 max=10 value=10>";
-			}
-		});
+		pp+= "<tr><td colspan=2 style='text-align: center'>set the general weight of the exit";
+		pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
+		pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
+		pp+= "<tr><td>teleport " +currentGeom.name+" weight:";
+		if ('exitWeight' in currentGeom && currentGeom.exitWeight !== undefined)
+			pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name=floor_exits_weights_"+currentGeom.name+" min=0 max=10 value="+currentGeom.exitWeight+">";
+		else
+			pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name=floor_exits_weights_"+currentGeom.name+" min=0 max=10 value=10>";
 	}
 	return pp;
 }
 //}}}
-
 function rightBoxShow(html, close_button=1) {//{{{
 	$('right-menu-box').html("");
 	if(close_button==1) { $('right-menu-box').append("<close-right-menu-box><img id=close-img-svg src=/aamks/css/close.svg></close-right-menu-box><br>"); }
 	$('right-menu-box').append(html);
 	$('right-menu-box').fadeIn(); 
-	underlayPointerEvents();
+	underlayPointerEvents(state.currentFloor);
 }
 //}}}
-
-function getMinMaxXY(object){
-	var points = JSON.parse(object['points'])
-	x_min = points[0][0];
-	x_max = points[0][0];
-	y_min = points[0][1];
-	y_max = points[0][1];
-	for (const [key, value] of Object.entries(points)) {
-		if (value[0] < x_min)
-			x_min = value[0];
-		else if (value[0] > x_max)
-			x_max = value[0];
-
-		if (value[1] < y_min)
-			y_min = value[1];
-		else if (value[1] > y_max)
-			y_max = value[1];
-	}
-
-	return [x_min, y_min, x_max, y_max];
-
-}
-
-function getExternalDoors(doors,room_types_objects){
-	external_doors = [];
-	doors.forEach((door, index) => {
-		var points = getMinMaxXY(door[0]);
-		var first_side_door_point = [points[0], points[1]];
-		var second_side_door_point = [points[2], points[3]];
-		var is_first_side_door_point_inside = false;
-		var is_second_side_door_point_inside = false;
-		room_types_objects.forEach((room, index) => {
-			room_points = getMinMaxXY(room[0]);
-			room_min_X = room_points[0];
-			room_max_X = room_points[2];
-			room_min_Y = room_points[1];
-			room_max_Y = room_points[3];
-			if (first_side_door_point[0] <= room_max_X && 
-				first_side_door_point[0] >= room_min_X &&
-				first_side_door_point[1] <= room_max_Y &&
-				first_side_door_point[1] >= room_min_Y)
+function getExternalDoors(doors,roomTypesObjects){
+	doors.forEach(door => {
+		let is_first_side_door_point_inside = false;
+		let is_second_side_door_point_inside = false;
+		roomTypesObjects.forEach(room => {
+			if (door.minx <= room.maxx && 
+				door.minx >= room.minx &&
+				door.miny <= room.maxy &&
+				door.miny >= room.miny)
 				is_first_side_door_point_inside = true;
-			if (second_side_door_point[0] <= room_max_X && 
-				second_side_door_point[0] >= room_min_X &&
-				second_side_door_point[1] <= room_max_Y &&
-				second_side_door_point[1] >= room_min_Y)
+			if (door.maxx <= room.maxx && 
+				door.maxx >= room.minx &&
+				door.maxy <= room.maxy &&
+				door.maxy >= room.miny)
 				is_second_side_door_point_inside = true;
 		});
 		if (is_first_side_door_point_inside == false ||
 			is_second_side_door_point_inside == false)
-				external_doors.push(door);
-		var is_first_side_door_point_outside = false;
-		var is_second_side_door_point_outside = false;
+				state.externalDoors.push(door);
 	});
 }
-function getRoomsAndAdjecentDoorsAndHoles(doors_and_holes,room_types_objects, holes){
-	rooms_and_adjecent_doors_and_holes = {};
-	room_types_objects.forEach((room, index) => {
-		rooms_and_adjecent_doors_and_holes[room[1]] = [];
-		var room_points = getMinMaxXY(room[0]);
-		var room_min_X = room_points[0];
-		var room_max_X = room_points[2];
-		var room_min_Y = room_points[1];
-		var room_max_Y = room_points[3];
-		doors_and_holes.forEach((obj, i) => {
+function getRoomsAndAdjecentDoorsAndHoles(doorsAndHoles,roomTypesObjects, holes){
+	state.roomsAndAdjDoorsAndHoles = {};
+	roomTypesObjects.forEach(room => {
+		state.roomsAndAdjDoorsAndHoles[room.name] = [];
+		doorsAndHoles.forEach(obj => {
 			var IsAdjecantToRoom = false;
-			points = getMinMaxXY(obj[0]);
-			min_X = points[0];
-			max_X = points[2];
-			min_Y = points[1];
-			max_Y = points[3];
-			if (min_X >= room_min_X &&
-				max_X <= room_max_X &&
-				(min_Y < room_max_Y && min_Y > room_min_Y || 
-				 max_Y > room_min_Y && max_Y < room_max_Y))
+			if (obj.minx >= room.minx &&
+				obj.maxx <= room.maxx &&
+				(obj.miny < room.maxy && obj.miny > room.miny || 
+				 obj.maxy > room.miny && obj.maxy < room.maxy))
 				IsAdjecantToRoom = true;
-			if (min_Y >= room_min_Y &&
-				max_Y <= room_max_Y &&
-				(min_X < room_max_X && min_X > room_min_X ||
-				 max_X > room_min_X && max_X < room_max_X))
+			if (obj.miny >= room.miny &&
+				obj.maxy <= room.maxy &&
+				(obj.minx < room.maxx && obj.minx > room.minx ||
+				 obj.maxx > room.minx && obj.maxx < room.maxx))
 				IsAdjecantToRoom = true;
 
 			if (IsAdjecantToRoom == true)
-				rooms_and_adjecent_doors_and_holes[room[1]].push(obj);
+				state.roomsAndAdjDoorsAndHoles[room.name].push(obj);
 		});
-
 	});
-
-	joinRoomsConnectedByHoles(room_types_objects,holes)
+	joinRoomsConnectedByHoles(roomTypesObjects,holes)
 }
 
-function joinRoomsConnectedByHoles(room_types_objects, holes){
-
-	rooms_pairs_joined_by_holes = getJoinedRoomsPairs(room_types_objects, holes);
+function joinRoomsConnectedByHoles(roomTypesObjects, holes){
+	rooms_pairs_joined_by_holes = getJoinedRoomsPairs(roomTypesObjects, holes);
 	getJoinedRoomsAndAdjecentDoors(rooms_pairs_joined_by_holes);
 }
 
-function getJoinedRoomsPairs(room_types_objects, holes){
+function getJoinedRoomsPairs(roomTypesObjects, holes){
 	rooms_pairs_joined_by_holes = [];
 	vhall_holes = [];
-	holes.forEach((hole, i) => {
-		points = getMinMaxXY(hole[0]);
-		hole_min_X = points[0];
-		hole_max_X = points[2];
-		hole_min_Y = points[1];
-		hole_max_Y = points[3];
+	holes.forEach(hole => {
 		joined_rooms = [];
-		room_types_objects.forEach((room, index) => {
-			room_points = getMinMaxXY(room[0]);
-			room_min_X = room_points[0];
-			room_max_X = room_points[2];
-			room_min_Y = room_points[1];
-			room_max_Y = room_points[3];
-			if (hole_min_X >= room_min_X &&
-				hole_max_X <= room_max_X &&
-				(hole_min_Y < room_max_Y && hole_min_Y > room_min_Y || 
-				 hole_max_Y > room_min_Y && hole_max_Y < room_max_Y))
-				joined_rooms.push(room[1])
-			else if (hole_min_Y >= room_min_Y &&
-				hole_max_Y <= room_max_Y &&
-				(hole_min_X < room_max_X && hole_min_X > room_min_X ||
-				 hole_max_X > room_min_X && hole_max_X < room_max_X))
-				joined_rooms.push(room[1])
+		roomTypesObjects.forEach(room => {
+			if (hole.minx >= room.minx &&
+				hole.maxx <= room.maxx &&
+				(hole.miny < room.maxy && hole.miny > room.miny || 
+				 hole.maxy > room.miny && hole.maxy < room.maxy))
+				joined_rooms.push(room.name)
+			else if (hole.miny >= room.miny &&
+				hole.maxy <= room.maxy &&
+				(hole.minx < room.maxx && hole.minx > room.minx ||
+				 hole.maxx > room.minx && hole.maxx < room.maxx))
+				joined_rooms.push(room.name)
 		});
 		if (joined_rooms.length == 2){
 			rooms_pairs_joined_by_holes.push([joined_rooms[0],joined_rooms[1]]);
 		}
 		else
 			vhall_holes.push(hole);
-
 	});
-
 	vhall_holes.forEach((hole, i) => {
-		for (let key in rooms_and_adjecent_doors_and_holes){
-			rooms_and_adjecent_doors_and_holes[key] = rooms_and_adjecent_doors_and_holes[key].filter(innerArray => innerArray[1] !== hole[1]);
+		for (let key in state.roomsAndAdjDoorsAndHoles){
+			state.roomsAndAdjDoorsAndHoles[key] = state.roomsAndAdjDoorsAndHoles[key].filter(innerArray => innerArray[1] !== hole.name);
 		}
 	});
-
 	return rooms_pairs_joined_by_holes;
 }
 
@@ -2146,14 +2017,12 @@ function getJoinedRoomsAndAdjecentDoors(rooms_pairs_joined_by_holes){
 		adjecentDoorsAndHolesConcated = [];
 		adjecentDoorsAndHoles = [];
 		for (let j = 0; j < grouped_rooms[i].length; j++) {
-			adjecentDoorsAndHolesConcated = adjecentDoorsAndHoles.concat(rooms_and_adjecent_doors_and_holes[grouped_rooms[i][j]]);
+			adjecentDoorsAndHolesConcated = adjecentDoorsAndHoles.concat(state.roomsAndAdjDoorsAndHoles[grouped_rooms[i][j]]);
 			adjecentDoorsAndHoles = adjecentDoorsAndHolesConcated;
 		}
-
 		adjecentDoorsAndHoles = [...new Set(adjecentDoorsAndHoles)];
-
 		for (let j = 0; j < grouped_rooms[i].length; j++) {
-			rooms_and_adjecent_doors_and_holes[grouped_rooms[i][j]] = adjecentDoorsAndHoles;
+			state.roomsAndAdjDoorsAndHoles[grouped_rooms[i][j]] = adjecentDoorsAndHoles;
 		}
 	}
 }
@@ -2202,80 +2071,15 @@ function groupRoomsByHoleConnections(rooms_pairs_joined_by_holes){
 function getFloorExits(){
 	cgEscapeCreate();
 	verifyIntersections();
-	dbUpdateCadJsonStr();
-	var doors =[];
-	var holes = [];
-	var room_types_objects =[];
-	var doors_and_holes = [];
-	var doors_and_holes_upper_floor_stairs = [];
-
-	for(var letter in gg) {
-		if (gg[letter]['t'] == 'door') { 
-			_.each(db({"floor": floor, "letter": letter}).select("cad_json","name"), function(m) {
-			doors.push(m);
-			doors_and_holes.push(m);
-			});
-		}
-	}
-
-	for(var letter in gg) {
-		if (gg[letter]['t'] == 'hole') { 
-			_.each(db({"floor": floor, "letter": letter}).select("cad_json","name"), function(m) {
-			doors_and_holes.push(m);
-			holes.push(m);
-			});
-		}
-	}
-
-	for(var letter in gg) {
-		if (gg[letter]['t'] == 'room') { 
-			_.each(db({"floor": floor, "letter": letter}).select("cad_json","name"), function(m) {
-				room_types_objects.push(m);
-			});
-		}
-	}
-
-	// var stairsNotVirtual = array
-    // 	.filter(subArray => subArray[1].startsWith('s'))
-    // 	.map(subArray => subArray[1]);
-
-    // if (stairsNotVirtual.length > 0) {
-
-    // }
-
-	// include virtual stairs from virtual_obj_parents variable
-	// virtual hall is not walkable
-	for(var letter of ['s']){
-		for(var _floor=0; _floor<floorsCount; _floor++) { 
-			_.each(db({"floor": _floor, "letter": letter}).select("cad_json","name"), function(m) {
-				cad_json = m[0];
-				name = m[1];
-				if (name in virtual_obj_parents){
-					for (let i = 0; i < virtual_obj_parents[name].length; i++) {
-						if (virtual_obj_parents[name][i][2] == floor){
-							room_types_objects.push([cad_json,name]);
-						}
-					}
-				}
-
-			});
-		}
-	}
-
-	getExternalDoors(doors,room_types_objects);
-	var floor_teleport_up_letter = 'ku';
-	var floor_teleport_down_letter = 'kd';
-	teleports = []
-	_.each(db({"floor": floor, "letter": floor_teleport_up_letter}).select("cad_json","name"), function(m) {
-		teleports.push(m);
-	});
-	_.each(db({"floor": floor, "letter": floor_teleport_down_letter}).select("cad_json","name"), function(m) {
-	teleports.push(m);
-	});
-	getRoomsAndAdjecentDoorsAndHoles(doors_and_holes, room_types_objects, holes);
-
+	const doors = getTypeApainterObjects('door', state.currentFloor);
+	const holes = getTypeApainterObjects('hole', state.currentFloor);
+	const doorsAndHoles = [...doors, ...holes];
+	const roomTypesObjects = getTypeApainterObjects('room', state.currentFloor);
+	const vstai = getTypeApainterObjects('vroom', state.currentFloor).filter(function(obj){ return obj.letter == 'vstai'});
+	roomTypesObjects.push(...vstai);
+	// getExternalDoors(doors,roomTypesObjects);
+	getRoomsAndAdjecentDoorsAndHoles(doorsAndHoles, roomTypesObjects, holes);
 }
-
 
 function validateRightBoxXY(input){
 	let value = parseInt(input.value);
@@ -2328,11 +2132,11 @@ function validateRightBoxInput(input) {
     var stairAndHall = ['s', 'a'];
     var vents = ['m', 'b'];
 
-    if (limitedZObj.includes(cg.letter)){
+    if (limitedZObj.includes(currentGeom.letter)){
     	if (input.id == 'alter-z1'){
 	    	let alter_z0 = parseInt(document.getElementById("alter-z0").value);
-	    	if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
-    			input.value = floorsZ0[cg.floor] + floors_dimz[cg.floor];
+	    	if (value > state.floorsZ0[currentGeom.floor] + state.floorsDimZ[currentGeom.floor]) {
+    			input.value = state.floorsZ0[currentGeom.floor] + state.floorsDimZ[currentGeom.floor];
 				document.getElementById("warning").innerHTML = "Cant' exceed the floor height!";
     		}
 	    	else if (value <= alter_z0) {
@@ -2341,8 +2145,8 @@ function validateRightBoxInput(input) {
     	}
 		else if (input.id == 'alter-z0'){
 	    	let alter_z1 = parseInt(document.getElementById("alter-z1").value);
-    		if (value < floorsZ0[cg.floor]) {
-				input.value = floorsZ0[cg.floor];
+    		if (value < state.floorsZ0[currentGeom.floor]) {
+				input.value = state.floorsZ0[currentGeom.floor];
 				document.getElementById("warning").innerHTML = "Height below floor height!";
 			}
     		else if (value >= alter_z1) {
@@ -2350,51 +2154,51 @@ function validateRightBoxInput(input) {
 			}
 		}
     }
-    else if (stairAndHall.includes(cg.letter)){
+    else if (stairAndHall.includes(currentGeom.letter)){
 		if (input.id == 'alter-z0'){
-			if (value < floorsZ0[cg.floor]) {
-				input.value = floorsZ0[cg.floor];
+			if (value < state.floorsZ0[currentGeom.floor]) {
+				input.value = state.floorsZ0[currentGeom.floor];
 			}
-			else if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
-				input.value = floorsZ0[cg.floor];
+			else if (value > state.floorsZ0[currentGeom.floor] + state.floorsDimZ[currentGeom.floor]) {
+				input.value = state.floorsZ0[currentGeom.floor];
 			}
 		}
     }
-    else if (vents.includes(cg.letter)){
+    else if (vents.includes(currentGeom.letter)){
     	if (input.id == 'alter-z1'){
-	    	if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor] + 4) {
-    			input.value = floorsZ0[cg.floor] + floors_dimz[cg.floor] + 4;
+	    	if (value > state.floorsZ0[currentGeom.floor] + state.floorsDimZ[currentGeom.floor] + 4) {
+    			input.value = state.floorsZ0[currentGeom.floor] + state.floorsDimZ[currentGeom.floor] + 4;
     		}
-	    	else if (value < floorsZ0[cg.floor]) {
-    			input.value =  floorsZ0[cg.floor];
+	    	else if (value < state.floorsZ0[currentGeom.floor]) {
+    			input.value =  state.floorsZ0[currentGeom.floor];
     		}
     	}
 		else if (input.id == 'alter-z0'){
-    		if (value < floorsZ0[cg.floor] - 4) {
-				input.value = floorsZ0[cg.floor] - 4;
+    		if (value < state.floorsZ0[currentGeom.floor] - 4) {
+				input.value = state.floorsZ0[currentGeom.floor] - 4;
 			}
-    		else if (value > floorsZ0[cg.floor] + floors_dimz[cg.floor]) {
-				input.value = floorsZ0[cg.floor] + floors_dimz[cg.floor];
+    		else if (value > state.floorsZ0[currentGeom.floor] + state.floorsDimZ[currentGeom.floor]) {
+				input.value = state.floorsZ0[currentGeom.floor] + state.floorsDimZ[currentGeom.floor];
 			}
 		}
     }
 
     else if (input.id == 'default_door_dimz'){
-    	if (value > floors_dimz[floor]) {
-    		input.value = floors_dimz[floor];
+    	if (value > state.floorsDimZ[currentGeom.floor]) {
+    		input.value = state.floorsDimZ[currentGeom.floor];
     	}
     }
     else if (input.id =='default_window_dimz'){
     	let window_offsetz = parseInt(document.getElementById("default_window_offsetz").value);
-    	if (value+window_offsetz > floors_dimz[floor]) {
-    		input.value = floors_dimz[floor] - window_offsetz;
+    	if (value+window_offsetz > state.floorsDimZ[currentGeom.floor]) {
+    		input.value = state.floorsDimZ[currentGeom.floor] - window_offsetz;
     	}
     }
 
     else if (input.id =='default_window_offsetz'){
     	let window_dimz= parseInt(document.getElementById("default_window_dimz").value);
-    	if (value+window_dimz > floors_dimz[floor]) {
-    		input.value = floors_dimz[floor] - window_dimz;
+    	if (value+window_dimz > state.floorsDimZ[currentGeom.floor]) {
+    		input.value = state.floorsDimZ[currentGeom.floor] - window_dimz;
     	}
     }
 	if (input.id == 'alter-z0'){
@@ -2412,39 +2216,33 @@ function showGeneralBox() { //{{{
 	html = "<table class=nobreak>"+
 		"<input id=general_setup type=hidden value=1>"+
 		"<tr><td colspan=2 style='text-align: center'>Since now"+
-
 		"<tr><td>floor<td><select id=floor name=floor style='width: 6ch;'>";
-	for (let i = 0; i < floorsCount; i++) {
-		if (i === floor) {
+	for (let i = 0; i < state.floorsCount; i++) {
+		if (i === state.currentFloor) {
 			html += `<option value="${i}" selected>${i}</option>`;
 		} else {
 			html += `<option value="${i}">${i}</option>`;
 		}
 	}
 	html+=	"</select>"+
-		"<tr><td>floor z-origin <td><input id=floorZ0 type=number name=floorZ0 value="+floorsZ0[floor]+" disabled style='background-color: darkgrey; color: #333; width: 6ch;'>"+
-
-		"<tr><td>floor height <td><input id=default_floor_dimz type=number name=default_floor_dimz value="+floors_dimz[floor]+" style='width: 6ch;'+>"+
+		"<tr><td>floor z-origin <td><input id=floorZ0 type=number name=floorZ0 value="+state.floorsZ0[currentGeom.floor]+" disabled style='background-color: darkgrey; color: #333; width: 6ch;'>"+
+		"<tr><td>floor height <td><input id=default_floor_dimz type=number name=default_floor_dimz value="+state.floorsDimZ[currentGeom.floor]+" style='width: 6ch;'+>"+
 		"<tr><td><td><tr><td><td><tr><td><td><tr><td><td><tr><td><td><tr><td><td>"+
-		"<tr><td>door's width <td><input id=default_door_width type=number name=default_door_width value="+defaults.door_width+" style='width: 6ch;'>"+
-		"<tr><td>door's height <td><input id=default_door_dimz type=number name=default_door_dimz oninput='validateRightBoxInput(this)' value="+defaults.door_dimz+" style='width: 6ch;'>"+
-		"<tr><td>window's height <td><input id=default_window_dimz type=number name=default_window_dimz oninput='validateRightBoxInput(this)' value="+defaults.window_dimz+" style='width: 6ch;'>"+
-		"<tr><td>window's z-offset <td><input id=default_window_offsetz type=number name=default_window_offsetz oninput='validateRightBoxInput(this)' value="+defaults.window_offsetz+" style='width: 6ch;'>"+
+		"<tr><td>door's width <td><input id=default_door_width type=number name=default_door_width value="+state.defaults.doorWidth+" style='width: 6ch;'>"+
+		"<tr><td>door's height <td><input id=default_door_dimz type=number name=default_door_dimz oninput='validateRightBoxInput(this)' value="+state.defaults.doorDimZ+" style='width: 6ch;'>"+
+		"<tr><td>window's height <td><input id=default_window_dimz type=number name=default_window_dimz oninput='validateRightBoxInput(this)' value="+state.defaults.windowDimZ+" style='width: 6ch;'>"+
+		"<tr><td>window's z-offset <td><input id=default_window_offsetz type=number name=default_window_offsetz oninput='validateRightBoxInput(this)' value="+state.defaults.windowOffsetZ+" style='width: 6ch;'>"+
 		"</table><br>"+
 		"<table class=nobreak>"+
 		"<withHelp>?<help>door's height cannot be higher than floor height<br><hr> window's height+z-offset cannot be higher than floor height</help></withHelp>"+
 		"<tr><td colspan=2 style='text-align: center'>utils"+
 		"<tr><td colspan=2><button id=btn_add_floor class=blink>Add floor</button>"+ 
-		"<tr><td colspan=2><button id=btn_copy_to_floor class=blink>copy</button> floor "+floor+" to floor <input id=copy_to_floor type=text value="+Object.keys(floors_dimz).length+" disabled style='background-color: darkgrey; color: #333; width: 3ch;'>";
-		
-
-		if (floorsCount == floor +1)
+		"<tr><td colspan=2><button id=btn_copy_to_floor class=blink>copy</button> floor "+state.currentFloor+" to floor <input id=copy_to_floor type=text value="+Object.keys(state.floorsDimZ).length+" disabled style='background-color: darkgrey; color: #333; width: 3ch;'>";
+		if (state.floorsCount == state.currentFloor +1)
 		{
 			html+=	"<tr><td colspan=2><button id=btn_delete_floor class=blink>Delete floor</button>";
 		}
-
 		html+=	"</table>";
-
 	rightBoxShow(html);
 }
 //}}}
@@ -2452,7 +2250,9 @@ function showHelpBox() {//{{{
 	rightBoxShow(
 		"<table class=nobreak>"+
 		"<tr><td><letter>letter</letter> + <letter>leftMouse</letter><td> create element"+
-		"<tr><td><letter>rightMouse</letter><td> element properties"+
+		"<tr><td><letter>rightMouse</letter><td> click element properties"+
+		"<tr><td><letter>rightMouse</letter><td> click on empty and drag shift objects"+
+		"<tr><td><letter>ctrl</letter> + <letter>rightMouse</letter><td> add/delete from selection"+
 		"<tr><td>hold <letter>ctrl</letter> <td> disable snapping"+ 
 		"<tr><td><letter>v</letter>	<td> 2D/3D views"+ 
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
@@ -2469,44 +2269,70 @@ function showHelpBox() {//{{{
 //}}}
 function propsXYZ() {//{{{
 	sty=" style='width: 40px' ";
-	if(cg.type=='evacuee') { 
-		return "X <input id=alter-px value="+cg.polypoints[0][0]+ sty+"><br>"+
-		"Y <input id=alter-py value="+cg.polypoints[0][1]+ sty+"><br>";
+	if(currentGeom.type=='evacuee') { 
+		return "<br>X <input id=alter-px value="+currentGeom.polypoints[0][0]+ sty+"><br>"+
+		"Y <input id=alter-py value="+currentGeom.polypoints[0][1]+ sty+"><br>";
 	} else{
-		const x_min = cg.polypoints[0][0];
-		const x_max = cg.polypoints[1][0];
-		const y_min = cg.polypoints[0][1];
-		const y_max = cg.polypoints[2][1];
 		var html = "<div>points:<div>"+
-		"<label>x-min<input id=alter-x-min type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+x_min+"'></label>"+
-		"<label>x-max<input id=alter-x-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+x_max+"'></label></div>"+
-		"<div>Width: <span id=alter-width>"+(x_max-x_min)+"</span></div>"+
-		"<div><label>y-min<input id=alter-y-min type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+y_min+"'></label>"+
-		"<label>y-max<input id=alter-y-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+y_max+"'></label></div>"+
-		"<div>Length: <span id=alter-length>"+(y_max-y_min)+"</span></div>"+
+		"<label>x-min<input id=alter-x-min type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.minx+"'></label>"+
+		"<label>x-max<input id=alter-x-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxx+"'></label></div>"+
+		"<div>Width: <span id=alter-width>"+(currentGeom.maxx-currentGeom.minx)+"</span></div>"+
+		"<div><label>y-min<input id=alter-y-min type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.miny+"'></label>"+
+		"<label>y-max<input id=alter-y-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxy+"'></label></div>"+
+		"<div>Length: <span id=alter-length>"+(currentGeom.maxy-currentGeom.miny)+"</span></div>"+
 		"</div>";
-		if (cg.letter == 'ku' || cg.letter == "kd")
+		if (currentGeom.letter == LETTERS.TELEPORT_UP || currentGeom.letter == LETTERS.TELEPORT_DOWN)
 			return html;
 		else{
-			html += "<div><label>z-min:<input id=alter-z0 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+cg.z[0]+"'></label>"+
-			"<label>z-max:<input id=alter-z1 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+cg.z[1]+"'></label></div>"+
-			"<div>Height: <span id=alter-height>"+(cg.z[1]-cg.z[0])+"</span></div>";
+			html += "<div><label>z-min:<input id=alter-z0 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z0+"'></label>"+
+			"<label>z-max:<input id=alter-z1 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z1+"'></label></div>"+
+			"<div>Height: <span id=alter-height>"+(currentGeom.z.z1-currentGeom.z.z0)+"</span></div>";
 		}
 		return html;
 	}
 }
 //}}}
+function selectedMoveBox(selectedIds){
+	const idsNames = Array.from(selectedIds).join('<br>');
+	rightBoxShow(
+		"<input id=selectedIds type='hidden' value='"+idsNames+"'>"+
+		"<div>objects shift:<div>"+
+		"<label>x<input id=x_shift type=number style='width: 8ch;'></label>"+
+		"<div><label>y<input id=y_shift type=number style='width: 8ch;'></label>"+
+		"<table style='table-layout: auto; width: auto; border-collapse: collapse;''>"+
+		"</table>"+
+		"<br><button id=btn_shift>SHIFT OBJECTS</button>"+
+		"<center><red>"+idsNames+"</red>"+
+		"", 0
+	);
+}
+function shiftObjects(){
+	const x_shift = Number(document.getElementById("x_shift").value);
+	const y_shift = Number(document.getElementById("y_shift").value);	
+	const selectedIds = document.getElementById("selectedIds").value.split('<br>').map(id => id.trim());
+	selectedIds.forEach(id => {
+		const obj = dbGet({'name': id});
+		if (obj.type === 'vroom') {
+			return; // skip shifting for vrooms
+		}
+		obj.polypoints.forEach(point => {
+			point[0] += x_shift;
+			point[1] += y_shift;
+		});
+		currentGeom = obj;
+		cgUpdate();
+		cgUpdateSvg();
+	});
+}
 function showCgPropsBox() {//{{{
-
-	if(cg.letter==undefined)					 { return; }   // mouse leaving right boxes
-	if(db({'name':cg.name}).get()[0]==undefined) { return; }   // clicking right boxes while new element is very infant
+	if(currentGeom.letter==undefined)					 { return; }   // mouse leaving right boxes
+	if(dbGet({'name':currentGeom.name})==undefined) { return; }   // clicking right boxes while new element is very infant
 	if($("#uimg_remove").length)				 { return; }   // return if underlay menu
 	showBuildingLabels(1);
-	getFloorExits();
-	activeLetter=cg.letter;
+	state.activeLetter=currentGeom.letter;
 	rightBoxShow(
 	    "<input id=geom_properties type=hidden value=1>"+
-	    "<center><red>&nbsp; "+cg.name+" &nbsp; "+gg[cg.letter]['x']+"</red>"+
+	    "<center><red>&nbsp; "+currentGeom.name+" &nbsp; "+state.gg[currentGeom.letter]['x']+"</red>"+
 		propsXYZ()+
 		"<div id='warning' style='width:200px; background: #600; color: #fff;'></div>"+
 		"<table style='table-layout: auto; width: auto; border-collapse: collapse;''>"+
@@ -2523,105 +2349,98 @@ function showCgPropsBox() {//{{{
 //}}}
 
 function saveRightBoxGeneral() {//{{{
-	defaults.door_dimz=Number($("#default_door_dimz").val());
-	defaults.door_width=Number($("#default_door_width").val());
-	floors_dimz[floor]=Number($("#default_floor_dimz").val());
-	defaults.window_dimz=Number($("#default_window_dimz").val());
-	defaults.window_offsetz=Number($("#default_window_offsetz").val());
-	// the if line below should be after floors_dimz[floor]=Number($("#default_floor_dimz").val());
-	// so that it assigns the correct value to the floors_dimz[floor] variable before changing floor
-	if (floor != $("#floor").val()) { changeFloor(Number($("#floor").val())); }
+	state.defaults.doorDimZ=Number($("#default_door_dimz").val());
+	state.defaults.doorWidth=Number($("#default_door_width").val());
+	state.floorsDimZ[state.currentFloor]=Number($("#default_floor_dimz").val());
+	state.defaults.windowDimZ=Number($("#default_window_dimz").val());
+	state.defaults.windowOffsetZ=Number($("#default_window_offsetz").val());
+	// the if line below should be after state.floorsDimZ[floor]=Number($("#default_floor_dimz").val());
+	// so that it assigns the correct value to the state.floorsDimZ[floor] variable before changing floor
+	if (state.currentFloor != $("#floor").val()) { changeFloor(Number($("#floor").val())); }
 	legend();
 }
 //}}}
 function validateForm() {//{{{
-	if(!cg.evacuees_density.match(/^auto$|^\d*\.?\d*$/)) { amsg({'err':1, 'msg': "Examples of valid density values:<br>auto<br>0.12"}); }
-	if($.isNumeric($("#alter-evacuees-density").val())) { cg.evacuees_density=Number($("#alter-evacuees-density").val()); } 
+	if(!currentGeom.evacueesDensity.match(/^auto$|^\d*\.?\d*$/)) { amsg({'err':1, 'msg': "Examples of valid density values:<br>auto<br>0.12"}); }
+	if($.isNumeric($("#alter-evacuees-density").val())) { currentGeom.evacueesDensity=Number($("#alter-evacuees-density").val()); } 
 }
 //}}}
 function saveRightBoxCgProps() {//{{{
-	if(cg.type=='evacuee') {
-		cg.polypoints=[[Number($("#alter-px").val()), Number($("#alter-py").val())]];
-		cg.z=[50,50];
-		$("#"+cg.name).attr('cx', cg.polypoints[0][0]).attr('cy', cg.polypoints[0][1]);   
+	if(currentGeom.type=='evacuee') {
+		currentGeom.polypoints=[[Number($("#alter-px").val()), Number($("#alter-py").val())]];
+		currentGeom.z.z0=50
+		currentGeom.z.z1=50
+		$("#"+currentGeom.name).attr('cx', currentGeom.polypoints[0][0]).attr('cy', currentGeom.polypoints[0][1]);   
 		cgUpdateSvg();
-		cgDb(undoRegister=0);
+		cgUpdate();
 	} else {
 		let z_has_changed = false;
-		cg.polypoints=[];
+		currentGeom.polypoints=[];
 		const x_min = Number($("#alter-x-min").val());
 		const x_max = Number($("#alter-x-max").val());
 		const y_min = Number($("#alter-y-min").val());
 		const y_max = Number($("#alter-y-max").val());
-		cg.polypoints.push([x_min, y_min]);
-		cg.polypoints.push([x_max, y_min]);
-		cg.polypoints.push([x_max, y_max]);
-		cg.polypoints.push([x_min, y_max]);
-		cg.evacuees_density=$("#alter-evacuees-density").val();
-		cg.exit_weight=$("#floor_exits_weights_"+cg.name).val();
-		if (cg.type == 'room'){
-			cg.room_exits_weights = getRoomExitWeight(cg.name);
+		currentGeom.polypoints.push([x_min, y_min]);
+		currentGeom.polypoints.push([x_max, y_min]);
+		currentGeom.polypoints.push([x_max, y_max]);
+		currentGeom.polypoints.push([x_min, y_max]);
+		currentGeom.evacueesDensity=$("#alter-evacuees-density").val();
+		currentGeom.exitWeight=$("#floor_exits_weights_"+currentGeom.name).val();
+		if (currentGeom.type == 'room'){
+			currentGeom.roomExitsWeights = getRoomExitWeight(currentGeom.name);
 		}
-		cg.mvent_throughput=parseFloat($("#alter-mvent-throughput").val());
-		cg.flow_direction=$("#alter-flow-direction").val();
-		cg.air_grille_surface=$("#alter-air-grille-surface").val(); 
+		currentGeom.mventThroughput=parseFloat($("#alter-mvent-throughput").val());
+		currentGeom.flowDirection=$("#alter-flow-direction").val();
+		currentGeom.airGrilleSurface=$("#alter-air-grille-surface").val(); 
 		validateForm();
 		var z0=Number($("#alter-z0").val());
 		var z1=Number($("#alter-z1").val());
 		if (!isNaN(z0) && !isNaN(z1)){
-			if (cg.z[0] != z0 || cg.z[1] != z1)
+			if (currentGeom.z.z0 != z0 || currentGeom.z.z1 != z1)
 			{
 				z_has_changed = true;
 				if (z1 < z0)
 					z1=z0;
-				cg.z=[z0, z1];
+				currentGeom.z.z0=z0
+				currentGeom.z.z1=z1
 			}
 		}
-
-		if(cg.floor != floor) { return; } // Just to be sure, there were (hopefully fixed) issues
+		if(currentGeom.floor != state.currentFloor) { return; } // Just to be sure, there were (hopefully fixed) issues
 		cgUpdateSvg();
-		cgDb(undoRegister=0);
+		cgUpdate();
 		updateSnapLines();
 		// property of hall or stair object was changed so we have to check if 
 		// we need to create virtual hall/stair additionaly
-		if(cg.letter == 's' || cg.letter=='a')
+		if(currentGeom.letter == 's' || currentGeom.letter=='a')
 			if (z_has_changed){
-				cgDbVirtualObj(cg);
-				cgSvgVirtualObj(cg);
+				createAndDrawVirtualObjs(currentGeom);
 			}
-
 	}
-
 } 
-
-function getRoomExitWeight() {//{{{
-	adjecentDoorsAndHoles = rooms_and_adjecent_doors_and_holes[cg.name];
-	adjecentDoorsAndHolesWeights={};
+function getRoomExitWeight(roomName) {//{{{
+	let adjecentDoorsAndHolesWeights={};
+	adjecentDoorsAndHoles = state.roomsAndAdjDoorsAndHoles[roomName];
 	adjecentDoorsAndHoles.forEach(function(obj){
-		var obj_name = obj[1];
-		adjecentDoorsAndHolesWeights[obj[0].idx] = $("#room_exits_weights_"+cg.name+"_"+obj_name).val();
+		adjecentDoorsAndHolesWeights[obj.idx] = $("#roomExitsWeights_"+roomName+"_"+obj.name).val();
 	});
 	return adjecentDoorsAndHolesWeights;
 }
-
 //}}}
 function saveRightBox() {//{{{
 	if ($("#general_setup").val() != null)   { saveRightBoxGeneral(); }
 	if ($("#geom_properties").val() != null) { saveRightBoxCgProps(); }
-	
 }
 //}}}
-
 function enumVertices() {//{{{
 	var mm=d3.select("#buildingLabels");
-	if(['room', 'obst', 'mvent', 'fire', 'vvent'].includes(cg.type)) { 
-		_.each(cg.polypoints, function(p) { 
+	if(['room', 'obst', 'mvent', 'fire', 'vvent'].includes(currentGeom.type)) { 
+		_.each(currentGeom.polypoints, function(p) { 
 			mm.append("text").attr("class","building-vertex").attr("x",p[0]+5).attr("y",p[1]-15).text(p[0]+", "+p[1]);
 		});
 	}
-	if(['evacuee', 'door', 'hole'].includes(cg.type)) { 
-        if (cg.polypoints.length>0) { 
-            p=cg.polypoints[0];
+	if(['evacuee', 'door', 'hole'].includes(currentGeom.type)) { 
+        if (currentGeom.polypoints.length>0) { 
+            p=currentGeom.polypoints[0];
             mm.append("text").attr("class","building-vertex").attr("x",p[0]+50).attr("y",p[1]+80).text(p[0]+", "+p[1]);
         }
 	}
@@ -2634,14 +2453,14 @@ function showBuildingLabels(aggressive=0, elems=[]) {//{{{
 		enumVertices();
 		if(elems.length>0) {
 			_.each(elems, function(vv) { 
-				_.each(db({'name': vv}).get(), function(v) { 
-					if (['d', 'q', 'e'].includes(activeLetter)) { x=v.minx; y=v.miny-30 } else { x=v.minx+15; y=v.miny+50; }
+				_.each(dbWhere({'name': vv}), function(v) { 
+					if (['d', 'q', 'e'].includes(state.activeLetter)) { x=v.minx; y=v.miny-30 } else { x=v.minx+15; y=v.miny+50; }
 					mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
 				});
 			});
 		} else {
-			_.each(db({'floor': floor, 'letter': activeLetter}).get(), function(v) { 
-				if (['d', 'q', 'e'].includes(activeLetter)) { x=v.minx; y=v.miny-30 } else { x=v.minx+15; y=v.miny+50; }
+			_.each(dbWhere({'floor': state.currentFloor, 'letter': state.activeLetter}), function(v) { 
+				if (['d', 'q', 'e'].includes(state.activeLetter)) { x=v.minx; y=v.miny-30 } else { x=v.minx+15; y=v.miny+50; }
 				mm.append("text").attr("class","building-label").attr("x",x).attr("y",y).text(v.name);
 			});
 		}
@@ -2650,12 +2469,12 @@ function showBuildingLabels(aggressive=0, elems=[]) {//{{{
 //}}}
 function verifyIntersections() {//{{{
 	var pp=PolygonTools.polygon;
-	for(var f=0; f<floorsCount; f++) {
-		_.each(db({'floor': f, 'type': 'room'}).get(), function(p1) { 
-			_.each(db({'floor': f, 'type': 'room'}).get(), function(p2) { 
+	for(var f=0; f<state.floorsCount; f++) {
+		_.each(dbWhere({'floor': f, 'type': 'room'}), function(p1) { 
+			_.each(dbWhere({'floor': f, 'type': 'room'}), function(p2) { 
 				if(p1.name!=p2.name && pp.intersection(p1.polypoints,p2.polypoints).length>0) { 
 					cgSelect([p1.name, p2.name]);
-					activeLetter=p1.letter;
+					state.activeLetter=p1.letter;
 					bulkProps();
 					amsg({'err':1, 'msg':"Overlaping rooms:<br>"+p1.name+"<br>"+p2.name}); 
 				}
@@ -2671,22 +2490,21 @@ function sceneBuilder() { //{{{
 	d3.select('body').append('legend0');
 	d3.select('body').append('legend2');
 	d3.select('view2d').append('legend1');
-	d3.select('view2d').append("div").attr("id", "apainter-texts-floor").html("floor "+floor+"/"+floorsCount);
+	d3.select('view2d').append("div").attr("id", "apainter-texts-floor").html("floor "+(state.currentFloor + 1)+"/"+state.floorsCount);
 	d3.select('view2d').append("div").attr("id", "apainter-texts-keys").html("n: next floor");
 	d3.select('view2d').append("div").attr("id", "apainter-texts-pos");
 	make_legend0("apainter");
 	make_legend2("apainter");
-	svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", win[0]).attr("height", win[1]);
-	svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
+	state.svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", state.win.width).attr("height", state.win.height);
+	state.svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
 	axes();
-	building = svg.append("g").attr("id", "building");
-	buildingLabels=svg.append("g").attr("id", "buildingLabels");
-	building.append("g").attr("id", "floor0").attr("class", "floor").attr('fill-opacity',0.4);
-	snapLinesSvg = svg.append("g").attr("id", "snapLinesSvg");
-	svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
+	state.building = state.svg.append("g").attr("id", "building");
+	state.buildingLabels=state.svg.append("g").attr("id", "buildingLabels");
+	state.building.append("g").attr("id", "floor0").attr("class", "floor").attr('fill-opacity',0.4);
+	state.snapLinesSvg = state.svg.append("g").attr("id", "snapLinesSvg");
+	state.svg.append('circle').attr('id', 'snapper').attr('cx', 100).attr('cy', 100).attr('r',30).attr('fill-opacity', 0).attr('fill', "#ff8800");
 	legend();
 	d3.select('view2d').append('right-menu-box');
 	zoomInit();
 }
-
 //}}}

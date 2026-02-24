@@ -189,7 +189,7 @@ function launch_draft() {//{{{
 //}}}
 function isEmpty(obj) {//{{{
 	// Check if dict empty
-	return Object.keys(obj).length === 0;
+	return obj === null || Object.keys(obj).length === 0;
 }
 //}}}
 dd = function() { //{{{
@@ -212,7 +212,6 @@ $(function() {
 	scenario_changer();
 	launch_draft();
 	launch_simulation();
-	if(navigator.userAgent.indexOf("Chrome")==-1) { alert("Aamks is designed for Google Chrome. Aamks may work, but is not supported on other browsers"); }
 });
 
 
