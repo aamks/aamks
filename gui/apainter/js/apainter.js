@@ -32,7 +32,7 @@ var external_doors = [];
 var teleports = [];
 var rooms_and_adjecent_doors_and_holes = {};
 var virtual_obj_parents = {};
-var obstAndCompartmentMarginWidth=26;
+var obstAndCompartmentMarginWidth=30;
 //}}}
 function debug() {//{{{
 	console.clear();
@@ -286,7 +286,7 @@ function cgDb(undoRegister=1) { //{{{
 	cad_json=generateObjectCadJson(cg);
 
 	b=getBbox();
-	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "flow_direction":cg.flow_direction, "air_grille_surface":cg.air_grille_surface, "exit_weight":cg.exit_weight,"room_exits_weights":cg.room_exits_weights, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
+	db.insert({"name": cg.name, "idx": cg.idx, "cad_json": cad_json, "letter": cg.letter, "type": cg.type, "lines": lines, "polypoints": cg.polypoints, "z": cg.z, "floor": cg.floor, "mvent_throughput": cg.mvent_throughput, "flow_direction":cg.flow_direction, "vent_connection":cg.vent_connection, "air_grille_surface":cg.air_grille_surface, "exit_weight":cg.exit_weight,"room_exits_weights":cg.room_exits_weights, "evacuees_density": cg.evacuees_density, "minx": b.min.x, "miny": b.min.y, "maxx": b.max.x, "maxy": b.max.y, "teleport_from":cg.teleport_from, "teleport_to":cg.teleport_to});
 
 	if(undoRegister==1) { undoBufferRegister('insert'); }
 
@@ -364,7 +364,11 @@ function generateObjectCadJson(obj){
 			cad_json["flow_direction"]=obj.flow_direction;
 		if (obj.air_grille_surface != null)
 			cad_json["air_grille_surface"]=obj.air_grille_surface;
-	}else if(obj.type=='floor_teleport') {
+	}else if(obj.type=='vvent') {
+		if (obj.vent_connection != null)
+			cad_json["vent_connection"]=obj.vent_connection;
+	}
+	else if(obj.type=='floor_teleport') {
 		cad_json["teleport_from"]=obj.teleport_from;
 		cad_json["teleport_to"]=obj.teleport_to;
 		if (obj.exit_weight != null)
@@ -733,6 +737,7 @@ function cgInit() {//{{{
 	cg.mvent_throughput=1.5;
 	cg.air_grille_surface = null;
 	cg.flow_direction = null;
+	cg.vent_connection = null;
 	cg.exit_weight = 10;
 	cg.room_exits_weights = {};
 	cg.z=[floorsZ0[floor]];
@@ -818,7 +823,7 @@ function addDefaultCgProps(){
 		r1 = zones[0];
 		r2 = zones[1];
 		if (r1==null && r2==null){
-			amsg({'err':1, 'msg':"Coorect mvent size and localization because it intersects not properly"}); 
+			amsg({'err':1, 'msg':"correct mvent size and localization because it intersects not properly"}); 
 		}
 		else
 		{
@@ -840,6 +845,22 @@ function addDefaultCgProps(){
 			}
 		}
 	} 
+	if(cg.type=='vvent') {
+		var zones = getConnectedZones(cg);
+		r1 = zones[0];
+		r2 = zones[1];
+		if (r1==null && r2==null){
+			amsg({'err':1, 'msg':"correct vvent size and localization because it intersects not properly"}); 
+		}
+		else
+		{
+			if(cg.vent_connection == null)
+			{
+				cg.vent_connection=`${r1}, ${r2}`;
+			}
+		}
+	} 
+	
 }
 function checkNegativeCords(){
 	var negative = false
@@ -1418,6 +1439,11 @@ function cgMake(floor,letter,record) { //{{{
 	if('mvent_throughput' in record) { cg.mvent_throughput=record.mvent_throughput; }
 	if('flow_direction' in record)   { cg.flow_direction=record.flow_direction; }
 	else { cg.flow_direction=undefined;}
+
+	if('vent_connection' in record)   { cg.vent_connection=record.vent_connection; }
+	else { cg.vent_connection=undefined;}
+
+	
 	if('air_grille_surface' in record)   { cg.air_grille_surface=record.air_grille_surface; }
 	else { cg.air_grille_surface=undefined;}
 	if('teleport_from' in record)	 { cg.teleport_from=record.teleport_from; }
@@ -1436,12 +1462,14 @@ function ajaxSaveCadJson(json_data) { //{{{
 }
 //}}}
 function getSumDimZLower(f) { //{{{
-	let z_sum = 0;
-	_.each(floors_dimz, function(floor_dimz,floor) { 
-		if (floor < f)
-			z_sum += floors_dimz[floor];
-	});
-	return z_sum;
+    f = parseInt(f, 10); // zamiana string → int
+
+    let z_sum = 0;
+    _.each(floors_dimz, function (floor_dimz, floor) {
+        if (parseInt(floor, 10) < f)
+            z_sum += floors_dimz[floor];
+    });
+    return z_sum;
 }
 //}}}
 function setFloorsZ(json) { //{{{
@@ -1752,6 +1780,7 @@ function floorCopy() {	//{{{
 		cg.room_exits_weights={};
 		cg.air_grille_surface = null;
 		cg.flow_direction = null;
+		cg.vent_connection = null;
 		cg.floor=c2f;
 		cg.idx=cgID;
 		cg.name=cg.letter + cgID;
@@ -1882,7 +1911,7 @@ function mventProps() {//{{{
 		r1 = zones[0];
 		r2 = zones[1];
 		if (r1==null && r2==null){
-			pp += "<tr><td>coorect mvent size and localization because</td><td> it intersects not properly</td></tr>";
+			pp += "<tr><td>correct mvent size and localization because</td><td> it intersects not properly</td></tr>";
 		}
 		else
 		{
@@ -1926,16 +1955,26 @@ function vventProps() {//{{{
 		var zones = getConnectedZones(cg);
 
 		if (zones.length === 1) {
-    		pp += "<tr><td>coorect vvent size and localization because</td><td> it intersects not properly</td></tr>";
+    		pp += "<tr><td>correct vvent size and localization because</td><td> it intersects not properly</td></tr>";
 		}
 		r1 = zones[0];
 		r2 = zones[1];
 		if (r1==null && r2==null){
-			pp += "<tr><td>coorect vvent size and localization because</td><td> it intersects not properly</td></tr>";
+			pp += "<tr><td>correct vvent size and localization because</td><td> it intersects not properly</td></tr>";
 		}
 		else
 		{
-			pp += "<tr><td colspan='2'>vvent "+cg.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
+			// pp += "<tr><td colspan='2'>vvent "+cg.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
+
+
+			pp += '<tr>';
+			pp += '  <td colspan="2" ' +
+			      'id="vvent"' +
+			      'data-r1="' + r1 + '" ' +
+			      'data-r2="' + r2 + '">';
+			pp += '    vvent ' + cg.name + ' is connecting: ' + r1 + ' and ' + r2;
+			pp += '  </td>';
+			pp += '</tr>';
 		}
 	} 
 	return pp;
@@ -2564,6 +2603,10 @@ function saveRightBoxCgProps() {//{{{
 		}
 		cg.mvent_throughput=parseFloat($("#alter-mvent-throughput").val());
 		cg.flow_direction=$("#alter-flow-direction").val();
+
+		const el = $("#vvent");
+		cg.vent_connection = el.data("r1") + ", " + el.data("r2");
+
 		cg.air_grille_surface=$("#alter-air-grille-surface").val(); 
 		validateForm();
 		var z0=Number($("#alter-z0").val());

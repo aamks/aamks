@@ -48,8 +48,8 @@ class Worker:
             self.working_dir=sys.argv[1] if len(sys.argv)>1 else "{}/workers/1/".format(os.environ['AAMKS_PROJECT'])
 
         # for local testing:
-        # os.environ['AAMKS_PROJECT'] = '/mnt/aamks_users/majster1020@wp.pl/test8/big2'
-        # self.working_dir = '/mnt/aamks_users/majster1020@wp.pl/test8/big2/workers/9'
+        # os.environ['AAMKS_PROJECT'] = '/mnt/aamks_users/rrrrr/sss/66666'
+        # self.working_dir = '/mnt/aamks_users/ttttt/Mariusz/55555/workers/462'
 
         self.project_dir = self.working_dir.split("/workers/")[0]
         self.sim_id = int(self.working_dir.split("/workers/")[1])
@@ -577,7 +577,7 @@ class Worker:
 
     def prepare_simulations(self):
         self.obstacles = json.loads(self.s.query('SELECT * FROM obstacles')[0]['json'], object_pairs_hook=OrderedDict)
-        floor_numers = sorted(self.obstacles['obstacles'].keys())
+        floor_numers = sorted(self.obstacles['obstacles'].keys(), key=int)
         self.evac_id = 1
         for floor in floor_numers:
             eenv = None
@@ -775,7 +775,7 @@ class Worker:
                 if self.has_everyone_left_the_building():
                     self.get_rsets()
                     self.wlogger.info('Simulation ends due to successful evacuation: {}'.format(self.rsets))
-                    self.simulation_time = max(self.rsets)
+                    self.simulation_time = max(x for x in self.rsets if x is not None)
                     self.time_shift = 0
                     break
             else:
@@ -857,8 +857,13 @@ class Worker:
 
     def generate_new_pynavmesh(self, floor, floor_critical_rooms):
         figure_points = []
-        with open(os.path.join(self.working_dir, f'pynavmesh{floor.floor}.nav_first')) as first_pynavmesh:
+
+        first_path = os.path.join(self.working_dir, f'pynavmesh{floor.floor}.nav_first')
+        with open(first_path) as first_pynavmesh:
             lines = first_pynavmesh.readlines()
+
+        original_content = ''.join(lines)
+
         points = lines[0].split()
         x_list = points[::3]
         z_list = points[2::3]
@@ -870,49 +875,59 @@ class Worker:
         index = -1
 
         for poly in polygons:
-            index +=1
+            index += 1
             poly_sides_count = int(poly)
-            for i in range (poly_sides_count):
-                figure_points.append((float(x_list[int(figures_points[count])]), float(z_list[int(figures_points[count])])))
-                count+=1
-            x = []
-            for co in figure_points:
-                x.append([co[0], co[1]])
-            all_figures.append((index,x))
-            x = []
+            for i in range(poly_sides_count):
+                figure_points.append((
+                    float(x_list[int(figures_points[count])]),
+                    float(z_list[int(figures_points[count])])
+                ))
+                count += 1
+
+            x = [[co[0], co[1]] for co in figure_points]
+            all_figures.append((index, x))
             figure_points = []
 
         figures_points_after_removal = []
         polygons_after_removal = []
 
+        figures_points_copy = figures_points.copy()
+
         for id, coordinates in all_figures:
-            skip_outer1 = False
-            skip_outer2 = False
+            skip = False
             for floor_critical_room in floor_critical_rooms:
-                x_min = self.rooms[floor_critical_room]['x_min']/100
-                x_max = self.rooms[floor_critical_room]['x_max']/100
-                y_min = self.rooms[floor_critical_room]['y_min']/100
-                y_max = self.rooms[floor_critical_room]['y_max']/100
+                x_min = self.rooms[floor_critical_room]['x_min'] / 100
+                x_max = self.rooms[floor_critical_room]['x_max'] / 100
+                y_min = self.rooms[floor_critical_room]['y_min'] / 100
+                y_max = self.rooms[floor_critical_room]['y_max'] / 100
+
                 for x, y in coordinates:
-                    if x_min < x and x_max > x and y_min < y and y_max > y:
-                        figures_points = figures_points[int(polygons[id]):]
-                        skip_outer1 = True
-                        skip_outer2 = True
+                    if x_min < x < x_max and y_min < y < y_max:
+                        figures_points_copy = figures_points_copy[int(polygons[id]):]
+                        skip = True
                         break
-                if skip_outer1:
+                if skip:
                     break
-            if skip_outer2:
+
+            if skip:
                 continue
+
             polygons_after_removal.append(polygons[id])
-            elements_to_move = figures_points[:int(polygons[id])]
-            figures_points = figures_points[int(polygons[id]):]
+            elements_to_move = figures_points_copy[:int(polygons[id])]
+            figures_points_copy = figures_points_copy[int(polygons[id]):]
             figures_points_after_removal.extend(elements_to_move)
 
         new_navmesh_path = os.path.join(self.working_dir, f'pynavmesh{floor.floor}.nav')
-        with open(new_navmesh_path, 'w') as file:
-            file.write(' '.join(points) + '\n')
-            file.write(' '.join(figures_points_after_removal) + '\n')
-            file.write(' '.join(polygons_after_removal))
+
+        if len(figures_points_after_removal) == 0 or len(polygons_after_removal) == 0:
+            with open(new_navmesh_path, 'w') as file:
+                file.write(original_content)
+        else:
+            with open(new_navmesh_path, 'w') as file:
+                file.write(' '.join(points) + '\n')
+                file.write(' '.join(figures_points_after_removal) + '\n')
+                file.write(' '.join(polygons_after_removal))
+
         vert, polygs = read_from_text(new_navmesh_path)
         floor.nav.navmesh = Pynavmesh(vert, polygs)
 
@@ -1027,9 +1042,9 @@ class Worker:
         '''
         if not e:
             self._animation_save()
-            LocalResultsCollector(self._get_meta(e)).psql_report()
+            LocalResultsCollector(self.working_dir,self._get_meta(e)).psql_report()
         else:
-            LocalResultsCollector(self._get_meta(e)).psql_error()
+            LocalResultsCollector(self.working_dir,self._get_meta(e)).psql_error()
         
     def _get_meta(self, e=False):
         report = OrderedDict()
@@ -1218,15 +1233,22 @@ class Worker:
             return exc
 
 class LocalResultsCollector:
-    def __init__(self, report: OrderedDict):
+    def __init__(self, working_dir, report: OrderedDict):
         self.meta = report
         self.p = Psql()
+        self.working_dir = working_dir
 
     def psql_report(self):
         fed = json.dumps(self.meta['psql']['fed'])
         fed_symbolic = json.dumps(self.meta['psql']['fed_symbolic'])
         rset = json.dumps(self.meta['psql']['rset'])
         dfeds = [pd.read_json(StringIO(i)) for i in self.meta['psql']['dfed'].values()]
+        # uncomment below when you want to save dfeds to a heat map 
+        # separately for individual simulations so that you can select the data later
+        # path = os.path.join(self.working_dir, "dfeds.json")
+        # with open(path, "w", encoding="utf-8") as f:
+        #     json.dump([df.to_dict(orient="records") for df in dfeds], f)
+
 
         # fed_growth_cells table
         def check_for_data(x, floor):

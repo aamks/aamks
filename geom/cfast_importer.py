@@ -2,6 +2,7 @@
 # {{{
 import json
 import os
+import random
 import sys
 from collections import OrderedDict
 
@@ -27,6 +28,7 @@ class CFASTimporter():
         self.geomsMap=Json().read("{}/inc.json".format(os.environ['AAMKS_PATH']))['aamksGeomsMap']
         self.doors_width=32
         self.walls_width=4
+        self.skip_door = False
         self.run()
 # }}}
     def run(self):
@@ -41,9 +43,11 @@ class CFASTimporter():
         self._find_intersections_within_floor()
         self._find_mvent_intersections()
         self._mvent_is_vertical()
+        
         self._get_faces()
         self._hvents_per_room()
         self._find_intersections_between_floors()
+        self._vent_is_vertical()
         self._vvents_per_room()
         self._add_names_to_vents_from_to()
         self._recalculate_vents_from_to()
@@ -167,13 +171,16 @@ class CFASTimporter():
                     record=self._prepare_geom_record(v)
                     if record != False:
                         data.append(record)
-        self.s_geom.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, flow_direction, air_grille_surface, evacuees_density, terminal_door, points, origin_room, orig_type, has_door, teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
+        self.s_geom.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, flow_direction,vent_connection, air_grille_surface, evacuees_density, terminal_door, points, origin_room, orig_type, has_door, teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
         self.s_geom.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
     def _prepare_attrs(self,v):# {{{
         aa={}
         aa['mvent_throughput']=v['mvent_throughput']    if 'mvent_throughput' in v else None
         aa['flow_direction']=v['flow_direction']    if 'flow_direction' in v else None
+
+        aa['vent_connection']=v['vent_connection']    if 'vent_connection' in v else None    
+
         aa['air_grille_surface']=v['air_grille_surface']    if 'air_grille_surface' in v else None
 
         try: 
@@ -238,6 +245,12 @@ class CFASTimporter():
         
         # HVENT  
         elif v['type'] in ('DOOR', 'DCLOSER', 'DELECTR', 'HOLE', 'WIN'): 
+            # uncomment below if you want to if you want to exclude the exit door
+            # if v['idx'] == 3:
+            #     return False
+            # elif v['type'] in ('DOOR',) and self.skip_door == False and random.randint(1, 100) <= 10:
+            #     self.skip_door = True
+            #     return False
             v['bbox']['width']=max(v['bbox']['width'],self.doors_width)
             v['bbox']['depth']=max(v['bbox']['depth'],self.doors_width)
             type_pri='HVENT'
@@ -251,8 +264,8 @@ class CFASTimporter():
 
         global_type_id=v['idx']
         name='{}{}'.format(self.geomsMap[v['type']], global_type_id)
-        #self.s_geom.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name  , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               ,    flow_direction               ,             air_grille_surface,        evacuees_density        , terminal_door , points                  , origin_room , orig_type , has_door,   teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
-        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None, None       ,None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] ,  v['attrs']['flow_direction'] ,  v['attrs']['air_grille_surface'] ,  v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights)
+        #self.s_geom.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name  , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               ,    flow_direction           ,          vent_connection,     air_grille_surface,        evacuees_density        , terminal_door , points                  , origin_room , orig_type , has_door,   teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
+        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None, None       ,None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] ,  v['attrs']['flow_direction'] ,   v['attrs']['vent_connection'] ,  v['attrs']['air_grille_surface'] ,  v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights)
 
 
 # }}}
@@ -272,7 +285,11 @@ class CFASTimporter():
         '''
 
         self.outside_compa=self.s_geom.query("SELECT max(global_type_id) FROM aamks_geom WHERE type_pri='COMPA'")[0]['max(global_type_id)']+1
-        self.floors=        [z['floor'] for z in self.s_geom.query("SELECT DISTINCT floor FROM aamks_geom ORDER BY floor")]
+        self.floors = sorted(
+            [z['floor'] for z in self.s_geom.query("SELECT DISTINCT floor FROM aamks_geom")],
+            key=int
+        )
+        
         self.all_doors=     [z['name'] for z in self.s_geom.query("SELECT name FROM aamks_geom WHERE type_tri='DOOR' ORDER BY name") ]
 
         self.s_geom.query("UPDATE aamks_geom SET is_vertical=0, cfast_width=width WHERE type_pri='HVENT' AND width > depth")
@@ -488,7 +505,7 @@ class CFASTimporter():
 
         update=[]
         for floor,vents_dict in self.aamks_polies['HVENT'].items():
-            all_hvents=[z['global_type_id'] for z in self.s_geom.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='HVENT' AND floor=? ORDER BY name", floor) ]
+            all_hvents=[z['global_type_id'] for z in self.s_geom.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='HVENT' AND floor=? ORDER BY name", (floor,)) ]
             vc_intersections={key:[] for key in all_hvents }
             for vent_id,vent_poly in vents_dict.items():
                 for compa_id,compa_poly in self.aamks_polies['COMPA'][floor].items():
@@ -511,7 +528,7 @@ class CFASTimporter():
     def _find_intersections_within_rooms(self):# {{{
         update=[]
         for floor,rooms_dict in self.aamks_polies['COMPA'].items():
-            all_rooms={z['global_type_id']: z['name'].split('.')[0] for z in self.s_geom.query("SELECT name, global_type_id FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY name", floor)}
+            all_rooms={z['global_type_id']: z['name'].split('.')[0] for z in self.s_geom.query("SELECT name, global_type_id FROM aamks_geom WHERE type_pri='COMPA' AND floor=? ORDER BY name", (floor,))}
             vc_intersections={key:[] for key in all_rooms.keys() }
             for compa1_id,compa1_poly in rooms_dict.items():
                 for compa2_id,compa2_poly in self.aamks_polies['COMPA'][floor].items():
@@ -522,6 +539,11 @@ class CFASTimporter():
                         vc_intersections[compa1_id].append(f'{all_rooms[compa2_id]};{fraction_to:.3f};{fraction_from:.3f}')
             for room_id, v in vc_intersections.items():        
                 update.append((",".join(v), room_id))
+        # uncomment when there is a problem with adjecents
+        # update=[(None, 1)]
+        # update=[(1,)]
+        # update=[('r2;0.079;0.246', 1), ('r2;0.079;0.246', 1000001), ('a1;0.246;0.079', 2)]
+        # self.s_geom.executemany("UPDATE aamks_geom SET adjacents=NULL where global_type_id=? and type_pri='COMPA'", update)
         self.s_geom.executemany("UPDATE aamks_geom SET adjacents=? where global_type_id=? and type_pri='COMPA'", update)
 
 # }}}
@@ -541,29 +563,24 @@ class CFASTimporter():
         '''
         
         update=[]
-        for floor,vents_dict in self.aamks_polies['VVENT'].items():
-            all_vvents=[z['global_type_id'] for z in self.s_geom.query("SELECT global_type_id FROM aamks_geom WHERE type_pri='VVENT' AND floor=? ORDER BY name", floor) ]
-            vc_intersections={key:[] for key in all_vvents }
-            for vent_id,vent_poly in vents_dict.items():
-                two_floors=deepcopy(self.aamks_polies['COMPA'][floor])
-                try:
-                    two_floors.update(self.aamks_polies['COMPA'][str(int(floor)+1)])
-                except KeyError:
-                    pass
-                for compa_id,compa_poly in two_floors.items():
-                    if vent_poly.intersection(compa_poly).length > 100:
-                        vc_intersections[vent_id].append(compa_id)
-                del two_floors
+        all_vvents=self.s_geom.query("SELECT global_type_id, vent_connection FROM aamks_geom WHERE type_pri='VVENT'")
+        for vvent in all_vvents:
+            parts = vvent['vent_connection'].split(", ")
+            vent_1_comp_name = parts[0]
+            vent_2_comp_name = parts[1]
 
-            for vent_id,v in vc_intersections.items():
-                v=sorted(v)
-                if len(v) == 1:
-                    v.append(self.outside_compa)
-                if len(v) > 2 or len(v)<1:
-                    name=self.s_geom.query("SELECT name FROM aamks_geom WHERE type_pri='VVENT' AND global_type_id=?", (vent_id,))[0]['name']
-                    self.fatal('{}: vvent intersects no rooms or more than 2 rooms.'.format(name))
-                update.append((v[0], v[1], vent_id))
-        self.s_geom.executemany("UPDATE aamks_geom SET vent_to=?, vent_from=? where global_type_id=? and type_pri='VVENT'", update)
+            if vent_1_comp_name == 'OUTSIDE':
+                vent_1_comp_name_id = self.outside_compa
+            else:
+                vent_1_comp_name_id = self.s_geom.query("SELECT global_type_id FROM aamks_geom WHERE name='"+vent_1_comp_name+"'")[0]['global_type_id']
+            
+            if vent_2_comp_name == 'OUTSIDE':
+                vent_2_comp_name_id = self.outside_compa
+            else:
+                vent_2_comp_name_id = self.s_geom.query("SELECT global_type_id FROM aamks_geom WHERE name='"+vent_2_comp_name+"'")[0]['global_type_id']
+
+            update.append((vent_1_comp_name_id, vent_2_comp_name_id, vvent['global_type_id']))
+        self.s_geom.executemany("UPDATE aamks_geom SET vent_from=?, vent_to=? where global_type_id=? and type_pri='VVENT'", update)
 
 # }}}
     def _towers_slices(self):# {{{
@@ -586,10 +603,17 @@ class CFASTimporter():
                 towers[w['name']]=[]
                 current_floor=w['floor']
 
+                min_z = 0
+                for f in sorted(self.floors, key=int):
+                    height = self.raw_geometry[f]['FLOOR_DIM_Z']
+                    self.raw_geometry[f]['MIN_Z'] = min_z
+                    min_z += height
+
                 for floor in self.floors:
-                    for v in self.s_geom.query("SELECT min(z0) FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,)):
-                        if v['min(z0)'] < w['tower_z1'] and v['min(z0)'] >= w['tower_z0']:
-                            towers[w['name']].append(floor)
+                    # for v in self.s_geom.query("SELECT min(z0) FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,)):
+                    min_z0 = self.raw_geometry[floor]['MIN_Z']
+                    if min_z0 < w['tower_z1'] and min_z0 >= w['tower_z0']:
+                        towers[w['name']].append(floor)
                 towers[w['name']].remove(current_floor)
 
         self.towers_parents={}
@@ -683,6 +707,45 @@ class CFASTimporter():
         self.s_geom.executemany("UPDATE aamks_geom SET is_vertical=? where global_type_id=? and type_pri='MVENT'", update)
 
 # }}}  
+    def _vent_is_vertical(self):# {{{
+        ''' 
+        Normally, is_vertical context is x or y. For mvent the context is z.
+        '''
+
+        update=[]
+        all_vents=self.s_geom.query("SELECT global_type_id, vent_from, vent_to, x0, y0, width, depth FROM aamks_geom WHERE type_pri='VVENT'")
+        for vvent in all_vents:
+            vvent_x_min = vvent['x0']
+            vvent_x_max = vvent['x0'] + vvent['width']
+            vvent_y_min = vvent['y0']
+            vvent_y_max = vvent['y0'] + vvent['depth']
+            # by default we set vertical to true
+            vertical = True
+            for i in (vvent['vent_from'], vvent['vent_to']):
+                name = self._id2compa_name[i]
+                # then we check if mvent is inside any room on 
+                # the plan, it means that it is horizontal
+                # and then we check vertical to False
+                if name == 'OUTSIDE':
+                    continue
+                else:
+                    room = self.s_geom.query("SELECT x0, y0, width, depth FROM aamks_geom WHERE name='"+name+"'")[0]
+                    room_x_min = room['x0']
+                    room_x_max = room['x0'] + room['width']
+                    room_y_min = room['y0']
+                    room_y_max = room['y0'] + room['depth']
+                    if (vvent_x_min >= room_x_min and
+                        vvent_x_max <= room_x_max and
+                        vvent_y_min >= room_y_min and
+                        vvent_y_max <= room_y_max):
+                        vertical = False
+            if vertical == True:
+                update.append((1, vvent['global_type_id']))
+            else:
+                update.append((0, vvent['global_type_id']))
+        self.s_geom.executemany("UPDATE aamks_geom SET is_vertical=? where global_type_id=? and type_pri='VVENT'", update)
+
+
 
     # staircase entities are named like s1.1, s1.2, s2.1, s2.2 in order to produce navmesh on subsequent floors
     # CFAST, however, treats each staircas as one compartment called s1, s2 and so on without irrelevant floor info

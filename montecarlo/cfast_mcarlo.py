@@ -76,6 +76,8 @@ class CfastMcarlo():
     def _cfast_record(self, key, name=None):
         continue_flag = 0
         name = name if name is not None else key
+        if key not in self.samples:
+            return ""
         if type(self.samples[key]) == dict:
             record = ''
             for k, v in self.samples[key].items():
@@ -209,8 +211,6 @@ class CfastMcarlo():
             collect.append('HALL = .TRUE.')
         if type_sec == 'STAI':
             collect.append('SHAFT = .TRUE.')
-        if type_sec == 'HALL':
-            collect.append('SHAFT = .TRUE.')
         collect.append(f'ORIGIN = {join2str(origin, ", ")}')
         collect.append(f'LEAK_AREA = {join2str(leak_area, ", ")}')
         collect.append(f'GRID = {join2str(grid, ", ")} /')
@@ -260,16 +260,28 @@ class CfastMcarlo():
     def _section_vvent(self):# {{{
         # VVENT AREA, SHAPE, INITIAL_FRACTION
         txt=['!! SECTION NATURAL VENT']
-        for i, v in enumerate(self.s_geom.query("SELECT distinct v.name, v.room_area, v.type_sec, v.vent_from_name, v.vent_to_name, v.vvent_room_seq, v.width, v.depth, (v.x0 - c.x0) + 0.5*v.width as x0, (v.y0 - c.y0) + 0.5*v.depth as y0 FROM aamks_geom v JOIN aamks_geom c on v.vent_to_name = c.name WHERE v.type_sec='VVENT' ORDER BY v.vent_from,v.vent_to")):
+        for i, v in enumerate(self.s_geom.query("SELECT name, vent_to_name, vent_from_name, is_vertical, z0, z1, height, x0,x1, width, y0,y1, depth FROM aamks_geom WHERE type_sec = 'VVENT'")):
             if cfast_name(v['vent_from_name']) in self.cfast_choice_compartments_names or cfast_name(v['vent_to_name']) in self.cfast_choice_compartments_names:
                 how_much_open = self.samples['vvents'][i][0]           # end state with probability of working
+
                 collect=[]
-                collect.append("&VENT TYPE = 'CEILING'")                                                  # VENT TYPE
+                                                                 # VENT TYPE
                 collect.append("ID = '{}'".format(v['name']))                                             # VENT ID
                 collect.append("COMP_IDS = '{}', '{}'".format(cfast_name(v['vent_from_name']), cfast_name(v['vent_to_name'])))
-                collect.append("AREA = {}".format(round((v['width']*v['depth'])/1e4, 2)))               # AREA OF THE VENT,
-                collect.append("SHAPE = 'SQUARE'")
-                collect.append("OFFSETS = {}, {}".format(round(v['x0']/100.0, 2), round(v['y0']/100.0, 2)))           # COMPARTMENT1_OFFSET
+                vvent_details = self.get_vvent_cfast_surface_details(v)
+                if v['is_vertical'] == 1:
+                    collect.append("&VENT TYPE = 'WALL'")
+                    collect.append("BOTTOM = {}".format(vvent_details['bottom'])   )
+                    collect.append("HEIGHT = {}".format(vvent_details['height'])   )
+                    collect.append("WIDTH = {}".format(vvent_details['width'])   )    
+  
+                else:
+                    collect.append("&VENT TYPE = 'CEILING'")
+                    collect.append("AREA = {}".format(vvent_details['area'])   )
+                
+                            # AREA OF THE VENT,
+                # collect.append("SHAPE = 'SQUARE'")
+                collect.append("OFFSETS = {}, {}".format(vvent_details['vent_offset'][0], vvent_details['vent_offset'][1]))            # COMPARTMENT1_OFFSET
                 collect.append("CRITERION = 'TIME' T = 0,90 F = 0,{} /".format(how_much_open))         # OPEN CLOSE
                 txt.append(', '.join(str(j) for j in collect))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
@@ -404,7 +416,109 @@ class CfastMcarlo():
         mvent_details['vent_offset'] = (round(vent_offset[0]/100, 2),round(vent_offset[1]/100, 2))
 
         return mvent_details
-        
+    
+
+    def get_vvent_cfast_surface_details(self, vent):
+        vent_details = {}
+        surface_intersection = ''
+        area = []
+        center_height = 0
+        vent_offset = (0,0)
+
+        room_name = vent['vent_from_name']
+        if room_name == 'OUTSIDE':
+            room_name = vent['vent_to_name']
+
+        room = self.s_geom.query("SELECT x0,x1,y0,y1,z0,z1,width,depth,height FROM aamks_geom WHERE name='"+room_name+"'")[0]
+
+        # Calculate the intersection boundary
+        xmin_intersection = max(vent['x0'], room['x0'])
+        xmax_intersection = min(vent['x0']+vent['width'], room['x0']+room['width'])
+        ymin_intersection = max(vent['y0'], room['y0'])
+        ymax_intersection = min(vent['y0']+vent['depth'], room['y0']+room['depth'])
+        zmin_intersection = max(vent['z0'], room['z0'])
+        zmax_intersection = min(vent['z0']+vent['height'], room['z0']+room['height'])
+
+        if (
+            xmin_intersection >= xmax_intersection
+            or ymin_intersection >= ymax_intersection
+            or zmin_intersection >= zmax_intersection
+        ):
+            raise ValueError(f'vent intersects the surface of ​​the room in the number of places not equal to 1 ')
+
+        # Check for intersection only if it extends beyond the boundaries of the room
+        # Area on the walls x
+        if xmin_intersection == room['x0'] and vent['x0'] < room['x0']:
+            surface_intersection = 'x_min'
+        elif xmax_intersection == room['x1'] and vent['x1'] > room['x1']:
+            surface_intersection = 'x_max'
+        # Area on the walls y
+        elif ymin_intersection == room['y0'] and vent['y0'] < room['y0']:
+            surface_intersection = 'y_min'
+        elif ymax_intersection == room['y1'] and vent['y1'] > room['y1']:
+            surface_intersection = 'y_max'
+        # Area on the walls z
+        elif zmin_intersection == room['z0'] and vent['z0'] < room['z0']:
+            surface_intersection = 'z_min'
+        elif zmax_intersection == room['z1'] and vent['z1'] > room['z1']:
+            surface_intersection = 'z_max'
+        else:
+            raise ValueError(f'mvent does not intersect any of the surface of ​​the room, something is wrong')
+
+        if surface_intersection == 'x_min':
+            center_height = vent['z0'] + vent['height']/2-room['z0']
+            area = vent['depth']*vent['height']
+            vent_offset = (0, vent['y0']+vent['depth']/2-room['y0'])
+            bottom = vent['z0']-room['z0']
+            top = vent['z1'] - vent['z0']
+            width = vent['y1'] - vent['y0']
+        elif surface_intersection == 'x_max':
+            center_height = vent['z0'] + vent['height']/2-room['z0']
+            area = vent['depth']*vent['height']
+            vent_offset = (room['width'], vent['y0']+vent['depth']/2-room['y0'])
+            bottom = vent['z0']-room['z0']
+            top = vent['z1'] - vent['z0']
+            width = vent['y1'] - vent['y0']
+        elif surface_intersection == 'y_min':
+            center_height = vent['z0'] + vent['height']/2-room['z0']
+            area = vent['width']*vent['height']
+            vent_offset = (vent['x0']+vent['width']/2-room['x0'], 0)
+            bottom = vent['z0']-room['z0']
+            top = vent['z1'] - vent['z0']
+            width = vent['x1'] - vent['x0']
+        elif surface_intersection == 'y_max':
+            center_height = vent['z0'] + vent['height']/2-room['z0']
+            area = vent['width']*vent['height']
+            vent_offset = (vent['x0']+vent['width']/2-room['x0'], room['depth'])
+            bottom = vent['z0']-room['z0']
+            top = vent['z1'] - vent['z0']
+            width = vent['x1'] - vent['x0']
+        elif surface_intersection == 'z_min':
+            area = vent['width']*vent['depth']
+            center_height = 0
+            vent_offset = (vent['x0']+vent['width']/2-room['x0'], vent['y0']+vent['depth']/2-room['y0'])
+            bottom = vent['z0']-room['z0']
+            top = vent['z1'] - vent['z0']
+            width = vent['x1'] - vent['x0']
+        elif surface_intersection == 'z_max':
+            area = vent['width']*vent['depth']
+            center_height = room['height']
+            vent_offset = (vent['x0']+vent['width']/2-room['x0'], vent['y0']+vent['depth']/2-room['y0'])
+            bottom = vent['z0']-room['z0']
+            top = vent['z1'] - vent['z0']
+            width = vent['x1'] - vent['x0']
+
+        vent_details['area'] = round(area/1e4, 2)
+        vent_details['center_height'] = round(center_height/100, 2) 
+        vent_details['vent_offset'] = (round(vent_offset[0]/100, 2),round(vent_offset[1]/100, 2))
+        vent_details['bottom'] = round(bottom/100,2)
+        vent_details['height'] = round(top/100,2)
+        vent_details['width'] = round(width/100,2)
+
+
+        return vent_details
+    
+
     def _section_fire(self):# {{{
         txt = (
             '!! SECTION FIRE',
@@ -606,23 +720,61 @@ class DrawAndLog:
             ranks_sum = sum(ranks)
             probabilities = [rank/ranks_sum for rank in ranks]
             return omega, probabilities
+
         # find fire compartment
         is_origin_in_room = binomial(True, self.conf['fire_starts_in_a_room'])
-        all_corridors_and_halls = [[z['name'], z['width']*z['depth']] for z in self.s_geom.query("SELECT name, width, depth FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore!=1 AND type_sec in('COR','HALL') ORDER BY global_type_id") ]
-        all_rooms = [[z['name'], z['width']*z['depth']] for z in self.s_geom.query("SELECT name, width, depth FROM aamks_geom WHERE type_sec='ROOM' ORDER BY global_type_id") ]
+        is_origin_in_stair = binomial(True, 0.01)
+
+        all_corridors = [
+            [z['name'], z['width'] * z['depth']]
+            for z in self.s_geom.query(
+                "SELECT name, width, depth FROM aamks_geom "
+                "WHERE type_pri='COMPA' AND fire_model_ignore!=1 "
+                "AND type_sec='COR' ORDER BY global_type_id"
+            )
+        ]
+
+        all_rooms_and_halls = [
+            [z['name'], z['width'] * z['depth']]
+            for z in self.s_geom.query(
+                "SELECT name, width, depth FROM aamks_geom "
+                "WHERE type_sec in('ROOM','HALL') ORDER BY global_type_id"
+            )
+        ]
+        all_stairs = [
+            [z['name'], z['width'] * z['depth']]
+            for z in self.s_geom.query(
+                "SELECT name, width, depth FROM aamks_geom "
+                "WHERE type_sec ='STAI' ORDER BY global_type_id"
+            )
+        ]
 
         comp = {}
-        if is_origin_in_room or not all_corridors_and_halls:
-            omega, probs = prob_space(all_rooms)
+
+        if is_origin_in_room or not all_corridors:
+            omega, probs = prob_space(all_rooms_and_halls)
             comp['type'] = 'room'
         else:
-            omega, probs = prob_space(all_corridors_and_halls)
+            omega, probs = prob_space(all_corridors)
             comp['type'] = 'non_room'
+        if is_origin_in_stair:
+            omega, probs = prob_space(all_stairs)
+            comp['type'] = 'non_room'
+
         comp['name'] = str(choice(omega, p=probs))
-        comp['global_type_id'] = self.s_geom.query("SELECT global_type_id FROM aamks_geom WHERE name=?", (comp['name'], ))[0]['global_type_id']
+        comp['global_type_id'] = self.s_geom.query(
+            "SELECT global_type_id FROM aamks_geom WHERE name=?",
+            (comp['name'],)
+        )[0]['global_type_id']
+
+        if is_origin_in_stair:
+            comp['name'] = str(choice(omega, p=probs))
+            comp['global_type_id'] = self.s_geom.query(
+                "SELECT global_type_id FROM aamks_geom WHERE name=?",
+                (comp['name'],)
+            )[0]['global_type_id']
 
         return comp
-
     def _locate_in_the_middle(self, fire_room):
         loc = {}
         # locate fire in compartment
@@ -703,11 +855,12 @@ class DrawAndLog:
             self._save_fire_origin([comp['name'], comp['type']] + list(loc.values()))
             self._save_cfast_close_compartments(comp['global_type_id'])
             comps = self.s_geom.query(f"SELECT adjacents FROM aamks_geom WHERE name='{comp['name']}'")[0]['adjacents']
-            for comp in comps.split(","):
-                comp_name = comp.split(";")[0]
-                if comp_name in self.cfast_choice_compartments_names:
-                    loc, comp_type = self._locate_randomly(comp_name)
-                    self._save_fire_origin([comp_name, comp_type] + list(loc.values()))
+            if comps is not None:
+                for comp in comps.split(","):
+                    comp_name = comp.split(";")[0]
+                    if comp_name in self.cfast_choice_compartments_names:
+                        loc, comp_type = self._locate_randomly(comp_name)
+                        self._save_fire_origin([comp_name, comp_type] + list(loc.values()))
 
         for fire in self._fires:
             if fire.major == 1:
@@ -821,6 +974,7 @@ class DrawAndLog:
             load_density = int(lognormal(*params))  # location, scale
         else:
             raise ValueError(f'Invalid fire load density input data - check the form.')
+
 
         hrr = HRR(self.conf, self._sim_id)
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
@@ -1025,19 +1179,20 @@ class DrawAndLog:
     def _draw_connections(self):
         conn = []
         comps = self.s_geom.query(f"SELECT adjacents FROM aamks_geom WHERE name='{self._fire.room}'")[0]['adjacents']
-        for comp in comps.split(","):
-            comp_name, fraction_to, fraction_from = comp.split(";")
-            conn.append({'TYPE': 'WALL', #CEILING, FLOOR or WALL
-                        'COMP_ID': self._fire.room,
-                        'COMP_IDS': comp_name,
-                        'F': float(fraction_to)
-                        })
-            conn.append({'TYPE': 'WALL',
-                        'COMP_ID': comp_name,
-                        'COMP_IDS': self._fire.room,
-                        'F': float(fraction_from)
-                        })
-        self.sections['CONN'] = conn
+        if comps:
+            for comp in comps.split(","):
+                comp_name, fraction_to, fraction_from = comp.split(";")
+                conn.append({'TYPE': 'WALL', #CEILING, FLOOR or WALL
+                            'COMP_ID': self._fire.room,
+                            'COMP_IDS': comp_name,
+                            'F': float(fraction_to)
+                            })
+                conn.append({'TYPE': 'WALL',
+                            'COMP_ID': comp_name,
+                            'COMP_IDS': self._fire.room,
+                            'F': float(fraction_from)
+                            })
+            self.sections['CONN'] = conn
 
     def _save_opened_objects(self):
         self.s.query("CREATE TABLE IF NOT EXISTS opened_objects(name, how_much_open)")

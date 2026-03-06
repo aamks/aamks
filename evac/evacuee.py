@@ -157,6 +157,9 @@ class Evacuee:
 
     def update_speed(self):
         extinction_coefficient = self.optical_density_at_position * 2.303
+        # when we add emergency evacuation lighting, agents will move faster, so we divide the extinction coefficient, for example, by 2
+        # extinction_coefficient = self.optical_density_at_position * 2.303 /2
+        # and self.speed = max(self.max_speed * 0.2 a nie 0,1)
         if self.beta_v == 0:
             self.beta_v = 0.00000001
         self.speed = max(self.max_speed * 0.1, self.max_speed * (1 + self.beta_v/self.alpha_v * extinction_coefficient))

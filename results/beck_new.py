@@ -1,6 +1,7 @@
 import matplotlib.ticker as tic
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
+from matplotlib.colors import LogNorm
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle as rect
 import json
@@ -24,6 +25,10 @@ from pylatex.basic import NewPage, LineBreak
 from pylatex.headfoot import PageStyle, Head, simple_page_number
 
 from include import Sqlite, Psql
+
+
+
+
 sys.path.append('/usr/local/aamks/results')
 
 def go_back(path='.', n=1): return os.sep.join(os.path.abspath(path).split(os.sep)[:-n])
@@ -99,7 +104,7 @@ class GetData:
         data = []
         dcbe = [json.loads(i[0]) for i in r]
         for i in dcbe:
-            item = max(i.values())
+            item = max(v for v in i.values() if v is not None)
             if item > 0:
                 data.append(item)
         data = np.array(data)
@@ -160,7 +165,6 @@ class GetData:
         self.raw['results'] = r_dicts
 
         return r_dicts  # list(dict)
-    
     def fed_der_df(self):
         fed_der_df_data = []
         col_names = ['cell_id', 'x_min', 'x_max', 'y_min', 'y_max', 'samples_number', 'fed_growth_sum']
@@ -168,8 +172,19 @@ class GetData:
         self.geometry() if 'geometry' not in self.raw.keys() else None
 
         for f in range(self.raw['geometry']['floors']+1):
-             fed_der_df_data.append(pd.DataFrame(self._quering(', '.join(col_names),
-                 tab='fed_growth_cells_data', wheres=[f'floor={f}'], raw=True), columns=col_names))
+            result = self._quering(
+                ', '.join(col_names),
+                tab='fed_growth_cells_data',
+                wheres=[f'floor={f}'],
+                raw=True
+            )
+
+            if result is None or len(result) == 0:
+                df = pd.DataFrame(columns=col_names)
+            else:
+                df = pd.DataFrame(result, columns=col_names)
+
+            fed_der_df_data.append(df)
 
         self.raw['fed_der_df'] = fed_der_df_data
 
@@ -181,7 +196,7 @@ class GetData:
         geom_data['floors'] = int(max(self._quering('DISTINCT floor', tab='fed_growth_cells_data', raw=True)))
         geom_data['area'] = self.s_geom.query('SELECT sum(room_area) as total FROM aamks_geom')[0]['total'] / 10000
         
-        for label, prefixes in {'rooms':['r', 'c', 'a', 's'], 'doors':['d'], 'obsts':['t']}.items():
+        for label, prefixes in {'rooms':['r', 'c', 'a', 's'], 'doors':['d','q','e','z'], 'obsts':['t']}.items():
             geom_data[label] = []
             for f in range(geom_data['floors']+1):
                 g = []
@@ -423,6 +438,8 @@ class Heatmap:
     
     def calc(self):
         for f, df in enumerate(self.plot['floors']):
+            if isinstance(self.data[f], pd.DataFrame) and self.data[f].empty:
+                continue
             df['xes'] = np.array(sorted([min(self.data[f]['x_min']), *self.data[f]['x_max'].unique()]))
             df['yes'] = np.array(sorted([min(self.data[f]['y_min']), *self.data[f]['y_max'].unique()]))
             df['data'] = self.data[f][['x_max', 'y_max', 'fed_growth_sum']]
@@ -617,57 +634,105 @@ class Plot:
 
         fig.savefig(os.path.join(self.dir, 'picts', 'pie_fault.png'))
         plt.close(fig)
-
-    # plot heatmap of FED absorption
+        
     def heatmap(self, hm: Heatmap, lab='Average FED absorbed in cell [-]'):
-        for f in range(hm.geom['floors']+1):
-            # initial figure definition
+    # wspólny vmax (globalny, ale stabilny)
+        all_data = np.concatenate([
+            floor['data'].ravel()
+            for floor in hm.plot['floors']
+            if len(floor) > 0
+        ])
+
+        vmax = np.nanpercentile(all_data, 99)  # odporne na piki
+
+        # logarytmiczna normalizacja
+        norm = LogNorm(vmin=1e-3, vmax=vmax)
+
+        for f in range(hm.geom['floors'] + 1):
+            if len(hm.plot['floors'][f]) == 0:
+                continue
+
             fig = plt.figure()
             ax = fig.add_subplot(111)
 
-            # colors
-            my_cmap = clr.LinearSegmentedColormap.from_list('', ['white', 'coral', 'darkred'])
-            colors = {'ROOM': '#8C9DCE', 'COR': '#385195', 'HALL': '#DBB55B', 'CONTOUR': '#000000', 
-                    'DOOR': clr.rgb2hex(my_cmap(0)), 'OBSTACLE': '#707070'}
-            
-            # plot fed growth data
-            dat = hm.plot['floors'][f]
-            c = ax.pcolormesh(dat['xes'], dat['yes'], dat['data'], cmap=my_cmap, vmax=hm.plot['range'])
+            # colormap
+            my_cmap = clr.LinearSegmentedColormap.from_list(
+                '', ['white', 'coral', 'darkred']
+            )
 
-            # add geometry entities to patches and plot them
+            colors = {
+                'ROOM': '#8C9DCE',
+                'COR': '#385195',
+                'HALL': '#DBB55B',
+                'CONTOUR': '#000000',
+                'DOOR': clr.rgb2hex(my_cmap(0)),
+                'DCLOSER': clr.rgb2hex(my_cmap(0)),
+                'DELECTR': clr.rgb2hex(my_cmap(0)),
+                'HOLE': clr.rgb2hex(my_cmap(0)),
+                'OBSTACLE': '#707070'
+            }
+
+            dat = hm.plot['floors'][f]
+
+            # zabezpieczenie FED = 0
+            data = np.clip(dat['data'], 1e-6, None)
+
+            c = ax.pcolormesh(
+                dat['xes'],
+                dat['yes'],
+                data,
+                cmap=my_cmap,
+                norm=norm
+            )
+
+            # geometry
             patches = []
+
             def pts2rect(pts):
                 xys = list(zip(*json.loads(pts)))
-                return tuple(min(xys[i]) for i in range(2)), max(xys[0]) - min(xys[0]), max(xys[1]) - min(xys[1])
+                return (
+                    (min(xys[0]), min(xys[1])),
+                    max(xys[0]) - min(xys[0]),
+                    max(xys[1]) - min(xys[1])
+                )
 
             for room in hm.geom['rooms'][f]:
-                patches.append(rect(*pts2rect(room['points']), lw=1.5, edgecolor=colors['CONTOUR'], fill=None))
-            for room in hm.geom['rooms'][f]:
-                patches.append(rect(*pts2rect(room['points']), lw=1.5, edgecolor=colors['CONTOUR'], fill=None))
+                patches.append(
+                    rect(*pts2rect(room['points']),
+                        lw=1.5, edgecolor=colors['CONTOUR'], fill=None)
+                )
+
             for door in hm.geom['doors'][f]:
-                patches.append(rect(*pts2rect(door['points']), lw=1.5, edgecolor=None, facecolor=colors['DOOR']))
+                patches.append(
+                    rect(*pts2rect(door['points']),
+                        lw=1.5, edgecolor=None, facecolor=colors['DOOR'])
+                )
+
             for obst in hm.geom['obsts'][f]:
-                patches.append(rect(*pts2rect(obst['points']), lw=1.5, edgecolor=None, facecolor=colors['OBSTACLE']))
+                patches.append(
+                    rect(*pts2rect(obst['points']),
+                        lw=1.5, edgecolor=None, facecolor=colors['OBSTACLE'])
+                )
 
             ax.add_collection(PatchCollection(patches, match_original=True))
 
-            # figure settings
-            plt.gca().axes.get_xaxis().set_visible(False)
-            plt.gca().axes.get_yaxis().set_visible(False)
-            plt.xlim([dat['xes'].min() - 100, dat['xes'].max() + 100])
-            plt.ylim([dat['yes'].min() - 100, dat['yes'].max() + 100])
+            # wygląd
+            ax.set_xlim([dat['xes'].min() - 100, dat['xes'].max() + 100])
+            ax.set_ylim([dat['yes'].min() - 100, dat['yes'].max() + 100])
             ax.set_ylim(ax.get_ylim()[::-1])
+            ax.set_aspect('equal', adjustable='box')
+
+            ax.axis('off')
             ax.set_title(f'Level {f}')
-            ax.set_xlabel('x axis')
-            ax.set_ylabel('y axis')
-            plt.gca().set_aspect('equal', adjustable='box')
-            c.set_clim(vmin=0)
-            fig.colorbar(c, ax=ax, fraction=0.03, pad=0.04, label=lab)
+
+            # colorbar
+            cb = fig.colorbar(c, ax=ax, fraction=0.03, pad=0.04)
+            cb.set_label(f'{lab} (log scale)')
+
             fig.tight_layout()
-            
-            # save figure
-            fig.savefig(os.path.join(self.dir, 'picts', f'floor_{f}.png'))#, dpi=170)
+            fig.savefig(os.path.join(self.dir, 'picts', f'floor_{f}.png'))
             plt.close(fig)
+
 
     def conv(self, data, path=None, label=None, conf=0.95):
         fig, ax = plt.subplots()
