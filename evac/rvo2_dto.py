@@ -712,8 +712,7 @@ class Detection:
             self.room_heights[r] = initial[r]['HGT']
         del initial
 
-        # set fire origin room detection to 0.001 (can't be 0 because bool(0) = False)
-        self.state['rooms'][self.evac_conf['FIRE_ORIGIN']] = .001
+        self.state['rooms'][self.evac_conf['FIRE_ORIGIN']] = 0
 
     def _od_to_vis(self, optical_density):
         # convert optical density to visibility
@@ -758,7 +757,7 @@ class Detection:
 
     def _delay_from_room(self, room: str, pre_evac: float):
         # calculate total delay time for room that is in fire
-        room_detection = self.state['rooms'][room]
+        room_detection = self.state['rooms'].get(room, False)
         if room_detection:
             return room_detection + pre_evac
         else:
@@ -774,13 +773,9 @@ class Detection:
 
     def _get_pedestrian_delay(self, evacuee: Evacuee):
         floor_data = self.evac_conf['FLOORS_DATA'][str(self.eenv.floor)]
-
-        room_delay = self._delay_from_room(evacuee.detection_compa, evacuee.detection_constituents['pre_evac_fire_origin'])
-        if evacuee.detection_compa == self.evac_conf['FIRE_ORIGIN']:
-            return room_delay
-        else:
-            floor_delay = self._delay_from_floor(floor_data['ALARMING'], evacuee.detection_constituents['pre_evac'])
-            return min(floor_delay, room_delay)
+        room_delay = self._delay_from_room(evacuee.current_compartment.name, evacuee.detection_constituents['pre_evac_fire_origin'])
+        floor_delay = self._delay_from_floor(floor_data['ALARMING'], evacuee.detection_constituents['pre_evac'])
+        return min(floor_delay, room_delay)
 
     def _update_delays(self):
         # iterate over evacuees and if still not moving set them proper delay

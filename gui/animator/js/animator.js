@@ -685,10 +685,23 @@ function updateAgentNumbersOnFloors(){
 }
 function updateEvacueesOnEachFloor(){
 	_.each(eData[frame], function(frame0_data,ffloor) {
-		evacueesLabelsGroup[ffloor].removeChildren();
-		velocitiesGroup[ffloor].removeChildren();
-		evacueesGroup[ffloor].removeChildren();
+		if (evacueesLabelsGroup[ffloor]){
+			evacueesLabelsGroup[ffloor].removeChildren();
+		}
+		if (velocitiesGroup[ffloor]){
+			velocitiesGroup[ffloor].removeChildren();
+		}
+		if (evacueesGroup[ffloor]){
+			evacueesGroup[ffloor].removeChildren();
+		}	
 		_.each(frame0_data, function(data, i) {
+			if (!velocitiesGroup[ffloor]) {
+		        velocitiesGroup[ffloor] = new Group();
+		    }
+
+		    if (!evacueesGroup[ffloor]) {
+		        evacueesGroup[ffloor] = new Group();
+		    }
 			evacueesGroup[ffloor].addChild(new Path.Circle({center: new Point(-10000, -10000), radius: evacueeRadius}));
 			velocitiesGroup[ffloor].addChild(new Path.Line({from: new Point(-10000, -10000), to: new Point(-10000,-10000), strokeColor:colors['fg']['c'], strokeCap: 'round', dashArray: [2,10], strokeWidth: velocitiesSize }));
 		});
@@ -830,6 +843,7 @@ function initRoomSmoke() {//{{{
         var ty=dstatic.floors[ffloor].floor_meta.ty;
         var tx=dstatic.floors[ffloor].floor_meta.tx;
 		for (var room in roomsOpacity[0][ffloor]) {
+
             var pp=JSON.parse(dstatic.floors[ffloor]['rooms'][room]['points']);
 			points=[];
 			_.each(pp, function(i) { points.push([i[0]+tx, i[1]+ty]); });
@@ -865,34 +879,38 @@ function initDoorsOpening() {//{{{
 	        var ty=dstatic.floors[ffloor].floor_meta.ty;
 	        var tx=dstatic.floors[ffloor].floor_meta.tx;
 			for (var door in doorsOpening[0][ffloor]) {
-	            var pp=JSON.parse(dstatic.floors[ffloor]['doors'][door]['points']);
-				points=[];
-				_.each(pp, function(i) { points.push([i[0]+tx, i[1]+ty]); });
+				var pp = []
+				if (dstatic.floors[ffloor]['doors'] && dstatic.floors[ffloor]['doors'][door] && dstatic.floors[ffloor]['doors'][door]['points']) {
+				    pp=JSON.parse(dstatic.floors[ffloor]['doors'][door]['points']);
+				    // var pp=JSON.parse(dstatic.floors[ffloor]['doors'][door]['points']);
+					points=[];
+					_.each(pp, function(i) { points.push([i[0]+tx, i[1]+ty]); });
 
-				rw=points[1][0] - points[0][0];
-				rh=points[2][1] - points[1][1];
+					rw=points[1][0] - points[0][0];
+					rh=points[2][1] - points[1][1];
 
-				first_char = door[0]
+					first_char = door[0]
 
-				if (first_char === 'd'){
-					fillColor = "#73d216";
-					strokeColor= "#5ea911";
-					strokeWidth = 5;
+					if (first_char === 'd'){
+						fillColor = "#73d216";
+						strokeColor= "#5ea911";
+						strokeWidth = 5;
+					}
+					else if (first_char === 'e'){
+						fillColor = "#ff4400";
+						strokeColor="#ffffff";
+						strokeWidth=5;
+					}
+					else if (first_char === 'q'){
+						fillColor = "#cc0000";
+						strokeColor="#990000";
+						strokeWidth=5;
+					}
+					group=new Group();
+					group.name=door;
+					group.floor=ffloor;
+					group.addChild(new Path.Rectangle({point: new Point(points[0][0], points[0][1]), fillColor:fillColor,strokeColor:strokeColor,strokeWidth:strokeWidth, size: new Size(rw,rh)}));
 				}
-				else if (first_char === 'e'){
-					fillColor = "#ff4400";
-					strokeColor="#ffffff";
-					strokeWidth=5;
-				}
-				else if (first_char === 'q'){
-					fillColor = "#cc0000";
-					strokeColor="#990000";
-					strokeWidth=5;
-				}
-				group=new Group();
-				group.name=door;
-				group.floor=ffloor;
-				group.addChild(new Path.Rectangle({point: new Point(points[0][0], points[0][1]), fillColor:fillColor,strokeColor:strokeColor,strokeWidth:strokeWidth, size: new Size(rw,rh)}));
 			}
 		}
 	}

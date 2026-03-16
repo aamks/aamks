@@ -83,7 +83,7 @@ class EvacMcarlo:
         self.fire_points['x'] = i['x']
         self.fire_points['y'] = i['y']
         self.fire_points['name'] = i['name']
-        self.fire_points['buffer'] = max(xx, yy)
+        self.fire_points['buffer'] = max(xx, yy)+50
 
 
         points=[ [i['x']-xx, i['y']-yy, 0], [i['x']+xx, i['y']-yy, 0], [i['x']+xx, i['y']+yy, 0], [i['x']-xx, i['y']+yy, 0], [i['x']-xx, i['y']-yy, 0] ]
