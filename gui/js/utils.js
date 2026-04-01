@@ -107,15 +107,16 @@ function amsg(r) {//{{{
 		if ("duration" in r) {
 			var duration=r['duration'];
 		} else {
-			var duration=1500;
+			var duration=3000;
 		}
 		$('#amsg').delay(duration).fadeOut(400);
 	} else if(r['err']==2){
-		$('#amsg').css('display', 'none');
+		$('#amsg').clearQueue();
 		$('#amsg').css('display', 'none');
 		$('#amsg').html(r['msg']);
 		$('#amsg').css('display', 'block');
 		$('#amsg').css('background-color', "#800");
+		$('#amsg').css('opacity', 1);
 		$('#amsg').delay(r['duration']).fadeOut(3000);
 	}
 }

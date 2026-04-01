@@ -23,9 +23,6 @@ const LETTERS = {
  * @property {number} floorTeleportUpDir
  * @property {number} floorTeleportDownDir
  * @property {any[]} externalDoors
- * @property {any[]} dragStartPos;
- * @property {any[]} dragEndPos
- * @property {d3.svg|null} selectionRect
  * @property {Object<string,any>} roomsAndAdjDoorsAndHoles
  * @property {Object<string,any>} virtualObjParents
  * @property {SVGSVGElement|null} svg
@@ -73,9 +70,6 @@ var state = {
   floorTeleportUpDir: 0,
   floorTeleportDownDir: 0,
   externalDoors: [],
-  dragStartPos: null,
-  dragEndPos: null,
-  selectionRect: null,
   roomsAndAdjDoorsAndHoles: {},
   virtualObjParents: {},
   svg: null,
@@ -234,7 +228,6 @@ $(function()  {
 });
 //}}}
 function registerListeners() {//{{{
-	setupSelectionBox();
 	$("right-menu-box").on("click"     , "#btn_copy_to_floor"       , function() { floorCopy() });
 	$("right-menu-box").on("click"     , "#btn_add_floor"           , function() { addFloor() });
 	$("right-menu-box").on("click"     , "#btn_delete_floor"        , function() { deleteFloor() });
@@ -256,99 +249,17 @@ function registerListeners() {//{{{
 	$("body").on("keyup"               , '#alter-py'                , function() { saveRightBox(); });
 	$("body").on("mouseleave"          , 'right-menu-box'           , function() { saveRightBox(); showCgPropsBox(); });
 	$("body").on("change"              , '#floor'                   , function() { saveRightBox(); showCgPropsBox(); showGeneralBox();});
-}
-function setupSelectionBox() {
-  let selectedIds = new Set();
-  const svg = d3.select('#apainter-svg');
-
-  state.selectionRect = svg.append('rect')
-    .attr('id', 'selection-rect')
-    .attr('fill', 'rgba(0, 150, 255, 0.2)')
-    .attr('stroke', '#0096ff')
-    .attr('stroke-width', 1)
-    .attr('display', 'none');
-
-  svg
-    .on('mousedown.select', function(event) {
-	  if (event.button !== 2) return;
-	  cgEscapeCreate();
-         // Check if clicked on selectable element
-      if (['circle', 'polygon'].includes(event.target.tagName)) {
-        const id = event.target.id;
-        if (event.ctrlKey) {
-          // Ctrl+right-click: toggle
-          selectedIds.has(id) ? selectedIds.delete(id) : selectedIds.add(id);
-        } else {
-          // Single select
-          selectedIds.clear();
-		  selectedIds.add(id)
-          cgSelect(id, 1, 1);
-          return;  // Don't drag rectangle
-        }
-        if (selectedIds.size > 0) {
-			selectedMoveBox(selectedIds);
-        	highlightSelected(selectedIds);
-			return;
+	$("body").on("mousedown", "#apainter-svg", function(e){
+		if (e.which !== 3) return;
+		cgEscapeCreate();
+		if (['circle', 'polygon'].includes(e.target.tagName)) { 
+			cgSelect(e.target.id);
+		} else { 
+			currentGeom={};
 		}
-      }
-      // Empty space → start selection box
-	  startSVGPos = d3.pointer(event, this);
-      state.dragStartPos = scaleMouse(startSVGPos);
-      state.dragEndPos = state.dragStartPos;
-      updateSelectionRect(startSVGPos, startSVGPos);
-      state.selectionRect.attr('display', 'block');
-    })
-    .on('mousemove.select', function(event) {
-      if (!state.dragStartPos) return;
-	  endSVGPos = d3.pointer(event, this);
-      state.dragEndPos = scaleMouse(endSVGPos);
-      updateSelectionRect(startSVGPos, endSVGPos);
-    })
-    .on('mouseup.select', function(event) {
-      if (event.button !== 2 || !state.dragStartPos) {
-        resetSelectionRect();
-        return;
-      }
-      const rect = {
-        minx: Math.min(state.dragStartPos.x, state.dragEndPos.x),
-        maxx: Math.max(state.dragStartPos.x, state.dragEndPos.x),
-        miny: Math.min(state.dragStartPos.y, state.dragEndPos.y),
-        maxy: Math.max(state.dragStartPos.y, state.dragEndPos.y)
-      };
-      selectedIds.clear();
-	  selectedIds = new Set(dbBetweenNames(rect));
-
-	if (selectedIds.size > 0) {
-		selectedMoveBox(selectedIds);
-		highlightSelected(selectedIds);
-	}
-      resetSelectionRect();
-    });
-  svg.on('contextmenu', e => e.preventDefault());
+	})
 }
-function updateSelectionRect(startPos, endPos) {
-  if (!state.dragStartPos || !state.dragEndPos) return;
 
-  const x = Math.min(startPos[0], endPos[0]);
-  const y = Math.min(startPos[1], endPos[1]);
-  const w = Math.abs(endPos[0] - startPos[0]);
-  const h = Math.abs(endPos[1] - startPos[1]);
-
-  state.selectionRect
-    .attr('x', x)
-    .attr('y', y)
-    .attr('width', w)
-    .attr('height', h);
-}
-function resetSelectionRect() {
-  state.dragStartPos = null;
-  state.dragEndPos = null;
-  if (state.selectionRect) {
-    state.selectionRect.attr('display', 'none')
-      .attr('width', 0)
-      .attr('height', 0);
-  }
-}
 function keyboardEvents()  { // {{{
 	$(this).keyup((e) =>   { if (e.target.nodeName != 'INPUT' && e.key in state.gg && ! e.ctrlKey )   { cgEscapeCreate(); state.activeLetter=e.key; cgStartDrawing(); } });
 	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'v')                  { cgEscapeCreate(); nextView(); } });
@@ -693,16 +604,18 @@ function addFloor() {//{{{
 	setNewFloorAttr(state.currentFloor);
 	state.floorsDimZ[state.currentFloor] = state.floorsDimZ[state.currentFloor-1];
 	state.floorsZ0[state.currentFloor] = getSumDimZLower(state.currentFloor);
+	showGeneralBox();
 }
 
 function deleteFloor() {//{{{
 	let _floor = Number($("#floor").val());
 	deletefloorZData();
 	state.floorsCount--;
-	d3.select('floor'+_floor).remove();
-	setNewFloorAttr(_floor-1);
 	state.currentFloor = _floor-1;
+	d3.select('#floor'+_floor).remove();
+	setNewFloorAttr(_floor-1);
 	showGeneralBox();
+	dbRemove({floor: _floor});
 }
 
 function deletefloorZData(){
@@ -728,13 +641,11 @@ function changeFloor(requested_floor) {//{{{
 function setNewFloorAttr(floor) {//{{{
 	$(".floor").attr("visibility","hidden");
 	$("#floor"+floor).attr("visibility","visible");
-
 	updateSnapLines();
 	$("#apainter-texts-floor").html("floor "+(state.currentFloor + 1)+"/"+state.floorsCount);
 	$("#apainter-texts-floor").clearQueue().finish();
 	$("#apainter-texts-floor").css("opacity",1).animate({"opacity": 0.1}, 1000);
 }
-
 //}}}
 function getEffectiveSnapForce() {
     const k = state.zoomTransform ? state.zoomTransform.k : 1;
@@ -910,7 +821,7 @@ function addDefaultCgProps(){
 	if(currentGeom.type=='mvent') {
 		const [r1, r2] = getConnectedZones(currentGeom);
 		if (r1==null || r2==null){
-			amsg({'err':1, 'msg':"Coorect mvent size and localization because it intersects not properly"}); 
+			amsg({'err':2, 'msg':"Coorect mvent size and localization because it intersects not properly", 'duration': 20000}); 
 		}
 		let mventWithDuct = false;
 		if (r1 == 'OUTSIDE' || r2 == 'OUTSIDE') {
@@ -1006,7 +917,11 @@ function getConnectedZones(geometry){
 	    return false;
 	}
     // Get all rooms
-    let rooms = getTypeApainterObjects('room');
+    let rooms = getTypeApainterObjects('room', geometry.floor - 1)
+				.concat(
+				getTypeApainterObjects('room', geometry.floor),
+				getTypeApainterObjects('room', geometry.floor + 1)
+				);
     let connectedZones = [];
 
     for (let room of rooms) {
@@ -1015,7 +930,7 @@ function getConnectedZones(geometry){
         }
     }
     if (connectedZones.length == 0){
-        amsg({ 'err': 2, 'msg': "The connection object does not intersect any zones. Please correct apainter geometry." });
+        amsg({ 'err': 2, 'msg': "The connection object does not intersect any zones. Please correct apainter geometry.", 'duration': 8000 });
         return [null, null];
 	}
     if (isObjectOutside(geometry, rooms.filter(room => connectedZones.includes(room.name)))) {
@@ -1479,7 +1394,7 @@ function getSumDimZLower(f) { //{{{
 	let z_sum = 0;
 	_.each(state.floorsDimZ, function(floor_dimz,floor) { 
 		if (floor < f)
-			z_sum += state.floorsDimZ[floor];
+			z_sum += floor_dimz;
 	});
 	return z_sum;
 }
@@ -1525,39 +1440,36 @@ function legend() { //{{{
 }
 //}}}
 function anyWindowOnInteriorWall(){
-	// window
-	var letter = 'w';
-	var floor_windows;
-	for(var floor=0; floor<state.floorsCount; floor++) { 
-		floor_windows = [];
-		_.each(dbWhere({"floor": floor, "letter": letter}), function(m) {
-			floor_windows.push(m);
-		});
-		for (let i = 0; i < floor_windows.length; i++) {
-    		if (!IsExternal(floor_windows[i]))
-    			return true;
+	let windows = getTypeApainterObjects("window")
+	let wronglyPlaced = []
+	windows.forEach(function(window) {
+		if (!IsExternal(window)){
+			wronglyPlaced.push(`Window: ${window.name}, floor: ${window.floor}`);
 		}
-	}
-	return false;
+	});
+	return wronglyPlaced;
 }
-
-function anyholeOnExternalWall(){
-	// hole
-	var letter = 'z';
-	var floor_holes;
-	for(var floor=0; floor<state.floorsCount; floor++) { 
-		floor_holes = [];
-		_.each(dbWhere({"floor": floor, "letter": letter}), function(m) {
-			floor_holes.push(m);
-		});
-		for (let i = 0; i < floor_holes.length; i++) {
-    		if (IsExternal(floor_holes[i]))
-    			return true;
+function anyHoleOnExternalWall(){
+	let holes = getTypeApainterObjects("hole")
+	let wronglyPlaced = []
+	holes.forEach(function(hole) {
+		if (IsExternal(hole)){
+			wronglyPlaced.push(`Hole: ${hole.name}, floor: ${hole.floor}`);
 		}
-	}
-	return false;
+	});
+	return wronglyPlaced;
 }
-
+function anyVentWronglyPlaced(){
+	let vents = getTypeApainterObjects('vvent').concat(getTypeApainterObjects('mvent'));
+	let wronglyPlaced = []
+	vents.forEach(function(vent) {
+		zones = getConnectedZones(vent);
+		if (zones.every(z => z === null)){
+			wronglyPlaced.push(`Vent: ${vent.name}, floor: ${vent.floor}`);
+		}
+	});
+	return wronglyPlaced;
+}
 function wrongTeleportLocation(){
 	const teleportsDown = dbWhere({"letter": LETTERS.TELEPORT_DOWN});
 	const teleportsUp = dbWhere({"letter": LETTERS.TELEPORT_UP})
@@ -1577,13 +1489,13 @@ function wrongTeleportLocation(){
     function checkEnd(teleport, floorIdx, point) {
       if (floorIdx < 0 || floorIdx >= state.floorsCount) {
         // No such floor
-        badNames.push(teleport.name);
+        badNames.push(`Teleport: ${teleport.name}, floor: ${teleport.floor}`);
         return;
       }
       const comps = compartments[floorIdx] || [];
       const obs   = obsts[floorIdx] || [];
       if (checkIfPointIsInAnyMargin(point, comps, obs)) {
-        badNames.push(teleport.name);
+        badNames.push(`Teleport: ${teleport.name}, floor: ${teleport.floor}`);
       }
     }
     teleportsDown.forEach(tp => {
@@ -1594,7 +1506,7 @@ function wrongTeleportLocation(){
       checkEnd(tp, tp.floor, tp.teleportFrom);
       checkEnd(tp, tp.floor + 1, tp.teleportTo);
     });
-    return Array.from(new Set(badNames));
+    return badNames;
 }
 
 function checkIfPointIsInAnyMargin(point, compartments,obsts){
@@ -1637,34 +1549,43 @@ function checkIfPointIsInAnyMargin(point, compartments,obsts){
 	return false;
 }
 function isGeometryCorrect(){
-	var teleports_to_return = [];
-	var msg;
-	if(anyholeOnExternalWall()){
-		amsg({'err':2, 'msg':`There is a hole in the outside wall. You can't do that. 
-			The holes are used to connect compartments. In the external wall you can 
-			draw normal door, windows, mechanical or normal vents. After correcting 
-			the geometry, you will be able to save your changes`, 'duration': 20000}); 
-		return false;
-	}
-	teleports_to_return = wrongTeleportLocation();
-	if (teleports_to_return.length > 0){
-		msg = `Wrong teleport location. The beginning and end of the teleport 
+	let msg = "";
+	teleports = wrongTeleportLocation();
+	if (teleports.length > 0){
+		msg += `Wrong teleport location. The beginning and end of the teleport 
 		should be outside the transparent-white internal margins of COMPARTMENT objects 
 		and the outer margins of OBST objects (the beginning and end of the teleport 
 		cannot be too close to the wall and obst). This applies to the beginning of 
 		the teleport for the floor on which the teleport is located and the end of 
 		the teleport in relation to the floor above if the teleport leads up and the 
-		floors below if the teleport leads down. The problem concerns teleporters: `;
-		for (let i = 0; i < teleports_to_return.length; i++) {
-			msg += teleports_to_return[i] + " "
-		}
-		amsg({'err':2, 'msg':msg, 'duration': 20000}); 
-		return false;
+		floors below if the teleport leads down. The problem concerns teleporters:<br>
+		${teleports.join('<br>')}<br>`;
 	}
-	if(anyWindowOnInteriorWall()){
-		amsg({'err':2, 'msg':`There is a window in the interior wall. You can't do that. 
-			Windows can only be located on the external wall`, 'duration': 15000}); 
-		return false;
+	holes = anyHoleOnExternalWall()
+	if(holes.length > 0){
+		msg += `There is a hole in the outside wall. You can't do that. 
+			The holes are used to connect compartments. In the external wall you can 
+			draw normal door, windows, mechanical or normal vents. Wrongly placed holes:<br>
+			${holes.join('<br>')}<br>`
+	}
+	windows = anyWindowOnInteriorWall();
+	if(windows.length > 0){
+		msg += `There is a window in the interior wall. You can't do that. 
+			Windows can only be located on the external wall. Wrongly placed windows:<br>
+			${windows.join('<br>')}<br>`
+	}
+	vents = anyVentWronglyPlaced()
+	if(vents.length > 0){
+		msg += `There is a vent which is not connected to any room. You can't do that. 
+			Vents should be located in such a way that they are connected to at least one room. 
+			After correcting the geometry, you will be able to save your changes
+			Wrongly placed vents:<br>
+			${vents.join('<br>')}<br>`
+	}
+	if (msg.length > 0){
+		msg += "After correcting the geometry, you will be able to save your changes!"
+		amsg({'err':2, 'msg':msg, 'duration': 8000}); 
+		return false
 	}
 	return true;
 }
@@ -1696,26 +1617,27 @@ function db2cadjson() {//{{{
 }
 //}}}
 function floorCopy() {	//{{{
-	c2f=Number($("#copy_to_floor").val());
+	c2f=Number($("#copy_to_floor").val()-1);
 	state.floorsDimZ[c2f] = state.floorsDimZ[state.currentFloor];
 	state.floorsZ0[c2f] = getSumDimZLower(c2f);
 	state.floorsCount++;
 	state.building.append("g").attr("id", "floor"+c2f).attr({"class": "floor", "opacity": 0, "visibility": "hidden"});
 	_.each(dbWhere({'floor': state.currentFloor}), function(m) {
 		if (m.letter == 'va' || m.letter == 'vs'||
-			m.letter == 's' || m.letter=='a'){
+			m.letter == 's' || m.letter=='a' || 
+			m.letter=='y'){
 			return;
 		}
 		state.activeLetter=m.letter;
-		cgIdUpdate();
+  		const idx = cgIdUpdate(m.letter);
 		currentGeom=deepcopy(m);
+		currentGeom.idx=idx;
 		currentGeom.exitWeight=state.defaults.exitWeight;
 		currentGeom.roomExitsWeights={};
 		currentGeom.airGrilleSurface = null;
 		currentGeom.flowDirection = null;
 		currentGeom.floor=c2f;
-		currentGeom.idx=cgID;
-		currentGeom.name=currentGeom.letter + cgID;
+		currentGeom.name=currentGeom.letter + idx;
 		currentGeom.z.z0=state.floorsZ0[c2f];
 		currentGeom.z.z1=state.floorsZ0[c2f] + m.z.z1- m.z.z0;
 		cgDb(undoRegister=0);
@@ -1731,14 +1653,10 @@ function floorCopy() {	//{{{
 	_.each(dbWhere({"letter": 'a'}), function(m){
 		createAndDrawVirtualObjs(m);
 	});
+	changeFloor(c2f);
 	showGeneralBox();
-	amsg({'err':0, 'msg': "floor"+state.currentFloor+" copied onto floor"+c2f});
+	amsg({'err':0, 'msg': "floor "+(state.currentFloor+1)+" copied onto floor "+(c2f+1)});
 }//}}}
-function highlightSelected(selectedIds) {
-  _.each(Array.from(selectedIds), function(id) {
-    d3.select('#' + id).classed('cg-selected', true);
-  });
-}
 function cgSelect(elems, blink=1, showProps=1) {//{{{
 	let virtualObjEscapeSelect = false;
 	$(".cg-selected").removeClass('cg-selected'); 
@@ -2219,14 +2137,14 @@ function showGeneralBox() { //{{{
 		"<tr><td>floor<td><select id=floor name=floor style='width: 6ch;'>";
 	for (let i = 0; i < state.floorsCount; i++) {
 		if (i === state.currentFloor) {
-			html += `<option value="${i}" selected>${i}</option>`;
+			html += `<option value="${i}" selected>${i + 1}</option>`;
 		} else {
-			html += `<option value="${i}">${i}</option>`;
+			html += `<option value="${i}">${i + 1}</option>`;
 		}
 	}
 	html+=	"</select>"+
-		"<tr><td>floor z-origin <td><input id=floorZ0 type=number name=floorZ0 value="+state.floorsZ0[currentGeom.floor]+" disabled style='background-color: darkgrey; color: #333; width: 6ch;'>"+
-		"<tr><td>floor height <td><input id=default_floor_dimz type=number name=default_floor_dimz value="+state.floorsDimZ[currentGeom.floor]+" style='width: 6ch;'+>"+
+		"<tr><td>floor z-origin <td><input id=floorZ0 type=number name=floorZ0 value="+state.floorsZ0[state.currentFloor]+" disabled style='background-color: darkgrey; color: #333; width: 6ch;'>"+
+		"<tr><td>floor height <td><input id=default_floor_dimz type=number name=default_floor_dimz value="+state.floorsDimZ[state.currentFloor]+" style='width: 7ch;'+>"+
 		"<tr><td><td><tr><td><td><tr><td><td><tr><td><td><tr><td><td><tr><td><td>"+
 		"<tr><td>door's width <td><input id=default_door_width type=number name=default_door_width value="+state.defaults.doorWidth+" style='width: 6ch;'>"+
 		"<tr><td>door's height <td><input id=default_door_dimz type=number name=default_door_dimz oninput='validateRightBoxInput(this)' value="+state.defaults.doorDimZ+" style='width: 6ch;'>"+
@@ -2237,7 +2155,7 @@ function showGeneralBox() { //{{{
 		"<withHelp>?<help>door's height cannot be higher than floor height<br><hr> window's height+z-offset cannot be higher than floor height</help></withHelp>"+
 		"<tr><td colspan=2 style='text-align: center'>utils"+
 		"<tr><td colspan=2><button id=btn_add_floor class=blink>Add floor</button>"+ 
-		"<tr><td colspan=2><button id=btn_copy_to_floor class=blink>copy</button> floor "+state.currentFloor+" to floor <input id=copy_to_floor type=text value="+Object.keys(state.floorsDimZ).length+" disabled style='background-color: darkgrey; color: #333; width: 3ch;'>";
+		"<tr><td colspan=2><button id=btn_copy_to_floor class=blink>copy</button> floor "+(state.currentFloor+1)+" to floor <input id=copy_to_floor type=text value="+(state.floorsCount+1)+" disabled style='background-color: darkgrey; color: #333; width: 3ch;'>";
 		if (state.floorsCount == state.currentFloor +1)
 		{
 			html+=	"<tr><td colspan=2><button id=btn_delete_floor class=blink>Delete floor</button>";
@@ -2292,38 +2210,6 @@ function propsXYZ() {//{{{
 	}
 }
 //}}}
-function selectedMoveBox(selectedIds){
-	const idsNames = Array.from(selectedIds).join('<br>');
-	rightBoxShow(
-		"<input id=selectedIds type='hidden' value='"+idsNames+"'>"+
-		"<div>objects shift:<div>"+
-		"<label>x<input id=x_shift type=number style='width: 8ch;'></label>"+
-		"<div><label>y<input id=y_shift type=number style='width: 8ch;'></label>"+
-		"<table style='table-layout: auto; width: auto; border-collapse: collapse;''>"+
-		"</table>"+
-		"<br><button id=btn_shift>SHIFT OBJECTS</button>"+
-		"<center><red>"+idsNames+"</red>"+
-		"", 0
-	);
-}
-function shiftObjects(){
-	const x_shift = Number(document.getElementById("x_shift").value);
-	const y_shift = Number(document.getElementById("y_shift").value);	
-	const selectedIds = document.getElementById("selectedIds").value.split('<br>').map(id => id.trim());
-	selectedIds.forEach(id => {
-		const obj = dbGet({'name': id});
-		if (obj.type === 'vroom') {
-			return; // skip shifting for vrooms
-		}
-		obj.polypoints.forEach(point => {
-			point[0] += x_shift;
-			point[1] += y_shift;
-		});
-		currentGeom = obj;
-		cgUpdate();
-		cgUpdateSvg();
-	});
-}
 function showCgPropsBox() {//{{{
 	if(currentGeom.letter==undefined)					 { return; }   // mouse leaving right boxes
 	if(dbGet({'name':currentGeom.name})==undefined) { return; }   // clicking right boxes while new element is very infant
