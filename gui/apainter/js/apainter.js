@@ -231,7 +231,6 @@ function registerListeners() {//{{{
 	$("right-menu-box").on("click"     , "#btn_copy_to_floor"       , function() { floorCopy() });
 	$("right-menu-box").on("click"     , "#btn_add_floor"           , function() { addFloor() });
 	$("right-menu-box").on("click"     , "#btn_delete_floor"        , function() { deleteFloor() });
-	$("right-menu-box").on("click"     , "#btn_shift"        		, function() { shiftObjects() });
 	$("right-menu-box").on("mouseover" , ".bulkProps"               , function() { cgSelect($(this).attr('id'),1,0);});
 	$("right-menu-box").on("click"     , '.bulkProps'               , function() { cgSelect($(this).attr('id'));  });
 	$("body").on("click"               , '#apainter-save'           , function() { if($("#cad-json-textarea").val()===undefined) { db2cadjson(); } else { saveTxtCadJson(); } });
@@ -283,7 +282,7 @@ function escapeAll(rmbClose=1) {//{{{
 	$("#buildingLabels").html(""); 
 	$("#apainter-texts-pos").html(''); 
 	if(rmbClose==1) { $("right-menu-box").css("display", "none"); }
-	underlayPointerEvents(state.currentFloor, stopDragging=1);
+	setUnderlayDragMode(false);
 }
 //}}}
 function cgIdUpdate(letter) {//{{{
@@ -316,8 +315,8 @@ function updateBbox(obj) {
   obj.maxy = maxy;
 }
 
-function drawGeom(geom) {
-  let parentId = '#floor' + geom.floor;
+function drawGeom(geom, parentId='#floor') {
+  parentId += geom.floor;
   let parent = d3.select(parentId);
   let elemName = (geom.type === 'evacuee') ? 'circle' : 'polygon';
     // Obst margin
@@ -345,8 +344,8 @@ function drawGeom(geom) {
   }
 }
 function cgUpdate(){
-	if(currentGeom.type=='underlay_scaler') { return; }
 	updateBbox(currentGeom);
+	if(currentGeom.type=='underlay_scaler') { return; }
 	currentGeom.lines = computeLines(currentGeom);
 	dbUpdateCurrentGeom()
 }
@@ -355,7 +354,6 @@ function cgDb(undoRegister=1) { //{{{
     currentGeom.lines = computeLines(currentGeom);
 	dbRemoveByName(currentGeom.name);
 	addDefaultCgProps();
-	updateBbox(currentGeom);
 
 	dbInsert({"name": currentGeom.name, "idx": currentGeom.idx,
 		"letter": currentGeom.letter, "type": currentGeom.type, "lines": currentGeom.lines,
@@ -745,7 +743,7 @@ function cgInit() {
     maxx: 0,
     maxy: 0,
     exitWeight: state.defaults.exitWeight,
-    evacueesDensity: null,
+    evacueesDensity: 'auto',
     roomExitsWeights: undefined,
     mventThroughput: state.defaults.mventThroughput,
     flowDirection: null,
@@ -793,7 +791,8 @@ function cgCreate() {//{{{
 		}
 	});
 	state.svg.on('mousemove', function(event) {
-		m=scaleMouse(d3.pointer(event, this)); // right click
+		if (!currentGeom || !currentGeom.growing) { return; }
+		m=scaleMouse(d3.pointer(event, this));
 		snap(m);
 		cgDecidePoints(m);
 		cgUpdateSvg(m); 
@@ -1119,7 +1118,8 @@ function assertCgReady() {//{{{
 
 	if(currentGeom.type=='underlay_scaler') { 
 		updateBbox(currentGeom)
-		underlayForm(currentGeom.maxx-currentGeom.minx, state.currentFloor);
+		currentGeom.growing=0
+		underlayForm(currentGeom.maxx-currentGeom.minx);
 		return true;
 	}
 	return true;
@@ -1217,7 +1217,7 @@ function cgStartDrawing() {//{{{
 	$('#legend_'+state.activeLetter).css({'color': '#f00', 'background-color': '#000', 'border-bottom': "1px solid #0f0"});
 	manageTeleportArrows()
 	cgCreate();
-	underlayPointerEvents(state.currentFloor, stopDragging=1);
+	setUnderlayDragMode(false);
 }
 //}}}
 function cgEscapeCreate() {//{{{
@@ -1434,7 +1434,7 @@ function legend() { //{{{
 	for(var letter in state.gg) {
 		if(state.gg[letter].legendary==1) { 
 			var x=dbSelect({"letter": letter}, "name");
-			$('legend1').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+state.gg[letter].font+"; background-color: "+state.gg[letter].c+"' title='"+state.gg[letter].description+"'>"+letter+" "+state.gg[letter].fourLetter+"</div>");
+			$('legend1').append("<div class=legend letter="+letter+" id=legend_"+letter+" style='color: "+state.gg[letter].font+"; background-color: "+state.gg[letter].c+"' title='"+state.gg[letter].description+"'><letter>"+letter+"</letter>"+state.gg[letter].fourLetter+"</div>");
 		}
 	}
 }
@@ -1842,8 +1842,7 @@ function rightBoxShow(html, close_button=1) {//{{{
 	$('right-menu-box').html("");
 	if(close_button==1) { $('right-menu-box').append("<close-right-menu-box><img id=close-img-svg src=/aamks/css/close.svg></close-right-menu-box><br>"); }
 	$('right-menu-box').append(html);
-	$('right-menu-box').fadeIn(); 
-	underlayPointerEvents(state.currentFloor);
+	$('right-menu-box').fadeIn();
 }
 //}}}
 function getExternalDoors(doors,roomTypesObjects){
@@ -2169,8 +2168,6 @@ function showHelpBox() {//{{{
 		"<table class=nobreak>"+
 		"<tr><td><letter>letter</letter> + <letter>leftMouse</letter><td> create element"+
 		"<tr><td><letter>rightMouse</letter><td> click element properties"+
-		"<tr><td><letter>rightMouse</letter><td> click on empty and drag shift objects"+
-		"<tr><td><letter>ctrl</letter> + <letter>rightMouse</letter><td> add/delete from selection"+
 		"<tr><td>hold <letter>ctrl</letter> <td> disable snapping"+ 
 		"<tr><td><letter>v</letter>	<td> 2D/3D views"+ 
 		"<tr><td><letter>n</letter>	<td> loop floors"+ 
@@ -2199,7 +2196,7 @@ function propsXYZ() {//{{{
 		"<label>y-max<input id=alter-y-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxy+"'></label></div>"+
 		"<div>Length: <span id=alter-length>"+(currentGeom.maxy-currentGeom.miny)+"</span></div>"+
 		"</div>";
-		if (currentGeom.letter == LETTERS.TELEPORT_UP || currentGeom.letter == LETTERS.TELEPORT_DOWN)
+		if (currentGeom.letter == LETTERS.TELEPORT_UP || currentGeom.letter == LETTERS.TELEPORT_DOWN || currentGeom.letter == "p")
 			return html;
 		else{
 			html += "<div><label>z-min:<input id=alter-z0 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z0+"'></label>"+
@@ -2251,6 +2248,13 @@ function validateForm() {//{{{
 	if($.isNumeric($("#alter-evacuees-density").val())) { currentGeom.evacueesDensity=Number($("#alter-evacuees-density").val()); } 
 }
 //}}}
+function setIfNotEmpty(selector, prop, asFloat = false) {
+  const rawValue = $.trim($(selector).val());
+  if (rawValue === "") return;
+  const value = asFloat ? parseFloat(rawValue) : rawValue;
+  if (!asFloat || !Number.isNaN(value)) currentGeom[prop] = value;
+}
+
 function saveRightBoxCgProps() {//{{{
 	if(currentGeom.type=='evacuee') {
 		currentGeom.polypoints=[[Number($("#alter-px").val()), Number($("#alter-py").val())]];
@@ -2270,14 +2274,14 @@ function saveRightBoxCgProps() {//{{{
 		currentGeom.polypoints.push([x_max, y_min]);
 		currentGeom.polypoints.push([x_max, y_max]);
 		currentGeom.polypoints.push([x_min, y_max]);
-		currentGeom.evacueesDensity=$("#alter-evacuees-density").val();
-		currentGeom.exitWeight=$("#floor_exits_weights_"+currentGeom.name).val();
+		setIfNotEmpty("#alter-evacuees-density", "evacueesDensity");
+		setIfNotEmpty("#floor_exits_weights_" + currentGeom.name, "exitWeight");
+		setIfNotEmpty("#alter-flow-direction", "flowDirection");
+		setIfNotEmpty("#alter-air-grille-surface", "airGrilleSurface");
+		setIfNotEmpty("#alter-mvent-throughput", "mventThroughput", asFloat=true);
 		if (currentGeom.type == 'room'){
 			currentGeom.roomExitsWeights = getRoomExitWeight(currentGeom.name);
 		}
-		currentGeom.mventThroughput=parseFloat($("#alter-mvent-throughput").val());
-		currentGeom.flowDirection=$("#alter-flow-direction").val();
-		currentGeom.airGrilleSurface=$("#alter-air-grille-surface").val(); 
 		validateForm();
 		var z0=Number($("#alter-z0").val());
 		var z1=Number($("#alter-z1").val());
@@ -2377,7 +2381,7 @@ function sceneBuilder() { //{{{
 	d3.select('body').append('legend2');
 	d3.select('view2d').append('legend1');
 	d3.select('view2d').append("div").attr("id", "apainter-texts-floor").html("floor "+(state.currentFloor + 1)+"/"+state.floorsCount);
-	d3.select('view2d').append("div").attr("id", "apainter-texts-keys").html("n: next floor");
+	d3.select('view2d').append("div").attr("id", "apainter-texts-keys").html("<letter>n</letter> next floor");
 	d3.select('view2d').append("div").attr("id", "apainter-texts-pos");
 	make_legend0("apainter");
 	make_legend2("apainter");

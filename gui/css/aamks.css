@@ -317,8 +317,8 @@ input[type="submit"]:hover, button:hover { opacity:0.7; }
 .bulkProps:hover {  color: #c60 !important; cursor: pointer;  }
 
 
-#apainter-texts-floor { user-select: none; position: absolute; left: 140px; top: 40px; color: #fff; opacity: 0.1; font-size: 16px; font-family: 'Sans'; }
-#apainter-texts-keys  { user-select: none; position: absolute; left: 140px; top: 60px; color: #fff; opacity: 0.1; font-size: 13px; font-family: 'Sans'; }
+#apainter-texts-floor { user-select: none; position: absolute; left: 155px; top: 40px; color: #fff; opacity: 0.2; font-size: 16px; font-family: 'Sans'; }
+#apainter-texts-keys  { user-select: none; position: absolute; left: 155px; top: 60px; color: #fff; opacity: 0.2; font-size: 13px; font-family: 'Sans'; }
 #apainter-texts-pos   { user-select: none; position: absolute; left: 340px; top: 50px; color: #fff; opacity: 0.4; font-size: 12px; font-family: 'Sans'; }
 
 #scenario { visibility: hidden; position: absolute; }
