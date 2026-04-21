@@ -246,7 +246,7 @@ function registerListeners() {//{{{
 	$("body").on("keyup"               , '#alter-z1'                , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-px'                , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-py'                , function() { saveRightBox(); });
-	$("body").on("mouseleave"          , 'right-menu-box'           , function() { saveRightBox(); showCgPropsBox(); });
+	$("body").on("mouseleave"          , 'right-menu-box'           , function() { saveRightBox(); });
 	$("body").on("change"              , '#floor'                   , function() { saveRightBox(); showCgPropsBox(); showGeneralBox();});
 	$("body").on("mousedown", "#apainter-svg", function(e){
 		if (e.which !== 3) return;
@@ -273,7 +273,7 @@ function keyboardEvents()  { // {{{
 	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == 'l')                  { cgEscapeCreate(); bulkProps(); } });
 	$(this).keydown((e) => { if (e.key == 'Escape')												{ escapeAll(); } });
 	// debug
-	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == ']') { debug(); }});
+	$(this).keydown((e) => { if (e.target.nodeName != 'INPUT' && e.key == ']') 					{ debug(); }});
 }
 //}}}
 function escapeAll(rmbClose=1) {//{{{
@@ -281,6 +281,7 @@ function escapeAll(rmbClose=1) {//{{{
 	legend(); 
 	$("#buildingLabels").html(""); 
 	$("#apainter-texts-pos").html(''); 
+	$("right-menu-box").empty();
 	if(rmbClose==1) { $("right-menu-box").css("display", "none"); }
 	setUnderlayDragMode(false);
 }
@@ -475,12 +476,14 @@ function start2dView() {//{{{
 	close3dView();
 	$("view2d").css("display", "block");
 	$("#apainter-svg").css("display", "block");
+	make_legend2("apainter")
 }
 //}}}
 function start3dView() {//{{{
 	state.threejsPlay=1;
 	state.currentView='3d'; 
 	close2dView();
+	make_legend2("apainter3d")
 	view3d();
 	$("view3d").css("display", "block");
 }
@@ -791,7 +794,6 @@ function cgCreate() {//{{{
 		}
 	});
 	state.svg.on('mousemove', function(event) {
-		if (!currentGeom || !currentGeom.growing) { return; }
 		m=scaleMouse(d3.pointer(event, this));
 		snap(m);
 		cgDecidePoints(m);
@@ -810,6 +812,9 @@ function cgCreate() {//{{{
 			cgRemove(undoRegister=0);
 		}
 		snappingHide();
+		if(currentGeom.type == 'underlay_scaler'){
+			state.svg.on('mousedown', null); state.svg.on('mousemove', null); state.svg.on('mouseup', null); 
+		}
 		cgInit();
 		showBuildingLabels();
 	});
@@ -1117,10 +1122,10 @@ function assertCgReady() {//{{{
 	if(currentGeom.polypoints[0][0]==currentGeom.polypoints[1][0] && currentGeom.polypoints[0][1]==currentGeom.polypoints[1][1]) { $("#"+currentGeom.name).remove(); return false; }
 
 	if(currentGeom.type=='underlay_scaler') { 
-		updateBbox(currentGeom)
-		currentGeom.growing=0
+		delete currentGeom.growing;
+		updateBbox(currentGeom);
 		underlayForm(currentGeom.maxx-currentGeom.minx);
-		return true;
+		return false;
 	}
 	return true;
 }
@@ -1232,6 +1237,7 @@ function cgEscapeCreate() {//{{{
 	if($("#gg_listing").length>0) { return; }
 	if($("input#ufloor").length>0) { return; }
 	$("right-menu-box").css("display", "none"); 
+	$("#p1").remove();
 }
 //}}}
 function saveTxtCadJson() {//{{{
@@ -1269,11 +1275,9 @@ function json2db(json) { //{{{
 				if(letter == 's' || letter=='a'){
 					createAndDrawVirtualObjs(geom)
 				}
-				lastGeom=geom;
 			})
 		})
 	});
-	currentGeom = lastGeom;
 	updateSnapLines(); // This is a heavy call, which shouldn't be called for each cgDb()
 	state.undoBuffer=[];
 }
@@ -1423,7 +1427,7 @@ function importCadJson() { //{{{
 		json2db(json.data);
 		_.each(json.data, function(data,floor) { 
 			importImgUnderlay(data['UNDERLAY_IMG'],floor); 
-			importFloorUnderlay(data['UNDERLAY_FLOOR'],floor); 
+			// importFloorUnderlay(data['UNDERLAY_FLOOR'],floor); 
 		});
 		d3.select('#floor_text').text("floor "+state.currentFloor+"/"+state.floorsCount);
 	});
@@ -2208,9 +2212,9 @@ function propsXYZ() {//{{{
 }
 //}}}
 function showCgPropsBox() {//{{{
-	if(currentGeom.letter==undefined)					 { return; }   // mouse leaving right boxes
+	if(currentGeom==undefined)		    			{ return; }   // mouse leaving right boxes
 	if(dbGet({'name':currentGeom.name})==undefined) { return; }   // clicking right boxes while new element is very infant
-	if($("#uimg_remove").length)				 { return; }   // return if underlay menu
+	// if($("#underlay_form").length)					{ return; }   // return if underlay menu
 	showBuildingLabels(1);
 	state.activeLetter=currentGeom.letter;
 	rightBoxShow(
@@ -2226,7 +2230,7 @@ function showCgPropsBox() {//{{{
 		vventProps()+
 		"</table>"+
 		"<br><wheat><letter>x</letter> delete, <letter>l</letter> list</wheat>"+
-		"", 0
+		""
 	);
 }
 //}}}
@@ -2385,6 +2389,7 @@ function sceneBuilder() { //{{{
 	d3.select('view2d').append("div").attr("id", "apainter-texts-pos");
 	make_legend0("apainter");
 	make_legend2("apainter");
+	bind3DHandlers()
 	state.svg = d3.select('view2d').append('svg').attr("id", "apainter-svg").attr("width", state.win.width).attr("height", state.win.height);
 	state.svg.append("filter").attr("id", "invertColorsFilter").append("feColorMatrix").attr("values", "-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0");
 	axes();

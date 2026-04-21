@@ -19,9 +19,12 @@ function createScene() { //{{{
 	
 	controls = new THREE.OrbitControls( camera, renderer.domElement );
 	controls.target = new THREE.Vector3(centerX, 0, centerY);
+	controls.enableZoom = false; 
+	controls.saveState();
 
 	scene = new THREE.Scene();
 	scene.add(new THREE.AxesHelper());
+	renderer.domElement.addEventListener("wheel", onWheelZoom, { passive: false });
 }
 //}}}
 function polyGeometry(geom) {//{{{
@@ -95,12 +98,14 @@ function view3d() {//{{{
 			$.getScript("js/OrbitControls.js", function(){
 				createScene();
 				createMeshes(); 
+				fitCameraToSceneOrtho();
 				animate();
 			});
 		});
 	} else {
 		removeMeshes();
 		createMeshes(); 
+		fitCameraToSceneOrtho();
 		animate();
 	}
 }
@@ -114,3 +119,147 @@ function animate() {//{{{
 	renderer.render( scene, camera );
 }
 //}}}
+function set3DView(view) {
+    state.current3DView = view;
+
+    const box = new THREE.Box3().setFromObject(scene);
+    if (box.isEmpty()) return;
+
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const dist = Math.max(size.x, size.y, size.z) * 2 || 300;
+
+    controls.target.copy(center);
+
+    switch (view) {
+        case "front":
+            camera.position.set(center.x, center.y, center.z + dist);
+            camera.up.set(0, 1, 0);
+            break;
+
+        case "back":
+            camera.position.set(center.x, center.y, center.z - dist);
+            camera.up.set(0, 1, 0);
+            break;
+
+        case "left":
+            camera.position.set(center.x - dist, center.y, center.z);
+            camera.up.set(0, 1, 0);
+            break;
+
+        case "right":
+            camera.position.set(center.x + dist, center.y, center.z);
+            camera.up.set(0, 1, 0);
+            break;
+
+        case "top":
+            camera.position.set(center.x, center.y + dist, center.z);
+            camera.up.set(0, 0, -1);
+            break;
+
+        case "iso":
+            camera.position.set(center.x + dist, center.y + dist, center.z + dist);
+            camera.up.set(0, 1, 0);
+            break;
+    }
+
+    camera.lookAt(center);
+    fitCameraToSceneOrtho(view);
+}
+
+function bind3DHandlers() {
+    $("legend2").on("click", "#vFront", function () { set3DView("front"); });
+    $("legend2").on("click", "#vBack", function () { set3DView("back"); });
+    $("legend2").on("click", "#vLeft", function () { set3DView("left"); });
+    $("legend2").on("click", "#vRight", function () { set3DView("right"); });
+    $("legend2").on("click", "#vTop", function () { set3DView("top"); });
+    $("legend2").on("click", "#vIso", function () { set3DView("iso"); });
+    $("legend2").on("click", "#vDefault", function () { controls.reset(); });
+}
+
+function onWheelZoom(event) {
+    event.preventDefault();
+    const rect = renderer.domElement.getBoundingClientRect();
+    const mouse = new THREE.Vector3(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1,
+        0
+    );
+    const before = mouse.clone().unproject(camera);
+    const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
+    camera.zoom = Math.max(1/30, Math.min(4, camera.zoom * zoomFactor));
+    camera.updateProjectionMatrix();
+    const after = mouse.clone().unproject(camera);
+    const delta = before.sub(after);
+    camera.position.add(delta);
+    controls.target.add(delta);
+    controls.update();
+    renderer.render(scene, camera);
+}
+function fitCameraToSceneOrtho(view, object = scene, offset = 1.1) {
+    if (!object || !camera || !controls) return;
+
+    const box = new THREE.Box3().setFromObject(object);
+    if (box.isEmpty()) return;
+
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    let fitWidth = size.x;
+    let fitHeight = size.y;
+    let depth = size.z;
+
+    switch (view) {
+        case "front":
+        case "back":
+            fitWidth = size.x;
+            fitHeight = size.y;
+            depth = size.z;
+            break;
+
+        case "left":
+        case "right":
+            fitWidth = size.z;
+            fitHeight = size.y;
+            depth = size.x;
+            break;
+
+        case "top":
+            fitWidth = size.x;
+            fitHeight = size.z;
+            depth = size.y;
+            break;
+
+        case "iso":
+            // approximate iso fit using all dimensions
+            fitWidth = size.x + size.z;
+            fitHeight = size.y + size.z;
+            depth = Math.max(size.x, size.y, size.z);
+            break;
+    }
+
+    fitWidth = Math.max(fitWidth, 0.001);
+    fitHeight = Math.max(fitHeight, 0.001);
+
+    const frustumWidth = camera.right - camera.left;
+    const frustumHeight = camera.top - camera.bottom;
+
+    const zoomX = frustumWidth / fitWidth;
+    const zoomY = frustumHeight / fitHeight;
+
+    controls.target.copy(center);
+
+    camera.zoom = Math.min(zoomX, zoomY) / offset;
+
+    const dir = camera.position.clone().sub(center).normalize();
+    const dist = Math.max(depth * 2, 100);
+
+    camera.position.copy(center.clone().add(dir.multiplyScalar(dist)));
+
+    camera.near = 0.1;
+    camera.far = Math.max(1000, dist + depth * 4);
+
+    camera.updateProjectionMatrix();
+    controls.update();
+    renderer.render(scene, camera);
+}

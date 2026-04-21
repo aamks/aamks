@@ -81,7 +81,23 @@ function make_legend2(module) {//{{{
 		$('legend2').append("<button id=btn-underlay-form title='Underlay setup'>U</button>");
 		$('legend2').append("<button id=button-help>Help</button>");
 		$('legend2').append("<button id=button-setup>Setup</button>");
-	} 
+	}
+	if (module=='apainter3d') {
+		$('legend2').append("<button id=vFront>Front</button>");
+		$('legend2').append("<button id=vBack>Back</button>");
+		$('legend2').append("<button id=vLeft>Left</button>");
+		$('legend2').append("<button id=vRight>Right</button>");
+		$("legend2").append('<button id="vTop">Top</button>');
+		$("legend2").append('<button id="vIso">Iso</button>');
+		$("legend2").append('<button id="vDefault">Default</button>');
+		$("legend2").append('<withHelp>?<help style="top:5%; left:auto; right:0;">'+
+			'Left click to rotate.<br>'+
+			'Right click to pan.<br>'+
+			'Mouse wheel to zoom.<br>'+
+			'Click buttons to set views.<br>'+
+			'Default view resets to the first position.<br>'+
+			'</help></withHelp></help></withHelp>');
+	}
 	if (module=='animator') {
 		$('legend2').append("<animator-floor-links style='padding-right: 10px'></animator-floor-links> ");
 		$('legend2').append("<button id=button-info>View sim information</button>");
