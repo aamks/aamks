@@ -197,6 +197,9 @@ function ufloorAdd() {//{{{
 //}}}
 function underlayImgSaveCad(floor) {//{{{
 	const $img=$("#uimg"+floor)
+	const jsImage = document.getElementById("uimg" + floor);
+	const transform = jsImage?.style?.transform || 'none';
+
 	if($img.attr('type') == 'none') { return {}; }
 
 	json={}
@@ -206,7 +209,7 @@ function underlayImgSaveCad(floor) {//{{{
 	json.scale=$img.css('scale');
 	json.rotate=$img.css('rotate');
 	json.translate=$img.css('translate');
-	json.transform=$img.css('transform');
+	json.transform = transform;
 	if(json.type=='pdf') { json.type='svg'; }
 	return json;
 }

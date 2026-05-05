@@ -204,9 +204,9 @@ function launch_draft() {//{{{
 	});
 }
 //}}}
-function isEmpty(obj) {//{{{
-	// Check if dict empty
-	return obj === null || Object.keys(obj).length === 0;
+function isEmpty(obj) {
+	// Returns true if obj is null, undefined, or an empty object
+	return !obj || Object.keys(obj).length === 0;
 }
 //}}}
 dd = function() { //{{{

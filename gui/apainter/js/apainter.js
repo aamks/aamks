@@ -197,6 +197,20 @@ function getTypeApainterObjects(type, floor=null) {
     return state.gg[o.letter].t === type;
   });
 }
+function getTypeApainterObjectsAllFloors(type) {
+	var all_objects = [];
+	for (var floor = 0; floor < state.floorsCount; floor++) {
+	  var floorObjects = state.scene.objects.filter(function(o) {
+		if (o.floor !== floor) {
+		  return false;
+		}
+		return state.gg[o.letter].t === type;
+	  });
+	  all_objects = all_objects.concat(floorObjects);
+	}
+	return all_objects;
+}
+
 function debug() {
 	console.clear();
 	dd(state.scene.objects);
@@ -238,9 +252,9 @@ function registerListeners() {//{{{
 	$("body").on("click"               , '#button-help'             , function() { showHelpBox(); });
 	$("body").on("click"               , '#button-setup'            , function() { showGeneralBox(); });
 	$("body").on("click"               , '.legend'                  , function() { state.activeLetter=$(this).attr('letter'); cgStartDrawing(); });
-	$("body").on("change"              , '#alter-mvent-throughput'  , function() { saveRightBox(); });
-	$("body").on("change"              , '#alter-flow-direction'    , function() { saveRightBox(); });
-	$("body").on("change"              , '#alter-air-grille-surface', function() { saveRightBox(); });
+	$("body").on("input"               , '#alter-mvent-throughput'  , function() { saveRightBox(); });
+	$("body").on("input"               , '#alter-flow-direction'    , function() { saveRightBox(); });
+	$("body").on("input"               , '#alter-air-grille-surface', function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-polypoints'        , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-z0'                , function() { saveRightBox(); });
 	$("body").on("keyup"               , '#alter-z1'                , function() { saveRightBox(); });
@@ -328,21 +342,29 @@ function drawGeom(geom, parentId='#floor') {
       .attr('points', scaleRectangleOutward(geom))
   }
   // Room margin
-  if (geom.type === 'room') {
+  if (geom.type === 'room' || geom.type === 'vroom') {
     parent.append(elemName)
       .attr('id', 'margin' + geom.name)
       .attr('class', 'COMPARTMENTMARGIN')
       .attr('points', scaleRectangleInward(geom))
   }
+
   let elem = parent.append(elemName)
     .attr('id', geom.name)
     .attr('class', geom.type + ' ' + state.gg[geom.letter].x);
-  if (elemName === 'polygon') {
-    elem.attr('points', flatPoints(geom));
-  } else {
-    let p0 = geom.polypoints[0] || [0, 0];
-    elem.attr('cx', p0[0]).attr('cy', p0[1]).attr('r', state.defaults.evacueeRadius);
-  }
+
+	// Jeśli typ to 'vroom', przesuń element na sam spód (początek DOM)
+	if (geom.type === 'vroom') {
+		elem.lower();
+	}
+
+	if (elemName === 'polygon') {
+		elem.attr('points', flatPoints(geom));
+	} else {
+		let p0 = geom.polypoints[0] || [0, 0];
+		elem.attr('cx', p0[0]).attr('cy', p0[1]).attr('r', state.defaults.evacueeRadius);
+	}
+
 }
 function cgUpdate(){
 	updateBbox(currentGeom);
@@ -740,7 +762,7 @@ function cgInit() {
     floor: state.currentFloor,
     points: [],
 	lines: [],
-    z: { z0: state.floorsZ0[state.currentFloor], z1: state.floorsDimZ[state.currentFloor] },
+    z: { z0: state.floorsZ0[state.currentFloor], z1: state.floorsZ0[state.currentFloor]+state.floorsDimZ[state.currentFloor] },
     minx: 0,
     miny: 0,
     maxx: 0,
@@ -874,6 +896,7 @@ function holeOnExternalWall(){
 		return external;
 	}
 }
+
 function IsExternal(geometry){
 	const [r1, r2] = getConnectedZones(geometry);
 	if(r1 == 'OUTSIDE' || r2 == 'OUTSIDE')
@@ -921,11 +944,7 @@ function getConnectedZones(geometry){
 	    return false;
 	}
     // Get all rooms
-    let rooms = getTypeApainterObjects('room', geometry.floor - 1)
-				.concat(
-				getTypeApainterObjects('room', geometry.floor),
-				getTypeApainterObjects('room', geometry.floor + 1)
-				);
+    let rooms = getTypeApainterObjectsAllFloors('room');
     let connectedZones = [];
 
     for (let room of rooms) {
@@ -1133,6 +1152,7 @@ function assertCgReady() {//{{{
 function flatPoints(obj) {//{{{
 	return obj.polypoints.join(" ");
 }
+
 function scaleRectangleOutward(obj) {
  	const adjustedPoints = [
 	  [obj.minx - state.defaults.obstAndCompartmentMarginWidth, obj.miny - state.defaults.obstAndCompartmentMarginWidth], // Top-left corner
@@ -1307,6 +1327,7 @@ function removeVirtualObjs(parentName) {
     d3.select('#' + vObj.name)?.remove();
     d3.select('#margin' + vObj.name)?.remove();
   });
+  state.virtualObjParents[parentName] = []
 }
 
 function createVirtualObj(parentGeom, floor, virtualObjNameMap, virtualObjMap) {
@@ -1397,7 +1418,7 @@ function ajaxSaveCadJson(json_data) { //{{{
 function getSumDimZLower(f) { //{{{
 	let z_sum = 0;
 	_.each(state.floorsDimZ, function(floor_dimz,floor) { 
-		if (floor < f)
+		if (parseInt(floor, 10) < f)
 			z_sum += floor_dimz;
 	});
 	return z_sum;
@@ -1813,18 +1834,25 @@ function vventProps() {//{{{
 function doorProps() {//{{{
 	var pp="";
 	if(currentGeom.type=='door') {
-		pp='';
-		pp+= "<tr><td colspan=2 style='text-align: center'>set the general weight of the exit";
-		pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
-		pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
-		pp+= "<tr><td>exit door " +currentGeom.name+" weight:";
-		if ('exitWeight' in currentGeom && currentGeom.exitWeight !== undefined)
-			pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name="+currentGeom.name+" min=0 max=10 value="+currentGeom.exitWeight+">";
-		else
-			pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name="+currentGeom.name+" min=0 max=10 value=10>";
+		getFloorExits();
+		state.externalDoors.forEach((door, index) => {
+			var door_name = door.name;
+			if (door_name == currentGeom.name){
+				pp='';
+				pp+= "<tr><td colspan=2 style='text-align: center'>set the general weight of the exit";
+				pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
+				pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
+				pp+= "<tr><td>exit door " +currentGeom.name+" weight:";
+				if ('exitWeight' in currentGeom && currentGeom.exitWeight !== undefined)
+					pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name="+currentGeom.name+" min=0 max=10 value="+currentGeom.exitWeight+">";
+				else
+					pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name="+currentGeom.name+" min=0 max=10 value=10>";
+			}
+		});
 	}
 	return pp;
 }
+
 //}}}
 function teleportProps() {//{{{
 	var pp="";
@@ -1849,20 +1877,26 @@ function rightBoxShow(html, close_button=1) {//{{{
 	$('right-menu-box').fadeIn();
 }
 //}}}
-function getExternalDoors(doors,roomTypesObjects){
-	doors.forEach(door => {
-		let is_first_side_door_point_inside = false;
-		let is_second_side_door_point_inside = false;
-		roomTypesObjects.forEach(room => {
-			if (door.minx <= room.maxx && 
-				door.minx >= room.minx &&
-				door.miny <= room.maxy &&
-				door.miny >= room.miny)
+
+
+function getExternalDoors(doors,room_types_objects){
+	state.externalDoors = []
+	doors.forEach((door, index) => {
+		var points = [door.minx,door.miny,door.maxx,door.maxy];
+		var first_side_door_point = [points[0], points[1]];
+		var second_side_door_point = [points[2], points[3]];
+		var is_first_side_door_point_inside = false;
+		var is_second_side_door_point_inside = false;
+		room_types_objects.forEach((room, index) => {
+			if (first_side_door_point[0] <= room.maxx && 
+				first_side_door_point[0] >= room.minx &&
+				first_side_door_point[1] <= room.maxy &&
+				first_side_door_point[1] >= room.miny)
 				is_first_side_door_point_inside = true;
-			if (door.maxx <= room.maxx && 
-				door.maxx >= room.minx &&
-				door.maxy <= room.maxy &&
-				door.maxy >= room.miny)
+			if (second_side_door_point[0] <= room.maxx && 
+				second_side_door_point[0] >= room.minx &&
+				second_side_door_point[1] <= room.maxy &&
+				second_side_door_point[1] >= room.miny)
 				is_second_side_door_point_inside = true;
 		});
 		if (is_first_side_door_point_inside == false ||
@@ -1870,6 +1904,7 @@ function getExternalDoors(doors,roomTypesObjects){
 				state.externalDoors.push(door);
 	});
 }
+
 function getRoomsAndAdjecentDoorsAndHoles(doorsAndHoles,roomTypesObjects, holes){
 	state.roomsAndAdjDoorsAndHoles = {};
 	roomTypesObjects.forEach(room => {
@@ -1990,15 +2025,13 @@ function groupRoomsByHoleConnections(rooms_pairs_joined_by_holes){
 }
 
 function getFloorExits(){
-	cgEscapeCreate();
-	verifyIntersections();
 	const doors = getTypeApainterObjects('door', state.currentFloor);
 	const holes = getTypeApainterObjects('hole', state.currentFloor);
 	const doorsAndHoles = [...doors, ...holes];
 	const roomTypesObjects = getTypeApainterObjects('room', state.currentFloor);
 	const vstai = getTypeApainterObjects('vroom', state.currentFloor).filter(function(obj){ return obj.letter == 'vstai'});
 	roomTypesObjects.push(...vstai);
-	// getExternalDoors(doors,roomTypesObjects);
+	getExternalDoors(doors,roomTypesObjects);
 	getRoomsAndAdjecentDoorsAndHoles(doorsAndHoles, roomTypesObjects, holes);
 }
 
@@ -2193,35 +2226,35 @@ function propsXYZ() {//{{{
 		"Y <input id=alter-py value="+currentGeom.polypoints[0][1]+ sty+"><br>";
 	} else{
 		var html = "<div>points:<div>"+
-		"<label>x-min<input id=alter-x-min type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.minx+"'></label>"+
-		"<label>x-max<input id=alter-x-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxx+"'></label></div>"+
+		"<label>x-min<input id=alter-x-min type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.minx+"'></label>"+
+		"<label>x-max<input id=alter-x-max type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxx+"'></label></div>"+
 		"<div>Width: <span id=alter-width>"+(currentGeom.maxx-currentGeom.minx)+"</span></div>"+
-		"<div><label>y-min<input id=alter-y-min type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.miny+"'></label>"+
-		"<label>y-max<input id=alter-y-max type=number onchange='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxy+"'></label></div>"+
+		"<div><label>y-min<input id=alter-y-min type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.miny+"'></label>"+
+		"<label>y-max<input id=alter-y-max type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxy+"'></label></div>"+
 		"<div>Length: <span id=alter-length>"+(currentGeom.maxy-currentGeom.miny)+"</span></div>"+
-		"</div>";
-		if (currentGeom.letter == LETTERS.TELEPORT_UP || currentGeom.letter == LETTERS.TELEPORT_DOWN || currentGeom.letter == "p")
-			return html;
-		else{
-			html += "<div><label>z-min:<input id=alter-z0 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z0+"'></label>"+
-			"<label>z-max:<input id=alter-z1 type=number onchange='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z1+"'></label></div>"+
+		"</div>"+
+		"<div><label>z-min:<input id=alter-z0 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z0+"'></label>"+
+			"<label>z-max:<input id=alter-z1 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z1+"'></label></div>"+
 			"<div>Height: <span id=alter-height>"+(currentGeom.z.z1-currentGeom.z.z0)+"</span></div>";
-		}
+		if (currentGeom.letter == LETTERS.TELEPORT_UP || currentGeom.letter == LETTERS.TELEPORT_DOWN || currentGeom.letter == "p")
+			return "";
+
 		return html;
 	}
 }
 //}}}
 function showCgPropsBox() {//{{{
-	if(currentGeom==undefined)		    			{ return; }   // mouse leaving right boxes
+	if(currentGeom?.letter === undefined)		    			{ return; }   // mouse leaving right boxes
 	if(dbGet({'name':currentGeom.name})==undefined) { return; }   // clicking right boxes while new element is very infant
 	// if($("#underlay_form").length)					{ return; }   // return if underlay menu
 	showBuildingLabels(1);
 	state.activeLetter=currentGeom.letter;
 	rightBoxShow(
+		"<div style='max-height: 85vh; overflow-y: auto; overflow-x: hidden; padding-right: 5px;'>" +
 	    "<input id=geom_properties type=hidden value=1>"+
 	    "<center><red>&nbsp; "+currentGeom.name+" &nbsp; "+state.gg[currentGeom.letter]['x']+"</red>"+
 		propsXYZ()+
-		"<div id='warning' style='width:200px; background: #600; color: #fff;'></div>"+
+		"<div id='warning' style='width:260px; background: #600; color: #fff;'></div>"+
 		"<table style='table-layout: auto; width: auto; border-collapse: collapse;''>"+
 		roomProps()+
 		doorProps()+
@@ -2230,6 +2263,7 @@ function showCgPropsBox() {//{{{
 		vventProps()+
 		"</table>"+
 		"<br><wheat><letter>x</letter> delete, <letter>l</letter> list</wheat>"+
+		"</div>"+
 		""
 	);
 }
@@ -2265,6 +2299,11 @@ function saveRightBoxCgProps() {//{{{
 		currentGeom.z.z0=50
 		currentGeom.z.z1=50
 		$("#"+currentGeom.name).attr('cx', currentGeom.polypoints[0][0]).attr('cy', currentGeom.polypoints[0][1]);   
+		cgUpdateSvg();
+		cgUpdate();
+	}
+	if(currentGeom.type=='floor_teleport') {
+		setIfNotEmpty("#floor_exits_weights_" + currentGeom.name, "exitWeight");
 		cgUpdateSvg();
 		cgUpdate();
 	} else {
