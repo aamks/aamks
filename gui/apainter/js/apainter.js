@@ -377,7 +377,6 @@ function cgDb(undoRegister=1) { //{{{
     currentGeom.lines = computeLines(currentGeom);
 	dbRemoveByName(currentGeom.name);
 	addDefaultCgProps();
-
 	dbInsert({"name": currentGeom.name, "idx": currentGeom.idx,
 		"letter": currentGeom.letter, "type": currentGeom.type, "lines": currentGeom.lines,
 		"polypoints": currentGeom.polypoints, "z": currentGeom.z, "floor": currentGeom.floor,
@@ -386,6 +385,7 @@ function cgDb(undoRegister=1) { //{{{
 		"roomExitsWeights":currentGeom.roomExitsWeights, "evacueesDensity": currentGeom.evacueesDensity, 
 		"minx": currentGeom.minx, "miny": currentGeom.miny, "maxx": currentGeom.maxx, "maxy": currentGeom.maxy, 
 		"teleportFrom":currentGeom.teleportFrom, "teleportTo":currentGeom.teleportTo});
+
 
 	if(undoRegister==1) { undoBufferRegister('insert'); }
 }
@@ -414,6 +414,7 @@ function generateObjectCadJson(obj){
 		cad_json["teleportTo"]=obj.teleportTo;
 		if (obj.exitWeight != null)
 			cad_json["exitWeight"]=obj.exitWeight;
+
 	}
 	return cad_json;
 }
@@ -872,6 +873,22 @@ function addDefaultCgProps(){
 			}
 		}
 	} 
+	if(cg.type=='vvent') {
+		var zones = getConnectedZones(cg);
+		r1 = zones[0];
+		r2 = zones[1];
+		if (r1==null && r2==null){
+			amsg({'err':1, 'msg':"correct vvent size and localization because it intersects not properly"}); 
+		}
+		else
+		{
+			if(cg.vent_connection == null)
+			{
+				cg.vent_connection=`${r1}, ${r2}`;
+			}
+		}
+	} 
+	
 }
 function checkNegativeCords(){
 	var negative = false
@@ -1404,6 +1421,7 @@ function computeLines(geom) {
     lines = [-100000,-100000,-100000,-100000,-100000,-100000,-100000,-100000];
   }
   return lines;
+
 }
 function ajaxSaveCadJson(json_data) { //{{{
 	if(!isGeometryCorrect()){
@@ -1422,6 +1440,7 @@ function getSumDimZLower(f) { //{{{
 			z_sum += floor_dimz;
 	});
 	return z_sum;
+
 }
 //}}}
 function setFloorsZ(json) { //{{{
@@ -1665,6 +1684,7 @@ function floorCopy() {	//{{{
 		currentGeom.name=currentGeom.letter + idx;
 		currentGeom.z.z0=state.floorsZ0[c2f];
 		currentGeom.z.z1=state.floorsZ0[c2f] + m.z.z1- m.z.z0;
+
 		cgDb(undoRegister=0);
 		drawGeom(currentGeom);
 
@@ -1785,6 +1805,7 @@ function mventProps() {//{{{
 		} else {
 			pp += "<tr><td colspan='2'>mvent "+currentGeom.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
 			pp += "<tr><td>flow direction: <td><select id=alter-flow-direction name=flowDirection >";
+
 			
 			const flow1 = `${r1} to ${r2}`;
 			const flow2 = `${r2} to ${r1}`;
@@ -1826,6 +1847,7 @@ function vventProps() {//{{{
 		else
 		{
 			pp += "<tr><td colspan='2'>vvent "+currentGeom.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
+
 		}
 	} 
 	return pp;
