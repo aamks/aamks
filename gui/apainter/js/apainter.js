@@ -2271,6 +2271,7 @@ function showHelpBox() {//{{{
 //}}}
 function propsXYZ() {//{{{
 	sty=" style='width: 40px' ";
+	if (currentGeom.type == 'floor_teleport') return ""
 	if(currentGeom.type=='evacuee') { 
 		return "<br>X <input id=alter-px value="+currentGeom.polypoints[0][0]+ sty+"><br>"+
 		"Y <input id=alter-py value="+currentGeom.polypoints[0][1]+ sty+"><br>";
@@ -2281,13 +2282,12 @@ function propsXYZ() {//{{{
 		"<div>Width: <span id=alter-width>"+(currentGeom.maxx-currentGeom.minx)+"</span></div>"+
 		"<div><label>y-min<input id=alter-y-min type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.miny+"'></label>"+
 		"<label>y-max<input id=alter-y-max type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxy+"'></label></div>"+
-		"<div>Length: <span id=alter-length>"+(currentGeom.maxy-currentGeom.miny)+"</span></div>"+
+		"<div>Length: <span id=alter-length>"+(currentGeom.maxy-currentGeom.miny)+"</span></div>"
+		if (currentGeom.letter == "p") return html;
+		html +=
 		"<div><label>z-min:<input id=alter-z0 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z0+"'></label>"+
 		"<label>z-max:<input id=alter-z1 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z1+"'></label></div>"+
 		"<div>Height: <span id=alter-height>"+(currentGeom.z.z1-currentGeom.z.z0)+"</span></div></div>";
-		if (currentGeom.letter == LETTERS.TELEPORT_UP || currentGeom.letter == LETTERS.TELEPORT_DOWN || currentGeom.letter == "p")
-			return "";
-
 		return html;
 	}
 }
