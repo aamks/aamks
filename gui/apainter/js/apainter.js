@@ -847,12 +847,12 @@ function cgCreate() {//{{{
 //}}}
 
 function addDefaultCgProps(){
-	const [r1, r2] = getConnectedZones(currentGeom);
-	if (r1==null || r2==null){
-		amsg({'err':2, 'msg':"This connection intersects only one zone. Adjust the geometry so it intersects two zones, such as another ROOM, the OUTSIDE, or an upper/lower level.", 'duration': 20000}); 
-		return
-	}
 	if(currentGeom.type=='mvent') {
+		const [r1, r2] = getConnectedZones(currentGeom);
+		if (r1 == null || r2 == null){
+			amsg({'err':2, 'msg':"This connection intersects only one zone. Adjust the geometry so it intersects two zones, such as another ROOM, the OUTSIDE, or an upper/lower level.", 'duration': 20000}); 
+			return
+		}
 		let mventWithDuct = false;
 		if (r1 == 'OUTSIDE' || r2 == 'OUTSIDE') {
 			// mechanical vent with duct leading outside
@@ -877,6 +877,11 @@ function addDefaultCgProps(){
 		}
 	} 
 	if(currentGeom.type=='vvent') {
+		const [r1, r2] = getConnectedZones(currentGeom);
+		if (r1 == null || r2 == null){
+			amsg({'err':2, 'msg':"This connection intersects only one zone. Adjust the geometry so it intersects two zones, such as another ROOM, the OUTSIDE, or an upper/lower level.", 'duration': 20000}); 
+			return
+		}
 		if(currentGeom.vent_connection == null)
 		{
 			currentGeom.vent_connection=`${r1}, ${r2}`;
@@ -2147,7 +2152,7 @@ function validateRightBoxInput(input) {
 			}
 		}
     }
-	else if (input.id == 'default_floor_dimz'){
+	if (input.id == 'default_floor_dimz'){
     	if (value < 1) {
     		input.value = 1;
     	}
@@ -2167,12 +2172,12 @@ function validateRightBoxInput(input) {
 			}
 		}
     }
-    else if (input.id == 'default_door_width'){
+if (input.id == 'default_door_width'){
     	if (value < 1) {
     		input.value = 1;
     	}
     }
-    else if (input.id == 'default_door_dimz'){
+	if (input.id == 'default_door_dimz'){
     	if (value > state.floorsDimZ[state.currentFloor]) {
     		input.value = state.floorsDimZ[state.currentFloor];
     	}
@@ -2180,7 +2185,7 @@ function validateRightBoxInput(input) {
     		input.value = 1;
     	}
     }
-    else if (input.id =='default_window_dimz'){
+	if (input.id =='default_window_dimz'){
     	let window_offsetz = parseInt(document.getElementById("default_window_offsetz").value);
     	if (value+window_offsetz > state.floorsDimZ[state.currentFloor]) {
     		input.value = state.floorsDimZ[state.currentFloor] - window_offsetz;
@@ -2190,7 +2195,7 @@ function validateRightBoxInput(input) {
     	}
     }
 
-    else if (input.id =='default_window_offsetz'){
+	if (input.id =='default_window_offsetz'){
     	let window_dimz= parseInt(document.getElementById("default_window_dimz").value);
     	if (value+window_dimz > state.floorsDimZ[state.currentFloor]) {
     		input.value = state.floorsDimZ[state.currentFloor] - window_dimz;
