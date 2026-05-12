@@ -213,8 +213,10 @@ function getTypeApainterObjectsAllFloors(type) {
 
 function debug() {
 	console.clear();
-	dd(state.scene.objects);
-	dd(currentGeom);
+	// dd(state.scene.objects);
+	// dd(currentGeom);
+	dd(state.floorsDimZ)
+	dd(state.floorsZ0)
 	//dd($("#ufloor"+floor)[0]);
 	//dd($('#apainter-svg')[0]); 
 	//_.each(dbWhere({'letter':'s'}), function(v) {
@@ -845,11 +847,12 @@ function cgCreate() {//{{{
 //}}}
 
 function addDefaultCgProps(){
+	const [r1, r2] = getConnectedZones(currentGeom);
+	if (r1==null || r2==null){
+		amsg({'err':2, 'msg':"This connection intersects only one zone. Adjust the geometry so it intersects two zones, such as another ROOM, the OUTSIDE, or an upper/lower level.", 'duration': 20000}); 
+		return
+	}
 	if(currentGeom.type=='mvent') {
-		const [r1, r2] = getConnectedZones(currentGeom);
-		if (r1==null || r2==null){
-			amsg({'err':2, 'msg':"Coorect mvent size and localization because it intersects not properly", 'duration': 20000}); 
-		}
 		let mventWithDuct = false;
 		if (r1 == 'OUTSIDE' || r2 == 'OUTSIDE') {
 			// mechanical vent with duct leading outside
@@ -873,22 +876,12 @@ function addDefaultCgProps(){
 			}
 		}
 	} 
-	if(cg.type=='vvent') {
-		var zones = getConnectedZones(cg);
-		r1 = zones[0];
-		r2 = zones[1];
-		if (r1==null && r2==null){
-			amsg({'err':1, 'msg':"correct vvent size and localization because it intersects not properly"}); 
-		}
-		else
+	if(currentGeom.type=='vvent') {
+		if(currentGeom.vent_connection == null)
 		{
-			if(cg.vent_connection == null)
-			{
-				cg.vent_connection=`${r1}, ${r2}`;
-			}
+			currentGeom.vent_connection=`${r1}, ${r2}`;
 		}
 	} 
-	
 }
 function checkNegativeCords(){
 	var negative = false
@@ -981,10 +974,6 @@ function getConnectedZones(geometry){
     if (connectedZones.length > 2) {
         amsg({ 'err': 2, 'msg': "The connection object intersects more than 2 zones. Please correct apainter geometry." });
         return [null, null];
-    }
-    if (connectedZones.length == 1) {
-		// the cuboid is inside one room
-		connectedZones.push('OUTSIDE');
     }
 	return connectedZones;
 }
@@ -1801,7 +1790,7 @@ function mventProps() {//{{{
 			mventWithDuct = true;
 		}
 		if (r1==null || r2==null){
-			pp += "<tr><td>coorect mvent size and localization because</td><td> it intersects not properly</td></tr>";
+			pp += "<tr><td colspan='2' style='text-align: center'>coorect mvent size and localization because it intersects not properly</td></tr>";
 		} else {
 			pp += "<tr><td colspan='2'>mvent "+currentGeom.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
 			pp += "<tr><td>flow direction: <td><select id=alter-flow-direction name=flowDirection >";
@@ -1842,7 +1831,7 @@ function vventProps() {//{{{
 	if(currentGeom.type=='vvent') {
 		const [r1, r2] = getConnectedZones(currentGeom);
 		if (r1==null || r2==null){
-			pp += "<tr><td>coorect vvent size and localization because</td><td> it intersects not properly</td></tr>";
+			pp += "<tr><td colspan='2' style='text-align: center'>coorect vvent size and localization because it intersects not properly</td></tr>";
 		}
 		else
 		{
@@ -2108,7 +2097,7 @@ function validateRightBoxInput(input) {
     var stairAndHall = ['s', 'a'];
     var vents = ['m', 'b'];
 
-    if (limitedZObj.includes(currentGeom.letter)){
+    if (limitedZObj.includes(currentGeom?.letter)){
     	if (input.id == 'alter-z1'){
 	    	let alter_z0 = parseInt(document.getElementById("alter-z0").value);
 	    	if (value > state.floorsZ0[currentGeom.floor] + state.floorsDimZ[currentGeom.floor]) {
@@ -2130,7 +2119,7 @@ function validateRightBoxInput(input) {
 			}
 		}
     }
-    else if (stairAndHall.includes(currentGeom.letter)){
+    else if (stairAndHall.includes(currentGeom?.letter)){
 		if (input.id == 'alter-z0'){
 			if (value < state.floorsZ0[currentGeom.floor]) {
 				input.value = state.floorsZ0[currentGeom.floor];
@@ -2140,7 +2129,7 @@ function validateRightBoxInput(input) {
 			}
 		}
     }
-    else if (vents.includes(currentGeom.letter)){
+    else if (vents.includes(currentGeom?.letter)){
     	if (input.id == 'alter-z1'){
 	    	if (value > state.floorsZ0[currentGeom.floor] + state.floorsDimZ[currentGeom.floor] + 4) {
     			input.value = state.floorsZ0[currentGeom.floor] + state.floorsDimZ[currentGeom.floor] + 4;
@@ -2158,23 +2147,56 @@ function validateRightBoxInput(input) {
 			}
 		}
     }
-
+	else if (input.id == 'default_floor_dimz'){
+    	if (value < 1) {
+    		input.value = 1;
+    	}
+		let doorHeight = parseInt(document.getElementById("default_door_dimz").value);
+		if (doorHeight > value) {
+			document.getElementById("default_door_dimz").value = value;
+		}
+		let windowHeight = parseInt(document.getElementById("default_window_dimz").value);
+		let windowOffsetZ = parseInt(document.getElementById("default_window_offsetz").value);
+		if (windowHeight + windowOffsetZ > value) {
+			if (windowHeight > value) {
+				document.getElementById("default_window_dimz").value = value;
+				document.getElementById("default_window_offsetz").value = 0;
+			}
+			else {
+				document.getElementById("default_window_offsetz").value = value - windowHeight;
+			}
+		}
+    }
+    else if (input.id == 'default_door_width'){
+    	if (value < 1) {
+    		input.value = 1;
+    	}
+    }
     else if (input.id == 'default_door_dimz'){
-    	if (value > state.floorsDimZ[currentGeom.floor]) {
-    		input.value = state.floorsDimZ[currentGeom.floor];
+    	if (value > state.floorsDimZ[state.currentFloor]) {
+    		input.value = state.floorsDimZ[state.currentFloor];
+    	}
+		if (value < 1) {
+    		input.value = 1;
     	}
     }
     else if (input.id =='default_window_dimz'){
     	let window_offsetz = parseInt(document.getElementById("default_window_offsetz").value);
-    	if (value+window_offsetz > state.floorsDimZ[currentGeom.floor]) {
-    		input.value = state.floorsDimZ[currentGeom.floor] - window_offsetz;
+    	if (value+window_offsetz > state.floorsDimZ[state.currentFloor]) {
+    		input.value = state.floorsDimZ[state.currentFloor] - window_offsetz;
+    	}
+		if (value < 1) {
+    		input.value = 1;
     	}
     }
 
     else if (input.id =='default_window_offsetz'){
     	let window_dimz= parseInt(document.getElementById("default_window_dimz").value);
-    	if (value+window_dimz > state.floorsDimZ[currentGeom.floor]) {
-    		input.value = state.floorsDimZ[currentGeom.floor] - window_dimz;
+    	if (value+window_dimz > state.floorsDimZ[state.currentFloor]) {
+    		input.value = state.floorsDimZ[state.currentFloor] - window_dimz;
+    	}
+		if (value < 1) {
+    		input.value = 1;
     	}
     }
 	if (input.id == 'alter-z0'){
@@ -2185,7 +2207,7 @@ function validateRightBoxInput(input) {
     	let alter_z0 = parseInt(document.getElementById("alter-z0").value);
 		document.getElementById("alter-height").innerHTML = input.value-alter_z0;
 	}
-	saveRightBoxCgProps();
+	saveRightBox();
 }
 
 function showGeneralBox() { //{{{
@@ -2201,13 +2223,14 @@ function showGeneralBox() { //{{{
 		}
 	}
 	html+=	"</select>"+
-		"<tr><td>floor z-origin <td><input id=floorZ0 type=number name=floorZ0 value="+state.floorsZ0[state.currentFloor]+" disabled style='background-color: darkgrey; color: #333; width: 6ch;'>"+
-		"<tr><td>floor height <td><input id=default_floor_dimz type=number name=default_floor_dimz value="+state.floorsDimZ[state.currentFloor]+" style='width: 7ch;'+>"+
+		"<tr><td>floor z-origin <td><input id=floorZ0 type=number name=floorZ0 value="+state.floorsZ0[state.currentFloor]+" disabled style='background-color: darkgrey; color: #333; width: 7ch;'>"+
+		"<tr><td>floor height <td><input id=default_floor_dimz type=number name=default_floor_dimz onchange='validateRightBoxInput(this)' value='"+state.floorsDimZ[state.currentFloor]+"' "+
+		(state.currentFloor+1 < state.floorsCount ? "disabled style='background-color: darkgrey;color: #333;width: 7ch;'>" : "style='width: 7ch;'>")+
 		"<tr><td><td><tr><td><td><tr><td><td><tr><td><td><tr><td><td><tr><td><td>"+
-		"<tr><td>door's width <td><input id=default_door_width type=number name=default_door_width value="+state.defaults.doorWidth+" style='width: 6ch;'>"+
-		"<tr><td>door's height <td><input id=default_door_dimz type=number name=default_door_dimz oninput='validateRightBoxInput(this)' value="+state.defaults.doorDimZ+" style='width: 6ch;'>"+
-		"<tr><td>window's height <td><input id=default_window_dimz type=number name=default_window_dimz oninput='validateRightBoxInput(this)' value="+state.defaults.windowDimZ+" style='width: 6ch;'>"+
-		"<tr><td>window's z-offset <td><input id=default_window_offsetz type=number name=default_window_offsetz oninput='validateRightBoxInput(this)' value="+state.defaults.windowOffsetZ+" style='width: 6ch;'>"+
+		"<tr><td>door's width <td><input id=default_door_width type=number name=default_door_width onchange='validateRightBoxInput(this)' value="+state.defaults.doorWidth+" style='width: 6ch;'>"+
+		"<tr><td>door's height <td><input id=default_door_dimz type=number name=default_door_dimz onchange='validateRightBoxInput(this)' value="+state.defaults.doorDimZ+" style='width: 6ch;'>"+
+		"<tr><td>window's height <td><input id=default_window_dimz type=number name=default_window_dimz onchange='validateRightBoxInput(this)' value="+state.defaults.windowDimZ+" style='width: 6ch;'>"+
+		"<tr><td>window's z-offset <td><input id=default_window_offsetz type=number name=default_window_offsetz onchange='validateRightBoxInput(this)' value="+state.defaults.windowOffsetZ+" style='width: 6ch;'>"+
 		"</table><br>"+
 		"<table class=nobreak>"+
 		"<withHelp>?<help>door's height cannot be higher than floor height<br><hr> window's height+z-offset cannot be higher than floor height</help></withHelp>"+
@@ -2247,17 +2270,16 @@ function propsXYZ() {//{{{
 		return "<br>X <input id=alter-px value="+currentGeom.polypoints[0][0]+ sty+"><br>"+
 		"Y <input id=alter-py value="+currentGeom.polypoints[0][1]+ sty+"><br>";
 	} else{
-		var html = "<div>points:<div>"+
+		var html = "<div style='width: 250px'>points:<div>"+
 		"<label>x-min<input id=alter-x-min type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.minx+"'></label>"+
 		"<label>x-max<input id=alter-x-max type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxx+"'></label></div>"+
 		"<div>Width: <span id=alter-width>"+(currentGeom.maxx-currentGeom.minx)+"</span></div>"+
 		"<div><label>y-min<input id=alter-y-min type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.miny+"'></label>"+
 		"<label>y-max<input id=alter-y-max type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxy+"'></label></div>"+
 		"<div>Length: <span id=alter-length>"+(currentGeom.maxy-currentGeom.miny)+"</span></div>"+
-		"</div>"+
 		"<div><label>z-min:<input id=alter-z0 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z0+"'></label>"+
-			"<label>z-max:<input id=alter-z1 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z1+"'></label></div>"+
-			"<div>Height: <span id=alter-height>"+(currentGeom.z.z1-currentGeom.z.z0)+"</span></div>";
+		"<label>z-max:<input id=alter-z1 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z1+"'></label></div>"+
+		"<div>Height: <span id=alter-height>"+(currentGeom.z.z1-currentGeom.z.z0)+"</span></div></div>";
 		if (currentGeom.letter == LETTERS.TELEPORT_UP || currentGeom.letter == LETTERS.TELEPORT_DOWN || currentGeom.letter == "p")
 			return "";
 
