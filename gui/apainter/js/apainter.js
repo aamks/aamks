@@ -16,7 +16,7 @@ const LETTERS = {
  * 		windowDimZ:number,windowOffsetZ:number,evacueeRadius:number, 
  * 		obstAndCompartmentMarginWidth:number, snapForceHole:number, snapForceOther:number,
  * 		zAdjFire:number, zAdjEvac:number, zAdjObst:number, zAdjVent:number,
- * 		mventThroughput:number, exitWeight:number}} defaults
+ * 		mvent_throughput:number, exit_weight:number}} defaults
  * @property {{x?:number,y?:number}} activeSnap
  * @property {any[]} undoBuffer
  * @property {number} threejsPlay
@@ -54,15 +54,15 @@ var state = {
     windowDimZ: 150,
     windowOffsetZ: 100,
 	evacueeRadius: 25,
-	obstAndCompartmentMarginWidth: 26,
+	obstAndCompartmentMarginWidth: 30,
 	snapForceHole: 100,
 	snapForceOther: 50,
 	zAdjFire: 250,
 	zAdjEvac: 150,
 	zAdjObst: 100,
 	zAdjVent: 50,
-	mventThroughput: 1.5,
-	exitWeight: 10
+	mvent_throughput: 1.5,
+	exit_weight: 10
   },
   activeSnap: {},
   undoBuffer: [],
@@ -102,14 +102,15 @@ var state = {
  * @property {number} miny
  * @property {number} maxx
  * @property {number} maxy
- * @property {?number} [exitWeight]
- * @property {('auto'|number)} [evacueesDensity]
- * @property {Object<string,number>} [roomExitsWeights]
- * @property {?number} [mventThroughput]
- * @property {?string} [flowDirection]
- * @property {?number} [airGrilleSurface]
- * @property {{x:number,y:number}|null} [teleportFrom]
- * @property {{x:number,y:number}|null} [teleportTo]
+ * @property {?number} [exit_weight]
+ * @property {('auto'|number)} [evacuees_density]
+ * @property {Object<string,number>} [room_exits_weights]
+ * @property {?number} [mvent_throughput]
+ * @property {?string} [flow_direction]
+ * @property {?number} [air_grille_surface]
+ * @property {?number} [vent_connection]
+ * @property {{x:number,y:number}|null} [teleport_from]
+ * @property {{x:number,y:number}|null} [teleport_to]
  * @property {string} preferredSnap
  * @property {number} snapForce
  * 
@@ -382,11 +383,11 @@ function cgDb(undoRegister=1) { //{{{
 	dbInsert({"name": currentGeom.name, "idx": currentGeom.idx,
 		"letter": currentGeom.letter, "type": currentGeom.type, "lines": currentGeom.lines,
 		"polypoints": currentGeom.polypoints, "z": currentGeom.z, "floor": currentGeom.floor,
-		"mventThroughput": currentGeom.mventThroughput, "flowDirection":currentGeom.flowDirection,
-		"airGrilleSurface":currentGeom.airGrilleSurface, "exitWeight":currentGeom.exitWeight,
-		"roomExitsWeights":currentGeom.roomExitsWeights, "evacueesDensity": currentGeom.evacueesDensity, 
+		"mvent_throughput": currentGeom.mvent_throughput, "flow_direction":currentGeom.flow_direction, "vent_connection":currentGeom.vent_connection,
+		"air_grille_surface":currentGeom.air_grille_surface, "exit_weight":currentGeom.exit_weight,
+		"room_exits_weights":currentGeom.room_exits_weights, "evacuees_density": currentGeom.evacuees_density, 
 		"minx": currentGeom.minx, "miny": currentGeom.miny, "maxx": currentGeom.maxx, "maxy": currentGeom.maxy, 
-		"teleportFrom":currentGeom.teleportFrom, "teleportTo":currentGeom.teleportTo});
+		"teleport_from":currentGeom.teleport_from, "teleport_to":currentGeom.teleport_to});
 
 
 	if(undoRegister==1) { undoBufferRegister('insert'); }
@@ -399,23 +400,27 @@ function generateObjectCadJson(obj){
 	cad_json['z']=JSON.stringify([obj.z.z0, obj.z.z1]);
 
 	if(obj.type=='door') {
-		if (obj.exitWeight != null)
-			cad_json["exitWeight"]=obj.exitWeight;
+		if (obj.exit_weight != null)
+			cad_json["exit_weight"]=obj.exit_weight;
 	} else if(obj.type=='room') {
-		cad_json["evacueesDensity"]=obj.evacueesDensity;
-		if (obj.roomExitsWeights != null)
-			cad_json["roomExitsWeights"]=obj.roomExitsWeights; 
+		cad_json["evacuees_density"]=obj.evacuees_density;
+		if (obj.room_exits_weights != null)
+			cad_json["room_exits_weights"]=obj.room_exits_weights; 
 	} else if(obj.type=='mvent') {
-		cad_json["mventThroughput"]=obj.mventThroughput;
-		if (obj.flowDirection != null)
-			cad_json["flowDirection"]=obj.flowDirection;
-		if (obj.airGrilleSurface != null)
-			cad_json["airGrilleSurface"]=obj.airGrilleSurface;
-	}else if(obj.type=='floor_teleport') {
-		cad_json["teleportFrom"]=obj.teleportFrom;
-		cad_json["teleportTo"]=obj.teleportTo;
-		if (obj.exitWeight != null)
-			cad_json["exitWeight"]=obj.exitWeight;
+		cad_json["mvent_throughput"]=obj.mvent_throughput;
+		if (obj.flow_direction != null)
+			cad_json["flow_direction"]=obj.flow_direction;
+		if (obj.air_grille_surface != null)
+			cad_json["air_grille_surface"]=obj.air_grille_surface;
+	} else if(obj.type=='vvent') {
+		if (obj.vent_connection != null)
+			cad_json["vent_connection"]=obj.vent_connection;
+	}
+	else if(obj.type=='floor_teleport') {
+		cad_json["teleport_from"]=obj.teleport_from;
+		cad_json["teleport_to"]=obj.teleport_to;
+		if (obj.exit_weight != null)
+			cad_json["exit_weight"]=obj.exit_weight;
 
 	}
 	return cad_json;
@@ -550,8 +555,8 @@ function cgRemove(undoRegister=1) {//{{{
 	$(".building-vertex").remove() 
 	if (currentGeom.type == 'door' || currentGeom.type == 'hole'){	
 		_.each(dbWhere({'floor': currentGeom.floor, 'type': 'room'}), function(m){
-			if (m.roomExitsWeights !== undefined && currentGeom.idx in m.roomExitsWeights)
-				delete m.roomExitsWeights[currentGeom.idx];
+			if (m.room_exits_weights !== undefined && currentGeom.idx in m.room_exits_weights)
+				delete m.room_exits_weights[currentGeom.idx];
 		});
 	}
 	if (currentGeom.type == 'obst'){	
@@ -770,14 +775,15 @@ function cgInit() {
     miny: 0,
     maxx: 0,
     maxy: 0,
-    exitWeight: state.defaults.exitWeight,
-    evacueesDensity: 'auto',
-    roomExitsWeights: undefined,
-    mventThroughput: state.defaults.mventThroughput,
-    flowDirection: null,
-    airGrilleSurface: null,
-    teleportFrom: null,
-    teleportTo: null,
+    exit_weight: undefined,
+    evacuees_density: 'auto',
+    room_exits_weights: undefined,
+    mvent_throughput: state.defaults.mvent_throughput,
+    flow_direction: null,
+    air_grille_surface: null,
+	vent_connection: null,
+    teleport_from: null,
+    teleport_to: null,
 	preferredSnap: null,
 	snapForce: (state.gg[state.activeLetter].t == 'hole') ? state.defaults.snapForceHole : state.defaults.snapForceOther,
   };
@@ -796,7 +802,7 @@ function cgInit() {
     obj.z.z1 = obj.z.z0 + state.defaults.doorDimZ;
   } else if (obj.type === 'room') {
     obj.z.z1 = obj.z.z0 + state.floorsDimZ[state.currentFloor];
-	obj.evacueesDensity = 'auto';
+	obj.evacuees_density = 'auto';
   }
   currentGeom = obj;
 }
@@ -848,44 +854,49 @@ function cgCreate() {//{{{
 
 function addDefaultCgProps(){
 	if(currentGeom.type=='mvent') {
-		const [r1, r2] = getConnectedZones(currentGeom);
-		if (r1 == null || r2 == null){
-			amsg({'err':2, 'msg':"This connection intersects only one zone. Adjust the geometry so it intersects two zones, such as another ROOM, the OUTSIDE, or an upper/lower level.", 'duration': 20000}); 
-			return
-		}
-		let mventWithDuct = false;
-		if (r1 == 'OUTSIDE' || r2 == 'OUTSIDE') {
+		var zones = getConnectedZones(currentGeom);
+		var mventWithDuct = false;
+		if (zones.length === 1) {
 			// mechanical vent with duct leading outside
+    		zones.push("OUTSIDE");
 			mventWithDuct = true;
+		}
+		r1 = zones[0];
+		r2 = zones[1];
+		if (r1==null && r2==null){
+			amsg({'err':1, 'msg':"correct mvent size and localization because it intersects not properly"}); 
 		}
 		else
 		{
-			// add this property for newly created mvent so that the flowDirection and 
-			// airGrilleSurface fields  (only in case of mventWithDuct==true)
+			// add this property for newly created mvent so that the flow_direction and 
+			// air_grille_surface fields  (only in case of mventWithDuct==true)
 			// are not set to null or undefined (they must always be set to something)
 			// different from (null or undefined)
-			if(currentGeom.flowDirection == null)
+			if(currentGeom.flow_direction == null)
 			{
-				currentGeom.flowDirection=`${r1} to ${r2}`;
+				currentGeom.flow_direction=`${r1} to ${r2}`;
 			}
-			if(currentGeom.airGrilleSurface == null)
+			if(currentGeom.air_grille_surface == null)
 			{
 				if(mventWithDuct == true){
-					currentGeom.airGrilleSurface='x_min';
+					currentGeom.air_grille_surface='x_min';
 				}
 			}
 		}
 	} 
 	if(currentGeom.type=='vvent') {
-		const [r1, r2] = getConnectedZones(currentGeom);
-		if (r1 == null || r2 == null){
-			amsg({'err':2, 'msg':"This connection intersects only one zone. Adjust the geometry so it intersects two zones, such as another ROOM, the OUTSIDE, or an upper/lower level.", 'duration': 20000}); 
+		var zones = getConnectedZones(currentGeom);
+		r1 = zones[0];
+		r2 = zones[1];
+		if (r1==null || r2==null){
+			amsg({'err':2, 'msg':"This connection intersects only one zone. Adjust the geometry so it intersects two zones, such as another ROOM, the OUTSIDE, or an upper/lower level.", 'duration': 6000}); 
 			return
 		}
 		if(currentGeom.vent_connection == null)
 		{
 			currentGeom.vent_connection=`${r1}, ${r2}`;
 		}
+
 	} 
 }
 function checkNegativeCords(){
@@ -980,6 +991,12 @@ function getConnectedZones(geometry){
         amsg({ 'err': 2, 'msg': "The connection object intersects more than 2 zones. Please correct apainter geometry." });
         return [null, null];
     }
+
+	if (connectedZones.length == 1) {
+		// the cuboid is inside one room
+		return [connectedZones[0]];
+    }
+
 	return connectedZones;
 }
 
@@ -1022,8 +1039,8 @@ function cgDecidePoints(m) {//{{{
 					p1=[px+state.defaults.floorTeleportWidth, py-10];
 					p2=[px+state.defaults.floorTeleportWidth, py+10];
 					p3=[px, py];
-					currentGeom.teleportFrom = [px+state.defaults.floorTeleportWidth, py]
-					currentGeom.teleportTo = [px, py]
+					currentGeom.teleport_from = [px+state.defaults.floorTeleportWidth, py]
+					currentGeom.teleport_to = [px, py]
 					break;
 				//arrow up downstairs
 				case 1:
@@ -1031,8 +1048,8 @@ function cgDecidePoints(m) {//{{{
 					p1=[px+10, py+state.defaults.floorTeleportWidth];
 					p2=[px-10, py+state.defaults.floorTeleportWidth];
 					p3=[px, py];
-					currentGeom.teleportFrom = [px, py+state.defaults.floorTeleportWidth]
-					currentGeom.teleportTo = [px, py]
+					currentGeom.teleport_from = [px, py+state.defaults.floorTeleportWidth]
+					currentGeom.teleport_to = [px, py]
 					break;
 				//arrow right downstairs
 				case 2:
@@ -1040,8 +1057,8 @@ function cgDecidePoints(m) {//{{{
 					p1=[px-state.defaults.floorTeleportWidth, py+10];
 					p2=[px-state.defaults.floorTeleportWidth, py-10];
 					p3=[px, py];
-					currentGeom.teleportFrom = [px-state.defaults.floorTeleportWidth, py]
-					currentGeom.teleportTo = [px, py]
+					currentGeom.teleport_from = [px-state.defaults.floorTeleportWidth, py]
+					currentGeom.teleport_to = [px, py]
 					break;
 				//arrow down downstairs
 				case 3:
@@ -1049,8 +1066,8 @@ function cgDecidePoints(m) {//{{{
 					p1=[px-10, py-state.defaults.floorTeleportWidth];
 					p2=[px+10, py-state.defaults.floorTeleportWidth];
 					p3=[px, py];
-					currentGeom.teleportFrom = [px, py-state.defaults.floorTeleportWidth]
-					currentGeom.teleportTo = [px, py]
+					currentGeom.teleport_from = [px, py-state.defaults.floorTeleportWidth]
+					currentGeom.teleport_to = [px, py]
 					break;
 				
 				default:
@@ -1066,8 +1083,8 @@ function cgDecidePoints(m) {//{{{
 					p1=[px+state.defaults.floorTeleportWidth, py-10];
 					p2=[px+state.defaults.floorTeleportWidth, py+10];
 					p3=[px, py];
-					currentGeom.teleportFrom = [px+state.defaults.floorTeleportWidth, py]
-					currentGeom.teleportTo = [px, py]
+					currentGeom.teleport_from = [px+state.defaults.floorTeleportWidth, py]
+					currentGeom.teleport_to = [px, py]
 					break;
 				//arrow up upstairs
 				case 1:
@@ -1075,8 +1092,8 @@ function cgDecidePoints(m) {//{{{
 					p1=[px+10, py+state.defaults.floorTeleportWidth];
 					p2=[px-10, py+state.defaults.floorTeleportWidth];
 					p3=[px, py];
-					currentGeom.teleportFrom = [px, py+state.defaults.floorTeleportWidth]
-					currentGeom.teleportTo = [px, py]
+					currentGeom.teleport_from = [px, py+state.defaults.floorTeleportWidth]
+					currentGeom.teleport_to = [px, py]
 					break;
 				//arrow right upstairs
 				case 2:
@@ -1084,8 +1101,8 @@ function cgDecidePoints(m) {//{{{
 					p1=[px-state.defaults.floorTeleportWidth, py+10];
 					p2=[px-state.defaults.floorTeleportWidth, py-10];
 					p3=[px, py];
-					currentGeom.teleportFrom = [px-state.defaults.floorTeleportWidth, py]
-					currentGeom.teleportTo = [px, py]
+					currentGeom.teleport_from = [px-state.defaults.floorTeleportWidth, py]
+					currentGeom.teleport_to = [px, py]
 					break;
 				//arrow down upstairs
 				case 3:
@@ -1093,8 +1110,8 @@ function cgDecidePoints(m) {//{{{
 					p1=[px-10, py-state.defaults.floorTeleportWidth];
 					p2=[px+10, py-state.defaults.floorTeleportWidth];
 					p3=[px, py];
-					currentGeom.teleportFrom = [px, py-state.defaults.floorTeleportWidth]
-					currentGeom.teleportTo = [px, py]
+					currentGeom.teleport_from = [px, py-state.defaults.floorTeleportWidth]
+					currentGeom.teleport_to = [px, py]
 					break;
 				default:
 					break;
@@ -1354,15 +1371,15 @@ function createVirtualObj(parentGeom, floor, virtualObjNameMap, virtualObjMap) {
     lines: parentGeom.lines,
     polypoints: parentGeom.polypoints,
     z: parentGeom.z,
-    exitWeight: parentGeom.exitWeight,
-    roomExitsWeights: parentGeom.roomExitsWeights,
-    evacueesDensity: parentGeom.evacueesDensity,
+    exit_weight: parentGeom.exit_weight,
+    room_exits_weights: parentGeom.room_exits_weights,
+    evacuees_density: parentGeom.evacuees_density,
     minx: parentGeom.minx,
     miny: parentGeom.miny,
     maxx: parentGeom.maxx,
     maxy: parentGeom.maxy,
-    teleportFrom: parentGeom.teleportFrom,
-    teleportTo: parentGeom.teleportTo
+    teleport_from: parentGeom.teleport_from,
+    teleport_to: parentGeom.teleport_to
   };
 }
 function findIntersectingFloors(parentGeom) {
@@ -1392,9 +1409,9 @@ function createGeomFromRecord(floor, letter, record) {
     z: {z0: zArr[0], z1: zArr[1]},
     minx: 0, miny: 0, maxx: 0, maxy: 0
   };
-  ['exitWeight', 'roomExitsWeights', 'evacueesDensity', 
-   'mventThroughput', 'flowDirection', 'airGrilleSurface',
-   'teleportFrom', 'teleportTo'].forEach(function(field) {
+  ['exit_weight', 'room_exits_weights', 'evacuees_density', 
+   'mvent_throughput', 'flow_direction', 'vent_connection', 'air_grille_surface',
+   'teleport_from', 'teleport_to'].forEach(function(field) {
     if (field in record) {
       geom[field] = record[field];
     }
@@ -1537,12 +1554,12 @@ function wrongTeleportLocation(){
       }
     }
     teleportsDown.forEach(tp => {
-      checkEnd(tp, tp.floor, tp.teleportFrom);
-      checkEnd(tp, tp.floor - 1, tp.teleportTo);
+      checkEnd(tp, tp.floor, tp.teleport_from);
+      checkEnd(tp, tp.floor - 1, tp.teleport_to);
     });
     teleportsUp.forEach(tp => {
-      checkEnd(tp, tp.floor, tp.teleportFrom);
-      checkEnd(tp, tp.floor + 1, tp.teleportTo);
+      checkEnd(tp, tp.floor, tp.teleport_from);
+      checkEnd(tp, tp.floor + 1, tp.teleport_to);
     });
     return badNames;
 }
@@ -1670,10 +1687,11 @@ function floorCopy() {	//{{{
   		const idx = cgIdUpdate(m.letter);
 		currentGeom=deepcopy(m);
 		currentGeom.idx=idx;
-		currentGeom.exitWeight=state.defaults.exitWeight;
-		currentGeom.roomExitsWeights={};
-		currentGeom.airGrilleSurface = null;
-		currentGeom.flowDirection = null;
+		currentGeom.exit_weight=state.defaults.exit_weight;
+		currentGeom.room_exits_weights={};
+		currentGeom.air_grille_surface = null;
+		currentGeom.vent_connection = null;
+		currentGeom.flow_direction = null;
 		currentGeom.floor=c2f;
 		currentGeom.name=currentGeom.letter + idx;
 		currentGeom.z.z0=state.floorsZ0[c2f];
@@ -1733,7 +1751,7 @@ function bulkPlainProps() {//{{{
 		['d', 'q', 'e', 'w', 'z'].includes(state.activeLetter) ? ['door', 'window', 'hole'].includes(type) : type === state.gg[state.activeLetter].t,
 		'floor': state.currentFloor}), function (m) {
 		tbody+="<tr><td class=bulkProps id="+ m.name + ">"+ m.name +"</td><td>"+m.z.z0+" - "+m.z.z1+"</td>"
-	if(m.type == 'room') tbody+="<td>"+m.evacueesDensity;
+	if(m.type == 'room') tbody+="<td>"+m.evacuees_density;
 	});
 	return tbody;
 }
@@ -1767,11 +1785,11 @@ function roomProps() {//{{{
 					else
 						pp+= "<tr><td>exit door " +obj.name+" weight:";
 
-					if ('roomExitsWeights' in currentGeom && currentGeom.roomExitsWeights !== undefined && currentGeom.roomExitsWeights[obj.idx] !== undefined)
-						pp+= "<td><input type=number id=roomExitsWeights_"+currentGeom.name+ "_"+obj.name+" name=roomExitsWeights_"+
-					currentGeom.name+ "_"+obj.name+" min=0 max=10 value="+currentGeom.roomExitsWeights[obj.idx]+">";
+					if ('room_exits_weights' in currentGeom && currentGeom.room_exits_weights !== undefined && currentGeom.room_exits_weights[obj.idx] !== undefined)
+						pp+= "<td><input type=number id=room_exits_weights_"+currentGeom.name+ "_"+obj.name+" name=room_exits_weights_"+
+					currentGeom.name+ "_"+obj.name+" min=0 max=10 value="+currentGeom.room_exits_weights[obj.idx]+">";
 					else
-						pp+= "<td><input type=number id=roomExitsWeights_"+currentGeom.name+ "_"+obj.name+" name=roomExitsWeights_"+
+						pp+= "<td><input type=number id=room_exits_weights_"+currentGeom.name+ "_"+obj.name+" name=room_exits_weights_"+
 					currentGeom.name+ "_"+obj.name+" min=0 max=10 value=10>";
 
 				});
@@ -1779,8 +1797,8 @@ function roomProps() {//{{{
 		}
 		pp+="<tr><td>density <withHelp>?<help> Draws the given number of  evacuees per square metre. <br><orange>auto</orange> draws"+
 		"the evacuees according to the building profile.<br><br>You can alter global densities in Project > Editor: text<br>"+
-		"evacueesDensity:<br>{ ROOM: 0.33, COR: 0.05, STAI: 0.05, HALL: 0.05 }</help></withHelp>";
-		pp+="<td><input type=text style='width: 40px' id=alter-evacuees-density value='"+currentGeom.evacueesDensity+"'>";
+		"evacuees_density:<br>{ ROOM: 0.33, COR: 0.05, STAI: 0.05, HALL: 0.05 }</help></withHelp>";
+		pp+="<td><input type=text style='width: 40px' id=alter-evacuees-density value='"+currentGeom.evacuees_density+"'>";
 	}
 	return pp;
 }
@@ -1788,31 +1806,34 @@ function roomProps() {//{{{
 function mventProps() {//{{{
 	var pp="";
 	if(currentGeom.type=='mvent') {
-		const [r1, r2] = getConnectedZones(currentGeom);
-		let mventWithDuct = false;
-		if (r1 == 'OUTSIDE' || r2 == 'OUTSIDE') {
+		var zones = getConnectedZones(currentGeom);
+		var mventWithDuct = false;
+		if (zones.length === 1) {
 			// mechanical vent with duct leading outside
+    		zones.push("OUTSIDE");
 			mventWithDuct = true;
 		}
-		if (r1==null || r2==null){
-			pp += "<tr><td colspan='2' style='text-align: center'>coorect mvent size and localization because it intersects not properly</td></tr>";
+		r1 = zones[0];
+		r2 = zones[1];
+		if (r1==null && r2==null){
+			pp += "<tr><td colspan='2' style='text-align: center'>Correct mvent size and localization because it intersects not properly</td></tr>";
 		} else {
 			pp += "<tr><td colspan='2'>mvent "+currentGeom.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
-			pp += "<tr><td>flow direction: <td><select id=alter-flow-direction name=flowDirection >";
+			pp += "<tr><td>flow direction: <td><select id=alter-flow-direction name=flow_direction >";
 
 			
 			const flow1 = `${r1} to ${r2}`;
 			const flow2 = `${r2} to ${r1}`;
 			
-			pp += `<option value='${flow1}' ${currentGeom.flowDirection === flow1 ? "selected" : ""}>${flow1}</option>`;
-			pp += `<option value='${flow2}' ${currentGeom.flowDirection === flow2 ? "selected" : ""}>${flow2}</option>`;
+			pp += `<option value='${flow1}' ${currentGeom.flow_direction === flow1 ? "selected" : ""}>${flow1}</option>`;
+			pp += `<option value='${flow2}' ${currentGeom.flow_direction === flow2 ? "selected" : ""}>${flow2}</option>`;
 			pp += "</select>";
 			if(mventWithDuct == true){
 				pp += "<tr><td>air grille surface: <td><select id=alter-air-grille-surface name=air-grille >";
 				
 				const surfaces = ["x_min", "x_max", "y_min", "y_max", "z_min", "z_max"];
 				for (const surface of surfaces) {
-					pp += `<option value='${surface}' ${currentGeom.airGrilleSurface === surface ? "selected" : ""}>${surface}</option>`;
+					pp += `<option value='${surface}' ${currentGeom.air_grille_surface === surface ? "selected" : ""}>${surface}</option>`;
 				}
 				pp += "</select>";
 			}
@@ -1826,7 +1847,7 @@ function mventProps() {//{{{
 				pp += "</help></withHelp></td></tr>";
 			}
 		}
-		pp += "<tr><td>flow [m3/s]: <td>  <input id=alter-mvent-throughput type=number size=3 min=0 max=100 step=0.1 value="+currentGeom.mventThroughput+">";
+		pp += "<tr><td>flow [m3/s]: <td>  <input id=alter-mvent-throughput type=number size=3 min=0 max=100 step=0.1 value="+currentGeom.mvent_throughput+">";
 	} 
 	return pp;
 }
@@ -1834,14 +1855,29 @@ function mventProps() {//{{{
 function vventProps() {//{{{
 	var pp="";
 	if(currentGeom.type=='vvent') {
-		const [r1, r2] = getConnectedZones(currentGeom);
-		if (r1==null || r2==null){
-			pp += "<tr><td colspan='2' style='text-align: center'>coorect vvent size and localization because it intersects not properly</td></tr>";
+		var zones = getConnectedZones(currentGeom);
+
+		if (zones.length === 1) {
+    		pp += "<tr><td>Correct vvent size and localization because</td><td> it intersects not properly</td></tr>";
+		}
+		r1 = zones[0];
+		r2 = zones[1];
+		if (r1==null && r2==null){
+			pp += "<tr><td>Correct vvent size and localization because</td><td> it intersects not properly</td></tr>";
 		}
 		else
 		{
-			pp += "<tr><td colspan='2'>vvent "+currentGeom.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
+			// pp += "<tr><td colspan='2'>vvent "+cg.name+" is connecting: "+r1+" and "+r2+"</td></tr>";
 
+
+			pp += '<tr>';
+			pp += '  <td colspan="2" ' +
+			      'id="vvent"' +
+			      'data-r1="' + r1 + '" ' +
+			      'data-r2="' + r2 + '">';
+			pp += '    vvent ' + currentGeom.name + ' is connecting: ' + r1 + ' and ' + r2;
+			pp += '  </td>';
+			pp += '</tr>';
 		}
 	} 
 	return pp;
@@ -1859,8 +1895,8 @@ function doorProps() {//{{{
 				pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
 				pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
 				pp+= "<tr><td>exit door " +currentGeom.name+" weight:";
-				if ('exitWeight' in currentGeom && currentGeom.exitWeight !== undefined)
-					pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name="+currentGeom.name+" min=0 max=10 value="+currentGeom.exitWeight+">";
+				if ('exit_weight' in currentGeom && currentGeom.exit_weight !== undefined)
+					pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name="+currentGeom.name+" min=0 max=10 value="+currentGeom.exit_weight+">";
 				else
 					pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name="+currentGeom.name+" min=0 max=10 value=10>";
 			}
@@ -1878,8 +1914,8 @@ function teleportProps() {//{{{
 		pp+= "<tr><td colspan=2 style='text-align: center'>0 - minimum weight - no agent will go there";
 		pp+= "<tr><td colspan=2 style='text-align: center'>10 - maximum weight";
 		pp+= "<tr><td>teleport " +currentGeom.name+" weight:";
-		if ('exitWeight' in currentGeom && currentGeom.exitWeight !== undefined)
-			pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name=floor_exits_weights_"+currentGeom.name+" min=0 max=10 value="+currentGeom.exitWeight+">";
+		if ('exit_weight' in currentGeom && currentGeom.exit_weight !== undefined)
+			pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name=floor_exits_weights_"+currentGeom.name+" min=0 max=10 value="+currentGeom.exit_weight+">";
 		else
 			pp+= "<td><input type=number id=floor_exits_weights_"+currentGeom.name+ " name=floor_exits_weights_"+currentGeom.name+" min=0 max=10 value=10>";
 	}
@@ -2283,7 +2319,6 @@ function propsXYZ() {//{{{
 		"<div><label>y-min<input id=alter-y-min type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.miny+"'></label>"+
 		"<label>y-max<input id=alter-y-max type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxy+"'></label></div>"+
 		"<div>Length: <span id=alter-length>"+(currentGeom.maxy-currentGeom.miny)+"</span></div>"
-		if (currentGeom.letter == "p") return html;
 		html +=
 		"<div><label>z-min:<input id=alter-z0 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z0+"'></label>"+
 		"<label>z-max:<input id=alter-z1 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z1+"'></label></div>"+
@@ -2331,8 +2366,8 @@ function saveRightBoxGeneral() {//{{{
 }
 //}}}
 function validateForm() {//{{{
-	if(!currentGeom.evacueesDensity.match(/^auto$|^\d*\.?\d*$/)) { amsg({'err':1, 'msg': "Examples of valid density values:<br>auto<br>0.12"}); }
-	if($.isNumeric($("#alter-evacuees-density").val())) { currentGeom.evacueesDensity=Number($("#alter-evacuees-density").val()); } 
+	if(!currentGeom.evacuees_density.match(/^auto$|^\d*\.?\d*$/)) { amsg({'err':1, 'msg': "Examples of valid density values:<br>auto<br>0.12"}); }
+	if($.isNumeric($("#alter-evacuees-density").val())) { currentGeom.evacuees_density=Number($("#alter-evacuees-density").val()); } 
 }
 //}}}
 function setIfNotEmpty(selector, prop, asFloat = false) {
@@ -2351,8 +2386,8 @@ function saveRightBoxCgProps() {//{{{
 		cgUpdateSvg();
 		cgUpdate();
 	}
-	if(currentGeom.type=='floor_teleport') {
-		setIfNotEmpty("#floor_exits_weights_" + currentGeom.name, "exitWeight");
+	else if(currentGeom.type=='floor_teleport') {
+		setIfNotEmpty("#floor_exits_weights_" + currentGeom.name, "exit_weight");
 		cgUpdateSvg();
 		cgUpdate();
 	} else {
@@ -2366,13 +2401,15 @@ function saveRightBoxCgProps() {//{{{
 		currentGeom.polypoints.push([x_max, y_min]);
 		currentGeom.polypoints.push([x_max, y_max]);
 		currentGeom.polypoints.push([x_min, y_max]);
-		setIfNotEmpty("#alter-evacuees-density", "evacueesDensity");
-		setIfNotEmpty("#floor_exits_weights_" + currentGeom.name, "exitWeight");
-		setIfNotEmpty("#alter-flow-direction", "flowDirection");
-		setIfNotEmpty("#alter-air-grille-surface", "airGrilleSurface");
-		setIfNotEmpty("#alter-mvent-throughput", "mventThroughput", asFloat=true);
+		setIfNotEmpty("#alter-evacuees-density", "evacuees_density");
+		setIfNotEmpty("#floor_exits_weights_" + currentGeom.name, "exit_weight");
+		setIfNotEmpty("#alter-flow-direction", "flow_direction");
+		setIfNotEmpty("#alter-air-grille-surface", "air_grille_surface");
+		const el = $("#vvent");
+		currentGeom.vent_connection = el.data("r1") + ", " + el.data("r2");
+		setIfNotEmpty("#alter-mvent-throughput", "mvent_throughput", asFloat=true);
 		if (currentGeom.type == 'room'){
-			currentGeom.roomExitsWeights = getRoomExitWeight(currentGeom.name);
+			currentGeom.room_exits_weights = getRoomExitWeight(currentGeom.name);
 		}
 		validateForm();
 		var z0=Number($("#alter-z0").val());
@@ -2403,7 +2440,7 @@ function getRoomExitWeight(roomName) {//{{{
 	let adjecentDoorsAndHolesWeights={};
 	adjecentDoorsAndHoles = state.roomsAndAdjDoorsAndHoles[roomName];
 	adjecentDoorsAndHoles.forEach(function(obj){
-		adjecentDoorsAndHolesWeights[obj.idx] = $("#roomExitsWeights_"+roomName+"_"+obj.name).val();
+		adjecentDoorsAndHolesWeights[obj.idx] = $("#room_exits_weights_"+roomName+"_"+obj.name).val();
 	});
 	return adjecentDoorsAndHolesWeights;
 }

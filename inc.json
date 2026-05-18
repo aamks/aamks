@@ -56,5 +56,6 @@
 		"VSTAI"   : "vs",
 		"VHALL"   : "va"
 	}, 
-    "colors":["#ff00ff","#00ff00","#00ffff","#660066","#aa0000","#008800","#ffffff","#ffff00","#ee7700","#000000"]
+    "colors":["#ff00ff","#00ff00","#00ffff","#660066","#aa0000","#008800","#ffffff","#ffff00","#ee7700","#000000"],
+	"evacueeRadius": 25 
 }
