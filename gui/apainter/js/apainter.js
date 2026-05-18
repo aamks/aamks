@@ -864,7 +864,7 @@ function addDefaultCgProps(){
 		r1 = zones[0];
 		r2 = zones[1];
 		if (r1==null && r2==null){
-			amsg({'err':1, 'msg':"correct mvent size and localization because it intersects not properly"}); 
+			amsg({'err':2, 'msg':"correct mvent size and localization because it intersects not properly"}); 
 		}
 		else
 		{
@@ -988,7 +988,7 @@ function getConnectedZones(geometry){
 	}
     // Ensure proper result structure
     if (connectedZones.length > 2) {
-        amsg({ 'err': 2, 'msg': "The connection object intersects more than 2 zones. Please correct apainter geometry." });
+        amsg({ 'err': 2, 'msg': "The connection object intersects more than 2 zones. Please correct apainter geometry.", 'duration': 8000 });
         return [null, null];
     }
 
@@ -1515,14 +1515,21 @@ function anyHoleOnExternalWall(){
 	return wronglyPlaced;
 }
 function anyVentWronglyPlaced(){
-	let vents = getTypeApainterObjects('vvent').concat(getTypeApainterObjects('mvent'));
+	let vents = getTypeApainterObjects('vvent')
+	let mvents = getTypeApainterObjects('mvent');
 	let wronglyPlaced = []
 	vents.forEach(function(vent) {
 		zones = getConnectedZones(vent);
-		if (zones.every(z => z === null)){
+		if ((zones.some(z => z === null)) || (zones.length !== 2)){
 			wronglyPlaced.push(`Vent: ${vent.name}, floor: ${vent.floor}`);
 		}
 	});
+	mvents.forEach(function(vent) {
+		zones = getConnectedZones(vent);
+		if ((zones.some(z => z === null)) || (zones.length === 1 && zones[0] === 'OUTSIDE')){
+			wronglyPlaced.push(`Vent: ${vent.name}, floor: ${vent.floor}`);
+		}
+	})
 	return wronglyPlaced;
 }
 function wrongTeleportLocation(){
@@ -1808,7 +1815,7 @@ function mventProps() {//{{{
 	if(currentGeom.type=='mvent') {
 		var zones = getConnectedZones(currentGeom);
 		var mventWithDuct = false;
-		if (zones.length === 1) {
+		if (zones.length === 1 || zones.some(z => z === "OUTSIDE")) {
 			// mechanical vent with duct leading outside
     		zones.push("OUTSIDE");
 			mventWithDuct = true;
@@ -1858,12 +1865,12 @@ function vventProps() {//{{{
 		var zones = getConnectedZones(currentGeom);
 
 		if (zones.length === 1) {
-    		pp += "<tr><td>Correct vvent size and localization because</td><td> it intersects not properly</td></tr>";
+    		pp += "<tr><td colspan='2' style='text-align: center'>Correct vvent size and localization because it intersects not properly</td></tr>";
 		}
 		r1 = zones[0];
 		r2 = zones[1];
 		if (r1==null && r2==null){
-			pp += "<tr><td>Correct vvent size and localization because</td><td> it intersects not properly</td></tr>";
+			pp += "<tr><td colspan='2' style='text-align: center'>Correct vvent size and localization because it intersects not properly</td></tr>";
 		}
 		else
 		{
@@ -2319,6 +2326,7 @@ function propsXYZ() {//{{{
 		"<div><label>y-min<input id=alter-y-min type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.miny+"'></label>"+
 		"<label>y-max<input id=alter-y-max type=number oninput='validateRightBoxXY(this)' style='width: 8ch;' value='"+currentGeom.maxy+"'></label></div>"+
 		"<div>Length: <span id=alter-length>"+(currentGeom.maxy-currentGeom.miny)+"</span></div>"
+		if (currentGeom.letter == "p") return html;
 		html +=
 		"<div><label>z-min:<input id=alter-z0 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z0+"'></label>"+
 		"<label>z-max:<input id=alter-z1 type=number oninput='validateRightBoxInput(this)' style='width: 8ch;' value='"+currentGeom.z.z1+"'></label></div>"+
