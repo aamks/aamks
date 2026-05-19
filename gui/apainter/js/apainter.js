@@ -1815,7 +1815,7 @@ function mventProps() {//{{{
 	if(currentGeom.type=='mvent') {
 		var zones = getConnectedZones(currentGeom);
 		var mventWithDuct = false;
-		if (zones.length === 1 || zones.some(z => z === "OUTSIDE")) {
+		if (zones.length === 1) {
 			// mechanical vent with duct leading outside
     		zones.push("OUTSIDE");
 			mventWithDuct = true;
