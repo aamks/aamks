@@ -81,7 +81,23 @@ function make_legend2(module) {//{{{
 		$('legend2').append("<button id=btn-underlay-form title='Underlay setup'>U</button>");
 		$('legend2').append("<button id=button-help>Help</button>");
 		$('legend2').append("<button id=button-setup>Setup</button>");
-	} 
+	}
+	if (module=='apainter3d') {
+		$('legend2').append("<button id=vFront>Front</button>");
+		$('legend2').append("<button id=vBack>Back</button>");
+		$('legend2').append("<button id=vLeft>Left</button>");
+		$('legend2').append("<button id=vRight>Right</button>");
+		$("legend2").append('<button id="vTop">Top</button>');
+		$("legend2").append('<button id="vIso">Iso</button>');
+		$("legend2").append('<button id="vDefault">Default</button>');
+		$("legend2").append('<withHelp>?<help style="top:5%; left:auto; right:0;">'+
+			'Left click to rotate.<br>'+
+			'Right click to pan.<br>'+
+			'Mouse wheel to zoom.<br>'+
+			'Click buttons to set views.<br>'+
+			'Default view resets to the first position.<br>'+
+			'</help></withHelp></help></withHelp>');
+	}
 	if (module=='animator') {
 		$('legend2').append("<animator-floor-links style='padding-right: 10px'></animator-floor-links> ");
 		$('legend2').append("<button id=button-info>View sim information</button>");
@@ -107,15 +123,16 @@ function amsg(r) {//{{{
 		if ("duration" in r) {
 			var duration=r['duration'];
 		} else {
-			var duration=1500;
+			var duration=3000;
 		}
 		$('#amsg').delay(duration).fadeOut(400);
 	} else if(r['err']==2){
-		$('#amsg').css('display', 'none');
+		$('#amsg').clearQueue();
 		$('#amsg').css('display', 'none');
 		$('#amsg').html(r['msg']);
 		$('#amsg').css('display', 'block');
 		$('#amsg').css('background-color', "#800");
+		$('#amsg').css('opacity', 1);
 		$('#amsg').delay(r['duration']).fadeOut(3000);
 	}
 }
@@ -187,9 +204,9 @@ function launch_draft() {//{{{
 	});
 }
 //}}}
-function isEmpty(obj) {//{{{
-	// Check if dict empty
-	return Object.keys(obj).length === 0;
+function isEmpty(obj) {
+	// Returns true if obj is null, undefined, or an empty object
+	return !obj || Object.keys(obj).length === 0;
 }
 //}}}
 dd = function() { //{{{
@@ -212,7 +229,6 @@ $(function() {
 	scenario_changer();
 	launch_draft();
 	launch_simulation();
-	if(navigator.userAgent.indexOf("Chrome")==-1) { alert("Aamks is designed for Google Chrome. Aamks may work, but is not supported on other browsers"); }
 });
 
 

@@ -1,6 +1,5 @@
 {
 	"aamksGeoms": {
-
 		"r":       { "legendary": 1 , "x": "ROOM"             , "t": "room"            , "c": "#729fcf" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 5, "fourLetter": "ROOM" , "description": "ROOM - regular compartment"}   ,
 		"c":       { "legendary": 1 , "x": "COR"              , "t": "room"            , "c": "#3465a4" , "stroke": "#ffffff" , "lightc": "#ffffff" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 5, "fourLetter": "CORR" , "description": "CORRIDOR - wide and narrow compartment"}   ,
 		"d":       { "legendary": 1 , "x": "DOOR"             , "t": "door"            , "c": "#73d216" , "stroke": "#73d216" , "lightc": "#000000" , "font": "#ffffff" , "animOpacity": 0.4 , "strokeWidth": 5, "fourLetter": "DOOR" , "description": "DOOR - regular exit"}   ,
@@ -36,8 +35,7 @@
 		"color_8": { "legendary": 0 , "x": "color_8"          , "t": "color_8"         , "c": "#ffff00" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
 		"color_9": { "legendary": 0 , "x": "color_9"          , "t": "color_9"         , "c": "#333333" , "stroke": "none"    , "lightc": "#333333" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }   ,
 		"fg":      { "legendary": 0 , "x": "fg"               , "t": "fg"              , "c": "#ffffff" , "stroke": "#ffffff" , "lightc": "#222222" , "font": "#444444" , "animOpacity":  1  , "strokeWidth": 0 }
-	}                               ,
-
+	},
 	"aamksGeomsMap": {
 		"ROOM"    : "r" ,
 		"COR"     : "c" ,
@@ -58,8 +56,6 @@
 		"VSTAI"   : "vs",
 		"VHALL"   : "va"
 	}, 
-
     "colors":["#ff00ff","#00ff00","#00ffff","#660066","#aa0000","#008800","#ffffff","#ffff00","#ee7700","#000000"],
-
 	"evacueeRadius": 25 
 }
