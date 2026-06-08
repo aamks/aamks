@@ -57,10 +57,10 @@ class CFASTRoomsChoice:
         # Pobieramy dane o pomieszczeniu, w którym wybuchł pożar
         # room_in_fire_name = 'c66'
         # room_in_fire_id = 66
-        # room_in_fire = self.s.query(f"SELECT x0 as x, y0 as y, z0 as z, width as length, depth as width, height FROM aamks_geom WHERE name='{room_in_fire_name}'")[0]
+        room_in_fire_floor = int(self.s.query(f"SELECT floor FROM aamks_geom WHERE type_pri='COMPA' AND global_type_id=?", (room_in_fire_id,))[0]['floor'])
 
         # Lista wszystkich pomieszczeń
-        for room in self.s.query("SELECT global_type_id, name, floor, x0, y0, z0, width, depth, height FROM aamks_geom WHERE type_pri='COMPA' and fire_model_ignore=0"):
+        for room in self.s.query("SELECT global_type_id, name, floor, x0, y0, z0, width, depth, height FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore=0 AND floor>=?", (room_in_fire_floor,)):
             self.rooms.append({
                 'floor':room['floor'],
                 'id': room['global_type_id'],
@@ -76,7 +76,7 @@ class CFASTRoomsChoice:
             })
 
         # Lista drzwi
-        for door in self.s.query("SELECT name, vent_from, vent_to, x0, y0, z0, width, height FROM aamks_geom WHERE type_tri='DOOR'"):
+        for door in self.s.query("SELECT name, vent_from, vent_to, x0, y0, z0, width, height FROM aamks_geom WHERE type_tri='DOOR' AND floor>=?", (room_in_fire_floor,)):
             self.doors.append({
                 'name': door['name'],
                 'room1_id': door['vent_from'],
