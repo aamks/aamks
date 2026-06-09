@@ -171,7 +171,7 @@ class CFASTimporter():
                     record=self._prepare_geom_record(v)
                     if record != False:
                         data.append(record)
-        self.s_geom.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, flow_direction,vent_connection, air_grille_surface, evacuees_density, terminal_door, points, origin_room, orig_type, has_door, teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
+        self.s_geom.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, flow_direction,vent_connection, air_grille_surface, evacuees_density, terminal_door, points, origin_room, orig_type, has_door, teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights, two_zone)")
         self.s_geom.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
     def _prepare_attrs(self,v):# {{{
@@ -197,6 +197,7 @@ class CFASTimporter():
         stair_direction = None
         exit_weight = None
         room_exits_weights = None
+        two_zone = None
 
         if v['type'] in ('OBST',):
             type_pri='OBST'
@@ -241,6 +242,8 @@ class CFASTimporter():
             type_tri=''
             if 'room_exits_weights' in v:
                 room_exits_weights = str(v['room_exits_weights'])
+            if 'two_zone' in v:
+                two_zone = v['two_zone']
         
         
         # HVENT  
@@ -264,8 +267,8 @@ class CFASTimporter():
 
         global_type_id=v['idx']
         name='{}{}'.format(self.geomsMap[v['type']], global_type_id)
-        #self.s_geom.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name  , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               ,    flow_direction           ,          vent_connection,     air_grille_surface,        evacuees_density        , terminal_door , points                  , origin_room , orig_type , has_door,   teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
-        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None, None       ,None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] ,  v['attrs']['flow_direction'] ,   v['attrs']['vent_connection'] ,  v['attrs']['air_grille_surface'] ,  v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights)
+        #self.s_geom.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name  , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               ,    flow_direction           ,          vent_connection,     air_grille_surface,        evacuees_density        , terminal_door , points                  , origin_room , orig_type , has_door,   teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights, two_zone)")
+        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None, None       ,None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] ,  v['attrs']['flow_direction'] ,   v['attrs']['vent_connection'] ,  v['attrs']['air_grille_surface'] ,  v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights, two_zone)
 
 
 # }}}
