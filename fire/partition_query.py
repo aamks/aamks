@@ -116,7 +116,8 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
         for i in self.relevant_params:
             self._default_conditions[i]=0
         self._default_conditions['ULO2']=20.9
-        self.all_compas=[i['name'] for i in self.s_geom.query("SELECT name FROM aamks_geom where type_pri = 'COMPA'")]
+        self.compasProps = self.s_geom.query("SELECT name, z0 FROM aamks_geom where type_pri = 'COMPA'")
+        self.all_compas=[i['name'] for i in self.compasProps]
         self.extend_compas_by_devices() 
         self.compa_conditions = OrderedDict()
         for compa in self.all_compas:
@@ -228,7 +229,19 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
                         self.compa_conditions[obj][param] = obj
                     else:
                         self.compa_conditions[obj][param] = self._default_conditions[param]
+        self.update_conditions_in_towers()
 
+    def update_conditions_in_towers(self):# {{{
+        for compa in self.compasProps:
+            if re.match(r'^[sa]\d+\.\d+$', compa['name']):
+                tower_name = compa['name'].split('.')[0]
+                conditions = self.compa_conditions[tower_name]
+                hgt = conditions['HGT'] if conditions['HGT'] is not None else 0
+                if compa['z0']/100 + self.config['LAYER_HEIGHT'] <= hgt:
+                    for k, v in list(conditions.items()):
+                        if k.startswith('U'):
+                            conditions['L' + k[1:]] = v
+                self.compa_conditions[compa['name']] = conditions # if HGT is lower than stair floor then conditions are the same as in Upper layer
 
     def xy2room(self,q):
         return self.get_conditions_from_point(q)['COMPA']
@@ -282,15 +295,8 @@ self.project_conf['simulation_time']        read_cfast_record(T) returns the nee
 
         if self.project_conf['fire_model'] == 'None':
             return self._default_conditions
-
-        if '.' in comp_name:
-            base_name = comp_name.split('.')[0]
-        else:
-            base_name = comp_name
     
-        return self.compa_conditions[base_name]
-
-
+        return self.compa_conditions[comp_name]
 # }}}
     def get_visibility(self, q):# {{{
         conditions = self.get_conditions_from_point(q)

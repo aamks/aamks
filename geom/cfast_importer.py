@@ -35,9 +35,9 @@ class CFASTimporter():
         self.s_geom.query('PRAGMA locking_mode = EXCLUSIVE')
         self._geometry2sqlite()
         self._enhancements()
-        self._towers_slices()
         self._floors_meta()
         self._world_meta()
+        self._towers_slices()
         self._aamks_geom_into_polygons()
         self._make_id2compa_name()
         self._find_intersections_within_floor()
@@ -600,21 +600,14 @@ class CFASTimporter():
         towers={}
 
         for w in self.s_geom.query("SELECT name,z0 as tower_z0,height+z0 as tower_z1,floor,height,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
-            floor_max_z=self.s_geom.query("SELECT max(z1) FROM aamks_geom WHERE type_sec NOT IN('STAI','HALL','MVENT') AND floor=?", (w['floor'],))[0]['max(z1)']
-            if w['tower_z1'] >= floor_max_z + 200:
+            if w['tower_z1'] >= self.floors_meta[w['floor']]['maxz_abs'] + 200:
 
                 towers[w['name']]=[]
                 current_floor=w['floor']
 
-                min_z = 0
-                for f in sorted(self.floors, key=int):
-                    height = self.raw_geometry[f]['FLOOR_DIM_Z']
-                    self.raw_geometry[f]['MIN_Z'] = min_z
-                    min_z += height
-
-                for floor in self.floors:
+                for floor in self.floors_meta:
                     # for v in self.s_geom.query("SELECT min(z0) FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,)):
-                    min_z0 = self.raw_geometry[floor]['MIN_Z']
+                    min_z0 = self.floors_meta[floor]['minz_abs']
                     if min_z0 < w['tower_z1'] and min_z0 >= w['tower_z0']:
                         towers[w['name']].append(floor)
                 towers[w['name']].remove(current_floor)
@@ -625,15 +618,13 @@ class CFASTimporter():
             orig_record=self.s_geom.query("SELECT global_type_id,type_pri,type_sec,type_tri,x0,y0,width,depth,x1,y1,room_area,evacuees_density,points,1 as fire_model_ignore, terminal_door FROM aamks_geom WHERE name=?", (orig_name,))[0]
             parent_id=orig_record['global_type_id']
             kk=list(orig_record.keys())
-            kk.append('floor')
-            kk.append('name')
+            kk.extend(['floor', 'name', 'z0', 'height', 'z1'])
             for flo in floors:
                 self.towers_parents[high_global_type_id]=parent_id
                 orig_record['global_type_id']=high_global_type_id
                 vv=list(orig_record.values())
-                vv.append(flo)
-                vv.append("{}.{}".format(orig_name,flo))
-                self.s_geom.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
+                vv.extend([flo, "{}.{}".format(orig_name,flo), self.floors_meta[flo]['minz_abs'], self.floors_meta[flo]['zdim'], self.floors_meta[flo]['maxz_abs']])
+                self.s_geom.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
                 high_global_type_id+=1
 
 # }}}
