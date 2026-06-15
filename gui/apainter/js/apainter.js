@@ -113,6 +113,7 @@ var state = {
  * @property {{x:number,y:number}|null} [teleport_to]
  * @property {string} preferredSnap
  * @property {number} snapForce
+ * @property {boolean} two_zone
  * 
  */
 /** @type {SceneObject|null} */
@@ -214,13 +215,10 @@ function getTypeApainterObjectsAllFloors(type) {
 
 function debug() {
 	console.clear();
+	dd(currentGeom);
 	// dd(state.scene.objects);
-	// dd(currentGeom);
-	dd(state.floorsDimZ)
-	dd(state.floorsZ0)
 	//dd($("#ufloor"+floor)[0]);
 	//dd($('#apainter-svg')[0]); 
-	//_.each(dbWhere({'letter':'s'}), function(v) {
 }
 
 $(function()  { 
@@ -384,7 +382,7 @@ function cgDb(undoRegister=1) { //{{{
 		"letter": currentGeom.letter, "type": currentGeom.type, "lines": currentGeom.lines,
 		"polypoints": currentGeom.polypoints, "z": currentGeom.z, "floor": currentGeom.floor,
 		"mvent_throughput": currentGeom.mvent_throughput, "flow_direction":currentGeom.flow_direction, "vent_connection":currentGeom.vent_connection,
-		"air_grille_surface":currentGeom.air_grille_surface, "exit_weight":currentGeom.exit_weight,
+		"air_grille_surface":currentGeom.air_grille_surface, "exit_weight":currentGeom.exit_weight, "two_zone":currentGeom.two_zone,
 		"room_exits_weights":currentGeom.room_exits_weights, "evacuees_density": currentGeom.evacuees_density, 
 		"minx": currentGeom.minx, "miny": currentGeom.miny, "maxx": currentGeom.maxx, "maxy": currentGeom.maxy, 
 		"teleport_from":currentGeom.teleport_from, "teleport_to":currentGeom.teleport_to});
@@ -404,6 +402,9 @@ function generateObjectCadJson(obj){
 			cad_json["exit_weight"]=obj.exit_weight;
 	} else if(obj.type=='room') {
 		cad_json["evacuees_density"]=obj.evacuees_density;
+		if(obj.letter=='s') {
+			cad_json["two_zone"]=obj.two_zone ?? false;
+		}
 		if (obj.room_exits_weights != null)
 			cad_json["room_exits_weights"]=obj.room_exits_weights; 
 	} else if(obj.type=='mvent') {
@@ -782,6 +783,7 @@ function cgInit() {
     flow_direction: null,
     air_grille_surface: null,
 	vent_connection: null,
+	two_zone: true,
     teleport_from: null,
     teleport_to: null,
 	preferredSnap: null,
@@ -1411,7 +1413,7 @@ function createGeomFromRecord(floor, letter, record) {
   };
   ['exit_weight', 'room_exits_weights', 'evacuees_density', 
    'mvent_throughput', 'flow_direction', 'vent_connection', 'air_grille_surface',
-   'teleport_from', 'teleport_to'].forEach(function(field) {
+   'teleport_from', 'teleport_to', 'two_zone'].forEach(function(field) {
     if (field in record) {
       geom[field] = record[field];
     }
@@ -1806,6 +1808,9 @@ function roomProps() {//{{{
 		"the evacuees according to the building profile.<br><br>You can alter global densities in Project > Editor: text<br>"+
 		"evacuees_density:<br>{ ROOM: 0.33, COR: 0.05, STAI: 0.05, HALL: 0.05 }</help></withHelp>";
 		pp+="<td><input type=text style='width: 40px' id=alter-evacuees-density value='"+currentGeom.evacuees_density+"'>";
+	}
+	if(currentGeom.letter=='s') {
+		pp += `<tr><td colspan=2 style='text-align: center'><input type=checkbox id=two-zone name=two-zone ${currentGeom.two_zone == true ? 'checked' : ''}>Enable two-zone fire model</td></tr>`;
 	}
 	return pp;
 }
@@ -2413,6 +2418,7 @@ function saveRightBoxCgProps() {//{{{
 		setIfNotEmpty("#floor_exits_weights_" + currentGeom.name, "exit_weight");
 		setIfNotEmpty("#alter-flow-direction", "flow_direction");
 		setIfNotEmpty("#alter-air-grille-surface", "air_grille_surface");
+		$("#two-zone").prop('checked') ? currentGeom.two_zone = true : currentGeom.two_zone = false;
 		const el = $("#vvent");
 		currentGeom.vent_connection = el.data("r1") + ", " + el.data("r2");
 		setIfNotEmpty("#alter-mvent-throughput", "mvent_throughput", asFloat=true);
