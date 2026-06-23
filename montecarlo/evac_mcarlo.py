@@ -213,7 +213,7 @@ class EvacMcarlo:
         self._floor_obstacles={}
         for floor in self.floors:
             obsts=[]
-            for x in self.json.readdb("obstacles")['obstacles'][floor]:
+            for x in self.json.readdb("obstacles")['obstacles'].get(floor, []):
                 obsts.append([(o[0],o[1]) for o in x])
             try:
                 obsts.append(self.json.readdb("obstacles")['fire'][floor])

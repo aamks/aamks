@@ -35,9 +35,9 @@ class CFASTimporter():
         self.s_geom.query('PRAGMA locking_mode = EXCLUSIVE')
         self._geometry2sqlite()
         self._enhancements()
-        self._towers_slices()
         self._floors_meta()
         self._world_meta()
+        self._towers_slices()
         self._aamks_geom_into_polygons()
         self._make_id2compa_name()
         self._find_intersections_within_floor()
@@ -171,7 +171,7 @@ class CFASTimporter():
                     record=self._prepare_geom_record(v)
                     if record != False:
                         data.append(record)
-        self.s_geom.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, flow_direction,vent_connection, air_grille_surface, evacuees_density, terminal_door, points, origin_room, orig_type, has_door, teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
+        self.s_geom.query("CREATE TABLE aamks_geom(name,floor,global_type_id,hvent_room_seq,vvent_room_seq,type_pri,type_sec,type_tri,x0,y0,z0,width,depth,height,cfast_width,sill,face,face_offset,vent_from,vent_to,material_ceiling,material_floor,material_wall,heat_detectors,smoke_detectors,sprinklers,is_vertical,vent_from_name,vent_to_name, room_area, x1, y1, z1, center_x, center_y, center_z, fire_model_ignore, mvent_throughput, flow_direction,vent_connection, air_grille_surface, evacuees_density, terminal_door, points, origin_room, orig_type, has_door, teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights, two_zone)")
         self.s_geom.executemany('INSERT INTO aamks_geom VALUES ({})'.format(','.join('?' * len(data[0]))), data)
 #}}}
     def _prepare_attrs(self,v):# {{{
@@ -197,6 +197,9 @@ class CFASTimporter():
         stair_direction = None
         exit_weight = None
         room_exits_weights = None
+        two_zone = None
+
+
 
         if v['type'] in ('OBST',):
             type_pri='OBST'
@@ -241,7 +244,8 @@ class CFASTimporter():
             type_tri=''
             if 'room_exits_weights' in v:
                 room_exits_weights = str(v['room_exits_weights'])
-        
+            if 'two_zone' in v:
+                two_zone = v['two_zone']
         
         # HVENT  
         elif v['type'] in ('DOOR', 'DCLOSER', 'DELECTR', 'HOLE', 'WIN'): 
@@ -264,8 +268,8 @@ class CFASTimporter():
 
         global_type_id=v['idx']
         name='{}{}'.format(self.geomsMap[v['type']], global_type_id)
-        #self.s_geom.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name  , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               ,    flow_direction           ,          vent_connection,     air_grille_surface,        evacuees_density        , terminal_door , points                  , origin_room , orig_type , has_door,   teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights)")
-        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None, None       ,None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] ,  v['attrs']['flow_direction'] ,   v['attrs']['vent_connection'] ,  v['attrs']['air_grille_surface'] ,  v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights)
+        #self.s_geom.query("CREATE TABLE aamks_geom(name , floor      , global_type_id , hvent_room_seq , vvent_room_seq , type_pri , type_sec  , type_tri , x0              , y0              , z0              , width              , depth              , height              , cfast_width , sill , face , face_offset , vent_from , vent_to , material_ceiling                      , material_floor                      , material_wall                      , heat_detectors , smoke_detectors , sprinklers , is_vertical , vent_from_name , vent_to_name  , room_area , x1   , y1   , z1   , center_x , center_y , center_z , fire_model_ignore , mvent_throughput               ,    flow_direction           ,          vent_connection,     air_grille_surface,        evacuees_density        , terminal_door , points                  , origin_room , orig_type , has_door,   teleport_from, teleport_to, adjacents, stair_direction, exit_weight, room_exits_weights, two_zone)")
+        return (name                                , v['floor'] , global_type_id , None           , None           , type_pri , v['type'] , type_tri , v['bbox']['x0'] , v['bbox']['y0'] , v['bbox']['z0'] , v['bbox']['width'] , v['bbox']['depth'] , v['bbox']['height'] , None        , None , None , None        , None      , None    , self.conf['material_ceiling']['type'] , self.conf['material_floor']['type'] , self.conf['material_wall']['type'] , 0              , 0               , 0          , None        , None           , None         , None, None       ,None , None , None     , None     , None     , 0                 , v['attrs']['mvent_throughput'] ,  v['attrs']['flow_direction'] ,   v['attrs']['vent_connection'] ,  v['attrs']['air_grille_surface'] ,  v['attrs']['evacuees_density'] , None          , json.dumps(v['points']) , None        , v['type'] , None,       teleport_from, teleport_to, None, stair_direction, exit_weight, room_exits_weights, two_zone)
 
 
 # }}}
@@ -597,21 +601,15 @@ class CFASTimporter():
         towers={}
 
         for w in self.s_geom.query("SELECT name,z0 as tower_z0,height+z0 as tower_z1,floor,height,type_sec FROM aamks_geom WHERE type_sec in ('STAI','HALL')"):
-            floor_max_z=self.s_geom.query("SELECT max(z1) FROM aamks_geom WHERE type_sec NOT IN('STAI','HALL','MVENT') AND floor=?", (w['floor'],))[0]['max(z1)']
-            if w['tower_z1'] >= floor_max_z + 200:
+            
+            if w['tower_z1'] >= self.floors_meta[w['floor']]['maxz_abs'] + 200:
 
                 towers[w['name']]=[]
                 current_floor=w['floor']
 
-                min_z = 0
-                for f in sorted(self.floors, key=int):
-                    height = self.raw_geometry[f]['FLOOR_DIM_Z']
-                    self.raw_geometry[f]['MIN_Z'] = min_z
-                    min_z += height
-
-                for floor in self.floors:
+                for floor in self.floors_meta:
                     # for v in self.s_geom.query("SELECT min(z0) FROM aamks_geom WHERE type_pri='COMPA' AND floor=?", (floor,)):
-                    min_z0 = self.raw_geometry[floor]['MIN_Z']
+                    min_z0 = self.floors_meta[floor]['minz_abs']
                     if min_z0 < w['tower_z1'] and min_z0 >= w['tower_z0']:
                         towers[w['name']].append(floor)
                 towers[w['name']].remove(current_floor)
@@ -622,15 +620,13 @@ class CFASTimporter():
             orig_record=self.s_geom.query("SELECT global_type_id,type_pri,type_sec,type_tri,x0,y0,width,depth,x1,y1,room_area,evacuees_density,points,1 as fire_model_ignore, terminal_door FROM aamks_geom WHERE name=?", (orig_name,))[0]
             parent_id=orig_record['global_type_id']
             kk=list(orig_record.keys())
-            kk.append('floor')
-            kk.append('name')
+            kk.extend(['floor', 'name', 'z0', 'height', 'z1'])
             for flo in floors:
                 self.towers_parents[high_global_type_id]=parent_id
                 orig_record['global_type_id']=high_global_type_id
                 vv=list(orig_record.values())
-                vv.append(flo)
-                vv.append("{}.{}".format(orig_name,flo))
-                self.s_geom.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
+                vv.extend([flo, "{}.{}".format(orig_name,flo), self.floors_meta[flo]['minz_abs'], self.floors_meta[flo]['zdim'], self.floors_meta[flo]['maxz_abs']])
+                self.s_geom.query("INSERT INTO aamks_geom ({}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)".format(",".join(kk)), tuple(vv))
                 high_global_type_id+=1
 
 # }}}

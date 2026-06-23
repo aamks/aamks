@@ -4,6 +4,7 @@ import json
 import os
 import pandas as pd
 import math
+from re import match
 from collections import OrderedDict
 from math import ceil, log, isinf
 from shapely.geometry import LineString,LineString, box
@@ -688,6 +689,7 @@ class Detection:
         self.state = {}
         self.rooms = []
         self.sensors = []
+        self.door_sensors = []
         self.conditions = []
         self.room_heights = {}
 
@@ -695,6 +697,9 @@ class Detection:
         for entity in all_compas:
             if entity.startswith(('sd', 'sp', 'hd')):
                 self.sensors.append(entity)
+            elif entity.startswith('t1_d') or entity.startswith('t2_d'):
+                # we don't care about targets - those are for fire spread
+                self.door_sensors.append(entity)
             elif entity.startswith('t_'):
                 # we don't care about targets - those are for fire spread
                 continue
@@ -742,10 +747,20 @@ class Detection:
 
     def _update_floor_state(self):
         # iterate over sensors to evaluate their state
+        self.state['floor'] = 1
+        return
         if not self.state['floor']:
             for sensor in self.sensors:
                 if self._is_fire_from_sensor(sensor):
                     self.state['floor'] = self.time
+
+    def update_door_burned_state(self):
+        # iterate over door_sensors to evaluate their state
+        burned_doors = []
+        for door_sensor in self.door_sensors:
+            if int(self.conditions[door_sensor]['TRGINT']) > 200:
+                burned_doors.append(door_sensor[3:])
+        return burned_doors
 
     def _update_rooms_state(self):
         # iterate over rooms to evaluate rooms' conditions and state
@@ -767,7 +782,7 @@ class Detection:
         # calculate total delay time for room that is in fire
         floor_detection = self.state['floor']
         if floor_detection:
-            return floor_detection + alarm + pre_evac
+            return floor_detection + alarm + pre_evac - 1
         else:
             return self.config['DETECTION_TIME']
 

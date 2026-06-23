@@ -57,10 +57,10 @@ class CFASTRoomsChoice:
         # Pobieramy dane o pomieszczeniu, w którym wybuchł pożar
         # room_in_fire_name = 'c66'
         # room_in_fire_id = 66
-        room_in_fire_floor = int(self.s.query(f"SELECT floor FROM aamks_geom WHERE type_pri='COMPA' AND global_type_id=?", (room_in_fire_id,))[0]['floor'])
+        # room_in_fire = self.s.query(f"SELECT x0 as x, y0 as y, z0 as z, width as length, depth as width, height FROM aamks_geom WHERE name='{room_in_fire_name}'")[0]
 
         # Lista wszystkich pomieszczeń
-        for room in self.s.query("SELECT global_type_id, name, floor, x0, y0, z0, width, depth, height FROM aamks_geom WHERE type_pri='COMPA' AND fire_model_ignore=0 AND floor>=?", (room_in_fire_floor,)):
+        for room in self.s.query("SELECT global_type_id, name, floor, x0, y0, z0, width, depth, height FROM aamks_geom WHERE type_pri='COMPA' and fire_model_ignore=0"):
             self.rooms.append({
                 'floor':room['floor'],
                 'id': room['global_type_id'],
@@ -76,7 +76,7 @@ class CFASTRoomsChoice:
             })
 
         # Lista drzwi
-        for door in self.s.query("SELECT name, vent_from, vent_to, x0, y0, z0, width, height FROM aamks_geom WHERE type_tri='DOOR' AND floor>=?", (room_in_fire_floor,)):
+        for door in self.s.query("SELECT name, vent_from, vent_to, x0, y0, z0, width, height FROM aamks_geom WHERE type_tri='DOOR'"):
             self.doors.append({
                 'name': door['name'],
                 'room1_id': door['vent_from'],
@@ -156,7 +156,42 @@ class CFASTRoomsChoice:
 
         # self.print_rooms()
 
-        return sorted([(room['id'], room['distance'], room['name']) for room in self.rooms], key=lambda x: x[1])[:self.rooms_number]
+        # 1. Znajdujemy piętro, na którym wybuchł pożar (konwertujemy na int)
+        fire_room = next((r for r in self.rooms if r['id'] == room_in_fire_id), None)
+        fire_floor = int(fire_room['floor']) if fire_room and fire_room['floor'] is not None else 0
+
+        # 2. Wstępny podział na pokoje spełniające warunek i "resztę"
+        primary_rooms = []
+        fallback_rooms = []
+
+        for room in self.rooms:
+            try:
+                current_room_floor = int(room['floor'])
+            except (ValueError, TypeError):
+                current_room_floor = 0
+
+            starts_with_s_or_a = room['name'] and room['name'].lower().startswith(('s', 'a'))
+            
+            # Warunek podstawowy
+            if current_room_floor >= fire_floor or starts_with_s_or_a:
+                primary_rooms.append(room)
+            else:
+                fallback_rooms.append(room)
+
+        # 3. Sortujemy obie listy według odległości (distance)
+        primary_sorted = sorted(primary_rooms, key=lambda x: x['distance'])
+        fallback_sorted = sorted(fallback_rooms, key=lambda x: x['distance'])
+
+        # 4. Budujemy ostateczną listę
+        final_rooms = primary_sorted[:self.rooms_number]
+
+        # Jeśli mamy za mało pokoi, dobieramy z "reszty" (piętra niższe)
+        if len(final_rooms) < self.rooms_number:
+            needed = self.rooms_number - len(final_rooms)
+            final_rooms.extend(fallback_sorted[:needed])
+
+        # 5. Formatujemy wynik końcowy do postaci krotek (id, distance, name)
+        return [(room['id'], room['distance'], room['name']) for room in final_rooms]
 
 
     def print_rooms(self):

@@ -81,10 +81,10 @@ class Obstacles():
             for i in animatorOtherObstacles:
                 animatorOtherObstaclesData[floor].append([(int(x),int(y), zz) for x,y in i.exterior.coords])
         
-        self.s.query("CREATE TABLE obstacles (json)")
+        self.s.query("CREATE TABLE IF NOT EXISTS obstacles (json)")
         self.s.query("INSERT INTO obstacles VALUES (?)", (json.dumps({'obstacles': rvo2ObstalesData}),))
         
-        self.s.query("CREATE TABLE obstacles_animator (json)")
+        self.s.query("CREATE TABLE IF NOT EXISTS obstacles_animator (json)")
         self.s.query("INSERT INTO obstacles_animator VALUES (?)", (json.dumps({'virtualHallHolesObstacles': animatorVirtualHallHolesObstaclesData, 'otherObstacles': animatorOtherObstaclesData}),))
 #}}}
     def _floor2obsts(self, floor):# {{{

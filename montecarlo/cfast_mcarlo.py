@@ -23,6 +23,8 @@ import numpy as np
 
 from montecarlo.evac_mcarlo import lognorm_params_from_percentiles, lognorm_percentiles_from_params
 from geom.choose_rooms_cfast import CFASTRoomsChoice
+from scipy.stats import gumbel_r
+
 
 # }}}
 def join2str(l, sep, quotes=False, force=False):
@@ -195,7 +197,7 @@ class CfastMcarlo():
             txt.append(row)
         return "\n".join(txt)
 # }}}
-    def _build_compa_row(self, name, width, depth, height, ceiling_matl_id, wall_matl_id, floor_matl_id, type_sec, origin, leak_area, grid):# {{{
+    def _build_compa_row(self, name, width, depth, height, ceiling_matl_id, wall_matl_id, floor_matl_id, type_sec, origin, leak_area, grid, two_zone):# {{{
         collect = []
         collect.append(f"&COMP ID = '{name}'")
         collect.append(f'WIDTH = {width}')
@@ -210,7 +212,8 @@ class CfastMcarlo():
         if type_sec == 'COR':
             collect.append('HALL = .TRUE.')
         if type_sec == 'STAI':
-            collect.append('SHAFT = .TRUE.')
+            if two_zone == 0:
+                collect.append('SHAFT = .TRUE.')
         collect.append(f'ORIGIN = {join2str(origin, ", ")}')
         collect.append(f'LEAK_AREA = {join2str(leak_area, ", ")}')
         collect.append(f'GRID = {join2str(grid, ", ")} /')
@@ -236,7 +239,8 @@ class CfastMcarlo():
             origin = [round(v['x0']/100.0, 2), round(v['y0']/100.0, 2), round(v['z0']/100.0, 2)]
             leak_area = [3.5E-4, 5.2E-5]
             grid = [50, 50, 50]
-            c_row = self._build_compa_row(name, width, depth, height, ceiling_matl, wall_matl, floor_matl, type_sec, origin, leak_area, grid)
+            two_zone = v['two_zone']
+            c_row = self._build_compa_row(name, width, depth, height, ceiling_matl, wall_matl, floor_matl, type_sec, origin, leak_area, grid, two_zone)
             txt.append(', '.join(str(i) for i in c_row))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
@@ -282,7 +286,8 @@ class CfastMcarlo():
                             # AREA OF THE VENT,
                 # collect.append("SHAPE = 'SQUARE'")
                 collect.append("OFFSETS = {}, {}".format(vvent_details['vent_offset'][0], vvent_details['vent_offset'][1]))            # COMPARTMENT1_OFFSET
-                collect.append("CRITERION = 'TIME' T = 0,90 F = 0,{} /".format(how_much_open))         # OPEN CLOSE
+                # collect.append("CRITERION = 'TIME' T = 0,90 F = 0,{} /".format(how_much_open))         # OPEN CLOSE
+                collect.append("CRITERION = 'TIME' T = 0,899,900 F = 0,0,{} /".format(how_much_open))         # OPEN CLOSE
                 txt.append(', '.join(str(j) for j in collect))
         return "\n".join(txt)+"\n" if len(txt)>1 else ""
 # }}}
@@ -974,7 +979,11 @@ class DrawAndLog:
             load_density = int(lognormal(*params))  # location, scale
         else:
             raise ValueError(f'Invalid fire load density input data - check the form.')
+        mu = 674.92   # parametr położenia (loc)
+        beta = 182.05 # parametr skali (scale)
+        pozar_mieszkania_dist = gumbel_r(loc=mu, scale=beta)
 
+        load_density = int(pozar_mieszkania_dist.rvs())
 
         hrr = HRR(self.conf, self._sim_id)
         t_up_to_hrr_peak = int((hrr_peak/self.alpha)**0.5)
@@ -1058,7 +1067,7 @@ class DrawAndLog:
                         win['SETPOINT'] = self.conf['windows_break']['setpoint']
                         win['PRE_FRACTION'] = 0
                         win['POST_FRACTION'] = 1
-                        win['DEVC_ID'] = f"t_{v['name']}"
+                        win['DEVC_ID'] = f"t1_{v['name']}"
             self._opened_objects[v['name']] = how_much_open
             self._psql_log_variable('w',how_much_open)
             windows.append(win)
@@ -1130,7 +1139,11 @@ class DrawAndLog:
     def _draw_window_and_door_targets(self):
         targets = []
         closed_rooms = ', '.join([f"'{room}'" for room, how_much_open in self._opened_objects.items() if how_much_open == 0])
-        for v in self.s_geom.query(f"SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.name IN ({closed_rooms}) AND v.type_sec='WIN'"):
+        windows = self.s_geom.query(f"SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.name IN ({closed_rooms}) AND v.type_sec in ('WIN')")
+        doors_from = self.s_geom.query(f"SELECT v.name, v.vent_from_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_from_name = r.name WHERE v.name IN ({closed_rooms}) AND v.type_sec in ('DOOR')")
+        doors_to = self.s_geom.query(f"SELECT v.name, v.vent_to_name, v.face, v.face_offset, v.width as wwidth, v.depth as wdepth, v.sill, v.height, r.width, r.depth, r.type_sec FROM aamks_geom v JOIN aamks_geom r on v.vent_to_name = r.name WHERE v.name IN ({closed_rooms}) AND v.type_sec in ('DOOR')")
+        all_elements = list(windows) + list(doors_from)
+        for v in all_elements:
             z = round((v['height']*0.5)/100, 2)
             if v['type_sec'] == 'STAI':
                 z += v['sill']/100
@@ -1150,7 +1163,7 @@ class DrawAndLog:
                 x = round((v['face_offset']+v['wwidth']*0.5)/100, 2)
                 y = 0
                 normal = [0., 1., 0.]
-            targets.append({'ID': f"t_{v['name']}",
+            targets.append({'ID': f"t1_{v['name']}",
                             'COMP_ID': cfast_name(v['vent_from_name']),
                             'LOCATION': [x, y, z],
                             'TYPE': 'PLATE',
@@ -1158,6 +1171,41 @@ class DrawAndLog:
                             'TEMPERATURE_DEPTH': 0,
                             'DEPTH_UNITS': 'M'
                             })
+            
+        for v in doors_to:
+            z = round((v['height']*0.5)/100, 2)
+            if v['type_sec'] == 'STAI':
+                z += v['sill']/100
+            if v['face'] == 'RIGHT':
+                x = 0
+                y=0
+                # y = round((v['depth']-v['face_offset']-v['wdepth']*0.50)/100, 2)
+                normal = [1., 0., 0.]
+            if v['face'] == 'LEFT':
+                x = v['width']/100
+                y=0
+                # y = round((v['face_offset']+v['wdepth']*0.5)/100, 2)
+                normal = [-1., 0., 0.]
+            if v['face'] == 'REAR':
+                # x = round((v['width']-v['face_offset']-v['wwidth']*0.5)/100, 2)
+                x=0
+                y = v['depth']/100
+                normal = [0., -1., 0.]
+            if v['face'] == 'FRONT':
+                # x = round((v['face_offset']+v['wwidth']*0.5)/100, 2)
+                x=0
+                y = 0
+                normal = [0., 1., 0.]
+            targets.append({'ID': f"t2_{v['name']}",
+                            'COMP_ID': cfast_name(v['vent_to_name']),
+                            'LOCATION': [x, y, z],
+                            'TYPE': 'PLATE',
+                            'NORMAL': normal,
+                            'TEMPERATURE_DEPTH': 0,
+                            'DEPTH_UNITS': 'M'
+                            })
+            
+
         if targets:
             self.sections.setdefault('DEVC', []).extend(targets)
 

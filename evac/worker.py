@@ -93,6 +93,7 @@ class Worker:
         self.floor_doors = {}
         self.working_door_closer_doors = {}
         self.cfast_chosen_doors_and_holes_names =[]
+        self.burned_doors = []
 
 
 
@@ -288,7 +289,10 @@ class Worker:
                     if door['name'] in self.working_door_closer_doors[int(floor.floor)]:
                         door['how_much_open'] = 0
                 self.cfast_door_opening_level[door['name']] = str(door['how_much_open'])
-
+        
+        # add burned doors
+        for door_name in self.burned_doors:
+            self.cfast_door_opening_level[door_name] = '1'
 
         for door_id, opening_level in self.cfast_door_opening_level.items():
             if door_id in self.cfast_chosen_doors_and_holes_names:
@@ -718,6 +722,11 @@ class Worker:
                     try:
                         i.read_cfast_record(time_frame)
                         floor_det = i.detection.update()  # floor_det is checked for ALL compartments (all floors)
+                        burned_doors = i.detection.update_door_burned_state()
+                        for d in burned_doors:
+                            if d not in self.burned_doors:
+                                self.burned_doors.append(d)
+
                         # with open(self.working_dir + "/debug_control.txt", "a+") as f:
                         #     f.seek(0)  # wróć na początek, żeby móc przeczytać zawartość
                         #     if f.read().strip() == "stop":

@@ -635,7 +635,7 @@ class Plot:
         fig.savefig(os.path.join(self.dir, 'picts', 'pie_fault.png'))
         plt.close(fig)
         
-    def heatmap(self, hm: Heatmap, lab='Average FED absorbed in cell [-]'):
+    def heatmap(self, hm: Heatmap, lab='Average increase in the FED coefficient in a given cell [-]'):
     # wspólny vmax (globalny, ale stabilny)
         all_data = np.concatenate([
             floor['data'].ravel()
