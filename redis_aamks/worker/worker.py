@@ -50,11 +50,11 @@ class RedisWorker:
         logger.debug(f'starting aamks iter {sim_id} id - {job_id}')
         self.redis_queue_push(f"WORKER {host_name} - starting aamks iter {sim_id} id - {job_id}")
         Psql().query(f"UPDATE simulations SET job_id='{job_id}' WHERE scenario_id={scenario_id} AND iteration={sim_id}")
-        try:
-            start_aamks_with_worker(project, user_id, sim_id)
-        except Exception as e:
-            self.redis_queue_push(f"WORKER {host_name} - during sim {sim_id} AAMKS halting error \n ERROR: {e}")
-            logger.error(f'during sim {sim_id} AAMKS halting error \n ERROR: {e}')
+        # try:
+        start_aamks_with_worker(project, user_id, sim_id)
+        # except Exception as e:
+        #     self.redis_queue_push(f"WORKER {host_name} - during sim {sim_id} AAMKS halting error \n ERROR: {e}")
+        #     logger.error(f'during sim {sim_id} AAMKS halting error \n ERROR: {e}')
         logger.debug(f"finished {sim_id} - {pwd}")
         self.redis_queue_push(f"WORKER {host_name} - finished {sim_id} - {pwd}")
 
